@@ -1,0 +1,2 @@
+gcc -Wall `gsl-config --cflags` -c GSL/gslaux.c -o GSL/gslaux.o
+gcc  -DDBG -Wall `gsl-config --cflags` -c GSL/gslaux.c -o GSL/debuggslaux.o

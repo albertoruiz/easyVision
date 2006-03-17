@@ -1,0 +1,575 @@
+#include "gslaux.h"
+#include <gsl/gsl_blas.h>
+#include <gsl/gsl_linalg.h>
+#include <gsl/gsl_math.h>
+#include <gsl/gsl_errno.h>
+#include <gsl/gsl_fft_complex.h>
+#include <gsl/gsl_eigen.h>
+#include <gsl/gsl_integration.h>
+#include <gsl/gsl_poly.h>
+#include <string.h>
+#include <time.h>
+
+#define MACRO(B) do {B} while (0)
+#define ERROR(CODE) MACRO(return CODE;)
+#define REQUIRES(COND, CODE) MACRO(if(!(COND)) {ERROR(CODE);})
+
+ 
+#define MIN(A,B) ((A)<(B)?(A):(B)) 
+ 
+#ifdef DBG
+#define DEBUGMSG(M) printf("GSL Wrapper "M": "); size_t t0 = time(NULL);
+#define OK MACRO(printf("%ld s\n",time(0)-t0); return 0;);
+#else
+#define DEBUGMSG(M)
+#define OK return 0;
+#endif
+
+
+#define CHECK(RES,CODE) MACRO(if(RES) return CODE;)
+
+#ifdef DBG
+#define DEBUGMAT(MSG,X) printf(MSG" = \n"); gsl_matrix_fprintf(stdout,M(X),"%f"); printf("\n");
+#else
+#define DEBUGMAT(MSG,X)
+#endif
+
+#ifdef DBG
+#define DEBUGVEC(MSG,X) printf(MSG" = \n"); gsl_vector_fprintf(stdout,V(X),"%f"); printf("\n");
+#else
+#define DEBUGVEC(MSG,X)
+#endif
+
+
+#define DVVIEW(A) gsl_vector_view A = gsl_vector_view_array(A##p,A##n)
+#define DMVIEW(A) gsl_matrix_view A = gsl_matrix_view_array(A##p,A##r,A##c)
+#define CMVIEW(A) gsl_matrix_complex_view A = gsl_matrix_complex_view_array(A##p,A##r,A##c)
+
+#define V(a) (&a.vector)
+#define M(a) (&a.matrix)
+
+#define BAD_SIZE 1000
+#define BAD_CODE 1001
+#define MEM      1002
+
+int constant(double val, DVEC(r)) {
+    DEBUGMSG("constant")
+    int k;
+    for(k=0;k<rn;k++) {
+        rp[k]=val;
+    }
+    OK
+}
+
+int vectorZip(int code, DVEC(a), DVEC(b), DVEC(r)) {
+    REQUIRES(an == bn && an == rn, BAD_SIZE);
+    DVVIEW(a);
+    DVVIEW(b);
+    DVVIEW(r);
+    switch(code) {
+        case 5: { 
+            DEBUGMSG("vectorZip pow")
+            int k;
+            for(k=0; k<an; k++) {
+                rp[k] = pow(ap[k],bp[k]);
+            }
+            OK
+        }
+        case 6: {
+            DEBUGMSG("vectorZip atan2") 
+            int k;
+            for(k=0; k<an; k++) {
+                rp[k] = atan2(ap[k],bp[k]);
+            }
+            OK
+        }
+    }
+    gsl_vector_memcpy(V(r),V(a));
+    int res;        
+    switch(code) {
+        case 1: {
+            DEBUGMSG("gsl_vector_mul") 
+            res = gsl_vector_mul(V(r),V(b));
+            CHECK(res,res);
+            OK
+        }
+        case 2: {
+            DEBUGMSG("gsl_vector_div") 
+            res = gsl_vector_div(V(r),V(b));
+            CHECK(res,res);
+            OK
+        }    
+        case 3: {
+            DEBUGMSG("gsl_vector_add") 
+            res = gsl_vector_add(V(r),V(b));
+            CHECK(res,res);
+            OK
+        }
+        case 4: {
+            DEBUGMSG("gsl_vector_sub") 
+            res = gsl_vector_sub(V(r),V(b));
+            CHECK(res,res);
+            OK
+        }
+        default: ERROR(BAD_CODE);
+    }
+    
+}
+
+/* hay que cambiar el estilo, incluyendo errorcodes
+double vector_dot(DVEC(a), DVEC(b)) {
+    REQUIRES(an == bn, "different sizes en vector_dot");
+    DEBUGMSG("GSL vector_dot");
+    DVVIEW(a);
+    DVVIEW(b);
+    double r;
+    gsl_blas_ddot(V(a),V(b),&r);
+    return r;
+}
+*/
+
+// pendiente de arreglar para admitir error codes
+double toScalar(int code, DVEC(x)) { 
+    DEBUGMSG("toScalar");
+    DVVIEW(x);
+    int res;
+    switch(code) {
+        case 1: { res = gsl_blas_dnrm2(V(x)); break; } 
+        case 2: { res = gsl_blas_dasum(V(x));  break; }
+        case 3: { res = gsl_vector_max_index(V(x));  break; }
+        case 4: { res = gsl_vector_max(V(x));  break; }
+        case 5: { res = gsl_vector_min_index(V(x)); break; }
+        case 6: { res = gsl_vector_min(V(x)); break; }
+        default: ERROR(BAD_CODE);
+    }    
+    CHECK(res,res);
+    OK
+}
+
+
+int vector_scale(double alpha, DVEC(x), DVEC(r)) {
+    REQUIRES(xn == rn,BAD_SIZE);
+    DEBUGMSG("vector_scale");
+    DVVIEW(x);
+    DVVIEW(r);
+    CHECK( gsl_vector_memcpy(V(r),V(x)) , MEM);
+    int res = gsl_vector_scale(V(r),alpha);
+    CHECK(res,res);
+    OK
+}
+
+
+int vector_offset(double offs, DVEC(x), DVEC(r)) { 
+    REQUIRES(xn == rn,BAD_SIZE);    
+    DEBUGMSG("vector_offset");
+    DVVIEW(x);
+    DVVIEW(r);
+    CHECK(gsl_vector_memcpy(V(r),V(x)), MEM);
+    int res = gsl_vector_add_constant(V(r),offs);
+    CHECK(res,res);
+    OK
+}
+
+
+inline double sign(double x) {
+    if(x>0) {
+        return +1.0;
+    } else if (x<0) {
+        return -1.0;
+    } else {
+        return 0.0;
+    }
+}
+
+ 
+#define OP(C,F) case C: { for(k=0;k<xn;k++) rp[k] = F(xp[k]); OK }
+int vectorMap(int code, DVEC(x), DVEC(r)) {
+    int k;
+    REQUIRES(xn == rn,BAD_SIZE);
+    DEBUGMSG("vectorMap");
+    switch (code) {
+        OP(0,sin)
+        OP(1,cos)
+        OP(2,tan)
+        OP(3,fabs)
+        OP(4,asin)
+        OP(5,acos)
+        OP(6,atan) /* atan2 mediante ewOp */
+        OP(7,sinh)
+        OP(8,cosh)
+        OP(9,tanh)
+        OP(10,asinh)
+        OP(11,acosh)
+        OP(12,atanh)
+        OP(13,exp)
+        OP(14,log)
+        OP(15,sign)
+        default: ERROR(BAD_CODE);
+    }   
+}
+
+
+int diagR(DVEC(d),DMAT(r)) { 
+    REQUIRES(dn==rr && rr==rc,BAD_SIZE);
+    DEBUGMSG("diagR");
+    int i,j;
+    for (i=0;i<rr;i++) {
+        for(j=0;j<rc;j++) {
+            rp[i*rc+j] = i==j?dp[i]:0.;
+        }
+    }
+    OK
+}
+
+int diagC(CVEC(d),CMAT(r)) { 
+    REQUIRES(dn==rr && rr==rc,BAD_SIZE);
+    DEBUGMSG("diagC");
+    int i,j;
+    for (i=0;i<rr;i++) {
+        for(j=0;j<rc;j++) {
+            rp[i*2*rc+2*j] = i==j?dp[2*i]:0.;
+            rp[i*2*rc+2*j+1] = i==j?dp[2*i+1]:0.;
+        }
+    }
+    OK
+}
+
+
+
+int take_diagonal(DMAT(a),DVEC(d)) {
+    int n = MIN(ar,ac);
+    REQUIRES(n==dn,BAD_SIZE);
+    DEBUGMSG("take_diagonal");
+    int k;
+    for (k=0; k<n; k++) {
+        dp[k] = ap[k*ac+k];
+    }
+    OK
+}
+
+
+int take_diagonalC(CMAT(a),CVEC(d)) {
+    int n = MIN(ar,ac);
+    REQUIRES(n==dn,BAD_SIZE);
+    DEBUGMSG("take_diagonalC");
+    int k;
+    for (k=0; k<n; k++) {
+        dp[2*k] = ap[k*2*ac+2*k];
+        dp[2*k+1] = ap[k*2*ac+2*k+1];
+    }
+    OK
+}
+
+
+int multiplyR(DMAT(a),DMAT(b),DMAT(r)) {          
+    REQUIRES(ac==br && ar==rr && bc==rc,BAD_SIZE);        
+    DEBUGMSG("multiplyR (gsl_blas_dgemm)");
+    DMVIEW(a);
+    DMVIEW(b);
+    DMVIEW(r);
+    int res = gsl_blas_dgemm 
+        (CblasNoTrans, CblasNoTrans,
+         1.0, M(a), M(b),
+         0.0, M(r));
+    CHECK(res,res);
+    OK
+}
+
+int multiplyC(CMAT(a),CMAT(b),CMAT(r)) {          
+    REQUIRES(ac==br && ar==rr && bc==rc,BAD_SIZE);        
+    DEBUGMSG("multiplyC (gsl_blas_zgemm)");
+    CMVIEW(a);
+    CMVIEW(b);
+    CMVIEW(r);
+    gsl_complex alpha, beta;
+    GSL_SET_COMPLEX(&alpha,1.,0.);
+    GSL_SET_COMPLEX(&beta,0.,0.);
+    int res = gsl_blas_zgemm 
+        (CblasNoTrans, CblasNoTrans,
+         alpha, M(a), M(b),
+         beta, M(r));
+    CHECK(res,res);
+    OK
+}
+
+
+int trans(DMAT(x),DMAT(t)) {
+    REQUIRES(xr==tc && xc==tr,BAD_SIZE);
+    DEBUGMSG("trans");
+    DMVIEW(x);
+    DMVIEW(t);
+    int res = gsl_matrix_transpose_memcpy(M(t),M(x));
+    CHECK(res,res);
+    OK
+}
+
+int transC(CMAT(x),CMAT(t)) {
+    REQUIRES(xr==tc && xc==tr,BAD_SIZE);
+    DEBUGMSG("transC");
+    CMVIEW(x);
+    CMVIEW(t);
+    int res = gsl_matrix_complex_transpose_memcpy(M(t),M(x));
+    CHECK(res,res);
+    OK
+}
+
+int submatrixR(int r1, int r2, int c1, int c2, DMAT(x),DMAT(r)) {
+    REQUIRES(0<=r1 && r1<=r2 && r2<xr && 0<=c1 && c1<=c2 && c2<xc &&
+            rr==r2-r1+1 && rc==c2-c1+1,BAD_SIZE);
+    DEBUGMSG("submatrix");
+    DMVIEW(x);
+    DMVIEW(r);
+    gsl_matrix_view S = gsl_matrix_submatrix(M(x),r1,c1,rr,rc);
+    int res = gsl_matrix_memcpy(M(r),M(S));
+    CHECK(res,res);
+    OK
+}
+
+int luSolveR(DMAT(a),DMAT(b),DMAT(r)) {
+    REQUIRES(ar==ac && ac==br && ar==rr && bc==rc,BAD_SIZE);        
+    DEBUGMSG("luSolveR");
+    DMVIEW(a);
+    DMVIEW(b);
+    DMVIEW(r);
+    int res;
+    gsl_matrix *LU = gsl_matrix_alloc(ar,ar);
+    CHECK(!LU,MEM);
+    int s;
+    gsl_permutation * p = gsl_permutation_alloc (ar);
+    CHECK(!p,MEM);
+    CHECK(gsl_matrix_memcpy(LU,M(a)),MEM);
+    res = gsl_linalg_LU_decomp(LU, p, &s);
+    CHECK(res,res);
+    int c;
+    
+    for (c=0; c<bc; c++) {
+        gsl_vector_const_view colb = gsl_matrix_const_column (M(b), c);
+        gsl_vector_view colr = gsl_matrix_column (M(r), c);
+        res = gsl_linalg_LU_solve (LU, p, V(colb), V(colr));
+        CHECK(res,res);
+    }
+    gsl_permutation_free(p);
+    gsl_matrix_free(LU);
+    OK
+}
+
+
+int luSolveC(CMAT(a),CMAT(b),CMAT(r)) {
+    REQUIRES(ar==ac && ac==br && ar==rr && bc==rc,BAD_SIZE);        
+    DEBUGMSG("luSolveC");
+    CMVIEW(a);
+    CMVIEW(b);
+    CMVIEW(r);
+    gsl_matrix_complex *LU = gsl_matrix_complex_alloc(ar,ar);
+    CHECK(!LU,MEM);
+    int s;
+    gsl_permutation * p = gsl_permutation_alloc (ar);
+    CHECK(!p,MEM);
+    CHECK(gsl_matrix_complex_memcpy(LU,M(a)),MEM);
+    int res;
+    res = gsl_linalg_complex_LU_decomp(LU, p, &s);
+    CHECK(res,res);
+    int c;
+    for (c=0; c<bc; c++) {
+        gsl_vector_complex_const_view colb = gsl_matrix_complex_const_column (M(b), c);
+        gsl_vector_complex_view colr = gsl_matrix_complex_column (M(r), c);
+        res = gsl_linalg_complex_LU_solve (LU, p, V(colb), V(colr));
+        CHECK(res,res);
+    }
+    gsl_permutation_free(p);
+    gsl_matrix_complex_free(LU);
+    OK
+}
+
+
+int luRaux(DMAT(a),DVEC(b)) {
+    REQUIRES(ar==ac && bn==ar*ar+ar+1,BAD_SIZE);        
+    DEBUGMSG("luRaux");
+    DMVIEW(a);
+    //DVVIEW(b);
+    gsl_matrix_view LU = gsl_matrix_view_array(bp,ar,ac);
+    int s;
+    gsl_permutation * p = gsl_permutation_alloc (ar);
+    CHECK(!p,MEM);
+    CHECK(gsl_matrix_memcpy(M(LU),M(a)),MEM);
+    gsl_linalg_LU_decomp(M(LU), p, &s);
+    bp[ar*ar] = s;
+    int k;
+    for (k=0; k<ar; k++) {
+        bp[ar*ar+k+1] = gsl_permutation_get(p,k);
+    }
+    gsl_permutation_free(p);
+    OK
+}
+
+int luCaux(CMAT(a),CVEC(b)) {
+    REQUIRES(ar==ac && bn==ar*ar+ar+1,BAD_SIZE);        
+    DEBUGMSG("luCaux");
+    CMVIEW(a);
+    //DVVIEW(b);
+    gsl_matrix_complex_view LU = gsl_matrix_complex_view_array(bp,ar,ac);
+    int s;
+    gsl_permutation * p = gsl_permutation_alloc (ar);
+    CHECK(!p,MEM);
+    CHECK(gsl_matrix_complex_memcpy(M(LU),M(a)),MEM);
+    int res;
+    res = gsl_linalg_complex_LU_decomp(M(LU), p, &s);
+    CHECK(res,res);
+    bp[2*ar*ar] = s;
+    bp[2*ar*ar+1] = 0;
+    int k;
+    for (k=0; k<ar; k++) {
+        bp[2*ar*ar+2*k+2] = gsl_permutation_get(p,k);
+        bp[2*ar*ar+2*k+2+1] = 0;
+    }
+    gsl_permutation_free(p);
+    OK
+}
+
+int svd(DMAT(a),DMAT(u), DVEC(s),DMAT(v)) {
+    REQUIRES(ar==ur && ac==uc && ac==sn && ac==vr && ac==vc,BAD_SIZE);
+    DEBUGMSG("svd");
+    DMVIEW(a);
+    DMVIEW(u);
+    DVVIEW(s);
+    DMVIEW(v);
+    gsl_vector  *workv = gsl_vector_alloc(ac);
+    CHECK(!workv,MEM);
+    gsl_matrix  *workm = gsl_matrix_alloc(ac,ac);
+    CHECK(!workm,MEM);
+    CHECK(gsl_matrix_memcpy(M(u),M(a)),MEM);
+    // int res = gsl_linalg_SV_decomp_jacobi (&U.matrix, &V.matrix, &S.vector);
+    // doesn't work 
+    //int res = gsl_linalg_SV_decomp (&U.matrix, &V.matrix, &S.vector, workv);
+    int res = gsl_linalg_SV_decomp_mod (M(u), workm, M(v), V(s), workv);
+    CHECK(res,res);
+    //gsl_matrix_transpose(M(v));
+    gsl_vector_free(workv);
+    gsl_matrix_free(workm);
+    OK
+}
+
+
+// for real symmetric matrices
+int eigensystem(DMAT(x),DVEC(l),DMAT(v)) {
+    REQUIRES(xr==xc && xr==ln && xr==vr && vr==vc,BAD_SIZE);
+    DEBUGMSG("eigensystem");
+    DMVIEW(x);
+    DVVIEW(l);
+    DMVIEW(v);
+    gsl_matrix *XP = gsl_matrix_alloc(xr,xr);
+    gsl_matrix_memcpy(XP,M(x)); // needed because the argument is destroyed
+    gsl_eigen_symmv_workspace * w = gsl_eigen_symmv_alloc (xc);
+    gsl_eigen_symmv (XP, V(l), M(v), w);
+    gsl_eigen_symmv_free (w);
+    gsl_matrix_free(XP);
+    gsl_eigen_symmv_sort (V(l), M(v), GSL_EIGEN_SORT_ABS_DESC);
+    //gsl_matrix_transpose(M(v));
+    OK
+}
+
+// for comlex hermitian matrices
+int eigensystemC(CMAT(x),DVEC(l),CMAT(v)) {
+    REQUIRES(xr==xc && xr==ln && xr==vr && vr==vc,BAD_SIZE);
+    DEBUGMSG("eigensystemC");
+    CMVIEW(x);
+    DVVIEW(l);
+    CMVIEW(v);
+    gsl_matrix_complex *XP = gsl_matrix_complex_alloc(xr,xr);
+    gsl_matrix_complex_memcpy(XP,M(x)); // needed because the argument is destroyed
+    gsl_eigen_hermv_workspace * w = gsl_eigen_hermv_alloc (xc);
+    gsl_eigen_hermv (XP, V(l), M(v), w);
+    gsl_eigen_hermv_free (w);
+    gsl_matrix_complex_free(XP);
+    gsl_eigen_hermv_sort (V(l), M(v), GSL_EIGEN_SORT_ABS_DESC);
+    //gsl_matrix_complex_transpose(M(v));
+    OK
+}
+
+int QR(DMAT(x),DMAT(q),DMAT(r)) {
+    REQUIRES(xr==rr && xc==rc && qr==qc && xr==qr,BAD_SIZE);
+    DEBUGMSG("QR");
+    DMVIEW(x);
+    DMVIEW(q);
+    DMVIEW(r);
+    gsl_matrix * a = gsl_matrix_alloc(xr,xc);
+    gsl_vector * tau = gsl_vector_alloc(MIN(xr,xc));
+    gsl_matrix_memcpy(a,M(x));
+    gsl_linalg_QR_decomp(a,tau);
+    gsl_linalg_QR_unpack(a,tau,M(q),M(r));
+    gsl_vector_free(tau);
+    gsl_matrix_free(a);
+    OK
+}
+
+int chol(DMAT(x),DMAT(l)) {
+    REQUIRES(xr==xc && lr==xr && lr==lc,BAD_SIZE);
+    DEBUGMSG("chol");
+    DMVIEW(x);
+    DMVIEW(l);
+    gsl_matrix_memcpy(M(l),M(x));
+    gsl_linalg_cholesky_decomp(M(l));
+    int r,c;
+    for (r=0; r<xr-1; r++) {
+        for(c=r+1; c<xc; c++) {
+            lp[r*lc+c] = 0.;
+        }
+    }
+    OK
+}
+
+
+int fft(int code, CVEC(X), CVEC(R)) {
+    REQUIRES(Xn == Rn,BAD_SIZE);
+    DEBUGMSG("fft");
+    int s = Xn;
+    gsl_fft_complex_wavetable * wavetable = gsl_fft_complex_wavetable_alloc (s);
+    gsl_fft_complex_workspace * workspace = gsl_fft_complex_workspace_alloc (s);
+    gsl_vector_view X = gsl_vector_view_array(Xp, 2*Xn);
+    gsl_vector_view R = gsl_vector_view_array(Rp, 2*Rn);
+    gsl_blas_dcopy(&X.vector,&R.vector);
+    if(code==0) {
+        gsl_fft_complex_forward (Rp, 1, s, wavetable, workspace);
+    } else {
+        gsl_fft_complex_inverse (Rp, 1, s, wavetable, workspace);
+    }    
+    gsl_fft_complex_wavetable_free (wavetable);
+    gsl_fft_complex_workspace_free (workspace);
+    OK
+}
+
+
+int integrate_qng(double f(double, void*), double a, double b, double prec,
+                   double *result, double*error) {
+    DEBUGMSG("integrate_qng");
+    gsl_function F;
+    F.function = f;
+    F.params = NULL;
+    int neval;
+    int res = gsl_integration_qng (&F, a,b, 0, prec, result, error, &neval); 
+    CHECK(res,res);
+    OK
+}
+
+int integrate_qags(double f(double,void*), double a, double b, double prec, int w, 
+               double *result, double* error) {
+    DEBUGMSG("integrate_qags");
+    gsl_integration_workspace * wk = gsl_integration_workspace_alloc (w);
+    gsl_function F;
+    F.function = f;
+    F.params = NULL;
+    int res = gsl_integration_qags (&F, a,b, 0, prec, w,wk, result, error); 
+    CHECK(res,res);
+    gsl_integration_workspace_free (wk); 
+    OK
+}
+
+int polySolve(DVEC(a), CVEC(z)) {
+    DEBUGMSG("polySolve");
+    REQUIRES(an>1,BAD_SIZE);
+    gsl_poly_complex_workspace * w = gsl_poly_complex_workspace_alloc (an);
+    int res = gsl_poly_complex_solve (ap, an, w, zp);
+    CHECK(res,res);
+    gsl_poly_complex_workspace_free (w);
+    OK;
+}
