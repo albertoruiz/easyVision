@@ -1,2 +1,19 @@
+#! /bin/bash
+
+echo "Compiling the C wrappers..."
 gcc -Wall `gsl-config --cflags` -c GSL/gslaux.c -o GSL/gslaux.o
+
+echo "Compiling the C wrappers with debugging information..."
 gcc  -DDBG -Wall `gsl-config --cflags` -c GSL/gslaux.c -o GSL/debuggslaux.o
+
+echo "Preparing the documentation..."
+rm -f doc/*
+haddock GSL.hs \
+        GSL/Util.hs \
+        GSL/Base.hs --hide=GSL.Base \
+        GSL/Wrappers.hs --hide=GSL.Wrappers \
+        GSL/Derived.hs --hide=GSL.Derived \
+        GSL/Interface.hs --hide=GSL.Interface \
+        -o doc -h
+
+echo "OK"
