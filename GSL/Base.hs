@@ -49,7 +49,7 @@ rows (M r _ _) = r
 cols :: Matrix t -> Int
 cols (M _ c _) = c
 
--- | creates a vector from a list. See also 'realVector' and 'vector'. 
+-- | Creates a vector from a list. Related functions: 'realVector', 'complexVector', 'fromLists', and 'flatten'. 
 fromList :: (Storable a) => [a] -> Vector a
 fromList [] = error "trying to create an empty GSL vector"
 fromList l = createV "fromList" (length l) $

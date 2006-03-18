@@ -11,7 +11,14 @@ import Numeric(showGFloat)
 import Foreign
 
 
--- | the imaginary unit
+{- | the imaginary unit
+
+@> ident 3 \<\> i
+1.i   0.   0.
+ 0.  1.i   0.
+ 0.   0.  1.i@
+
+-}
 i :: Complex Double
 i = 0:+1 
 

@@ -20,11 +20,11 @@ module GSL.Util (
     -- * Matrix IO
     fromFile, gslReadMatrix,
     -- * Special matrices
-    i, norm, hilb, ident, constant, 
+    ident, constant, hilb, 
     -- * Additional matrix manipulation
     extractRows, fromRows, toRows, fromCols, toCols, flipud, fliprl, 
     -- * Other
-    (//), disp,  sumCols, outer
+     i, norm, (//), disp, sumCols, outer
 ) where
 
 import GSL
