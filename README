@@ -1,0 +1,27 @@
+You need the GNU Scientific Library (http://www.gnu.org/software/gsl).
+For instance, in a Fedora Core Linux system you can:
+
+# yum install gsl gsl-devel.
+
+The performance of some linear algebra computations significantly increases using ATLAS
+(http://math-atlas.sourceforge.net/). You can download precompiled libraries for your
+system from https://sourceforge.net/project/showfiles.php?group_id=23725
+
+The first time (or if you change GSL/gslaux.c or GSL/gslaux.h) you must run:
+
+$ ./setup
+
+COMMAND LINE EXAMPLES
+---------------------
+
+Interactive, standard gsl without atlas optimization:
+
+$ ghci-6.4.1 <prog.hs> GSL/gslaux.o -lgslcblas -lgsl 
+
+Compiled, using atlas:
+
+$ LIBATLAS=/path/to/atlas/lib
+$ ghc-6.4.1 --make <prog.hs> GSL/gslaux.o -L$LIBATLAS -lcblas /usr/lib/libgsl.a -latlas
+
+You can alternatively link with GSL/debuggslaux.o to "printf" the
+C wrappers that are used by your program, with timing information.
