@@ -14,6 +14,6 @@ haddock GSL.hs \
         GSL/Wrappers.hs --hide=GSL.Wrappers \
         GSL/Derived.hs --hide=GSL.Derived \
         GSL/Interface.hs --hide=GSL.Interface \
-        -o doc -h
+        -o doc -h 2> /dev/null
 
 echo "OK"

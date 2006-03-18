@@ -49,14 +49,14 @@ rows (M r _ _) = r
 cols :: Matrix t -> Int
 cols (M _ c _) = c
 
--- | creates a vector from a list 
+-- | creates a vector from a list. See also 'realVector' and 'vector'. 
 fromList :: (Storable a) => [a] -> Vector a
 fromList [] = error "trying to create an empty GSL vector"
 fromList l = createV "fromList" (length l) $
     \n p -> do pokeArray p l
                return 0
 
--- | creates a list from a vector
+-- | creates a list from a vector.
 toList :: (Storable t) => Vector t -> [t]
 toList (V n p) = unsafePerformIO $ withForeignPtr p $ peekArray n
 

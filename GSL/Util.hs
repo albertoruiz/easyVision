@@ -26,15 +26,19 @@ import GSL.Interface
 import GSL.Derived
 import Foreign
 
+-- | creates a real vector from a list. Useful in some situations to avoid type annotations.
 realVector :: [Double] -> V
 realVector = fromList
 
+-- | creates a complex vector from a list. Useful in some situations to avoid type annotations.
 vector :: [Complex Double] -> CV
 vector = fromList
 
+-- | creates a real vector from a list of lists. Useful in some situations to avoid type annotations.
 realMatrix :: [[Double]] -> M
 realMatrix = fromLists
 
+-- | creates a complex vector from a list. Useful in some situations to avoid type annotations.
 matrix :: [[Complex Double]] -> CM
 matrix = fromLists
 
@@ -57,18 +61,19 @@ flipud m = fromRows . reverse . toRows $ m
 fliprl :: (Storable t, Trans t) => Matrix t -> Matrix t
 fliprl m = fromCols . reverse . toCols $ m   
 
-{- | display with n digits after the decimal point
-
+{- | display with n digits after the decimal point.
 -}
 disp :: (Disp a) => Int -> a -> IO ()
 disp n = putStrLn . format n
 
 --------------------------------------------
 
--- | sum of columns of a matrix
+-- | sum of columns of a matrix.
 sumCols :: (Mul V (Matrix t) (Vector t)) => Matrix t -> Vector t
 sumCols m = constant 1 (rows m) <> m
 
--- | outer product of two vectors
+-- | outer product of two vectors.
 outer :: (Mul (Matrix a) (Matrix b) (Matrix r)) => Vector a -> Vector b -> Matrix r
 outer u v = reshape 1 u <> reshape (size v) v
+
+

@@ -8,18 +8,20 @@ Maintainer  :  Alberto Ruiz (aruiz at um dot es)
 Stability   :  provisional
 Portability :  uses -fffi and -fglasgow-exts
 
-Wrappers for some useful functions of the GNU Scientific Library (<http://www.gnu.org/software/gsl>).
- 
-This module provides a simple functional interface to standard matrix computations (eigensystems, singular values, pseudoinverses, etc.) and other numeric algorithms.
+This library provides a simple interface to standard matrix computations (eigensystems, singular values, pseudoinverses, etc.) and other numeric algorithms. It is based on C wrappers the GNU Scientific Library (<http://www.gnu.org/software/gsl>).
 
-More information can be found at <http://dis.um.es/~alberto/GSLHaskell>
+This is a work in progress. The latest version (extremely unstable) can be obtained from: 
+
+darcs get --partial http:\/\/dis.um.es\/\~alberto\/GSLHaskell
+
+Any kind of help is welcome!
 
 -}
 -----------------------------------------------------------------------------
 
 module GSL (
     -- * Data types
-    -- | This library works with four data types: real vectors ('V'), complex vectors ('CV'), real matrices ('M') and complex matrices ('CM'). They are statically different, inmutable, and with automatic garbage collection. They are implemented as Foreign pointers to C-style arrays of double with dimension information, corresponding to the GSL vectors and matrices. 
+    -- | The library works with four data types: real vectors ('V'), complex vectors ('CV'), real matrices ('M') and complex matrices ('CM'). They are statically different, inmutable, and with automatic garbage collection. They are implemented as Foreign pointers to C-style arrays of double with dimension information, corresponding to the GSL vectors and matrices. 
     
     -- ** Vectors
     V, CV, fromList, toList,

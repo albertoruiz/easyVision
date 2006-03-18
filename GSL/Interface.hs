@@ -414,7 +414,7 @@ class Disp a where
  > 0.50 1.50 0.50
  > 0.50 0.50 1.50
 
- The Show instances of the vectors and matrices use format 3. See 'disp'.
+ The Show instances of vectors and matrices use format 3. See also 'disp'.
  
  -}
  format :: Int -> a -> String
