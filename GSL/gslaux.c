@@ -463,6 +463,7 @@ int eigensystem(DMAT(x),DVEC(l),DMAT(v)) {
     DMVIEW(v);
     gsl_matrix *XP = gsl_matrix_alloc(xr,xr);
     gsl_matrix_memcpy(XP,M(x)); // needed because the argument is destroyed
+                                // many thanks to Nico Mahlo for the bug report 
     gsl_eigen_symmv_workspace * w = gsl_eigen_symmv_alloc (xc);
     gsl_eigen_symmv (XP, V(l), M(v), w);
     gsl_eigen_symmv_free (w);
@@ -480,7 +481,7 @@ int eigensystemC(CMAT(x),DVEC(l),CMAT(v)) {
     DVVIEW(l);
     CMVIEW(v);
     gsl_matrix_complex *XP = gsl_matrix_complex_alloc(xr,xr);
-    gsl_matrix_complex_memcpy(XP,M(x)); // needed because the argument is destroyed
+    gsl_matrix_complex_memcpy(XP,M(x)); // again needed because the argument is destroyed
     gsl_eigen_hermv_workspace * w = gsl_eigen_hermv_alloc (xc);
     gsl_eigen_hermv (XP, V(l), M(v), w);
     gsl_eigen_hermv_free (w);
@@ -549,7 +550,7 @@ int integrate_qng(double f(double, void*), double a, double b, double prec,
     gsl_function F;
     F.function = f;
     F.params = NULL;
-    int neval;
+    size_t neval;
     int res = gsl_integration_qng (&F, a,b, 0, prec, result, error, &neval); 
     CHECK(res,res);
     OK
