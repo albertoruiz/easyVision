@@ -15,15 +15,23 @@ Utility functions easily derivable from the basic ones in "GSL".
 -----------------------------------------------------------------------------
 
 module GSL.Util (
-    vector, matrix, realVector, realMatrix,
-    i, norm, hilb, ident, constant, extractRows, fromRows, toRows, fromCols, toCols,
-    (//), disp, flipud, fliprl, fromFile, sumCols, outer
+    -- * Easy creation of vectos and matrices
+    realVector, realMatrix, complexVector, complexMatrix, 
+    -- * Matrix IO
+    fromFile, gslReadMatrix,
+    -- * Special matrices
+    i, norm, hilb, ident, constant, 
+    -- * Additional matrix manipulation
+    extractRows, fromRows, toRows, fromCols, toCols, flipud, fliprl, 
+    -- * Other
+    (//), disp,  sumCols, outer
 ) where
 
 import GSL
 import GSL.Base
 import GSL.Interface
 import GSL.Derived
+import GSL.Wrappers
 import Foreign
 
 -- | creates a real vector from a list. Useful in some situations to avoid type annotations.
@@ -31,16 +39,16 @@ realVector :: [Double] -> V
 realVector = fromList
 
 -- | creates a complex vector from a list. Useful in some situations to avoid type annotations.
-vector :: [Complex Double] -> CV
-vector = fromList
+complexVector :: [Complex Double] -> CV
+complexVector = fromList
 
 -- | creates a real vector from a list of lists. Useful in some situations to avoid type annotations.
 realMatrix :: [[Double]] -> M
 realMatrix = fromLists
 
 -- | creates a complex vector from a list. Useful in some situations to avoid type annotations.
-matrix :: [[Complex Double]] -> CM
-matrix = fromLists
+complexMatrix :: [[Complex Double]] -> CM
+complexMatrix = fromLists
 
 {- | postfix function application with low precedence (as in Mathematica)
 

@@ -212,6 +212,7 @@ readVector v = fromList . read $ v
 
 readMatrix r = fromLists . map (map r). map words . lines . cleanpun   
 
+-- | loads a matrix from a formatted ASCII text file 
 fromFile :: FilePath -> IO M
 fromFile filename = readFile filename >>= return . readMatrix read
 

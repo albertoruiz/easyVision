@@ -1,6 +1,7 @@
 #include "gslaux.h"
 #include <gsl/gsl_blas.h>
 #include <gsl/gsl_linalg.h>
+#include <gsl/gsl_matrix.h>
 #include <gsl/gsl_math.h>
 #include <gsl/gsl_errno.h>
 #include <gsl/gsl_fft_complex.h>
@@ -9,6 +10,8 @@
 #include <gsl/gsl_poly.h>
 #include <string.h>
 #include <time.h>
+#include <stdio.h>
+
 
 #define MACRO(B) do {B} while (0)
 #define ERROR(CODE) MACRO(return CODE;)
@@ -51,6 +54,7 @@
 #define BAD_SIZE 1000
 #define BAD_CODE 1001
 #define MEM      1002
+#define BAD_FILE 1003
 
 int constant(double val, DVEC(r)) {
     DEBUGMSG("constant")
@@ -572,4 +576,16 @@ int polySolve(DVEC(a), CVEC(z)) {
     CHECK(res,res);
     gsl_poly_complex_workspace_free (w);
     OK;
+}
+
+int matrix_fscanf(char*filename, DMAT(a)) {
+    DEBUGMSG("gsl_matrix_fscanf");
+    //printf(filename); printf("\n");
+    DMVIEW(a);
+    FILE * f = fopen(filename,"r");
+    CHECK(!f,BAD_FILE);
+    int res = gsl_matrix_fscanf(f, M(a));
+    CHECK(res,res);
+    fclose (f);
+    OK
 }

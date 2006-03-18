@@ -241,4 +241,5 @@ prot msg f = do
         1000 -> error $ "size problem in the GSL wrapper: " ++ msg
         1001 -> error $ "unknown opcode in the GSL wrapper: " ++ msg
         1002 -> error $ "memory allocation problem in GSL wrapper: " ++ msg
+        1003 -> error $ "wrong file name in GSL wrapper: " ++ msg
     

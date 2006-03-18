@@ -18,6 +18,7 @@ module GSL.Wrappers where
 
 import GSL.Base
 import Foreign
+import Foreign.C.Types
 
 -- | creates a constant vector
 constantV :: Double -> Int -> V
@@ -332,3 +333,12 @@ polySolve x@(V n _) = createV "polySolve" (n-1) $ v c_polySolve x
 foreign import ccall "gslaux.h polySolve" c_polySolve:: TVCV
 
 ------------------------------------------------------------------------
+
+-- | loads a matrix efficiently from formatted ASCII text file (the number of rows and columns must be known in advance).
+gslReadMatrix :: FilePath -> (Int,Int) -> IO M
+gslReadMatrix filename (r,c) = do
+    charname <- newArray0 (toEnum . fromEnum $ 0) (map (toEnum.fromEnum) filename) 
+    let m = createM "gslReadMatrix" r c $ c_gslReadMatrix charname
+    --free charname  TO DO: free the auxiliary CString
+    return m
+foreign import ccall "gslaux.h matrix_fscanf" c_gslReadMatrix:: Ptr CChar -> TM

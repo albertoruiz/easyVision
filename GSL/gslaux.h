@@ -59,3 +59,5 @@ int integrate_qags(double f(double,void*), double a, double b, double prec, int 
                double *result, double* error);
 
 int polySolve(DVEC(a), CVEC(z));
+
+int matrix_fscanf(char*filename, DMAT(a));
