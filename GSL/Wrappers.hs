@@ -342,3 +342,49 @@ gslReadMatrix filename (r,c) = do
     --free charname  TO DO: free the auxiliary CString
     return m
 foreign import ccall "gslaux.h matrix_fscanf" c_gslReadMatrix:: Ptr CChar -> TM
+
+---------------------------------------------------------------------------
+{- | Minimization of a multidimensional function, using the method of Nelder and Mead, implemented by /gsl_multimin_fminimizer_nmsimplex/, and described in <http://www.gnu.org/software/gsl/manual/gsl-ref_35.html#SEC474>.
+
+@\> let minimize f xi = minimizeNMSimplex f xi (replicate (length xi) 1) 1e-6 100
+\> let f [x,y] = (x-1)*(x-1) + (y+3)*(y+3)
+\> minimize f [10,10]
+([1.000000039316922,-3.0000005208092726],2.727881187741245e-13,66)@
+
+-}
+minimizeNMSimplex :: ([Double] -> Double) -- ^ function to minimize
+          -> [Double]            -- ^ starting point
+          -> [Double]            -- ^ sizes of the initial search box
+          -> Double              -- ^ desired precision of the solution
+          -> Int                 -- ^ maximum number of iterations allowed
+          -> ([Double], Double, Int)   
+          -- ^ solution vector, the value of the function at it, and the number of iterations performed by the algorithm      
+minimizeNMSimplex f xi sz tol maxit = (sol,  val, round it) where
+    val:it:sol = toList $ minimizeV (f.toList) tol maxit (fromList xi) (fromList sz)
+
+
+
+minimizeV :: (V -> Double)       -- ^ function to minimize
+          -> Double              -- ^ error tolerance
+          -> Int                 -- ^ maximum number of iterations
+          -> V                   -- ^ initial solution
+          -> V                   -- ^ sizes of the search box
+          -> V                   -- ^ solution and function value at it and iterations
+          
+minimizeV f tol maxit xi@(V n _) sz = unsafePerformIO $ do
+    fp <- mkVecfun (iv f)
+    let sol = createV "minimizeV" (n+2) $ vv (c_minimize fp tol maxit) xi sz
+    --freeHaskellFunPtr fp
+    return sol
+foreign import ccall "gslaux.h minimize" 
+ c_minimize:: FunPtr (Int -> Ptr Double -> Double) -> Double -> Int -> TVVV
+    
+iv :: (V -> Double) -> (Int -> Ptr Double -> Double)    
+iv f n p = f (createV "iv" n copy) where
+    copy n q = do 
+        copyArray q p n
+        return 0
+
+-- | conversion of Haskell functions into function pointers that can be used in the C side
+foreign import ccall "wrapper" mkVecfun:: (Int -> Ptr Double -> Double) -> IO( FunPtr (Int -> Ptr Double -> Double)) 
+      

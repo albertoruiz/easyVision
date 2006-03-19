@@ -61,3 +61,6 @@ int integrate_qags(double f(double,void*), double a, double b, double prec, int 
 int polySolve(DVEC(a), CVEC(z));
 
 int matrix_fscanf(char*filename, DMAT(a));
+
+int minimize(double f(int, double*), double tolsize, int maxit, 
+             DVEC(xi), DVEC(sz), DVEC(sol)); 

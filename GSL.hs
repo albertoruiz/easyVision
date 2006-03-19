@@ -38,6 +38,8 @@ module GSL (
     polySolve, 
     -- ** Integration
     integrateQNG, integrateQAGS,
+    -- ** Multidimensional minimization
+    minimizeNMSimplex,
     -- * Matrix manipulation
     size, rows, cols, diag, trans, conj, subVector, subMatrix,  
     flatten, reshape, fromBlocks, format,
