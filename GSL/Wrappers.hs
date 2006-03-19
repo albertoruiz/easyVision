@@ -362,8 +362,6 @@ minimizeNMSimplex :: ([Double] -> Double) -- ^ function to minimize
 minimizeNMSimplex f xi sz tol maxit = (sol,  val, round it) where
     val:it:sol = toList $ minimizeV (f.toList) tol maxit (fromList xi) (fromList sz)
 
-
-
 minimizeV :: (V -> Double)       -- ^ function to minimize
           -> Double              -- ^ error tolerance
           -> Int                 -- ^ maximum number of iterations

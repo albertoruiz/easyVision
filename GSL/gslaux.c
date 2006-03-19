@@ -612,6 +612,9 @@ int minimize(double f(int, double*), double tolsize, int maxit,
              DVEC(xi), DVEC(sz), DVEC(sol)) {
     REQUIRES(xin==szn && xin +2 == soln,BAD_SIZE);
     DEBUGMSG("minimize (nmsimplex)");
+    #ifdef DBG
+    printf("\n");
+    #endif
     gsl_multimin_function my_func;
     // extract function from pars
     my_func.f = f_aux_min;
@@ -639,7 +642,7 @@ int minimize(double f(int, double*), double tolsize, int maxit,
         double size = gsl_multimin_fminimizer_size (s);
         status = gsl_multimin_test_size (size, tolsize);
 
-        #ifdef DGB
+        #ifdef DBG
         if (status == GSL_SUCCESS) {
             printf ("Minimum found at:\n");
         }
