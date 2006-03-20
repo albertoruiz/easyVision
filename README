@@ -11,17 +11,21 @@ The first time (or if you change GSL/gslaux.c or GSL/gslaux.h) you must run:
 
 $ ./setup
 
+It may be necessary to make it executable:
+
+$ chmod u+x setup
+
 COMMAND LINE EXAMPLES
 ---------------------
 
-Interactive, standard gsl without atlas optimization:
+Typical interactive session:
 
-$ ghci-6.4.1 <prog.hs> GSL/gslaux.o -lgslcblas -lgsl 
+$ ghci-6.4.1 demo.hs GSL/gslaux.o -lgslcblas -lgsl 
 
-Compiled, using atlas:
+Compiled, using atlas optimized libraries:
 
 $ LIBATLAS=/path/to/atlas/lib
-$ ghc-6.4.1 --make <prog.hs> GSL/gslaux.o -L$LIBATLAS -lcblas /usr/lib/libgsl.a -latlas
+$ ghc-6.4.1 --make <yourprog.hs> GSL/gslaux.o -L$LIBATLAS -lcblas /usr/lib/libgsl.a -latlas
 
 You can alternatively link with GSL/debuggslaux.o to "printf" the
 C wrappers that are used by your program, with timing information.
