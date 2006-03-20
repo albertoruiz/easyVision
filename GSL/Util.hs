@@ -30,7 +30,7 @@ module GSL.Util (
     splot, mesh, meshdom, 
     matrixToPGM, imshow,
     -- * Other
-     i, norm, (//), disp, sumCols, outer
+     i, norm, (//), disp, sumCols, outer, linspace
 ) where
 
 import GSL.Base

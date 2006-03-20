@@ -726,7 +726,14 @@ disp n = putStrLn . format n
 sumCols :: (Mul V (Matrix t) (Vector t)) => Matrix t -> Vector t
 sumCols m = constant 1 (rows m) <> m
 
--- | outer product of two vectors.
+{- | outer product of two vectors.
+
+@\> realVector [1,2,3] \`outer\` complexVector [7,0,2*i,1+i]
+ 7.  0.  2.i  1.+1.i
+14.  0.  4.i  2.+2.i
+21.  0.  6.i  3.+3.i@
+
+-}
 outer :: (Mul (Matrix a) (Matrix b) (Matrix r)) => Vector a -> Vector b -> Matrix r
 outer u v = reshape 1 u <> reshape (size v) v
 

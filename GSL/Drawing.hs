@@ -62,9 +62,6 @@ splot f rx ry n = mesh z where
     (x,y) = meshdom (linspace n rx) (linspace n ry)
     z = f x y
 
-linspace n (a,b) = realVector [a,a+delta .. b] 
-    where delta = (b-a)/(fromIntegral n -1)
-
 {- | given a list of vectors [x, y1, y2, ...] it draws y1, y2, ... etc. against x -}
 mplot :: [V] -> IO ()
 mplot m = do
