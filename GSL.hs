@@ -8,11 +8,11 @@ Maintainer  :  Alberto Ruiz (aruiz at um dot es)
 Stability   :  provisional
 Portability :  uses -fffi and -fglasgow-exts
 
-This library provides a simple interface to standard matrix computations (eigensystems, singular values, pseudoinverses, etc.) and other numeric algorithms. It is based on C wrappers the GNU Scientific Library (<http://www.gnu.org/software/gsl>).
+This library provides a simple interface to standard matrix computations (eigensystems, singular values, pseudoinverses, etc.) and other numeric algorithms. It is based on high level wrappers for the GNU Scientific Library (<http://www.gnu.org/software/gsl>).
 
-This is a work in progress. The latest version (extremely unstable) can be obtained from: 
+This is a work in progress. The latest version (in construction) can be obtained from: 
 
-darcs get --partial http:\/\/dis.um.es\/\~alberto\/GSLHaskell
+darcs get http:\/\/dis.um.es\/\~alberto\/GSLHaskell
 
 Any kind of help is welcome!
 
