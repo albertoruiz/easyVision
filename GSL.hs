@@ -51,6 +51,7 @@ import GSL.Base
 import GSL.Wrappers
 import GSL.Derived
 import GSL.Interface
+import GSL.Drawing
 import Complex
 
 

@@ -344,7 +344,7 @@ gslReadMatrix filename (r,c) = do
 foreign import ccall "gslaux.h matrix_fscanf" c_gslReadMatrix:: Ptr CChar -> TM
 
 ---------------------------------------------------------------------------
-{- | Minimization of a multidimensional function, using the method of Nelder and Mead, implemented by /gsl_multimin_fminimizer_nmsimplex/, and described in <http://www.gnu.org/software/gsl/manual/gsl-ref_35.html#SEC474>.
+{- | Minimization of a multidimensional function, using the method of Nelder and Mead, implemented by /gsl_multimin_fminimizer_nmsimplex/, and described in <http://www.gnu.org/software/gsl/manual/gsl-ref_35.html#SEC474>. The gradient of the function is not required.
 
 @\> let minimize f xi = minimizeNMSimplex f xi (replicate (length xi) 1) 1e-6 100
 \> let f [x,y] = (x-1)*(x-1) + (y+3)*(y+3)

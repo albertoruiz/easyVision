@@ -212,9 +212,13 @@ readVector v = fromList . read $ v
 
 readMatrix r = fromLists . map (map r). map words . lines . cleanpun   
 
--- | loads a matrix from a formatted ASCII text file 
+-- | Loads a real matrix from a formatted ASCII text file 
 fromFile :: FilePath -> IO M
 fromFile filename = readFile filename >>= return . readMatrix read
+
+-- | Saves a real matrix to a formatted ascii text file
+toFile :: FilePath -> M -> IO ()
+toFile filename matrix = writeFile filename (unlines . map unwords. map (map show) . toLists $ matrix)
 
 cleanpun = map f where
     f ',' = ' '
@@ -251,3 +255,4 @@ ident = diagR . constantV 1
 -----------------------------------------------------------
 
 isSquare (M r c _) = r==c
+
