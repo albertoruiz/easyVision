@@ -117,7 +117,7 @@ matrixToPGM filename m = do
     header = "P2 "++show c++" "++show r++" "++show (round maxgray :: Int)++"\n"
     maxgray = 255.0
     maxval = m // flatten // toList // maximum
-    minval = m // flatten // toList // maximum
+    minval = m // flatten // toList // minimum
     scale = if (maxval == minval) 
         then 0.0
         else maxgray / (maxval - minval)
