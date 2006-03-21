@@ -1,10 +1,8 @@
 -- Principal component analysis
 
-module Main where
-
 import GSL
 import GSL.Util
-
+   
 -- division by an integer
 m ./. r = m <> (1/fromIntegral r ::Double)
 
@@ -15,14 +13,24 @@ mean x = sumCols x ./. (rows x)
 cov x = (trans xc <> xc) ./. (rows x -1) 
     where xc = center x
           center m = m |-| constant 1 (rows m) `outer` mean m
+   
+takeRows n = fromRows . take n . toRows   
+   
+pca :: Int -> M -> (V -> V , V -> V)    
+pca n dataSet = (encode,decode)    
+  where    
+    encode x = vp <> (x |-| m)
+    decode x = x <> vp |+| m
+    m = mean dataSet
+    c = cov dataSet
+    (_,v) = eig c
+    vp = takeRows n (trans v)
     
--- by now, check only the largest eigenvalues
-test :: M -> [Double]
-test x = take 10 (toList ls) where
-    mc = cov x
-    (ls, _)  = eig mc
-    
-main = do 
+main = do
     m <- gslReadMatrix "/home/alberto/space/data/mnist.txt" (5000,785)
-    let x = subMatrix 0 (rows m-1) 0 (cols m -2) m
-    print (test x) 
+    let xs = subMatrix 0 (rows m-1) 0 (cols m -2) m
+    let x = toRows xs !! 4  -- an arbitrary test vector
+    let (pe,pd) = pca 10 xs
+    let y = pe x
+    disp 2 y
+    print $ norm (x |-| pd y) / norm x
