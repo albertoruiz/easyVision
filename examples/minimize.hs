@@ -3,7 +3,6 @@
 module Main where
 
 import GSL
-import GSL.Util
 
 f [x,y] = 10*(x-1)^2 + 20*(y-2)^2 + 30
 

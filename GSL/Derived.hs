@@ -1,8 +1,22 @@
 {-# OPTIONS -fglasgow-exts #-}
 
+-----------------------------------------------------------------------------
+-- |
+-- Module      :  LinearAlgebra.Wrappers
+-- Copyright   :  (c) Alberto Ruiz 2006
+-- License     :  GPL-style
+-- 
+-- Maintainer  :  Alberto Ruiz (aruiz at um dot es)
+-- Stability   :  provisional
+-- Portability :  portable (uses FFI)
+--
+-- Functions that can be written in terms of the most basic ones.
+--
+-----------------------------------------------------------------------------
+
 module GSL.Derived where
 
-import GSL.Base
+import GSL.Core
 import GSL.Wrappers
 import Complex
 import Data.List(transpose,intersperse)

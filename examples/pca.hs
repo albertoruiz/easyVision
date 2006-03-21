@@ -1,7 +1,6 @@
 -- Principal component analysis
 
 import GSL
-import GSL.Util
    
 -- division by an integer
 m ./. r = m <> (1/fromIntegral r ::Double)

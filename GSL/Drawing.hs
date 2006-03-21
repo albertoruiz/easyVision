@@ -23,10 +23,9 @@ module GSL.Drawing(
     
 ) where
 
-import GSL.Base
+import GSL.Core
 import GSL.Derived
 import GSL.Interface
---import GSL.Util
 import Data.List(intersperse)
 import System
 

@@ -16,7 +16,7 @@
 
 module GSL.Wrappers where
 
-import GSL.Base
+import GSL.Core
 import Foreign
 import Foreign.C.Types
 

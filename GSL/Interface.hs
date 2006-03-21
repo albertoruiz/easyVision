@@ -1,8 +1,22 @@
 {-# OPTIONS -fglasgow-exts #-}
 
+-----------------------------------------------------------------------------
+-- |
+-- Module      :  LinearAlgebra.Wrappers
+-- Copyright   :  (c) Alberto Ruiz 2006
+-- License     :  GPL-style
+-- 
+-- Maintainer  :  Alberto Ruiz (aruiz at um dot es)
+-- Stability   :  provisional
+-- Portability :  portable (uses FFI)
+--
+-- High level and minimalist interface to the linear algebra functionality
+--
+-----------------------------------------------------------------------------
+
 module GSL.Interface where
 
-import GSL.Base
+import GSL.Core
 import GSL.Wrappers
 import GSL.Derived
 import Complex

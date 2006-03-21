@@ -9,12 +9,12 @@ gcc  -DDBG -Wall `gsl-config --cflags` -c GSL/gslaux.c -o GSL/debuggslaux.o
 echo "Preparing the documentation..."
 rm -f doc/*
 haddock GSL.hs \
-        GSL/Util.hs \
-        GSL/Base.hs --hide=GSL.Base \
+        GSL/Base.hs GSL/Utils.hs \
+        GSL/Core.hs --hide=GSL.Core \
         GSL/Wrappers.hs --hide=GSL.Wrappers \
         GSL/Derived.hs --hide=GSL.Derived \
         GSL/Interface.hs --hide=GSL.Interface \
         GSL/Drawing.hs --hide=GSL.Drawing \
-        -o doc -h 2> /dev/null
+        -o doc -h -p GSL/prologue -t GSLHaskell 2> /dev/null
 
 echo "OK"

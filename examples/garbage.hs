@@ -1,7 +1,6 @@
 -- checking automatic garbage collection
 
 import GSL
-import GSL.Util
 
 m k = constant k (1000000::Int)
 

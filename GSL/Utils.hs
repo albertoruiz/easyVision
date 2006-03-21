@@ -1,7 +1,7 @@
 {-# OPTIONS -fglasgow-exts #-}
 -----------------------------------------------------------------------------
 {- |
-Module      :  GSL.Util
+Module      :  GSL.Utils
 Copyright   :  (c) Alberto Ruiz 2006
 License     :  GPL-style
 
@@ -14,7 +14,7 @@ Utility functions easily derivable from the basic ones in "GSL".
 -}
 -----------------------------------------------------------------------------
 
-module GSL.Util (
+module GSL.Utils (
     -- * Easy creation of vectors and matrices
     realVector, realMatrix, complexVector, complexMatrix, 
     -- * Matrix IO
@@ -33,11 +33,10 @@ module GSL.Util (
      i, norm, (//), disp, sumCols, outer, linspace
 ) where
 
-import GSL.Base
-import GSL.Interface
-import GSL.Derived
+import GSL.Core
 import GSL.Wrappers
+import GSL.Derived
+import GSL.Interface
+import GSL.Drawing
 import Foreign
 import Complex
-import GSL.Drawing
-
