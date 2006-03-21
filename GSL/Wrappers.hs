@@ -62,7 +62,7 @@ foreign import ccall "gslaux.h take_diagonalC" c_take_diagonalC :: TCMCV
 -}
 eigS :: M -> (V, M)
 eigS x@(M r _ _) = createVM "eigensystemS" r r r $ m c_eigensystem x
-foreign import ccall "gslaux.h eigensystem" c_eigensystem :: TMVM
+foreign import ccall "gslaux.h eigensystemR" c_eigensystem :: TMVM
 
 {- | eigendecomposition of a complex hermitian matrix using /gsl_eigen_hermv/
 

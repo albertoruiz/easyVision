@@ -130,7 +130,26 @@ subVector k l x@(V n _)
     | otherwise = createV "subVector" l $ v f x 
  where f n p l q = do copyArray q (advancePtr p k) l 
                       return 0
-        
+
+
+-- | Reading a vector position.         
+(!:) :: (Storable t) => Vector t -> Int -> t
+infixl 9 !: 
+(V n p) !: k 
+    | k<0 || k>=n = error "vector indexing out of range"
+    | otherwise   = unsafePerformIO $ do
+                        withForeignPtr p $ \p ->
+                            peek (advancePtr p k) 
+    
+-- | Reading a matrix position.         
+(!!:) :: (Storable t) => Matrix t -> (Int,Int) -> t
+infixl 9 !!: 
+(M r c p) !!: (i,j) 
+    | i<0 || i>=r || j<0 || j>=c = error "matrix indexing out of range"
+    | otherwise   = unsafePerformIO $ do
+                        withForeignPtr p $ \p ->
+                            peek (advancePtr p (i*c+j)) 
+
 --------------------------------------------------------
 -- | creates a new Vector by joining a list of Vectors
 join :: (Storable t) => [Vector t] -> Vector t
