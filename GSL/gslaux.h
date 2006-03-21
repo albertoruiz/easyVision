@@ -1,7 +1,13 @@
 #define DVEC(A) int A##n, double*A##p
 #define CVEC(A) int A##n, double*A##p
 #define DMAT(A) int A##r, int A##c, double* A##p
-#define CMAT(A) int A##r, int A##c, double* A##p 
+#define CMAT(A) int A##r, int A##c, double* A##p
+ 
+// const pointer versions for the parameters 
+#define KDVEC(A) int A##n, const double*A##p
+#define KCVEC(A) int A##n, const double*A##p
+#define KDMAT(A) int A##r, int A##c, const double* A##p
+#define KCMAT(A) int A##r, int A##c, const double* A##p 
 
 int constant(double val, DVEC(r));
 
@@ -42,13 +48,13 @@ int diagC(CVEC(d),CMAT(r));
     
 int svd(DMAT(x),DMAT(u), DVEC(s),DMAT(v));
 
-int eigensystem(DMAT(x),DVEC(l),DMAT(v));
+int eigensystemR(KDMAT(x),DVEC(l),DMAT(v));
 
-int eigensystemC(CMAT(x),DVEC(l),CMAT(v));
+int eigensystemC(KCMAT(x),DVEC(l),CMAT(v));
 
-int qr(DMAT(x),DMAT(q),DMAT(r));
+int qr(KDMAT(x),DMAT(q),DMAT(r));
 
-int chol(DMAT(x),DMAT(l));
+int chol(KDMAT(x),DMAT(l));
     
 int fft(int code, CVEC(a), CVEC(b));
     

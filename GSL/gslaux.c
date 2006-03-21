@@ -48,6 +48,9 @@
 #define DVVIEW(A) gsl_vector_view A = gsl_vector_view_array(A##p,A##n)
 #define DMVIEW(A) gsl_matrix_view A = gsl_matrix_view_array(A##p,A##r,A##c)
 #define CMVIEW(A) gsl_matrix_complex_view A = gsl_matrix_complex_view_array(A##p,A##r,A##c)
+#define KDVVIEW(A) gsl_vector_const_view A = gsl_vector_const_view_array(A##p,A##n)
+#define KDMVIEW(A) gsl_matrix_const_view A = gsl_matrix_const_view_array(A##p,A##r,A##c)
+#define KCMVIEW(A) gsl_matrix_complex_const_view A = gsl_matrix_complex_const_view_array(A##p,A##r,A##c)
 
 #define V(a) (&a.vector)
 #define M(a) (&a.matrix)
@@ -456,65 +459,67 @@ int svd(DMAT(a),DMAT(u), DVEC(s),DMAT(v)) {
 
 
 // for real symmetric matrices
-int eigensystem(DMAT(x),DVEC(l),DMAT(v)) {
+int eigensystemR(KDMAT(x),DVEC(l),DMAT(v)) {
     REQUIRES(xr==xc && xr==ln && xr==vr && vr==vc,BAD_SIZE);
-    DEBUGMSG("eigensystem");
-    DMVIEW(x);
+    DEBUGMSG("eigensystemR (gsl_eigen_symmv)");
+    KDMVIEW(x);
     DVVIEW(l);
     DMVIEW(v);
-    gsl_matrix *XP = gsl_matrix_alloc(xr,xr);
-    gsl_matrix_memcpy(XP,M(x)); // needed because the argument is destroyed
+    gsl_matrix *XC = gsl_matrix_alloc(xr,xr);
+    gsl_matrix_memcpy(XC,M(x)); // needed because the argument is destroyed
                                 // many thanks to Nico Mahlo for the bug report 
     gsl_eigen_symmv_workspace * w = gsl_eigen_symmv_alloc (xc);
-    gsl_eigen_symmv (XP, V(l), M(v), w);
+    int res = gsl_eigen_symmv (XC, V(l), M(v), w);
+    CHECK(res,res);
     gsl_eigen_symmv_free (w);
-    gsl_matrix_free(XP);
+    gsl_matrix_free(XC);
     gsl_eigen_symmv_sort (V(l), M(v), GSL_EIGEN_SORT_ABS_DESC);
-    //gsl_matrix_transpose(M(v));
     OK
 }
 
 // for comlex hermitian matrices
-int eigensystemC(CMAT(x),DVEC(l),CMAT(v)) {
+int eigensystemC(KCMAT(x),DVEC(l),CMAT(v)) {
     REQUIRES(xr==xc && xr==ln && xr==vr && vr==vc,BAD_SIZE);
     DEBUGMSG("eigensystemC");
-    CMVIEW(x);
+    KCMVIEW(x);
     DVVIEW(l);
     CMVIEW(v);
-    gsl_matrix_complex *XP = gsl_matrix_complex_alloc(xr,xr);
-    gsl_matrix_complex_memcpy(XP,M(x)); // again needed because the argument is destroyed
+    gsl_matrix_complex *XC = gsl_matrix_complex_alloc(xr,xr);
+    gsl_matrix_complex_memcpy(XC,M(x)); // again needed because the argument is destroyed
     gsl_eigen_hermv_workspace * w = gsl_eigen_hermv_alloc (xc);
-    gsl_eigen_hermv (XP, V(l), M(v), w);
+    int res = gsl_eigen_hermv (XC, V(l), M(v), w);
+    CHECK(res,res);
     gsl_eigen_hermv_free (w);
-    gsl_matrix_complex_free(XP);
+    gsl_matrix_complex_free(XC);
     gsl_eigen_hermv_sort (V(l), M(v), GSL_EIGEN_SORT_ABS_DESC);
-    //gsl_matrix_complex_transpose(M(v));
     OK
 }
 
-int QR(DMAT(x),DMAT(q),DMAT(r)) {
+int QR(KDMAT(x),DMAT(q),DMAT(r)) {
     REQUIRES(xr==rr && xc==rc && qr==qc && xr==qr,BAD_SIZE);
     DEBUGMSG("QR");
-    DMVIEW(x);
+    KDMVIEW(x);
     DMVIEW(q);
     DMVIEW(r);
     gsl_matrix * a = gsl_matrix_alloc(xr,xc);
     gsl_vector * tau = gsl_vector_alloc(MIN(xr,xc));
     gsl_matrix_memcpy(a,M(x));
-    gsl_linalg_QR_decomp(a,tau);
+    int res = gsl_linalg_QR_decomp(a,tau);
+    CHECK(res,res);
     gsl_linalg_QR_unpack(a,tau,M(q),M(r));
     gsl_vector_free(tau);
     gsl_matrix_free(a);
     OK
 }
 
-int chol(DMAT(x),DMAT(l)) {
+int chol(KDMAT(x),DMAT(l)) {
     REQUIRES(xr==xc && lr==xr && lr==lc,BAD_SIZE);
     DEBUGMSG("chol");
-    DMVIEW(x);
+    KDMVIEW(x);
     DMVIEW(l);
     gsl_matrix_memcpy(M(l),M(x));
-    gsl_linalg_cholesky_decomp(M(l));
+    int res = gsl_linalg_cholesky_decomp(M(l));
+    CHECK(res,res);
     int r,c;
     for (r=0; r<xr-1; r++) {
         for(c=r+1; c<xc; c++) {

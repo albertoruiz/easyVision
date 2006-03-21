@@ -389,7 +389,7 @@ foreign import ccall "wrapper" mkVecfun:: (Int -> Ptr Double -> Double) -> IO( F
 ----------------------------------------------------------------
 -------------------- simple functions --------------------------
 
-{- | The error function (/gsl_sf_erf/), defined as 2\/ \\sqrt \\pi * \int\_0\^t exp -t\^2 dt
+{- | The error function (/gsl_sf_erf/), defined as 2\/ \\sqrt \\pi * \int\_0\^t exp -t\^2 dt.
 
 @> erf 1.5
 0.9661051464753108@
