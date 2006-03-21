@@ -386,3 +386,13 @@ iv f n p = f (createV "iv" n copy) where
 -- | conversion of Haskell functions into function pointers that can be used in the C side
 foreign import ccall "wrapper" mkVecfun:: (Int -> Ptr Double -> Double) -> IO( FunPtr (Int -> Ptr Double -> Double)) 
       
+----------------------------------------------------------------
+-------------------- simple functions --------------------------
+
+{- | The error function (/gsl_sf_erf/), defined as 2\/ \\sqrt \\pi * \int\_0\^t exp -t\^2 dt
+
+@> erf 1.5
+0.9661051464753108@
+
+-}
+foreign import ccall "gsl_sf_erf" erf :: Double -> Double

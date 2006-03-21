@@ -29,3 +29,10 @@ $ ghc-6.4.1 --make <yourprog.hs> GSL/gslaux.o -L$LIBATLAS -lcblas /usr/lib/libgs
 
 You can alternatively link with GSL/debuggslaux.o to "printf" the
 C wrappers that are used by your program, with timing information.
+
+ACKNOWLEDGEMENTS
+----------------
+
+The author thanks all the people in the Haskell mailing lists for their help.
+
+- Nico Mahlo discovered a bug in the eigendecomposition wrapper.

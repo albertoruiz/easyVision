@@ -40,6 +40,8 @@ module GSL (
     integrateQNG, integrateQAGS,
     -- ** Multidimensional minimization
     minimizeNMSimplex,
+    -- ** Error functions
+    erf,
     -- * Matrix manipulation
     size, rows, cols, diag, trans, conj, subVector, subMatrix,  
     flatten, reshape, fromBlocks, format,
