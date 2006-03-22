@@ -526,6 +526,11 @@ instance Entrywise M CM CM where
 instance Entrywise CM M CM where
  a .* b = a .* cm b
  
+infixl 7 .*.
+-- | multiplication by a Double (to avoid an explicit signature) 
+(.*.) :: (Mul Double b c) => Double -> b -> c
+(.*.) = (<>) 
+ 
 gmap = undefined
 
 extract l is = [l!!i |i<-is]

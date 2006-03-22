@@ -192,8 +192,8 @@ foreign import ccall "gslaux.h vector_offset" c_vectorOffset :: Double -> TVV
 
 -- | obtains different functions of a vector: norm1, norm2, max, min, posmax, posmin, etc.
 toScalar :: Int -> V -> Double
-toScalar code x =  v (c_toScalar code) x
-foreign import ccall "gslaux.h toScalar" c_toScalar :: Int -> Int -> PD -> Double
+toScalar code x =  (createV "toScalar" 1 $ v (c_toScalar code) x) !: 0
+foreign import ccall "gslaux.h toScalar" c_toScalar :: Int -> TVV
 
 -- | Mapeo de vectores con una función deseada
 vectorMap :: Int -> V -> V
@@ -389,10 +389,18 @@ foreign import ccall "wrapper" mkVecfun:: (Int -> Ptr Double -> Double) -> IO( F
 ----------------------------------------------------------------
 -------------------- simple functions --------------------------
 
-{- | The error function (/gsl_sf_erf/), defined as 2\/ \\sqrt \\pi * \int\_0\^t exp -t\^2 dt.
+{- | The error function (/gsl_sf_erf/), defined as 2\/ \\sqrt \\pi * \int\_0\^t \\exp -t\^2 dt.
 
 @> erf 1.5
 0.9661051464753108@
 
 -}
 foreign import ccall "gsl_sf_erf" erf :: Double -> Double
+
+{- | The Gaussian probability density function (/gsl_sf_erf_Z/), defined as (1\/\\sqrt\{2\\pi\}) \\exp(-x\^2\/2).
+
+>> erf_Z 1.5
+>0.12951759566589172
+
+-}
+foreign import ccall "gsl_sf_erf_Z" erf_Z :: Double -> Double

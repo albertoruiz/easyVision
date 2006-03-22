@@ -137,10 +137,11 @@ double vector_dot(DVEC(a), DVEC(b)) {
 */
 
 // pendiente de arreglar para admitir error codes
-double toScalar(int code, DVEC(x)) { 
+int toScalar(int code, KDVEC(x), DVEC(r)) { 
+    REQUIRES(rn==1,BAD_SIZE);
     DEBUGMSG("toScalar");
-    DVVIEW(x);
-    int res;
+    KDVVIEW(x);
+    double res;
     switch(code) {
         case 1: { res = gsl_blas_dnrm2(V(x)); break; } 
         case 2: { res = gsl_blas_dasum(V(x));  break; }
@@ -150,7 +151,7 @@ double toScalar(int code, DVEC(x)) {
         case 6: { res = gsl_vector_min(V(x)); break; }
         default: ERROR(BAD_CODE);
     }    
-    CHECK(res,res);
+    rp[0] = res;
     OK
 }
 

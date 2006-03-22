@@ -17,7 +17,7 @@ int vector_scale(double alpha, DVEC(x), DVEC(r));
         
 int vector_offset(double offs, DVEC(x), DVEC(r));
 
-double toScalar(int code, DVEC(x));
+int toScalar(int code, KDVEC(x), DVEC(r));
 /* norm2, absdif, maximum, posmax, etc. */
 
 int vectorMap(int code, DVEC(x), DVEC(r));
