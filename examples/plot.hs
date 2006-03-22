@@ -1,6 +1,6 @@
 import GSL
 
-f x =  vmap sin x |+| 0.5 .*. vmap sin (5.*. x)
+f x =  sin x + 0.5 * sin (5*x)
 
 gaussianPDF = erf_Z
 cumdist x = 0.5 * (1+ erf (x/sqrt 2))

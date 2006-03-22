@@ -1,5 +1,4 @@
-import GSL
-import GSL.Instances 
+import GSL 
 
 sombrero n = mesh (f x y) where 
     (x,y) = meshdom range range
