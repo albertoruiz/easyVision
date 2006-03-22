@@ -285,6 +285,15 @@ class Inv a b c | a b -> c where
 
  It is based on the 'lu' decomposition, /gsl_linalg_LU_solve/, and /gsl_linalg_complex_LU_solve/. Currently it only deals with square and nonsingular systems.
 
+>> a = realMatrix [[1,1],[1,-1]]
+>> b = realVector [5,7]
+>
+>> a <\> b
+>6. -1.
+>
+>> a <\> complexVector [-2,1+i]
+>-0.500+0.500i  -1.500-0.500i
+
  -}
  (<\>) :: a -> b -> c      
 
@@ -314,7 +323,7 @@ instance Inv M CV CV where
 
 --------------------------------------- general operations
 
-{- | shortcut for the 2-norm ('pnorm' \"2\")
+{- | shortcut for the 2-norm ('pnorm' 2)
 
 @ > norm $ 'hilb' 5
  1.5670506910982311
@@ -325,38 +334,38 @@ instance Inv M CV CV where
 
 -}
 norm :: Norm a => a -> Double
-norm x = pnorm "2" x
+norm x = pnorm 2 x
 
 class Norm a where
- -- | computes the p-norm of a matrix or vector (with the same definitions as GNU-octave) . See also 'norm'.
- pnorm :: String -> a -> Double
+ -- | computes the p-norm of a matrix or vector (with the same definitions as GNU-octave). pnorm 0 denotes \\inf-norm. See also 'norm'.
+ pnorm :: Int -> a -> Double
 
 instance Norm V where
- pnorm "2" = norm2
- pnorm "1" = norm1
- pnorm "inf" = normInf . vectorMap 3
- pnorm _ = error "p norm not defined"
+ pnorm 2 = norm2
+ pnorm 1 = norm1
+ pnorm 0 = normInf . vectorMap 3
+ pnorm _ = error "p norm not yet defined"
 
 instance Norm CV where
- pnorm "2" = norm2 . asReal
- pnorm "1" = norm1 . vmap magnitude
- pnorm "inf" = normInf . vmap magnitude
- pnorm _ = error "p norm not defined"
+ pnorm 2 = norm2 . asReal
+ pnorm 1 = norm1 . vmap magnitude
+ pnorm 0 = normInf . vmap magnitude
+ pnorm _ = error "p norm not yet defined"
 
 instance Norm M where
- pnorm "2" m = head (toList s) where (_,s,_) = svd m
- pnorm "1" m = toScalar 4 $ constant 1 (rows m) <> asVector (vectorMap 3) m
- pnorm "inf" m = toScalar 4 $ asVector (vectorMap 3) m <> constant 1 (cols m)
- pnorm _ _ = error "p norm not defined"
+ pnorm 2 m = head (toList s) where (_,s,_) = svd m
+ pnorm 1 m = toScalar 4 $ constant 1 (rows m) <> asVector (vectorMap 3) m
+ pnorm 0 m = toScalar 4 $ asVector (vectorMap 3) m <> constant 1 (cols m)
+ pnorm _ _ = error "p norm not yet defined"
 
 instance Norm CM where
- pnorm "2" m = maxvalsing m
+ pnorm 2 m = maxvalsing m
   where maxvalsing m = sqrt . abs . head . toList . fst . eigH $ mm
         mm = if (rows m) > (cols m) then (conj.trans) m <> m
                                     else m <> (conj.trans) m
- pnorm "1" m = toScalar 4 $ constant 1 (rows m) <> asVector (vmap magnitude) m
- pnorm "inf" m = toScalar 4 $ asVector (vmap magnitude) m <> constant 1 (cols m)
- pnorm _ _ = error "p norm not defined"
+ pnorm 1 m = toScalar 4 $ constant 1 (rows m) <> asVector (vmap magnitude) m
+ pnorm 0 m = toScalar 4 $ asVector (vmap magnitude) m <> constant 1 (cols m)
+ pnorm _ _ = error "p norm not yet defined"
 
 
 -- | svd of complex matrix, based on eigH
@@ -692,9 +701,9 @@ instance Eig (Complex Double) where
        | otherwise     = error "eig received a nonhermitian complex matrix"    
        
       
-isSymmetric m = isSquare m && pnorm "1" (flatten $ m |-| (trans m)) < 1e-10
+isSymmetric m = isSquare m && pnorm 1 (flatten $ m |-| (trans m)) < 1e-10
 
-isHermitian m = isSquare m && pnorm "1" (flatten $ m |-| (conj. trans $ m)) < 1e-10
+isHermitian m = isSquare m && pnorm 1 (flatten $ m |-| (conj. trans $ m)) < 1e-10
     
     
 ------------------------------------------------------------

@@ -15,6 +15,8 @@ It may be necessary to make it executable:
 
 $ chmod u+x setup
 
+You should also run ./setup after darcs pull .
+
 COMMAND LINE EXAMPLES
 ---------------------
 
