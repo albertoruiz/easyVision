@@ -14,9 +14,11 @@ This module provides the basic functionality and a collection of convenience fun
 
 module GSL (
     module GSL.Base,
-    module GSL.Utils
+    module GSL.Utils,
+    module GSL.Instances
 ) where
 
 import GSL.Base
 import GSL.Utils
-import Complex
+import GSL.Instances
+

@@ -18,11 +18,13 @@ module GSL.Base (
     -- | The library works with four data types: real vectors ('V'), complex vectors ('CV'), real matrices ('M') and complex matrices ('CM'). They are statically different, inmutable, and with automatic garbage collection. They are implemented as Foreign pointers to C-style arrays of double with dimension information, corresponding to the GSL vectors and matrices. 
     
     -- ** Vectors
+    -- | (TO DO: sort description, read, show, and numeric instances)
     V, CV, fromList, toList,
     -- ** Matrices 
+    -- | (TO DO: sort description, read, show, and numeric instances)
     M, CM, fromLists, toLists, 
     -- * Basic Linear Algebra
-    (<>), (|+|), (|-|),  (<\>), det, pnorm, (.*),
+    (<>), (<\>), det, pnorm,
     -- * Matrix factorizations
     eig, svd, qr, chol, lu,
     -- * Fourier Transform

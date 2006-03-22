@@ -9,7 +9,7 @@ Maintainer  :  Alberto Ruiz (aruiz at um dot es)
 Stability   :  provisional
 Portability :  uses -fffi and -fglasgow-exts
 
-Utility functions easily derivable from the basic ones in "GSL".
+Utility functions.
 
 -}
 -----------------------------------------------------------------------------
@@ -30,7 +30,7 @@ module GSL.Utils (
     splot, mesh, meshdom, 
     matrixToPGM, imshow,
     -- * Other
-     i, norm, (//), disp, sumCols, outer, linspace, (.*.)
+     i, norm, (//), disp, sumCols, outer, linspace
 ) where
 
 import GSL.Core

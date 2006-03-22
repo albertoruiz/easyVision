@@ -62,7 +62,7 @@ toList (V n p) = unsafePerformIO $ withForeignPtr p $ peekArray n
 
 {- | creates a matrix from a vector by grouping the elements in rows with the desired number of columns.
 
-> > reshape 4 $ fromList [1..12] :: M
+> > reshape 4 (realVector [1..12])
 > 1.  2.  3.  4.
 > 5.  6.  7.  8.
 > 9. 10. 11. 12.

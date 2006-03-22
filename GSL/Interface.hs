@@ -25,7 +25,7 @@ import Numeric(showGFloat)
 import Foreign
 
 
-{- | the imaginary unit
+{- | The imaginary unit
 
 @> ident 3 \<\> i
 1.i   0.   0.
@@ -40,7 +40,7 @@ i = 0:+1
 
 class Mul a b c | a b -> c where
  infixl 7 <>
- -- | matrix product, matrix-vector product, dot product and scaling of vectors and matrices
+ -- | Matrix product, matrix-vector product, dot product and scaling of vectors and matrices.
  (<>) :: a -> b -> c         
 
 class Add a b c | a b -> c where
@@ -280,11 +280,7 @@ instance Add M (Complex Double) CM where
 --------------------------------------
 class Inv a b c | a b -> c where
  infixl 6 <\>
-{- | Efficient multiplication by the inverse, without explicitly computing it. Useful for solving linear systems. It has the same meaning as the /left division/ operator of Matlab and GNU-octave: 
-
- @a \<\\> b = inverse(a) \<\> b@
-
- It is based on the 'lu' decomposition, /gsl_linalg_LU_solve/, and /gsl_linalg_complex_LU_solve/. Currently it only deals with square and nonsingular systems.
+{- | Efficient multiplication by the inverse, without explicitly computing it. Useful for solving linear systems. It has the same meaning as the /left division/ operator of Matlab and GNU-Octave: @a \<\\> b = inv(a) \<\> b@. It is based on the 'lu' decomposition, /gsl_linalg_LU_solve/, and /gsl_linalg_complex_LU_solve/. Currently it only deals with square and nonsingular systems.
 
 >> a = realMatrix [[1,1],[1,-1]]
 >> b = realVector [5,7]
@@ -324,13 +320,13 @@ instance Inv M CV CV where
 
 --------------------------------------- general operations
 
-{- | shortcut for the 2-norm ('pnorm' 2)
+{- | Shortcut for the 2-norm ('pnorm' 2)
 
 @ > norm $ 'hilb' 5
  1.5670506910982311
 @
 
-> > norm $ fromList [1,-1,i,-i]
+> > norm $ complexVector [1,-1,i,-i]
 > 2.0
 
 -}
@@ -402,7 +398,7 @@ instance Diag CM CV where
 ----------------------------------------
         
 class Constant dim res | dim -> res where  
-    {- | creates a constant real vector or matrix with the desired dimensions, or with the same dimensions as another vector or matrix. For example:
+    {- | Creates a constant real vector or matrix with the desired dimensions, or with the same dimensions as another vector or matrix. For example:
     
     > > constant 7.5 (5::Int)
     > 7.500 7.500 7.500 7.500 7.500
@@ -411,7 +407,7 @@ class Constant dim res | dim -> res where
     > 1.000 1.000 1.000 1.000
     > 1.000 1.000 1.000 1.000
     >
-    > > let m = fromLists [[1,2,4],[0,2,0]] :: M
+    > > let m = realMatrix [[1,2,4],[0,2,0]]
     > > constant 3 m
     > 3.000 3.000 3.000
     > 3.000 3.000 3.000
@@ -450,9 +446,9 @@ instance Conj Matrix where
 -------------------------------------------
      
 class Disp a where
- {- | formatted version of a matrix or vector with n decimal places
+ {- | Formatted version of a matrix or vector with n decimal places
  
- > > format 2 $ (0.5::Double) |+| ident 3
+ > > format 2 $ 0.5 + ident 3
  > "1.50 0.50 0.50\n0.50 1.50 0.50\n0.50 0.50 1.50\n"
  > > putStr it
  > 1.50 0.50 0.50
@@ -565,7 +561,7 @@ extractRows l m = fromRows $ extract (toRows $ m) l
 class LU t where
  {- | The LU decomposition of a square matrix. Is based on /gsl_linalg_LU_decomp/ and  /gsl_linalg_complex_LU_decomp/ as described in <http://www.gnu.org/software/gsl/manual/gsl-ref_13.html#SEC223>.
 
-> > let m = fromLists [[1,2,-3],[2+3*i,-7,0],[1,-i,2*i]]
+> > let m = complexMatrix [[1,2,-3],[2+3*i,-7,0],[1,-i,2*i]]
 > > let (l,u,p,s) = lu m
 
 L is the lower triangular:
@@ -626,11 +622,9 @@ instance LU (Complex Double) where
     u = triang r r 0 1 .* lu
     l = triang r r 0 0 .* lu |+| ident r
 
-{- | determinant of a square matrix, computed from the 'lu' decomposition.
+{- | Determinant of a square matrix, computed from the 'lu' decomposition.
 
-> > let m = fromLists [[7,2],[3,8]] ::M
-> (0.01 secs, 543320 bytes)
-> det m
+>> det (realMatrix [[7,2],[3,8]])
 > 50.0
 
 -}
@@ -640,7 +634,7 @@ det m = s * (product $ toList $ diag $ u)
     
 {- | fast 1D Fourier transform of a vector using /gsl_fft_complex_forward/. It uses the same scaling conventions as GNU Octave.
 
->> fft (fromList [1,2,3,4])
+>> fft (complexVector [1,2,3,4])
 > 10.  -2.+2.i  -2.  -2.-2.i
 
 -}
@@ -649,7 +643,7 @@ fft = genfft 0
 
 {- | inverse fft using /gsl_fft_complex_inverse/.
 
-> > ifft (fromList [0,2-2*i,0,2+2*i])
+> > ifft (complexVector [0,2-2*i,0,2+2*i])
 > 1.  1.  -1.  -1.
 
 -}
@@ -659,9 +653,9 @@ ifft = genfft 1
 -----------------------------------------------------------
 
 class Eig t where
- {- | eigendecomposition of a real symmetric matrix using /gsl_eigen_symmv/.
+ {- | Eigenvalues and eigenvectors of a real symmetric matrix, using /gsl_eigen_symmv/:
 
-> > let (l,v) = eig (fromLists [[1,2],[2,1]] ::M)
+> > let (l,v) = eig (realMatrix [[1,2],[2,1]])
 > > l
 > 3.000 -1.000
 >
@@ -673,9 +667,9 @@ class Eig t where
 > 1.000 2.000
 > 2.000 1.000
 
-eigendecomposition of a complex hermitian matrix using /gsl_eigen_hermv/
+Eigenvalues and eigenvectors of a complex hermitian matrix, using /gsl_eigen_hermv/:
 
-> > let (l,v) = eig $ fromLists [[1,2+i],[2-i,3]]
+> > let (l,v) = eig $ complexMatrix [[1,2+i],[2-i,3]]
 >
 > > l
 > 4.449 -0.449
@@ -689,8 +683,6 @@ eigendecomposition of a complex hermitian matrix using /gsl_eigen_hermv/
 > 2.-1.i      3.
 
 -}
-
-
  eig :: Matrix t -> (Vector Double, Matrix t)       
  
 instance Eig Double where
@@ -709,19 +701,19 @@ isHermitian m = isSquare m && pnorm 1 (flatten $ m |-| (conj. trans $ m)) < 1e-1
     
 ------------------------------------------------------------
 
--- | creates a real vector from a list. Useful in some situations to avoid type annotations.
+-- | Creates a real vector from a list.
 realVector :: [Double] -> V
 realVector = fromList
 
--- | creates a complex vector from a list. Useful in some situations to avoid type annotations.
+-- | Creates a complex vector from a list.
 complexVector :: [Complex Double] -> CV
 complexVector = fromList
 
--- | creates a real vector from a list of lists. Useful in some situations to avoid type annotations.
+-- | Creates a real matrix from a list of lists.
 realMatrix :: [[Double]] -> M
 realMatrix = fromLists
 
--- | creates a complex vector from a list. Useful in some situations to avoid type annotations.
+-- | Creates a complex matrix from a list of lists. 
 complexMatrix :: [[Complex Double]] -> CM
 complexMatrix = fromLists
 
@@ -736,22 +728,22 @@ infixl 1 //
 x // f = f x
 ------------------------------------------    
 
--- | reverse rows 
+-- | Reverse rows 
 flipud :: Storable t => Matrix t -> Matrix t
 flipud m = fromRows . reverse . toRows $ m
 
--- | reverse columns
+-- | Reverse columns
 fliprl :: (Storable t, Trans t) => Matrix t -> Matrix t
 fliprl m = fromCols . reverse . toCols $ m   
 
-{- | display with n digits after the decimal point.
+{- | Prints a formatted matrix or vector with n digits after the decimal point.
 -}
 disp :: (Disp a) => Int -> a -> IO ()
 disp n = putStrLn . format n
 
 --------------------------------------------
 
--- | sum of columns of a matrix.
+-- | Sum of columns of a matrix.
 sumCols :: (Mul V (Matrix t) (Vector t)) => Matrix t -> Vector t
 sumCols m = constant 1 (rows m) <> m
 

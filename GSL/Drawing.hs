@@ -32,10 +32,10 @@ import Graphics.HGL
 
 ------------------------------------------------------------------------
 
-{- | Plot a list of vectors using the Haskell Graphics Library. Given a list of vectors [x, y1, y2, ...] it draws y1, y2, ... against x.
+{- | Plots a list of vectors using the Haskell Graphics Library. Given a list of vectors [x, y1, y2, ...] it draws y1, y2, ... against x.
 
 >> let x = linspace 1000 (-2,2) 
->hplot [x, vmap erf x, 0.5 .*. vmap cos (2.*.x)]
+>hplot [x, exp(-x^2), 1+0.5 * cos (2*x)]
  
 -}
 hplot :: [V] -> IO ()
@@ -97,7 +97,7 @@ mesh m = do
 
 {- | Draws the surface represented by the function f in the desired ranges and number of points, internally using 'mesh'.
 
-> > let f x y = mmap cos (x |+| y) 
+> > let f x y = cos (x + y) 
 > > splot f (0,pi) (0,2*pi) 50    
 
 -}
@@ -129,9 +129,9 @@ mapf [] _ = []
 mapf (f:fs) a = f a: mapf fs a
     
     
-{- | draws a list of functions over a desired range and with a desired number of points 
+{- | Draws a list of functions over a desired range and with a desired number of points 
 
-> > plot [vmap sin, vmap cos, vmap sin . (2.*.)] (0,2*pi) 1000
+> > plot [sin, cos, sin.(3*)] (0,2*pi) 1000
 
 -}
 plot :: [V->V] -> (Double,Double) -> Int -> IO ()
@@ -140,7 +140,7 @@ plot fs rx n = hplot (x: mapf fs x)
 
 {- | Draws a parametric curve. For instance, to draw a spiral we can do something like:
 
-> > parametricPlot (\t->(t .* vmap sin t,t .* vmap cos t)) (0,10*pi) 1000
+> > parametricPlot (\t->(t * sin t, t * cos t)) (0,10*pi) 1000
 
 -}    
 parametricPlot :: (V->(V,V)) -> (Double, Double) -> Int -> IO ()

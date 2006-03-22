@@ -85,9 +85,9 @@ eigH x@(M r _ _) = createVM "eigensystemH" r r r $ m c_eigensystemC x
 foreign import ccall "gslaux.h eigensystemC" c_eigensystemC :: TCMVCM
 
 
-{- | singular value decomposition of a real matrix using /gsl_linalg_SV_decomp_mod/.
+{- | Singular value decomposition of a real matrix, using /gsl_linalg_SV_decomp_mod/:
 
-> > let (u,s,v) = svd $ fromLists [[1,2,3],[-4,1,7]]
+> > let (u,s,v) = svd $ realMatrix [[1,2,3],[-4,1,7]]
 >
 > > u
 > 0.310 -0.951
@@ -112,9 +112,9 @@ svd x@(M r c _) = if r>=c
     then svd' x
     else (v, s, u) where (u,s,v) = svd' (transR x)
 
-{- | qr decomposition of a real matrix using /gsl_linalg_QR_decomp/ and /gsl_linalg_QR_unpack/.
+{- | QR decomposition of a real matrix using /gsl_linalg_QR_decomp/ and /gsl_linalg_QR_unpack/.
 
-> > let (q,r) = qr $ fromLists [[1,3,5,7],[2,0,-2,4]]
+> > let (q,r) = qr $ realMatrix [[1,3,5,7],[2,0,-2,4]]
 >
 > > q
 > -0.447 -0.894
@@ -135,7 +135,7 @@ foreign import ccall "gslaux.h QR" c_qr :: TMMM
 
 {- | Cholesky decomposition of a symmetric positive definite real matrix using /gsl_linalg_cholesky_decomp/.
 
-> > let c = chol $ fromLists [[5,4],[4,5]]
+> > let c = chol $ realMatrix [[5,4],[4,5]]
 >
 > > c
 > 2.236    0.
@@ -313,14 +313,14 @@ foreign import ccall "gslaux.h integrate_qng"
 ------------------------------------------------------------------------
 
 {- | Solution of general polynomial equations, using /gsl_poly_complex_solve/. For example,
-     the solution of x^3 + 8 = 0
+     the three solutions of x^3 + 8 = 0
 
-> > polySolve $ fromList [8,0,0,1]
+> > polySolve $ realVector [8,0,0,1]
 > -2.  1.+1.732i  1.-1.732i
 
 The example in the GSL manual: To find the roots of x^5 -1 = 0:
 
-> > toList $ polySolve (fromList [-1, 0, 0, 0, 0, 1]) 
+> > toList $ polySolve (realVector [-1, 0, 0, 0, 0, 1]) 
 > [(-0.8090169943749475) :+ 0.5877852522924731,
 > (-0.8090169943749475) :+ (-0.5877852522924731),
 > 0.30901699437494734 :+ 0.9510565162951536,

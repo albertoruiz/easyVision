@@ -64,9 +64,9 @@ joinVert ms = case common cols ms of
 joinHoriz :: (Storable t, Trans t) => [Matrix t] -> Matrix t
 joinHoriz ms = trans. joinVert . map trans $ ms
 
-{- | creates a matrix from blocks given as a list of lists of matrices
+{- | Creates a matrix from blocks given as a list of lists of matrices:
 
-> > let a = diag $ fromList [5,7,2::Double]
+> > let a = diag $ realVector [5,7,2]
 > > let b = constant (-1) (3::Int,4::Int)
 > > fromBlocks [[a,b],[b,a]]
 >  5.  0.  0. -1. -1. -1. -1.
