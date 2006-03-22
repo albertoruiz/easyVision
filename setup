@@ -15,6 +15,7 @@ haddock GSL.hs \
         GSL/Derived.hs --hide=GSL.Derived \
         GSL/Interface.hs --hide=GSL.Interface \
         GSL/Drawing.hs --hide=GSL.Drawing \
+        GSL/Instances.hs --hide=GSL.Instances \
         -o doc -h -p GSL/prologue -t GSLHaskell 2> /dev/null
 
 echo "OK"

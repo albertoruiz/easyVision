@@ -53,6 +53,7 @@ infixl 5 |-|
 (|-|) :: (Mul Double b d, Add a d c) => a -> b -> c
 a |-| b = a |+| (-1::Double) <> b
  
+ 
 instance Mul Double Double Double where
  (<>) = (*)
   
@@ -68,8 +69,8 @@ instance Mul (Complex Double) (Complex Double) (Complex Double) where
 
 ----------------------------------------------
 
-cv v = complexV (v, (0::Double)<>v)
-cm m = complexM (m, (0::Double)<>m)
+cv v = complexV (v, constant 0 v)
+cm m = complexM (m, constant 0 m)
 
 -- | map on vectors
 vmap :: (Storable a, Storable b) => (a -> b) -> Vector a -> Vector b
