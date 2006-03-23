@@ -92,8 +92,8 @@ instance Num CM where
 instance Fractional V where
     fromRational n = fromList [fromRational n]
     (/) = adaptScalar f (vectorZip 2) g where
-        r `f` v = constant r v / v
-        v `g` r = v / constant r v
+        r `f` v = vectorZip 2 (constant r v) v
+        v `g` r = v <> recip r
         
 -------------------------------------------------------
         
@@ -108,16 +108,16 @@ instance Fractional CV where
 instance Fractional M where
     fromRational n = fromLists [[fromRational n]]
     (/) = adaptScalar' f (asVector2 (vectorZip 2)) g where
-        r `f` v = constant r v / v
-        v `g` r = v / constant r v
+        r `f` m = asVector2 (vectorZip 2) (constant r m) m
+        m `g` r = m <> recip r
         
 -------------------------------------------------------
         
 instance Fractional CM where
     fromRational n = fromLists [[fromRational n]]
     (/) = adaptScalar' f (mzip (/)) g where
-        r `f` v = mmap ((*r).recip) v
-        v `g` r = mmap (/r) v
+        r `f` m = mmap ((*r).recip) m
+        m `g` r = mmap (/r) m
         
 ---------------------------------------------------------
         

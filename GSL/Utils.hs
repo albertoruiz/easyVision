@@ -26,8 +26,8 @@ module GSL.Utils (
     vmap, mmap, vzip, mzip, 
     -- * Drawing 
     -- | A number of elementary drawing functions are provided. Some of them use the Haskell Graphics library. External tools like gnuplot and imageMagick are also temporarily used; we will eventually HOpengGL. Some function names (after Octave) are provisional not very informative...
-    hplot, plot, parametricPlot, mplot, 
-    splot, mesh, meshdom, 
+    hplot, plot, parametricPlot, plotOpenGL, mplot, 
+    meshOpenGL, splot, mesh, meshdom, 
     matrixToPGM, imshow,
     -- * Other
      i, norm, (//), disp, sumCols, outer, linspace
