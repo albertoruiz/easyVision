@@ -17,6 +17,7 @@ Utility functions.
 module GSL.Utils (
     -- * Easy creation of vectors and matrices
     realVector, realMatrix, complexVector, complexMatrix, 
+    fromStorableArrayV, fromStorableArrayM,
     -- * Matrix IO
     fromFile, toFile, gslReadMatrix,
     -- * Special matrices

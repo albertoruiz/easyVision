@@ -18,6 +18,7 @@ module GSL.Core  where
 
 import Foreign
 import Complex
+import Data.Array.Storable
 
 ----------------------------------------------------------------------
 instance (Storable a, RealFloat a) => Storable (Complex a) where    --
@@ -49,7 +50,7 @@ rows (M r _ _) = r
 cols :: Matrix t -> Int
 cols (M _ c _) = c
 
--- | Creates a vector from a list. Related functions: 'realVector', 'complexVector', 'fromLists', and 'flatten'. 
+-- | Creates a vector from a list. Related functions: 'realVector', 'complexVector', 'fromStorableArrayV', 'fromLists', and 'flatten'. 
 fromList :: (Storable a) => [a] -> Vector a
 fromList [] = error "trying to create an empty GSL vector"
 fromList l = createV "fromList" (length l) $
@@ -262,3 +263,66 @@ prot msg f = do
         1002 -> error $ "memory allocation problem in GSL wrapper: " ++ msg
         1003 -> error $ "wrong file name in GSL wrapper: " ++ msg
     
+-------------------------------------------------------------------
+------------- fast creation from storable arrays ------------------
+
+{- | Creates a vector from a standard Haskell @StorableArray@ indexed by @(Int)@:
+
+>import GSL
+>import Data.Array.Storable
+>
+>main = do 
+>    hv <- newArray (1,10) 37 
+>    print (bounds hv)
+>    els <- getElems hv
+>    print els
+>    v <- fromStorableArrayV hv :: IO (CV)
+>    print v
+>    print (norm v)
+>
+>> main
+>(1,10)
+>[37.0 :+ 0.0,37.0 :+ 0.0,37.0 :+ 0.0, (etc.),37.0 :+ 0.0]
+>37.  37.  37.  37.  37.  37.  37.  37.  37.  37.@
+
+The elements are efficient copied using @withStorableArray@ and @copyArray@.
+
+-}
+fromStorableArrayV :: Storable t => StorableArray Int t -> IO (Vector t) 
+fromStorableArrayV arr = do
+    let (l,u) = bounds arr
+    let n = u-l+1
+    let f n p = do 
+        withStorableArray arr $ \ptr -> copyArray p ptr n
+        return 0
+    return $ createV "fromStorableArrayV" n f
+
+{- | Creates a matrix from a standard Haskell 'StorableArray' indexed by (Int,Int):
+
+>import GSL
+>import Data.Array.Storable
+>
+>main = do 
+>hm <- newListArray ((1,1),(5,5)) [1 .. 25]
+>    m <- fromStorableArrayM hm :: IO (M)
+>    print m
+>
+>> main
+> 1.  2.  3.  4.  5.
+> 6.  7.  8.  9. 10.
+>11. 12. 13. 14. 15.
+>16. 17. 18. 19. 20.
+>21. 22. 23. 24. 25.
+
+The elements are efficient copied using @withStorableArray@ and @copyArray@.
+
+-}
+fromStorableArrayM :: Storable t => StorableArray (Int,Int) t -> IO (Matrix t) 
+fromStorableArrayM arr = do
+    let ((r1,c1),(r2,c2)) = bounds arr
+    let r = r2-r1+1
+    let c = c2-c1+1
+    let f r c p = do 
+        withStorableArray arr $ \ptr -> copyArray p ptr (r*c)
+        return 0
+    return $ createM "fromStorableArrayM" r c f

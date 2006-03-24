@@ -38,7 +38,7 @@ instance Trans Double where
 instance Trans (Complex Double) where
     trans = transC
     
--- | Creates a matrix from a list of lists (considered as rows). Related functions: 'realMatrix', 'complexMatrix', 'fromRows', 'fromCols', 'fromFile', and 'gslReadMatrix'.
+-- | Creates a matrix from a list of lists (considered as rows). Related functions: 'realMatrix', 'complexMatrix', 'fromRows', 'fromCols', 'fromStorableArrayM', 'fromFile', and 'gslReadMatrix'.
 fromLists :: Storable t => [[t]] -> Matrix t
 fromLists = fromRows . map fromList 
 
