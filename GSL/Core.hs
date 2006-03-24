@@ -283,7 +283,9 @@ prot msg f = do
 >> main
 >(1,10)
 >[37.0 :+ 0.0,37.0 :+ 0.0,37.0 :+ 0.0, (etc.),37.0 :+ 0.0]
->37.  37.  37.  37.  37.  37.  37.  37.  37.  37.@
+>37.  37.  37.  37.  37.  37.  37.  37.  37.  37.
+>
+>117.00427342623003
 
 The elements are efficient copied using @withStorableArray@ and @copyArray@.
 
