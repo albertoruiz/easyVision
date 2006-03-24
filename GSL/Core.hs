@@ -299,13 +299,25 @@ fromStorableArrayV arr = do
         return 0
     return $ createV "fromStorableArrayV" n f
 
-{- | Creates a matrix from a standard Haskell 'StorableArray' indexed by (Int,Int):
+{- | Creates a @StorableArray@ indexed by @(Int)@ from a GSL Vector.
+
+The elements are efficient copied using @withStorableArray@ and @copyArray@.
+
+-}
+toStorableArrayV :: Storable t => Vector t -> IO(StorableArray Int t)
+toStorableArrayV (V n p) = do
+    arr <- newArray_ (0, n-1) 
+    withForeignPtr p $ \p ->
+        withStorableArray arr $ \ptr -> copyArray ptr p n
+    return arr
+
+{- | Creates a matrix from a standard Haskell @StorableArray@ indexed by @(Int,Int)@:
 
 >import GSL
 >import Data.Array.Storable
 >
 >main = do 
->hm <- newListArray ((1,1),(5,5)) [1 .. 25]
+>    hm <- newListArray ((1,1),(5,5)) [1 .. 25]
 >    m <- fromStorableArrayM hm :: IO (M)
 >    print m
 >
@@ -328,3 +340,15 @@ fromStorableArrayM arr = do
         withStorableArray arr $ \ptr -> copyArray p ptr (r*c)
         return 0
     return $ createM "fromStorableArrayM" r c f
+    
+{- | Creates @StorableArray@ indexed by @(Int,Int)@ from a matrix.
+
+The elements are efficient copied using @withStorableArray@ and @copyArray@.
+
+-}
+toStorableArrayM :: Storable t => Matrix t -> IO(StorableArray (Int,Int) t) 
+toStorableArrayM (M r c p) = do
+    arr <- newArray_ ((0,0),(r-1,c-1)) 
+    withForeignPtr p $ \p ->
+        withStorableArray arr $ \ptr -> copyArray ptr p (r*c)
+    return arr   

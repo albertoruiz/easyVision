@@ -22,7 +22,7 @@ COMMAND LINE EXAMPLES
 
 Typical interactive session:
 
-$ ghci-6.4.1 demo.hs GSL/gslaux.o -lgslcblas -lgsl 
+$ ghci-6.4.1 demo.hs GSL/gslaux.o -lgslcblas -lgsl -lGL
 
 Compiled, using atlas optimized libraries:
 

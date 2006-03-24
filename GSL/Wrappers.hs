@@ -404,3 +404,8 @@ foreign import ccall "gsl_sf_erf" erf :: Double -> Double
 
 -}
 foreign import ccall "gsl_sf_erf_Z" erf_Z :: Double -> Double
+
+-- | experiment to send to opengl a mesh from C
+meshC :: M -> IO Int
+meshC x =  m c_mesh x
+foreign import ccall "gslaux.h mesh" c_mesh :: Int -> Int -> Ptr Double -> IO Int

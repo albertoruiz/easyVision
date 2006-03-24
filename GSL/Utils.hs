@@ -17,7 +17,7 @@ Utility functions.
 module GSL.Utils (
     -- * Easy creation of vectors and matrices
     realVector, realMatrix, complexVector, complexMatrix, 
-    fromStorableArrayV, fromStorableArrayM,
+    fromStorableArrayV, fromStorableArrayM, toStorableArrayV, toStorableArrayM,
     -- * Matrix IO
     fromFile, toFile, gslReadMatrix,
     -- * Special matrices
@@ -26,7 +26,7 @@ module GSL.Utils (
     extractRows, fromRows, toRows, fromCols, toCols, flipud, fliprl,
     vmap, mmap, vzip, mzip, 
     -- * Drawing 
-    -- | A number of elementary drawing functions are provided. Some of them use the Haskell Graphics library. External tools like gnuplot and imageMagick are also temporarily used; we will eventually HOpengGL. Some function names (after Octave) are provisional not very informative...
+    -- | A number of elementary drawing functions using HGL and HOpenGL. External tools (gnuplot and imageMagick) can also be used. The function names (after Octave) are provisional...
     hplot, plot, parametricPlot, plotOpenGL, mplot, 
     meshOpenGL, splot, mesh, meshdom, 
     matrixToPGM, imshow,
