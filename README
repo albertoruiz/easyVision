@@ -15,14 +15,19 @@ It may be necessary to make it executable:
 
 $ chmod u+x setup
 
-You should also run ./setup after darcs pull .
+You should also run ./setup after darcs pull.
+
+Other required packages (for a Fedora Core Linux distribution):
+
+xorg-x11-devel
+freeglut-devel
 
 COMMAND LINE EXAMPLES
 ---------------------
 
 Typical interactive session:
 
-$ ghci-6.4.1 demo.hs GSL/gslaux.o -lgslcblas -lgsl -lGL
+$ LD_LIBRARY_PATH=/usr/X11R6/lib ghci-6.4.1 demo.hs GSL/gslaux.o -lgslcblas -lgsl -lGL
 
 Compiled, using atlas optimized libraries:
 
