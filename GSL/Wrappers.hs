@@ -104,6 +104,7 @@ foreign import ccall "gslaux.h eigensystemC" c_eigensystemC :: TCMVCM
 > > u <> diag s <> trans v
 >  1. 2. 3.
 > -4. 1. 7.
+
 -}
 svd :: M -> (M, V, M)
 svd' x@(M r c _) = createMVM "svd" r c c c c $ m c_svd x

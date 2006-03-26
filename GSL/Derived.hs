@@ -279,3 +279,17 @@ isSquare (M r c _) = r==c
 linspace :: Int -> (Double, Double) -> Vector Double
 linspace n (a,b) = fromList [a::Double,a+delta .. b] 
     where delta = (b-a)/(fromIntegral n -1)
+    
+    
+-------------------------------------------------------------
+    
+{- | Machine precision of a Double.     
+
+>> eps
+> 2.22044604925031e-16
+
+(The value used by GNU-Octave)
+
+-}
+eps :: Double
+eps =  2.22044604925031e-16

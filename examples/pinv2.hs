@@ -16,8 +16,3 @@ main = do
     let f = polynomialModel 3 d
     disp 3 $ fromBlocks [[d, reshape 1 (f x)]]     
 
-pinv m = v <> diag s' <> trans u where
-    (u,s,v) = svd m
-    sl@(g:_) = toList s
-    s' = fromList . map rec $ sl
-    rec x = if x/g < 1E-10 then 1 else 1/x 
