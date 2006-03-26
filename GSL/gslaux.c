@@ -679,13 +679,12 @@ int mesh(KDMAT(x)) {
     DEBUGMSG("mesh");
     int i,j;
     for(i=1;i<xr;i++) {
-        for(j=1;j<xc;j++) {
-            glBegin(GL_POLYGON);
-                glVertex3d(i,j,xp[i*xc+j]);
-                glVertex3d(i-1,j,xp[(i-1)*xc+j]);
-                glVertex3d(i,j-1,xp[i*xc+j-1]);
-            glEnd();
-        } 
+        glBegin(GL_TRIANGLE_STRIP);
+        for(j=0;j<xc;j++) { 
+            glVertex3d(i,j,xp[i*xc+j]);
+            glVertex3d(i-1,j,xp[(i-1)*xc+j]);
+        }
+        glEnd(); 
     }
     OK
 }
