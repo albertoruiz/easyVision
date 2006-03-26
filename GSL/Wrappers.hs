@@ -385,6 +385,22 @@ iv f n p = f (createV "iv" n copy) where
 
 -- | conversion of Haskell functions into function pointers that can be used in the C side
 foreign import ccall "wrapper" mkVecfun:: (Int -> Ptr Double -> Double) -> IO( FunPtr (Int -> Ptr Double -> Double)) 
+            
+--------------------------------------------------------------------
+-- including optimization info
+            
+minimizeListV f tol maxit xi@(V n _) sz = unsafePerformIO $ do
+    fp <- mkVecfun (iv f)
+    let sol = createM "minimizeVList" maxit (n+3) $ vv (c_minimizeList fp tol maxit) xi sz
+    --freeHaskellFunPtr fp
+    return sol
+foreign import ccall "gslaux.h minimizeList" 
+ c_minimizeList:: FunPtr (Int -> Ptr Double -> Double) -> Double -> Int -> TVVM
+      
+{-      
+minimizeListNMSimplex f xi sz tol maxit = (sol,  val, round it) where
+    val:it:sol = toList $ minimizeV (f.toList) tol maxit (fromList xi) (fromList sz)      
+-}      
       
 ----------------------------------------------------------------
 -------------------- simple functions --------------------------

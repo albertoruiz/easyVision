@@ -673,6 +673,55 @@ int minimize(double f(int, double*), double tolsize, int maxit,
     OK
 }  
 
+// this version returns info about intermediate steps
+int minimizeList(double f(int, double*), double tolsize, int maxit, 
+                 DVEC(xi), DVEC(sz), DMAT(sol)) {
+    REQUIRES(xin==szn && solr == maxit && solc == 3+xin,BAD_SIZE);
+    DEBUGMSG("minimizeList (nmsimplex)");
+    gsl_multimin_function my_func;
+    // extract function from pars
+    my_func.f = f_aux_min;
+    my_func.n = xin; 
+    my_func.params = f;
+    size_t iter = 0;
+    int status;
+    double size;
+    const gsl_multimin_fminimizer_type *T;
+    gsl_multimin_fminimizer *s = NULL;
+    // Initial vertex size vector 
+    DVVIEW(sz);
+    // Starting point
+    DVVIEW(xi);
+    // Minimizer nmsimplex, without derivatives
+    T = gsl_multimin_fminimizer_nmsimplex;
+    s = gsl_multimin_fminimizer_alloc (T, my_func.n);
+
+    gsl_multimin_fminimizer_set (s, &my_func, V(xi), V(sz));
+    do {
+        status = gsl_multimin_fminimizer_iterate (s);
+        solp[iter*solc+0] = iter;
+        solp[iter*solc+1] = s->fval;
+        solp[iter*solc+2] = size;
+        size = gsl_multimin_fminimizer_size (s);
+        int k;
+        for(k=0;k<xin;k++) {
+            solp[iter*solc+k+3] = gsl_vector_get(s->x,k);
+        }
+        status = gsl_multimin_test_size (size, tolsize);
+        iter++;                    
+    } while (status == GSL_CONTINUE && iter < maxit);
+    int i,j;
+    for (i=iter; i<solr; i++) {
+        solp[i*solc+0] = iter;
+        for(j=1;j<solc;j++) {
+            solp[i*solc+j]=0.;
+        }
+    }        
+    gsl_multimin_fminimizer_free(s);
+    OK
+}  
+
+
 #include <GL/gl.h>
 #include <GL/glu.h>
 int mesh(KDMAT(x)) {

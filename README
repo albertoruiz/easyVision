@@ -1,11 +1,7 @@
 You need the GNU Scientific Library (http://www.gnu.org/software/gsl).
 For instance, in a Fedora Core Linux system you can:
 
-# yum install gsl gsl-devel.
-
-The performance of some linear algebra computations significantly increases using ATLAS
-(http://math-atlas.sourceforge.net/). You can download precompiled libraries for your
-system from https://sourceforge.net/project/showfiles.php?group_id=23725
+# yum install gsl gsl-devel
 
 The first time (or if you change GSL/gslaux.c or GSL/gslaux.h) you must run:
 
@@ -22,17 +18,44 @@ Other required packages (for a Fedora Core Linux distribution):
 xorg-x11-devel
 freeglut-devel
 
+The performance of some linear algebra computations significantly increases using ATLAS
+(http://math-atlas.sourceforge.net/).
+
+For Fedora Core 4 you can directly 
+
+# yum install atlas
+
+or better:
+
+# yum install octave
+
+which requires atlas, fftw, gnuplot, etc.
+
+If your distribution does not have an atlas package you can download precompiled 
+libraries from https://sourceforge.net/project/showfiles.php?group_id=23725
+
 COMMAND LINE EXAMPLES
 ---------------------
 
-Typical interactive session:
+Interactive:
 
-$ LD_LIBRARY_PATH=/usr/X11R6/lib ghci-6.4.1 demo.hs GSL/gslaux.o -lgslcblas -lgsl -lGL
+$ ghci demo.hs GSL/gslaux.o -lgslcblas -lgsl -lGL
 
-Compiled, using atlas optimized libraries:
+With Atlas optimization, Fedora Core 4:
+
+We need a symbolic link to the dynamic library:
+$ ln -s /usr/lib/atlas/libcblas.so.3 libcblas.so
+
+$ ghci demo.hs GSL/gslaux.o -L. -lcblas -lgsl -lGL
+
+Compiled:
+
+$ ghc --make demo.hs GSL/gslaux.o -lgslcblas -lgsl
+
+Compiled usign the static libraries downloaded from the home page:
 
 $ LIBATLAS=/path/to/atlas/lib
-$ ghc-6.4.1 --make <yourprog.hs> GSL/gslaux.o -L$LIBATLAS -lcblas /usr/lib/libgsl.a -latlas
+$ ghc --make <yourprog.hs> GSL/gslaux.o -L$LIBATLAS -lcblas /usr/lib/libgsl.a -latlas
 
 You can alternatively link with GSL/debuggslaux.o to "printf" the
 C wrappers that are used by your program, with timing information.

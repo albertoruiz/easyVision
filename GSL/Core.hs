@@ -233,6 +233,7 @@ type TM = Int -> Int -> PD -> IO Int          --
 type TMM =  Int -> Int -> PD -> TM            -- 
 type TMMM =  Int -> Int -> PD -> TMM          -- 
 type TVM = Int -> PD -> TM                    -- 
+type TVVM = Int -> PD -> TVM                  --
 type TMV = Int -> Int -> PD -> TV             -- 
 type TMVM = Int -> Int -> PD -> TVM           -- 
 type TMMVM = Int -> Int -> PD -> TMVM         --
