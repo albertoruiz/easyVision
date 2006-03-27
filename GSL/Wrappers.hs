@@ -353,14 +353,14 @@ foreign import ccall "gslaux.h matrix_fscanf" c_gslReadMatrix:: Ptr CChar -> TM
 ([1.000000039316922,-3.0000005208092726],2.727881187741245e-13,66)@
 
 -}
-minimizeNMSimplex :: ([Double] -> Double) -- ^ function to minimize
+minimizeNMSimplex' :: ([Double] -> Double) -- ^ function to minimize
           -> [Double]            -- ^ starting point
           -> [Double]            -- ^ sizes of the initial search box
           -> Double              -- ^ desired precision of the solution
           -> Int                 -- ^ maximum number of iterations allowed
           -> ([Double], Double, Int)   
           -- ^ solution vector, the value of the function at it, and the number of iterations performed by the algorithm      
-minimizeNMSimplex f xi sz tol maxit = (sol,  val, round it) where
+minimizeNMSimplex' f xi sz tol maxit = (sol,  val, round it) where
     val:it:sol = toList $ minimizeV (f.toList) tol maxit (fromList xi) (fromList sz)
 
 minimizeV :: (V -> Double)       -- ^ function to minimize
@@ -398,11 +398,8 @@ minimizeListV f tol maxit xi@(V n _) sz = unsafePerformIO $ do
 foreign import ccall "gslaux.h minimizeList" 
  c_minimizeList:: FunPtr (Int -> Ptr Double -> Double) -> Double -> Int -> TVVM
       
-{-      
-minimizeListNMSimplex f xi sz tol maxit = (sol,  val, round it) where
-    val:it:sol = toList $ minimizeV (f.toList) tol maxit (fromList xi) (fromList sz)      
--}      
-      
+
+          
 ----------------------------------------------------------------
 -------------------- simple functions --------------------------
 

@@ -800,3 +800,40 @@ pinvTol t m = v <> diag s' <> trans u where
     rec x = if x < g*tol then 1 else 1/x
     tol = (fromIntegral (max (rows m) (cols m)) * g * t * eps)
     
+-------------------------------------------------------------------------    
+{- | Minimization of a multidimensional function, using the method of Nelder and Mead, implemented by /gsl_multimin_fminimizer_nmsimplex/, and described in <http://www.gnu.org/software/gsl/manual/gsl-ref_35.html#SEC474>. The gradient of the function is not required.
+
+@\> let minimize f xi = minimizeNMSimplex f xi (replicate (length xi) 1) 1e-6 100
+\> let f [x,y] = (x-1)*(x-1) + (y+3)*(y+3)
+\> let (s,p) = minimize f [10,10]
+\> s
+[1.000000039316922,-3.0000005208092726]
+\>p
+ 0.   231.250       0. 11.500     8.
+ 1.   185.563    1.082 10.250     7.
+ 2.   165.391    1.372 12.625  2.500
+ 3.   107.910    2.459 11.313 -1.750
+ 4.   107.910    3.376 11.313 -1.750
+ 5.   107.910    2.307 11.313 -1.750
+ 6.    78.079    2.307  8.586 -7.531
+ 7.    45.755    2.868  6.816  0.453
+ 8.    17.223    3.758  0.479 -7.117
+ 9.    17.223    5.033  0.479 -7.117
+10.     7.631    5.033  3.205 -1.336
+11.     2.268    3.758  0.275 -1.680
+....................................
+65.        0. 1.355e-6  1.000 -3.000@
+
+-}     
+minimizeNMSimplex :: ([Double] -> Double) -- ^ function to minimize
+          -> [Double]            -- ^ starting point
+          -> [Double]            -- ^ sizes of the initial search box
+          -> Double              -- ^ desired precision of the solution
+          -> Int                 -- ^ maximum number of iterations allowed
+          -> ([Double], M)   
+          -- ^ solution vector, and the optimization trajectory followed by the algorithm      
+minimizeNMSimplex f xi sz tol maxit = (sol, path) where
+    rawpath = minimizeListV (f.toList) tol maxit (fromList xi) (fromList sz)
+    it = round (rawpath !!: (maxit-1,0))
+    path = subMatrix 0 (it-1) 0 (cols rawpath -1) rawpath
+    [sol] = toLists $ subMatrix (it-1) (it-1) 3 (cols rawpath -1) path
