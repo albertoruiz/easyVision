@@ -12,3 +12,5 @@ main = do
     let (s,p) = minimize f [5,7]
     print s
     print p
+    let [x,y] = drop 3 (toCols p)
+    hplot [x,y]

@@ -69,9 +69,6 @@ int polySolve(DVEC(a), CVEC(z));
 int matrix_fscanf(char*filename, DMAT(a));
 
 int minimize(double f(int, double*), double tolsize, int maxit, 
-             DVEC(xi), DVEC(sz), DVEC(sol)); 
-
-int minimizeList(double f(int, double*), double tolsize, int maxit, 
                  DVEC(xi), DVEC(sz), DMAT(sol));
 
 int mesh(KDMAT(x));

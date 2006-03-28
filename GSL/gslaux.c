@@ -136,7 +136,7 @@ double vector_dot(DVEC(a), DVEC(b)) {
 }
 */
 
-// pendiente de arreglar para admitir error codes
+
 int toScalar(int code, KDVEC(x), DVEC(r)) { 
     REQUIRES(rn==1,BAD_SIZE);
     DEBUGMSG("toScalar");
@@ -614,67 +614,8 @@ double f_aux_min(const gsl_vector*x, void *pars) {
     return res;                
 }        
     
-int minimize(double f(int, double*), double tolsize, int maxit, 
-             DVEC(xi), DVEC(sz), DVEC(sol)) {
-    REQUIRES(xin==szn && xin +2 == soln,BAD_SIZE);
-    DEBUGMSG("minimize (nmsimplex)");
-    #ifdef DBG
-    printf("\n");
-    #endif
-    gsl_multimin_function my_func;
-    // extract function from pars
-    my_func.f = f_aux_min;
-    my_func.n = xin; 
-    my_func.params = f;
-    size_t iter = 0;
-    int status;
-    const gsl_multimin_fminimizer_type *T;
-    gsl_multimin_fminimizer *s = NULL;
-    // Initial vertex size vector 
-    DVVIEW(sz);
-    // Starting point
-    DVVIEW(xi);
-    // Minimizer nmsimplex, without derivatives
-    T = gsl_multimin_fminimizer_nmsimplex;
-    s = gsl_multimin_fminimizer_alloc (T, my_func.n);
-
-    gsl_multimin_fminimizer_set (s, &my_func, V(xi), V(sz));
-    do {
-        iter++;
-        status = gsl_multimin_fminimizer_iterate (s);
-        if (status)
-            break;
-
-        double size = gsl_multimin_fminimizer_size (s);
-        status = gsl_multimin_test_size (size, tolsize);
-
-        #ifdef DBG
-        if (status == GSL_SUCCESS) {
-            printf ("Minimum found at:\n");
-        }
-        printf ("%5d ", iter);
-        int i;
-        for (i = 0; i < xin; i++) {
-            printf ("%10.3e ", gsl_vector_get (s->x, i));
-        }
-        printf ("f() = %7.3f size = %.3f\n", s->fval, size);
-        #endif
-        
-    } while (status == GSL_CONTINUE && iter < maxit);
-    //CHECK(status,status);
-    // load error and solution in the haskell vector
-    solp[0] = s->fval;
-    solp[1] = iter;
-    int k;
-    for(k=0;k<xin;k++) {
-        solp[k+2] = gsl_vector_get(s->x,k);
-    }
-    gsl_multimin_fminimizer_free(s);
-    OK
-}  
-
 // this version returns info about intermediate steps
-int minimizeList(double f(int, double*), double tolsize, int maxit, 
+int minimize(double f(int, double*), double tolsize, int maxit, 
                  DVEC(xi), DVEC(sz), DMAT(sol)) {
     REQUIRES(xin==szn && solr == maxit && solc == 3+xin,BAD_SIZE);
     DEBUGMSG("minimizeList (nmsimplex)");
@@ -720,6 +661,56 @@ int minimizeList(double f(int, double*), double tolsize, int maxit,
     gsl_multimin_fminimizer_free(s);
     OK
 }  
+
+// conjugate gradient
+int minimizeWithDeriv(double f(int, double*), double tolsize, int maxit, 
+                DVEC(xi), DVEC(sz), DMAT(sol)) {
+    REQUIRES(xin==szn && solr == maxit && solc == 3+xin,BAD_SIZE);
+    DEBUGMSG("minimizeList (nmsimplex)");
+    gsl_multimin_function my_func;
+    // extract function from pars
+    my_func.f = f_aux_min;
+    my_func.n = xin; 
+    my_func.params = f;
+    size_t iter = 0;
+    int status;
+    double size;
+    const gsl_multimin_fminimizer_type *T;
+    gsl_multimin_fminimizer *s = NULL;
+    // Initial vertex size vector 
+    DVVIEW(sz);
+    // Starting point
+    DVVIEW(xi);
+    // Minimizer nmsimplex, without derivatives
+    T = gsl_multimin_fminimizer_nmsimplex;
+    s = gsl_multimin_fminimizer_alloc (T, my_func.n);
+
+    gsl_multimin_fminimizer_set (s, &my_func, V(xi), V(sz));
+    do {
+        status = gsl_multimin_fminimizer_iterate (s);
+        solp[iter*solc+0] = iter;
+        solp[iter*solc+1] = s->fval;
+        solp[iter*solc+2] = size;
+        size = gsl_multimin_fminimizer_size (s);
+        int k;
+        for(k=0;k<xin;k++) {
+            solp[iter*solc+k+3] = gsl_vector_get(s->x,k);
+        }
+        status = gsl_multimin_test_size (size, tolsize);
+        iter++;                    
+    } while (status == GSL_CONTINUE && iter < maxit);
+    int i,j;
+    for (i=iter; i<solr; i++) {
+        solp[i*solc+0] = iter;
+        for(j=1;j<solc;j++) {
+            solp[i*solc+j]=0.;
+        }
+    }        
+    gsl_multimin_fminimizer_free(s);
+    OK
+}  
+
+
 
 
 #include <GL/gl.h>

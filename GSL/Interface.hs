@@ -833,7 +833,7 @@ minimizeNMSimplex :: ([Double] -> Double) -- ^ function to minimize
           -> ([Double], M)   
           -- ^ solution vector, and the optimization trajectory followed by the algorithm      
 minimizeNMSimplex f xi sz tol maxit = (sol, path) where
-    rawpath = minimizeListV (f.toList) tol maxit (fromList xi) (fromList sz)
+    rawpath = minimizeV (f.toList) tol maxit (fromList xi) (fromList sz)
     it = round (rawpath !!: (maxit-1,0))
     path = subMatrix 0 (it-1) 0 (cols rawpath -1) rawpath
     [sol] = toLists $ subMatrix (it-1) (it-1) 3 (cols rawpath -1) path

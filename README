@@ -52,7 +52,7 @@ Compiled:
 
 $ ghc --make demo.hs GSL/gslaux.o -lgslcblas -lgsl
 
-Compiled usign the static libraries downloaded from the home page:
+Compiled using the static libraries downloaded from the home page:
 
 $ LIBATLAS=/path/to/atlas/lib
 $ ghc --make <yourprog.hs> GSL/gslaux.o -L$LIBATLAS -lcblas /usr/lib/libgsl.a -latlas
