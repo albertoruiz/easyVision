@@ -356,6 +356,21 @@ iv f n p = f (createV "iv" n copy) where
 -- | conversion of Haskell functions into function pointers that can be used in the C side
 foreign import ccall "wrapper" mkVecfun:: (Int -> Ptr Double -> Double) -> IO( FunPtr (Int -> Ptr Double -> Double)) 
             
+-- | conversion of Haskell functions into function pointers that can be used in the C side
+foreign import ccall "wrapper" mkVecVecfun:: (Int -> Ptr Double -> Ptr Double -> IO ()) -> IO( FunPtr (Int -> Ptr Double -> Ptr Double->IO()))            
+            
+aux_vTov :: (V -> V) -> (Int -> Ptr Double -> Ptr Double -> IO())    
+aux_vTov f n p r = g where
+    (V _ pr) = f x
+    x = createV "aux_vTov" n copy
+    copy n q = do 
+        print n
+        copyArray q p n
+        return 0
+    g = do
+        print "hola"
+        withForeignPtr pr $ \pr -> copyArray r pr n
+            
 --------------------------------------------------------------------
 -- | auxiliary function used by 'minimize'
 
@@ -372,6 +387,24 @@ minimizeV f tol maxit xi@(V n _) sz = unsafePerformIO $ do
     return sol
 foreign import ccall "gslaux.h minimize" 
  c_minimizeList:: FunPtr (Int -> Ptr Double -> Double) -> Double -> Int -> TVVM
+      
+      
+minimizeDerivV :: (V -> Double)  -- ^ function to minimize
+          -> (V -> V)            -- ^ gradient
+          -> Double              -- ^ error tolerance
+          -> Int                 -- ^ maximum number of iterations
+          -> V                   -- ^ initial solution
+          -> M                   -- ^ matrix with solution, info and trajectory            
+minimizeDerivV f df tol maxit xi@(V n _) = unsafePerformIO $ do
+    fp <- mkVecfun (iv f)
+    print "okfp"
+    dfp <- mkVecVecfun (aux_vTov df)
+    print "okdfp"
+    let sol = createM "minimizeDerivV" maxit (n+2) $ v (c_minimizeDeriv fp dfp tol maxit) xi
+    --freeHaskellFunPtr fp
+    return sol
+foreign import ccall "gslaux.h minimizeWithDeriv" 
+ c_minimizeDeriv:: FunPtr (Int -> Ptr Double -> Double) -> FunPtr (Int -> Ptr Double -> Ptr Double -> IO ())  -> Double -> Int -> TVM      
       
 ----------------------------------------------------------------
 -------------------- simple functions --------------------------
