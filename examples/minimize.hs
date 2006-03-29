@@ -15,6 +15,12 @@ conjugrad f df xi = minimizeConjugateGradient 1E-2 1E-4 1E-3 30
                                               (fromList.df.toList) 
                                               (fromList xi)
 
+partialDerivative n f v = fst (derivCentral 0.01 g (v!!n)) where
+    g x = f (concat [a,x:b])
+    (a,_:b) = splitAt n v
+        
+gradient f v = [partialDerivative k f v | k <- [0 .. length v -1]]
+
 main = do
     let (s,p) = minimize f [5,7]
     print s
@@ -24,5 +30,8 @@ main = do
     let (s,p) = conjugrad f df [5,7]
     print s
     print p
-    let [x,y] = drop 2 (toCols p)
-    hplot [x,y]
+    hplot $ drop 2 (toCols p)
+    let (s,p) = conjugrad f (gradient f) [5,7]
+    print s
+    print p
+    hplot $ drop 2 (toCols p)

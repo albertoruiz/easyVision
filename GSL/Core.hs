@@ -50,7 +50,7 @@ rows (M r _ _) = r
 cols :: Matrix t -> Int
 cols (M _ c _) = c
 
--- | Creates a vector from a list. Related functions: 'realVector', 'complexVector', 'fromStorableArrayV', 'fromLists', and 'flatten'. 
+-- | Creates a vector from a list. Related functions: 'Util.realVector', 'Util.complexVector', 'fromStorableArrayV', 'Util.fromLists', and 'flatten'. 
 fromList :: (Storable a) => [a] -> Vector a
 fromList [] = error "trying to create an empty GSL vector"
 fromList l = createV "fromList" (length l) $

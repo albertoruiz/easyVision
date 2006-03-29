@@ -15,7 +15,7 @@ Interface to the GSL and basic infrastructure for manipulation of vectors and ma
 
 module GSL.Base (
     -- * Data types
-    -- | The library works with four data types: real vectors ('V'), complex vectors ('CV'), real matrices ('M') and complex matrices ('CM'). They are statically different, inmutable, and with automatic garbage collection. They are implemented as Foreign pointers to C-style arrays of double with dimension information, corresponding to the GSL vectors and matrices. 
+    -- | The library works with four data types: real vectors ('V'), complex vectors ('CV'), real matrices ('M') and complex matrices ('CM'). They are statically different, inmutable, and with automatic garbage collection. They are implemented as Foreign pointers to C-style arrays of double with dimension information, corresponding to the GSL vectors and matrices. These types are internally similar to StorableArray's, but they are inmutable and can be used outside the IO monad.)
     
     -- ** Vectors
     -- | (TO DO: sort description, read, show, and numeric instances)
