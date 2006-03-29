@@ -7,6 +7,7 @@
 #include <gsl/gsl_fft_complex.h>
 #include <gsl/gsl_eigen.h>
 #include <gsl/gsl_integration.h>
+#include <gsl/gsl_deriv.h>
 #include <gsl/gsl_poly.h>
 #include <gsl/gsl_multimin.h>
 #include <string.h>
@@ -767,4 +768,19 @@ int mesh(KDMAT(x)) {
         glEnd(); 
     }
     OK
+}
+
+int deriv(int code, double f(double, void*), double x, double h, double * result, double * abserr)
+{
+    gsl_function F;
+    F.function = f;
+    F.params = 0;
+
+    if(code==0) return gsl_deriv_central (&F, x, h, result, abserr);
+    
+    if(code==1) return gsl_deriv_forward (&F, x, h, result, abserr);
+
+    if(code==2) return gsl_deriv_backward (&F, x, h, result, abserr);
+    
+    return 0;
 }
