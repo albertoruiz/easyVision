@@ -662,12 +662,13 @@ int minimize(double f(int, double*), double tolsize, int maxit,
     OK
 }  
 
+// working with the gradient
+
 typedef struct {double (*f)(int, double*); void (*df)(int, double*, double*);} Tfdf;
 
 double f_aux_min(const gsl_vector*x, void *pars) {
     Tfdf * fdf = ((Tfdf*) pars);
     double* p = (double*)calloc(x->size,sizeof(double));
-    printf("entro en f_aux_min\n");
     int k;
     for(k=0;k<x->size;k++) {
         p[k] = gsl_vector_get(x,k);
@@ -683,35 +684,28 @@ void df_aux_min(const gsl_vector * x, void * pars, gsl_vector * g) {
     double* p = (double*)calloc(x->size,sizeof(double));
     double* q = (double*)calloc(x->size,sizeof(double));
     int k;
-    DEBUGVEC("entrada",x);
     for(k=0;k<x->size;k++) {
         p[k] = gsl_vector_get(x,k);
     }  
-    printf("copyarg\n");
-    fdf->df(x->size,p,q);
     
-    printf("eval\n");
+    fdf->df(x->size,p,q);
+
     for(k=0;k<x->size;k++) {
         gsl_vector_set(g,k,q[k]);
     }
-    DEBUGVEC("salida",g); 
     free(p);
     free(q);                
 }        
 
 void fdf_aux_min(const gsl_vector * x, void * pars, double * f, gsl_vector * g) {
     *f = f_aux_min(x,pars);
-    printf("salidaf %f\n",*f);
-    df_aux_min(x,pars,g);
-    DEBUGVEC("salidafdf",g);                
+    df_aux_min(x,pars,g);                
 }        
-
 
 // conjugate gradient
 int minimizeWithDeriv(double f(int, double*), void df(int, double*, double*), 
-                      double tolgrad, int maxit, 
+                      double initstep, double minimpar, double tolgrad, int maxit, 
                       DVEC(xi), DMAT(sol)) {
-    printf("%d %d %d\n",xin,solr,solc);
     REQUIRES(solr == maxit && solc == 2+xin,BAD_SIZE);
     DEBUGMSG("minimizeWithDeriv (conjugate_fr)");
     gsl_multimin_function_fdf my_func;
@@ -733,19 +727,9 @@ int minimizeWithDeriv(double f(int, double*), void df(int, double*, double*),
     // Minimizer nmsimplex, without derivatives
     T = gsl_multimin_fdfminimizer_conjugate_fr;
     s = gsl_multimin_fdfminimizer_alloc (T, my_func.n);
-    printf("testing f_aux_min %f\n",f_aux_min(V(xi),&stfdf));
-    gsl_vector * tau = gsl_vector_alloc(xin);
-    df_aux_min(V(xi),&stfdf,tau);
-    DEBUGVEC("testing df_aux_min",tau);
-    double ft;
-    fdf_aux_min(V(xi),&stfdf,&ft,tau);
-    printf("testing fdf_aux_min %f\n",ft);
-    DEBUGVEC("y tau",tau);
-    gsl_multimin_fdfminimizer_set (s, &my_func, V(xi), 0.01, 1e-4);
-    printf("set \n");
+    gsl_multimin_fdfminimizer_set (s, &my_func, V(xi), initstep, minimpar);
     do {
         status = gsl_multimin_fdfminimizer_iterate (s);
-        printf("status %d\n",status);
         solp[iter*solc+0] = iter;
         solp[iter*solc+1] = s->f;
         int k;

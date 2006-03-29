@@ -35,7 +35,8 @@ module GSL.Base (
     -- ** Integration
     integrateQNG, integrateQAGS,
     -- ** Multidimensional minimization
-    minimizeNMSimplex,
+    -- | Minimization of a multidimensional function using some of the algorithms described in <http://www.gnu.org/software/gsl/manual/gsl-ref_35.html#SEC474>.
+    minimizeConjugateGradient, minimizeNMSimplex, 
     -- ** Special functions
     erf, erf_Z,
     -- * Matrix manipulation

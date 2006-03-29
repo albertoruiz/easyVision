@@ -801,28 +801,48 @@ pinvTol t m = v <> diag s' <> trans u where
     tol = (fromIntegral (max (rows m) (cols m)) * g * t * eps)
     
 -------------------------------------------------------------------------    
-{- | Minimization of a multidimensional function, using the method of Nelder and Mead, implemented by /gsl_multimin_fminimizer_nmsimplex/, and described in <http://www.gnu.org/software/gsl/manual/gsl-ref_35.html#SEC474>. The gradient of the function is not required.
+{- | The method of Nelder and Mead, implemented by /gsl_multimin_fminimizer_nmsimplex/. The gradient of the function is not required. This is the example in the GSL manual:
 
-@\> let minimize f xi = minimizeNMSimplex f xi (replicate (length xi) 1) 1e-6 100
-\> let f [x,y] = (x-1)*(x-1) + (y+3)*(y+3)
-\> let (s,p) = minimize f [10,10]
-\> s
-[1.000000039316922,-3.0000005208092726]
-\>p
- 0.   231.250       0. 11.500     8.
- 1.   185.563    1.082 10.250     7.
- 2.   165.391    1.372 12.625  2.500
- 3.   107.910    2.459 11.313 -1.750
- 4.   107.910    3.376 11.313 -1.750
- 5.   107.910    2.307 11.313 -1.750
- 6.    78.079    2.307  8.586 -7.531
- 7.    45.755    2.868  6.816  0.453
- 8.    17.223    3.758  0.479 -7.117
- 9.    17.223    5.033  0.479 -7.117
-10.     7.631    5.033  3.205 -1.336
-11.     2.268    3.758  0.275 -1.680
-....................................
-65.        0. 1.355e-6  1.000 -3.000@
+@minimize f xi = minimizeNMSimplex f xi (replicate (length xi) 1) 1e-6 100
+\ 
+f [x,y] = 10*(x-1)^2 + 20*(y-2)^2 + 30
+\ 
+main = do
+    let (s,p) = minimize f [5,7]
+    print s
+    print p
+\ 
+\> main
+[0.9920430849306285,1.9969168063253164]
+ 0. 512.500       0. 6.500    5.
+ 1. 290.625    1.082 5.250    4.
+ 2. 290.625    1.372 5.250    4.
+ 3. 252.500    1.372 5.500    1.
+ 4. 101.406    1.372 2.625 3.500
+ 5. 101.406    1.823 2.625 3.500
+ 6.     60.    1.823    0.    3.
+ 7.  42.275    1.823 2.094 1.875
+ 8.  42.275    1.303 2.094 1.875
+ 9.  35.684    1.303 0.258 1.906
+10.  35.664    1.026 0.588 2.445
+11.  30.680    0.804 1.258 2.025
+12.  30.680    0.467 1.258 2.025
+13.  30.539    0.356 1.093 1.849
+14.  30.137    0.285 0.883 2.004
+15.  30.137    0.168 0.883 2.004
+16.  30.090    0.123 0.958 2.060
+17.  30.005    0.100 1.022 2.004
+18.  30.005 6.051e-2 1.022 2.004
+19.  30.005 4.249e-2 1.022 2.004
+20.  30.005 4.249e-2 1.022 2.004
+21.  30.005 2.742e-2 1.022 2.004
+22.  30.001 2.119e-2 0.992 1.997
+23.  30.001 1.530e-2 0.992 1.997
+24.  30.001 1.259e-2 0.992 1.997@    
+
+The path to the solution can be graphically shown by means of:
+
+>hplot $ drop 3 (toCols p)
 
 -}     
 minimizeNMSimplex :: ([Double] -> Double) -- ^ function to minimize
@@ -837,3 +857,54 @@ minimizeNMSimplex f xi sz tol maxit = (sol, path) where
     it = round (rawpath !!: (maxit-1,0))
     path = subMatrix 0 (it-1) 0 (cols rawpath -1) rawpath
     [sol] = toLists $ subMatrix (it-1) (it-1) 3 (cols rawpath -1) path
+
+{- | The Fletcher-Reeves conjugate gradient algorithm /gsl_multimin_fminimizer_conjugate_fr/. This is the example in the GSL manual:
+
+@minimize f df xi = minimizeConjugateGradient 1E-2 1E-4 1E-3 30 
+\                                             (f.toList) 
+\                                             (fromList.df.toList) 
+\                                             (fromList xi)
+f [x,y] = 10*(x-1)^2 + 20*(y-2)^2 + 30
+\ 
+df [x,y] = [20*(x-1), 40*(y-2)]
+\  
+main = do
+    let (s,p) = minimize f df [5,7]
+    print s
+    print p
+\ 
+\> main
+[1.0,2.0]
+ 0. 687.848 4.996 6.991
+ 1. 683.555 4.989 6.972
+ 2. 675.013 4.974 6.935
+ 3. 658.108 4.944 6.861
+ 4. 625.013 4.885 6.712
+ 5. 561.684 4.766 6.415
+ 6. 446.467 4.528 5.821
+ 7. 261.794 4.053 4.632
+ 8.  75.498 3.102 2.255
+ 9.  67.037 2.852 1.630
+10.  45.316 2.191 1.762
+11.  30.186 0.869 2.026
+12.     30.    1.    2.@
+
+The path to the solution can be graphically shown by means of:
+
+>hplot $ drop 2 (toCols p)
+
+-}     
+minimizeConjugateGradient :: 
+       Double        -- ^ initial step size
+    -> Double        -- ^ minimization parameter   
+    -> Double        -- ^ desired precision of the solution (gradient test)
+    -> Int           -- ^ maximum number of iterations allowed
+    -> (V -> Double) -- ^ function to minimize
+    -> (V -> V)      -- ^ gradient  
+    -> V             -- ^ starting point
+    -> (V, M)        -- ^ solution vector, and the optimization trajectory followed by the algorithm      
+minimizeConjugateGradient istep minimpar tol maxit f df xi = (sol, path) where
+    rawpath = minimizeDerivV f df tol maxit xi istep minimpar
+    it = round (rawpath !!: (maxit-1,0))
+    path = subMatrix 0 (it-1) 0 (cols rawpath -1) rawpath
+    sol = flatten $ subMatrix (it-1) (it-1) 2 (cols rawpath -1) path

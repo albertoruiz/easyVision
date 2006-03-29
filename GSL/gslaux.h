@@ -72,7 +72,7 @@ int minimize(double f(int, double*), double tolsize, int maxit,
                  DVEC(xi), DVEC(sz), DMAT(sol));
 
 int minimizeWithDeriv(double f(int, double*), void df(int, double*, double*),
-                      double tolgrad, int maxit, 
+                      double initstep, double minimpar, double tolgrad, int maxit, 
                       DVEC(xi), DMAT(sol));
 
 int mesh(KDMAT(x));
