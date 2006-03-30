@@ -5,7 +5,7 @@ import GSL
 m k = constant k (1000000::Int)
 
 -- this is an infinite list of one million-component vectors
-x :: [V]
+x :: [Vector]
 x = map m [0..]
 
 -- this is an infinite list with the corresponding euclidean norms

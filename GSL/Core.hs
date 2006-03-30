@@ -30,50 +30,58 @@ instance (Storable a, RealFloat a) => Storable (Complex a) where    --
     poke p (a :+ b) = pokeArray (castPtr p) [a,b]                   --
 ----------------------------------------------------------------------
 
--- | generic GSL vector
-data Vector t = V Int (ForeignPtr t)
--- | generic GSL matrix
-data Matrix t = M Int Int (ForeignPtr t)
+-- | Generic GSL vector (C array 1D)
+data GSLVector t = V Int (ForeignPtr t)
+-- | Generic GSL matrix (C array 2D)
+data GSLMatrix t = M Int Int (ForeignPtr t)
 
-type V = Vector Double
-type M = Matrix Double 
-type CV = Vector (Complex Double)
-type CM = Matrix (Complex Double)
+-- | Vector of real (double precision) numbers.
+type Vector = GSLVector Double
+-- | Matrix with real (double precision) components.
+type Matrix = GSLMatrix Double 
+-- | Vector of complex (double precision) numbers.
+type ComplexVector = GSLVector (Complex Double)
+-- | Matrix with complex (double precision) components.
+type ComplexMatrix = GSLMatrix (Complex Double)
 
--- | number of elements of a vector
-size :: Vector t -> Int
+-- | Number of elements of a vector.
+size :: GSLVector t -> Int
 size (V n _) = n
--- | number of rows of a matrix
-rows :: Matrix t -> Int
+-- | Number of rows of a matrix.
+rows :: GSLMatrix t -> Int
 rows (M r _ _) = r
--- | number of columns of a matrix
-cols :: Matrix t -> Int
+-- | Number of columns of a matrix.
+cols :: GSLMatrix t -> Int
 cols (M _ c _) = c
 
--- | Creates a vector from a list. Related functions: 'Util.realVector', 'Util.complexVector', 'fromStorableArrayV', 'Util.fromLists', and 'flatten'. 
-fromList :: (Storable a) => [a] -> Vector a
+-- | Creates a vector from a list. Related functions: 'GSL.Interface.realVector', 'GSL.Interface.complexVector', 'fromStorableArrayV', 'GSL.Derived.fromLists', and 'flatten'. 
+fromList :: (Storable a) => [a] -> GSLVector a
 fromList [] = error "trying to create an empty GSL vector"
 fromList l = createV "fromList" (length l) $
     \n p -> do pokeArray p l
                return 0
 
--- | creates a list from a vector.
-toList :: (Storable t) => Vector t -> [t]
+-- | Creates a list from a vector.
+toList :: (Storable t) => GSLVector t -> [t]
 toList (V n p) = unsafePerformIO $ withForeignPtr p $ peekArray n
 
-{- | creates a matrix from a vector by grouping the elements in rows with the desired number of columns.
+{- | Creates a matrix from a vector by grouping the elements in rows with the desired number of columns.
 
-> > reshape 4 (realVector [1..12])
-> 1.  2.  3.  4.
-> 5.  6.  7.  8.
-> 9. 10. 11. 12.
+@\> reshape 4 ('GSL.Interface.realVector' [1..12])
+1.  2.  3.  4.
+5.  6.  7.  8.
+9. 10. 11. 12.@
 
 -}
-reshape :: Int -> Vector t -> Matrix t
+reshape :: Int -> GSLVector t -> GSLMatrix t
 reshape c (V n p) = M r c p where r = n `quot` c
 
--- | creates a vector by concatenation of rows
-flatten :: Matrix t -> Vector t
+{- | Creates a vector by concatenation of rows
+
+@\> flatten ('GSL.Derived.ident' 3)
+1. 0. 0. 0. 1. 0. 0. 0. 1.@
+-}
+flatten :: GSLMatrix t -> GSLVector t
 flatten (M r c p) = V (r*c) p
 
 
@@ -85,14 +93,14 @@ common f = commonval . map f where
     commonval [a] = Just a
     commonval (a:b:xs) = if a==b then commonval (b:xs) else Nothing
 
--- | creates a Matrix from a list of vectors
-fromRows :: (Storable t) => [Vector t] -> Matrix t
+-- | creates a GSLMatrix from a list of vectors
+fromRows :: (Storable t) => [GSLVector t] -> GSLMatrix t
 fromRows vs = case common size vs of
     Nothing -> error "fromRows on vectors with different sizes" 
     Just c  -> reshape c (join vs)
 
 -- | extracts the rows of a matrix as a list of vectors
-toRows :: (Storable t) => Matrix t -> [Vector t]
+toRows :: (Storable t) => GSLMatrix t -> [GSLVector t]
 toRows x = toRows' 0 where
     v = flatten x
     r = rows x
@@ -101,31 +109,31 @@ toRows x = toRows' 0 where
               | otherwise = subVector k c v : toRows' (k+c)
               
 -- | adapts a function on vectors to work on all the elements of matrices
-asVector :: (Vector a -> Vector b) -> Matrix a -> Matrix b
+asVector :: (GSLVector a -> GSLVector b) -> GSLMatrix a -> GSLMatrix b
 asVector f m = reshape (cols m) . f . flatten $ m
  
 sameShape (M r1 c1 _) (M r2 c2 _) = r1==r2 && c1 == c2 
  
 -- | adapts a function on two vectors to work on all the elements of two matrices
-asVector2 :: (Vector a -> Vector b -> Vector c) -> Matrix a -> Matrix b -> Matrix c
+asVector2 :: (GSLVector a -> GSLVector b -> GSLVector c) -> GSLMatrix a -> GSLMatrix b -> GSLMatrix c
 asVector2 f m1 m2 
     | sameShape m1 m2 = reshape (cols m1) $ f (flatten m1) (flatten m2)
     | otherwise = error "inconsistent matrix dimensions" 
  
 -- | transforms a complex vector into a real vector with alternating real and imaginary parts 
-asReal :: CV -> V 
+asReal :: ComplexVector -> Vector 
 asReal (V n p) = V (2*n) (castForeignPtr p)
 
 -- | transforms a real vector into a complex vector with alternating real and imaginary parts
-asComplex :: V -> CV
+asComplex :: Vector -> ComplexVector
 asComplex (V n p) = V (n `quot` 2) (castForeignPtr p)
 
 -----------------------------------------------------------------------------
--- | creates a Vector taking a number of consecutive elements from another Vector
+-- | creates a GSLVector taking a number of consecutive elements from another GSLVector
 subVector :: (Storable t) =>   Int       -- ^ index of the starting element
                             -> Int       -- ^ number of elements to extract 
-                            -> Vector t  -- ^ source
-                            -> Vector t  -- ^ result
+                            -> GSLVector t  -- ^ source
+                            -> GSLVector t  -- ^ result
 subVector k l x@(V n _) 
     | k<0 || k >= n || k+l > n || l < 0 = error "subVector out of range"         
     | otherwise = createV "subVector" l $ v f x 
@@ -134,7 +142,7 @@ subVector k l x@(V n _)
 
 
 -- | Reading a vector position.         
-(!:) :: (Storable t) => Vector t -> Int -> t
+(!:) :: (Storable t) => GSLVector t -> Int -> t
 infixl 9 !: 
 (V n p) !: k 
     | k<0 || k>=n = error "vector indexing out of range"
@@ -143,7 +151,7 @@ infixl 9 !:
                             peek (advancePtr p k) 
     
 -- | Reading a matrix position.         
-(!!:) :: (Storable t) => Matrix t -> (Int,Int) -> t
+(!!:) :: (Storable t) => GSLMatrix t -> (Int,Int) -> t
 infixl 9 !!: 
 (M r c p) !!: (i,j) 
     | i<0 || i>=r || j<0 || j>=c = error "matrix indexing out of range"
@@ -152,8 +160,8 @@ infixl 9 !!:
                             peek (advancePtr p (i*c+j)) 
 
 --------------------------------------------------------
--- | creates a new Vector by joining a list of Vectors
-join :: (Storable t) => [Vector t] -> Vector t
+-- | creates a new GSLVector by joining a list of Vectors
+join :: (Storable t) => [GSLVector t] -> GSLVector t
 join [] = error "joining an empty list"
 join as = createV "join" tot (joiner as) where
     tot = sum (map size as)
@@ -277,7 +285,7 @@ prot msg f = do
 >    print (bounds hv)
 >    els <- getElems hv
 >    print els
->    v <- fromStorableArrayV hv :: IO (CV)
+>    v <- fromStorableArrayV hv :: IO (ComplexVector)
 >    print v
 >    print (norm v)
 >
@@ -291,7 +299,7 @@ prot msg f = do
 The elements are efficient copied using @withStorableArray@ and @copyArray@.
 
 -}
-fromStorableArrayV :: Storable t => StorableArray Int t -> IO (Vector t) 
+fromStorableArrayV :: Storable t => StorableArray Int t -> IO (GSLVector t) 
 fromStorableArrayV arr = do
     let (l,u) = bounds arr
     let n = u-l+1
@@ -300,12 +308,12 @@ fromStorableArrayV arr = do
         return 0
     return $ createV "fromStorableArrayV" n f
 
-{- | Creates a @StorableArray@ indexed by @(Int)@ from a GSL Vector.
+{- | Creates a @StorableArray@ indexed by @(Int)@ from a GSLVector.
 
 The elements are efficient copied using @withStorableArray@ and @copyArray@.
 
 -}
-toStorableArrayV :: Storable t => Vector t -> IO(StorableArray Int t)
+toStorableArrayV :: Storable t => GSLVector t -> IO(StorableArray Int t)
 toStorableArrayV (V n p) = do
     arr <- newArray_ (0, n-1) 
     withForeignPtr p $ \p ->
@@ -314,25 +322,25 @@ toStorableArrayV (V n p) = do
 
 {- | Creates a matrix from a standard Haskell @StorableArray@ indexed by @(Int,Int)@:
 
->import GSL
->import Data.Array.Storable
->
->main = do 
->    hm <- newListArray ((1,1),(5,5)) [1 .. 25]
->    m <- fromStorableArrayM hm :: IO (M)
->    print m
->
->> main
-> 1.  2.  3.  4.  5.
-> 6.  7.  8.  9. 10.
->11. 12. 13. 14. 15.
->16. 17. 18. 19. 20.
->21. 22. 23. 24. 25.
+@import GSL
+import Data.Array.Storable
+\ 
+main = do 
+    hm <- newListArray ((1,1),(5,5)) [1 .. 25]
+    m <- fromStorableArrayM hm :: IO ('Matrix')
+    print m
+\ 
+\> main
+ 1.  2.  3.  4.  5.
+ 6.  7.  8.  9. 10.
+11. 12. 13. 14. 15.
+16. 17. 18. 19. 20.
+21. 22. 23. 24. 25.@
 
 The elements are efficient copied using @withStorableArray@ and @copyArray@.
 
 -}
-fromStorableArrayM :: Storable t => StorableArray (Int,Int) t -> IO (Matrix t) 
+fromStorableArrayM :: Storable t => StorableArray (Int,Int) t -> IO (GSLMatrix t) 
 fromStorableArrayM arr = do
     let ((r1,c1),(r2,c2)) = bounds arr
     let r = r2-r1+1
@@ -347,7 +355,7 @@ fromStorableArrayM arr = do
 The elements are efficient copied using @withStorableArray@ and @copyArray@.
 
 -}
-toStorableArrayM :: Storable t => Matrix t -> IO(StorableArray (Int,Int) t) 
+toStorableArrayM :: Storable t => GSLMatrix t -> IO(StorableArray (Int,Int) t) 
 toStorableArrayM (M r c p) = do
     arr <- newArray_ ((0,0),(r-1,c-1)) 
     withForeignPtr p $ \p ->

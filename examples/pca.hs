@@ -12,7 +12,7 @@ cov x = (trans xc <> xc) / fromIntegral (rows x -1)
    
 takeRows n = fromRows . take n . toRows   
    
-pca :: Int -> M -> (V -> V , V -> V)    
+pca :: Int -> Matrix -> (Vector -> Vector , Vector -> Vector)    
 pca n dataSet = (encode,decode)    
   where    
     encode x = vp <> (x - m)

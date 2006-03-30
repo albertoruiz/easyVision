@@ -12,14 +12,14 @@ cov x = (trans xc <> xc) / fromIntegral (rows x -1)
    
 takeRows n = fromRows . take n . toRows   
    
-type Stat = (V, [Double], M) 
+type Stat = (Vector, [Double], Matrix) 
 -- 1st and 2nd order statistics of a dataset (mean, eigenvalues and eigenvectors of cov)  
-stat :: M -> Stat   
+stat :: Matrix -> Stat   
 stat x = (m, toList s, trans v) where   
     m = mean x
     (s,v) = eig (cov x)   
    
-pca :: Double -> Stat -> (V -> V , V -> V)          
+pca :: Double -> Stat -> (Vector -> Vector , Vector -> Vector)          
 pca prec (m,s,v) = (encode,decode)    
   where    
     encode x = vp <> (x - m)
@@ -31,13 +31,13 @@ pca prec (m,s,v) = (encode,decode)
                 then error "the precision in pca must be 0<prec<1"
                 else prec   
     
-mnist :: IO M  
+mnist :: IO Matrix  
 mnist = gslReadMatrix "/home/alberto/space/data/mnist.txt" (5000,785) 
 
-shdigit :: V -> IO ()
+shdigit :: Vector -> IO ()
 shdigit v = imshow (reshape 28 (-v))
 
-test :: Stat -> Double -> V -> IO ()
+test :: Stat -> Double -> Vector -> IO ()
 test st prec x = do
     let (pe,pd) = pca prec st
     let y = pe x

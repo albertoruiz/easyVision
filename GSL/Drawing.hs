@@ -31,7 +31,7 @@ import GSL.Interface
 import Data.List(intersperse)
 import System
 import Graphics.HGL hiding (Char, DoubleBuffered)
-import Graphics.UI.GLUT
+import Graphics.UI.GLUT hiding (Matrix)
 import Data.IORef
 import System.Exit
 import Foreign hiding (rotate)
@@ -40,11 +40,11 @@ import Foreign hiding (rotate)
 
 {- | Plots a list of vectors using the Haskell Graphics Library. Given a list of vectors [x, y1, y2, ...] it draws y1, y2, ... against x.
 
->> let x = linspace 1000 (-2,2) 
->hplot [x, exp(-x^2), 1+0.5 * cos (2*x)]
+@> let x = 'linspace' 1000 (-2,2) 
+hplot [x, exp(-x^2), 1+0.5 * cos (2*x)]@
  
 -}
-hplot :: [V] -> IO ()
+hplot :: [Vector] -> IO ()
 hplot vs = windowHGL (prepPol vs) 
 
 genPairs [] = []
@@ -65,7 +65,7 @@ prepPol vs = map (polyline . adaptPair ranges) pairs where
     pairs = genPairs vs
     ranges = getRanges pairs
     
-adaptVector:: (Int,Int) -> (Double, Double)-> V -> [Int]
+adaptVector:: (Int,Int) -> (Double, Double)-> Vector -> [Int]
 adaptVector (a,b) (mx,mn) v = k <> v |+| c // toList // map round
     where vl = toList v
           k = if mx == mn then 0 else (fromIntegral b- fromIntegral a)/(mx-mn)
@@ -80,8 +80,8 @@ windowHGL grs = do
 -------------------------------------------------------------------------------
 
 
--- | From vectors x and y, it generates a pair of matrices to be used as x and y arguments for matrix functions. It is used by 'splot' to build a 'mesh'.
-meshdom :: V -> V -> (M, M)
+-- | From vectors x and y, it generates a pair of matrices to be used as x and y arguments for matrix functions.
+meshdom :: Vector -> Vector -> (Matrix, Matrix)
 meshdom r1 r2 = (outer r1 (constant 1 r2), outer (constant 1 r1) r2)
  
 
@@ -92,7 +92,7 @@ meshdom r1 r2 = (outer r1 (constant 1 r2), outer (constant 1 r1) r2)
 In certain versions you can interactively rotate the graphic using the mouse.
 
 -}
-mesh :: M -> IO ()
+mesh :: Matrix -> IO ()
 mesh m = do
     writeFile "splot-gnu-command" "splot \"splot-tmp.txt\" matrix with lines; pause -1"; 
     toFile "splot-tmp.txt" m
@@ -107,13 +107,13 @@ mesh m = do
 > > splot f (0,pi) (0,2*pi) 50    
 
 -}
-splot :: (M->M->M) -> (Double,Double) -> (Double,Double) -> Int -> IO () 
+splot :: (Matrix->Matrix->Matrix) -> (Double,Double) -> (Double,Double) -> Int -> IO () 
 splot f rx ry n = mesh z where
     (x,y) = meshdom (linspace n rx) (linspace n ry)
     z = f x y
 
 {- | Similar to hplot, but using gnuplot -}
-mplot :: [V] -> IO ()
+mplot :: [Vector] -> IO ()
 mplot m = do
     writeFile "plot-gnu-command" (commands++endcmd)
     toFile "plot-tmp.txt" (fromCols m)
@@ -140,7 +140,7 @@ mapf (f:fs) a = f a: mapf fs a
 > > plot [sin, cos, sin.(3*)] (0,2*pi) 1000
 
 -}
-plot :: [V->V] -> (Double,Double) -> Int -> IO ()
+plot :: [Vector->Vector] -> (Double,Double) -> Int -> IO ()
 plot fs rx n = hplot (x: mapf fs x)
     where x = linspace n rx  
 
@@ -149,7 +149,7 @@ plot fs rx n = hplot (x: mapf fs x)
 > > parametricPlot (\t->(t * sin t, t * cos t)) (0,10*pi) 1000
 
 -}    
-parametricPlot :: (V->(V,V)) -> (Double, Double) -> Int -> IO ()
+parametricPlot :: (Vector->(Vector,Vector)) -> (Double, Double) -> Int -> IO ()
 parametricPlot f rt n = hplot [fx, fy]
     where t = linspace n rt
           (fx,fy) = f t 
@@ -157,7 +157,7 @@ parametricPlot f rt n = hplot [fx, fy]
     
     
 -- | writes a matrix to pgm image file
-matrixToPGM :: String -> M -> IO ()    
+matrixToPGM :: String -> Matrix -> IO ()    
 matrixToPGM filename m = do
     let ll = map (map f) (toLists m)
     writeFile filename $ header ++ unlines (map unwords ll)
@@ -174,7 +174,7 @@ matrixToPGM filename m = do
     f x = show ( round ( scale *(x - minval) ) :: Int )   
     
 -- | imshow shows a representation of a matrix as a gray level image using ImageMagick's display and an auxilary text file
-imshow :: M -> IO ()
+imshow :: Matrix -> IO ()
 imshow m = do
     matrixToPGM "tmpimg.pgm" m
     putStr "close the image window to continue...\n"
@@ -200,14 +200,15 @@ drawMesh z@(M r c p) = do
                  
 {- | It draws an animated sequence of surfaces given by coordinates (x, y, z) = f k, where k is the frame number. For example:
 
->w k = fromIntegral k / 100 
->rg = linspace 40 (-2,2)
->(x,y) = meshdom rg rg
->r2 = x*x+y*y
->> meshOpenGL $ \k -> exp (-r2) * cos (w k *r2)
+@w k = fromIntegral k \/ 100 
+rg = 'linspace' 40 (-2,2)
+(x,y) = 'meshdom' rg rg
+r2 = x*x+y*y
+\ 
+\> meshOpenGL $ \k -> exp (-r2) * cos (w k *r2)@
 
 -}
-meshOpenGL :: (Int -> M) -> IO () 
+meshOpenGL :: (Int -> Matrix) -> IO () 
 meshOpenGL f = do
     prepareOpenGL g where
     g k = do
@@ -234,7 +235,7 @@ meshOpenGL f = do
 >> plotOpenGL $ \k -> (x, cos x + 0.2 * cos (5*x- f k))
 
 -}
-plotOpenGL :: (Int -> (V, V)) -> IO ()
+plotOpenGL :: (Int -> (Vector, Vector)) -> IO ()
 plotOpenGL f = do
     prepareOpenGL g where
     g k = do

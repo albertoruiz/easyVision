@@ -1,6 +1,6 @@
 import GSL
 
-prepSyst :: Int -> M -> (M , V)
+prepSyst :: Int -> Matrix -> (Matrix , Vector)
 prepSyst n d = (a,b) where
     [x,b] = toCols d
     a = fromCols $ map (x^) [1 .. n]

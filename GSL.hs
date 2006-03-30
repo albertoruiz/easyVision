@@ -8,7 +8,7 @@ Maintainer  :  Alberto Ruiz (aruiz at um dot es)
 Stability   :  provisional
 Portability :  uses -fffi and -fglasgow-exts
 
-This module provides the basic functionality and a collection of convenience functions.
+This module reexports the basic functionality and a collection of utilities.
 
 -}
 

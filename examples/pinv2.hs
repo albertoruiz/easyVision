@@ -1,9 +1,9 @@
 import GSL
 
-expand :: Int -> V -> M
+expand :: Int -> Vector -> Matrix
 expand n x = fromCols $ map (x^) [1 .. n] 
 
-polynomialModel :: Int -> M -> (V -> V)
+polynomialModel :: Int -> Matrix -> (Vector -> Vector)
 polynomialModel n d = f where
     f z = expand n z <> ws       
     ws  = pinv a <> b            

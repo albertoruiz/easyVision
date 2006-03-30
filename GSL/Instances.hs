@@ -30,10 +30,10 @@ adaptScalar f1 f2 f3 x y
 
 ---------------------------------------------------
 
-instance Eq V where
+instance Eq Vector where
     u == v = toList u == toList v
 
-instance Num V where
+instance Num Vector where
     (+) = adaptScalar (|+|) (|+|) (|+|)
     (-) = adaptScalar (|-|) (vectorZip 4) (|-|)
     (*) = adaptScalar (<>) (.*) (<>)
@@ -43,10 +43,10 @@ instance Num V where
     
 ----------------------------------------------------
 
-instance Eq CV where
+instance Eq ComplexVector where
     u == v = toList u == toList v    
 
-instance Num CV where
+instance Num ComplexVector where
     (+) = adaptScalar (|+|) (|+|) (|+|)
     (-) = adaptScalar (|-|) (|-|) (|-|)
     (*) = adaptScalar (<>) (.*) (<>)
@@ -63,10 +63,10 @@ adaptScalar' f1 f2 f3 x y
 
 ---------------------------------------------------
 
-instance Eq M where
+instance Eq Matrix where
     u == v = toLists u == toLists v
 
-instance Num M where
+instance Num Matrix where
     (+) = adaptScalar' (|+|) (|+|) (|+|)
     (-) = adaptScalar' (|-|) (asVector2 (vectorZip 4)) (|-|)
     (*) = adaptScalar' (<>) (.*) (<>)
@@ -76,10 +76,10 @@ instance Num M where
     
 ----------------------------------------------------
 
-instance Eq CM where
+instance Eq ComplexMatrix where
     u == v = toLists u == toLists v    
 
-instance Num CM where
+instance Num ComplexMatrix where
     (+) = adaptScalar' (|+|) (|+|) (|+|)
     (-) = adaptScalar' (|-|) (|-|) (|-|)
     (*) = adaptScalar' (<>) (.*) (<>)
@@ -89,7 +89,7 @@ instance Num CM where
     
 ------------------------------------------------------
 
-instance Fractional V where
+instance Fractional Vector where
     fromRational n = fromList [fromRational n]
     (/) = adaptScalar f (vectorZip 2) g where
         r `f` v = vectorZip 2 (constant r v) v
@@ -97,7 +97,7 @@ instance Fractional V where
         
 -------------------------------------------------------
         
-instance Fractional CV where
+instance Fractional ComplexVector where
     fromRational n = fromList [fromRational n]
     (/) = adaptScalar f (vzip (/)) g where
         r `f` v = vmap ((*r).recip) v
@@ -105,7 +105,7 @@ instance Fractional CV where
         
 ------------------------------------------------------
 
-instance Fractional M where
+instance Fractional Matrix where
     fromRational n = fromLists [[fromRational n]]
     (/) = adaptScalar' f (asVector2 (vectorZip 2)) g where
         r `f` m = asVector2 (vectorZip 2) (constant r m) m
@@ -113,7 +113,7 @@ instance Fractional M where
         
 -------------------------------------------------------
         
-instance Fractional CM where
+instance Fractional ComplexMatrix where
     fromRational n = fromLists [[fromRational n]]
     (/) = adaptScalar' f (mzip (/)) g where
         r `f` m = mmap ((*r).recip) m
@@ -121,7 +121,7 @@ instance Fractional CM where
         
 ---------------------------------------------------------
         
-instance Floating V where
+instance Floating Vector where
     sin   = vectorMap 0
     cos   = vectorMap 1
     tan   = vectorMap 2
@@ -140,7 +140,7 @@ instance Floating V where
     
 -----------------------------------------------------------
     
-instance Floating M where
+instance Floating Matrix where
     sin   = asVector sin
     cos   = asVector cos
     tan   = asVector tan
@@ -159,7 +159,7 @@ instance Floating M where
     
 -------------------------------------------------------------
     
-instance Floating CV where
+instance Floating ComplexVector where
     sin   = vmap sin
     cos   = vmap cos
     tan   = vmap tan
@@ -178,7 +178,7 @@ instance Floating CV where
        
 ---------------------------------------------------------------       
 
-instance Floating CM where
+instance Floating ComplexMatrix where
     sin   = asVector sin
     cos   = asVector cos
     tan   = asVector tan

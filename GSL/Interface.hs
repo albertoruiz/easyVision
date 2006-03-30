@@ -27,7 +27,7 @@ import Foreign
 
 {- | The imaginary unit
 
-@> ident 3 \<\> i
+@> 'ident' 3 \<\> i
 1.i   0.   0.
  0.  1.i   0.
  0.   0.  1.i@
@@ -40,7 +40,33 @@ i = 0:+1
 
 class Mul a b c | a b -> c where
  infixl 7 <>
- -- | Matrix product, matrix-vector product, dot product and scaling of vectors and matrices.
+{- | Matrix product, matrix-vector product, dot product and scaling of vectors and matrices. Using this operator you can freely combine real and complex objects:
+
+@v = 'realVector' [1,2,3]
+cv = 'complexVector' [1+'i',2]
+m = 'realMatrix' [[1,2,3],[4,5,7]]
+cm = 'complexMatrix' [[1,2],[3+'i',7*'i'],['i',1]]
+\ 
+\> m \<\> v
+14. 35.
+\ 
+\> cv \<\> m
+9.+1.i  12.+2.i  17.+3.i
+\ 
+\> m \<\> cm
+  7.+5.i   5.+14.i
+19.+12.i  15.+35.i
+\ 
+\> v \<\> 'i'
+1.i  2.i  3.i
+\ 
+\> v \<\> v
+14.0
+\ 
+\> cv \<\> cv
+4.0 :+ 2.0@
+
+-}
  (<>) :: a -> b -> c         
 
 class Add a b c | a b -> c where
@@ -73,208 +99,208 @@ cv v = complexV (v, constant 0 v)
 cm m = complexM (m, constant 0 m)
 
 -- | map on vectors
-vmap :: (Storable a, Storable b) => (a -> b) -> Vector a -> Vector b
+vmap :: (Storable a, Storable b) => (a -> b) -> GSLVector a -> GSLVector b
 vmap f = fromList . map f . toList
 
 -- | zipWith on vectors
-vzip :: (Storable a, Storable b, Storable c) => (a -> b -> c) -> Vector a -> Vector b -> Vector c
+vzip :: (Storable a, Storable b, Storable c) => (a -> b -> c) -> GSLVector a -> GSLVector b -> GSLVector c
 vzip f a b = fromList $ zipWith f (toList a) (toList b)
 
 -- | map on matrices
-mmap :: (Storable a, Storable b) => (a -> b) -> Matrix a -> Matrix b
+mmap :: (Storable a, Storable b) => (a -> b) -> GSLMatrix a -> GSLMatrix b
 mmap m = asVector . vmap $ m
 
 -- zipWith on matrices
-mzip :: (Storable a, Storable b, Storable c) => (a -> b -> c) -> Matrix a -> Matrix b -> Matrix c
+mzip :: (Storable a, Storable b, Storable c) => (a -> b -> c) -> GSLMatrix a -> GSLMatrix b -> GSLMatrix c
 mzip f = asVector2 (vzip f)
 
 --------------------------------- matrix matrix
 
-instance Mul M M M where
+instance Mul Matrix Matrix Matrix where
  (<>) = multiply
 
-instance Mul CM CM CM where
+instance Mul ComplexMatrix ComplexMatrix ComplexMatrix where
  (<>) = multiplyC
 
-instance Mul CM M CM where
+instance Mul ComplexMatrix Matrix ComplexMatrix where
  c <> r = c <> cm r
 
-instance Mul M CM CM where
+instance Mul Matrix ComplexMatrix ComplexMatrix where
  r <> c = cm r <> c
 
 --------------------------------- matrix vector
 
-instance Mul M V V where
+instance Mul Matrix Vector Vector where
  (<>) = mRvR
 
-instance Mul CM CV CV where
+instance Mul ComplexMatrix ComplexVector ComplexVector where
  (<>) = mCvC
 
-instance Mul CM V CV where
+instance Mul ComplexMatrix Vector ComplexVector where
  m <> v = m <> cv v
 
-instance Mul M CV CV where
+instance Mul Matrix ComplexVector ComplexVector where
  m <> v = cm m <> v
 
 --------------------------------- vector matrix
 
-instance Mul V M V where
+instance Mul Vector Matrix Vector where
  (<>) = vRmR
  
-instance Mul CV CM CV where
+instance Mul ComplexVector ComplexMatrix ComplexVector where
  (<>) = vCmC
  
-instance Mul CV M CV where
+instance Mul ComplexVector Matrix ComplexVector where
  v <> m = v <> cm m
  
-instance Mul V CM CV where
+instance Mul Vector ComplexMatrix ComplexVector where
  v <> m = cv v <> m
 
 --------------------------------- dot product
 
-instance Mul V V Double where
+instance Mul Vector Vector Double where
  (<>) = vRvR
  
-instance Mul CV CV (Complex Double) where
+instance Mul ComplexVector ComplexVector (Complex Double) where
  (<>) = vCvC
   
-instance Mul V CV (Complex Double) where
+instance Mul Vector ComplexVector (Complex Double) where
  a <> b = cv a <> b
  
-instance Mul CV V (Complex Double) where
+instance Mul ComplexVector Vector (Complex Double) where
  (<>) = flip (<>)
  
 --------------------------------- scaling vectors  
   
-instance Mul Double V V where
+instance Mul Double Vector Vector where
  (<>) = scale
 
-instance Mul V Double V where
+instance Mul Vector Double Vector where
  (<>) = flip (<>)
   
-instance Mul (Complex Double) CV CV where
+instance Mul (Complex Double) ComplexVector ComplexVector where
  (<>) = scaleC
 
-instance Mul CV (Complex Double) CV where
+instance Mul ComplexVector (Complex Double) ComplexVector where
  (<>) = flip (<>)
 
-instance Mul Double CV CV where
+instance Mul Double ComplexVector ComplexVector where
  a <> v = (a:+0) <> v
 
-instance Mul CV Double CV where
+instance Mul ComplexVector Double ComplexVector where
  (<>) = flip (<>)
 
-instance Mul (Complex Double) V CV where
+instance Mul (Complex Double) Vector ComplexVector where
  a <> v = a <> cv v
 
-instance Mul V (Complex Double) CV where
+instance Mul Vector (Complex Double) ComplexVector where
  (<>) = flip (<>)
 
 --------------------------------- scaling matrices
 
-instance Mul Double M M where
+instance Mul Double Matrix Matrix where
  (<>) a = asVector (a <>)
 
-instance Mul M Double M where
+instance Mul Matrix Double Matrix where
  (<>) = flip (<>)
 
-instance Mul (Complex Double) CM CM where
+instance Mul (Complex Double) ComplexMatrix ComplexMatrix where
  (<>) a = asVector (a <>)
 
-instance Mul CM (Complex Double) CM where
+instance Mul ComplexMatrix (Complex Double) ComplexMatrix where
  (<>) = flip (<>)
 
-instance Mul Double CM CM where
+instance Mul Double ComplexMatrix ComplexMatrix where
  a <> m = (a:+0) <> m
 
-instance Mul CM Double CM where
+instance Mul ComplexMatrix Double ComplexMatrix where
  (<>) = flip (<>)
 
-instance Mul (Complex Double) M CM where
+instance Mul (Complex Double) Matrix ComplexMatrix where
  a <> m = a <> cm m
 
-instance Mul M (Complex Double) CM where
+instance Mul Matrix (Complex Double) ComplexMatrix where
  (<>) = flip (<>)
 
 ------------------------------- adding vectors
 
-instance Add V V V where
+instance Add Vector Vector Vector where
  (|+|) = vectorZip 3
 
-instance Add CV CV CV where
+instance Add ComplexVector ComplexVector ComplexVector where
  (|+|) = vzip (+)
  
-instance Add V CV CV where
+instance Add Vector ComplexVector ComplexVector where
  a |+| b = cv a |+| b
  
-instance Add CV V CV where
+instance Add ComplexVector Vector ComplexVector where
  (|+|) = flip (|+|)
 
 ------------------------------- adding matrices
 
-instance Add M M M where
+instance Add Matrix Matrix Matrix where
  (|+|) = asVector2 (|+|)
 
-instance Add CM CM CM where
+instance Add ComplexMatrix ComplexMatrix ComplexMatrix where
  (|+|) = asVector2 (|+|)
  
-instance Add M CM CM where
+instance Add Matrix ComplexMatrix ComplexMatrix where
  (|+|) = asVector2 (|+|)
  
-instance Add CM M CM where
+instance Add ComplexMatrix Matrix ComplexMatrix where
  (|+|) = asVector2 (|+|)
 
 --------------------------------- adding scalars to vectors  
   
-instance Add Double V V where
+instance Add Double Vector Vector where
  (|+|) = offset
 
-instance Add V Double V where
+instance Add Vector Double Vector where
  (|+|) = flip (|+|)
   
-instance Add (Complex Double) CV CV where
+instance Add (Complex Double) ComplexVector ComplexVector where
  (|+|) = offsetC
 
-instance Add CV (Complex Double) CV where
+instance Add ComplexVector (Complex Double) ComplexVector where
  (|+|) = flip (|+|)
 
-instance Add Double CV CV where
+instance Add Double ComplexVector ComplexVector where
  a |+| v = (a:+0) |+| v
 
-instance Add CV Double CV where
+instance Add ComplexVector Double ComplexVector where
  (|+|) = flip (|+|)
 
-instance Add (Complex Double) V CV where
+instance Add (Complex Double) Vector ComplexVector where
  a |+| v = a |+| cv v
 
-instance Add V (Complex Double) CV where
+instance Add Vector (Complex Double) ComplexVector where
  (|+|) = flip (|+|)
 
 
 --------------------------------- adding scalars to matrices 
   
-instance Add Double M M where
+instance Add Double Matrix Matrix where
  (|+|) a = asVector (a |+|)
 
-instance Add M Double M where
+instance Add Matrix Double Matrix where
  (|+|) = flip (|+|)
   
-instance Add (Complex Double) CM CM where
+instance Add (Complex Double) ComplexMatrix ComplexMatrix where
  (|+|) a = asVector (a |+|)
 
-instance Add CM (Complex Double) CM where
+instance Add ComplexMatrix (Complex Double) ComplexMatrix where
  (|+|) = flip (|+|)
 
-instance Add Double CM CM where
+instance Add Double ComplexMatrix ComplexMatrix where
  a |+| m = (a:+0) |+| m
 
-instance Add CM Double CM where
+instance Add ComplexMatrix Double ComplexMatrix where
  (|+|) = flip (|+|)
 
-instance Add (Complex Double) M CM where
+instance Add (Complex Double) Matrix ComplexMatrix where
  a |+| m = a |+| cm m
 
-instance Add M (Complex Double) CM where
+instance Add Matrix (Complex Double) ComplexMatrix where
  (|+|) = flip (|+|)
 
 --------------------------------------
@@ -282,40 +308,40 @@ class Inv a b c | a b -> c where
  infixl 6 <\>
 {- | Efficient multiplication by the inverse, without explicitly computing it. Useful for solving linear systems. It has the same meaning as the /left division/ operator of Matlab and GNU-Octave: @a \<\\> b = inv(a) \<\> b@. It is based on the 'lu' decomposition, /gsl_linalg_LU_solve/, and /gsl_linalg_complex_LU_solve/. Currently it only deals with square and nonsingular systems.
 
->> a = realMatrix [[1,1],[1,-1]]
->> b = realVector [5,7]
->
->> a <\> b
->6. -1.
->
->> a <\> complexVector [-2,1+i]
->-0.500+0.500i  -1.500-0.500i
+@\> a = 'realMatrix' [[1,1],[1,-1]]
+\> b = 'realVector' [5,7]
+\ 
+\> a \<\\\> b
+6. -1.
+\ 
+\> a \<\\\> 'complexVector' [-2,1+'i']
+-0.500+0.500i  -1.500-0.500i@
 
  -}
  (<\>) :: a -> b -> c      
 
-instance Inv M M M where
+instance Inv Matrix Matrix Matrix where
  (<\>) = luSolveR
 
-instance Inv CM CM CM where
+instance Inv ComplexMatrix ComplexMatrix ComplexMatrix where
  (<\>) = luSolveC
 
-instance Inv M CM CM where
+instance Inv Matrix ComplexMatrix ComplexMatrix where
  a <\> b = cm a <\> b
 
-instance Inv CM M CM where
+instance Inv ComplexMatrix Matrix ComplexMatrix where
  a <\> b = a <\> cm b
 
-instance Inv M V V where
+instance Inv Matrix Vector Vector where
  (<\>) a = flatten . (<\>) a . reshape 1 
 
-instance Inv CM CV CV where
+instance Inv ComplexMatrix ComplexVector ComplexVector where
  (<\>) a = flatten . (<\>) a . reshape 1 
 
-instance Inv CM V CV where
+instance Inv ComplexMatrix Vector ComplexVector where
  a <\> b = a <\> cv b
  
-instance Inv M CV CV where
+instance Inv Matrix ComplexVector ComplexVector where
  a <\> b = cm a <\> b
 
 --------------------------------------- general operations
@@ -323,11 +349,11 @@ instance Inv M CV CV where
 {- | Shortcut for the 2-norm ('pnorm' 2)
 
 @ > norm $ 'hilb' 5
- 1.5670506910982311
+1.5670506910982311
 @
 
-> > norm $ complexVector [1,-1,i,-i]
-> 2.0
+@\> norm $ 'complexVector' [1,-1,'i',-'i']
+2.0@
 
 -}
 norm :: Norm a => a -> Double
@@ -337,25 +363,25 @@ class Norm a where
  -- | computes the p-norm of a matrix or vector (with the same definitions as GNU-octave). pnorm 0 denotes \\inf-norm. See also 'norm'.
  pnorm :: Int -> a -> Double
 
-instance Norm V where
+instance Norm Vector where
  pnorm 2 = norm2
  pnorm 1 = norm1
  pnorm 0 = normInf . vectorMap 3
  pnorm _ = error "p norm not yet defined"
 
-instance Norm CV where
+instance Norm ComplexVector where
  pnorm 2 = norm2 . asReal
  pnorm 1 = norm1 . vmap magnitude
  pnorm 0 = normInf . vmap magnitude
  pnorm _ = error "p norm not yet defined"
 
-instance Norm M where
+instance Norm Matrix where
  pnorm 2 m = head (toList s) where (_,s,_) = svd m
  pnorm 1 m = toScalar 4 $ constant 1 (rows m) <> asVector (vectorMap 3) m
  pnorm 0 m = toScalar 4 $ asVector (vectorMap 3) m <> constant 1 (cols m)
  pnorm _ _ = error "p norm not yet defined"
 
-instance Norm CM where
+instance Norm ComplexMatrix where
  pnorm 2 m = maxvalsing m
   where maxvalsing m = sqrt . abs . head . toList . fst . eigH $ mm
         mm = if (rows m) > (cols m) then (conj.trans) m <> m
@@ -366,7 +392,7 @@ instance Norm CM where
 
 
 -- | svd of complex matrix, based on eigH
-svdC :: CM -> (CM,V,CM)
+svdC :: ComplexMatrix -> (ComplexMatrix,Vector,ComplexMatrix)
 svdC' m = (u',s,v) where
     (l,v) = eigH $ (conj.trans) m <> m
     s = (vmap (sqrt.abs)) l
@@ -381,18 +407,18 @@ svdC x@(M r c _) = if r>=c
 -----------------------------------------------------------------
 
 class Diag a r | a -> r where
-    -- | create a diagonal matrix from a vector, or extract the main diagonal from a matrix
+    -- | Creates a diagonal matrix from a vector, or extracts the main diagonal from a matrix
     diag :: a -> r
     
-instance Diag V M where
+instance Diag Vector Matrix where
     diag = diagR
-instance Diag M V where
+instance Diag Matrix Vector where
     diag = takeDiag
-instance Diag CV CM where
+instance Diag ComplexVector ComplexMatrix where
     diag = diagC
-instance Diag CM CV where
+instance Diag ComplexMatrix ComplexVector where
     diag = takeDiagC
---instance Diag [Double] M where
+--instance Diag [Double] Matrix where
 --    diag = diagR.fromList    
         
 ----------------------------------------
@@ -400,32 +426,32 @@ instance Diag CM CV where
 class Constant dim res | dim -> res where  
     {- | Creates a constant real vector or matrix with the desired dimensions, or with the same dimensions as another vector or matrix. For example:
     
-    > > constant 7.5 (5::Int)
-    > 7.500 7.500 7.500 7.500 7.500
-    >
-    > > constant 1 (2::Int,4::Int)
-    > 1.000 1.000 1.000 1.000
-    > 1.000 1.000 1.000 1.000
-    >
-    > > let m = realMatrix [[1,2,4],[0,2,0]]
-    > > constant 3 m
-    > 3.000 3.000 3.000
-    > 3.000 3.000 3.000
-    >
+@\> constant 7.5 (5::Int)
+7.500 7.500 7.500 7.500 7.500
+\ 
+\> constant 1 (2::Int,4::Int)
+1.000 1.000 1.000 1.000
+1.000 1.000 1.000 1.000
+\ 
+\> let m = 'realMatrix' [[1,2,4],[0,2,0]]
+\> constant 3 m
+3.000 3.000 3.000
+3.000 3.000 3.000@
+
     -}
     constant :: Double -> dim -> res
      
         
-instance Constant Int V where
+instance Constant Int Vector where
     constant = constantV
                
-instance Constant (Int,Int) M where
+instance Constant (Int,Int) Matrix where
     constant v (r,c) = constantM v r c
         
-instance Constant M M where
+instance Constant Matrix Matrix where
     constant v (M r c _) = constantM v r c
     
-instance Constant V V where
+instance Constant Vector Vector where
     constant v (V s _) = constantV v s
     
 
@@ -437,10 +463,10 @@ class Conj obj where
     -- | complex conjugate of a complex vector or matrix
     conj :: obj (Complex Double) -> obj (Complex Double)
     
-instance Conj Vector where
+instance Conj GSLVector where
     conj = conjV
         
-instance Conj Matrix where
+instance Conj GSLMatrix where
     conj = asVector conj       
      
 -------------------------------------------
@@ -448,40 +474,40 @@ instance Conj Matrix where
 class Disp a where
  {- | Formatted version of a matrix or vector with n decimal places
  
- > > format 2 $ 0.5 + ident 3
- > "1.50 0.50 0.50\n0.50 1.50 0.50\n0.50 0.50 1.50\n"
- > > putStr it
- > 1.50 0.50 0.50
- > 0.50 1.50 0.50
- > 0.50 0.50 1.50
+@\> format 2 $ 0.5 + 'GSL.Derived.ident' 3
+\"1.50 0.50 0.50\\n0.50 1.50 0.50\\n0.50 0.50 1.50\\n\"
+\> putStr it
+1.50 0.50 0.50
+0.50 1.50 0.50
+0.50 0.50 1.50@
 
  The Show instances of vectors and matrices use format 3. See also 'disp'.
  
  -}
  format :: Int -> a -> String
       
-instance Disp V where
+instance Disp Vector where
  format n = showVector " " (shf n)
        
-instance Disp CV where
+instance Disp ComplexVector where
  format n = showVector "  " (shfc n)       
  
-instance Disp M where
+instance Disp Matrix where
  format n = showMatrix " " (shf n)
        
-instance Disp CM where
+instance Disp ComplexMatrix where
  format n = showMatrix "  " (shfc n)
         
-instance Show V where
+instance Show Vector where
     show = format 3
 
-instance Show CV where
+instance Show ComplexVector where
     show = format 3
 
-instance Show M where
+instance Show Matrix where
     show = format 3
 
-instance Show CM where
+instance Show ComplexMatrix where
     show = format 3
         
 ----------------------------------------------
@@ -495,10 +521,10 @@ class SubMatrix mat where
           -> mat -- ^ original matrix
           -> mat -- ^ resulting submatrix
            
-instance SubMatrix M where
+instance SubMatrix Matrix where
  subMatrix = subMatrixR
  
-instance SubMatrix CM where
+instance SubMatrix ComplexMatrix where
  subMatrix = subMatrixC
 
 ------------------------------------------------
@@ -508,28 +534,28 @@ class Entrywise a b c | a b -> c where
  -}
  (.*) :: a -> b -> c
  
-instance Entrywise V V V where
+instance Entrywise Vector Vector Vector where
  (.*) = vzip (*)
 
-instance Entrywise CV CV CV where
+instance Entrywise ComplexVector ComplexVector ComplexVector where
  (.*) = vzip (*)
    
-instance Entrywise V CV CV where
+instance Entrywise Vector ComplexVector ComplexVector where
  a .* b = cv a .* b
  
-instance Entrywise CV V CV where
+instance Entrywise ComplexVector Vector ComplexVector where
  a .* b = a .* cv b
 
-instance Entrywise M M M where
+instance Entrywise Matrix Matrix Matrix where
  (.*) = asVector2 (vzip (*))
 
-instance Entrywise CM CM CM where
+instance Entrywise ComplexMatrix ComplexMatrix ComplexMatrix where
  (.*) = asVector2 (vzip (*))   
  
-instance Entrywise M CM CM where
+instance Entrywise Matrix ComplexMatrix ComplexMatrix where
  a .* b = cm a .* b
  
-instance Entrywise CM M CM where
+instance Entrywise ComplexMatrix Matrix ComplexMatrix where
  a .* b = a .* cm b
  
 infixl 7 .*.
@@ -555,56 +581,55 @@ triang r c h v = reshape c $ fromList [el i j | i<-[0..r-1], j<-[0..c-1]]
 > 0. 1. 0. 0.
 
 -}
-extractRows :: (Storable t) => [Int] -> Matrix t -> Matrix t
+extractRows :: (Storable t) => [Int] -> GSLMatrix t -> GSLMatrix t
 extractRows l m = fromRows $ extract (toRows $ m) l
     
 class LU t where
  {- | The LU decomposition of a square matrix. Is based on /gsl_linalg_LU_decomp/ and  /gsl_linalg_complex_LU_decomp/ as described in <http://www.gnu.org/software/gsl/manual/gsl-ref_13.html#SEC223>.
 
-> > let m = complexMatrix [[1,2,-3],[2+3*i,-7,0],[1,-i,2*i]]
-> > let (l,u,p,s) = lu m
+@\> let m = 'complexMatrix' [[1,2,-3],[2+3*'i',-7,0],[1,-'i',2*'i']]
+\> let (l,u,p,s) = lu m@
 
 L is the lower triangular:
 
-> > l
->           1.            0.  0.
-> 0.154-0.231i            1.  0.
-> 0.154-0.231i  0.624-0.522i  1.
+@\> l
+          1.            0.  0.
+0.154-0.231i            1.  0.
+0.154-0.231i  0.624-0.522i  1.@
 
 U is the upper triangular:
 
->
-> > u
-> 2.+3.i           -7.            0.
->     0.  3.077-1.615i           -3.
->     0.            0.  1.873+0.433i
+@\> u
+2.+3.i           -7.            0.
+    0.  3.077-1.615i           -3.
+    0.            0.  1.873+0.433i@
 
 p is a permutation:
 
-> > p
-> [1,0,2]
+@\> p
+[1,0,2]@
 
 L \* U obtains a permuted version of the original matrix:
 
-@ > 'extractRows' p m
+@\> 'extractRows' p m
   2.+3.i   -7.   0.
       1.    2.  -3.
-      1.  -1.i  2.i @
-
-@ > l \<\> u
+      1.  -1.i  2.i
+\ 
+\> l \<\> u
  2.+3.i   -7.   0.
      1.    2.  -3.
-     1.  -1.i  2.i @
+     1.  -1.i  2.i@
 
 s is the sign of the permutation, required to obtain sign of the determinant:
 
-> > s * product (toList $ diag u)
-> (-18.0) :+ (-16.000000000000004)
-> > det m
-> (-18.0) :+ (-16.000000000000004)
+@\> s * product ('toList' $ 'diag' u)
+(-18.0) :+ (-16.000000000000004)
+\> 'det' m
+(-18.0) :+ (-16.000000000000004)@
 
  -}
- lu :: Matrix t -> (Matrix t, Matrix t, [Int], t)
+ lu :: GSLMatrix t -> (GSLMatrix t, GSLMatrix t, [Int], t)
 
 instance LU Double where
  lu m@(M r _ _) = (l,u,p, fromIntegral s') where
@@ -624,30 +649,30 @@ instance LU (Complex Double) where
 
 {- | Determinant of a square matrix, computed from the 'lu' decomposition.
 
->> det (realMatrix [[7,2],[3,8]])
-> 50.0
+@\> det ('realMatrix' [[7,2],[3,8]])
+50.0@
 
 -}
-det :: (Diag (Matrix t) (Vector t), Storable t, Num t, LU t) => Matrix t -> t
+det :: (Diag (GSLMatrix t) (GSLVector t), Storable t, Num t, LU t) => GSLMatrix t -> t
 det m = s * (product $ toList $ diag $ u) 
     where (_,u,_,s) = lu m 
     
 {- | fast 1D Fourier transform of a vector using /gsl_fft_complex_forward/. It uses the same scaling conventions as GNU Octave.
 
->> fft (complexVector [1,2,3,4])
-> 10.  -2.+2.i  -2.  -2.-2.i
+@> fft ('complexVector' [1,2,3,4])
+10.  -2.+2.i  -2.  -2.-2.i@
 
 -}
-fft :: CV -> CV
+fft :: ComplexVector -> ComplexVector
 fft = genfft 0
 
-{- | inverse fft using /gsl_fft_complex_inverse/.
+{- | inverse 'fft' using /gsl_fft_complex_inverse/.
 
-> > ifft (complexVector [0,2-2*i,0,2+2*i])
-> 1.  1.  -1.  -1.
+@> ifft ('complexVector' [0,2-2*'i',0,2+2*'i'])
+1.  1.  -1.  -1.@
 
 -}
-ifft :: CV->CV
+ifft :: ComplexVector->ComplexVector
 ifft = genfft 1
             
 -----------------------------------------------------------
@@ -655,35 +680,35 @@ ifft = genfft 1
 class Eig t where
  {- | Eigenvalues and eigenvectors of a real symmetric matrix, using /gsl_eigen_symmv/:
 
-> > let (l,v) = eig (realMatrix [[1,2],[2,1]])
-> > l
-> 3.000 -1.000
->
-> > v
-> 0.707 -0.707
-> 0.707  0.707
->
-> > v <> diag l <> trans v
-> 1.000 2.000
-> 2.000 1.000
+@\> let (l,v) = eig ('realMatrix' [[1,2],[2,1]])
+\> l
+3.000 -1.000
+\ 
+\> v
+0.707 -0.707
+0.707  0.707
+\ 
+\> v \<\> 'diag' l \<\> 'trans' v
+1.000 2.000
+2.000 1.000@
 
 Eigenvalues and eigenvectors of a complex hermitian matrix, using /gsl_eigen_hermv/:
 
-> > let (l,v) = eig $ complexMatrix [[1,2+i],[2-i,3]]
->
-> > l
-> 4.449 -0.449
->
-> > v
->        -0.544          0.839
-> -0.751+0.375i  -0.487+0.243i
->
-> > v <> diag l <> (conj.trans) v
->     1.  2.+1.i
-> 2.-1.i      3.
+@\> let (l,v) = eig $ 'complexMatrix' [[1,2+'i'],[2-'i',3]]
+\ 
+\> l
+4.449 -0.449
+\ 
+\> v
+       -0.544          0.839
+-0.751+0.375i  -0.487+0.243i
+\ 
+\> v \<\> 'diag' l \<\> ('conj' . 'trans') v
+    1.  2.+1.i
+2.-1.i      3.@
 
 -}
- eig :: Matrix t -> (Vector Double, Matrix t)       
+ eig :: GSLMatrix t -> (GSLVector Double, GSLMatrix t)       
  
 instance Eig Double where
  eig m | isSymmetric m = eigS m
@@ -702,25 +727,25 @@ isHermitian m = isSquare m && pnorm 1 (flatten $ m |-| (conj. trans $ m)) < 1e-1
 ------------------------------------------------------------
 
 -- | Creates a real vector from a list.
-realVector :: [Double] -> V
+realVector :: [Double] -> Vector
 realVector = fromList
 
 -- | Creates a complex vector from a list.
-complexVector :: [Complex Double] -> CV
+complexVector :: [Complex Double] -> ComplexVector
 complexVector = fromList
 
 -- | Creates a real matrix from a list of lists.
-realMatrix :: [[Double]] -> M
+realMatrix :: [[Double]] -> Matrix
 realMatrix = fromLists
 
 -- | Creates a complex matrix from a list of lists. 
-complexMatrix :: [[Complex Double]] -> CM
+complexMatrix :: [[Complex Double]] -> ComplexMatrix
 complexMatrix = fromLists
 
 {- | postfix function application with low precedence (as in Mathematica)
 
-> > hilb 10 // eig // fst // toList // maximum
-> 1.7519196702651774
+@\> 'hilb' 10 \/\/ 'eig' \/\/ fst \/\/ 'toList' \/\/ maximum
+1.7519196702651774@
 
 -}
 (//) :: a -> (a -> b) -> b
@@ -729,11 +754,11 @@ x // f = f x
 ------------------------------------------    
 
 -- | Reverse rows 
-flipud :: Storable t => Matrix t -> Matrix t
+flipud :: Storable t => GSLMatrix t -> GSLMatrix t
 flipud m = fromRows . reverse . toRows $ m
 
 -- | Reverse columns
-fliprl :: (Storable t, Trans t) => Matrix t -> Matrix t
+fliprl :: (Storable t, Trans t) => GSLMatrix t -> GSLMatrix t
 fliprl m = fromCols . reverse . toCols $ m   
 
 {- | Prints a formatted matrix or vector with n digits after the decimal point.
@@ -744,18 +769,18 @@ disp n = putStrLn . format n
 --------------------------------------------
 
 -- | Sum of columns of a matrix.
-sumCols :: (Mul V (Matrix t) (Vector t)) => Matrix t -> Vector t
+sumCols :: (Mul Vector (GSLMatrix t) (GSLVector t)) => GSLMatrix t -> GSLVector t
 sumCols m = constant 1 (rows m) <> m
 
-{- | outer product of two vectors.
+{- | Outer product of two vectors.
 
-@\> realVector [1,2,3] \`outer\` complexVector [7,0,2*i,1+i]
+@\> 'realVector' [1,2,3] \`outer\` 'complexVector' [7,0,2*'i',1+'i']
  7.  0.  2.i  1.+1.i
 14.  0.  4.i  2.+2.i
 21.  0.  6.i  3.+3.i@
 
 -}
-outer :: (Mul (Matrix a) (Matrix b) (Matrix r)) => Vector a -> Vector b -> Matrix r
+outer :: (Mul (GSLMatrix a) (GSLMatrix b) (GSLMatrix r)) => GSLVector a -> GSLVector b -> GSLMatrix r
 outer u v = reshape 1 u <> reshape (size v) v
 
 -------------------------------------------------
@@ -764,35 +789,37 @@ outer u v = reshape 1 u <> reshape (size v) v
     
 {- | Pseudoinverse of a real matrix with the default tolerance used by GNU-Octave: the singular values less than max (rows, colums) * greatest singular value * 'eps' are ignored. See 'pinvTol'.
 
->> let m = realMatrix [[1,2],[5,8],[10,-5]]
->> pinv m
->9.353e-3 4.539e-2  7.637e-2
->2.231e-2 8.993e-2 -4.719e-2
->
->> m <> pinv m <> m
-> 1.  2.
-> 5.  8.
->10. -5.
+@\> let m = 'realMatrix' [[1,2],[5,8],[10,-5]]
+\> pinv m
+9.353e-3 4.539e-2  7.637e-2
+2.231e-2 8.993e-2 -4.719e-2
+\ 
+\> m \<\> pinv m \<\> m
+ 1.  2.
+ 5.  8.
+10. -5.@
 
 -}
-pinv :: M -> M
+pinv :: Matrix -> Matrix
 pinv m = pinvTol 1 m
 
 {- | Pseudoinverse of a real matrix with the desired tolerance, expressed as a
 multiplicative factor of the default tolerance used by GNU-Octave (see 'pinv').
 
->> pinv $ realMatrix [[1,0,0],[0,1,0],[0,0,1e-10]]
->1. 0.           0.
->0. 1.           0.
->0. 0. 10000000000.
->
->> pinvTol 1E8 $ realMatrix [[1,0,0],[0,1,0],[0,0,1e-10]]
->1. 0. 0.
->0. 1. 0.
->0. 0. 1.
+@\> let m = 'realMatrix' [[1,0,0],[0,1,0],[0,0,1e-10]]
+\ 
+\> 'pinv' m 
+1. 0.           0.
+0. 1.           0.
+0. 0. 10000000000.
+\ 
+\> pinvTol 1E8 m
+1. 0. 0.
+0. 1. 0.
+0. 0. 1.@
 
 -}
-pinvTol :: Double -> M -> M
+pinvTol :: Double -> Matrix -> Matrix
 pinvTol t m = v <> diag s' <> trans u where
     (u,s,v) = svd m
     sl@(g:_) = toList s
@@ -842,7 +869,7 @@ main = do
 
 The path to the solution can be graphically shown by means of:
 
->hplot $ drop 3 (toCols p)
+@'GSL.Drawing.hplot' $ drop 3 ('toCols' p)@
 
 -}     
 minimizeNMSimplex :: ([Double] -> Double) -- ^ function to minimize
@@ -850,7 +877,7 @@ minimizeNMSimplex :: ([Double] -> Double) -- ^ function to minimize
           -> [Double]            -- ^ sizes of the initial search box
           -> Double              -- ^ desired precision of the solution
           -> Int                 -- ^ maximum number of iterations allowed
-          -> ([Double], M)   
+          -> ([Double], Matrix)   
           -- ^ solution vector, and the optimization trajectory followed by the algorithm      
 minimizeNMSimplex f xi sz tol maxit = (sol, path) where
     rawpath = minimizeV (f.toList) tol maxit (fromList xi) (fromList sz)
@@ -861,9 +888,9 @@ minimizeNMSimplex f xi sz tol maxit = (sol, path) where
 {- | The Fletcher-Reeves conjugate gradient algorithm /gsl_multimin_fminimizer_conjugate_fr/. This is the example in the GSL manual:
 
 @minimize f df xi = minimizeConjugateGradient 1E-2 1E-4 1E-3 30 
-\                                             (f.toList) 
-\                                             (fromList.df.toList) 
-\                                             (fromList xi)
+\                                             (f . 'toList') 
+\                                             ('fromList' . df . 'toList') 
+\                                             ('fromList' xi)
 f [x,y] = 10*(x-1)^2 + 20*(y-2)^2 + 30
 \ 
 df [x,y] = [20*(x-1), 40*(y-2)]
@@ -891,7 +918,7 @@ main = do
 
 The path to the solution can be graphically shown by means of:
 
->hplot $ drop 2 (toCols p)
+@'GSL.Drawing.hplot' $ drop 2 ('toCols' p)@
 
 -}     
 minimizeConjugateGradient :: 
@@ -899,12 +926,34 @@ minimizeConjugateGradient ::
     -> Double        -- ^ minimization parameter   
     -> Double        -- ^ desired precision of the solution (gradient test)
     -> Int           -- ^ maximum number of iterations allowed
-    -> (V -> Double) -- ^ function to minimize
-    -> (V -> V)      -- ^ gradient  
-    -> V             -- ^ starting point
-    -> (V, M)        -- ^ solution vector, and the optimization trajectory followed by the algorithm      
+    -> (Vector -> Double) -- ^ function to minimize
+    -> (Vector -> Vector)      -- ^ gradient  
+    -> Vector             -- ^ starting point
+    -> (Vector, Matrix)        -- ^ solution vector, and the optimization trajectory followed by the algorithm      
 minimizeConjugateGradient istep minimpar tol maxit f df xi = (sol, path) where
     rawpath = minimizeDerivV f df tol maxit xi istep minimpar
     it = round (rawpath !!: (maxit-1,0))
     path = subMatrix 0 (it-1) 0 (cols rawpath -1) rawpath
     sol = flatten $ subMatrix (it-1) (it-1) 2 (cols rawpath -1) path
+
+class Comp a b | a -> b where
+    -- | Creates a complex version of an entity.
+    complex :: a -> b
+
+instance Comp Double (Complex Double) where
+    complex = (:+ 0)
+
+instance Comp (Complex Double) (Complex Double) where
+    complex = id
+
+instance Comp Vector ComplexVector where
+    complex = cv
+
+instance Comp ComplexVector ComplexVector where
+    complex = id
+
+instance Comp Matrix ComplexMatrix where
+    complex = cm
+
+instance Comp ComplexMatrix ComplexMatrix where
+    complex = id
