@@ -15,7 +15,7 @@ takeRows n = fromRows . take n . toRows
 type Stat = (Vector, [Double], Matrix) 
 -- 1st and 2nd order statistics of a dataset (mean, eigenvalues and eigenvectors of cov)  
 stat :: Matrix -> Stat   
-stat x = (m, toList1 s, trans v) where   
+stat x = (m, toList s, trans v) where   
     m = mean x
     (s,v) = eig (cov x)   
    

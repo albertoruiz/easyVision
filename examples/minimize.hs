@@ -11,9 +11,9 @@ df [x,y] = [20*(x-1), 40*(y-2)]
 minimize f xi = minimizeNMSimplex f xi (replicate (length xi) 1) 1E-2 100
 
 conjugrad f df xi = minimizeConjugateGradient 1E-2 1E-4 1E-3 30 
-                                              (f.toList1) 
-                                              (fromList1.df.toList1) 
-                                              (fromList1 xi)
+                                              (f.toList) 
+                                              (fromList.df.toList) 
+                                              (fromList xi)
 
 partialDerivative n f v = fst (derivCentral 0.01 g (v!!n)) where
     g x = f (concat [a,x:b])

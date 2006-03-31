@@ -1068,7 +1068,7 @@ class FromToList gsl_object list | list -> gsl_object, gsl_object->list where
  
 instance FromToList Vector [Double] where
     fromList = fromList1
-    toList = toList
+    toList = toList1
  
 instance FromToList ComplexVector [Complex Double] where
     fromList = fromList1
