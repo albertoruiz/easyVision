@@ -377,14 +377,14 @@ instance Norm ComplexVector where
  pnorm _ = error "p norm not yet defined"
 
 instance Norm Matrix where
- pnorm 2 m = head (toList1 s) where (_,s,_) = svd m
+ pnorm 2 m = head (toList s) where (_,s,_) = svd m
  pnorm 1 m = toScalar 4 $ constant 1 (rows m) <> asVector (vectorMap 3) m
  pnorm 0 m = toScalar 4 $ asVector (vectorMap 3) m <> constant 1 (cols m)
  pnorm _ _ = error "p norm not yet defined"
 
 instance Norm ComplexMatrix where
  pnorm 2 m = maxvalsing m
-  where maxvalsing m = sqrt . abs . head . toList1 . fst . eigH $ mm
+  where maxvalsing m = sqrt . abs . head . toList . fst . eigH $ mm
         mm = if (rows m) > (cols m) then (conj.trans) m <> m
                                     else m <> (conj.trans) m
  pnorm 1 m = toScalar 4 $ constant 1 (rows m) <> asVector (vmap magnitude) m
@@ -570,7 +570,7 @@ extract l is = [l!!i |i<-is]
 
 {- auxiliary function to get triangular matrices
 -}
-triang r c h v = reshape c $ fromList1 [el i j | i<-[0..r-1], j<-[0..c-1]]
+triang r c h v = reshape c $ fromList [el i j | i<-[0..r-1], j<-[0..c-1]]
     where el i j = if j-i>=h then v else (1::Double) - v
     
 {- | rearranges the rows of a matrix according to the order given in a list of integers. 
@@ -636,7 +636,7 @@ instance LU Double where
  lu m@(M r _ _) = (l,u,p, fromIntegral s') where
     v = luRaux m
     lu = reshape r $ subVector 0 (r*r) v
-    s':p = map round . toList1 . subVector (r*r) (r+1) $ v 
+    s':p = map round . toList . subVector (r*r) (r+1) $ v 
     u = triang r r 0 1 .* lu
     l = triang r r 0 0 .* lu |+| ident r
 
@@ -644,7 +644,7 @@ instance LU (Complex Double) where
  lu m@(M r _ _) = (l,u,p, fromIntegral s') where
     v = luCaux m
     lu = reshape r $ subVector 0 (r*r) v
-    s':p = map (round.realPart) . toList1 . subVector (r*r) (r+1) $ v 
+    s':p = map (round.realPart) . toList . subVector (r*r) (r+1) $ v 
     u = triang r r 0 1 .* lu
     l = triang r r 0 0 .* lu |+| ident r
 
@@ -654,8 +654,8 @@ instance LU (Complex Double) where
 50.0@
 
 -}
-det :: (Diag (GSLMatrix t) (GSLVector t), Storable t, Num t, LU t) => GSLMatrix t -> t
-det m = s * (product $ toList1 $ diag $ u) 
+det :: (Diag (GSLMatrix t) (GSLVector t), (FromToList (GSLVector t) [t]), Num t, LU t) => GSLMatrix t -> t
+det m = s * (product $ toList $ diag $ u) 
     where (_,u,_,s) = lu m 
     
 {- | fast 1D Fourier transform of a vector using /gsl_fft_complex_forward/. It uses the same scaling conventions as GNU Octave.
@@ -729,19 +729,19 @@ isHermitian m = isSquare m && pnorm 1 (flatten $ m |-| (conj. trans $ m)) < 1e-1
 
 -- | Creates a real vector from a list.
 realVector :: [Double] -> Vector
-realVector = fromList1
+realVector = fromList
 
 -- | Creates a complex vector from a list.
 complexVector :: [Complex Double] -> ComplexVector
-complexVector = fromList1
+complexVector = fromList
 
 -- | Creates a real matrix from a list of lists.
 realMatrix :: [[Double]] -> Matrix
-realMatrix = fromList2
+realMatrix = fromList
 
 -- | Creates a complex matrix from a list of lists. 
 complexMatrix :: [[Complex Double]] -> ComplexMatrix
-complexMatrix = fromList2
+complexMatrix = fromList
 
 {- | postfix function application with low precedence (as in Mathematica)
 
@@ -823,8 +823,8 @@ multiplicative factor of the default tolerance used by GNU-Octave (see 'pinv').
 pinvTol :: Double -> Matrix -> Matrix
 pinvTol t m = v <> diag s' <> trans u where
     (u,s,v) = svd m
-    sl@(g:_) = toList1 s
-    s' = fromList1 . map rec $ sl
+    sl@(g:_) = toList s
+    s' = fromList . map rec $ sl
     rec x = if x < g*tol then 1 else 1/x
     tol = (fromIntegral (max (rows m) (cols m)) * g * t * eps)
     
@@ -881,10 +881,10 @@ minimizeNMSimplex :: ([Double] -> Double) -- ^ function to minimize
           -> ([Double], Matrix)   
           -- ^ solution vector, and the optimization trajectory followed by the algorithm      
 minimizeNMSimplex f xi sz tol maxit = (sol, path) where
-    rawpath = minimizeV (f.toList1) tol maxit (fromList1 xi) (fromList1 sz)
+    rawpath = minimizeV (f.toList) tol maxit (fromList xi) (fromList sz)
     it = round (rawpath !!: (maxit-1,0))
     path = subMatrix 0 (it-1) 0 (cols rawpath -1) rawpath
-    [sol] = toList2 $ subMatrix (it-1) (it-1) 3 (cols rawpath -1) path
+    [sol] = toList $ subMatrix (it-1) (it-1) 3 (cols rawpath -1) path
 
 {- | The Fletcher-Reeves conjugate gradient algorithm /gsl_multimin_fminimizer_conjugate_fr/. This is the example in the GSL manual:
 
@@ -1068,7 +1068,7 @@ class FromToList gsl_object list | list -> gsl_object, gsl_object->list where
  
 instance FromToList Vector [Double] where
     fromList = fromList1
-    toList = toList1
+    toList = toList
  
 instance FromToList ComplexVector [Complex Double] where
     fromList = fromList1
