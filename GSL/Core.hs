@@ -308,9 +308,7 @@ fromStorableArrayV arr = do
         return 0
     return $ createV "fromStorableArrayV" n f
 
-{- | Creates a @StorableArray@ indexed by @(Int)@ from a GSLVector.
-
-The elements are efficient copied using @withStorableArray@ and @copyArray@.
+{- | Creates a @StorableArray@ indexed by @(Int)@ from a GSLVector. The elements are efficient copied using @withStorableArray@ and @copyArray@.
 
 -}
 toStorableArrayV :: Storable t => GSLVector t -> IO(StorableArray Int t)
@@ -320,24 +318,7 @@ toStorableArrayV (V n p) = do
         withStorableArray arr $ \ptr -> copyArray ptr p n
     return arr
 
-{- | Creates a matrix from a standard Haskell @StorableArray@ indexed by @(Int,Int)@:
-
-@import GSL
-import Data.Array.Storable
-\ 
-main = do 
-    hm <- newListArray ((1,1),(5,5)) [1 .. 25]
-    m <- fromStorableArrayM hm :: IO ('Matrix')
-    print m
-\ 
-\> main
- 1.  2.  3.  4.  5.
- 6.  7.  8.  9. 10.
-11. 12. 13. 14. 15.
-16. 17. 18. 19. 20.
-21. 22. 23. 24. 25.@
-
-The elements are efficient copied using @withStorableArray@ and @copyArray@.
+{- | Creates a matrix from a standard Haskell @StorableArray@ indexed by @(Int,Int)@. The elements are efficient copied using @withStorableArray@ and @copyArray@.
 
 -}
 fromStorableArrayM :: Storable t => StorableArray (Int,Int) t -> IO (GSLMatrix t) 

@@ -23,6 +23,7 @@ import Complex
 import Data.List(transpose)
 import Numeric(showGFloat)
 import Foreign
+import Data.Array.Storable (StorableArray)
 
 
 {- | The imaginary unit
@@ -936,6 +937,8 @@ minimizeConjugateGradient istep minimpar tol maxit f df xi = (sol, path) where
     path = subMatrix 0 (it-1) 0 (cols rawpath -1) rawpath
     sol = flatten $ subMatrix (it-1) (it-1) 2 (cols rawpath -1) path
 
+----------------------------------------------------------
+
 class Comp a b | a -> b where
     -- | Creates a complex version of an entity.
     complex :: a -> b
@@ -957,3 +960,98 @@ instance Comp Matrix ComplexMatrix where
 
 instance Comp ComplexMatrix ComplexMatrix where
     complex = id
+
+------------------------------------------------------------
+
+class FromArray gsl_object haskell_array | haskell_array -> gsl_object, gsl_object-> haskell_array where
+    {- | Creates a vector or a matrix from a standard Haskell @StorableArray@:
+
+From a vector:
+
+@import GSL
+import Data.Array.Storable
+\ 
+main = do 
+    hv <- newArray (1,10) 37 
+    print (bounds hv)
+    els <- getElems hv
+    print els
+    v <- fromArray hv :: IO ('ComplexVector')
+    print v
+    print ('norm' v)
+\ 
+\> main
+(1,10)
+[37.0 :+ 0.0,37.0 :+ 0.0,37.0 :+ 0.0, (etc.),37.0 :+ 0.0]
+37.  37.  37.  37.  37.  37.  37.  37.  37.  37.
+\ 
+117.00427342623003@
+
+From a matrix:
+
+@import GSL
+import Data.Array.Storable
+\ 
+main = do 
+    hm <- newListArray ((1,1),(5,5)) [1 .. 25]
+    m <- fromArray hm :: IO ('Matrix')
+    print m
+\ 
+\> main
+ 1.  2.  3.  4.  5.
+ 6.  7.  8.  9. 10.
+11. 12. 13. 14. 15.
+16. 17. 18. 19. 20.
+21. 22. 23. 24. 25.@
+
+The elements are efficient copied using @withStorableArray@ and @copyArray@.
+
+-}
+    fromArray :: haskell_array -> gsl_object
+         
+instance FromArray (IO Vector) (StorableArray Int Double) where
+    fromArray = fromStorableArrayV
+    
+instance FromArray (IO (ComplexVector)) (StorableArray Int (Complex Double)) where
+    fromArray = fromStorableArrayV
+  
+instance FromArray (IO Matrix) (StorableArray (Int,Int) Double) where
+    fromArray = fromStorableArrayM
+    
+instance FromArray (IO (ComplexMatrix)) (StorableArray (Int,Int) (Complex Double)) where
+    fromArray = fromStorableArrayM
+
+class ToArray gsl_object haskell_array | haskell_array -> gsl_object, gsl_object-> haskell_array where
+    {- | Creates a standard Haskell @StorableArray@ from a vector or a matrix:
+
+@import GSL
+import Data.Array.Storable
+\ 
+main = do 
+    v <- toArray (complexVector [1,2,i])
+    e <- getAssocs v
+    print e
+    m <- toArray (realMatrix [[1,2],[3,4]])
+    e <- getAssocs m
+    print e
+\ 
+\> main
+[(0,1.0 :+ 0.0),(1,2.0 :+ 0.0),(2,0.0 :+ 1.0)]
+[((0,0),1.0),((0,1),2.0),((1,0),3.0),((1,1),4.0)]@
+
+The elements are efficient copied using @withStorableArray@ and @copyArray@.
+
+-}    
+    toArray :: gsl_object -> haskell_array
+         
+instance ToArray Vector (IO (StorableArray Int Double)) where
+    toArray = toStorableArrayV
+    
+instance ToArray ComplexVector (IO (StorableArray Int (Complex Double))) where
+    toArray = toStorableArrayV
+  
+instance ToArray Matrix (IO (StorableArray (Int,Int) Double)) where
+    toArray = toStorableArrayM
+    
+instance ToArray ComplexMatrix (IO (StorableArray (Int,Int) (Complex Double))) where
+    toArray = toStorableArrayM
