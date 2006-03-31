@@ -2,8 +2,8 @@ import GSL
 
 prepSyst :: Int -> Matrix -> (Matrix , Vector)
 prepSyst n d = (a,b) where
-    [x,b] = toCols d
-    a = fromCols $ map (x^) [1 .. n]
+    [x,b] = toColumns d
+    a = fromColumns $ map (x^) [1 .. n]
 
 main = do
     dat <- fromFile "examples/data.txt"

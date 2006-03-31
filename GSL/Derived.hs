@@ -38,21 +38,21 @@ instance Trans Double where
 instance Trans (Complex Double) where
     trans = transC
     
--- | Creates a matrix from a list of lists (considered as rows). Related functions: 'GSL.Interface.realMatrix', 'GSL.Interface.complexMatrix', 'fromRows', 'fromCols', 'fromStorableArrayM', 'fromFile', and 'gslReadMatrix'.
-fromLists :: Storable t => [[t]] -> GSLMatrix t
-fromLists = fromRows . map fromList 
+-- | Creates a matrix from a list of lists (considered as rows). Related functions: 'GSL.Interface.realMatrix', 'GSL.Interface.complexMatrix', 'fromRows', 'fromColumns', 'fromStorableArrayM', 'fromFile', and 'gslReadMatrix'.
+fromList2 :: Storable t => [[t]] -> GSLMatrix t
+fromList2 = fromRows . map fromList1 
 
 -- | Creates a list of lists from the rows o a matrix
-toLists :: Storable t => GSLMatrix t -> [[t]] 
-toLists = map toList . toRows
+toList2 :: Storable t => GSLMatrix t -> [[t]] 
+toList2 = map toList1 . toRows
 
 -- | Creates a matrix from a list of vectors, as columns
-fromCols :: (Storable t, Trans t) => [GSLVector t] -> GSLMatrix t
-fromCols m = trans . fromRows $ m
+fromColumns :: (Storable t, Trans t) => [GSLVector t] -> GSLMatrix t
+fromColumns m = trans . fromRows $ m
 
 -- | Creates a list of vectors from the columns of a matrix
-toCols :: (Storable t, Trans t) => GSLMatrix t -> [GSLVector t]
-toCols m = toRows . trans $ m
+toColumns :: (Storable t, Trans t) => GSLMatrix t -> [GSLVector t]
+toColumns m = toRows . trans $ m
 
 -- | creates a matrix from a vertical list of matrices
 joinVert :: (Storable t) => [GSLMatrix t] -> GSLMatrix t
@@ -82,17 +82,17 @@ fromBlocks = joinVert . map joinHoriz
 
 -- | obtains the complex conjugate of a complex vector
 conjV :: ComplexVector -> ComplexVector
-conjV v = asComplex $ flatten $ reshape 2 (asReal v) `multiply` diagR (fromList [1,-1])
+conjV v = asComplex $ flatten $ reshape 2 (asReal v) `multiply` diagR (fromList1 [1,-1])
 
 -- | dot product of two real vectors
 vRvR :: Vector -> Vector -> Double
 vRvR u v = r where
-    [[r]] = toLists $ multiply (reshape (size u) u) (reshape 1 v) 
+    [[r]] = toList2 $ multiply (reshape (size u) u) (reshape 1 v) 
 
 -- | dot product of two complex vectors
 vCvC :: ComplexVector -> ComplexVector -> Complex Double
 vCvC u v = r where
-    [[r]] = toLists $ multiplyC (reshape (size u) u) (reshape 1 v)
+    [[r]] = toList2 $ multiplyC (reshape (size u) u) (reshape 1 v)
 
 -- | real matrix vector product 
 mRvR :: Matrix -> Vector -> Vector
@@ -111,10 +111,10 @@ vCmC :: ComplexVector -> ComplexMatrix -> ComplexVector
 vCmC v m = flatten $ multiplyC (reshape (size v) v) m 
 
 scaleC :: Complex Double -> ComplexVector -> ComplexVector
-scaleC x = fromList . map (*x). toList
+scaleC x = fromList1 . map (*x). toList1
 
 offsetC :: Complex Double -> ComplexVector -> ComplexVector
-offsetC x = fromList . map (+x). toList
+offsetC x = fromList1 . map (+x). toList1
 
 norm2 :: Vector -> Double
 norm2 = toScalar 1 
@@ -130,21 +130,21 @@ constantM val r c = reshape c $ constantV val (r*c)
 
 -- | creates a complex vector from vectors with real and imaginary parts
 complexV :: (Vector,Vector) -> ComplexVector
-complexV (r,i) = asComplex $ flatten $ fromCols [r,i]
+complexV (r,i) = asComplex $ flatten $ fromColumns [r,i]
 
 -- | creates a complex matrix from matrices with real and imaginary parts
 complexM :: (Matrix,Matrix) -> ComplexMatrix
-complexM (r,i) = reshape (cols r) $ asComplex $ flatten $ fromCols [flatten r, flatten i]
+complexM (r,i) = reshape (cols r) $ asComplex $ flatten $ fromColumns [flatten r, flatten i]
 
 -- | extracts the real and imaginary parts of a complex vector
 reimV :: ComplexVector -> (Vector,Vector)
-reimV m = (a,b) where [a,b] = toCols $ reshape 2 $ asReal m
+reimV m = (a,b) where [a,b] = toColumns $ reshape 2 $ asReal m
 
 -- | extracts the real and imaginary parts of a complex matrix
 reimM :: ComplexMatrix -> (Matrix,Matrix)
 reimM m = (reshape c a, reshape c b)
     where c = cols m
-          [a,b] = toCols $ reshape 2 $ asReal $ flatten m 
+          [a,b] = toColumns $ reshape 2 $ asReal $ flatten m 
 
 --------------------------------------------------------------------
 
@@ -177,7 +177,7 @@ dsp sep as = unlines . map unwords' $ transpose mtp where
     unwords' = concat . intersperse sep
 
 showMatrix :: (Storable t) => String -> (t -> String) -> GSLMatrix t -> String
-showMatrix sep f m = dsp sep . map (map f) . toLists $ m
+showMatrix sep f m = dsp sep . map (map f) . toList2 $ m
 
 showVector :: (Storable t) => String -> (t -> String) -> GSLVector t -> String
 showVector sep f v = showMatrix sep f (reshape (size v) v)
@@ -187,16 +187,16 @@ showVector sep f v = showMatrix sep f (reshape (size v) v)
 -----------------------------------------------
 instance Read Vector where
     readsPrec _ s = case reads s of
-                [(l,r)] -> [(fromList l,r)]
-                _       -> [(fromList . map read . words $ sp, sr)]
+                [(l,r)] -> [(fromList1 l,r)]
+                _       -> [(fromList1 . map read . words $ sp, sr)]
       where clean = dropWhile (\c->c==' ' || c=='\n') s
             (sp,sr) = break (\c->c==';' || c=='\n') clean
             
 
 instance Read ComplexVector where
     readsPrec _ s = case reads s of
-                [(l,r)] -> [(fromList l,r)]
-                _       -> [(fromList . map readComplex . words $ sp,sr)]
+                [(l,r)] -> [(fromList1 l,r)]
+                _       -> [(fromList1 . map readComplex . words $ sp,sr)]
       where clean = dropWhile (\c->c==' ' || c=='\n') s
             (sp,sr) = break (\c->c==';' || c=='\n') clean
 
@@ -211,20 +211,20 @@ readComplex s = case reads s of
 
 instance Read Matrix where
     readsPrec _ s = case reads s of
-                [(ll,r)] -> [(fromLists ll,r)]
+                [(ll,r)] -> [(fromList2 ll,r)]
                 _ -> [(readMatrix read s,"")]
 
 instance Read ComplexMatrix where
     readsPrec _ s = case reads s of
-                [(ll,r)] -> [(fromLists ll,r)]
+                [(ll,r)] -> [(fromList2 ll,r)]
                 _ -> [(readMatrix readComplex s,"")]
 
 
 
 readVector :: (Read t, Storable t) => String -> GSLVector t
-readVector v = fromList . read $ v 
+readVector v = fromList1 . read $ v 
 
-readMatrix r = fromLists . map (map r). map words . lines . cleanpun   
+readMatrix r = fromList2 . map (map r). map words . lines . cleanpun   
 
 -- | Loads a real matrix from a formatted ASCII text file 
 fromFile :: FilePath -> IO Matrix
@@ -232,7 +232,7 @@ fromFile filename = readFile filename >>= return . readMatrix read
 
 -- | Saves a real matrix to a formatted ascii text file
 toFile :: FilePath -> Matrix -> IO ()
-toFile filename matrix = writeFile filename (unlines . map unwords. map (map show) . toLists $ matrix)
+toFile filename matrix = writeFile filename (unlines . map unwords. map (map show) . toList2 $ matrix)
 
 cleanpun = map f where
     f ',' = ' '
@@ -252,7 +252,7 @@ cleanpun = map f where
 
 -}
 hilb :: Int -> Matrix
-hilb n = reshape n $ fromList [1/fromIntegral (i+j-1)| i<-[1..n], j<-[1..n]]
+hilb n = reshape n $ fromList1 [1/fromIntegral (i+j-1)| i<-[1..n], j<-[1..n]]
     
 {- | The identity matrix of order N.
 
@@ -277,7 +277,7 @@ isSquare (M r c _) = r==c
 
 -}
 linspace :: Int -> (Double, Double) -> GSLVector Double
-linspace n (a,b) = fromList [a::Double,a+delta .. b] 
+linspace n (a,b) = fromList1 [a::Double,a+delta .. b] 
     where delta = (b-a)/(fromIntegral n -1)
     
     

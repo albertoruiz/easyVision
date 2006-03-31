@@ -66,8 +66,8 @@ prepPol vs = map (polyline . adaptPair ranges) pairs where
     ranges = getRanges pairs
     
 adaptVector:: (Int,Int) -> (Double, Double)-> Vector -> [Int]
-adaptVector (a,b) (mx,mn) v = k <> v |+| c // toList // map round
-    where vl = toList v
+adaptVector (a,b) (mx,mn) v = k <> v |+| c // toList1 // map round
+    where vl = toList1 v
           k = if mx == mn then 0 else (fromIntegral b- fromIntegral a)/(mx-mn)
           c = fromIntegral a - k*mn
 
@@ -116,7 +116,7 @@ splot f rx ry n = mesh z where
 mplot :: [Vector] -> IO ()
 mplot m = do
     writeFile "plot-gnu-command" (commands++endcmd)
-    toFile "plot-tmp.txt" (fromCols m)
+    toFile "plot-tmp.txt" (fromColumns m)
     putStr "Press [Return] to close the graphic and continue... "
     system "gnuplot plot-gnu-command"
     system "rm plot-tmp.txt plot-gnu-command"
@@ -159,15 +159,15 @@ parametricPlot f rt n = hplot [fx, fy]
 -- | writes a matrix to pgm image file
 matrixToPGM :: String -> Matrix -> IO ()    
 matrixToPGM filename m = do
-    let ll = map (map f) (toLists m)
+    let ll = map (map f) (toList2 m)
     writeFile filename $ header ++ unlines (map unwords ll)
  where 
     c = cols m
     r = rows m
     header = "P2 "++show c++" "++show r++" "++show (round maxgray :: Int)++"\n"
     maxgray = 255.0
-    maxval = m // flatten // toList // maximum
-    minval = m // flatten // toList // minimum
+    maxval = m // flatten // toList1 // maximum
+    minval = m // flatten // toList1 // minimum
     scale = if (maxval == minval) 
         then 0.0
         else maxgray / (maxval - minval)

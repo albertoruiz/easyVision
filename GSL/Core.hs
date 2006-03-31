@@ -54,16 +54,16 @@ rows (M r _ _) = r
 cols :: GSLMatrix t -> Int
 cols (M _ c _) = c
 
--- | Creates a vector from a list. Related functions: 'GSL.Interface.realVector', 'GSL.Interface.complexVector', 'fromStorableArrayV', 'GSL.Derived.fromLists', and 'flatten'. 
-fromList :: (Storable a) => [a] -> GSLVector a
-fromList [] = error "trying to create an empty GSL vector"
-fromList l = createV "fromList" (length l) $
+-- | Creates a vector from a list.  
+fromList1 :: (Storable a) => [a] -> GSLVector a
+fromList1 [] = error "trying to create an empty GSL vector"
+fromList1 l = createV "fromList1" (length l) $
     \n p -> do pokeArray p l
                return 0
 
 -- | Creates a list from a vector.
-toList :: (Storable t) => GSLVector t -> [t]
-toList (V n p) = unsafePerformIO $ withForeignPtr p $ peekArray n
+toList1 :: (Storable t) => GSLVector t -> [t]
+toList1 (V n p) = unsafePerformIO $ withForeignPtr p $ peekArray n
 
 {- | Creates a matrix from a vector by grouping the elements in rows with the desired number of columns.
 

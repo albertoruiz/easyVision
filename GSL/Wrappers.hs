@@ -47,7 +47,7 @@ foreign import ccall "gslaux.h take_diagonalC" c_take_diagonalC :: TCMCV
 
 {- | eigendecomposition of a real symmetric matrix using /gsl_eigen_symmv/.
 
-> > let (l,v) = eigS $ fromLists [[1,2],[2,1]]
+> > let (l,v) = eigS $ fromList2 [[1,2],[2,1]]
 > > l
 > 3.000 -1.000
 >
@@ -66,7 +66,7 @@ foreign import ccall "gslaux.h eigensystemR" c_eigensystem :: TMVM
 
 {- | eigendecomposition of a complex hermitian matrix using /gsl_eigen_hermv/
 
-> > let (l,v) = eigH $ fromLists [[1,2+i],[2-i,3]]
+> > let (l,v) = eigH $ fromList2 [[1,2+i],[2-i,3]]
 >
 > > l
 > 4.449 -0.449
@@ -352,7 +352,7 @@ derivCentral :: Double                  -- ^ initial step size
                 -> Double               -- ^ point where the derivative is taken
                 -> (Double, Double)     -- ^ result and absolute error
 derivCentral = derivGen 0
--- | Adaptive forward difference algorithm, /gsl_deriv_forward/. The function is evaluated only at points greater than x, and never at x itself. The derivative is returned in result and an estimate of its absolute error is returned in abserr. This function should be used if f(x) has a discontinuity at x, or is undefined for values less than x.
+-- | Adaptive forward difference algorithm, /gsl_deriv_forward/. The function is evaluated only at points greater than x, and never at x itself. The derivative is returned in result and an estimate of its absolute error is returned in abserr. This function should be used if f(x) has a discontinuity at x, or is undefined for values less than x. A backward derivative can be obtained using a negative step.
 derivForward :: Double                  -- ^ initial step size
                 -> (Double -> Double)   -- ^ function 
                 -> Double               -- ^ point where the derivative is taken
@@ -375,7 +375,7 @@ derivBackward = derivGen 2
 
 The example in the GSL manual: To find the roots of x^5 -1 = 0:
 
-@\> 'toList' $ polySolve ('realVector' [-1, 0, 0, 0, 0, 1]) 
+@\> 'GSL.Interface.toList' $ polySolve ('realVector' [-1, 0, 0, 0, 0, 1]) 
 [(-0.8090169943749475) :+ 0.5877852522924731,
 (-0.8090169943749475) :+ (-0.5877852522924731),
 0.30901699437494734 :+ 0.9510565162951536,

@@ -31,7 +31,7 @@ adaptScalar f1 f2 f3 x y
 ---------------------------------------------------
 
 instance Eq Vector where
-    u == v = toList u == toList v
+    u == v = toList1 u == toList1 v
 
 instance Num Vector where
     (+) = adaptScalar (|+|) (|+|) (|+|)
@@ -39,12 +39,12 @@ instance Num Vector where
     (*) = adaptScalar (<>) (.*) (<>)
     abs = vectorMap 3
     signum = vectorMap 15
-    fromInteger n = fromList [fromInteger n]
+    fromInteger n = fromList1 [fromInteger n]
     
 ----------------------------------------------------
 
 instance Eq ComplexVector where
-    u == v = toList u == toList v    
+    u == v = toList1 u == toList1 v    
 
 instance Num ComplexVector where
     (+) = adaptScalar (|+|) (|+|) (|+|)
@@ -52,7 +52,7 @@ instance Num ComplexVector where
     (*) = adaptScalar (<>) (.*) (<>)
     abs = vmap abs
     signum = vmap signum
-    fromInteger n = fromList [fromInteger n]
+    fromInteger n = fromList1 [fromInteger n]
     
 ---------------------------------------------------
 
@@ -64,7 +64,7 @@ adaptScalar' f1 f2 f3 x y
 ---------------------------------------------------
 
 instance Eq Matrix where
-    u == v = toLists u == toLists v
+    u == v = toList2 u == toList2 v
 
 instance Num Matrix where
     (+) = adaptScalar' (|+|) (|+|) (|+|)
@@ -72,12 +72,12 @@ instance Num Matrix where
     (*) = adaptScalar' (<>) (.*) (<>)
     abs = asVector (vectorMap 3)
     signum = asVector (vectorMap 15)
-    fromInteger n = fromLists [[fromInteger n]]
+    fromInteger n = fromList2 [[fromInteger n]]
     
 ----------------------------------------------------
 
 instance Eq ComplexMatrix where
-    u == v = toLists u == toLists v    
+    u == v = toList2 u == toList2 v    
 
 instance Num ComplexMatrix where
     (+) = adaptScalar' (|+|) (|+|) (|+|)
@@ -85,12 +85,12 @@ instance Num ComplexMatrix where
     (*) = adaptScalar' (<>) (.*) (<>)
     abs = mmap abs
     signum = mmap signum
-    fromInteger n = fromLists [[fromInteger n]]
+    fromInteger n = fromList2 [[fromInteger n]]
     
 ------------------------------------------------------
 
 instance Fractional Vector where
-    fromRational n = fromList [fromRational n]
+    fromRational n = fromList1 [fromRational n]
     (/) = adaptScalar f (vectorZip 2) g where
         r `f` v = vectorZip 2 (constant r v) v
         v `g` r = v <> recip r
@@ -98,7 +98,7 @@ instance Fractional Vector where
 -------------------------------------------------------
         
 instance Fractional ComplexVector where
-    fromRational n = fromList [fromRational n]
+    fromRational n = fromList1 [fromRational n]
     (/) = adaptScalar f (vzip (/)) g where
         r `f` v = vmap ((*r).recip) v
         v `g` r = vmap (/r) v
@@ -106,7 +106,7 @@ instance Fractional ComplexVector where
 ------------------------------------------------------
 
 instance Fractional Matrix where
-    fromRational n = fromLists [[fromRational n]]
+    fromRational n = fromList2 [[fromRational n]]
     (/) = adaptScalar' f (asVector2 (vectorZip 2)) g where
         r `f` m = asVector2 (vectorZip 2) (constant r m) m
         m `g` r = m <> recip r
@@ -114,7 +114,7 @@ instance Fractional Matrix where
 -------------------------------------------------------
         
 instance Fractional ComplexMatrix where
-    fromRational n = fromLists [[fromRational n]]
+    fromRational n = fromList2 [[fromRational n]]
     (/) = adaptScalar' f (mzip (/)) g where
         r `f` m = mmap ((*r).recip) m
         m `g` r = mmap (/r) m
@@ -136,7 +136,7 @@ instance Floating Vector where
     atanh = vectorMap 12
     exp   = vectorMap 13
     log   = vectorMap 14  
-    pi    = fromList [pi]
+    pi    = fromList1 [pi]
     
 -----------------------------------------------------------
     
@@ -155,7 +155,7 @@ instance Floating Matrix where
     atanh = asVector atanh
     exp   = asVector exp
     log   = asVector log  
-    pi    = fromLists [[pi]]    
+    pi    = fromList2 [[pi]]    
     
 -------------------------------------------------------------
     
@@ -174,7 +174,7 @@ instance Floating ComplexVector where
     atanh = vmap atanh
     exp   = vmap exp
     log   = vmap log  
-    pi    = fromList [pi]     
+    pi    = fromList1 [pi]     
        
 ---------------------------------------------------------------       
 
@@ -193,4 +193,4 @@ instance Floating ComplexMatrix where
     atanh = asVector atanh
     exp   = asVector exp
     log   = asVector log  
-    pi    = fromLists [[pi]]    
+    pi    = fromList2 [[pi]]    

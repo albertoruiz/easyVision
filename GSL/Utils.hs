@@ -15,16 +15,18 @@ Utility functions.
 -----------------------------------------------------------------------------
 
 module GSL.Utils (
-    -- * Easy creation of vectors and matrices
+    -- * Creation of vectors and matrices
     realVector, realMatrix, complexVector, complexMatrix, 
     fromArray, toArray,
+    -- * Matrix Manipulation
+    size, rows, cols, diag, trans, conj, subVector, subMatrix,  
+    flatten, reshape, fromBlocks, format,
+    extractRows, fromRows, toRows, fromColumns, toColumns, flipud, fliprl,
+    vmap, mmap, vzip, mzip,
     -- * Matrix IO
     fromFile, toFile, gslReadMatrix,
     -- * Special matrices
     ident, constant, hilb, 
-    -- * Additional matrix manipulation
-    extractRows, fromRows, toRows, fromCols, toCols, flipud, fliprl,
-    vmap, mmap, vzip, mzip, 
     -- * Drawing 
     -- | A number of elementary drawing functions using HGL and HOpenGL. External tools (gnuplot and imageMagick) can also be used. The function names (after Octave) are provisional...
     hplot, plot, parametricPlot, plotOpenGL, mplot, 
