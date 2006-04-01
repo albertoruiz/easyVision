@@ -24,6 +24,7 @@ import Data.List(transpose)
 import Numeric(showGFloat)
 import Foreign
 import Data.Array.Storable (StorableArray)
+import Data.Array
 
 
 {- | The imaginary unit
@@ -963,48 +964,39 @@ instance Comp ComplexMatrix ComplexMatrix where
 
 ------------------------------------------------------------
 
-class FromArray gsl_object haskell_array | haskell_array -> gsl_object, gsl_object-> haskell_array where
-    {- | Creates a vector or a matrix from a standard Haskell @StorableArray@:
+class FromArray gsl_object haskell_array | haskell_array -> gsl_object{-, gsl_object-> haskell_array-} where
+    {- | Creates a vector or a matrix from a standard Haskell @Array@ or @StorableArray@. See also 'toArray'. For example:
 
-From a vector:
-
-@import GSL
-import Data.Array.Storable
+@type MyHaskellVector  = Array (Int) (Complex Double)
+type MyHaskellMatrix  = StorableArray (Int,Int) Double
+\ 
+hv,chv :: MyHaskellVector
+\ 
+hv = listArray (1,4) [1,0:+1,2:+3,5:+(-1)] 
+chv = 'toArray'. 'conj' . 'fromArray' $ hv
 \ 
 main = do 
-    hv <- newArray (1,10) 37 
-    print (bounds hv)
-    els <- getElems hv
-    print els
-    v <- fromArray hv :: IO ('ComplexVector')
-    print v
-    print ('norm' v)
-\ 
-\> main
-(1,10)
-[37.0 :+ 0.0,37.0 :+ 0.0,37.0 :+ 0.0, (etc.),37.0 :+ 0.0]
-37.  37.  37.  37.  37.  37.  37.  37.  37.  37.
-\ 
-117.00427342623003@
-
-From a matrix:
-
-@import GSL
-import Data.Array.Storable
-\ 
-main = do 
-    hm <- newListArray ((1,1),(5,5)) [1 .. 25]
-    m <- fromArray hm :: IO ('Matrix')
+    print (elems chv)
+    print $ norm ('fromArray' hv)
+\    
+    hm <- newListArray ((1,1),(3,5)) [1 .. 15] :: IO MyHaskellMatrix
+    m <- 'fromArray' hm
     print m
+    mn <- 'toArray' ('trans' m) :: IO MyHaskellMatrix
+    em <- getElems mn
+    print em
 \ 
-\> main
+\>  main
+[1.0 :+ 0.0,0.0 :+ (-1.0),2.0 :+ (-3.0),5.0 :+ 1.0]
+6.4031242374328485
+\ 
  1.  2.  3.  4.  5.
  6.  7.  8.  9. 10.
 11. 12. 13. 14. 15.
-16. 17. 18. 19. 20.
-21. 22. 23. 24. 25.@
+\ 
+[1.0,6.0,11.0,2.0,7.0,12.0,3.0,8.0,13.0,4.0,9.0,14.0,5.0,10.0,15.0]@
 
-The elements are efficient copied using @withStorableArray@ and @copyArray@.
+For StorableArray the elements are efficient copied using @withStorableArray@ and @copyArray@. For Array we @freeze@ or @thawn@ an auxiliary @StorableArray@.
 
 -}
     fromArray :: haskell_array -> gsl_object
@@ -1012,7 +1004,7 @@ The elements are efficient copied using @withStorableArray@ and @copyArray@.
 instance FromArray (IO Vector) (StorableArray Int Double) where
     fromArray = fromStorableArrayV
     
-instance FromArray (IO (ComplexVector)) (StorableArray Int (Complex Double)) where
+instance FromArray (IO ComplexVector) (StorableArray Int (Complex Double)) where
     fromArray = fromStorableArrayV
   
 instance FromArray (IO Matrix) (StorableArray (Int,Int) Double) where
@@ -1021,25 +1013,23 @@ instance FromArray (IO Matrix) (StorableArray (Int,Int) Double) where
 instance FromArray (IO (ComplexMatrix)) (StorableArray (Int,Int) (Complex Double)) where
     fromArray = fromStorableArrayM
 
-class ToArray gsl_object haskell_array | haskell_array -> gsl_object, gsl_object-> haskell_array where
-    {- | Creates a standard Haskell @StorableArray@ from a vector or a matrix:
+instance FromArray Vector (Array Int Double) where
+    fromArray = fromArrayV
 
-@import GSL
-import Data.Array.Storable
-\ 
-main = do 
-    v <- toArray (complexVector [1,2,i])
-    e <- getAssocs v
-    print e
-    m <- toArray (realMatrix [[1,2],[3,4]])
-    e <- getAssocs m
-    print e
-\ 
-\> main
-[(0,1.0 :+ 0.0),(1,2.0 :+ 0.0),(2,0.0 :+ 1.0)]
-[((0,0),1.0),((0,1),2.0),((1,0),3.0),((1,1),4.0)]@
+instance FromArray ComplexVector (Array Int (Complex Double)) where
+    fromArray = fromArrayV
 
-The elements are efficient copied using @withStorableArray@ and @copyArray@.
+instance FromArray Matrix (Array (Int,Int) Double) where
+    fromArray = fromArrayM
+
+instance FromArray ComplexMatrix (Array (Int,Int) (Complex Double)) where
+    fromArray = fromArrayM
+
+
+---------------------------------------------------------------------------------
+
+class ToArray gsl_object haskell_array | haskell_array -> gsl_object{-, gsl_object-> haskell_array-} where
+    {- | Creates a standard Haskell @Array@ or @StorableArray@ from a vector or a matrix. See 'fromArray'.
 
 -}    
     toArray :: gsl_object -> haskell_array
@@ -1056,13 +1046,25 @@ instance ToArray Matrix (IO (StorableArray (Int,Int) Double)) where
 instance ToArray ComplexMatrix (IO (StorableArray (Int,Int) (Complex Double))) where
     toArray = toStorableArrayM
 
+instance ToArray Vector (Array Int Double) where
+    toArray = toArrayV
+
+instance ToArray ComplexVector (Array Int (Complex Double)) where
+    toArray = toArrayV
+
+instance ToArray Matrix (Array (Int,Int) Double) where
+    toArray = toArrayM
+
+instance ToArray ComplexMatrix (Array (Int,Int) (Complex Double)) where
+    toArray = toArrayM
+
 ----------------------------------------------------------------------------
 
 class FromToList gsl_object list | list -> gsl_object, gsl_object->list where
-    {- | Creates a vector from a list of numbers, or a matrix from a list of lists of numbers, considered as rows. We have the specialized versions 'realVector', 'realMatrix', 'complexVector', and 'complexMatrix', as an alternative to type annotations. Vectors and matrices can be created from StorableArrays using 'fromArray'.
+    {- | Creates a vector from a list of numbers, or a matrix from a list of lists of numbers, considered as rows. We have the specialized versions 'realVector', 'realMatrix', 'complexVector', and 'complexMatrix', as an alternative to type annotations. Vectors and matrices can also be created from some types of standard Haskell arrays using 'fromArray'.
     -}
     fromList :: list -> gsl_object
-    {- | Creates a list of numbers from a vector, or a list of lists of numbers (the rows), from a matrix. StorableArrays can be also obtained from vectors or matrices using 'toArray'.
+    {- | Creates a list of numbers from a vector, or a list of lists of numbers (the rows), from a matrix. Some types of standard Haskell arrays can be also obtained from vectors or matrices using 'toArray'.
     -}
     toList :: gsl_object -> list
  

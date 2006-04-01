@@ -19,6 +19,8 @@ module GSL.Core  where
 import Foreign
 import Complex
 import Data.Array.Storable
+import Data.Array(Array)
+
 
 ----------------------------------------------------------------------
 instance (Storable a, RealFloat a) => Storable (Complex a) where    --
@@ -342,3 +344,29 @@ toStorableArrayM (M r c p) = do
     withForeignPtr p $ \p ->
         withStorableArray arr $ \ptr -> copyArray ptr p (r*c)
     return arr   
+    
+---------------------------------------------------------------    
+    
+fromArrayV :: Storable t => Array Int t -> GSLVector t
+fromArrayV arr = unsafePerformIO $ do
+    sa <- thaw arr
+    v <- fromStorableArrayV sa
+    return v
+    
+fromArrayM :: Storable t => Array (Int,Int) t -> GSLMatrix t
+fromArrayM arr = unsafePerformIO $ do
+    sa <- thaw arr
+    m <- fromStorableArrayM sa
+    return m
+    
+toArrayV :: Storable t => GSLVector t -> Array Int t
+toArrayV v = unsafePerformIO $ do
+    sa <- toStorableArrayV v
+    arr <- freeze sa
+    return arr
+    
+toArrayM :: Storable t => GSLMatrix t -> Array (Int,Int) t
+toArrayM m = unsafePerformIO $ do
+    sa <- toStorableArrayM m
+    arr <- freeze sa
+    return arr
