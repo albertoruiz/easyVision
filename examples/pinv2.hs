@@ -1,10 +1,11 @@
+-- MSE polynomial model using the pseudoinverse
 import GSL
 
 expand :: Int -> Vector -> Matrix
 expand n x = fromColumns $ map (x^) [1 .. n] 
 
-polynomialModel :: Int -> Matrix -> (Vector -> Vector)
-polynomialModel n d = f where
+polynomialModel :: Matrix -> Int -> (Vector -> Vector)
+polynomialModel d n = f where
     f z = expand n z <> ws       
     ws  = pinv a <> b            
     [x,b] = toColumns d  
@@ -12,7 +13,8 @@ polynomialModel n d = f where
     
 main = do
     d <- fromFile "examples/data.txt"
-    let x = head (toColumns d)
-    let f = polynomialModel 3 d
-    disp 3 $ fromBlocks [[d, reshape 1 (f x)]]     
-
+    let [x,y] = toColumns d
+    let pol = polynomialModel d
+    let view = [x, y, pol 1 x, pol 2 x, pol 3 x]   
+    disp 3 $ fromColumns view   
+    hplot view

@@ -771,8 +771,8 @@ disp n = putStrLn . format n
 --------------------------------------------
 
 -- | Sum of columns of a matrix.
-sumCols :: (Mul Vector (GSLMatrix t) (GSLVector t)) => GSLMatrix t -> GSLVector t
-sumCols m = constant 1 (rows m) <> m
+sumColumns :: (Mul Vector (GSLMatrix t) (GSLVector t)) => GSLMatrix t -> GSLVector t
+sumColumns m = constant 1 (rows m) <> m
 
 {- | Outer product of two vectors.
 

@@ -1,3 +1,4 @@
+-- initial comprobation for the polynomial model example
 import GSL
 
 prepSyst :: Int -> Matrix -> (Matrix , Vector)

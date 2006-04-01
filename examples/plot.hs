@@ -1,6 +1,6 @@
 import GSL
 
-sombrero n = mesh (f x y) where 
+sombrero n = f x y where 
     (x,y) = meshdom range range
     range = linspace n (-2,2)
     f x y = exp (-r2) * cos (2*r2) where 
@@ -15,4 +15,5 @@ main = do
     let x = linspace 1000 (-4,4)
     hplot [f x]
     hplot [x, vmap cumdist x,  vmap gaussianPDF x]
-    sombrero 40
+    mesh (sombrero 40)
+    meshOpenGL $ const (sombrero 40)

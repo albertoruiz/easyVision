@@ -13,4 +13,4 @@ main = do
     let (x,y) = meshdom rg rg
     let r2 = x*x+y*y
     meshOpenGL $ \k -> exp (-r2) * cos (w k *r2)
-                    
+    
