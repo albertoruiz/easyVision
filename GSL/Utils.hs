@@ -22,7 +22,7 @@ module GSL.Utils (
     size, rows, cols, diag, trans, conj, subVector, subMatrix,  
     flatten, reshape, fromBlocks, format,
     extractRows, fromRows, toRows, fromColumns, toColumns, flipud, fliprl,
-    vmap, mmap, vzip, mzip,
+    vmap, mmap, vzip, mzip, takeRows, takeColumns, dropRows, dropColumns,
     -- * Matrix IO
     fromFile, toFile, gslReadMatrix,
     -- * Special matrices

@@ -12,9 +12,7 @@ mean x = sumColumns x / fromIntegral (rows x)
 cov x = (trans xc <> xc) / fromIntegral (rows x -1) 
     where xc = center x
           center m = m - constant 1 (rows m) `outer` mean m
-   
-takeRows n = fromRows . take n . toRows   
-   
+     
 type Stat = (Vector, [Double], Matrix) 
 -- 1st and 2nd order statistics of a dataset (mean, eigenvalues and eigenvectors of cov)  
 stat :: Matrix -> Stat   
@@ -53,7 +51,7 @@ test st prec x = do
     
 main = do
     m <- mnist
-    let xs = subMatrix 0 (rows m-1) 0 (cols m -2) m
+    let xs = takeColumns (cols m -1) m
     let x = toRows xs !! 4  -- an arbitrary test vector
     shdigit x
     let st = stat xs

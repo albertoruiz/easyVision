@@ -112,7 +112,7 @@ vzip f a b = fromList1 $ zipWith f (toList1 a) (toList1 b)
 mmap :: (Storable a, Storable b) => (a -> b) -> GSLMatrix a -> GSLMatrix b
 mmap m = asVector . vmap $ m
 
--- zipWith on matrices
+-- | zipWith on matrices
 mzip :: (Storable a, Storable b, Storable c) => (a -> b -> c) -> GSLMatrix a -> GSLMatrix b -> GSLMatrix c
 mzip f = asVector2 (vzip f)
 
@@ -516,12 +516,10 @@ instance Show ComplexMatrix where
  
 class SubMatrix mat where
     -- | extraction of a submatrix from a matrix
-    subMatrix :: Int -- ^ first row 
-          -> Int -- ^ last row
-          -> Int -- ^ first column
-          -> Int -- ^ last column
-          -> mat -- ^ original matrix
-          -> mat -- ^ resulting submatrix
+    subMatrix :: (Int,Int) -- ^ (initial row, initial column)
+              -> (Int,Int) -- ^ (rows, columns) dimensions of submatrix
+              -> mat -- ^ original matrix
+              -> mat -- ^ resulting submatrix
            
 instance SubMatrix Matrix where
  subMatrix = subMatrixR
@@ -884,8 +882,8 @@ minimizeNMSimplex :: ([Double] -> Double) -- ^ function to minimize
 minimizeNMSimplex f xi sz tol maxit = (sol, path) where
     rawpath = minimizeV (f.toList) tol maxit (fromList xi) (fromList sz)
     it = round (rawpath !!: (maxit-1,0))
-    path = subMatrix 0 (it-1) 0 (cols rawpath -1) rawpath
-    [sol] = toList $ subMatrix (it-1) (it-1) 3 (cols rawpath -1) path
+    path = takeRows it rawpath
+    [sol] = toList $ dropRows (it-1) path
 
 {- | The Fletcher-Reeves conjugate gradient algorithm /gsl_multimin_fminimizer_conjugate_fr/. This is the example in the GSL manual:
 
@@ -935,8 +933,8 @@ minimizeConjugateGradient ::
 minimizeConjugateGradient istep minimpar tol maxit f df xi = (sol, path) where
     rawpath = minimizeDerivV f df tol maxit xi istep minimpar
     it = round (rawpath !!: (maxit-1,0))
-    path = subMatrix 0 (it-1) 0 (cols rawpath -1) rawpath
-    sol = flatten $ subMatrix (it-1) (it-1) 2 (cols rawpath -1) path
+    path = takeRows it rawpath
+    sol = flatten $ dropRows (it-1) path
 
 ----------------------------------------------------------
 
@@ -1083,3 +1081,17 @@ instance FromToList Matrix [[Double]] where
 instance FromToList ComplexMatrix [[Complex Double]] where
     fromList = fromList2
     toList = toList2
+
+-------------------------------------------------
+-- | Creates a matrix with the first n rows of another matrix
+takeRows :: SubMatrix (GSLMatrix t) => Int -> GSLMatrix t -> GSLMatrix t
+takeRows n mat = subMatrix (0,0) (n, cols mat) mat
+-- | Creates a copy of a matrix without the first n rows
+dropRows :: SubMatrix (GSLMatrix t) => Int -> GSLMatrix t -> GSLMatrix t
+dropRows n mat = subMatrix (n,0) (rows mat - n, cols mat) mat
+-- |Creates a matrix with the first n columns of another matrix
+takeColumns :: SubMatrix (GSLMatrix t) => Int -> GSLMatrix t -> GSLMatrix t
+takeColumns n mat = subMatrix (0,0) (rows mat, n) mat
+-- | Creates a copy of a matrix without the first n columns
+dropColumns :: SubMatrix (GSLMatrix t) => Int -> GSLMatrix t -> GSLMatrix t
+dropColumns n mat = subMatrix (0,n) (rows mat, cols mat - n) mat

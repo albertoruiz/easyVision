@@ -173,12 +173,10 @@ transC x@(M r c _) = createM "transC" c r $ m c_transC x
 foreign import ccall "gslaux.h transC" c_transC :: TCMCM
 
 -- | extraction of a submatrix of a real matrix
-subMatrixR :: Int -- ^ r1 
-          -> Int -- ^ r2
-          -> Int -- ^ c1
-          -> Int -- ^ c2
-          -> Matrix -> Matrix 
-subMatrixR r1 r2 c1 c2 x@(M r c _) = createM "submatrixR" (r2-r1+1) (c2-c1+1) $ m (c_submatrixR r1 r2 c1 c2) x
+subMatrixR :: (Int,Int) -- ^ (r0,c0) starting position 
+           -> (Int,Int) -- ^ (rt,ct) dimensions of submatrix
+           -> Matrix -> Matrix 
+subMatrixR (r0,c0) (rt,ct) x@(M r c _) = createM "submatrixR" rt ct $ m (c_submatrixR r0 (r0+rt-1) c0 (c0+ct-1)) x
 foreign import ccall "gslaux.h submatrixR" c_submatrixR :: Int -> Int -> Int -> Int -> TMM
 
 -- | scaling of a real vector

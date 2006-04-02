@@ -13,8 +13,6 @@ cov x = (trans xc <> xc) / fromIntegral (rows x -1)
     where xc = center x
           center m = m - constant 1 (rows m) `outer` mean m
    
-takeRows n = fromRows . take n . toRows   
-   
 -- creates the compression and decompression functions from the desired number of components
 pca :: Int -> Matrix -> (Vector -> Vector , Vector -> Vector)    
 pca n dataSet = (encode,decode)    
@@ -28,7 +26,7 @@ pca n dataSet = (encode,decode)
     
 main = do
     m <- gslReadMatrix "examples/mnist.txt" (5000,785)
-    let xs = subMatrix 0 (rows m-1) 0 (cols m -2) m -- the last column is the digit type (class label)
+    let xs = takeColumns (cols m -1) m -- the last column is the digit type (class label)
     let x = toRows xs !! 4  -- an arbitrary test vector
     let (pe,pd) = pca 10 xs
     let y = pe x

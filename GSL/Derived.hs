@@ -148,9 +148,9 @@ reimM m = (reshape c a, reshape c b)
 
 --------------------------------------------------------------------
 
-subMatrixC r1 r2 c1 c2 x@(M r c _) = 
-    reshape (c2-c1+1) . asComplex . flatten . 
-    subMatrixR r1 r2 (2*c1) (2*c2). 
+subMatrixC (r0,c0) (rt,ct) x@(M r c _) = 
+    reshape ct . asComplex . flatten . 
+    subMatrixR (r0,2*c0) (rt,2*ct) .
     reshape (2*c) . asReal . flatten $ x
 
 ---------------------------------------------------------------------
