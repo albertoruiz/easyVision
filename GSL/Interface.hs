@@ -1095,3 +1095,32 @@ takeColumns n mat = subMatrix (0,0) (rows mat, n) mat
 -- | Creates a copy of a matrix without the first n columns
 dropColumns :: SubMatrix (GSLMatrix t) => Int -> GSLMatrix t -> GSLMatrix t
 dropColumns n mat = subMatrix (0,n) (rows mat, cols mat - n) mat
+
+--------------------------------------------------
+
+class Adapt a b c | a b -> c where
+    adapt :: a -> b -> c
+ 
+instance Adapt Vector Vector (Vector, Vector) where
+    adapt a b = (a, b)
+    
+instance Adapt Vector ComplexVector (ComplexVector, ComplexVector) where
+    adapt a b = (complex a, b)
+
+instance Adapt ComplexVector Vector (ComplexVector, ComplexVector) where
+    adapt a b = (a, complex b)
+
+instance Adapt ComplexVector ComplexVector (ComplexVector, ComplexVector) where
+    adapt a b = (a, b)
+
+instance Adapt Matrix Matrix (Matrix, Matrix) where
+    adapt a b = (a, b)
+    
+instance Adapt Matrix ComplexMatrix (ComplexMatrix, ComplexMatrix) where
+    adapt a b = (complex a, b)
+
+instance Adapt ComplexMatrix Matrix (ComplexMatrix, ComplexMatrix) where
+    adapt a b = (a, complex b)
+
+instance Adapt ComplexMatrix ComplexMatrix (ComplexMatrix, ComplexMatrix) where
+    adapt a b = (a, b)
