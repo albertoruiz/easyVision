@@ -637,14 +637,15 @@ int minimize(double f(int, double*), double tolsize, int maxit,
     // Minimizer nmsimplex, without derivatives
     T = gsl_multimin_fminimizer_nmsimplex;
     s = gsl_multimin_fminimizer_alloc (T, my_func.n);
-
     gsl_multimin_fminimizer_set (s, &my_func, V(xi), V(sz));
     do {
         status = gsl_multimin_fminimizer_iterate (s);
+        size = gsl_multimin_fminimizer_size (s);
+        
         solp[iter*solc+0] = iter;
         solp[iter*solc+1] = s->fval;
         solp[iter*solc+2] = size;
-        size = gsl_multimin_fminimizer_size (s);
+        
         int k;
         for(k=0;k<xin;k++) {
             solp[iter*solc+k+3] = gsl_vector_get(s->x,k);
@@ -725,7 +726,7 @@ int minimizeWithDeriv(double f(int, double*), void df(int, double*, double*),
     gsl_multimin_fdfminimizer *s = NULL;
     // Starting point
     DVVIEW(xi);
-    // Minimizer nmsimplex, without derivatives
+    // conjugate gradient fr
     T = gsl_multimin_fdfminimizer_conjugate_fr;
     s = gsl_multimin_fdfminimizer_alloc (T, my_func.n);
     gsl_multimin_fdfminimizer_set (s, &my_func, V(xi), initstep, minimpar);

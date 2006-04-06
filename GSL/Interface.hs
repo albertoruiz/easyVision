@@ -830,7 +830,7 @@ pinvTol t m = v <> diag s' <> trans u where
 -------------------------------------------------------------------------    
 {- | The method of Nelder and Mead, implemented by /gsl_multimin_fminimizer_nmsimplex/. The gradient of the function is not required. This is the example in the GSL manual:
 
-@minimize f xi = minimizeNMSimplex f xi (replicate (length xi) 1) 1e-6 100
+@minimize f xi = minimizeNMSimplex f xi (replicate (length xi) 1) 1e-2 100
 \ 
 f [x,y] = 10*(x-1)^2 + 20*(y-2)^2 + 30
 \ 
@@ -841,31 +841,31 @@ main = do
 \ 
 \> main
 [0.9920430849306285,1.9969168063253164]
- 0. 512.500       0. 6.500    5.
- 1. 290.625    1.082 5.250    4.
+0. 512.500    1.082 6.500    5.
+ 1. 290.625    1.372 5.250    4.
  2. 290.625    1.372 5.250    4.
  3. 252.500    1.372 5.500    1.
- 4. 101.406    1.372 2.625 3.500
+ 4. 101.406    1.823 2.625 3.500
  5. 101.406    1.823 2.625 3.500
  6.     60.    1.823    0.    3.
- 7.  42.275    1.823 2.094 1.875
+ 7.  42.275    1.303 2.094 1.875
  8.  42.275    1.303 2.094 1.875
- 9.  35.684    1.303 0.258 1.906
-10.  35.664    1.026 0.588 2.445
-11.  30.680    0.804 1.258 2.025
-12.  30.680    0.467 1.258 2.025
-13.  30.539    0.356 1.093 1.849
-14.  30.137    0.285 0.883 2.004
-15.  30.137    0.168 0.883 2.004
-16.  30.090    0.123 0.958 2.060
-17.  30.005    0.100 1.022 2.004
-18.  30.005 6.051e-2 1.022 2.004
+ 9.  35.684    1.026 0.258 1.906
+10.  35.664    0.804 0.588 2.445
+11.  30.680    0.467 1.258 2.025
+12.  30.680    0.356 1.258 2.025
+13.  30.539    0.285 1.093 1.849
+14.  30.137    0.168 0.883 2.004
+15.  30.137    0.123 0.883 2.004
+16.  30.090    0.100 0.958 2.060
+17.  30.005 6.051e-2 1.022 2.004
+18.  30.005 4.249e-2 1.022 2.004
 19.  30.005 4.249e-2 1.022 2.004
-20.  30.005 4.249e-2 1.022 2.004
-21.  30.005 2.742e-2 1.022 2.004
-22.  30.001 2.119e-2 0.992 1.997
-23.  30.001 1.530e-2 0.992 1.997
-24.  30.001 1.259e-2 0.992 1.997@    
+20.  30.005 2.742e-2 1.022 2.004
+21.  30.005 2.119e-2 1.022 2.004
+22.  30.001 1.530e-2 0.992 1.997
+23.  30.001 1.259e-2 0.992 1.997
+24.  30.001 7.663e-3 0.992 1.997@    
 
 The path to the solution can be graphically shown by means of:
 
@@ -879,7 +879,7 @@ minimizeNMSimplex :: ([Double] -> Double) -- ^ function to minimize
           -> Int                 -- ^ maximum number of iterations allowed
           -> ([Double], Matrix)   
           -- ^ solution vector, and the optimization trajectory followed by the algorithm      
-minimizeNMSimplex f xi sz tol maxit = (sol, path) where
+minimizeNMSimplex f xi sz tol maxit = (drop 3 sol, path) where
     rawpath = minimizeV (f.toList) tol maxit (fromList xi) (fromList sz)
     it = round (rawpath !!: (maxit-1,0))
     path = takeRows it rawpath
@@ -934,7 +934,7 @@ minimizeConjugateGradient istep minimpar tol maxit f df xi = (sol, path) where
     rawpath = minimizeDerivV f df tol maxit xi istep minimpar
     it = round (rawpath !!: (maxit-1,0))
     path = takeRows it rawpath
-    sol = flatten $ dropRows (it-1) path
+    sol = flatten $ dropColumns 2 $ dropRows (it-1) path
 
 ----------------------------------------------------------
 
