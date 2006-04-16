@@ -1,19 +1,11 @@
-You need the GNU Scientific Library (http://www.gnu.org/software/gsl).
-For instance, in a Fedora Core Linux system you can:
+REQUIREMENTS
+
+The GNU Scientific Library (http://www.gnu.org/software/gsl).
+For instance, in a Fedora Core Linux system you can install it using yum:
 
 # yum install gsl gsl-devel
 
-The first time (or if you change GSL/gslaux.c or GSL/gslaux.h) you must run:
-
-$ ./setup
-
-It may be necessary to make it executable:
-
-$ chmod u+x setup
-
-You should also run ./setup after darcs pull.
-
-Other required packages (for a Fedora Core Linux distribution):
+Other required packages:
 
 xorg-x11-devel
 freeglut-devel
@@ -21,7 +13,7 @@ freeglut-devel
 The performance of some linear algebra computations significantly increases using ATLAS
 (http://math-atlas.sourceforge.net/).
 
-For Fedora Core 4 you can directly 
+For Fedora Core 4 you can install it using yum: 
 
 # yum install atlas
 
@@ -29,31 +21,46 @@ or better:
 
 # yum install octave
 
-which requires atlas, fftw, gnuplot, etc.
+which includes other useful packages such as atlas, fftw, gnuplot, etc.
 
-If your distribution does not have an atlas package you can download precompiled 
-libraries from https://sourceforge.net/project/showfiles.php?group_id=23725
+(You can also download precompiled atlas libraries from https://sourceforge.net/project/showfiles.php?group_id=23725)
+
+INSTALLATION
+
+$ runhaskell Setup.hs configure --prefix=$HOME
+$ runhaskell Setup.hs build
+$ runhaskell Setup.hs install --user
+
+You should also repeat these steps after a darcs pull.
+
 
 COMMAND LINE EXAMPLES
 ---------------------
 
 Interactive:
 
-$ ghci demo.hs GSL/gslaux.o -lgslcblas -lgsl -lGL
-
-With Atlas optimization, Fedora Core 4:
-
-We need a symbolic link to the dynamic library:
-$ ln -s /usr/lib/atlas/libcblas.so.3 libcblas.so
-
-$ ghci demo.hs GSL/gslaux.o -L. -lcblas -lgsl -lGL
+$ ghci demo.hs
 
 Compiled:
 
-$ ghc --make demo.hs GSL/gslaux.o -lgslcblas -lgsl
+$ ghc demo.hs -o demo -package GSL
+
+With Atlas optimization, in Fedora Core 4:
+
+We may need a symbolic link to the dynamic library:
+$ ln -s /usr/lib/atlas/libcblas.so.3 libcblas.so
+
+Then we change in GSLHaskell.cabal the line
+
+- extra-libraries:    gsl gslcblas
++ extra-libraries:    gsl cblas
+
+and reinstall the library.
 
 Compiled using the static libraries downloaded from the home page:
 
+$ chmod u+x setup
+$ ./setup
 $ LIBATLAS=/path/to/atlas/lib
 $ ghc --make <yourprog.hs> GSL/gslaux.o -L$LIBATLAS -lcblas /usr/lib/libgsl.a -latlas
 

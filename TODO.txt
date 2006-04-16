@@ -1,0 +1,23 @@
+- wrappers to the sf_result struct including value and error of the special functions
+- records
+- catch errors in integrate?
+- overloaded size, realPart, imagPart
+- include const pointers in all wrappers 
+- add multidimensional block
+- add generic <|> and <->
+- quickcheck tests
+- explore atlas lapack, also the wrappers by H Daume
+- documentation of pnorm
+- include det, logdet and inv in Base
+- improve parameter of pinvTol
+- full svd
+- check cholesky?
+- strange error in submatrix
+- improve signatures
+
+--- open issues ---
+
+- functions returning Maybe something, e.g. inv, chol, etc.
+- typechecking of dimensions
+
+

@@ -1,0 +1,19 @@
+Name:               GSL
+Version:            0.5
+License:            GPL
+Author:             Alberto Ruiz
+Maintainer:         aruiz@um.es
+Stability:          provisional
+Homepage:           http://dis.um.es/~alberto/GSLHaskell
+Package-url:
+Category:           Numerical
+Build-Depends:      base, HGL, OpenGL, GLUT, haskell98 
+Synopsis:           Functional interface to the GNU Scientific Library
+Exposed-modules:    GSL, GSL.Base, GSL.Utils
+Extensions: 
+Other-modules:      GSL.Core, GSL.Derived, GSL.Wrappers, 
+                    GSL.Interface, GSL.Drawing, GSL.Instances 
+Includes:           gslaux.h
+Include-dirs:       GSL
+C-sources:          GSL/gslaux.c
+extra-libraries:    gsl gslcblas 
