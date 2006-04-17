@@ -8,16 +8,13 @@
 - quickcheck tests
 - explore atlas lapack, also the wrappers by H Daume
 - documentation of pnorm
+- nicer show
 - include det, logdet and inv in Base
 - improve parameter of pinvTol
 - full svd
 - check cholesky?
-- strange error in submatrix
+- erratic behavior after submatrix error
 - improve signatures
+- functions returning Maybe something?, e.g. inv, chol, etc.
 
---- open issues ---
-
-- functions returning Maybe something, e.g. inv, chol, etc.
-- typechecking of dimensions
-
-
+- Frederik Eaton's interface with static checking of dimensions 
