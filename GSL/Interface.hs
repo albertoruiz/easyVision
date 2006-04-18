@@ -1,8 +1,8 @@
-{-# OPTIONS -fglasgow-exts #-}
+{-# OPTIONS -O -fglasgow-exts #-}
 
 -----------------------------------------------------------------------------
 -- |
--- Module      :  LinearAlgebra.Wrappers
+-- Module      :  LinearAlgebra.Interface
 -- Copyright   :  (c) Alberto Ruiz 2006
 -- License     :  GPL-style
 -- 

@@ -4,6 +4,7 @@
 - catch errors in integrate?
 - overloaded size, realPart, imagPart
 - include const pointers in all wrappers 
+- several implicit declarations
 - add multidimensional block
 - add generic <|> and <->
 - quickcheck tests

@@ -1,6 +1,6 @@
 -----------------------------------------------------------------------------
 {- |
-Module      :  GSL
+Module      :  GSL.Base
 Copyright   :  (c) Alberto Ruiz 2006
 License     :  GPL-style
 

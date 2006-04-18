@@ -1,4 +1,4 @@
-{-# OPTIONS -fglasgow-exts #-}
+{-# OPTIONS -O -fglasgow-exts #-}
 -----------------------------------------------------------------------------
 {- |
 Module      :  GSL.Instances
