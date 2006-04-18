@@ -19,10 +19,10 @@ module GSL.Utils (
     realVector, realMatrix, complexVector, complexMatrix, 
     fromArray, toArray,
     -- * Matrix Manipulation
-    size, rows, cols, diag, trans, conj, subVector, subMatrix,  
+    size, rows, cols, diag, trans, conj, subVector, join, subMatrix,  
     flatten, reshape, fromBlocks, format,
     extractRows, fromRows, toRows, fromColumns, toColumns, flipud, fliprl,
-    vmap, mmap, vzip, mzip, takeRows, takeColumns, dropRows, dropColumns,
+    vmap, mmap, vzip, mzip, takeRows, takeColumns, dropRows, dropColumns, (!:), (!!:),
     -- * Matrix IO
     fromFile, toFile, gslReadMatrix,
     -- * Special matrices

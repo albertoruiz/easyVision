@@ -1,5 +1,6 @@
 - wrappers to the sf_result struct including value and error of the special functions
 - records
+- selectable algorithm for eigS
 - catch errors in integrate?
 - overloaded size, realPart, imagPart
 - include const pointers in all wrappers 

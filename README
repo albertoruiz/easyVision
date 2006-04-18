@@ -1,19 +1,40 @@
-REQUIREMENTS
+REQUIREMENTS -----------------------------------------------------------
 
 The GNU Scientific Library (http://www.gnu.org/software/gsl).
 For instance, in a Fedora Core Linux system you can install it using yum:
 
 # yum install gsl gsl-devel
 
-Other required packages:
+Other required packages: xorg-x11-devel freeglut-devel
 
-xorg-x11-devel
-freeglut-devel
+INSTALLATION -----------------------------------------------------------
 
-The performance of some linear algebra computations significantly increases using ATLAS
-(http://math-atlas.sourceforge.net/).
+$ runhaskell Setup.hs configure --prefix=$HOME
+$ runhaskell Setup.hs build
+$ runhaskell Setup.hs install --user
 
-For Fedora Core 4 you can install it using yum: 
+(You should also repeat these steps after a darcs pull.)
+
+Now you can compile the examples without any special parameter:
+
+Interactive:
+
+$ ghci demo.hs
+
+Compiled:
+
+$ ghc --make demo.hs -o demo
+
+If --make is not give we need -package GSL:
+
+$ ghc demo.hs -o demo -package GSL
+
+USING ATLAS OPTIMIZED LIBRARIES ----------------------------------------
+
+The performance of some linear algebra computations with big matrices 
+significantly increases using ATLAS (http://math-atlas.sourceforge.net/).
+
+In Fedora Core >= 4 you can install it using yum: 
 
 # yum install atlas
 
@@ -25,39 +46,23 @@ which includes other useful packages such as atlas, fftw, gnuplot, etc.
 
 (You can also download precompiled atlas libraries from https://sourceforge.net/project/showfiles.php?group_id=23725)
 
-INSTALLATION
+To use the altlas cblas library you can simply 
+include it in the command line:
 
-$ runhaskell Setup.hs configure --prefix=$HOME
-$ runhaskell Setup.hs build
-$ runhaskell Setup.hs install --user
+$ ghc --make pca1.hs /usr/lib/atlas/libcblas.so.3
 
-You should also repeat these steps after a darcs pull.
-
-
-COMMAND LINE EXAMPLES
----------------------
-
-Interactive:
-
-$ ghci demo.hs
-
-Compiled:
-
-$ ghc demo.hs -o demo -package GSL
-
-With Atlas optimization, in Fedora Core 4:
-
-We may need a symbolic link to the dynamic library:
-$ ln -s /usr/lib/atlas/libcblas.so.3 libcblas.so
-
-Then we change in GSLHaskell.cabal the line
+Another possibility is to change the following line in GSLHaskell.cabal:
 
 - extra-libraries:    gsl gslcblas
 + extra-libraries:    gsl cblas
 
 and reinstall the library.
 
-Compiled using the static libraries downloaded from the home page:
+(But in this case, in Fedora Core 4 I need a symbolic link:
+root# ln -s /usr/lib/atlas/libcblas.so.3 /usr/local/lib/libcblas.so
+)
+
+We can also use the static libraries downloaded from the home page:
 
 $ chmod u+x setup
 $ ./setup
@@ -67,8 +72,7 @@ $ ghc --make <yourprog.hs> GSL/gslaux.o -L$LIBATLAS -lcblas /usr/lib/libgsl.a -l
 You can alternatively link with GSL/debuggslaux.o to "printf" the
 C wrappers that are used by your program, with timing information.
 
-ACKNOWLEDGEMENTS
-----------------
+ACKNOWLEDGEMENTS ------------------------------------------------------------
 
 The author thanks all the people in the Haskell mailing lists for their help.
 
