@@ -5,13 +5,17 @@ Author:             Alberto Ruiz
 Maintainer:         aruiz@um.es
 Stability:          provisional
 Homepage:           http://dis.um.es/~alberto/GSLHaskell
-Package-url:        http://dis.um.es/~alberto/GSLHaskell/GSLHaskell-2006-04-18.tgz
-Category:           Numerical
-Build-Depends:      base, HGL, OpenGL, GLUT, haskell98 
+Package-url:        http://dis.um.es/~alberto/GSLHaskell/GSLHaskell.tar.gz
 Synopsis:           Functional interface to the GNU Scientific Library
+Description:
+Category:           Numerical
+tested-with:        GHC ==6.4.1
+Build-Depends:      base, HGL, OpenGL, GLUT, haskell98 
 Exposed-modules:    GSL, GSL.Base, GSL.Utils
-Extensions: 
+--Extensions: 
 Other-modules:      GSL.Core, GSL.Derived, GSL.Wrappers, 
                     GSL.Interface, GSL.Drawing, GSL.Instances 
 C-sources:          GSL/gslaux.c
 extra-libraries:    gsl gslcblas 
+--ghc-prof-options: 
+cc-options:         -Wall -O2  
