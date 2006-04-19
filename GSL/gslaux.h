@@ -11,52 +11,52 @@
 
 int constant(double val, DVEC(r));
 
-int vectorZip(int code, DVEC(a), DVEC(b), DVEC(r));        
+int vectorZip(int code, KDVEC(a), KDVEC(b), DVEC(r));        
         
-int vector_scale(double alpha, DVEC(x), DVEC(r));
+int vector_scale(double alpha, KDVEC(x), DVEC(r));
         
-int vector_offset(double offs, DVEC(x), DVEC(r));
+int vector_offset(double offs, KDVEC(x), DVEC(r));
 
 int toScalar(int code, KDVEC(x), DVEC(r));
 /* norm2, absdif, maximum, posmax, etc. */
 
-int vectorMap(int code, DVEC(x), DVEC(r));
+int vectorMap(int code, KDVEC(x), DVEC(r));
 /* sin cos tan etc. */
     
-int multiplyR(DMAT(a),DMAT(b),DMAT(r)); 
-int multiplyC(CMAT(a),CMAT(b),CMAT(r));
+int multiplyR(KDMAT(a),KDMAT(b),DMAT(r)); 
+int multiplyC(KCMAT(a),KCMAT(b),CMAT(r));
         
-int luSolveR(DMAT(a),DMAT(b),DMAT(r)); 
-int luSolveC(CMAT(a),CMAT(b),CMAT(r));
+int luSolveR(KDMAT(a),KDMAT(b),DMAT(r)); 
+int luSolveC(KCMAT(a),KCMAT(b),CMAT(r));
         
-int take_diagonal(DMAT(a),DVEC(d));
+int take_diagonal(KDMAT(a),DVEC(d));
 
-int take_diagonalC(CMAT(a),CVEC(d));
+int take_diagonalC(KCMAT(a),CVEC(d));
             
-int luRaux(DMAT(a),DVEC(b));
+int luRaux(KDMAT(a),DVEC(b));
 
-int luCaux(CMAT(a),CVEC(b));
+int luCaux(KCMAT(a),CVEC(b));
 
-int trans(DMAT(x),DMAT(t));
+int trans(KDMAT(x),DMAT(t));
 
-int transC(CMAT(x),CMAT(t));
+int transC(KCMAT(x),CMAT(t));
 
-int submatrixR(int r1, int r2, int c1, int c2, DMAT(x),DMAT(r));
+int submatrixR(int r1, int r2, int c1, int c2, KDMAT(x),DMAT(r));
                 
-int diagR(DVEC(d),DMAT(r));  
-int diagC(CVEC(d),CMAT(r));   
+int diagR(KDVEC(d),DMAT(r));  
+int diagC(KCVEC(d),CMAT(r));   
     
-int svd(DMAT(x),DMAT(u), DVEC(s),DMAT(v));
+int svd(KDMAT(x),DMAT(u), DVEC(s),DMAT(v));
 
 int eigensystemR(KDMAT(x),DVEC(l),DMAT(v));
 
 int eigensystemC(KCMAT(x),DVEC(l),CMAT(v));
 
-int qr(KDMAT(x),DMAT(q),DMAT(r));
+int QR(KDMAT(x),DMAT(q),DMAT(r));
 
 int chol(KDMAT(x),DMAT(l));
     
-int fft(int code, CVEC(a), CVEC(b));
+int fft(int code, KCVEC(a), CVEC(b));
     
 int integrate_qng(double f(double, void*), double a, double b, double prec,
                    double *result, double*error);
@@ -64,15 +64,20 @@ int integrate_qng(double f(double, void*), double a, double b, double prec,
 int integrate_qags(double f(double,void*), double a, double b, double prec, int w, 
                double *result, double* error);
 
-int polySolve(DVEC(a), CVEC(z));
+int polySolve(KDVEC(a), CVEC(z));
 
 int matrix_fscanf(char*filename, DMAT(a));
 
 int minimize(double f(int, double*), double tolsize, int maxit, 
-                 DVEC(xi), DVEC(sz), DMAT(sol));
+                 KDVEC(xi), KDVEC(sz), DMAT(sol));
 
 int minimizeWithDeriv(double f(int, double*), void df(int, double*, double*),
                       double initstep, double minimpar, double tolgrad, int maxit, 
-                      DVEC(xi), DMAT(sol));
+                      KDVEC(xi), DMAT(sol));
 
 int mesh(KDMAT(x));
+
+int deriv(int code, double f(double, void*), double x, double h, double * result, double * abserr);
+
+double gsl_sf_erf(double);
+double gsl_sf_erf_Z(double);

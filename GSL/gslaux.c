@@ -70,10 +70,10 @@ int constant(double val, DVEC(r)) {
     OK
 }
 
-int vectorZip(int code, DVEC(a), DVEC(b), DVEC(r)) {
+int vectorZip(int code, KDVEC(a), KDVEC(b), DVEC(r)) {
     REQUIRES(an == bn && an == rn, BAD_SIZE);
-    DVVIEW(a);
-    DVVIEW(b);
+    KDVVIEW(a);
+    KDVVIEW(b);
     DVVIEW(r);
     switch(code) {
         case 5: { 
@@ -157,10 +157,10 @@ int toScalar(int code, KDVEC(x), DVEC(r)) {
 }
 
 
-int vector_scale(double alpha, DVEC(x), DVEC(r)) {
+int vector_scale(double alpha, KDVEC(x), DVEC(r)) {
     REQUIRES(xn == rn,BAD_SIZE);
     DEBUGMSG("vector_scale");
-    DVVIEW(x);
+    KDVVIEW(x);
     DVVIEW(r);
     CHECK( gsl_vector_memcpy(V(r),V(x)) , MEM);
     int res = gsl_vector_scale(V(r),alpha);
@@ -169,10 +169,10 @@ int vector_scale(double alpha, DVEC(x), DVEC(r)) {
 }
 
 
-int vector_offset(double offs, DVEC(x), DVEC(r)) { 
+int vector_offset(double offs, KDVEC(x), DVEC(r)) { 
     REQUIRES(xn == rn,BAD_SIZE);    
     DEBUGMSG("vector_offset");
-    DVVIEW(x);
+    KDVVIEW(x);
     DVVIEW(r);
     CHECK(gsl_vector_memcpy(V(r),V(x)), MEM);
     int res = gsl_vector_add_constant(V(r),offs);
@@ -193,7 +193,7 @@ inline double sign(double x) {
 
  
 #define OP(C,F) case C: { for(k=0;k<xn;k++) rp[k] = F(xp[k]); OK }
-int vectorMap(int code, DVEC(x), DVEC(r)) {
+int vectorMap(int code, KDVEC(x), DVEC(r)) {
     int k;
     REQUIRES(xn == rn,BAD_SIZE);
     DEBUGMSG("vectorMap");
@@ -219,7 +219,7 @@ int vectorMap(int code, DVEC(x), DVEC(r)) {
 }
 
 
-int diagR(DVEC(d),DMAT(r)) { 
+int diagR(KDVEC(d),DMAT(r)) { 
     REQUIRES(dn==rr && rr==rc,BAD_SIZE);
     DEBUGMSG("diagR");
     int i,j;
@@ -231,7 +231,7 @@ int diagR(DVEC(d),DMAT(r)) {
     OK
 }
 
-int diagC(CVEC(d),CMAT(r)) { 
+int diagC(KCVEC(d),CMAT(r)) { 
     REQUIRES(dn==rr && rr==rc,BAD_SIZE);
     DEBUGMSG("diagC");
     int i,j;
@@ -246,7 +246,7 @@ int diagC(CVEC(d),CMAT(r)) {
 
 
 
-int take_diagonal(DMAT(a),DVEC(d)) {
+int take_diagonal(KDMAT(a),DVEC(d)) {
     int n = MIN(ar,ac);
     REQUIRES(n==dn,BAD_SIZE);
     DEBUGMSG("take_diagonal");
@@ -258,7 +258,7 @@ int take_diagonal(DMAT(a),DVEC(d)) {
 }
 
 
-int take_diagonalC(CMAT(a),CVEC(d)) {
+int take_diagonalC(KCMAT(a),CVEC(d)) {
     int n = MIN(ar,ac);
     REQUIRES(n==dn,BAD_SIZE);
     DEBUGMSG("take_diagonalC");
@@ -271,11 +271,11 @@ int take_diagonalC(CMAT(a),CVEC(d)) {
 }
 
 
-int multiplyR(DMAT(a),DMAT(b),DMAT(r)) {          
+int multiplyR(KDMAT(a),KDMAT(b),DMAT(r)) {          
     REQUIRES(ac==br && ar==rr && bc==rc,BAD_SIZE);        
     DEBUGMSG("multiplyR (gsl_blas_dgemm)");
-    DMVIEW(a);
-    DMVIEW(b);
+    KDMVIEW(a);
+    KDMVIEW(b);
     DMVIEW(r);
     int res = gsl_blas_dgemm 
         (CblasNoTrans, CblasNoTrans,
@@ -285,11 +285,11 @@ int multiplyR(DMAT(a),DMAT(b),DMAT(r)) {
     OK
 }
 
-int multiplyC(CMAT(a),CMAT(b),CMAT(r)) {          
+int multiplyC(KCMAT(a),KCMAT(b),CMAT(r)) {          
     REQUIRES(ac==br && ar==rr && bc==rc,BAD_SIZE);        
     DEBUGMSG("multiplyC (gsl_blas_zgemm)");
-    CMVIEW(a);
-    CMVIEW(b);
+    KCMVIEW(a);
+    KCMVIEW(b);
     CMVIEW(r);
     gsl_complex alpha, beta;
     GSL_SET_COMPLEX(&alpha,1.,0.);
@@ -303,43 +303,43 @@ int multiplyC(CMAT(a),CMAT(b),CMAT(r)) {
 }
 
 
-int trans(DMAT(x),DMAT(t)) {
+int trans(KDMAT(x),DMAT(t)) {
     REQUIRES(xr==tc && xc==tr,BAD_SIZE);
     DEBUGMSG("trans");
-    DMVIEW(x);
+    KDMVIEW(x);
     DMVIEW(t);
     int res = gsl_matrix_transpose_memcpy(M(t),M(x));
     CHECK(res,res);
     OK
 }
 
-int transC(CMAT(x),CMAT(t)) {
+int transC(KCMAT(x),CMAT(t)) {
     REQUIRES(xr==tc && xc==tr,BAD_SIZE);
     DEBUGMSG("transC");
-    CMVIEW(x);
+    KCMVIEW(x);
     CMVIEW(t);
     int res = gsl_matrix_complex_transpose_memcpy(M(t),M(x));
     CHECK(res,res);
     OK
 }
 
-int submatrixR(int r1, int r2, int c1, int c2, DMAT(x),DMAT(r)) {
+int submatrixR(int r1, int r2, int c1, int c2, KDMAT(x),DMAT(r)) {
     REQUIRES(0<=r1 && r1<=r2 && r2<xr && 0<=c1 && c1<=c2 && c2<xc &&
             rr==r2-r1+1 && rc==c2-c1+1,BAD_SIZE);
     DEBUGMSG("submatrix");
-    DMVIEW(x);
+    KDMVIEW(x);
     DMVIEW(r);
-    gsl_matrix_view S = gsl_matrix_submatrix(M(x),r1,c1,rr,rc);
+    gsl_matrix_const_view S = gsl_matrix_const_submatrix(M(x),r1,c1,rr,rc);
     int res = gsl_matrix_memcpy(M(r),M(S));
     CHECK(res,res);
     OK
 }
 
-int luSolveR(DMAT(a),DMAT(b),DMAT(r)) {
+int luSolveR(KDMAT(a),KDMAT(b),DMAT(r)) {
     REQUIRES(ar==ac && ac==br && ar==rr && bc==rc,BAD_SIZE);        
     DEBUGMSG("luSolveR");
-    DMVIEW(a);
-    DMVIEW(b);
+    KDMVIEW(a);
+    KDMVIEW(b);
     DMVIEW(r);
     int res;
     gsl_matrix *LU = gsl_matrix_alloc(ar,ar);
@@ -364,11 +364,11 @@ int luSolveR(DMAT(a),DMAT(b),DMAT(r)) {
 }
 
 
-int luSolveC(CMAT(a),CMAT(b),CMAT(r)) {
+int luSolveC(KCMAT(a),KCMAT(b),CMAT(r)) {
     REQUIRES(ar==ac && ac==br && ar==rr && bc==rc,BAD_SIZE);        
     DEBUGMSG("luSolveC");
-    CMVIEW(a);
-    CMVIEW(b);
+    KCMVIEW(a);
+    KCMVIEW(b);
     CMVIEW(r);
     gsl_matrix_complex *LU = gsl_matrix_complex_alloc(ar,ar);
     CHECK(!LU,MEM);
@@ -392,10 +392,10 @@ int luSolveC(CMAT(a),CMAT(b),CMAT(r)) {
 }
 
 
-int luRaux(DMAT(a),DVEC(b)) {
+int luRaux(KDMAT(a),DVEC(b)) {
     REQUIRES(ar==ac && bn==ar*ar+ar+1,BAD_SIZE);        
     DEBUGMSG("luRaux");
-    DMVIEW(a);
+    KDMVIEW(a);
     //DVVIEW(b);
     gsl_matrix_view LU = gsl_matrix_view_array(bp,ar,ac);
     int s;
@@ -412,10 +412,10 @@ int luRaux(DMAT(a),DVEC(b)) {
     OK
 }
 
-int luCaux(CMAT(a),CVEC(b)) {
+int luCaux(KCMAT(a),CVEC(b)) {
     REQUIRES(ar==ac && bn==ar*ar+ar+1,BAD_SIZE);        
     DEBUGMSG("luCaux");
-    CMVIEW(a);
+    KCMVIEW(a);
     //DVVIEW(b);
     gsl_matrix_complex_view LU = gsl_matrix_complex_view_array(bp,ar,ac);
     int s;
@@ -436,10 +436,10 @@ int luCaux(CMAT(a),CVEC(b)) {
     OK
 }
 
-int svd(DMAT(a),DMAT(u), DVEC(s),DMAT(v)) {
+int svd(KDMAT(a),DMAT(u), DVEC(s),DMAT(v)) {
     REQUIRES(ar==ur && ac==uc && ac==sn && ac==vr && ac==vc,BAD_SIZE);
     DEBUGMSG("svd");
-    DMVIEW(a);
+    KDMVIEW(a);
     DMVIEW(u);
     DVVIEW(s);
     DMVIEW(v);
@@ -532,13 +532,13 @@ int chol(KDMAT(x),DMAT(l)) {
 }
 
 
-int fft(int code, CVEC(X), CVEC(R)) {
+int fft(int code, KCVEC(X), CVEC(R)) {
     REQUIRES(Xn == Rn,BAD_SIZE);
     DEBUGMSG("fft");
     int s = Xn;
     gsl_fft_complex_wavetable * wavetable = gsl_fft_complex_wavetable_alloc (s);
     gsl_fft_complex_workspace * workspace = gsl_fft_complex_workspace_alloc (s);
-    gsl_vector_view X = gsl_vector_view_array(Xp, 2*Xn);
+    gsl_vector_const_view X = gsl_vector_const_view_array(Xp, 2*Xn);
     gsl_vector_view R = gsl_vector_view_array(Rp, 2*Rn);
     gsl_blas_dcopy(&X.vector,&R.vector);
     if(code==0) {
@@ -577,7 +577,7 @@ int integrate_qags(double f(double,void*), double a, double b, double prec, int 
     OK
 }
 
-int polySolve(DVEC(a), CVEC(z)) {
+int polySolve(KDVEC(a), CVEC(z)) {
     DEBUGMSG("polySolve");
     REQUIRES(an>1,BAD_SIZE);
     gsl_poly_complex_workspace * w = gsl_poly_complex_workspace_alloc (an);
@@ -617,7 +617,7 @@ double only_f_aux_min(const gsl_vector*x, void *pars) {
     
 // this version returns info about intermediate steps
 int minimize(double f(int, double*), double tolsize, int maxit, 
-                 DVEC(xi), DVEC(sz), DMAT(sol)) {
+                 KDVEC(xi), KDVEC(sz), DMAT(sol)) {
     REQUIRES(xin==szn && solr == maxit && solc == 3+xin,BAD_SIZE);
     DEBUGMSG("minimizeList (nmsimplex)");
     gsl_multimin_function my_func;
@@ -631,9 +631,9 @@ int minimize(double f(int, double*), double tolsize, int maxit,
     const gsl_multimin_fminimizer_type *T;
     gsl_multimin_fminimizer *s = NULL;
     // Initial vertex size vector 
-    DVVIEW(sz);
+    KDVVIEW(sz);
     // Starting point
-    DVVIEW(xi);
+    KDVVIEW(xi);
     // Minimizer nmsimplex, without derivatives
     T = gsl_multimin_fminimizer_nmsimplex;
     s = gsl_multimin_fminimizer_alloc (T, my_func.n);
@@ -707,7 +707,7 @@ void fdf_aux_min(const gsl_vector * x, void * pars, double * f, gsl_vector * g) 
 // conjugate gradient
 int minimizeWithDeriv(double f(int, double*), void df(int, double*, double*), 
                       double initstep, double minimpar, double tolgrad, int maxit, 
-                      DVEC(xi), DMAT(sol)) {
+                      KDVEC(xi), DMAT(sol)) {
     REQUIRES(solr == maxit && solc == 2+xin,BAD_SIZE);
     DEBUGMSG("minimizeWithDeriv (conjugate_fr)");
     gsl_multimin_function_fdf my_func;
@@ -725,7 +725,7 @@ int minimizeWithDeriv(double f(int, double*), void df(int, double*, double*),
     const gsl_multimin_fdfminimizer_type *T;
     gsl_multimin_fdfminimizer *s = NULL;
     // Starting point
-    DVVIEW(xi);
+    KDVVIEW(xi);
     // conjugate gradient fr
     T = gsl_multimin_fdfminimizer_conjugate_fr;
     s = gsl_multimin_fdfminimizer_alloc (T, my_func.n);

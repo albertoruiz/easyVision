@@ -1,7 +1,7 @@
 #! /bin/bash
 
 echo "Compiling the C wrappers..."
-gcc -Wall `gsl-config --cflags` -c GSL/gslaux.c -o GSL/gslaux.o
+gcc -O2 -Wall `gsl-config --cflags` -c GSL/gslaux.c -o GSL/gslaux.o
 
 echo "Compiling the C wrappers with debugging information..."
 gcc  -DDBG -Wall `gsl-config --cflags` -c GSL/gslaux.c -o GSL/debuggslaux.o

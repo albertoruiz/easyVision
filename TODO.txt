@@ -3,12 +3,9 @@
 - selectable algorithm for eigS
 - catch errors in integrate?
 - overloaded size, realPart, imagPart
-- include const pointers in all wrappers 
-- several implicit declarations
 - add multidimensional block
 - add generic <|> and <->
 - quickcheck tests
-- explore atlas lapack, also the wrappers by H Daume
 - documentation of pnorm
 - nicer show
 - include det, logdet and inv in Base
@@ -19,4 +16,5 @@
 - improve signatures
 - functions returning Maybe something?, e.g. inv, chol, etc.
 
+- explore lapack and atlas lapack for functions not in the GSL, and by H Daume's wrappers.
 - Frederik Eaton's interface with static checking of dimensions 
