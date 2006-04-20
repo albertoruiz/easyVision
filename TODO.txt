@@ -15,6 +15,7 @@
 - erratic behavior after submatrix error
 - improve signatures
 - functions returning Maybe something?, e.g. inv, chol, etc.
+- !? matrixToPGM crashes with -O 
 
 - explore lapack and atlas lapack for functions not in the GSL, and by H Daume's wrappers.
 - Frederik Eaton's interface with static checking of dimensions 

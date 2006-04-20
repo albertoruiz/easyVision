@@ -36,8 +36,8 @@ pca prec (m,s,v) = (encode,decode)
     
 
 shdigit :: Vector -> IO ()
---shdigit v = imshow (reshape 28 (-v))
-shdigit v = meshOpenGL $ const (reshape 28 v/300)
+shdigit v = imshow (reshape 28 (-v))
+--shdigit v = meshOpenGL $ const (reshape 28 v/300)
 
 -- shows the effect of a given reconstruction quality on a test vector
 test :: Stat -> Double -> Vector -> IO ()
