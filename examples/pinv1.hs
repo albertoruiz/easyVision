@@ -7,7 +7,7 @@ prepSyst n d = (a,b) where
     a = fromColumns $ map (x^) [1 .. n]
 
 main = do
-    dat <- fromFile "examples/data.txt"
+    dat <- fromFile "data.txt"
     let (a,b) = prepSyst 3 dat
     putStr "Coefficient matrix:\n"
     disp 2 a

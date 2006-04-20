@@ -5,7 +5,7 @@ Author:             Alberto Ruiz
 Maintainer:         aruiz@um.es
 Stability:          provisional
 Homepage:           http://dis.um.es/~alberto/GSLHaskell
-Package-url:        http://dis.um.es/~alberto/GSLHaskell/GSLHaskell.tar.gz
+Package-url:        
 Synopsis:           Functional interface to the GNU Scientific Library
 Description:
 Category:           Numerical

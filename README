@@ -15,11 +15,19 @@ $ runhaskell Setup.hs install --user
 
 (You should also repeat these steps after a darcs pull.)
 
-Now you can compile the examples without any special parameter:
+NOTE: The library should be used from another directory.
+For instance, to run the examples:
+
+$ cd examples
 
 Interactive:
 
 $ ghci demo.hs
+> main
+
+Script:
+
+$ runhaskell demo.hs
 
 Compiled:
 
@@ -46,7 +54,7 @@ which includes other useful packages such as atlas, fftw, gnuplot, etc.
 
 (You can also download precompiled atlas libraries from https://sourceforge.net/project/showfiles.php?group_id=23725)
 
-To use the altlas cblas library you can simply 
+To use the atlas cblas library you can simply 
 include it in the command line:
 
 $ ghc --make pca1.hs /usr/lib/atlas/libcblas.so.3
@@ -61,16 +69,6 @@ and reinstall the library.
 (But in this case, in Fedora Core 4 I need a symbolic link:
 root# ln -s /usr/lib/atlas/libcblas.so.3 /usr/local/lib/libcblas.so
 )
-
-We can also use the static libraries downloaded from the home page:
-
-$ chmod u+x setup
-$ ./setup
-$ LIBATLAS=/path/to/atlas/lib
-$ ghc --make <yourprog.hs> GSL/gslaux.o -L$LIBATLAS -lcblas /usr/lib/libgsl.a -latlas
-
-You can alternatively link with GSL/debuggslaux.o to "printf" the
-C wrappers that are used by your program, with timing information.
 
 ACKNOWLEDGEMENTS ------------------------------------------------------------
 

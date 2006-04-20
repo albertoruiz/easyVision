@@ -12,7 +12,7 @@ polynomialModel d n = f where
     a = expand n x
     
 main = do
-    d <- fromFile "examples/data.txt"
+    d <- fromFile "data.txt"
     let [x,y] = toColumns d
     let pol = polynomialModel d
     let view = [x, y, pol 1 x, pol 2 x, pol 3 x]   

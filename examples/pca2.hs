@@ -34,12 +34,10 @@ pca prec (m,s,v) = (encode,decode)
                 then error "the precision in pca must be 0<prec<1"
                 else prec   
     
-mnist :: IO Matrix  
-mnist = gslReadMatrix "examples/mnist.txt" (5000,785) 
 
 shdigit :: Vector -> IO ()
-shdigit v = imshow (reshape 28 (-v))
---shdigit v = meshOpenGL $ const (reshape 28 v/300)
+--shdigit v = imshow (reshape 28 (-v))
+shdigit v = meshOpenGL $ const (reshape 28 v/300)
 
 -- shows the effect of a given reconstruction quality on a test vector
 test :: Stat -> Double -> Vector -> IO ()
@@ -50,7 +48,7 @@ test st prec x = do
     shdigit (pd y)    
     
 main = do
-    m <- mnist
+    m <- gslReadMatrix "mnist.txt" (5000,785) 
     let xs = takeColumns (cols m -1) m
     let x = toRows xs !! 4  -- an arbitrary test vector
     shdigit x

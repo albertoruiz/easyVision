@@ -25,7 +25,7 @@ pca n dataSet = (encode,decode)
     vp = takeRows n (trans v)
     
 main = do
-    m <- gslReadMatrix "examples/mnist.txt" (5000,785)
+    m <- gslReadMatrix "mnist.txt" (5000,785)
     let xs = takeColumns (cols m -1) m -- the last column is the digit type (class label)
     let x = toRows xs !! 4  -- an arbitrary test vector
     let (pe,pd) = pca 10 xs
