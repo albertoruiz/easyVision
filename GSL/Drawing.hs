@@ -131,11 +131,10 @@ mplot m = do
     endcmd = "pause -1"
 
 
-mapf :: [t -> a] -> t -> [a]
-mapf [] _ = []
-mapf (f:fs) a = f a: mapf fs a
-    
-    
+-- apply several functions to one object
+mapf fs x = map ($x) fs
+
+        
 {- | Draws a list of functions over a desired range and with a desired number of points 
 
 > > plot [sin, cos, sin.(3*)] (0,2*pi) 1000

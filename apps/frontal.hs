@@ -399,7 +399,7 @@ fullstudy (prob,name) = do
     mapM_ (study 20) (versions (prob,name))
 
 main = do
-    mapM_ printViews (map (head.versions) problems)
+    when False $ mapM_ printViews (map (head.versions) problems)
     s <- getArgs
     fullstudy (problems!! read (s!!0))
     -- fullstudy (problems!!1)
