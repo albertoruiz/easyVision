@@ -120,7 +120,7 @@ rectifier ((rho,yh),f) = kgen f <> rot1 (atan2 f yh) <> rot3 (-rho) <> kgen (rec
 
 -- associated camera (the inverse of the above)
 --rectifier' ((rho,yh),f) = kgen f <> rot3 rho <> rot1 (- atan2 f yh) <> kgen (recip f)
---rectifier' = inv3.rectifier 
+--rectifier' = inv.rectifier 
 rectifier' ((rho,yh),f) = reshape 3 $ realVector [ 
       cr, -ca*sr, -f*sa*sr,
       sr,  ca*cr,  f*cr*sa,
@@ -234,7 +234,7 @@ data RectifInfo =
 prepare n noiselevel cams fs = rf where
     rf = RF { usedViews = views
             , dHs = map (estimateHomographyRaw (head views)) (tail views) 
-            , iHs = map inv3 (dHs rf)
+            , iHs = map inv (dHs rf)
             , nHoriz = n
             , paramHoriz = pars
             , trueCams = cams
@@ -398,10 +398,40 @@ versions (prob, name) =
 fullstudy (prob,name) = do
     mapM_ (study 20) (versions (prob,name))
 
-main = do
+main' = do
     when False $ mapM_ printViews (map (head.versions) problems)
     s <- getArgs
     fullstudy (problems!! read (s!!0))
     -- fullstudy (problems!!1)
     -- fullstudy (problems!!2)
     -- fullstudy (problems!!3)
+
+---------------------------------------------------
+
+study' rectinfo name = do
+    putStrLn $ "--------------- "++name++" -------------"
+    putStr "True horizon: "
+    print $ truePars rectinfo
+    putStr "Test qualities: "
+    print $ testQuality rectinfo
+    putStr "Estimated f1 with true horizon: "
+    print $ estimatorF $ truefDist $ rectinfo
+    putStr "Init AllF: "
+    print $ initAllF rectinfo
+    putStr "Optimized AllF: "   
+    print $ fst $ solAllF rectinfo
+    putStr "Init F1: "
+    print $ initF1 rectinfo
+    putStr "Optimized F1: "
+    print $ fst $ solF1 rectinfo
+    putStr "Init auto: "
+    print $ initAuto rectinfo
+    putStr "Init constant: "
+    print $ initConstant rectinfo
+
+main = do
+    s <- getArgs
+    let explore = read (s!!0)
+    let noise   = read (s!!1)
+    let (p,name) = problems !! read (s!!2)
+    study' (info (genCams p) explore noise) name

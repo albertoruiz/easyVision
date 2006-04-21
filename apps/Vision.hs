@@ -4,33 +4,28 @@ import GSL
 import Stat
  
 data CameraParameters
-    = CamPar { focalDist
-             , panAngle
-             , tiltAngle
-             , rollAngle
-             , centerX
-             , centerY
-             , centerZ :: Double
+    = CamPar { focalDist                      :: Double
+             , panAngle, tiltAngle, rollAngle :: Double
+             , cameraCenter                   :: (Double,Double,Double)
              } deriving Show
  
--- computes the camera parameters from the camera center and the point imaged in the image center  
+-- computes the camera parameters given the projection center, 
+-- the point imaged in the image center and roll angle
 easyCamera :: Double -> (Double,Double,Double) -> (Double,Double,Double) -> Double -> CameraParameters
 easyCamera fov cen@(cx,cy,cz) pun@(px,py,pz) rho  = 
     CamPar { focalDist = f
            , panAngle = beta
            , tiltAngle = alpha
            , rollAngle = rho
-           , centerX = cx
-           , centerY = cy
-           , centerZ = cz
-}
-    where dx = px-cx
-          dy = py-cy
-          dz = pz-cz
-          dh = sqrt (dx*dx+dy*dy)
-          f = 1 / tan (fov/2)
-          beta = atan2 (-dx) dy
-          alpha = atan2 dh (-dz) 
+           , cameraCenter = cen
+           } where 
+    dx = px-cx
+    dy = py-cy
+    dz = pz-cz
+    dh = sqrt (dx*dx+dy*dy)
+    f = 1 / tan (fov/2)
+    beta = atan2 (-dx) dy
+    alpha = atan2 dh (-dz) 
  
  
  
@@ -70,7 +65,7 @@ rotPTR (pan,tilt,roll) = realMatrix
 syntheticCamera campar = k <> r <> m where
     CamPar {focalDist = f, 
             panAngle = p, tiltAngle = t, rollAngle = q,
-            centerX = cx, centerY = cy, centerZ = cz} = campar
+            cameraCenter = (cx,cy,cz)} = campar
     m = realMatrix [[1,0,0, -cx],
                     [0,1,0, -cy],
                     [0,0,1, -cz]]
@@ -96,33 +91,8 @@ homog v = join [v,1]
 
 unitary v = v <> recip (norm v)
 
-det3 m 
-    | rows m /=3 || cols m /= 3 = det m
-    | otherwise = num
-    where [m11,m12,m13, m21,m22,m23, m31,m32,m33] = toList (flatten m)
-          num = -m13*m22*m31
-                +m12*m23*m31
-                +m13*m21*m32
-                -m11*m23*m32 
-                -m12*m21*m33 
-                +m11*m22*m33    
+inv m = m <\> ident (rows m)
 
-inv3 m 
-    | rows m /=3 || cols m /= 3 = m <\> ident (rows m)
-    | otherwise = fromList [[a11,a12,a13], 
-                            [a21,a22,a23], 
-                            [a31,a32,a33]]
-    where   [m11,m12,m13, m21,m22,m23, m31,m32,m33] = toList (flatten m)
-            d = recip (det3 m)
-            a11 = (-m23*m32 + m22*m33)*d
-            a12 = ( m13*m32 - m12*m33)*d
-            a13 = (-m13*m22 + m12*m23)*d
-            a21 = ( m23*m31 - m21*m33)*d
-            a22 = (-m13*m31 + m11*m33)*d
-            a23 = ( m13*m21 - m11*m23)*d
-            a31 = (-m22*m31 + m21*m32)*d
-            a32 = ( m12*m31 - m11*m32)*d
-            a33 = (-m12*m21 + m11*m22)*d
 
 focal' c = res where
     n = c <> mS <> trans c <> linf
@@ -150,7 +120,7 @@ focal c = res where
 poseGen mbf c = res where
     cp = CamPar {focalDist = f, 
                  panAngle = -beta, tiltAngle = alpha, rollAngle = rho,
-                 centerX = cx, centerY = cy, centerZ = -cz} 
+                 cameraCenter = (cx, cy, -cz) } 
     
     mf = case mbf of
             Just givenf -> givenf  -- given, use it
@@ -159,7 +129,7 @@ poseGen mbf c = res where
             Just f -> Just cp           -- solution
             Nothing -> Nothing     -- cannot be estimated
     Just f = mf        
-    cnor = c <> signum (det3 c)
+    cnor = c <> signum (det c)
     s = kgen (1/f) <> cnor
     [s1,s2,s3] = toColumns s
     r1 = unitary s1
@@ -225,7 +195,7 @@ estimateHomographyRaw dest orig = h where
             t36=bx     
     
 -- with normalization    
-estimateHomography' dest orig = inv3 wd <> h <> wo where
+estimateHomography' dest orig = inv wd <> h <> wo where
     std = stat dest
     sto = stat orig
     nd = toList (normalizedData std)
@@ -234,9 +204,9 @@ estimateHomography' dest orig = inv3 wd <> h <> wo where
     wd = whiteningTransformation std
     wo = whiteningTransformation sto   
     
-normat3 m = m <> recip m!!:(2,2)
+normat3 m = m <> recip m!!:(rows m -1, cols m -1)
 
-normatdet m = m <> recip (det3 m)
+normatdet m = m <> recip (det m)
 
 
 homogMat m = fromBlocks [[m, constant 1 (rows m, 1::Int)]]
@@ -261,7 +231,7 @@ rq m = (r,q) where
 -- | Given a camera matrix it returns (K, R, C)
 -- | m' =~= k <> r <> fromBlocks [[ident 3,reshape 1 (-c)]]
 factorizeCamera :: Matrix -> (Matrix,Matrix,Vector)
-factorizeCamera m = (normat3 k, r <> signum (det3 r),c) where
+factorizeCamera m = (normat3 k, r <> signum (det r),c) where
     m' = takeColumns 3 m
     (k',r') = rq m'
     s = diag(signum (diag k'))
