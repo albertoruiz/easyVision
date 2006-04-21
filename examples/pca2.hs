@@ -1,5 +1,8 @@
--- Improved PCA, including illustrative graphics
--- You can download the data file from http://dis.um.es/~alberto/material/sp/minst.txt.zip
+{- Improved PCA, including illustrative graphics
+   To download the data file:
+        $ wget http://dis.um.es/~alberto/material/sp/mnist.txt.gz
+        $ gunzip mnist.txt.gz
+-}
 
 import GSL
    

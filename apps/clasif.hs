@@ -1,5 +1,8 @@
--- Classifying handwritten digits using Mahalanobis distance
--- You can download the data file from http://dis.um.es/~alberto/material/sp/minst.txt.zip
+{- Classifying handwritten digits using Mahalanobis distance.
+   To download the data file:
+        $ wget http://dis.um.es/~alberto/material/sp/mnist.txt.gz
+        $ gunzip mnist.txt.gz
+-}
 
 import GSL
 import Data.List
@@ -122,7 +125,7 @@ prepareClasif f prob = (fun, errorRate, confusionMatrix) where
 
                                                   
 main = do
-    m <- gslReadMatrix "examples/mnist.txt" (5000,785)
+    m <- gslReadMatrix "mnist.txt" (5000,785)
     let rawproblem = prepareProblem (takeRows 4000 m) (dropRows 4000 m)
     let st = stat (designSamples rawproblem)
     
