@@ -5,7 +5,7 @@
 - overloaded size, realPart, imagPart
 - add multidimensional block
 - add generic <|> and <->
-- quickcheck tests
+- quickcheck and HUnit tests
 - documentation of pnorm
 - nicer show
 - include det, logdet and inv in Base
@@ -17,5 +17,7 @@
 - functions returning Maybe something?, e.g. inv, chol, etc.
 - !? matrixToPGM crashes with -O 
 
-- explore lapack and atlas lapack for functions not in the GSL, and by H Daume's wrappers.
+- workaround of matrix computations not available in the GSL
+- explore lapack, atlas lapack and H.Daume's wrappers.
+
 - Frederik Eaton's interface with static checking of dimensions 

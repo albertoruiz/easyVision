@@ -206,7 +206,11 @@ estimateHomography' dest orig = inv wd <> h <> wo where
     
 normat3 m = m <> recip m!!:(rows m -1, cols m -1)
 
-normatdet m = m <> recip (det m)
+normatdet m = m <> recip k where
+    s = subMatrix (0,0) (n,n) m
+    n = min (rows m) (cols m)
+    d = det s
+    k = signum d * abs d **(1/ fromIntegral n)
 
 
 homogMat m = fromBlocks [[m, constant 1 (rows m, 1::Int)]]
