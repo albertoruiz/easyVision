@@ -56,7 +56,7 @@ classify lfuns x = c where
 	dm = minimum dists
 	Just c = elemIndex dm dists
 
--- given a certain distance function to a population (e.g., dist.stat) and a 
+-- given a certain distance function to a population (e.g., mahalanobisDist.stat) and a 
 -- ClassificationProblem this function creates a classifier fun and the estimation
 -- of the misclassification probability and confusion matrix of the method
 prepareClasif f prob = (fun, errorRate, confusionMatrix) where

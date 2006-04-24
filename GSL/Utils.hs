@@ -19,7 +19,7 @@ module GSL.Utils (
     fromArray, toArray,
     -- * Matrix Manipulation
     size, rows, cols, diag, trans, conj, subVector, join, subMatrix,  
-    flatten, reshape, fromBlocks, format,
+    flatten, reshape, fromBlocks, (<|>), (<->), format,
     extractRows, fromRows, toRows, fromColumns, toColumns, flipud, fliprl,
     vmap, mmap, vzip, mzip, takeRows, takeColumns, dropRows, dropColumns, (!:), (!!:),
     -- * Matrix IO

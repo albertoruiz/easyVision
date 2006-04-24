@@ -1124,3 +1124,76 @@ instance Adapt ComplexMatrix Matrix (ComplexMatrix, ComplexMatrix) where
 
 instance Adapt ComplexMatrix ComplexMatrix (ComplexMatrix, ComplexMatrix) where
     adapt a b = (a, b)
+
+---------------------------------------------------------------
+
+class Joinable a b c | a b -> c where
+    joinH :: a -> b -> c 
+    joinV :: a -> b -> c
+
+instance Joinable Matrix Vector Matrix where
+    joinH m v = fromBlocks [[m,reshape 1 v]]
+    joinV m v = fromBlocks [[m],[reshape (size v) v]]
+    
+instance Joinable Vector Matrix Matrix where
+    joinH v m = fromBlocks [[reshape 1 v,m]]
+    joinV v m = fromBlocks [[reshape (size v) v],[m]]
+
+instance Joinable Matrix Matrix Matrix where
+    joinH m1 m2 = fromBlocks [[m1,m2]]
+    joinV m1 m2 = fromBlocks [[m1],[m2]]
+    
+instance Joinable ComplexMatrix ComplexVector ComplexMatrix where
+    joinH m v = fromBlocks [[m,reshape 1 v]]
+    joinV m v = fromBlocks [[m],[reshape (size v) v]]
+    
+instance Joinable ComplexVector ComplexMatrix ComplexMatrix where
+    joinH v m = fromBlocks [[reshape 1 v,m]]
+    joinV v m = fromBlocks [[reshape (size v) v],[m]]
+
+instance Joinable ComplexMatrix ComplexMatrix ComplexMatrix where
+    joinH m1 m2 = fromBlocks [[m1,m2]]
+    joinV m1 m2 = fromBlocks [[m1],[m2]]
+    
+instance Joinable ComplexMatrix Vector ComplexMatrix where
+    joinH m v = joinH m (complex v)
+    joinV m v = joinV m (complex v)
+    
+instance Joinable ComplexVector Matrix ComplexMatrix where
+    joinH v m = joinH v (complex m)
+    joinV v m = joinV v (complex m)
+    
+instance Joinable ComplexMatrix Matrix ComplexMatrix where
+    joinH m1 m2 = joinH m1 (complex m2)
+    joinV m1 m2 = joinV m1 (complex m2)
+    
+instance Joinable Matrix ComplexVector ComplexMatrix where
+    joinH m v = joinH (complex m) v
+    joinV m v = joinV (complex m) v
+    
+instance Joinable Vector ComplexMatrix ComplexMatrix where
+    joinH v m = joinH (complex v) m
+    joinV v m = joinV (complex v) m
+
+instance Joinable Matrix ComplexMatrix ComplexMatrix where
+    joinH m1 m2 = joinH (complex m1) m2
+    joinV m1 m2 = joinV (complex m1) m2
+    
+infixl 3 <|>, <->
+
+{- | Horizontal concatenation of matrices and vectors:
+
+@\> 'ident' 3 \<-\> i\<\>'ident' 3 \<|\> 'realVector' [1..6]
+ 1.   0.   0.  1.
+ 0.   1.   0.  2.
+ 0.   0.   1.  3.
+1.i   0.   0.  4.
+ 0.  1.i   0.  5.
+ 0.   0.  1.i  6.@
+-}
+(<|>) :: (Joinable a b c) => a -> b -> c
+a <|> b = joinH a b
+
+-- | Vertical concatenation of matrices and vectors.
+(<->) :: (Joinable a b c) => a -> b -> c
+a <-> b = joinV a b
