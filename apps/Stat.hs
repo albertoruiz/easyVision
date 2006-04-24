@@ -20,15 +20,14 @@ stat x = s where
     xc = x |-| m
     c = (trans xc <> xc) / fromIntegral (rows x -1)
     (l,v) = eig c 
-    lastrow = realMatrix [replicate (cols x) 0 ++[1]]
+    lastrow = realVector (replicate (cols x) 0 ++[1])
     w = diag (1/sqrt l) <> v
     s = Stat { meanVector = m
              , covarianceMatrix = c
              , eigenvalues = l
              , eigenvectors = trans v
-             , invCov = c <\> ident (cols x)
-             , whiteningTransformation = fromBlocks [[w, reshape 1 $ - w <> m], 
-                                                     [lastrow]]
+             , invCov = inv c
+             , whiteningTransformation = w <|> -w<>m <-> lastrow  
              , normalizedData = xc <> trans w                                     
 } 
     

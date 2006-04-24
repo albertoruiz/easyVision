@@ -32,7 +32,7 @@ module GSL.Utils (
     meshOpenGL, splot, mesh, meshdom, 
     matrixToPGM, imshow,
     -- * Other
-    i, complex, norm, pinv, pinvTol, eps, disp, outer, linspace
+    i, complex, norm, inv, pinv, pinvTol, eps, disp, outer, linspace
 ) where
 
 import GSL.Core

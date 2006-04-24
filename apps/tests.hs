@@ -9,7 +9,7 @@ a =~= b = pnorm 1 (flatten (a - b)) < 1E-12
 
 factorizeCameraTest m = normatdet m =~= normatdet m' where
     (k,r,c) = factorizeCamera m
-    m' = k <> r <> fromBlocks [[ident 3,reshape 1 (-c)]]
+    m' = k <> r <> (ident 3 <|> -c)
 
 poseEstimationTest m = normatdet m =~= normatdet m' where
     Just pars = poseGen Nothing (homogZ0 m)

@@ -783,13 +783,28 @@ sumColumns m = constant 1 (rows m) <> m
 outer :: (Mul (GSLMatrix a) (GSLMatrix b) (GSLMatrix r)) => GSLVector a -> GSLVector b -> GSLMatrix r
 outer u v = reshape 1 u <> reshape (size v) v
 
--------------------------------------------------
+--------------------------------------------------------------
+
+{- | Inverse of a square matrix (shortcut for m \<\\> 'ident' ('rows' m)).
+
+@\>inv ('realMatrix' [[1,4]
+                 ,[0,2]])
+1.   -2.
+0. 0.500@
+-}
+inv :: (Inv (GSLMatrix t) Matrix c) => GSLMatrix t -> c
+inv m = if rows m == cols m
+    then m <\> ident (rows m)
+    else error "inv of nonsquare matrix"
+
 
 --------------------------------------------------------------
     
 {- | Pseudoinverse of a real matrix with the default tolerance used by GNU-Octave: the singular values less than max (rows, colums) * greatest singular value * 'eps' are ignored. See 'pinvTol'.
 
-@\> let m = 'realMatrix' [[1,2],[5,8],[10,-5]]
+@\> let m = 'realMatrix' [[ 1, 2]
+                     ,[ 5, 8]
+                     ,[10,-5]]
 \> pinv m
 9.353e-3 4.539e-2  7.637e-2
 2.231e-2 8.993e-2 -4.719e-2
@@ -806,7 +821,9 @@ pinv m = pinvTol 1 m
 {- | Pseudoinverse of a real matrix with the desired tolerance, expressed as a
 multiplicative factor of the default tolerance used by GNU-Octave (see 'pinv').
 
-@\> let m = 'realMatrix' [[1,0,0],[0,1,0],[0,0,1e-10]]
+@\> let m = 'realMatrix' [[1,0,    0]
+                     ,[0,1,    0]
+                     ,[0,0,1e-10]]
 \ 
 \> 'pinv' m 
 1. 0.           0.

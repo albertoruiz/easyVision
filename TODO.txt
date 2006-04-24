@@ -4,11 +4,10 @@
 - catch errors in integrate?
 - overloaded size, realPart, imagPart
 - add multidimensional block
-- add generic <|> and <->
 - quickcheck and HUnit tests
 - documentation of pnorm
 - nicer show
-- include det, logdet and inv in Base
+- include logdet
 - improve parameter of pinvTol
 - full svd
 - check cholesky?

@@ -91,8 +91,6 @@ homog v = join [v,1]
 
 unitary v = v <> recip (norm v)
 
-inv m = m <\> ident (rows m)
-
 
 focal' c = res where
     n = c <> mS <> trans c <> linf
@@ -213,7 +211,7 @@ normatdet m = m <> recip k where
     k = signum d * abs d **(1/ fromIntegral n)
 
 
-homogMat m = fromBlocks [[m, constant 1 (rows m, 1::Int)]]
+homogMat m = m <|> constant 1 (rows m)
 
 inHomogMat m = ma / (mb `outer` constant 1 (cols ma))
     where ma = takeColumns (cols m -1) m
@@ -233,7 +231,7 @@ rq m = (r,q) where
 
 
 -- | Given a camera matrix it returns (K, R, C)
--- | m' =~= k <> r <> fromBlocks [[ident 3,reshape 1 (-c)]]
+-- | m' =~= k <> r <> (ident 3 <|> -c)
 factorizeCamera :: Matrix -> (Matrix,Matrix,Vector)
 factorizeCamera m = (normat3 k, r <> signum (det r),c) where
     m' = takeColumns 3 m
