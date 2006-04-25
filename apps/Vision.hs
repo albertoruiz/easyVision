@@ -193,9 +193,9 @@ estimateHomographyRaw dest orig = h where
             t36=bx     
     
 -- with normalization    
-estimateHomography' dest orig = inv wd <> h <> wo where
-    std = stat dest
-    sto = stat orig
+estimateHomography dest orig = inv wd <> h <> wo where
+    std = stat (realMatrix dest)
+    sto = stat (realMatrix orig)
     nd = toList (normalizedData std)
     no = toList (normalizedData sto)
     h = estimateHomographyRaw nd no

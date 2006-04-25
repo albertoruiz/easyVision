@@ -41,7 +41,7 @@ unitSquare = [[a,a],
               [b,b],
               [b,a]]
     where a = (-0.5)
-          b = 0.5
+          b = 0.5::Double
 
       
                        
