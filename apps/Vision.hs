@@ -159,9 +159,6 @@ asMat v = fromList [[ 0,-c, b],
           c = v!:2     
     
 cross a b = asMat a <> b    
-    
-            
-            
             
 -- check equal size    
 estimateHomographyRaw dest orig = h where
@@ -192,15 +189,16 @@ estimateHomographyRaw dest orig = h where
             t35=bx*ay
             t36=bx     
     
--- with normalization    
-estimateHomography dest orig = inv wd <> h <> wo where
+withNormalization estimateTransformation dest orig = inv wd <> h <> wo where
     std = stat (realMatrix dest)
     sto = stat (realMatrix orig)
     nd = toList (normalizedData std)
     no = toList (normalizedData sto)
-    h = estimateHomographyRaw nd no
+    h = estimateTransformation nd no
     wd = whiteningTransformation std
-    wo = whiteningTransformation sto   
+    wo = whiteningTransformation sto 
+   
+estimateHomography = withNormalization estimateHomographyRaw   
     
 normat3 m = m <> recip m!!:(rows m -1, cols m -1)
 
@@ -242,3 +240,42 @@ factorizeCamera m = (normat3 k, r <> signum (det r),c) where
     k = k'<>s
     r = s<>r'
     c = inHomog $ flatten $ dropColumns 3 v'
+    
+    
+    
+estimateCameraRaw image world = h where
+    eqs = concat (zipWith eq image world)
+    a = realMatrix eqs
+    (_,_,v) = svd a
+    h = reshape 4 $ flatten $ dropColumns 11 v
+    eq [bx,by] [ax,ay,az] = 
+        [[  0,  0,  0,  0,t15,t16,t17,t18,t19,t110,t111,t112],
+         [t21,t22,t23,t24,  0,  0,  0,  0,t29,t210,t211,t212],
+         [t31,t32,t33,t34,t35,t36,t37,t38,  0,   0,   0,   0]] where
+            t15 =(-ax)
+            t16 =(-ay)
+            t17 =(-az)
+            t18 =(-1)
+            t19 =by*ax 
+            t110=by*ay 
+            t111=by*az
+            t112=by
+            t21 =ax 
+            t22 =ay 
+            t23 =az
+            t24 =1
+            t29 =(-bx*ax) 
+            t210=(-bx*ay)
+            t211=(-bx*az) 
+            t212=(-bx)
+            t31=(-by*ax) 
+            t32=(-by*ay) 
+            t33=(-by*az)
+            t34=(-by)
+            t35=bx*ax 
+            t36=bx*ay
+            t37=bx*az
+            t38=bx     
+    
+
+estimateCamera = withNormalization estimateCameraRaw 

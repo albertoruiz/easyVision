@@ -1,4 +1,4 @@
--- Necessity of normalization in homography estimation
+-- Necessity of normalization in the estimation of 
 
 module Main where
 
@@ -6,7 +6,6 @@ import Vision
 import GSL 
 import Stat
 
-dest::Double->Double->[[Double]]
 dest a b = [[0,0]
            ,[a,0]
            ,[0,a]
@@ -15,7 +14,6 @@ dest a b = [[0,0]
            ,[a+b,a+b]
            ,[a+b,a-b]]
              
-orig::[[Double]]           
 orig     = [[0,0]
            ,[1,0]
            ,[0,1]
@@ -25,13 +23,51 @@ orig     = [[0,0]
            ,[1,1]]
              
 h1 = estimateHomographyRaw (dest 100 1) orig
-
 h2 = estimateHomography (dest 100 1) orig
 
 e1 = (realMatrix $ ht h1 orig) - 100 * realMatrix orig
-
 e2 = (realMatrix $ ht h2 orig) - 100 * realMatrix orig 
 
+
+world = [[0, 2, -1]
+        ,[0, 1, -1]
+        ,[0, 0, -1]
+        ,[0, 2,  0]
+        ,[0, 1,  0]
+        ,[0, 0,  0]
+        ,[1, 2,  0]
+        ,[1, 1,  0]
+        ,[1, 0,  0]]
+
+imageCen=[[-123,   2]
+        ,[-107, -47]
+        ,[ -87,-117]
+        ,[ -81,  89]
+        ,[ -57,  51]
+        ,[ -23,  -5]
+        ,[   5,  58]
+        ,[  40,  18]
+        ,[  91, -40]]
+
+image = toList $ realMatrix imageCen |+| realVector [200,150]
+
+m1 = estimateCameraRaw image world
+m2 = estimateCamera image world
+e3 = (realMatrix $ ht m1 world) - (realMatrix image)
+e4 = (realMatrix $ ht m2 world) - (realMatrix image)
+
+
 main = do
+    print (normat3 h1)
+    print (normat3 h2)
     print e1
     print e2
+    print (pnorm 1 $ flatten e1)
+    print (pnorm 1 $ flatten e2)
+    putStrLn ""
+    print (normat3 m1)
+    print (normat3 m2)
+    print e3
+    print e4
+    print (pnorm 1 $ flatten e3)
+    print (pnorm 1 $ flatten e4)

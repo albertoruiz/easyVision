@@ -1,4 +1,5 @@
 -- experiments on planar rectification
+-- runhaskell frontal 20 0.01 1
 
 import GSL
 import Vision
