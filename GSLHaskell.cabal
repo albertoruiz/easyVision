@@ -10,7 +10,7 @@ Synopsis:           Functional interface to the GNU Scientific Library
 Description:
 Category:           Numerical
 tested-with:        GHC ==6.4.1
-Build-Depends:      base, HGL, OpenGL, GLUT, haskell98 
+Build-Depends:      base, HGL, OpenGL, GLUT, haskell98, HUnit, X11 
 Exposed-modules:    GSL, GSL.Base, GSL.Utils
 --Extensions: 
 Other-modules:      GSL.Core, GSL.Derived, GSL.Wrappers, 

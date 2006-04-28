@@ -15,6 +15,10 @@ $ runhaskell Setup.hs install --user
 
 (You should also repeat these steps after a darcs pull.)
 
+These commands and a few tests can be also invoked by the script:
+
+$ ./setup
+
 NOTE: The library should be used from another directory.
 For instance, to run the examples:
 
@@ -33,7 +37,7 @@ Compiled:
 
 $ ghc --make demo.hs -o demo
 
-If --make is not give we need -package GSL:
+If --make is not given we need -package GSL:
 
 $ ghc demo.hs -o demo -package GSL
 

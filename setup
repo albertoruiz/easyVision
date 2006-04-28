@@ -1,5 +1,13 @@
 #! /bin/bash
 
+echo "Cabal user install..."
+runhaskell Setup.hs configure --prefix=$HOME
+runhaskell Setup.hs build
+runhaskell Setup.hs install --user
+echo "Performing some tests..."
+(cd apps; runhaskell tests)
+exit 0
+
 echo "Compiling the C wrappers..."
 gcc -O2 -Wall `gsl-config --cflags` -c GSL/gslaux.c -o GSL/gslaux.o
 
