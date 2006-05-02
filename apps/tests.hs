@@ -17,7 +17,7 @@ poseEstimationTest m = normatdet m =~= normatdet m' where
     Just pars' = poseGen Nothing (homogZ0 m')
     m'' = syntheticCamera pars'
 
-m1 = -3 * (syntheticCamera $ easyCamera 2 (1,2,3) (0,3,0) (30*degree))
+m1 = -3 * (syntheticCamera $ easyCamera (40*degree) (1,2,3) (0,3,0) (30*degree))
     
 m2 = realMatrix [[1,0.1, 1],
                  [0,  2,-2],
@@ -36,11 +36,26 @@ classifyTest n1 n2 numErr = do
     assertEqual ("classifyTest "++show (n1,n2)++", ") numErr errors
         
 -------------------------------------------------------------------
+        
+besselTest = do
+    let (r,e) = bessel_J0_e 5.0
+    let expected = -0.17759677131433830434739701
+    assertBool "bessel_J0_e" ( abs (r-expected) < e ) 
+        
+exponentialTest = do
+    let (v,e,err) = exp_e10_e 30.0
+    let expected = exp 30.0
+    assertBool "exp_e10_e" ( abs (v*10^e - expected) < 4E-2 ) 
+        
+        
+-------------------------------------------------------------------
 
 tests = TestList 
     [ TestCase (assertBool "factorize1" (factorizeCameraTest m1))
     , TestCase (assertBool "factorize2" (factorizeCameraTest m2))
     , TestCase (assertBool "pose"       (poseEstimationTest  m1))
+    , TestCase $ besselTest
+    , TestCase $ exponentialTest
     , TestCase $ classifyTest 500 500 129 
     --, TestCase $ classifyTest 4000 1000 63 
     ]

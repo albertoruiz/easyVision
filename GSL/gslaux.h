@@ -81,3 +81,6 @@ int deriv(int code, double f(double, void*), double x, double h, double * result
 
 double gsl_sf_erf(double);
 double gsl_sf_erf_Z(double);
+
+int gsl_sf_bessel_J0_e(double, double*); // hmmm...
+int gsl_sf_exp_e10_e(double, double*);   // HMMMMM...

@@ -477,6 +477,39 @@ foreign import ccall "gsl_sf_erf" erf :: Double -> Double
 -}
 foreign import ccall "gsl_sf_erf_Z" erf_Z :: Double -> Double
 
+----------------------------------------------------------------
+-------------------- functions returning sf_result -------------
+
+{- | The regular cylindrical Bessel function of zeroth order, J_0(x). This is
+   the example in the GSL manual, returning the value of the function and
+   the error term: 
+
+@\> bessel_J0_e 5.0
+(-0.1775967713143383,1.9302109579684196e-16)@
+
+-}
+bessel_J0_e :: Double -> (Double,Double)
+bessel_J0_e x = createSFR "bessel_J0_e" (gsl_sf_bessel_J0_e x)
+foreign import ccall "gsl_sf_bessel_J0_e" gsl_sf_bessel_J0_e :: Double -> Ptr Double -> IO Int
+
+-------------------- functions returning sf_result_e10 -------------
+
+{- | (From the GSL manual) \"This function computes the exponential \exp(x) using the @gsl_sf_result_e10@ type to return a result with extended range. This function may be useful if the value of \exp(x) would overflow the numeric range of double\". 
+
+For example:
+
+@\> exp_e10_e 30.0
+(1.0686474581524432,1.4711818964275088e-14,13)@
+
+@\> exp 30.0
+1.0686474581524463e13@
+
+-}
+exp_e10_e :: Double -> (Double,Int,Double)
+exp_e10_e x = createSFR_E10 "exp_e10_e" (gsl_sf_exp_e10_e x)
+foreign import ccall "gsl_sf_exp_e10_e" gsl_sf_exp_e10_e :: Double -> Ptr Double -> IO Int
+
+-----------------------------------------------------------------
 -- | experiment to send to opengl a mesh from C
 meshC :: Matrix -> IO Int
 meshC x =  m c_mesh x

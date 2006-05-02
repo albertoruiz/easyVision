@@ -1,4 +1,3 @@
-- wrappers to the sf_result struct including value and error of the special functions
 - records
 - selectable algorithm for eigS
 - catch errors in integrate?

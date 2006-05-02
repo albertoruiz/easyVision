@@ -41,8 +41,8 @@ module GSL.Base (
     -- | Minimization of a multidimensional function using some of the algorithms described in <http://www.gnu.org/software/gsl/manual/gsl-ref_35.html#SEC474>.
     minimizeConjugateGradient, minimizeNMSimplex, 
     -- ** Special functions
-    erf, erf_Z,
-    module Complex
+    erf, erf_Z, bessel_J0_e, exp_e10_e,
+    module Data.Complex
 ) where
 
 import GSL.Core
@@ -50,7 +50,7 @@ import GSL.Wrappers
 import GSL.Derived
 import GSL.Interface
 import GSL.Drawing
-import Complex
+import Data.Complex
 
 {- $VectorsAndMatrices Vectors and matrices admit the operators in the Num and Floating classes in the element by element sense:
 
