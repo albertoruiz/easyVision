@@ -149,8 +149,10 @@ consistency ConstantUnknown hs horiz = r where
     mbOmegas = repeat mbOmega1
     r = quality ihs mbOmegas c
     
-prepareExperiment mov frms noise = (sol, funs) where
-    interimageHomographies = genInterimage $ genViews noise (genCams mov frms)
+prepareExperiment mov frms noise = (sol, v0, funs) where
+    views = genViews noise (genCams mov frms)
+    v0 = head views
+    interimageHomographies = genInterimage views
     trueHoriz = getSolution mov frms
     fs = getFocals mov frms
     sol = (trueHoriz,fs)
@@ -292,8 +294,11 @@ minimizeCG f df xi = minimizeConjugateGradient 1E-2 1E-4 1E-3 30
 findSol' fun (rinit,hinit) = minimizeCG (mkfun fun) (gradient (mkfun fun)) [rinit,hinit] 
         
             
+shpoly l = hplot $ toColumns $ realMatrix (l!!3 :l)            
+            
 main = do
-    let ((h,fs),(fun1,fun2,fun3,fun4)) = prepareExperiment orbit frames1 0.0
+    let ((h,fs),v0, (fun1,fun2,fun3,fun4)) = prepareExperiment orbit frames1 0.02
+    shpoly v0
     print $ fun1 h
     print $ fun2 h
     print $ fun3 h
@@ -304,6 +309,8 @@ main = do
     print path
     print sol
     print h
+    let r = rectifier ((\[a,b]->(a,b)) sol, head fs)
+    shpoly $ ht r $ v0
     let (sol,path) = findSol' fun1 (rt+1*degree,yt+0.05)
     print path
     print (toList sol)
