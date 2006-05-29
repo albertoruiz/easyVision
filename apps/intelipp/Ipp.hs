@@ -53,7 +53,7 @@ data ROI = ROI { r1, r2, c1, c2 :: Int}
 starting :: Img -> ROI -> Ptr ()
 starting img roi = plusPtr (ptr img) (r1 roi * step img + c1 roi*(datasize img)*(layers img))
   
-roiSize (ROI { r1=a, r2=b, c1=x, c2=y}) = encodeAsDouble (b-a+1) (y-x+1)  
+roiSize (ROI { r1=a, r2=b, c1=x, c2=y}) = encodeAsDouble  (y-x+1)  (b-a+1)
 
 encodeAsDouble :: Int -> Int -> Double
 encodeAsDouble a b = unsafePerformIO $ do

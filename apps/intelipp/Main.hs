@@ -1,6 +1,7 @@
 {-# OPTIONS -fffi #-}
 
 import Ipp
+import Draw
  
 import Foreign 
 import Foreign.C.Types
@@ -40,11 +41,22 @@ cre im f = do
     f im r
     return r     
     
+    
+pyr im k = do
+    let roi = ROI {r1=20, c1=150, r2 = 290, c2=290}  
+    --r <- img (datasize im) (layers im) (rows im) (cols im)
+    r <- copy32f im
+    mK2p1 ippiFilterGauss_32f_C1R 33 roi r im
+    mK2 ippiCopy_32f_C1R (fullroi im) im r
+    if k == 1000 then error "OK"
+                else return im
+    
+    
 main = do
     --loop 1000 testMalloc
   
     w <- testImage
-    imageshow w 
+    --imageshow w 
     
     --d <- img 4 1 300 300
     --mK2 ippiCopy_32f_C1R (fullroi d) d w
@@ -52,5 +64,7 @@ main = do
     
     let roi = ROI {r1=150, c1=150, r2 = 299, c2=299}
     mK2p1 ippiFilterGauss_32f_C1R 55 roi d w
-    imageshow d
+    --imageshow d
+    
+    imageShow' (300,300) (pyr w) 
     
