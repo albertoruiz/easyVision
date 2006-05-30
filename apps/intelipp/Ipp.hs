@@ -5,7 +5,7 @@ module Ipp where
 import Foreign
 import Control.Monad(when)
  
-import GSL hiding(rows, cols) 
+--import GSL hiding(rows, cols) 
 
 ------------------------------------------------------------
 ------------- descriptor of an ipp image -------------------
@@ -91,9 +91,3 @@ mK2p1 f p roi img other = do
     touchForeignPtr (fptr img)
     touchForeignPtr (fptr other)
     return ()          
-    
-
-imageshow img = do 
-    dat <- getData img
-    let mat = realMatrix $ map (map (fromRational.toRational)) dat
-    imshow mat 
