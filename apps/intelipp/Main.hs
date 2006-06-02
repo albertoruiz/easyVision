@@ -23,7 +23,31 @@ foreign import ccall "auxIpp.h ippiCopy_32f_C1R"
 foreign import ccall "auxIpp.h ippiCopy_8u_C1R" 
      ippiCopy_8u_C1R :: Ptr() -> Int -> Ptr() -> Int -> Double -> IO Int
       
+foreign import ccall "auxIpp.h ippiScale_32f8u_C1R" 
+     ippiScale_32f8u_C1R :: Ptr() -> Int -> Ptr() -> Int -> Double -> Float -> Float -> IO Int
       
+foreign import ccall "auxIpp.h ippiScale_8u32f_C1R" 
+     ippiScale_8u32f_C1R :: Ptr() -> Int -> Ptr() -> Int -> Double -> Float -> Float -> IO Int
+            
+foreign import ccall "auxIpp.h ippiFilterSobelVert_32f_C1R" 
+     ippiFilterSobelVert_32f_C1R :: Ptr() -> Int -> Ptr() -> Int -> Double -> IO Int
+      
+foreign import ccall "auxIpp.h ippiFilterSobelHoriz_32f_C1R" 
+     ippiFilterSobelHoriz_32f_C1R :: Ptr() -> Int -> Ptr() -> Int -> Double -> IO Int
+      
+foreign import ccall "auxIpp.h ippiAbs_32f_C1R" 
+     ippiAbs_32f_C1R :: Ptr() -> Int -> Ptr() -> Int -> Double -> IO Int
+      
+foreign import ccall "auxIpp.h ippiAdd_32f_C1R" 
+     ippiAdd_32f_C1R :: Ptr() -> Int -> Ptr() -> Int -> Ptr() -> Int -> Double -> IO Int
+            
+foreign import ccall "auxIpp.h ippiFilterMax_32f_C1R" 
+     ippiFilterMax_32f_C1R :: Ptr() -> Int -> Ptr() -> Int -> Double -> Double -> Double -> IO Int
+            
+foreign import ccall "auxIpp.h ippiCompare_32f_C1R" 
+     ippiCompare_32f_C1R :: Ptr() -> Int -> Ptr() -> Int -> Ptr() -> Int -> Double -> Int -> IO Int
+            
+            
 ------------------------------------------------------      
 foreign import ccall "auxIpp.h mycvOpenCamera"
      openCamera :: Ptr CChar -> IO Int
@@ -52,9 +76,55 @@ testImage (r,c) = do
 copy32f im = cre im fun where
     fun im r = mK2 ippiCopy_32f_C1R (fullroi im) r im
 
+scale8u32f vmin vmax im = cre' im fun 4 1 where
+    fun im r = mK2p2 ippiScale_8u32f_C1R 0.0 1.0 (fullroi im) r im
+
+filterSobelVert im = cre im fun where
+    roi = shrink (1,1) (fullroi im)
+    fun im r = mK2 ippiFilterSobelVert_32f_C1R roi r im
+
+filterSobelHoriz im = cre im fun where
+    roi = shrink (1,1) (fullroi im)
+    fun im r = mK2 ippiFilterSobelHoriz_32f_C1R roi r im
+
+abs32f im = cre im fun where
+    fun im r = mK2 ippiAbs_32f_C1R (fullroi im) r im
+
+add32f im1 im2 = cre2 im1 im2 fun where
+    fun im1 im2 r = mK3 ippiAdd_32f_C1R (fullroi im1) r im1 im2
+
+gauss mask im = cre im fun where
+    roi = shrink (1,1) (fullroi im)
+    fun im r = mK2p1 ippiFilterGauss_32f_C1R mask roi r im
+
+filterMax32f sz im = cre im fun where
+    d = (sz-1) `quot` 2
+    roi = shrink (d,d) (fullroi im)
+    fun im r = mK2p2 ippiFilterMax_32f_C1R (encodeAsDouble sz sz) (encodeAsDouble d d) roi r im
+
+compare32f code im1 im2 = cre2' im1 im2 fun 1 1 where
+    fun im1 im2 r = mK3p1 ippiCompare_32f_C1R code (fullroi im1) r im1 im2
+
+
+
 cre im f = do
     r <- img (datasize im) (layers im) (rows im) (cols im)
     f im r
+    return r     
+    
+cre' im f d l = do
+    r <- img d l (rows im) (cols im)
+    f im r
+    return r    
+    
+cre2 im1 im2 f = do
+    r <- img (datasize im1) (layers im1) (rows im1) (cols im1)
+    f im1 im2 r
+    return r     
+    
+cre2' im1 im2 f d l = do
+    r <- img d l (rows im1) (cols im1)
+    f im1 im2 r
     return r     
     
     
@@ -83,8 +153,16 @@ grab c = do
     
 
 visor cam k = do
-    im <- grab cam
-    return im
+    im  <- grab cam
+    imf <- scale8u32f 0 1 im  >>= gauss 55
+    gx  <- filterSobelVert imf
+    gy  <- filterSobelHoriz imf
+    agx <- abs32f gx
+    agy <- abs32f gy
+    g   <- add32f agx agy >>= gauss 55
+    mg  <- filterMax32f 3 g >>= filterMax32f 3
+    lm  <- compare32f 2 mg g
+    return mg
 
     
 main = do
@@ -93,8 +171,6 @@ main = do
     cam <- openCamera filename
     setCameraMode cam 1 288 384
     imageShow (384,288) (visor cam)
-    
-    print "hola"
     
     
 main' = do

@@ -65,6 +65,13 @@ encodeAsDouble a b = unsafePerformIO $ do
 
 fullroi img = ROI {r1=0, r2=rows img-1, c1=0, c2=cols img-1}
 
+shrink (r,c) roi = 
+    ROI {r1=(r1 roi) +r, 
+         r2=(r2 roi) -r,
+         c1=(c1 roi) +c,
+         c2=(c2 roi) -c}
+
+
 mK1 f roi img = do
     err <- f (starting img roi) (step img) (roiSize roi)
     when (err/=0) (error "ipp mK1")
@@ -76,6 +83,22 @@ mK2 f roi img other = do
     when (err/=0) (error "ipp mK2")
     touchForeignPtr (fptr img)
     touchForeignPtr (fptr other)
+    return ()        
+    
+mK3 f roi img other1 other2 = do
+    err <- f (starting other1 roi) (step other1) (starting other2 roi) (step other2) (starting img roi) (step img) (roiSize roi)
+    when (err/=0) (error "ipp mK2")
+    touchForeignPtr (fptr img)
+    touchForeignPtr (fptr other1)
+    touchForeignPtr (fptr other1)
+    return ()        
+    
+mK3p1 f p roi img other1 other2 = do
+    err <- f (starting other1 roi) (step other1) (starting other2 roi) (step other2) (starting img roi) (step img) (roiSize roi) p
+    when (err/=0) (error "ipp mK2")
+    touchForeignPtr (fptr img)
+    touchForeignPtr (fptr other1)
+    touchForeignPtr (fptr other1)
     return ()        
     
     
@@ -91,3 +114,10 @@ mK2p1 f p roi img other = do
     touchForeignPtr (fptr img)
     touchForeignPtr (fptr other)
     return ()          
+
+mK2p2 f p1 p2 roi img other = do
+    err <- f (starting other roi) (step other) (starting img roi) (step img) (roiSize roi) p1 p2
+    when (err/=0) (error "ipp mK2p2")
+    touchForeignPtr (fptr img)
+    touchForeignPtr (fptr other)
+    return ()  
