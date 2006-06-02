@@ -5,42 +5,40 @@ import Ipp
 import Data.IORef
 import System.Exit
 import Foreign (touchForeignPtr)
+import Control.Monad(unless)
 
 
--- hopengl machinery copied from GSL.Drawing, must be cleaned up
+-- hopengl machinery copied from GSL.Drawing
            
 dibujar f state = do
     st @ (State {frame = n}) <- readIORef state
-    --clearColor $= Color4 0 0 0 0.1
-    clear [ColorBuffer,DepthBuffer]
-    loadIdentity
-    rotate (angle st) $ Vector3 1 0 (0::GLfloat)
-    f n
+    clear [ColorBuffer]
+    unless (pause st) $ f n
     swapBuffers     
     
 -----------------------------------------------------
 
-data State = State { frame :: Int, pause :: Bool, angle :: GLfloat}
+data State = State { frame :: Int, pause :: Bool}
 
 prepareOpenGL f sz = do 
     getArgsAndInitialize
-    initialDisplayMode $= [DoubleBuffered, WithDepthBuffer]
+    initialDisplayMode $= [DoubleBuffered]
     createWindow "OpenGL Image Raster"
     windowSize $= sz
-    lookAt (Vertex3 0 0 1) (Vertex3 0 0 0) (Vector3 1 0 0)
-    lighting $= Enabled
-    light (Light 0) $= Enabled
     
-    depthFunc $= Just Less
-    
-    --polygonSmooth $= Enabled
-    --lineSmooth $= Enabled
-        
-    state <- newIORef (State {frame = 0, pause = False, angle = 60})
+    state <- newIORef (State {frame = 0, pause = False})
     displayCallback $= dibujar f state
     keyboardMouseCallback $= Just (keyboard state)
     idleCallback $= Just (modify state)
     --addTimerCallback 30 $ modify state
+    
+    {-
+    createWindow "another window"
+    windowSize $= sz
+    displayCallback $= dibujar f state
+    idleCallback $= Just (postRedisplay Nothing)
+    -}
+    
     mainLoop
             
 modify state = do
@@ -54,29 +52,35 @@ keyboard _ (Char '\27') Down _ _ = do
 keyboard st (Char 'p') Down _ _ = do
     modifyIORef st $ \s -> s {pause = not (pause s)}
 
-keyboard st (SpecialKey KeyUp) Down _ _ = do
-    modifyIORef st $ \s -> s {angle = angle s + 5}
-
-keyboard st (SpecialKey KeyDown) Down _ _ = do
-    modifyIORef st $ \s -> s {angle = angle s - 5}
-
 keyboard _ _ _ _ _ = return ()
  
 ---------------------------------------------------------------------
 
-imageShow (w,h) f = do
-    prepareOpenGL g (Size w h) where
+tp 1 = UnsignedByte
+tp 4 = Float
+
+
+display m w h = do
+    matrixMode $= Projection
+    loadIdentity
+    ortho2D 0.0 (fromIntegral w ::GLdouble) 0.0 (fromIntegral h)
+    matrixMode $= Modelview 0
+    loadIdentity
+    
+    rasterPos (Vertex2 (1::GLfloat) (fromIntegral h-1))
+    pixelZoom $= (1,-1)
+    drawPixels (Size (fromIntegral $ step m `quot` (datasize m)) (fromIntegral $ rows m))
+                (PixelData Luminance (tp $ datasize m) (ptr m))
+    touchForeignPtr (fptr m)
+
+imageShow' (w,h) f = do
+    prepareOpenGL g (Size (w+2) (h+2)) where
     g k = do
         let m = f k
-        drawPixels (Size (fromIntegral $ step m `quot` 4) (fromIntegral $ rows m))
-                   (PixelData Luminance Float (ptr m))
-        touchForeignPtr (fptr m)
+        display m w h
         
-imageShow' (w,h) f = do
-    prepareOpenGL g (Size w h) where
+imageShow (w,h) f = do
+    prepareOpenGL g (Size (w+2) (h+2)) where
     g k = do
         m <- f k
-        drawPixels (Size (fromIntegral $ step m `quot` 4) (fromIntegral $ rows m))
-                   (PixelData Luminance Float (ptr m))
-        touchForeignPtr (fptr m)
-        
+        display m w h

@@ -5,6 +5,8 @@ import Draw
  
 import Foreign 
 import Foreign.C.Types
+import Foreign.C.String(newCString)
+import System.Environment(getArgs)
  
 foreign import ccall "ippiImageJaehne_32f_C1R" 
   ippiImageJaehne_32f_C1R :: Ptr() -> Int -> Double -> IO Int
@@ -18,6 +20,20 @@ foreign import ccall "auxIpp.h ippiFilterGauss_32f_C1R"
 foreign import ccall "auxIpp.h ippiCopy_32f_C1R" 
      ippiCopy_32f_C1R :: Ptr() -> Int -> Ptr() -> Int -> Double -> IO Int
       
+foreign import ccall "auxIpp.h ippiCopy_8u_C1R" 
+     ippiCopy_8u_C1R :: Ptr() -> Int -> Ptr() -> Int -> Double -> IO Int
+      
+      
+------------------------------------------------------      
+foreign import ccall "auxIpp.h mycvOpenCamera"
+     openCamera :: Ptr CChar -> IO Int
+
+foreign import ccall "auxIpp.h mycvSetModeCamera"
+     setCameraMode :: Int -> Int -> Int -> Int -> IO()
+
+foreign import ccall "auxIpp.h mycvGetFrameCamera"
+     getFrame :: Int -> Ptr Int -> IO (Ptr CChar)
+-------------------------------------------------------
 
 testMalloc = do
     imgs <- mapM (\r -> img 4 1 r r) [300 .. 400]
@@ -52,17 +68,40 @@ pyr im k = do
                 else return im
     
     
-main = do
+main'' = do
     w <- testImage (300,500)
-    imageShow' (300,300) (pyr w) 
+    imageShow (300,300) (pyr w) 
     
+    
+grab c = do
+    pstep <- malloc
+    dat <- getFrame c pstep
+    stepc <- peek pstep
+    res <- img 1 1 288 384
+    copyArray (castPtr $ ptr res) dat (288*stepc)
+    return res 
+    
+
+visor cam k = do
+    im <- grab cam
+    return im
+
+    
+main = do
+    args <- getArgs
+    filename <- newCString (args!!0)
+    cam <- openCamera filename
+    setCameraMode cam 1 288 384
+    imageShow (384,288) (visor cam)
+    
+    print "hola"
     
     
 main' = do
     --loop 1000 testMalloc
   
     w <- testImage (300,300)
-    --imageShow (300,300) (const w) 
+    --imageShow' (300,300) (const w) 
     
     --d <- img 4 1 300 300
     --mK2 ippiCopy_32f_C1R (fullroi d) d w
@@ -70,5 +109,5 @@ main' = do
     
     let roi = ROI {r1=150, c1=150, r2 = 299, c2=299}
     mK2p1 ippiFilterGauss_32f_C1R 55 roi d w
-    imageShow (300,300) (const d) 
+    imageShow' (300,300) (const d) 
     
