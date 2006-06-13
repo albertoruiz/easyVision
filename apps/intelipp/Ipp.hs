@@ -87,7 +87,7 @@ mK2 f roi img other = do
     
 mK3 f roi img other1 other2 = do
     err <- f (starting other1 roi) (step other1) (starting other2 roi) (step other2) (starting img roi) (step img) (roiSize roi)
-    when (err/=0) (error "ipp mK2")
+    when (err/=0) (error "ipp mK3")
     touchForeignPtr (fptr img)
     touchForeignPtr (fptr other1)
     touchForeignPtr (fptr other1)
@@ -95,7 +95,7 @@ mK3 f roi img other1 other2 = do
     
 mK3p1 f p roi img other1 other2 = do
     err <- f (starting other1 roi) (step other1) (starting other2 roi) (step other2) (starting img roi) (step img) (roiSize roi) p
-    when (err/=0) (error "ipp mK2")
+    when (err/=0) (error "ipp mK3p1")
     touchForeignPtr (fptr img)
     touchForeignPtr (fptr other1)
     touchForeignPtr (fptr other1)
@@ -107,6 +107,13 @@ mK1p1 f p roi img = do
     when (err/=0) (error "ipp mK1p1")
     touchForeignPtr (fptr img)
     return () 
+       
+mK1p2 f p1 p2 roi img = do
+    err <- f (starting img roi) (step img) (roiSize roi) p1 p2
+    when (err/=0) (error "ipp mK1p2")
+    touchForeignPtr (fptr img)
+    return () 
+       
        
 mK2p1 f p roi img other = do
     err <- f (starting other roi) (step other) (starting img roi) (step img) (roiSize roi) p
@@ -121,3 +128,25 @@ mK2p2 f p1 p2 roi img other = do
     touchForeignPtr (fptr img)
     touchForeignPtr (fptr other)
     return ()  
+    
+mK2p3 f p1 p2 p3 roi img other = do
+    err <- f (starting other roi) (step other) (starting img roi) (step img) (roiSize roi) p1 p2 p3
+    when (err/=0) (error "ipp mK2p3")
+    touchForeignPtr (fptr img)
+    touchForeignPtr (fptr other)
+    return ()      
+    
+imgAs im = img (datasize im) (layers im) (rows im) (cols im)
+
+src im roi f = f (starting im roi) (step im)
+dst im roi f = f (starting im roi) (step im) (roiSize roi)
+app p f = f p
+
+checkIPP msg ls f = do
+    err <- f
+    when (err/=0) (error msg)
+    mapM_ (touchForeignPtr . fptr) ls
+    return ()
+
+infixl 0 //
+(//) = flip ($)

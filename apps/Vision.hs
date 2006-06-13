@@ -189,16 +189,16 @@ estimateHomographyRaw dest orig = h where
             t35=bx*ay
             t36=bx     
     
-withNormalization estimateTransformation dest orig = inv wd <> h <> wo where
+withNormalization lt estimateRelation dest orig = lt wd <> h <> wo where
     std = stat (realMatrix dest)
     sto = stat (realMatrix orig)
     nd = toList (normalizedData std)
     no = toList (normalizedData sto)
-    h = estimateTransformation nd no
+    h = estimateRelation nd no
     wd = whiteningTransformation std
     wo = whiteningTransformation sto 
    
-estimateHomography = withNormalization estimateHomographyRaw   
+estimateHomography = withNormalization inv estimateHomographyRaw   
     
 normat3 m = m <> recip m!!:(rows m -1, cols m -1)
 
@@ -208,6 +208,7 @@ normatdet m = m <> recip k where
     d = det s
     k = signum d * abs d **(1/ fromIntegral n)
 
+normat m = m <> recip (norm (flatten m))
 
 homogMat m = m <|> constant 1 (rows m)
 
@@ -278,4 +279,34 @@ estimateCameraRaw image world = h where
             t38=bx     
     
 
-estimateCamera = withNormalization estimateCameraRaw 
+estimateCamera = withNormalization inv estimateCameraRaw 
+
+--------------------------------------------------------
+
+estimateFundamentalRaw l r = f where
+    f = reshape 3 $ flatten $ dropColumns 8 v
+    (_,_,v) = svd eqs
+    eqs = realMatrix (zipWith eq l r)
+    eq [xl, yl] [xr, yr] = [xl*xr, xl*yr, xl, xr*yl, yl*yr, yl, xr, yr, 1.0]
+    
+correctFundamental f = f' where
+    (u,s,v) = svd f
+    s1:s2:_ = toList s
+    f' = u <> diag (fromList [s1,s2,0.0]) <> trans v
+    
+estimateFundamental = withNormalization trans f where
+    f l r = correctFundamental (estimateFundamentalRaw l r)
+
+distPointLine [x,y,w] [a,b,c] = sqrt $ (a*x + b*y + c*w)^2 / (a^2+b^2) / w^2
+
+epipolarQuality f l r = zipWith fun l r where
+    fun [a1,a2] [b1,b2] = distPointLine [a1,a2,1.0] epb where
+        epb = toList (f <> realVector [b1,b2,1.0])
+        
+qualityOfEssential e = (s1-s2)/(s1+s2) where
+    s1:s2:_ = toList s
+    (_,s,_) = svd e         
+        
+qualityOfInducedEssential fund f = qualityOfEssential (kgen f <> fund <> kgen f)
+            
+-- selfCalibrateFundamental fund f0 = 

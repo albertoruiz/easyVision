@@ -1,10 +1,11 @@
--- Necessity of normalization in the estimation of 
+-- Necessity of normalization in the linear estimation of geometric relationships
 
 module Main where
 
 import Vision
 import GSL 
 import Stat
+import Data.List(genericLength)
 
 dest a b = [[0,0]
            ,[a,0]
@@ -71,3 +72,17 @@ main = do
     print e4
     print (pnorm 1 $ flatten e3)
     print (pnorm 1 $ flatten e4)
+    putStrLn ""
+    correspondences <- fromFile "stereo.txt"
+    let leftpts  = toList $ takeColumns 2 correspondences
+    let rightpts = toList $ dropColumns 2 correspondences
+    let f = estimateFundamental leftpts rightpts
+    disp 8 (normat f)
+    print $ mean $ epipolarQuality f leftpts rightpts
+    let fs = linspace 500 (50,200)
+    hplot [fs, vmap (qualityOfInducedEssential f) fs]
+    print $ minimize (\[x]-> qualityOfInducedEssential f x) [170.0]
+
+mean l = sum l / genericLength l
+
+minimize f xi = minimizeNMSimplex f xi (replicate (length xi) 1) 1e-2 100

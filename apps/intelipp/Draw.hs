@@ -74,13 +74,13 @@ display m w h = do
     touchForeignPtr (fptr m)
 
 imageShow' (w,h) f = do
-    prepareOpenGL g (Size (w+2) (h+2)) where
+    prepareOpenGL g (Size (fromIntegral w+2) (fromIntegral h+2)) where
     g k = do
         let m = f k
         display m w h
         
 imageShow (w,h) f = do
-    prepareOpenGL g (Size (w+2) (h+2)) where
+    prepareOpenGL g (Size (fromIntegral w+2) (fromIntegral h+2)) where
     g k = do
         m <- f k
         display m w h

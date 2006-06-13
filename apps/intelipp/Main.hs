@@ -2,6 +2,7 @@
 
 import Ipp
 import Draw
+import Camera 
  
 import Foreign 
 import Foreign.C.Types
@@ -20,6 +21,9 @@ foreign import ccall "auxIpp.h ippiFilterGauss_32f_C1R"
 foreign import ccall "auxIpp.h ippiCopy_32f_C1R" 
      ippiCopy_32f_C1R :: Ptr() -> Int -> Ptr() -> Int -> Double -> IO Int
       
+foreign import ccall "auxIpp.h ippiCopy_32f_C1MR" 
+     ippiCopy_32f_C1MR :: Ptr() -> Int -> Ptr() -> Int -> Double -> Ptr() -> Int -> IO Int
+            
 foreign import ccall "auxIpp.h ippiCopy_8u_C1R" 
      ippiCopy_8u_C1R :: Ptr() -> Int -> Ptr() -> Int -> Double -> IO Int
       
@@ -41,23 +45,22 @@ foreign import ccall "auxIpp.h ippiAbs_32f_C1R"
 foreign import ccall "auxIpp.h ippiAdd_32f_C1R" 
      ippiAdd_32f_C1R :: Ptr() -> Int -> Ptr() -> Int -> Ptr() -> Int -> Double -> IO Int
             
+foreign import ccall "auxIpp.h ippiSub_32f_C1R" 
+     ippiSub_32f_C1R :: Ptr() -> Int -> Ptr() -> Int -> Ptr() -> Int -> Double -> IO Int
+            
+foreign import ccall "auxIpp.h ippiMul_32f_C1R" 
+     ippiMul_32f_C1R :: Ptr() -> Int -> Ptr() -> Int -> Ptr() -> Int -> Double -> IO Int
+            
+            
 foreign import ccall "auxIpp.h ippiFilterMax_32f_C1R" 
      ippiFilterMax_32f_C1R :: Ptr() -> Int -> Ptr() -> Int -> Double -> Double -> Double -> IO Int
             
 foreign import ccall "auxIpp.h ippiCompare_32f_C1R" 
      ippiCompare_32f_C1R :: Ptr() -> Int -> Ptr() -> Int -> Ptr() -> Int -> Double -> Int -> IO Int
             
-            
-------------------------------------------------------      
-foreign import ccall "auxIpp.h mycvOpenCamera"
-     openCamera :: Ptr CChar -> IO Int
+foreign import ccall "auxIpp.h ippiThreshold_Val_32f_C1R" 
+     ippiThreshold_Val_32f_C1R ::  Ptr() -> Int -> Ptr() -> Int -> Double -> Double -> Double -> Int -> IO Int            
 
-foreign import ccall "auxIpp.h mycvSetModeCamera"
-     setCameraMode :: Int -> Int -> Int -> Int -> IO()
-
-foreign import ccall "auxIpp.h mycvGetFrameCamera"
-     getFrame :: Int -> Ptr Int -> IO (Ptr CChar)
--------------------------------------------------------
 
 testMalloc = do
     imgs <- mapM (\r -> img 4 1 r r) [300 .. 400]
@@ -77,7 +80,7 @@ copy32f im = cre im fun where
     fun im r = mK2 ippiCopy_32f_C1R (fullroi im) r im
 
 scale8u32f vmin vmax im = cre' im fun 4 1 where
-    fun im r = mK2p2 ippiScale_8u32f_C1R 0.0 1.0 (fullroi im) r im
+    fun im r = mK2p2 ippiScale_8u32f_C1R vmin vmax (fullroi im) r im
 
 filterSobelVert im = cre im fun where
     roi = shrink (1,1) (fullroi im)
@@ -93,6 +96,23 @@ abs32f im = cre im fun where
 add32f im1 im2 = cre2 im1 im2 fun where
     fun im1 im2 r = mK3 ippiAdd_32f_C1R (fullroi im1) r im1 im2
 
+sub32f im1 im2 = cre2 im1 im2 fun where
+    fun im1 im2 r = mK3 ippiSub_32f_C1R (fullroi im1) r im1 im2
+
+mul32f im1 im2 = cre2 im1 im2 fun where
+    fun im1 im2 r = mK3 ippiMul_32f_C1R (fullroi im1) r im1 im2
+
+thresholdVal32f t v code im = cre im fun where
+    fun im r = mK2p3 ippiThreshold_Val_32f_C1R t v code (fullroi im) r im
+
+infixl 7  |*|
+(|*|) = mul32f
+
+infixl 6  |+|, |-|
+(|+|) = add32f
+(|-|) = sub32f
+
+
 gauss mask im = cre im fun where
     roi = shrink (1,1) (fullroi im)
     fun im r = mK2p1 ippiFilterGauss_32f_C1R mask roi r im
@@ -102,10 +122,21 @@ filterMax32f sz im = cre im fun where
     roi = shrink (d,d) (fullroi im)
     fun im r = mK2p2 ippiFilterMax_32f_C1R (encodeAsDouble sz sz) (encodeAsDouble d d) roi r im
 
-compare32f code im1 im2 = cre2' im1 im2 fun 1 1 where
-    fun im1 im2 r = mK3p1 ippiCompare_32f_C1R code (fullroi im1) r im1 im2
+
+compare32f code im1 im2 = do
+    r <- img 1 1 (rows im1) (cols im1)
+    let roi = (fullroi im1)
+    (ippiCompare_32f_C1R // src im1 roi // src im2 roi // dst r roi) code // checkIPP "compare32f" [r,im1,im2]
+    return r 
 
 
+copyMask32f im mask = do
+    r <- imgAs im
+    let roi = fullroi im
+    ippiSet_32f_C1R 0.0 // dst r roi // checkIPP "set32f" [r]
+    ippiCopy_32f_C1MR // src im roi // dst r roi // src mask roi // checkIPP "copyMask32f" [r,im,mask]
+    return r
+    
 
 cre im f = do
     r <- img (datasize im) (layers im) (rows im) (cols im)
@@ -143,14 +174,26 @@ main'' = do
     imageShow (300,300) (pyr w) 
     
     
-grab c = do
-    pstep <- malloc
-    dat <- getFrame c pstep
-    stepc <- peek pstep
-    res <- img 1 1 288 384
-    copyArray (castPtr $ ptr res) dat (288*stepc)
-    return res 
-    
+secondOrder image = do
+    gx  <- filterSobelVert image
+    gy  <- filterSobelHoriz image
+    gxx <- filterSobelVert gx
+    gyy <- filterSobelHoriz gy
+    gxy <- filterSobelHoriz gx
+    return (gx,gy,gxx,gyy,gxy)
+     
+hessian image = do
+    (gx,gy,gxx,gyy,gxy) <- secondOrder image
+    ab <- gxx |*| gyy
+    cc <- gxy |*| gxy
+    h  <- ab  |-| cc
+    return h
+
+localMax g = do
+    mg   <- filterMax32f 3 g
+    mask <- compare32f 2 mg g
+    r    <- copyMask32f g mask
+    return r
 
 visor cam k = do
     im  <- grab cam
@@ -164,13 +207,19 @@ visor cam k = do
     lm  <- compare32f 2 mg g
     return mg
 
+
+visor' cam k = do
+    im  <- grab cam
+    imf <- scale8u32f 0 0.5 im >>= gauss 55 >>= gauss 55 
+    h   <- hessian imf  >>= localMax >>= thresholdVal32f 0.3 0.0 0 >>= thresholdVal32f 0.3 1 4
+    return h
+    
+    
     
 main = do
     args <- getArgs
-    filename <- newCString (args!!0)
-    cam <- openCamera filename
-    setCameraMode cam 1 288 384
-    imageShow (384,288) (visor cam)
+    cam@(_,_,(h,w)) <- openCamera (args!!0) 1 (288,384)
+    imageShow (w,h) (visor' cam)
     
     
 main' = do
