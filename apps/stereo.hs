@@ -16,9 +16,9 @@ gnuplot command = do
     system "rm gnuplotcommand"
     
 main = do    
-    correspondences <- fromFile "stereo.txt"
-    gnuplot "plot [-120:120] [-120:120] 'stereo.txt' using 1:2 with points title 'first view'"
-    gnuplot "plot [-120:120] [-120:120] 'stereo.txt' using 3:4 with points title 'second view'"
+    correspondences <- fromFile "correspondences.txt"
+    gnuplot "plot [-120:120] [-120:120] 'correspondences.txt' using 1:2 with points title 'first view'"
+    gnuplot "plot [-120:120] [-120:120] 'correspondences.txt' using 3:4 with points title 'second view'"
     let leftpts  = toList $ takeColumns 2 correspondences
     let rightpts = toList $ dropColumns 2 correspondences
     let f = estimateFundamental leftpts rightpts
