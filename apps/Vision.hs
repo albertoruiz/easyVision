@@ -2,6 +2,7 @@ module Vision where
 
 import GSL
 import Stat
+import Data.List(transpose)
  
 data CameraParameters
     = CamPar { focalDist                      :: Double
@@ -281,7 +282,7 @@ estimateCameraRaw image world = h where
 
 estimateCamera = withNormalization inv estimateCameraRaw 
 
---------------------------------------------------------
+--------------------- Basic Stereo -----------------------
 
 estimateFundamentalRaw l r = f where
     f = reshape 3 $ flatten $ dropColumns 8 v
@@ -309,4 +310,37 @@ qualityOfEssential e = (s1-s2)/(s1+s2) where
         
 qualityOfInducedEssential fund f = qualityOfEssential (kgen f <> fund <> kgen f)
             
--- selfCalibrateFundamental fund f0 = 
+estimateEssential f0 fund = (esen,f,err) where
+    minimize fun xi = minimizeNMSimplex fun xi (replicate (length xi) 1) 1e-2 100
+    ([f],_) = minimize (\[x]-> qualityOfInducedEssential fund x) [f0]
+    err = qualityOfInducedEssential fund f
+    esen = kgen f <> fund <> kgen f
+    
+camerasFromEssential e = [m1,m2,m3,m4] where
+    (u,_,v) = svd (trans e)
+    [_,_,u3] = toColumns u
+    w = realMatrix [[ 0,1,0],
+                    [-1,0,0],
+                    [ 0,0,1]]
+    m1 = u <>       w <> trans v <|>  u3
+    m2 = u <>       w <> trans v <|> -u3
+    m3 = u <> trans w <> trans v <|>  u3
+    m4 = u <> trans w <> trans v <|> -u3
+    
+triangulate1 ms ps = x3d where
+    eq [[m11, m12, m13, m14],
+        [m21, m22, m23, m24],
+        [m31, m32, m33, m34]] [x,y] = [[ m21-y*m31,   m22-y*m32,    m23-y*m33,   m24-y*m34],
+                                       [-m11+x*m31,  -m12+x*m32,   -m13+x*m33,  -m14+x*m34],
+                                       [y*m11-x*m21, y*m12-x*m22, y*m13-x*m23, y*m14-x*m24]]
+    eqs = concat $ zipWith eq (map toList ms) ps
+    a = realMatrix eqs
+    (_,_,v) = svd a
+    x3d = toList $ inHomog $ flatten $ dropColumns 3 v
+    
+triangulate mps = xs where
+    ms = map fst mps
+    ps = transpose (map snd mps)
+    xs = map (triangulate1 ms) ps
+    
+cameraOrigin = ident 3 <|> realVector [0,0,0]
