@@ -16,27 +16,38 @@ gnuplot command = do
     system "rm gnuplotcommand"
     
 main = do    
-    correspondences <- fromFile "correspondences.txt"
-    gnuplot "plot [-120:120] [-120:120] 'correspondences.txt' using 1:2 with points title 'first view'"
-    gnuplot "plot [-120:120] [-120:120] 'correspondences.txt' using 3:4 with points title 'second view'"
-    let leftpts  = toList $ takeColumns 2 correspondences
-    let rightpts = toList $ dropColumns 2 correspondences
+    let datafile = "correspondences.txt"
+    correspondences <- fromFile datafile
+    gnuplot $ "set size square; plot [-120:120] [-120:120] '"++datafile++"' using 1:2 with points title 'first view'"
+    gnuplot $ "set size square; plot [-120:120] [-120:120] '"++datafile++"' using 3:4 with points title 'second view'"
+    let rawleft  = toList $ takeColumns 2 correspondences
+    let rawright  = toList $ dropColumns 2 correspondences
+    let leftpts = map (\[x,y]->[-x,y]) rawleft
+    let rightpts = map (\[x,y]->[-x,y]) rawright 
     let f = estimateFundamental leftpts rightpts
+    putStrLn "Fundamental matrix:"
     disp 8 (normat f)
+    putStr "mean epipolar distance: "
     print $ mean $ epipolarQuality f leftpts rightpts
     let fs = linspace 500 (50,200)
     hplot [fs, vmap (qualityOfInducedEssential f) fs]
     let (e,df,err) = estimateEssential 170.0 f
+    putStr "Estimated f: "
     print df
+    putStr "with quality: "
     print err
+    putStrLn "Essential matrix: "
     disp 8 (normat e)
-    print $ norm $ flatten $ (normat e)
     let ms = camerasFromEssential e
     mapM_ (print.normat) ms
+    let m2 = ms!!3
+    let (_,r,c) = factorizeCamera (m2)
+    print r
+    print c
     let x = triangulate [(kgen df <> cameraOrigin, leftpts), 
-                         (kgen df <> ms!!3, rightpts)]
-    print $ head x 
-    writeFile "points3D.txt" $ unlines $ map unwords $ map (map show) x
-    gnuplot $ "set xlabel 'x'; set ylabel 'y'; set zlabel 'z'; set view 75,160;"
-            ++"splot 'points3D.txt' with points title '3D reconstruction'"
+                         (kgen df <> m2,           rightpts)]               
+    writeFile "points3D.txt" $ unlines $ map unwords $ map (map show) ([0,0,0]: toList c :x)
+    gnuplot $ "set size square; set view 72,200; set ticslevel 0;"
+            ++"set xlabel 'x'; set ylabel 'y'; set zlabel 'z'; "
+            ++"splot [-1.2:1.2] [-1.2:1.2] 'points3D.txt' with points title '3D reconstruction'"
 
