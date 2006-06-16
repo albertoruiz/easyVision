@@ -317,7 +317,7 @@ estimateEssential f0 fund = (esen,f,err) where
     esen = kgen f <> fund <> kgen f
     
 camerasFromEssential e = [m1,m2,m3,m4] where
-    (u,_,v) = svd (trans e)
+    (u,_,v) = svd e
     [_,_,u3] = toColumns u
     w = realMatrix [[ 0,1,0],
                     [-1,0,0],
@@ -343,4 +343,24 @@ triangulate mps = xs where
     ps = transpose (map snd mps)
     xs = map (triangulate1 ms) ps
     
-cameraOrigin = ident 3 <|> realVector [0,0,0]
+cameraAtOrigin = ident 3 <|> realVector [0,0,0]
+
+cameraDirection m = unitary (det a <> m3) where
+    a = takeColumns 3 m
+    [_,_,m3] = toRows a
+    
+depthOfPoint p m = (signum (det a) / norm m3) <> w3 where
+    a = takeColumns 3 m
+    [_,_,m3] = toRows a
+    w = m <> homog (realVector p)
+    [_,_,w3] = toList w
+    
+depthsOfInducedPoint p p' m m' = (d,d') where
+    d  = depthOfPoint x m
+    d' = depthOfPoint x m'
+    x = triangulate1 [m,m'] [p,p']  
+    
+selectCamera p p' m ms = m' where
+    [m'] = filter f ms 
+    f m' = a > 0 && b > 0 where
+        (a,b) = depthsOfInducedPoint p p' m m'
