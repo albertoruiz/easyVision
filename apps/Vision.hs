@@ -314,7 +314,10 @@ estimateEssential f0 fund = (esen,f,err) where
     minimize fun xi = minimizeNMSimplex fun xi (replicate (length xi) 1) 1e-2 100
     ([f],_) = minimize (\[x]-> qualityOfInducedEssential fund x) [f0]
     err = qualityOfInducedEssential fund f
-    esen = kgen f <> fund <> kgen f
+    esen' = kgen f <> fund <> kgen f
+    (u,s,v) = svd esen'
+    esen = u <> diag (realVector [1,1,0]) <> trans v
+    
     
 camerasFromEssential e = [m1,m2,m3,m4] where
     (u,_,v) = svd e
@@ -364,3 +367,8 @@ selectCamera p p' m ms = m' where
     [m'] = filter f ms 
     f m' = a > 0 && b > 0 where
         (a,b) = depthsOfInducedPoint p p' m m'
+        
+epipoles f = (nullspace f, nullspace (trans f)) where
+    nullspace f = flatten $ dropColumns 2 v where (_,_,v) = svd f
+        
+---------------------------------------------------------

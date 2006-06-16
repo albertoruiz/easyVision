@@ -15,15 +15,22 @@ gnuplot command = do
     system "gnuplot gnuplotcommand" 
     system "rm gnuplotcommand"
     
-main = do    
+plotpoints l = do
+    writeFile "auxpoints.txt" $ unlines $ map unwords $ map (map show) l
+    gnuplot $ "set size square; plot [-120:120] [-120:120]  'auxpoints.txt' with points"
+    system "rm auxpoints.txt"
+    
+flipx = \[x,y]->[-x,y]
+    
+stereo = do    
     let datafile = "correspondences.txt"
     correspondences <- fromFile datafile
     gnuplot $ "set size square; plot [-120:120] [-120:120] '"++datafile++"' using 1:2 with points title 'first view'"
     gnuplot $ "set size square; plot [-120:120] [-120:120] '"++datafile++"' using 3:4 with points title 'second view'"
     let raw  = toList $ takeColumns 2 correspondences
     let raw'  = toList $ dropColumns 2 correspondences
-    let pts = map (\[x,y]->[-x,y]) raw
-    let pts' = map (\[x,y]->[-x,y]) raw' 
+    let pts = map flipx raw
+    let pts' = map flipx raw' 
     let f = estimateFundamental pts' pts
     putStrLn "Fundamental matrix:"
     disp 8 (normat f)
@@ -54,3 +61,42 @@ main = do
             ++"set xlabel 'x'; set ylabel 'y'; set zlabel 'z'; "
             ++"splot [-1.2:1.2] [-1.2:1.2] 'points3D.txt' with points title '3D reconstruction'"
     
+rectif = do    
+    let datafile = "correspondences.txt"
+    correspondences <- fromFile datafile
+    let raw  = toList $ takeColumns 2 correspondences
+    let raw'  = toList $ dropColumns 2 correspondences
+    let pts = map flipx raw
+    let pts' = map flipx raw' 
+    let f = estimateFundamental pts' pts
+    putStrLn "Fundamental matrix:"
+    disp 8 (normat f)
+    putStr "mean epipolar distance: "
+    print $ mean $ epipolarQuality f pts' pts
+    let fs = linspace 500 (50,200)
+    let (e,df,err) = estimateEssential 170.0 f
+    putStr "Estimated f: "
+    print df
+    putStr "with quality: "
+    print err
+    putStr "epipoles: "
+    let (ep,ep') = epipoles f
+    plotpoints $ (flipx $ toList $ inHomog ep) : raw
+    plotpoints $ (flipx $ toList $ inHomog ep') : raw'
+    
+    let rec = ht (rectifier ep 0) pts
+    plotpoints (map flipx rec)
+    let rec' = ht (rectifier ep' pi) pts'
+    plotpoints (map flipx rec')
+
+
+main = rectif
+
+rectifier ep d = r where
+    [x,y,w] = toList (unitary ep)
+    x' = x/w
+    y' = y/w
+    angle = if abs w < 1E-6
+        then atan2 y x
+        else atan2 y' x'
+    r = rot3 (angle+d)
