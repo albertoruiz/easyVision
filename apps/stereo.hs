@@ -7,6 +7,7 @@ import GSL
 --import Stat
 import Data.List(genericLength)
 import System(system)
+import Debug.Trace(trace)
 
 mean l = sum l / genericLength l
          
@@ -17,7 +18,7 @@ gnuplot command = do
     
 plotpoints l = do
     writeFile "auxpoints.txt" $ unlines $ map unwords $ map (map show) l
-    gnuplot $ "set size square; plot [-120:120] [-120:120]  'auxpoints.txt' with points"
+    gnuplot $ "set size square; plot [-320:320] [-320:320]  'auxpoints.txt' with points"
     system "rm auxpoints.txt"
     
 flipx = \[x,y]->[-x,y]
@@ -73,30 +74,33 @@ rectif = do
     disp 8 (normat f)
     putStr "mean epipolar distance: "
     print $ mean $ epipolarQuality f pts' pts
-    let fs = linspace 500 (50,200)
     let (e,df,err) = estimateEssential 170.0 f
     putStr "Estimated f: "
     print df
     putStr "with quality: "
     print err
-    putStr "epipoles: "
     let (ep,ep') = epipoles f
     plotpoints $ (flipx $ toList $ inHomog ep) : raw
     plotpoints $ (flipx $ toList $ inHomog ep') : raw'
     
-    let rec = ht (rectifier ep 0) pts
+    let rec = ht (rectifier ep df 0) pts
     plotpoints (map flipx rec)
-    let rec' = ht (rectifier ep' pi) pts'
+    let rec' = ht (rectifier ep' df pi) pts'
     plotpoints (map flipx rec')
-
+    plotpoints $ (map flipx rec)++(map flipx rec')
 
 main = rectif
 
-rectifier ep d = r where
+rectifier ep f d = r2 <> r1 where
     [x,y,w] = toList (unitary ep)
     x' = x/w
     y' = y/w
-    angle = if abs w < 1E-6
+    roll = if abs w < 1E-6
         then atan2 y x
         else atan2 y' x'
-    r = rot3 (angle+d)
+    r1 = rot3 (roll+d)
+    pan = if abs w < 1E-6
+        then 0
+        else acos $ x' / sqrt (x'^2+f^2)
+    q = sqrt (x'^2 + y'^2)
+    r2 = kgen f <> rot2 pan <> kgen (1/f)
