@@ -18,7 +18,7 @@ gnuplot command = do
     
 plotpoints l = do
     writeFile "auxpoints.txt" $ unlines $ map unwords $ map (map show) l
-    gnuplot $ "set size square; plot [-320:320] [-320:320]  'auxpoints.txt' with points"
+    gnuplot $ "set size square; plot [-500:500] [-500:500]  'auxpoints.txt' with points"
     system "rm auxpoints.txt"
     
 flipx = \[x,y]->[-x,y]
@@ -61,6 +61,7 @@ stereo = do
     gnuplot $ "set size square; set view 72,200; set ticslevel 0;"
             ++"set xlabel 'x'; set ylabel 'y'; set zlabel 'z'; "
             ++"splot [-1.2:1.2] [-1.2:1.2] 'points3D.txt' with points title '3D reconstruction'"
+    system "rm points3D.txt"
     
 rectif = do    
     let datafile = "correspondences.txt"
@@ -79,28 +80,23 @@ rectif = do
     print df
     putStr "with quality: "
     print err
+      
     let (ep,ep') = epipoles f
     plotpoints $ (flipx $ toList $ inHomog ep) : raw
     plotpoints $ (flipx $ toList $ inHomog ep') : raw'
     
-    let rec = ht (rectifier ep df 0) pts
-    plotpoints (map flipx rec)
-    let rec' = ht (rectifier ep' df pi) pts'
-    plotpoints (map flipx rec')
-    plotpoints $ (map flipx rec)++(map flipx rec')
+    let (h, h') = stereoRectifiers f pts pts'
+    let rec = ht h pts
+    let rec' = ht h' pts'
+    let ax = realMatrix (map flipx rec)
+    let ax' = realMatrix (map flipx rec')
+    let auxmat = toList $ ax <|> ax'- ax
+    writeFile "dispar.txt" $ unlines $ map unwords $ map (map show) auxmat
+    gnuplot "set size square; plot [-120:120] [-120:120] 'dispar.txt' with vectors"
+    system "rm dispar.txt"
 
-main = rectif
+main = do
+    stereo
+    rectif
 
-rectifier ep f d = r2 <> r1 where
-    [x,y,w] = toList (unitary ep)
-    x' = x/w
-    y' = y/w
-    roll = if abs w < 1E-6
-        then atan2 y x
-        else atan2 y' x'
-    r1 = rot3 (roll+d)
-    pan = if abs w < 1E-6
-        then 0
-        else acos $ x' / sqrt (x'^2+f^2)
-    q = sqrt (x'^2 + y'^2)
-    r2 = kgen f <> rot2 pan <> kgen (1/f)
+    

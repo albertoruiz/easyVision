@@ -371,4 +371,41 @@ selectCamera p p' m ms = m' where
 epipoles f = (nullspace f, nullspace (trans f)) where
     nullspace f = flatten $ dropColumns 2 v where (_,_,v) = svd f
         
----------------------------------------------------------
+canonicalCameras f = (cameraAtOrigin, m2) where
+    (_,e') = epipoles f
+    m2 = asMat e' <> f  <|> e'    
+            
+fundamentalFromCameras p p' = asMat e' <> p' <> pinv p where
+    e' = p' <> c
+    c = flatten $ dropColumns 3 v 
+    (_,_,v) = svd (p <-> realVector [0,0,0,0]) 
+    
+stereoRectifiers fund pts pts' = (h,h') where    -- HZ p.307
+    (e,e') = epipoles fund
+    [x,y,w] = toList (unitary e')
+    x' = x/w
+    y' = y/w
+    roll = if abs w < 1E-6
+        then atan2 y x
+        else atan2 y' x'
+    r = rot3 (roll)
+    q = sqrt (x'^2 + y'^2)
+    g = realMatrix [[1,0,0],  -- HZ p.305, better than a conjugate rotation
+                    [0,1,0],
+                    [a,0,1]] where a = -1.0/q
+    h' = g <> r
+    
+    h = ha <> h0
+    h0 = h' <> m
+    (_,m') = canonicalCameras fund
+    m = takeColumns 3 m' + outer e' (realVector [1,1,1]) -- hmmm
+    ha = realMatrix [[a,b,c],
+                     [0,1,0],
+                     [0,0,1]]
+    t' = ht h' pts'
+    t =  ht h0 pts
+    eq [x,y] [x',_] = [x,y,1,x']
+    eqs = realMatrix $ zipWith eq t t'
+    coef = takeColumns 3 eqs
+    term = flatten $ dropColumns 3 eqs
+    [a,b,c] = toList $ pinv coef <> term
