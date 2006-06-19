@@ -69,7 +69,7 @@ display m w h = do
     
     rasterPos (Vertex2 (1::GLfloat) (fromIntegral h-1))
     pixelZoom $= (1,-1)
-    drawPixels (Size (fromIntegral $ step m `quot` (datasize m)) (fromIntegral $ rows m))
+    drawPixels (Size (fromIntegral $ step m `quot` (datasize m)) (fromIntegral $ height m))
                 (PixelData Luminance (tp $ datasize m) (ptr m))
     touchForeignPtr (fptr m)
 

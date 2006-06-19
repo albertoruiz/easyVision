@@ -1,189 +1,19 @@
-{-# OPTIONS -fffi #-}
-
 import Ipp
+import Typical
 import Draw
 import Camera 
- 
-import Foreign 
-import Foreign.C.Types
-import Foreign.C.String(newCString)
+
 import System.Environment(getArgs)
- 
-foreign import ccall "ippiImageJaehne_32f_C1R" 
-  ippiImageJaehne_32f_C1R :: Ptr() -> Int -> Double -> IO Int
-
-foreign import ccall "auxIpp.h ippiSet_32f_C1R" 
-  ippiSet_32f_C1R :: CFloat -> Ptr() -> Int -> Double -> IO Int
- 
-foreign import ccall "auxIpp.h ippiFilterGauss_32f_C1R" 
-     ippiFilterGauss_32f_C1R :: Ptr() -> Int -> Ptr() -> Int -> Double -> Int -> IO Int
      
-foreign import ccall "auxIpp.h ippiCopy_32f_C1R" 
-     ippiCopy_32f_C1R :: Ptr() -> Int -> Ptr() -> Int -> Double -> IO Int
-      
-foreign import ccall "auxIpp.h ippiCopy_32f_C1MR" 
-     ippiCopy_32f_C1MR :: Ptr() -> Int -> Ptr() -> Int -> Double -> Ptr() -> Int -> IO Int
-            
-foreign import ccall "auxIpp.h ippiCopy_8u_C1R" 
-     ippiCopy_8u_C1R :: Ptr() -> Int -> Ptr() -> Int -> Double -> IO Int
-      
-foreign import ccall "auxIpp.h ippiScale_32f8u_C1R" 
-     ippiScale_32f8u_C1R :: Ptr() -> Int -> Ptr() -> Int -> Double -> Float -> Float -> IO Int
-      
-foreign import ccall "auxIpp.h ippiScale_8u32f_C1R" 
-     ippiScale_8u32f_C1R :: Ptr() -> Int -> Ptr() -> Int -> Double -> Float -> Float -> IO Int
-            
-foreign import ccall "auxIpp.h ippiFilterSobelVert_32f_C1R" 
-     ippiFilterSobelVert_32f_C1R :: Ptr() -> Int -> Ptr() -> Int -> Double -> IO Int
-      
-foreign import ccall "auxIpp.h ippiFilterSobelHoriz_32f_C1R" 
-     ippiFilterSobelHoriz_32f_C1R :: Ptr() -> Int -> Ptr() -> Int -> Double -> IO Int
-      
-foreign import ccall "auxIpp.h ippiAbs_32f_C1R" 
-     ippiAbs_32f_C1R :: Ptr() -> Int -> Ptr() -> Int -> Double -> IO Int
-      
-foreign import ccall "auxIpp.h ippiAdd_32f_C1R" 
-     ippiAdd_32f_C1R :: Ptr() -> Int -> Ptr() -> Int -> Ptr() -> Int -> Double -> IO Int
-            
-foreign import ccall "auxIpp.h ippiSub_32f_C1R" 
-     ippiSub_32f_C1R :: Ptr() -> Int -> Ptr() -> Int -> Ptr() -> Int -> Double -> IO Int
-            
-foreign import ccall "auxIpp.h ippiMul_32f_C1R" 
-     ippiMul_32f_C1R :: Ptr() -> Int -> Ptr() -> Int -> Ptr() -> Int -> Double -> IO Int
-            
-            
-foreign import ccall "auxIpp.h ippiFilterMax_32f_C1R" 
-     ippiFilterMax_32f_C1R :: Ptr() -> Int -> Ptr() -> Int -> Double -> Double -> Double -> IO Int
-            
-foreign import ccall "auxIpp.h ippiCompare_32f_C1R" 
-     ippiCompare_32f_C1R :: Ptr() -> Int -> Ptr() -> Int -> Ptr() -> Int -> Double -> Int -> IO Int
-            
-foreign import ccall "auxIpp.h ippiThreshold_Val_32f_C1R" 
-     ippiThreshold_Val_32f_C1R ::  Ptr() -> Int -> Ptr() -> Int -> Double -> Double -> Double -> Int -> IO Int            
-
-foreign import ccall "auxIpp.h ippiSqrt_32f_C1R" 
-     ippiSqrt_32f_C1R :: Ptr() -> Int -> Ptr() -> Int -> Double -> IO Int
-
-
-
-testMalloc = do
-    imgs <- mapM (\r -> img 4 1 r r) [300 .. 400]
-    print $ map step imgs    
-    
-    
 testImage (r,c) = do 
     w <- img 4 1 r c
-    mK1 (ippiSet_32f_C1R 0.0) (fullroi w) w
-    let roi = ROI {r1=50, c1=50, r2 = 250, c2=250}  
-    mK1 (ippiSet_32f_C1R 0.5) roi w
+    set32f 0.0 w (fullroi w)
+    set32f 0.5 w $ ROI {r1=50, c1=50, r2 = 250, c2=250}  
     let roi = ROI {r1=100, c1=100, r2 = 200, c2=200}  
-    mK1 ippiImageJaehne_32f_C1R roi w
+    ippiImageJaehne_32f_C1R // dst w roi // checkIPP "ippiSetImageJanehne" [w]
     return w
     
-copy32f im = cre im fun where
-    fun im r = mK2 ippiCopy_32f_C1R (fullroi im) r im
 
-scale8u32f vmin vmax im = cre' im fun 4 1 where
-    fun im r = mK2p2 ippiScale_8u32f_C1R vmin vmax (fullroi im) r im
-
-filterSobelVert im = cre im fun where
-    roi = shrink (1,1) (fullroi im)
-    fun im r = mK2 ippiFilterSobelVert_32f_C1R roi r im
-
-filterSobelHoriz im = cre im fun where
-    roi = shrink (1,1) (fullroi im)
-    fun im r = mK2 ippiFilterSobelHoriz_32f_C1R roi r im
-
-abs32f im = cre im fun where
-    fun im r = mK2 ippiAbs_32f_C1R (fullroi im) r im
-
-add32f im1 im2 = cre2 im1 im2 fun where
-    fun im1 im2 r = mK3 ippiAdd_32f_C1R (fullroi im1) r im1 im2
-
-sub32f im1 im2 = cre2 im1 im2 fun where
-    fun im1 im2 r = mK3 ippiSub_32f_C1R (fullroi im1) r im1 im2
-
-mul32f im1 im2 = cre2 im1 im2 fun where
-    fun im1 im2 r = mK3 ippiMul_32f_C1R (fullroi im1) r im1 im2
-
-thresholdVal32f t v code im = cre im fun where
-    fun im r = mK2p3 ippiThreshold_Val_32f_C1R t v code (fullroi im) r im
-
-infixl 7  |*|
-(|*|) = mul32f
-
-infixl 6  |+|, |-|
-(|+|) = add32f
-(|-|) = sub32f
-
-
-gauss mask im = cre im fun where
-    roi = shrink (1,1) (fullroi im)
-    fun im r = mK2p1 ippiFilterGauss_32f_C1R mask roi r im
-
-filterMax32f sz im = cre im fun where
-    d = (sz-1) `quot` 2
-    roi = shrink (d,d) (fullroi im)
-    fun im r = mK2p2 ippiFilterMax_32f_C1R (encodeAsDouble sz sz) (encodeAsDouble d d) roi r im
-
-
-compare32f code im1 im2 = do
-    r <- img 1 1 (rows im1) (cols im1)
-    let roi = (fullroi im1)
-    (ippiCompare_32f_C1R // src im1 roi // src im2 roi // dst r roi) code // checkIPP "compare32f" [r,im1,im2]
-    return r 
-
-
-copyMask32f im mask = do
-    r <- imgAs im
-    let roi = fullroi im
-    ippiSet_32f_C1R 0.0 // dst r roi // checkIPP "set32f" [r]
-    ippiCopy_32f_C1MR // src im roi // dst r roi // src mask roi // checkIPP "copyMask32f" [r,im,mask]
-    return r
-    
-    
-sqrt32f im = do
-    r <- imgAs im
-    let roi = fullroi im
-    ippiSqrt_32f_C1R // src im roi // dst r roi // checkIPP "sqrt32f" [r,im]
-    return r
-
-cre im f = do
-    r <- img (datasize im) (layers im) (rows im) (cols im)
-    f im r
-    return r     
-    
-cre' im f d l = do
-    r <- img d l (rows im) (cols im)
-    f im r
-    return r    
-    
-cre2 im1 im2 f = do
-    r <- img (datasize im1) (layers im1) (rows im1) (cols im1)
-    f im1 im2 r
-    return r     
-    
-cre2' im1 im2 f d l = do
-    r <- img d l (rows im1) (cols im1)
-    f im1 im2 r
-    return r     
-    
-    
-pyr im k = do
-    let roi = ROI {r1=150, c1=20, r2 = 290, c2=290}  
-    --r <- img (datasize im) (layers im) (rows im) (cols im)
-    r <- copy32f im
-    mK2p1 ippiFilterGauss_32f_C1R 33 roi r im --3x3 mask (or 55 (5x5))
-    mK2 ippiCopy_32f_C1R (fullroi im) im r
-    if k == 1000 then error "OK"
-                else return im
-    
-    
-main'' = do
-    w <- testImage (300,500)
-    imageShow (300,300) (pyr w) 
-    
-    
 secondOrder image = do
     gx  <- filterSobelVert image
     gy  <- filterSobelHoriz image
@@ -199,11 +29,11 @@ hessian image = do
     h  <- ab  |-| cc
     return h
 
-localMax g = do
-    mg   <- filterMax32f 3 g
-    mask <- compare32f 2 mg g
-    r    <- copyMask32f g mask
-    return r
+times 0 f = return
+times n f = g where
+    g x = do
+        v <- f x >>= times (n-1) f
+        return v
 
 visor cam k = do
     im  <- grab cam
@@ -216,7 +46,6 @@ visor cam k = do
     mg  <- filterMax32f 3 g >>= filterMax32f 3
     lm  <- compare32f 2 mg g
     return mg
-
 
 visor' cam k = do
     im  <- grab cam
@@ -231,31 +60,21 @@ visor'' cam k = do
     return h
         
     
-    
-times 0 f = return
-times n f = g where
-    g x = do
-        v <- f x >>= times (n-1) f
-        return v
-        
-    
 main = do
     args <- getArgs
     cam@(_,_,(h,w)) <- openCamera (args!!0) 1 (288,384)
     imageShow (w,h) (visor'' cam)
     
     
+
+pyr im k = do
+    let roi = ROI {r1=150, c1=20, r2 = 290, c2=290}  
+    r <- copy32f im
+    (ippiFilterGauss_32f_C1R // src im roi // dst r roi) 33 // checkIPP "gauss" [im,r] --3x3 mask (or 55 (5x5))
+    ippiCopy_32f_C1R // src r roi // dst im roi // checkIPP "copy" [im,r]
+    if k == 1000 then error "OK"
+                else return r
+    
 main' = do
-    --loop 1000 testMalloc
-  
-    w <- testImage (300,300)
-    --imageShow' (300,300) (const w) 
-    
-    --d <- img 4 1 300 300
-    --mK2 ippiCopy_32f_C1R (fullroi d) d w
-    d <- copy32f w
-    
-    let roi = ROI {r1=150, c1=150, r2 = 299, c2=299}
-    mK2p1 ippiFilterGauss_32f_C1R 55 roi d w
-    imageShow' (300,300) (const d) 
-    
+    w <- testImage (300,500)
+    imageShow (300,300) (pyr w) 

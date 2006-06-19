@@ -1,12 +1,17 @@
 {-# OPTIONS -fffi #-}
 
-module Ipp where
+module Ipp(module IppWrappers
+          , Img(..)
+          , img, imgAs, getData
+          , ROI(..), fullroi, shrink
+          , src, dst, checkIPP, (//)
+          , ippRect
+) where
 
 import Foreign
 import Control.Monad(when)
+import IppWrappers
  
---import GSL hiding(rows, cols) 
-
 ------------------------------------------------------------
 ------------- descriptor of an ipp image -------------------
 
@@ -15,11 +20,11 @@ data Img = Img { fptr :: ForeignPtr ()
                , step :: Int
                , datasize :: Int
                , layers :: Int
-               , rows :: Int
-               , cols :: Int
+               , height :: Int
+               , width :: Int
                }
 
--- this is the constructor, given pixel size, layers, rows and columns
+-- this is the constructor, given pixel size, layers, height and width
 -- we use the Haskell gc instead of ippiMalloc and ippiFree
 
 img sz ly r c = do
@@ -30,8 +35,8 @@ img sz ly r c = do
     let p' = unsafeForeignPtrToPtr fp
     let p = alignPtr p' 32
     --print (p', p) -- debug
-    return Img { rows = r
-               , cols = c
+    return Img { height = r
+               , width = c
                , layers = ly
                , datasize = sz
                , fptr = fp
@@ -40,7 +45,7 @@ img sz ly r c = do
                }
                 
 getData :: Img -> IO [[Float]]
-getData (Img {fptr = fp, ptr = p, datasize = d, step = s, rows = r, cols = c}) = do
+getData (Img {fptr = fp, ptr = p, datasize = d, step = s, height = r, width = c}) = do
     let jump = s `quot` d
     let row k = peekArray c (advancePtr (castPtr p) (k*jump))
     r <- mapM row [0 .. r-1]
@@ -63,84 +68,20 @@ encodeAsDouble a b = unsafePerformIO $ do
     free p
     return r
 
-fullroi img = ROI {r1=0, r2=rows img-1, c1=0, c2=cols img-1}
+ippRect = encodeAsDouble
+
+fullroi img = ROI {r1=0, r2=height img-1, c1=0, c2=width img-1}
 
 shrink (r,c) roi = 
     ROI {r1=(r1 roi) +r, 
          r2=(r2 roi) -r,
          c1=(c1 roi) +c,
          c2=(c2 roi) -c}
-
-
-mK1 f roi img = do
-    err <- f (starting img roi) (step img) (roiSize roi)
-    when (err/=0) (error "ipp mK1")
-    touchForeignPtr (fptr img)
-    return ()
     
-mK2 f roi img other = do
-    err <- f (starting other roi) (step other) (starting img roi) (step img) (roiSize roi)
-    when (err/=0) (error "ipp mK2")
-    touchForeignPtr (fptr img)
-    touchForeignPtr (fptr other)
-    return ()        
-    
-mK3 f roi img other1 other2 = do
-    err <- f (starting other1 roi) (step other1) (starting other2 roi) (step other2) (starting img roi) (step img) (roiSize roi)
-    when (err/=0) (error "ipp mK3")
-    touchForeignPtr (fptr img)
-    touchForeignPtr (fptr other1)
-    touchForeignPtr (fptr other1)
-    return ()        
-    
-mK3p1 f p roi img other1 other2 = do
-    err <- f (starting other1 roi) (step other1) (starting other2 roi) (step other2) (starting img roi) (step img) (roiSize roi) p
-    when (err/=0) (error "ipp mK3p1")
-    touchForeignPtr (fptr img)
-    touchForeignPtr (fptr other1)
-    touchForeignPtr (fptr other1)
-    return ()        
-    
-    
-mK1p1 f p roi img = do
-    err <- f (starting img roi) (step img) (roiSize roi) p
-    when (err/=0) (error "ipp mK1p1")
-    touchForeignPtr (fptr img)
-    return () 
-       
-mK1p2 f p1 p2 roi img = do
-    err <- f (starting img roi) (step img) (roiSize roi) p1 p2
-    when (err/=0) (error "ipp mK1p2")
-    touchForeignPtr (fptr img)
-    return () 
-       
-       
-mK2p1 f p roi img other = do
-    err <- f (starting other roi) (step other) (starting img roi) (step img) (roiSize roi) p
-    when (err/=0) (error "ipp mK2p1")
-    touchForeignPtr (fptr img)
-    touchForeignPtr (fptr other)
-    return ()          
-
-mK2p2 f p1 p2 roi img other = do
-    err <- f (starting other roi) (step other) (starting img roi) (step img) (roiSize roi) p1 p2
-    when (err/=0) (error "ipp mK2p2")
-    touchForeignPtr (fptr img)
-    touchForeignPtr (fptr other)
-    return ()  
-    
-mK2p3 f p1 p2 p3 roi img other = do
-    err <- f (starting other roi) (step other) (starting img roi) (step img) (roiSize roi) p1 p2 p3
-    when (err/=0) (error "ipp mK2p3")
-    touchForeignPtr (fptr img)
-    touchForeignPtr (fptr other)
-    return ()      
-    
-imgAs im = img (datasize im) (layers im) (rows im) (cols im)
+imgAs im = img (datasize im) (layers im) (height im) (width im)
 
 src im roi f = f (starting im roi) (step im)
 dst im roi f = f (starting im roi) (step im) (roiSize roi)
-app p f = f p
 
 checkIPP msg ls f = do
     err <- f
