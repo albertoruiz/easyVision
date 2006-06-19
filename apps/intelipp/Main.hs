@@ -61,6 +61,10 @@ foreign import ccall "auxIpp.h ippiCompare_32f_C1R"
 foreign import ccall "auxIpp.h ippiThreshold_Val_32f_C1R" 
      ippiThreshold_Val_32f_C1R ::  Ptr() -> Int -> Ptr() -> Int -> Double -> Double -> Double -> Int -> IO Int            
 
+foreign import ccall "auxIpp.h ippiSqrt_32f_C1R" 
+     ippiSqrt_32f_C1R :: Ptr() -> Int -> Ptr() -> Int -> Double -> IO Int
+
+
 
 testMalloc = do
     imgs <- mapM (\r -> img 4 1 r r) [300 .. 400]
@@ -137,6 +141,12 @@ copyMask32f im mask = do
     ippiCopy_32f_C1MR // src im roi // dst r roi // src mask roi // checkIPP "copyMask32f" [r,im,mask]
     return r
     
+    
+sqrt32f im = do
+    r <- imgAs im
+    let roi = fullroi im
+    ippiSqrt_32f_C1R // src im roi // dst r roi // checkIPP "sqrt32f" [r,im]
+    return r
 
 cre im f = do
     r <- img (datasize im) (layers im) (rows im) (cols im)
@@ -210,16 +220,29 @@ visor cam k = do
 
 visor' cam k = do
     im  <- grab cam
-    imf <- scale8u32f 0 0.5 im >>= gauss 55 >>= gauss 55 
+    imf <- scale8u32f 0 0.5 im >>= (2 `times` gauss 55)
     h   <- hessian imf  >>= localMax >>= thresholdVal32f 0.3 0.0 0 >>= thresholdVal32f 0.3 1 4
     return h
     
+visor'' cam k = do
+    im  <- grab cam
+    imf <- scale8u32f 0 1 im >>= (3 `times` gauss 55)
+    h   <- hessian imf >>= abs32f >>= sqrt32f
+    return h
+        
     
+    
+times 0 f = return
+times n f = g where
+    g x = do
+        v <- f x >>= times (n-1) f
+        return v
+        
     
 main = do
     args <- getArgs
     cam@(_,_,(h,w)) <- openCamera (args!!0) 1 (288,384)
-    imageShow (w,h) (visor' cam)
+    imageShow (w,h) (visor'' cam)
     
     
 main' = do

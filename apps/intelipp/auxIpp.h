@@ -16,6 +16,7 @@ int ippiMul_32f_C1R(void*,int,void*,int,void*,int,double);
 int ippiFilterMax_32f_C1R(void*,int,void*,int,double,double,double);
 int ippiCompare_32f_C1R(void*,int,void*,int,void*,int,double,int);
 int ippiThreshold_Val_32f_C1R(void*,int,void*,int,double,float,float,int);
+int ippiSqrt_32f_C1R(void*,int,void*,int,double);
 
 int mycvOpenCamera(char *filename);
 void mycvSetModeCamera(int camera,int mode,int rows,int cols);
