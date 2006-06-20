@@ -23,8 +23,7 @@ plotpoints l = do
     
 flipx = \[x,y]->[-x,y]
     
-stereo = do    
-    let datafile = "correspondences.txt"
+stereo datafile = do    
     correspondences <- fromFile datafile
     gnuplot $ "set size square; plot [-120:120] [-120:120] '"++datafile++"' using 1:2 with points title 'first view'"
     gnuplot $ "set size square; plot [-120:120] [-120:120] '"++datafile++"' using 3:4 with points title 'second view'"
@@ -44,6 +43,11 @@ stereo = do
     print df
     putStr "with quality: "
     print err
+    putStr "Estimated f using Bougnoux's method: "
+    let (f1,f2) = (bougnoux f, bougnoux (trans f))
+    print (f1,f2)
+    putStrLn "with quality: "
+    print $ qualityOfEssential (kgen f2 <> f <> kgen f1)
     putStrLn "Essential matrix: "
     disp 8 (normat e)
     putStrLn "candidate cameras:" 
@@ -63,8 +67,8 @@ stereo = do
             ++"splot [-1.2:1.2] [-1.2:1.2] 'points3D.txt' with points title '3D reconstruction'"
     system "rm points3D.txt"
     
-rectif = do    
-    let datafile = "correspondences.txt"
+
+rectif datafile = do
     correspondences <- fromFile datafile
     let raw  = toList $ takeColumns 2 correspondences
     let raw'  = toList $ dropColumns 2 correspondences
@@ -75,11 +79,6 @@ rectif = do
     disp 8 (normat f)
     putStr "mean epipolar distance: "
     print $ mean $ epipolarQuality f pts' pts
-    let (e,df,err) = estimateEssential 170.0 f
-    putStr "Estimated f: "
-    print df
-    putStr "with quality: "
-    print err
       
     let (ep,ep') = epipoles f
     plotpoints $ (flipx $ toList $ inHomog ep) : raw
@@ -94,9 +93,8 @@ rectif = do
     writeFile "dispar.txt" $ unlines $ map unwords $ map (map show) auxmat
     gnuplot "set size square; plot [-120:120] [-120:120] 'dispar.txt' with vectors"
     system "rm dispar.txt"
-
-main = do
-    stereo
-    rectif
-
     
+    
+main = do
+    stereo "correspondences.txt"
+    rectif "correspondences.txt"

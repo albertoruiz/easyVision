@@ -318,6 +318,13 @@ estimateEssential f0 fund = (esen,f,err) where
     (u,s,v) = svd esen'
     esen = u <> diag (realVector [1,1,0]) <> trans v
     
+bougnoux fun = sqrt $ - a / b where
+    a = (p' <> asMat e' <> i' <> fun <> p) * (p <> trans fun <> p')
+    b = (p' <> asMat e' <> i' <> fun <> i' <> trans fun <> p')
+    (_,e') = epipoles fun
+    i' = diag $ realVector [1,1,0]
+    p = realVector [0,0,1]
+    p' = realVector [0,0,1]
     
 camerasFromEssential e = [m1,m2,m3,m4] where
     (u,_,v) = svd e
