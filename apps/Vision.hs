@@ -307,16 +307,25 @@ epipolarQuality f l r = zipWith fun l r where
 qualityOfEssential e = (s1-s2)/(s1+s2) where
     s1:s2:_ = toList s
     (_,s,_) = svd e         
-        
-qualityOfInducedEssential fund f = qualityOfEssential (kgen f <> fund <> kgen f)
-            
+                   
 estimateEssential f0 fund = (esen,f,err) where
     minimize fun xi = minimizeNMSimplex fun xi (replicate (length xi) 1) 1e-2 100
-    ([f],_) = minimize (\[x]-> qualityOfInducedEssential fund x) [f0]
-    err = qualityOfInducedEssential fund f
+    cost [x] = qualityOfEssential (kgen x <> fund <> kgen x)
+    ([f],_) = minimize cost [f0]
+    err = cost [f]
     esen' = kgen f <> fund <> kgen f
     (u,s,v) = svd esen'
     esen = u <> diag (realVector [1,1,0]) <> trans v
+    
+estimateEssential' (f0,f0') fund = (esen,(f,f'),err) where
+    minimize fun xi = minimizeNMSimplex fun xi (replicate (length xi) 1) 1e-2 100
+    cost [x,x'] = qualityOfEssential (kgen x' <> fund <> kgen x)
+    ([f,f'],_) = minimize cost [f0,f0']
+    err = cost [f,f']
+    esen' = kgen f' <> fund <> kgen f
+    (u,s,v) = svd esen'
+    esen = u <> diag (realVector [1,1,0]) <> trans v    
+    
     
 bougnoux fun = sqrt $ - a / b where
     a = (p' <> asMat e' <> i' <> fun <> p) * (p <> trans fun <> p')

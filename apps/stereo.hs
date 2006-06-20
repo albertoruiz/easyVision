@@ -37,9 +37,9 @@ stereo datafile = do
     putStr "mean epipolar distance: "
     print $ mean $ epipolarQuality f pts' pts
     let fs = linspace 500 (50,200)
-    hplot [fs, vmap (qualityOfInducedEssential f) fs]
+    hplot [fs, vmap (\x -> qualityOfEssential (kgen x <> f <> kgen x)) fs]
     let (e,df,err) = estimateEssential 170.0 f
-    putStr "Estimated f: "
+    putStr "Estimated common f using equalization: "
     print df
     putStr "with quality: "
     print err
@@ -48,6 +48,13 @@ stereo datafile = do
     print (f1,f2)
     putStrLn "with quality: "
     print $ qualityOfEssential (kgen f2 <> f <> kgen f1)
+    
+    putStr "Estimated fs using equalization method: "
+    let (_,(df,df'),err) = estimateEssential' (170.0,170.0) f
+    print (df,df')
+    putStrLn "with quality: "
+    print $ err
+    
     putStrLn "Essential matrix: "
     disp 8 (normat e)
     putStrLn "candidate cameras:" 
