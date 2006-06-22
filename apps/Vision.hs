@@ -326,14 +326,37 @@ estimateEssential' (f0,f0') fund = (esen,(f,f'),err) where
     (u,s,v) = svd esen'
     esen = u <> diag (realVector [1,1,0]) <> trans v    
     
-    
-bougnoux fun = sqrt $ - a / b where
+bougnoux fun = sqrt (- a / b) where
     a = (p' <> asMat e' <> i' <> fun <> p) * (p <> trans fun <> p')
     b = (p' <> asMat e' <> i' <> fun <> i' <> trans fun <> p')
     (_,e') = epipoles fun
     i' = diag $ realVector [1,1,0]
     p = realVector [0,0,1]
     p' = realVector [0,0,1]
+    
+sturm fun = fs where    
+    (u,s,v) = svd fun
+    [a,b,_] = toList s
+    [[u11, u12, u13],
+     [u21, u22, u23],
+     [  _,   _,   _]] = toList (trans u)
+    [[v11, v12, v13],
+     [v21, v22, v23],
+     [  _,   _,   _]] = toList (trans v) 
+    k = a*u13*v13+b*u23*v23
+    p0 = u23*v13*k
+    q0 = u13*v23*k
+    p1 = a*u13*u23*(1-v13^2) + b*v13*v23*(1-u23^2)
+    q1 = a*v13*v23*(1-u13^2) + b*u13*u23*(1-v23^2)
+    r0 = a^2*u13^2*v13^2 - b^2*u23^2*v23^2
+    r1 = a^2*(u13^2+v13^2-2*u13^2*v13^2) - b^2*(u23^2+v23^2-2*u23^2*v23^2)
+    r2 = a^2*(1-u13^2)*(1-v13^2) - b^2*(1-u23^2)*(1-v23^2)
+    f1 = sqrt (-p0/p1)
+    f2 = sqrt (-q0/q1)
+    d = sqrt (r1^2 - 4*r0*r2)
+    f3 = sqrt $ (-r1 + d)/2/r2
+    f4 = sqrt $ (-r1 - d)/2/r2
+    fs = filter (>0) [f1,f2,f3,f4]
     
 camerasFromEssential e = [m1,m2,m3,m4] where
     (u,_,v) = svd e

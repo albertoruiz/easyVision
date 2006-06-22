@@ -43,17 +43,23 @@ stereo datafile = do
     print df
     putStr "with quality: "
     print err
+    putStr "Estimated fs using equalization: "
+    let (_,(df,df'),err) = estimateEssential' (170.0,170.0) f
+    print (df,df')
+    putStrLn "with quality: "
+    print $ err
+
     putStr "Estimated f using Bougnoux's method: "
     let (f1,f2) = (bougnoux f, bougnoux (trans f))
     print (f1,f2)
     putStrLn "with quality: "
     print $ qualityOfEssential (kgen f2 <> f <> kgen f1)
     
-    putStr "Estimated fs using equalization method: "
-    let (_,(df,df'),err) = estimateEssential' (170.0,170.0) f
-    print (df,df')
-    putStrLn "with quality: "
-    print $ err
+    putStr "Estimated common f using Sturm's method: "
+    let fs = sturm f
+    print fs
+    putStr "with qualities: "
+    print $ map (\x -> qualityOfEssential (kgen x <> f <> kgen x)) fs
     
     putStrLn "Essential matrix: "
     disp 8 (normat e)
