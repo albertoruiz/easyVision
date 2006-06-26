@@ -161,6 +161,42 @@ asMat v = fromList [[ 0,-c, b],
     
 cross a b = asMat a <> b    
             
+cameraOutline f = 
+    [[0::Double,0,0],
+    [-1,1,f],
+    [1,1,f],
+    [1,-1,f],
+    [-1,-1,f],
+    [-1,1,f],
+    [0,0,0],
+    [1,1,f],
+    [0,0,0],
+    [-1,-1,f],
+    [0,0,0],
+    [1,-1,f],
+    [0,0,0],
+    [0,0,10*f]
+    ]
+
+toCameraSystem cam = (inv m, f) where
+    (k,r,c) = factorizeCamera cam
+    m = (r <|> -r <> c) <-> realVector [0,0,0,1]
+    (f:_):_ = toList k            
+            
+doublePerp (a,b) (c,d) = (e,f) where
+    a' = realVector a
+    b' = realVector b
+    c' = realVector c
+    d' = realVector d
+    v = cross (b'-a') (d'-c')
+    coef = fromColumns [b'-a', v, c'-d']
+    term = c'-a'
+    [lam,mu,ep] = toList (inv coef <> term)
+    e = toList $ a' + lam <> (b'-a')
+    f = toList $ a' + lam <> (b'-a') + mu <> v
+
+------------------------------------------------------            
+            
 -- check equal size    
 estimateHomographyRaw dest orig = h where
     eqs = concat (zipWith eq dest orig)

@@ -4,12 +4,13 @@ module Main where
 
 import Vision
 import GSL 
---import Stat
 import Data.List(genericLength)
 import System(system)
 import Debug.Trace(trace)
 
 mean l = sum l / genericLength l
+         
+prep = (++"e\n") . unlines . map (unwords . (map show))         
          
 gnuplot command = do
     writeFile "gnuplotcommand" $ command ++ "; pause -1 'Press return to continue...'"
@@ -17,11 +18,18 @@ gnuplot command = do
     system "rm gnuplotcommand"
     
 plotpoints l = do
-    writeFile "auxpoints.txt" $ unlines $ map unwords $ map (map show) l
-    gnuplot $ "set size square; plot [-500:500] [-500:500]  'auxpoints.txt' with points"
-    system "rm auxpoints.txt"
+    gnuplot $ "set size square; plot [-500:500] [-500:500]  \"-\" with points\n"
+              ++ prep l
     
 flipx = \[x,y]->[-x,y]
+    
+shcam cam pts = (c,p) where 
+    (h,f) = toCameraSystem cam
+    t1 = h <> diag (realVector [1,1,1,3])
+    c = ht t1 (cameraOutline 1)
+    t2 = t1 <> diag (realVector [1,1,1,f])
+    p = ht t2 (map (++[f]) pts)
+    
     
 stereo datafile = do    
     correspondences <- fromFile datafile
@@ -37,7 +45,7 @@ stereo datafile = do
     putStr "mean epipolar distance: "
     print $ mean $ epipolarQuality f pts' pts
     let fs = linspace 500 (50,200)
-    hplot [fs, vmap (\x -> qualityOfEssential (kgen x <> f <> kgen x)) fs]
+    mplot [fs, vmap (\x -> qualityOfEssential (kgen x <> f <> kgen x)) fs]
     let (e,df,err) = estimateEssential 170.0 f
     putStr "Estimated common f using equalization: "
     print df
@@ -73,13 +81,25 @@ stereo datafile = do
     putStrLn "second camera: "
     print m'
     let (_,_,c) = factorizeCamera m'
-    let x = triangulate [(m, pts), (m', pts')]               
-    writeFile "points3D.txt" $ unlines $ map unwords $ map (map show) ([0,0,0]: toList c :x)
+    let x = triangulate [(m, pts), (m', pts')] 
+    let (mo,v)   = shcam m  pts
+    let (mo',v') = shcam m' pts'                           
+    let sp = [head mo, head x, head mo']              
+                  
     gnuplot $ "set size square; set view 72,200; set ticslevel 0;"
-            ++"set xlabel 'x'; set ylabel 'y'; set zlabel 'z'; "
-            ++"splot [-1.2:1.2] [-1.2:1.2] 'points3D.txt' with points title '3D reconstruction'"
-    system "rm points3D.txt"
-    
+            ++"set xlabel 'x'; set ylabel 'y'; set zlabel 'z';"
+            ++"splot [-1.2:1.2] [-1.2:1.2] [-0.2:2.2] "
+            ++"\"-\" title '3D reconstruction' with points 30, "
+            ++"\"-\" title 'first camera' with lines 1, \"-\" title 'second camera' with lines 3,"
+            ++"\"-\" title 'first image' with dots 1, \"-\" title 'first image' with dots 3,"
+            ++"\"-\" title 'sample point' with lines 31\n"
+            ++ prep x
+            ++ prep mo
+            ++ prep mo'
+            ++ prep v
+            ++ prep v'
+            ++ prep sp
+   
 
 rectif datafile = do
     correspondences <- fromFile datafile
