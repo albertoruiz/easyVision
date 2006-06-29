@@ -1,3 +1,9 @@
+-- This should work with a firewire camera: 
+--    $ ./a.out /dev/dv1394
+-- or with a raw dv video, for instance:
+--    $ wget http://ditec.um.es/~pedroe/svnvideos/misc/penguin.dv
+--    $ ./a.out penguin.dv
+
 import Ipp
 import Typical
 import Draw
@@ -5,6 +11,7 @@ import Camera
 
 import System.Environment(getArgs)
      
+
 testImage (r,c) = do 
     w <- img 4 1 r c
     set32f 0.0 w (fullroi w)
@@ -13,15 +20,14 @@ testImage (r,c) = do
     ippiImageJaehne_32f_C1R // dst w roi // checkIPP "ippiSetImageJanehne" [w]
     return w
     
-
 secondOrder image = do
-    gx  <- filterSobelVert image
-    gy  <- filterSobelHoriz image
-    gxx <- filterSobelVert gx
-    gyy <- filterSobelHoriz gy
-    gxy <- filterSobelHoriz gx
-    return (gx,gy,gxx,gyy,gxy)
-     
+    gx  <- sobelVert image
+    gy  <- sobelHoriz image
+    gxx <- sobelVert gx
+    gyy <- sobelHoriz gy
+    gxy <- sobelHoriz gx
+    return (gx,gy,gxx,gyy,gxy)    
+
 hessian image = do
     (gx,gy,gxx,gyy,gxy) <- secondOrder image
     ab <- gxx |*| gyy
@@ -38,11 +44,11 @@ times n f = g where
 visor cam k = do
     im  <- grab cam
     imf <- scale8u32f 0 1 im  >>= gauss 55
-    gx  <- filterSobelVert imf
-    gy  <- filterSobelHoriz imf
+    gx  <- sobelVert imf
+    gy  <- sobelHoriz imf
     agx <- abs32f gx
     agy <- abs32f gy
-    g   <- add32f agx agy >>= gauss 55
+    g   <- agx |+| agy >>= gauss 55
     mg  <- filterMax32f 3 g >>= filterMax32f 3
     lm  <- compare32f 2 mg g
     return mg
@@ -54,10 +60,11 @@ visor' cam k = do
     return h
     
 visor'' cam k = do
-    im  <- grab cam
-    imf <- scale8u32f 0 1 im >>= (3 `times` gauss 55)
-    h   <- hessian imf >>= abs32f >>= sqrt32f
-    return h
+    im  <- grab cam >>= scale8u32f 0 1
+    img <- (5 `times` gauss 55) im
+    h   <- hessian img >>= abs32f >>= sqrt32f
+    copyROI32f im h
+    return im {vroi = vroi h}
         
     
 main = do

@@ -3,12 +3,12 @@
 module Ipp(module IppWrappers
           , Img(..)
           , img, imgAs, getData
-          , ROI(..), fullroi, shrink
+          , ROI(..), fullroi, shrink, shift
           , src, dst, checkIPP, (//)
           , ippRect
 ) where
 
-import Foreign
+import Foreign hiding (shift)
 import Control.Monad(when)
 import IppWrappers
  
@@ -22,6 +22,7 @@ data Img = Img { fptr :: ForeignPtr ()
                , layers :: Int
                , height :: Int
                , width :: Int
+               , vroi :: ROI
                }
 
 -- this is the constructor, given pixel size, layers, height and width
@@ -35,14 +36,17 @@ img sz ly r c = do
     let p' = unsafeForeignPtrToPtr fp
     let p = alignPtr p' 32
     --print (p', p) -- debug
-    return Img { height = r
-               , width = c
-               , layers = ly
-               , datasize = sz
-               , fptr = fp
-               , ptr = p
-               , step = c' 
-               }
+    let res = Img { 
+          height = r
+        , width = c
+        , layers = ly
+        , datasize = sz
+        , fptr = fp
+        , ptr = p
+        , step = c'
+        , vroi = fullroi res 
+        }
+    return res
                 
 getData :: Img -> IO [[Float]]
 getData (Img {fptr = fp, ptr = p, datasize = d, step = s, height = r, width = c}) = do
@@ -53,7 +57,7 @@ getData (Img {fptr = fp, ptr = p, datasize = d, step = s, height = r, width = c}
     return r
 
 
-data ROI = ROI { r1, r2, c1, c2 :: Int}
+data ROI = ROI { r1, r2, c1, c2 :: Int} deriving Show
 
 starting :: Img -> ROI -> Ptr ()
 starting img roi = plusPtr (ptr img) (r1 roi * step img + c1 roi*(datasize img)*(layers img))
@@ -78,6 +82,14 @@ shrink (r,c) roi =
          c1=(c1 roi) +c,
          c2=(c2 roi) -c}
     
+shift (r,c) roi = 
+    ROI {r1=(r1 roi) +r, 
+         r2=(r2 roi) +r,
+         c1=(c1 roi) +c,
+         c2=(c2 roi) +c}
+       
+-- id, const    
+    
 imgAs im = img (datasize im) (layers im) (height im) (width im)
 
 src im roi f = f (starting im roi) (step im)
@@ -86,8 +98,9 @@ dst im roi f = f (starting im roi) (step im) (roiSize roi)
 checkIPP msg ls f = do
     err <- f
     when (err/=0) (error msg)
-    mapM_ (touchForeignPtr . fptr) ls
+    mapM_ (touchForeignPtr . fptr) ls -- really needed!
     return ()
 
 infixl 0 //
 (//) = flip ($)
+
