@@ -15,15 +15,6 @@ imgAsR2 roifun im1 im2 = do
 cr2 f im1 im2 r = f // src im1 (vroi r) // src im2 (vroi r)// dst r (vroi r)
 
 ----------------------------------------
-
-gauss mask im = do
-    r <- imgAsR1 (shrink (s,s)) im
-    (cr1 ippiFilterGauss_32f_C1R im r) mask // checkIPP "gauss" [im]
-    return r
-  where s = case mask of
-                33 -> 1
-                55 -> 2
-                _  -> error "illegal mask"
      
 set32f v im roi = ippiSet_32f_C1R v // dst im roi // checkIPP "set32f" [im]
 
@@ -33,16 +24,7 @@ scale8u32f vmin vmax im = do
     (cr1 ippiScale_8u32f_C1R im r) vmin vmax // checkIPP "scale8u32f" [im]
     return r
        
-thresholdVal32f t v code im = do
-    r <- imgAsR1 id im
-    (cr1 ippiThreshold_Val_32f_C1R im r) t v code // checkIPP "thresholdVal32f" [im]
-    return r
-
-filterMax32f sz im = do
-    let d = (sz-1) `quot` 2
-    r <- imgAsR1 (shrink (d,d)) im
-    (cr1 ippiFilterMax_32f_C1R im r) (ippRect sz sz) (ippRect d d) // checkIPP "filterMax32f" [im]
-    return r       
+copyROI32f r im = ippiCopy_32f_C1R // src im (vroi im) // dst r (vroi im) // checkIPP "copyROI32f" [im]
        
 simplefun1 ippfun roifun msg = g where
     g im = do
@@ -56,8 +38,20 @@ sqrt32f = simplefun1 ippiSqrt_32f_C1R id "sqrt32f"
 sobelVert = simplefun1 ippiFilterSobelVert_32f_C1R (shrink (1,1)) "sobelVert"
 sobelHoriz = simplefun1 ippiFilterSobelHoriz_32f_C1R (shrink (1,1)) "sobelHoriz"
  
-copyROI32f r im = ippiCopy_32f_C1R // src im (vroi im) // dst r (vroi im) // checkIPP "copyROI32f" [im]
+gauss mask = simplefun1 f (shrink (s,s)) "gauss" where
+    s = case mask of
+                33 -> 1
+                55 -> 2
+                _  -> error "illegal mask"
+    f ps ss pd sd r = ippiFilterGauss_32f_C1R ps ss pd sd r mask
 
+thresholdVal32f t v code = simplefun1 f id "thresholdVal32f" where
+    f ps ss pd sd r = ippiThreshold_Val_32f_C1R ps ss pd sd r t v code
+
+filterMax32f sz = simplefun1 f (shrink (d,d)) "filterMax32f" where
+    d = (sz-1) `quot` 2
+    f ps ss pd sd r = ippiFilterMax_32f_C1R ps ss pd sd r (ippRect sz sz) (ippRect d d)
+ 
 ---------------------------------------------
 
 simplefun2 ippfun roifun msg = g where

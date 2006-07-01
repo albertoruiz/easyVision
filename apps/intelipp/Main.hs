@@ -61,7 +61,7 @@ visor' cam k = do
     
 visor'' cam k = do
     im  <- grab cam >>= scale8u32f 0 1
-    img <- (5 `times` gauss 55) im
+    img <- (5 `times` gauss 55) im {vroi = (vroi im) {c1= width im `quot` 2}}
     h   <- hessian img >>= abs32f >>= sqrt32f
     copyROI32f im h
     return im {vroi = vroi h}
