@@ -7,81 +7,69 @@
 import Ipp
 import Typical
 import Draw
-import Camera 
-
+import Camera
+import Graphics.UI.GLUT
+import Data.IORef
+import System.Exit
+import Control.Monad(when)
 import System.Environment(getArgs)
      
 
-testImage (r,c) = do 
-    w <- img 4 1 r c
-    set32f 0.0 w (fullroi w)
-    set32f 0.5 w $ ROI {r1=50, c1=50, r2 = 250, c2=250}  
-    let roi = ROI {r1=100, c1=100, r2 = 200, c2=200}  
-    ippiImageJaehne_32f_C1R // dst w roi // checkIPP "ippiSetImageJanehne" [w]
-    return w
-    
-secondOrder image = do
-    gx  <- sobelVert image
-    gy  <- sobelHoriz image
-    gxx <- sobelVert gx
-    gyy <- sobelHoriz gy
-    gxy <- sobelHoriz gx
-    return (gx,gy,gxx,gyy,gxy)    
-
-hessian image = do
-    (gx,gy,gxx,gyy,gxy) <- secondOrder image
-    ab <- gxx |*| gyy
-    cc <- gxy |*| gxy
-    h  <- ab  |-| cc
-    return h
-
-times 0 f = return
-times n f = g where
-    g x = do
-        v <- f x >>= times (n-1) f
-        return v
-
-visor cam k = do
-    im  <- grab cam
-    imf <- scale8u32f 0 1 im  >>= gauss 55
-    gx  <- sobelVert imf
-    gy  <- sobelHoriz imf
-    agx <- abs32f gx
-    agy <- abs32f gy
-    g   <- agx |+| agy >>= gauss 55
-    mg  <- filterMax32f 3 g >>= filterMax32f 3
-    lm  <- compare32f 2 mg g
-    return mg
-
-visor' cam k = do
-    im  <- grab cam
-    imf <- scale8u32f 0 0.5 im >>= (2 `times` gauss 55)
-    h   <- hessian imf  >>= localMax >>= thresholdVal32f 0.3 0.0 0 >>= thresholdVal32f 0.3 1 4
-    return h
-    
-visor'' cam k = do
-    im  <- grab cam >>= scale8u32f 0 1
-    img <- (5 `times` gauss 55) im {vroi = (vroi im) {c1= width im `quot` 2}}
-    h   <- hessian img >>= abs32f >>= sqrt32f
-    copyROI32f im h
-    return im {vroi = vroi h}
-        
-    
 main = do
     args <- getArgs
     cam@(_,_,(h,w)) <- openCamera (args!!0) 1 (288,384)
-    imageShow (w,h) (visor'' cam)
-    
-    
 
-pyr im k = do
-    let roi = ROI {r1=150, c1=20, r2 = 290, c2=290}  
-    r <- copy32f im
-    (ippiFilterGauss_32f_C1R // src im roi // dst r roi) 33 // checkIPP "gauss" [im,r] --3x3 mask (or 55 (5x5))
-    ippiCopy_32f_C1R // src r roi // dst im roi // checkIPP "copy" [im,r]
-    if k == 1000 then error "OK"
-                else return r
+    getArgsAndInitialize
+    initialDisplayMode $= [DoubleBuffered]
+
+    dummyimg <- img 1 1 100 100
+    state <- newIORef $ State {camid = cam, frame = 0, pause = False,
+                               rawimage = dummyimg, hess = dummyimg, locmax = dummyimg,
+                                smooth = 5}
+
+    w1 <- installWindow "camera" (w,h) rawimage keyboard state
+    w2 <- installWindow "hessian" (w,h) hess keyboard state
+    w3 <- installWindow "local maxima" (w,h) locmax keyboard state
+
+    idleCallback $= Just ( do
+        st <- readIORef state
+        when (not (pause st)) $ do
+            im <- grab (camid st)
+            writeIORef state (st {rawimage = im})
+        worker state
+        mapM_ (postRedisplay . Just) [w1,w2,w3])
+
+    mainLoop
+
+keyboard st (Char 'p') Down _ _ = do
+    modifyIORef st $ \s -> s {pause = not (pause s)}
+keyboard _ (Char '\27') Down _ _ = do
+    exitWith ExitSuccess
+keyboard st (Char '+') Down _ _ = do
+    modifyIORef st $ \s -> s {smooth = smooth s + 1}
+keyboard st (Char '-') Down _ _ = do
+    modifyIORef st $ \s -> s {smooth = max (smooth s - 1) 0}    
+keyboard _ _ _ _ _ = return ()
+
+-------------------------------------------------------
+
+data State = 
+    State { camid :: Camera
+          , frame :: Int 
+          , pause :: Bool
+          , rawimage :: Img
+          , hess :: Img
+          , locmax :: Img
+          , smooth :: Int
+          }
+
+worker stref = do
+    st  <- readIORef stref
     
-main' = do
-    w <- testImage (300,500)
-    imageShow (300,300) (pyr w) 
+    im  <- scale8u32f 0 1 (rawimage st)
+    img <- ((smooth st) `times` gauss 55) im
+    h   <- hessian img >>= abs32f >>= sqrt32f
+    copyROI32f im h
+    lm <- localMax 7 h
+    
+    writeIORef stref (st {hess = im {vroi = vroi h}, locmax = lm})

@@ -3,7 +3,7 @@
 module Ipp(module IppWrappers
           , Img(..)
           , img, imgAs, getData
-          , ROI(..), fullroi, shrink, shift
+          , ROI(..), fullroi, shrink, shift, intersection
           , src, dst, checkIPP, (//)
           , ippRect
 ) where
@@ -87,6 +87,13 @@ shift (r,c) roi =
          r2=(r2 roi) +r,
          c1=(c1 roi) +c,
          c2=(c2 roi) +c}
+       
+intersection a b = ROI { r1 = max (r1 a) (r1 b)
+                       , r2 = min (r2 a) (r2 b)
+                       , c1 = max (c1 a) (c1 b)
+                       , c2 = min (c2 a) (c2 b)
+                       }
+       
        
 -- id, const    
     

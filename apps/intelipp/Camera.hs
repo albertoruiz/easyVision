@@ -31,3 +31,5 @@ grab (cam,mode,(h,w)) = do
     res <- img 1 1 h w
     copyArray (castPtr $ ptr res) dat (h*stepc)
     return res 
+
+type Camera = (Int,Int,(Int,Int))

@@ -2,6 +2,8 @@ module Typical where
 
 import Ipp
      
+---------------------------------------     
+     
 imgAsR1 roifun im = do 
     r <- imgAs im
     return r {vroi = roifun (vroi im)} 
@@ -60,30 +62,58 @@ simplefun2 ippfun roifun msg = g where
         cr2 ippfun im1 im2 r // checkIPP msg [im1,im2]
         return r
 
-fr1 r1 r2 = r1
-
 infixl 7  |*|
 infixl 6  |+|, |-|
-(|*|) = simplefun2 ippiMul_32f_C1R fr1 "mul32f"
-(|+|) = simplefun2 ippiAdd_32f_C1R fr1 "add32f"
-(|-|) = flip $ simplefun2 ippiSub_32f_C1R fr1 "sub32f" -- more natural argument order
+(|*|) = simplefun2 ippiMul_32f_C1R intersection "mul32f"
+(|+|) = simplefun2 ippiAdd_32f_C1R intersection "add32f"
+(|-|) = flip $ simplefun2 ippiSub_32f_C1R intersection "sub32f" -- more natural argument order
 
 
 compare32f code im1 im2 = do
     r <- img 1 1 (height im1) (width im1)
-    let roi = (fullroi im1)
-    (ippiCompare_32f_C1R // src im1 roi // src im2 roi // dst r roi) code // checkIPP "compare32f" [r,im1,im2]
-    return r 
+    let roi = intersection (vroi im1) (vroi im2)
+    (ippiCompare_32f_C1R // src im1 roi // src im2 roi // dst r roi) code // checkIPP "compare32f" [im1,im2]
+    return r {vroi = roi}
 
 copyMask32f im mask = do
     r <- imgAs im
-    let roi = fullroi im
-    set32f 0.0 r roi
-    ippiCopy_32f_C1MR // src im roi // dst r roi // src mask roi // checkIPP "copyMask32f" [r,im,mask]
-    return r
+    let roi = intersection (vroi im) (vroi mask)
+    set32f 0.0 r (fullroi r)
+    ippiCopy_32f_C1MR // src im roi // dst r roi // src mask roi // checkIPP "copyMask32f" [im,mask]
+    return $ r {vroi = roi}
     
-localMax g = do
-    mg   <- filterMax32f 3 g
+localMax r g = do
+    mg   <- filterMax32f r g
     mask <- compare32f 2 mg g
     r    <- copyMask32f g mask
     return r
+
+testImage (r,c) = do 
+    w <- img 4 1 r c
+    set32f 0.0 w (fullroi w)
+    set32f 0.5 w $ ROI {r1=50, c1=50, r2 = 250, c2=250}  
+    let roi = ROI {r1=100, c1=100, r2 = 200, c2=200}  
+    ippiImageJaehne_32f_C1R // dst w roi // checkIPP "ippiSetImageJanehne" [w]
+    return w
+    
+secondOrder image = do
+    gx  <- sobelVert image
+    gy  <- sobelHoriz image
+    gxx <- sobelVert gx
+    gyy <- sobelHoriz gy
+    gxy <- sobelHoriz gx
+    return (gx,gy,gxx,gyy,gxy)    
+
+hessian image = do
+    (gx,gy,gxx,gyy,gxy) <- secondOrder image
+    ab <- gxx |*| gyy
+    cc <- gxy |*| gxy
+    h  <- ab  |-| cc
+    return h
+
+times 0 f = return
+times n f = g where
+    g x = do
+        v <- f x >>= times (n-1) f
+        return v
+
