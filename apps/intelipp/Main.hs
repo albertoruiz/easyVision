@@ -29,6 +29,9 @@ main = do
 
     w1 <- installWindow "camera" (w,h) rawimage keyboard state
     w2 <- installWindow "hessian" (w,h) hess keyboard state
+    
+    attachMenu LeftButton $ Menu [MenuEntry "Quit" (exitWith ExitSuccess)]
+    
     w3 <- installWindow "local maxima" (w,h) locmax keyboard state
 
     idleCallback $= Just ( do
@@ -36,7 +39,9 @@ main = do
         when (not (pause st)) $ do
             im <- grab (camid st)
             writeIORef state (st {rawimage = im})
-        worker state
+        st <- readIORef state    
+        newstate <- worker st
+        writeIORef state newstate {frame = frame st +1}
         mapM_ (postRedisplay . Just) [w1,w2,w3])
 
     mainLoop
@@ -45,9 +50,9 @@ keyboard st (Char 'p') Down _ _ = do
     modifyIORef st $ \s -> s {pause = not (pause s)}
 keyboard _ (Char '\27') Down _ _ = do
     exitWith ExitSuccess
-keyboard st (Char '+') Down _ _ = do
+keyboard st (MouseButton WheelUp) _ _ _ = do
     modifyIORef st $ \s -> s {smooth = smooth s + 1}
-keyboard st (Char '-') Down _ _ = do
+keyboard st (MouseButton WheelDown) _ _ _ = do
     modifyIORef st $ \s -> s {smooth = max (smooth s - 1) 0}    
 keyboard _ _ _ _ _ = return ()
 
@@ -63,13 +68,13 @@ data State =
           , smooth :: Int
           }
 
-worker stref = do
-    st  <- readIORef stref
-    
+worker st = do
+    --when (frame st == 100) (exitWith ExitSuccess)
+        
     im  <- scale8u32f 0 1 (rawimage st)
     img <- ((smooth st) `times` gauss 55) im
     h   <- hessian img >>= abs32f >>= sqrt32f
     copyROI32f im h
     lm <- localMax 7 h
     
-    writeIORef stref (st {hess = im {vroi = vroi h}, locmax = lm})
+    return (st {hess = im {vroi = vroi h}, locmax = lm})
