@@ -54,8 +54,11 @@ foreign import ccall "auxIpp.h ippiCompare_32f_C1R"
      ippiCompare_32f_C1R :: Ptr() -> Int -> Ptr() -> Int -> Ptr() -> Int -> Double -> Int -> IO Int
             
 foreign import ccall "auxIpp.h ippiThreshold_Val_32f_C1R" 
-     ippiThreshold_Val_32f_C1R ::  Ptr() -> Int -> Ptr() -> Int -> Double -> Double -> Double -> Int -> IO Int            
+     ippiThreshold_Val_32f_C1R ::  Ptr() -> Int -> Ptr() -> Int -> Double -> Float -> Float -> Int -> IO Int            
 
 foreign import ccall "auxIpp.h ippiSqrt_32f_C1R" 
      ippiSqrt_32f_C1R :: Ptr() -> Int -> Ptr() -> Int -> Double -> IO Int
+    
+foreign import ccall "auxIpp.h ippiMinMax_32f_C1R" 
+     ippiMinMax_32f_C1R :: Ptr() -> Int -> Double -> Ptr Float -> Ptr Float -> IO Int
     

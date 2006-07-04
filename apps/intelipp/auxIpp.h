@@ -1,5 +1,8 @@
+#define SRC void*,int
+#define DST void*,int,double
 
-int ippiSet_32f_C1R(float,void*,int,double);
+
+int ippiSet_32f_C1R(float,DST);
 int ippiImageJaehne_32f_C1R(void*,int,double);
 int ippiFilterGauss_32f_C1R(void*,int,void*,int,double,int);
 int ippiFilterSobelVert_32f_C1R(void*,int,void*,int,double);
@@ -17,6 +20,7 @@ int ippiFilterMax_32f_C1R(void*,int,void*,int,double,double,double);
 int ippiCompare_32f_C1R(void*,int,void*,int,void*,int,double,int);
 int ippiThreshold_Val_32f_C1R(void*,int,void*,int,double,float,float,int);
 int ippiSqrt_32f_C1R(void*,int,void*,int,double);
+int ippiMinMax_32f_C1R(DST,float*,float*);
 
 int mycvOpenCamera(char *filename);
 void mycvSetModeCamera(int camera,int mode,int rows,int cols);

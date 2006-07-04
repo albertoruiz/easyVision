@@ -75,6 +75,11 @@ worker st = do
     img <- ((smooth st) `times` gauss 55) im
     h   <- hessian img >>= abs32f >>= sqrt32f
     copyROI32f im h
-    lm <- localMax 7 h
+    (mn,mx) <- Typical.minmax h
+    --print (mn,mx)
+    lm <- localMax 7 h >>= thresholdVal32f (mx/2) 0.0 ippCmpLess
+    lmr <- imgAs lm
+    set32f 0.0 lmr (fullroi lmr)
+    copyROI32f lmr lm
     
-    return (st {hess = im {vroi = vroi h}, locmax = lm})
+    return (st {hess = im {vroi = vroi h}, locmax = lmr {vroi = vroi lm}})

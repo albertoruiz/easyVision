@@ -311,7 +311,7 @@ shpoly l = hplot $ toColumns $ realMatrix (l!!3 :l)
 main = do
     s <- getArgs
     let ((h,fs),hs) = prepareExperiment' orbit frames1 (read $ s!!0)
-    --print h
-    --print fs
+    print h
+    print fs
     disp 10 $ fromBlocks $ map (\x->[x]) hs
     

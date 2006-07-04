@@ -1,6 +1,7 @@
 module Typical where
 
 import Ipp
+import Foreign
      
 ---------------------------------------     
      
@@ -68,6 +69,11 @@ infixl 6  |+|, |-|
 (|+|) = simplefun2 ippiAdd_32f_C1R intersection "add32f"
 (|-|) = flip $ simplefun2 ippiSub_32f_C1R intersection "sub32f" -- more natural argument order
 
+ippCmpLess      = 0 :: Int
+ippCmpLessEq    = 1 :: Int
+ippCmpEq        = 2 :: Int
+ippCmpGreaterEq = 3 :: Int
+ippCmpGreater   = 4 :: Int
 
 compare32f code im1 im2 = do
     r <- img 1 1 (height im1) (width im1)
@@ -84,7 +90,7 @@ copyMask32f im mask = do
     
 localMax r g = do
     mg   <- filterMax32f r g
-    mask <- compare32f 2 mg g
+    mask <- compare32f ippCmpEq mg g
     r    <- copyMask32f g mask
     return r
 
@@ -117,3 +123,12 @@ times n f = g where
         v <- f x >>= times (n-1) f
         return v
 
+minmax im = do
+    mn <- malloc 
+    mx <- malloc
+    (ippiMinMax_32f_C1R // dst im (vroi im)) mn mx // checkIPP "minmax" [im]
+    a <- peek mn
+    b <- peek mx
+    free mn
+    free mx
+    return (a,b)
