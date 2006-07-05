@@ -132,3 +132,22 @@ minmax im = do
     free mn
     free mx
     return (a,b)
+    
+warp im h = do
+    r <- imgAs im
+    set32f 0.0 r (fullroi r)
+    coefs <- newArray (concat h)
+    warpPerspective32f (ptr im) (step im) (height im) (width im)
+                           (r1 (vroi im)) (r2 (vroi im)) (c1 (vroi im)) (c2 (vroi im))
+                           (ptr r) (step r)
+                           (r1 (vroi r)) (r2 (vroi r)) (c1 (vroi r)) (c2 (vroi r))
+                           coefs inter_LINEAR //checkIPP "warp" [im]
+    free coefs
+    return r
+                                  
+inter_NN         =  1 :: Int  
+inter_LINEAR     =  2 :: Int  
+inter_CUBIC      =  4 :: Int
+inter_SUPER      =  8 :: Int
+inter_LANCZOS    = 16 :: Int
+--inter_SMOOTH_EDGE = (1 << 31) :: Int

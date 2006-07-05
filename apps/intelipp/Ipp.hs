@@ -104,7 +104,9 @@ dst im roi f = f (starting im roi) (step im) (roiSize roi)
 
 checkIPP msg ls f = do
     err <- f
-    when (err/=0) (error msg)
+    when (err/=0) $ do
+        putStrLn $ "In " ++ msg ++ ":"
+        ippError err
     mapM_ (touchForeignPtr . fptr) ls -- really needed!
     return ()
 

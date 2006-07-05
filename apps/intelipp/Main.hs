@@ -22,10 +22,11 @@ main = do
     getArgsAndInitialize
     initialDisplayMode $= [DoubleBuffered]
 
-    dummyimg <- img 1 1 100 100
-    state <- newIORef $ State {camid = cam, frame = 0, pause = False,
-                               rawimage = dummyimg, hess = dummyimg, locmax = dummyimg,
-                                smooth = 5}
+    dummy <- img 1 1 100 100
+    state <- newIORef State 
+                   {camid = cam, frame = 0, pause = False,
+                   rawimage = dummy, hess = dummy, locmax = dummy, warped = dummy,
+                   smooth = 5}
 
     w1 <- installWindow "camera" (w,h) rawimage keyboard state
     w2 <- installWindow "hessian" (w,h) hess keyboard state
@@ -33,6 +34,7 @@ main = do
     attachMenu LeftButton $ Menu [MenuEntry "Quit" (exitWith ExitSuccess)]
     
     w3 <- installWindow "local maxima" (w,h) locmax keyboard state
+    w4 <- installWindow "warped" (w,h) warped keyboard state
 
     idleCallback $= Just ( do
         st <- readIORef state
@@ -42,7 +44,7 @@ main = do
         st <- readIORef state    
         newstate <- worker st
         writeIORef state newstate {frame = frame st +1}
-        mapM_ (postRedisplay . Just) [w1,w2,w3])
+        mapM_ (postRedisplay . Just) [w1,w2,w3,w4])
 
     mainLoop
 
@@ -66,15 +68,23 @@ data State =
           , hess :: Img
           , locmax :: Img
           , smooth :: Int
+          , warped :: Img
           }
+
 
 worker st = do
     --when (frame st == 100) (exitWith ExitSuccess)
         
     im  <- scale8u32f 0 1 (rawimage st)
+    let t = [[0.5,0.1,30],
+             [0,1.5,100],
+             [0,0.005,1]]
+    w <- warp im t
+
     img <- ((smooth st) `times` gauss 55) im
     h   <- hessian img >>= abs32f >>= sqrt32f
     copyROI32f im h
+    
     (mn,mx) <- Typical.minmax h
     --print (mn,mx)
     lm <- localMax 7 h >>= thresholdVal32f (mx/2) 0.0 ippCmpLess
@@ -82,4 +92,6 @@ worker st = do
     set32f 0.0 lmr (fullroi lmr)
     copyROI32f lmr lm
     
-    return (st {hess = im {vroi = vroi h}, locmax = lmr {vroi = vroi lm}})
+    return (st {hess = im {vroi = vroi h}, 
+                locmax = lmr {vroi = vroi lm},
+                warped = w})

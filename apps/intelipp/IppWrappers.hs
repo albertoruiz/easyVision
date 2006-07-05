@@ -62,3 +62,12 @@ foreign import ccall "auxIpp.h ippiSqrt_32f_C1R"
 foreign import ccall "auxIpp.h ippiMinMax_32f_C1R" 
      ippiMinMax_32f_C1R :: Ptr() -> Int -> Double -> Ptr Float -> Ptr Float -> IO Int
     
+foreign import ccall "auxIpp.h auxWarpPerspective_32f_C1R" 
+     warpPerspective32f :: Ptr() -> Int -> Int -> Int ->
+                           Int -> Int -> Int -> Int ->
+                           Ptr() -> Int -> 
+                           Int -> Int -> Int -> Int ->  
+                           Ptr Double -> Int -> 
+                           IO Int
+
+foreign import ccall "auxIpp.h ippErrorMsg" ippError :: Int -> IO ()
