@@ -13,6 +13,9 @@ import Data.IORef
 import System.Exit
 import Control.Monad(when)
 import System.Environment(getArgs)
+
+import GSL
+import Vision
      
 
 main = do
@@ -26,7 +29,7 @@ main = do
     state <- newIORef State 
                    {camid = cam, frame = 0, pause = False,
                    rawimage = dummy, hess = dummy, locmax = dummy, warped = dummy,
-                   smooth = 5}
+                   smooth = 5, alpha = 0, rho = 0, foc = 600, sca = 1}
 
     w1 <- installWindow "camera" (w,h) rawimage keyboard state
     w2 <- installWindow "hessian" (w,h) hess keyboard state
@@ -34,7 +37,7 @@ main = do
     attachMenu LeftButton $ Menu [MenuEntry "Quit" (exitWith ExitSuccess)]
     
     w3 <- installWindow "local maxima" (w,h) locmax keyboard state
-    w4 <- installWindow "warped" (w,h) warped keyboard state
+    w4 <- installWindow "warped" (w,h) warped kbdwarp state
 
     idleCallback $= Just ( do
         st <- readIORef state
@@ -55,9 +58,35 @@ keyboard _ (Char '\27') Down _ _ = do
 keyboard st (MouseButton WheelUp) _ _ _ = do
     modifyIORef st $ \s -> s {smooth = smooth s + 1}
 keyboard st (MouseButton WheelDown) _ _ _ = do
-    modifyIORef st $ \s -> s {smooth = max (smooth s - 1) 0}    
+    modifyIORef st $ \s -> s {smooth = max (smooth s - 1) 0}
 keyboard _ _ _ _ _ = return ()
 
+------------------------------------------------------
+
+--chg st field op = modifyIORef st $ \s -> s {field = op (field s)}  
+
+kbdwarp st (SpecialKey KeyUp) Down _ _ = do
+    modifyIORef st $ \s -> s {alpha = alpha s + 5*degree}        
+kbdwarp st (SpecialKey KeyDown) Down _ _ = do
+    modifyIORef st $ \s -> s {alpha = alpha s - 5*degree}            
+
+kbdwarp st (SpecialKey KeyRight) _ _ _ = do
+    modifyIORef st $ \s -> s {rho = rho s + 5*degree}
+kbdwarp st (SpecialKey KeyLeft) _ _ _ = do
+    modifyIORef st $ \s -> s {rho = rho s - 5*degree}
+
+kbdwarp st (MouseButton WheelUp) _ _ _ = do
+    modifyIORef st $ \s -> s {sca = sca s * 1.1}
+kbdwarp st (MouseButton WheelDown) _ _ _ = do
+    modifyIORef st $ \s -> s {sca = sca s * 0.9}
+
+kbdwarp st (Char '+') _ _ _ = do
+    modifyIORef st $ \s -> s {foc = foc s + 20}
+kbdwarp st (Char '-') _ _ _ = do
+    modifyIORef st $ \s -> s {foc = max (foc s - 20) 20}
+
+
+kbdwarp _ _ _ _ _ = return ()
 -------------------------------------------------------
 
 data State = 
@@ -69,17 +98,32 @@ data State =
           , locmax :: Img
           , smooth :: Int
           , warped :: Img
+          , alpha, rho, foc, sca :: Double
           }
 
+
+desp x y = realMatrix [[1,0,x],
+                       [0,1,y],
+                       [0,0,1]]
+
+scaling s = desp (192) (144) <> 
+            realMatrix [[s,0,0],
+                        [0,s,0],
+                        [0,0,1]] <> desp (-192) (-144)
+
+warper alpha rho foc scale = r where 
+    t = desp 192 144 <> kgen foc 
+        <> rot1 alpha <> rot3 rho 
+        <> kgen (1/foc) <> desp (-192) (-144)
+    [a,b] = toList $ inHomog $ t <> realVector [192,144,1]
+    r = scaling scale <> desp (192-a) (144-b) <>t
 
 worker st = do
     --when (frame st == 100) (exitWith ExitSuccess)
         
     im  <- scale8u32f 0 1 (rawimage st)
-    let t = [[0.5,0.1,30],
-             [0,1.5,100],
-             [0,0.005,1]]
-    w <- warp im t
+    let t = warper (alpha st) (rho st) (foc st) (sca st)
+    w <- warp im (toList t)
 
     img <- ((smooth st) `times` gauss 55) im
     h   <- hessian img >>= abs32f >>= sqrt32f
