@@ -2,7 +2,7 @@
 --    $ ./a.out /dev/dv1394
 -- or with a raw dv video, for instance:
 --    $ wget http://ditec.um.es/~pedroe/svnvideos/misc/penguin.dv
---    $ ./a.out penguin.dv
+--    $ ./hessian penguin.dv
 
 import Ipp
 import Typical
@@ -13,69 +13,48 @@ import Data.IORef
 import System.Exit
 import Control.Monad(when)
 import System.Environment(getArgs)
+import HEasyVision
 
+data MyState = ST {smooth :: Int}
 
+--------------------------------------------------------------
 main = do
     args <- getArgs
-    cam@(_,_,(h,w)) <- openCamera (args!!0) 1 (288,384)
-
-    getArgsAndInitialize
-    initialDisplayMode $= [DoubleBuffered]
-
-    dummy <- img 1 1 100 100
-    state <- newIORef State 
-                   {camid = cam, frame = 0, pause = False,
-                   rawimage = dummy, hess = dummy, locmax = dummy,
-                   smooth = 5}
-
-    w1 <- installWindow "camera" (w,h) rawimage keyboard state
-    w2 <- installWindow "hessian" (w,h) hess keyboard state
+    cam@(_,_,(h,w)) <- openCamera (args!!0) Gray (288,384)
     
-    attachMenu LeftButton $ Menu [MenuEntry "Quit" (exitWith ExitSuccess)]
+    state <- prepare cam ST {smooth = 5} 
     
-    w3 <- installWindow "local maxima" (w,h) locmax keyboard state
-   
-    idleCallback $= Just ( do
-        st <- readIORef state
-        when (not (pause st)) $ do
-            im <- grab (camid st)
-            writeIORef state (st {rawimage = im})
-        st <- readIORef state    
-        newstate <- worker st
-        writeIORef state newstate {frame = frame st +1}
-        mapM_ (postRedisplay . Just) [w1,w2,w3])
-
-    mainLoop
-
+    addWindow "camera" (w,h) Nothing keyboard state
+    addWindow "hessian" (w,h) Nothing keyboard state
+    addWindow "local maxima" (w,h) Nothing keyboard state
+    
+    launch state worker
+    
+-----------------------------------------------------------------
 keyboard st (Char 'p') Down _ _ = do
     modifyIORef st $ \s -> s {pause = not (pause s)}
 keyboard _ (Char '\27') Down _ _ = do
     exitWith ExitSuccess
+
 keyboard st (MouseButton WheelUp) _ _ _ = do
-    modifyIORef st $ \s -> s {smooth = smooth s + 1}
+    modifyIORef st $ \s -> s {ust = (ust s) {smooth = smooth (ust s) + 1}}
 keyboard st (MouseButton WheelDown) _ _ _ = do
-    modifyIORef st $ \s -> s {smooth = max (smooth s - 1) 0}
+    modifyIORef st $ \s -> s {ust = (ust s) {smooth = max (smooth (ust s) - 1) 0}}
 keyboard _ _ _ _ _ = return ()
+------------------------------------------------------------------
 
-
-data State = 
-    State { camid :: Camera
-          , frame :: Int 
-          , pause :: Bool
-          , rawimage :: Img
-          , hess :: Img
-          , locmax :: Img
-          , smooth :: Int
-          }
-
-
-worker st = do
-    --when (frame st == 100) (exitWith ExitSuccess)
-        
-    im  <- scale8u32f 0 1 (rawimage st)
-    img <- ((smooth st) `times` gauss 55) im
+worker inWindow camera st = do
+    
+    inWindow "camera" $ do
+        display camera
+            
+    im  <- scale8u32f 0 1 camera
+    img <- (smooth st `times` gauss Mask5x5) im
     h   <- hessian img >>= abs32f >>= sqrt32f
     copyROI32f im h
+    
+    inWindow "hessian" $ do
+        display im {vroi = vroi h}
     
     (mn,mx) <- Typical.minmax h
     --print (mn,mx)
@@ -84,4 +63,7 @@ worker st = do
     set32f 0.0 lmr (fullroi lmr)
     copyROI32f lmr lm
     
-    return (st {hess = im {vroi = vroi h}, locmax = lmr {vroi = vroi lm}})
+    inWindow "local maxima" $ do
+        display lmr {vroi = vroi lm}
+    
+    return st

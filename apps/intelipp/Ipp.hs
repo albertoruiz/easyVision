@@ -1,7 +1,7 @@
 {-# OPTIONS -fffi #-}
 
 module Ipp(module IppWrappers
-          , Img(..)
+          , Img(..), ImageType(..)
           , img, imgAs, getData
           , ROI(..), fullroi, shrink, shift, intersection
           , src, dst, checkIPP, (//)
@@ -15,9 +15,12 @@ import IppWrappers
 ------------------------------------------------------------
 ------------- descriptor of an ipp image -------------------
 
+data ImageType = RGB | Gray | I32f 
+
 data Img = Img { fptr :: ForeignPtr ()
                , ptr  :: Ptr ()
                , step :: Int
+               , itype :: ImageType
                , datasize :: Int
                , layers :: Int
                , height :: Int
@@ -28,7 +31,7 @@ data Img = Img { fptr :: ForeignPtr ()
 -- this is the constructor, given pixel size, layers, height and width
 -- we use the Haskell gc instead of ippiMalloc and ippiFree
 
-img sz ly r c = do
+img' t sz ly r c = do
     let w = c*sz*ly
     let rest = w `mod` 32
     let c' = if rest == 0 then w else w + 32 - rest
@@ -44,9 +47,14 @@ img sz ly r c = do
         , fptr = fp
         , ptr = p
         , step = c'
+        , itype = t
         , vroi = fullroi res 
         }
     return res
+                
+img Gray = img' Gray 1 1
+img I32f = img' I32f 4 1
+img RGB  = img' RGB  1 3                
                 
 getData :: Img -> IO [[Float]]
 getData (Img {fptr = fp, ptr = p, datasize = d, step = s, height = r, width = c}) = do
@@ -97,7 +105,7 @@ intersection a b = ROI { r1 = max (r1 a) (r1 b)
        
 -- id, const    
     
-imgAs im = img (datasize im) (layers im) (height im) (width im)
+imgAs im = img (itype im) (height im) (width im)
 
 src im roi f = f (starting im roi) (step im)
 dst im roi f = f (starting im roi) (step im) (roiSize roi)

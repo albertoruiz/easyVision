@@ -1,16 +1,24 @@
 module Draw where
 
-import Graphics.UI.GLUT
+import Graphics.UI.GLUT hiding (RGB)
+import qualified Graphics.UI.GLUT as GL
 import Ipp
 import Data.IORef
 import Foreign (touchForeignPtr)
 
+myDrawPixels m@Img{itype=RGB} = 
+    drawPixels (Size (fromIntegral $ step m `quot` 3) (fromIntegral $ height m))
+               (PixelData GL.RGB UnsignedByte (ptr m))
 
-tp 1 = UnsignedByte
-tp 4 = Float
+myDrawPixels m@Img{itype=Gray} = 
+    drawPixels (Size (fromIntegral $ step m `quot` (datasize m)) (fromIntegral $ height m))
+               (PixelData Luminance UnsignedByte (ptr m))
 
+myDrawPixels m@Img{itype=I32f} = 
+    drawPixels (Size (fromIntegral $ step m `quot` (datasize m)) (fromIntegral $ height m))
+               (PixelData Luminance Float (ptr m))
 
-display m= do
+display m = do
     matrixMode $= Projection
     loadIdentity
     let w = width m
@@ -21,8 +29,7 @@ display m= do
     
     rasterPos (Vertex2 (0::GLfloat) (fromIntegral h-1.0001))
     pixelZoom $= (1,-1)
-    drawPixels (Size (fromIntegral $ step m `quot` (datasize m)) (fromIntegral $ height m))
-                (PixelData Luminance (tp $ datasize m) (ptr m))
+    myDrawPixels m
     touchForeignPtr (fptr m)
     let r = shrink (-1,-1) $ vroi m
     drawPolyline [[h-1 - r1 r,c1 r],
@@ -34,14 +41,10 @@ display m= do
 drawPolyline xs = do 
     lineWidth $= 1
     currentColor $= Color4 1 0 0 1
-    renderPrimitive LineStrip $ f xs where
-        f [] = return ()
-        f ([y,x]:r) = do
-            vertex (Vertex2 (fromIntegral x::GLfloat) (fromIntegral y))
-            f r
+    renderPrimitive LineStrip $ mapM_ f xs where
+        f [y,x] = vertex (Vertex2 (fromIntegral x::GLfloat) (fromIntegral y))
 
-  
-installWindow name (wid,hei) imgtodraw kbdcallback state = do
+installWindow name (wid,hei) (Just fun) kbdcallback state = do
     w <- createWindow name
     windowSize $= Size (fromIntegral wid) (fromIntegral hei)
     
@@ -52,5 +55,11 @@ installWindow name (wid,hei) imgtodraw kbdcallback state = do
     draw = do
         clear [ColorBuffer]
         st <- readIORef state
-        display (imgtodraw st)
+        fun st
         swapBuffers  
+
+installWindow name (wid,hei) Nothing kbdcallback state = do
+    w <- createWindow name
+    windowSize $= Size (fromIntegral wid) (fromIntegral hei)
+    keyboardMouseCallback $= Just (kbdcallback state)
+    return w 

@@ -322,7 +322,7 @@ prot msg f = do
 >
 >117.00427342623003
 
-The elements are efficient copied using @withStorableArray@ and @copyArray@.
+The elements are efficiently copied using @withStorableArray@ and @copyArray@.
 
 -}
 fromStorableArrayV :: Storable t => StorableArray Int t -> IO (GSLVector t) 
@@ -334,7 +334,7 @@ fromStorableArrayV arr = do
         return 0
     return $ createV "fromStorableArrayV" n f
 
-{- | Creates a @StorableArray@ indexed by @(Int)@ from a GSLVector. The elements are efficient copied using @withStorableArray@ and @copyArray@.
+{- | Creates a @StorableArray@ indexed by @(Int)@ from a GSLVector. The elements are efficiently copied using @withStorableArray@ and @copyArray@.
 
 -}
 toStorableArrayV :: Storable t => GSLVector t -> IO(StorableArray Int t)
@@ -344,7 +344,7 @@ toStorableArrayV (V n p) = do
         withStorableArray arr $ \ptr -> copyArray ptr p n
     return arr
 
-{- | Creates a matrix from a standard Haskell @StorableArray@ indexed by @(Int,Int)@. The elements are efficient copied using @withStorableArray@ and @copyArray@.
+{- | Creates a matrix from a standard Haskell @StorableArray@ indexed by @(Int,Int)@. The elements are efficiently copied using @withStorableArray@ and @copyArray@.
 
 -}
 fromStorableArrayM :: Storable t => StorableArray (Int,Int) t -> IO (GSLMatrix t) 
@@ -359,7 +359,7 @@ fromStorableArrayM arr = do
     
 {- | Creates @StorableArray@ indexed by @(Int,Int)@ from a matrix.
 
-The elements are efficient copied using @withStorableArray@ and @copyArray@.
+The elements are efficiently copied using @withStorableArray@ and @copyArray@.
 
 -}
 toStorableArrayM :: Storable t => GSLMatrix t -> IO(StorableArray (Int,Int) t) 

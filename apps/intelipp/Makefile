@@ -2,10 +2,13 @@ IPP=/opt/intel/ipp/5.0/ia32/
 
 LIBS=mycvCamera.o auxIpp.o -L$(IPP)/sharedlib -lguide -lippcore -lippi -lipps -lippcc -lippvc -lraw1394 -ldc1394_control
 		
-all: hessian warp		
+all: hessian warp player		
 		
 hessian: auxc
 		ghc -O --make hessian.hs -o hessian $(LIBS)
+		
+player: auxc
+		ghc -O --make player.hs -o player $(LIBS)		
 		
 warp: auxc
 		ghc -O --make warp.hs -o warp -i.. $(LIBS)

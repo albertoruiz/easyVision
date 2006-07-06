@@ -21,15 +21,19 @@ foreign import ccall "auxIpp.h mycvGetFrameCamera"
 openCamera device mode (h,w) = do
     cdev <- newCString device
     cam <- openCameraC cdev
-    setCameraModeC cam mode h w
+    setCameraModeC cam intmode h w
     return (cam,mode,(h,w))
+ where intmode = case mode of
+                   RGB -> 0
+                   Gray -> 1
+                   _ -> error "image type not supported by the camera"
     
 grab (cam,mode,(h,w)) = do
     pstep <- malloc
     dat <- getFrameC cam pstep
     stepc <- peek pstep
-    res <- img 1 1 h w
+    res <- img mode h w
     copyArray (castPtr $ ptr res) dat (h*stepc)
     return res 
 
-type Camera = (Int,Int,(Int,Int))
+type Camera = (Int,ImageType,(Int,Int))

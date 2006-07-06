@@ -22,7 +22,7 @@ cr2 f im1 im2 r = f // src im1 (vroi r) // src im2 (vroi r)// dst r (vroi r)
 set32f v im roi = ippiSet_32f_C1R v // dst im roi // checkIPP "set32f" [im]
 
 scale8u32f vmin vmax im = do
-    r' <- img 4 1 (height im) (width im)
+    r' <- img I32f (height im) (width im)
     let r = r' {vroi = vroi im}
     (cr1 ippiScale_8u32f_C1R im r) vmin vmax // checkIPP "scale8u32f" [im]
     return r
@@ -41,12 +41,15 @@ sqrt32f = simplefun1 ippiSqrt_32f_C1R id "sqrt32f"
 sobelVert = simplefun1 ippiFilterSobelVert_32f_C1R (shrink (1,1)) "sobelVert"
 sobelHoriz = simplefun1 ippiFilterSobelHoriz_32f_C1R (shrink (1,1)) "sobelHoriz"
  
+data Mask = Mask3x3 | Mask5x5
+code Mask3x3 = 33
+code Mask5x5 = 55
+
 gauss mask = simplefun1 f (shrink (s,s)) "gauss" where
     s = case mask of
-                33 -> 1
-                55 -> 2
-                _  -> error "illegal mask"
-    f ps ss pd sd r = ippiFilterGauss_32f_C1R ps ss pd sd r mask
+                Mask3x3 -> 1
+                Mask5x5 -> 2
+    f ps ss pd sd r = ippiFilterGauss_32f_C1R ps ss pd sd r (code mask)
 
 thresholdVal32f t v code = simplefun1 f id "thresholdVal32f" where
     f ps ss pd sd r = ippiThreshold_Val_32f_C1R ps ss pd sd r t v code
@@ -76,7 +79,7 @@ ippCmpGreaterEq = 3 :: Int
 ippCmpGreater   = 4 :: Int
 
 compare32f code im1 im2 = do
-    r <- img 1 1 (height im1) (width im1)
+    r <- img Gray (height im1) (width im1)
     let roi = intersection (vroi im1) (vroi im2)
     (ippiCompare_32f_C1R // src im1 roi // src im2 roi // dst r roi) code // checkIPP "compare32f" [im1,im2]
     return r {vroi = roi}
@@ -95,7 +98,7 @@ localMax r g = do
     return r
 
 testImage (r,c) = do 
-    w <- img 4 1 r c
+    w <- img I32f r c
     set32f 0.0 w (fullroi w)
     set32f 0.5 w $ ROI {r1=50, c1=50, r2 = 250, c2=250}  
     let roi = ROI {r1=100, c1=100, r2 = 200, c2=200}  
@@ -133,7 +136,7 @@ minmax im = do
     free mx
     return (a,b)
     
-warp im h = do
+warp h im = do
     r <- imgAs im
     set32f 0.0 r (fullroi r)
     coefs <- newArray (concat h)
