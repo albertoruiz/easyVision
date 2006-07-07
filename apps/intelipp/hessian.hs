@@ -26,7 +26,6 @@ main = do
     
     addWindow "camera" (w,h) Nothing keyboard state
     addWindow "hessian" (w,h) Nothing keyboard state
-    addWindow "local maxima" (w,h) Nothing keyboard state
     
     launch state worker
     
@@ -44,9 +43,6 @@ keyboard _ _ _ _ _ = return ()
 ------------------------------------------------------------------
 
 worker inWindow camera st = do
-    
-    inWindow "camera" $ do
-        display camera
             
     im  <- scale8u32f 0 1 camera
     img <- (smooth st `times` gauss Mask5x5) im
@@ -57,13 +53,16 @@ worker inWindow camera st = do
         display im {vroi = vroi h}
     
     (mn,mx) <- Typical.minmax h
-    --print (mn,mx)
-    lm <- localMax 7 h >>= thresholdVal32f (mx/2) 0.0 ippCmpLess
-    lmr <- imgAs lm
-    set32f 0.0 lmr (fullroi lmr)
-    copyROI32f lmr lm
-    
-    inWindow "local maxima" $ do
-        display lmr {vroi = vroi lm}
+    hotPoints <- localMax 7 h >>= thresholdVal32f (mx/2) 0.0 ippCmpLess >>= getPoints32f 200 
+        
+    inWindow "camera" $ do
+        display camera
+        mydraw hotPoints
     
     return st
+
+------------------------------------------------------
+mydraw xs = do
+    pointSize $= 3
+    renderPrimitive Points $ mapM_ f xs where
+        f [y,x] = vertex (Vertex2 (fromIntegral x::GLfloat) (288-1-fromIntegral y))

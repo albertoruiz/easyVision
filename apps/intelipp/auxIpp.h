@@ -32,3 +32,6 @@ int auxWarpPerspective_32f_C1R(void * pSrc, int sstep, int sh, int sw,
                                const double *h, int interp);
 
 void ippErrorMsg(int err);
+
+int getPoints32f(float * pSrc, int sstep, int sr1, int sr2, int sc1, int sc2,
+                 int max, int* tot, int* hp);

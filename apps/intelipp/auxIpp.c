@@ -21,3 +21,25 @@ void ippErrorMsg(int err) {
     printf("%s\n",ippGetStatusString(err)); 
     exit(err);
 }
+
+int getPoints32f(float * pSrc, int sstep, int sr1, int sr2, int sc1, int sc2,
+                 int max, int* tot, int* hp) {
+    int r,c;
+    int pos = 0;
+    int maxpos = 2*max-3;
+    for (r=sr1; r<=sr2; r++) {
+        for(c=sc1; c<=sc2; c++) {
+            if(pos>=maxpos) {
+                *tot = max;
+                return 1;
+            }
+            if(*(pSrc+r*sstep/4+c) > 0.) {
+                hp[pos] =  r;
+                hp[pos+1] = c;
+                pos+=2;
+            }
+        }
+    }
+    *tot = pos;
+    return 0;          
+}

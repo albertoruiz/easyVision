@@ -154,3 +154,19 @@ inter_CUBIC      =  4 :: Int
 inter_SUPER      =  8 :: Int
 inter_LANCZOS    = 16 :: Int
 --inter_SMOOTH_EDGE = (1 << 31) :: Int
+
+getPoints32f mx im = do
+    r <- mallocArray (2*mx)
+    ptot <- malloc
+    ok <- c_getPoints32f (castPtr (ptr im)) (step im) 
+                   (r1 (vroi im)) (r2 (vroi im)) (c1 (vroi im)) (c2 (vroi im))
+                   mx ptot r
+    tot <- peek ptot
+    hp <- peekArray tot r
+    free ptot
+    free r
+    return (partit 2 hp)
+    
+partit :: Int -> [a] -> [[a]]
+partit _ [] = []
+partit n l  = take n l : partit n (drop n l)
