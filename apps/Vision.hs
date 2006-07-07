@@ -2,7 +2,8 @@ module Vision where
 
 import GSL
 import Stat
-import Data.List(transpose)
+import Data.List(transpose,nub,maximumBy)
+import System.Random 
  
 data CameraParameters
     = CamPar { focalDist                      :: Double
@@ -484,3 +485,23 @@ stereoRectifiers fund pts pts' = (h,h') where    -- HZ p.307
     coef = takeColumns 3 eqs
     term = flatten $ dropColumns 3 eqs
     [a,b,c] = toList $ pinv coef <> term
+
+
+partit :: Int -> [a] -> [[a]]
+partit _ [] = []
+partit n l  = take n l : partit n (drop n l)
+
+
+compareBy f = (\a b-> compare (f a) (f b))
+
+ransac :: ([a]->t) -> (t -> a -> Bool) -> Int -> Int -> [a] -> (t,[a])
+ransac estimator isInlier n t dat = (result, goodData) where
+    result = estimator goodData
+    goodData = inliers bestModel
+    bestModel = maximumBy (compareBy (length.inliers)) models
+    models = take t (map estimator samples)
+    inliers model = filter (isInlier model) dat
+    samples = map (map (dat!!)) goodGroups
+    goodGroups = filter ((==n).length) $ map nub $ partit n randomIndices
+    randomIndices = randomRs (0, length dat -1) (mkStdGen 0)
+    
