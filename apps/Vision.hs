@@ -198,13 +198,24 @@ doublePerp (a,b) (c,d) = (e,f) where
     f = toList $ a' + lam <> (b'-a') + mu <> v
 
 ------------------------------------------------------            
-            
--- check equal size    
+
+-- overconstrained nullspace (mse solution of homogeneous linear system)
+-- we assume that it is 1d 
+homogSystem :: [[Double]] -> Vector
+homogSystem coeffs = sol where
+    r = length coeffs
+    c = length (head coeffs)
+    mat | r >= c   = realMatrix coeffs
+        | r == c-1 = realMatrix (head coeffs : coeffs)
+        | otherwise = error "homogSystem with rows<cols-1"
+    (_,_,v) = svd mat
+    sol = flatten $ dropColumns (c-1) v
+    
+             
+    
 estimateHomographyRaw dest orig = h where
     eqs = concat (zipWith eq dest orig)
-    a = realMatrix eqs
-    (_,_,v) = svd a
-    h = reshape 3 $ flatten $ dropColumns 8 v
+    h = reshape 3 $ homogSystem eqs
     eq [bx,by] [ax,ay] = 
         [[  0,  0,  0,t14,t15,t16,t17,t18,t19],
          [t21,t22,t23,  0,  0,  0,t27,t28,t29],
@@ -285,9 +296,7 @@ factorizeCamera m = (normat3 k, r <> signum (det r),c) where
     
 estimateCameraRaw image world = h where
     eqs = concat (zipWith eq image world)
-    a = realMatrix eqs
-    (_,_,v) = svd a
-    h = reshape 4 $ flatten $ dropColumns 11 v
+    h = reshape 4 $ homogSystem eqs
     eq [bx,by] [ax,ay,az] = 
         [[  0,  0,  0,  0,t15,t16,t17,t18,t19,t110,t111,t112],
          [t21,t22,t23,t24,  0,  0,  0,  0,t29,t210,t211,t212],
@@ -323,9 +332,8 @@ estimateCamera = withNormalization inv estimateCameraRaw
 --------------------- Basic Stereo -----------------------
 
 estimateFundamentalRaw l r = f where
-    f = reshape 3 $ flatten $ dropColumns 8 v
-    (_,_,v) = svd eqs
-    eqs = realMatrix (zipWith eq l r)
+    f = reshape 3 $ homogSystem eqs
+    eqs = zipWith eq l r
     eq [xl, yl] [xr, yr] = [xl*xr, xl*yr, xl, xr*yl, yl*yr, yl, xr, yr, 1.0]
     
 correctFundamental f = f' where
@@ -487,11 +495,12 @@ stereoRectifiers fund pts pts' = (h,h') where    -- HZ p.307
     term = flatten $ dropColumns 3 eqs
     [a,b,c] = toList $ pinv coef <> term
 
+------------------------------ RANSAC -------------------------------
 
 partit :: Int -> [a] -> [[a]]
 partit _ [] = []
 partit n l  = take n l : partit n (drop n l)
-
+-- take (length l `quot`n) $ unfoldr (\a -> Just (splitAt n a)) l   
 
 compareBy f = (\a b-> compare (f a) (f b))
 
@@ -513,9 +522,10 @@ ransacSize s p eps = 1 + (floor $ log (1-p) / log (1-(1-eps)^s))    ::Integer
     
 position fun l = k where Just k = elemIndex (fun l) l
         
+        
 -- | adaptive ransac  
 ransac :: ([a]->t) -> (t -> a -> Bool) -> Int -> [a] -> (t,[a])
-ransac estimator isInlier n dat = (bestModel,inliers) where 
+ransac estimator isInlier n dat = {-trace (show aux)-} (bestModel,inliers) where 
     models = map estimator (samples n dat)
     inls = map inliers models where inliers model = filter (isInlier model) dat 
     eps = map prop inls where prop l = 1 - genericLength l / genericLength dat
@@ -524,4 +534,22 @@ ransac estimator isInlier n dat = (bestModel,inliers) where
     p = position maximum (map length (genericTake k inls))
     bestModel = models!!p
     inliers = inls!!p
+    aux = map length $ genericTake k inls
     
+--------------------------    
+    
+isInlierTrans t h (dst,src) = norm (vd - vde) < t 
+    where vd  = realVector dst
+          vde = inHomog $ h <> homog (realVector src)
+
+estimateHomographyRansac dist dst orig = h where 
+    h = estimateHomography a b where (a,b) = unzip inliers
+    (_,inliers) = ransac estimator (isInlierTrans dist) 4 (zip dst orig)
+    estimator l = estimateHomographyRaw a b where (a,b) = unzip l
+    
+isInlierFund t f (x',x) = head (epipolarQuality f [x'] [x]) < t   
+    
+estimateFundamentalRansac dist pts' pts = (f,inliers) where 
+    f = estimateFundamental a b where (a,b) = unzip inliers
+    (_,inliers) = ransac estimator (isInlierFund dist) 8 (zip pts' pts)
+    estimator l = estimateFundamentalRaw a b where (a,b) = unzip l

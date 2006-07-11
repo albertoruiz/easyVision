@@ -47,7 +47,19 @@ exponentialTest = do
     let expected = exp 30.0
     assertBool "exp_e10_e" ( abs (v*10^e - expected) < 4E-2 ) 
         
+-------------------------------------------------------------------
         
+ransacTest = assertBool "ransac homography" (normat3 h1 =~= normat3 h) where
+    orig = [[x,y] | x <- [-1, -0.9 .. 1], y <- [-1, -0.9 .. 1::Double]]
+    dest = ht h1 a ++ ht h2 b where (a,b) = splitAt 230 orig
+    h1 = realMatrix [[1,0,0],
+                    [0,1,0],
+                    [0,0,1]]
+    h2 = realMatrix [[2,0,-0.5],
+                    [0,1,0],
+                    [0.02,0,1]]
+    h = estimateHomographyRansac 0.001 dest orig                
+
 -------------------------------------------------------------------
 
 tests = TestList 
@@ -57,7 +69,8 @@ tests = TestList
     , TestCase $ besselTest
     , TestCase $ exponentialTest
     , TestCase $ classifyTest 500 500 129 
-    --, TestCase $ classifyTest 4000 1000 63 
+    --, TestCase $ classifyTest 4000 1000 63
+    , TestCase $ ransacTest 
     ]
                  
 main = runTestTT tests
