@@ -50,7 +50,7 @@ exponentialTest = do
 -------------------------------------------------------------------
         
 ransacTest = assertBool "ransac homography" (normat3 h1 =~= normat3 h) where
-    orig = [[x,y] | x <- [-1, -0.9 .. 1], y <- [-1, -0.9 .. 1::Double]]
+    orig = [[x,y] | x <- [-1, -0.9 .. 1], y <- [-1, -0.9 .. 1]]
     dest = ht h1 a ++ ht h2 b where (a,b) = splitAt 230 orig
     h1 = realMatrix [[1,0,0],
                     [0,1,0],

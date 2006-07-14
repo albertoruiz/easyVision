@@ -8,6 +8,7 @@ import Data.List(genericLength)
 import System(system)
 import System
 
+
 mean l = sum l / genericLength l
          
 prep = (++"e\n") . unlines . map (unwords . (map show))         
@@ -44,18 +45,10 @@ stereo datafile = do
     disp 8 (normat f)
     putStr "mean epipolar distance: "
     print $ mean $ epipolarQuality f pts' pts
-    
-{-
-    let (f,inliers) = estimateFundamentalRansac 2.0 pts' pts
-    putStrLn "Fundamental matrix using RANSAC:"
-    disp 8 (normat f)
-    let (pts',pts) = unzip inliers
-    putStr "mean epipolar distance: "
-    print $ mean $ epipolarQuality f pts' pts
--}    
-    
+        
     let fs = linspace 500 (50,200)
     mplot [fs, vmap (\x -> qualityOfEssential (kgen x <> f <> kgen x)) fs]
+    
     let (e,df,err) = estimateEssential 170.0 f
     putStr "Estimated common f using equalization: "
     print df
