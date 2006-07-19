@@ -9,6 +9,7 @@ echo "Preparing the documentation..."
 rm -f doc/*
 haddock GSL.hs \
         GSL/Base.hs GSL/Utils.hs \
+        GSL/Differentiation.hs \
         GSL/Integration.hs \
         GSL/Special.hs \
         GSL/Core.hs --hide=GSL.Core \

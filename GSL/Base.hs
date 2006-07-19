@@ -32,9 +32,6 @@ module GSL.Base (
     -- * Numerical functions
     -- ** Polynomials
     polySolve,
-    -- ** Differentiation
-    -- | From the GSL manual, <http://www.gnu.org/software/gsl/manual/gsl-ref_toc.html#TOC407>: \"The functions described in this chapter compute numerical derivatives by finite differencing. An adaptive algorithm is used to find the best choice of finite difference and to estimate the error in the derivative.\"
-    derivCentral, derivForward,
     -- ** Multidimensional minimization
     -- | Minimization of a multidimensional function using some of the algorithms described in <http://www.gnu.org/software/gsl/manual/gsl-ref_35.html#SEC474>.
     minimizeConjugateGradient, minimizeNMSimplex, 

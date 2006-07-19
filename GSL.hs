@@ -1,4 +1,4 @@
-{- | 
+{- |
 
 Module      :  GSL
 Copyright   :  (c) Alberto Ruiz 2006
@@ -16,6 +16,7 @@ module GSL (
     module GSL.Base,
     module GSL.Utils,
     module GSL.Instances,
+    module GSL.Differentiation,
     module GSL.Integration,
     module GSL.Special
 ) where
@@ -23,6 +24,7 @@ module GSL (
 import GSL.Base
 import GSL.Utils
 import GSL.Instances
+import GSL.Differentiation
 import GSL.Integration
 import GSL.Special
 
