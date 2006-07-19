@@ -132,7 +132,7 @@ mplot m = do
 
 
 -- apply several functions to one object
-mapf fs x = map ($x) fs
+mapf fs x = map ($ x) fs
 
         
 {- | Draws a list of functions over a desired range and with a desired number of points 

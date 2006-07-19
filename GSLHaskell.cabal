@@ -5,17 +5,30 @@ Author:             Alberto Ruiz
 Maintainer:         aruiz@um.es
 Stability:          provisional
 Homepage:           http://dis.um.es/~alberto/GSLHaskell
-Package-url:        
+Package-url:
 Synopsis:           Functional interface to the GNU Scientific Library
 Description:
 Category:           Numerical
-tested-with:        GHC ==6.4.1
-Build-Depends:      base, HGL, OpenGL, GLUT, haskell98, HUnit, X11 
-Exposed-modules:    GSL, GSL.Base, GSL.Utils
---Extensions: 
+tested-with:        GHC ==6.4.1, GHC==6.4.2
+Build-Depends:      base, haskell98, HGL, OpenGL, GLUT, HUnit, X11
+Exposed-modules:    GSL, GSL.Base, GSL.Utils,
+                         --GSL.Vector,
+                         --GSL.Matrix, 
+                         --GSL.LinearAlgebra,
+                         --GSL.Fourier,
+                         --GSL.Polynomials,
+                         --GSL.Integration,
+                         --GSL.Differentiation,
+                         --GSL.Integration,
+                         --GSL.Minimization,
+                        GSL.Special
+Extensions:         ForeignFunctionInterface,
+                    MultiParamTypeClasses,
+                    FunctionalDependencies
 Other-modules:      GSL.Core, GSL.Derived, GSL.Wrappers, 
                     GSL.Interface, GSL.Drawing, GSL.Instances 
 C-sources:          GSL/gslaux.c
+includes:           gslaux.h
 extra-libraries:    gsl gslcblas 
---ghc-prof-options: 
-cc-options:         -Wall -O2  
+cc-options:         -Wall -O2
+ghc-prof-options:   -auto-all 

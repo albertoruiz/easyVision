@@ -15,10 +15,12 @@ This module reexports the basic functionality and a collection of utilities.
 module GSL (
     module GSL.Base,
     module GSL.Utils,
-    module GSL.Instances
+    module GSL.Instances,
+    module GSL.Special
 ) where
 
 import GSL.Base
 import GSL.Utils
 import GSL.Instances
+import GSL.Special
 

@@ -215,27 +215,7 @@ createMVM t r1 c1 n r2 c2 f = unsafePerformIO $ do
     return (M r1 c1 p, V n s, M r2 c2 q)
         
 ----------------------------------------------------------------        
--- the sf_result struct is equivalent to an array of two doubles
 
-createSFR s f = unsafePerformIO $ do
-    p <- mallocArray 2
-    prot s $ f p
-    [val,err] <- peekArray 2 p 
-    free p
-    return (val,err)
-        
--- the sf_result_e10 contains two doubles and the exponent       
-                
-createSFR_E10 s f = unsafePerformIO $ do
-    let sd = sizeOf (0::Double)  
-    let si = sizeOf (0::Int)     
-    p <- mallocBytes (2*sd + si)
-    prot s $ f p
-    val <- peekByteOff p 0
-    err <- peekByteOff p sd
-    expo <- peekByteOff p (2*sd) 
-    free p
-    return (val,expo,err)
 
 ---------------------------------------------------------
 -------------- argument transformers --------------------

@@ -10,25 +10,28 @@ module Main where
 import GSL 
 import System.Environment (getArgs)
 
-kernelmatrix kernel objs = reshape (length objs) $ fromList [kernel x y | x <- objs, y <- objs]
-    
-kernelMSE :: [x] -> [Double] -> (x -> x -> Double) -> ( x-> Double)
-kernelMSE objs labels kernel = fun where
+matrix = realMatrix
+vector = realVector
+
+partit _ [] = []
+partit n l  = take n l : partit n (drop n l)
+
+table f l1 l2 = partit (length l1) $ [f x y | x <- l1, y <- l2]
+
+kernelMSE :: (x -> x -> Double) -> [x] -> [Double] -> ( x-> Double)
+kernelMSE kernel objs labels = fun where
     fun z = expan z <> a
-    a = pinv (kernelmatrix kernel objs) <> fromList labels
-    expan z = fromList $ map (kernel z) objs
+    a = {-# SCC "pinv" #-} pinv (matrix (table kernel objs objs)) <> vector labels
+    expan z = vector $ map (kernel z) objs
     
     
-kernelMSEgen :: Int -> Double -> [x] -> [Double] -> (x-> x -> Double) -> (x->Double)
-kernelMSEgen step tol objs labels kernel = fun where
+kernelMSEgen :: (x-> x -> Double) -> Int -> Double -> [x] -> [Double] -> (x->Double)
+kernelMSEgen kernel step tol objs labels = fun where
     fun z = expan z <> a
-    expan z = fromList $ map (kernel z) subobjs
+    expan z = vector $ map (kernel z) subobjs
     subobjs = [ x | (x,k) <- zip objs [0 ..], k `mod` step ==0]
-    k = reshape (length subobjs) $ fromList [kernel x y | x <- objs, y <- subobjs]
-    a = pinvTol tol k <> fromList labels
-    info = "learn "++ (show $ length subobjs)++", "++(show s)
-    (_,s,_) = svd k
-     
+    k = matrix (table kernel objs subobjs)
+    a = {-# SCC "pinvTol" #-} pinvTol tol k <> fromList labels 
     
 polykernel :: Int -> Vector -> Vector -> Double    
 polykernel n x y = (x<>y + 1)^n
@@ -62,10 +65,10 @@ main = do
     let tol = 1.0
     let sigma = 2.0
     
-    let g1 = kernelMSE exs labs (polykernel' 5)
-    let z1 = reshape n $ realVector [tanh $ g1 [a,b] | a <- x, b <- y]
-    imshow z1
-    let g2 = kernelMSEgen frac tol exs labs (gausskernel sigma)
-    let z2 = reshape n $ realVector [tanh $ g2 [a,b] | a <- x, b <- y]
-    imshow z2
+    let g1 = kernelMSE (polykernel' 5) exs labs
+    let z1 = table f x y where f a b = tanh (g1 [a,b])
+    imshow (matrix z1)
+    let g2 = kernelMSEgen (gausskernel sigma) frac tol exs labs
+    let z2 = table f x y where f a b = tanh (g2 [a,b])
+    imshow (matrix z2)
     
