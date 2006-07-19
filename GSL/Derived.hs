@@ -238,7 +238,7 @@ cleanpun = map f where
     f ',' = ' '
     f ';' = '\n'
     f x = x            
-    
+   
 -----------------------------------------------------    
     
 {- | The Hilbert matrix of order N.  The i, j element of a Hilbert matrix is defined as 1 \/ (i + j - 1) (taken from GNU-octave)

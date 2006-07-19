@@ -11,6 +11,10 @@ Description:
 Category:           Numerical
 tested-with:        GHC ==6.4.1, GHC==6.4.2
 Build-Depends:      base, haskell98, HGL, OpenGL, GLUT, HUnit, X11
+Extensions:         ForeignFunctionInterface,
+                    MultiParamTypeClasses,
+                    FunctionalDependencies
+--ghc-options:        -Wall
 Exposed-modules:    GSL, GSL.Base, GSL.Utils,
                          --GSL.Vector,
                          --GSL.Matrix, 
@@ -19,13 +23,10 @@ Exposed-modules:    GSL, GSL.Base, GSL.Utils,
                          --GSL.Polynomials,
                          --GSL.Integration,
                          --GSL.Differentiation,
-                         --GSL.Integration,
+                         GSL.Integration,
                          --GSL.Minimization,
                         GSL.Special
-Extensions:         ForeignFunctionInterface,
-                    MultiParamTypeClasses,
-                    FunctionalDependencies
-Other-modules:      GSL.Core, GSL.Derived, GSL.Wrappers, 
+Other-modules:      GSL.Core, GSL.Derived, GSL.Wrappers,
                     GSL.Interface, GSL.Drawing, GSL.Instances 
 C-sources:          GSL/gslaux.c
 includes:           gslaux.h

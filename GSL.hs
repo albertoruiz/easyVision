@@ -16,11 +16,13 @@ module GSL (
     module GSL.Base,
     module GSL.Utils,
     module GSL.Instances,
+    module GSL.Integration,
     module GSL.Special
 ) where
 
 import GSL.Base
 import GSL.Utils
 import GSL.Instances
+import GSL.Integration
 import GSL.Special
 

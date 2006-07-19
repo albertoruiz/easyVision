@@ -374,3 +374,10 @@ toArrayM m = unsafePerformIO $ do
     sa <- toStorableArrayM m
     arr <- freeze sa
     return arr
+
+--------------------------------------------------------
+
+{- | conversion of Haskell functions into function pointers that can be used in the C side
+-}
+foreign import ccall "wrapper" mkfun:: (Double -> Ptr() -> Double) -> IO( FunPtr (Double -> Ptr() -> Double)) 
+

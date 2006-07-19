@@ -31,9 +31,7 @@ module GSL.Base (
     fft, ifft,
     -- * Numerical functions
     -- ** Polynomials
-    polySolve, 
-    -- ** Integration
-    integrateQNG, integrateQAGS,
+    polySolve,
     -- ** Differentiation
     -- | From the GSL manual, <http://www.gnu.org/software/gsl/manual/gsl-ref_toc.html#TOC407>: \"The functions described in this chapter compute numerical derivatives by finite differencing. An adaptive algorithm is used to find the best choice of finite difference and to estimate the error in the derivative.\"
     derivCentral, derivForward,
