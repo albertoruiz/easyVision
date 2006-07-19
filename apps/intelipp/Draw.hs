@@ -60,6 +60,7 @@ installWindow name (wid,hei) (Just fun) kbdcallback state = do
 
 installWindow name (wid,hei) Nothing kbdcallback state = do
     w <- createWindow name
+    displayCallback $= return ()
     windowSize $= Size (fromIntegral wid) (fromIntegral hei)
     keyboardMouseCallback $= Just (kbdcallback state)
     return w 
