@@ -20,6 +20,7 @@ int ippiCompare_32f_C1R(SRC,SRC,DST,int);
 int ippiThreshold_Val_32f_C1R(SRC,DST,float,float,int);
 int ippiSqrt_32f_C1R(SRC,DST);
 int ippiMinMax_32f_C1R(DST,float*,float*);
+int ippiMulC_32f_C1R(SRC,float,DST);
 
 int mycvOpenCamera(char *filename);
 void mycvSetModeCamera(int camera,int mode,int rows,int cols);

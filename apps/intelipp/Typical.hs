@@ -66,11 +66,14 @@ simplefun2 ippfun roifun msg = g where
         cr2 ippfun im1 im2 r // checkIPP msg [im1,im2]
         return r
 
-infixl 7  |*|
+infixl 7  |*| -- , .*|
 infixl 6  |+|, |-|
 (|*|) = simplefun2 ippiMul_32f_C1R intersection "mul32f"
 (|+|) = simplefun2 ippiAdd_32f_C1R intersection "add32f"
 (|-|) = flip $ simplefun2 ippiSub_32f_C1R intersection "sub32f" -- more natural argument order
+
+scale32f v = simplefun1 f id "mulC32f" where
+    f ps ss pd sd r = ippiMulC_32f_C1R ps ss v pd sd r
 
 ippCmpLess      = 0 :: Int
 ippCmpLessEq    = 1 :: Int

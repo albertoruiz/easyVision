@@ -29,7 +29,6 @@ Exposed-modules:    GSL, GSL.Base, GSL.Utils,
 Other-modules:      GSL.Core, GSL.Derived, GSL.Wrappers,
                     GSL.Interface, GSL.Drawing, GSL.Instances 
 C-sources:          GSL/gslaux.c
-includes:           gslaux.h
-extra-libraries:    gsl gslcblas 
+extra-libraries:    gsl gslcblas
 cc-options:         -Wall -O2
-ghc-prof-options:   -auto-all 
+ghc-prof-options:   -auto-all

@@ -1,4 +1,6 @@
 #include <ipp.h>
+#include<stdlib.h>
+#include<stdio.h>
 
 int auxWarpPerspective_32f_C1R(void * pSrc, int sstep, int sh, int sw,
                                int sr1, int sr2, int sc1, int sc2,
