@@ -27,10 +27,7 @@ module GSL.Base (
     (<>), (<\>), det, pnorm,
     -- ** Matrix factorizations
     eig, svd, qr, chol, lu,
-    -- * Numerical functions
-    -- ** Multidimensional minimization
-    -- | Minimization of a multidimensional function using some of the algorithms described in <http://www.gnu.org/software/gsl/manual/gsl-ref_35.html#SEC474>.
-    minimizeConjugateGradient, minimizeNMSimplex, 
+
     module Data.Complex
 ) where
 

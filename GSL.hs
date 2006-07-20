@@ -16,17 +16,21 @@ module GSL (
     module GSL.Base,
     module GSL.Utils,
     module GSL.Instances,
+    module GSL.Fourier,
     module GSL.Differentiation,
     module GSL.Integration,
     module GSL.Polynomials,
+    module GSL.Minimization,
     module GSL.Special
 ) where
 
 import GSL.Base
 import GSL.Utils
 import GSL.Instances
+import GSL.Fourier
 import GSL.Differentiation
 import GSL.Integration
 import GSL.Polynomials
+import GSL.Minimization
 import GSL.Special
 
