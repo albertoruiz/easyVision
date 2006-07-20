@@ -238,30 +238,6 @@ foreign import ccall "gslaux.h luCaux" c_luCaux :: TCMCV
 
 --------------------------------------------------------------
 
-------------------------------------------------------------------------
-
-{- | Solution of general polynomial equations, using /gsl_poly_complex_solve/. For example,
-     the three solutions of x^3 + 8 = 0
-
-@\> polySolve $ 'realVector' [8,0,0,1]
--2.  1.+1.732i  1.-1.732i@
-
-The example in the GSL manual: To find the roots of x^5 -1 = 0:
-
-@\> 'GSL.Interface.toList' $ polySolve ('realVector' [-1, 0, 0, 0, 0, 1]) 
-[(-0.8090169943749475) :+ 0.5877852522924731,
-(-0.8090169943749475) :+ (-0.5877852522924731),
-0.30901699437494734 :+ 0.9510565162951536,
-0.30901699437494734 :+ (-0.9510565162951536),
-1.0 :+ 0.0]@
-
--}  
-polySolve :: Vector -> ComplexVector
-polySolve x@(V n _) = createV "polySolve" (n-1) $ v c_polySolve x
-foreign import ccall "gslaux.h polySolve" c_polySolve:: TVCV
-
-------------------------------------------------------------------------
-
 -- | loads a matrix efficiently from formatted ASCII text file (the number of rows and columns must be known in advance).
 gslReadMatrix :: FilePath -> (Int,Int) -> IO Matrix
 gslReadMatrix filename (r,c) = do

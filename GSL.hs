@@ -18,6 +18,7 @@ module GSL (
     module GSL.Instances,
     module GSL.Differentiation,
     module GSL.Integration,
+    module GSL.Polynomials,
     module GSL.Special
 ) where
 
@@ -26,5 +27,6 @@ import GSL.Utils
 import GSL.Instances
 import GSL.Differentiation
 import GSL.Integration
+import GSL.Polynomials
 import GSL.Special
 

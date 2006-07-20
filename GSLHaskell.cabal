@@ -15,12 +15,13 @@ Extensions:         ForeignFunctionInterface,
                     MultiParamTypeClasses,
                     FunctionalDependencies
 --ghc-options:        -Wall
+--ghc-options:
 Exposed-modules:    GSL, GSL.Base, GSL.Utils,
                          --GSL.Vector,
                          --GSL.Matrix, 
                          --GSL.LinearAlgebra,
                          --GSL.Fourier,
-                         --GSL.Polynomials,
+                         GSL.Polynomials,
                          GSL.Differentiation,
                          GSL.Integration,
                          --GSL.Minimization,

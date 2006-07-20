@@ -30,8 +30,6 @@ module GSL.Base (
     -- * Fourier Transform
     fft, ifft,
     -- * Numerical functions
-    -- ** Polynomials
-    polySolve,
     -- ** Multidimensional minimization
     -- | Minimization of a multidimensional function using some of the algorithms described in <http://www.gnu.org/software/gsl/manual/gsl-ref_35.html#SEC474>.
     minimizeConjugateGradient, minimizeNMSimplex, 

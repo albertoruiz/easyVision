@@ -11,6 +11,7 @@ haddock GSL.hs \
         GSL/Base.hs GSL/Utils.hs \
         GSL/Differentiation.hs \
         GSL/Integration.hs \
+        GSL/Polynomials.hs \
         GSL/Special.hs \
         GSL/Core.hs --hide=GSL.Core \
         GSL/Wrappers.hs --hide=GSL.Wrappers \
