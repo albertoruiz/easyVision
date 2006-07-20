@@ -9,6 +9,7 @@ echo "Preparing the documentation..."
 rm -f doc/*
 haddock GSL.hs \
         GSL/Base.hs GSL/Utils.hs \
+        GSL/Fourier.hs \
         GSL/Differentiation.hs \
         GSL/Integration.hs \
         GSL/Polynomials.hs \
@@ -19,7 +20,7 @@ haddock GSL.hs \
         GSL/Interface.hs --hide=GSL.Interface \
         GSL/Drawing.hs --hide=GSL.Drawing \
         GSL/Instances.hs --hide=GSL.Instances \
-        -o doc -h -p GSL/prologue -t GSLHaskell 2> /dev/null
+        -o doc -h -p GSL/prologue -t GSLHaskell # 2> /dev/null
 
 echo "Performing some tests..."
 (cd apps; runhaskell tests)

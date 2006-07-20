@@ -205,11 +205,6 @@ vectorZip code x y = createV "vectorZip" (size x) $ vv (c_vectorZip code) x y
 foreign import ccall "gslaux.h vectorZip" c_vectorZip :: Int -> TVVV
 
 
-genfft code x@(V n _) = createV "fft" n $ v (c_fft code) x
-foreign import ccall "gslaux.h fft" c_fft ::  Int -> TCVCV
---fft  = genfft 0
---ifft = genfft 1
-
 --------------------------------------------------------
 
 {- | efficient multiplication by the inverse of a matrix (for real matrices). 

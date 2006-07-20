@@ -656,25 +656,7 @@ instance LU (Complex Double) where
 det :: (Diag (GSLMatrix t) (GSLVector t), (FromToList (GSLVector t) [t]), Num t, LU t) => GSLMatrix t -> t
 det m = s * (product $ toList $ diag $ u) 
     where (_,u,_,s) = lu m 
-    
-{- | fast 1D Fourier transform of a vector using /gsl_fft_complex_forward/. It uses the same scaling conventions as GNU Octave.
 
-@> fft ('complexVector' [1,2,3,4])
-10.  -2.+2.i  -2.  -2.-2.i@
-
--}
-fft :: ComplexVector -> ComplexVector
-fft = genfft 0
-
-{- | inverse 'fft' using /gsl_fft_complex_inverse/.
-
-@> ifft ('complexVector' [0,2-2*'i',0,2+2*'i'])
-1.  1.  -1.  -1.@
-
--}
-ifft :: ComplexVector->ComplexVector
-ifft = genfft 1
-            
 -----------------------------------------------------------
 
 class Eig t where
