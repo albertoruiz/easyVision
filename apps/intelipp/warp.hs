@@ -28,7 +28,7 @@ main = do
     state <- prepare cam $ Map.fromList 
                              [("alpha",-40*degree) 
                              ,("rho",0) 
-                             ,("foc" , 400)
+                             ,("foc" , 538)
                              ,("sca",1/2)]
 
     addWindow "camera" (w,h) Nothing kbdwarp state
@@ -61,10 +61,6 @@ kbdwarp st (Char '-') _ _ _ = modify st "foc" $ max 20 . (+(-20))
 kbdwarp _ _ _ _ _ = return ()
 -------------------------------------------------------
 
-
-desp x y = realMatrix [[1,0,x],
-                       [0,1,y],
-                       [0,0,1]]
 
 scaling s = desp (192) (144) <> 
             realMatrix [[s,0,0],

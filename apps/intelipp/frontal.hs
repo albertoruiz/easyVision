@@ -8,7 +8,7 @@ import Ipp
 import Typical
 import Draw
 import Camera
-import Graphics.UI.GLUT
+import Graphics.UI.GLUT hiding (Matrix)
 import Data.IORef
 import System.Exit
 import Control.Monad(when)
@@ -22,10 +22,15 @@ data MyState = ST { smooth :: Int
                   , marked ::[[Int]]
                   , new:: Bool
                   , imgs::[Img]
-                  , pts :: [[[Int]]]
+                  , pts :: [[[Double]]]
                   , toshow :: Int
-                  , basev ::Int  
+                  , basev ::Int
+                  , hs :: [Matrix]
+                  , rho :: Double
+                  , yh :: Double
                   }
+
+list |> elem = list ++ [elem]
 
 --------------------------------------------------------------
 main = do
@@ -39,12 +44,16 @@ main = do
                             , pts=[]
                             , toshow = 0
                             , basev = 0
+                            , hs = []
+                            , rho = 0
+                            , yh = 2
                             }
     
     addWindow "camera" (w,h) Nothing marker state
     addWindow "hessian" (w,h) Nothing keyboard state
     addWindow "selected" (w,h) Nothing keyboard state
     addWindow "warped" (w,h) Nothing keyboard state
+    addWindow "rectified" (w,h) Nothing keyboard state
     
     launch state worker
     
@@ -59,9 +68,9 @@ keyboard st (MouseButton WheelUp) _ _ _ = do
 keyboard st (MouseButton WheelDown) _ _ _ = do
     modifyIORef st $ \s -> s {ust = (ust s) {smooth = max (smooth (ust s) - 1) 0}}
 
-keyboard st (Char '+') Down _ _ = do
+keyboard st (SpecialKey KeyRight) Down _ _ = do
     modifyIORef st $ \s -> s {ust = (ust s) {toshow = toshow (ust s) + 1}}
-keyboard st (Char '-') Down _ _ = do
+keyboard st (SpecialKey KeyLeft) Down _ _ = do
     modifyIORef st $ \s -> s {ust = (ust s) {toshow = max (toshow (ust s) - 1) 0}}
 
 keyboard st (SpecialKey KeyUp) Down _ _ = do
@@ -80,7 +89,7 @@ marker st (MouseButton RightButton) Down _ pos@(Position x y) = do
 
 marker st b s m p = keyboard st b s m p
 
-
+mycolor r g b = currentColor $= Color4 r g (b::GLfloat) 1
 -------------------------------------------------------------------
 
 worker inWindow camera st = do
@@ -105,41 +114,77 @@ worker inWindow camera st = do
     let oknew = new st && length (marked st) `rem` 4 == 0
 
     let newimages = if (oknew)
-            then img : imgs st
+            then imgs st |> img
             else imgs st
 
+
+    let cm = fromIntegral $ width camera `quot` 2
+    let rm = fromIntegral $ height camera `quot` 2
+
+    let fix pixs = map f pixs where
+        f [r,c] = [x,y] where x  = (fromIntegral c-cm)/cm
+                              y  = (fromIntegral r-rm)/cm
+
+    let nor = desp (-1) (-rm/cm) <> diag (realVector [1/cm,1/cm,1])
+
     let newpts = if(oknew)
-            then take 4 newmarked : pts st
+            then pts st |> fix (take 4 newmarked)
             else pts st
+
+
+    let newhs = if(oknew)
+            then genInterimage newpts
+            else hs st
 
 
     inWindow "camera" $ do
         display camera
-        currentColor $= Color4 1 0 (0::GLfloat) 0
+        mycolor 1 0 0
         mydraw hotPoints
-        currentColor $= Color4 0 0 (1::GLfloat) 0
+        mycolor 0 0 1
         mydraw newmarked
 
-    when (length (imgs st)>0) $ do
-        let pdest = (toshow st) `mod` length (imgs st)
-        let psrc  = (basev st) `mod` length (imgs st)
-        inWindow "selected" $ do
-            display (imgs st !! pdest)
-            currentColor $= Color4 1 0 (1::GLfloat) 0
-            mydraw (pts st !! pdest)
-        inWindow "warped" $ do
-            let dest = map reverse $ (map (map fromIntegral) $ pts st!!pdest)
-            let src  = map reverse $ (map (map fromIntegral) $ pts st!!psrc)
-            let t = toList $ estimateHomography dest src
-            warp t (imgs st !! psrc) >>= display
+    when (length newimages>0) $ do
+        let ptget = (toshow st) `mod` length newimages
+        let pbase = (basev  st) `mod` length newimages
+        let pt = newpts!!ptget
+        let pb = newpts!!pbase
+        let ht = newhs!!ptget
+        let hb = newhs!!pbase
+        let imt = newimages!!ptget
+        let imb = newimages!!pbase
 
-    return st {new = False, marked = newmarked, imgs=newimages, pts = newpts}
+        let t = inv hb <> ht
+        let t' = inv nor <> t <> nor
+
+        let r0 = inv nor <> (camera0 ((rho st, yh st),2.8)) <> nor
+        let [a,b] = toList $ inHomog $ r0 <> realVector [192,144,1]
+        let r = inv nor <> (camera0 ((rho st, yh st),2.8)) <> ht <> nor
+        let r' = scaling 0.2 <> desp (192-a) (144-b) <>r
+
+        inWindow "selected" $ do
+            display imb
+            mycolor 1 0 1
+            mydraw' pb
+        inWindow "warped" $ do
+            warp (toList t') imt >>= display
+        inWindow "rectified" $ do
+            warp (toList r') imt >>= display
+        when (oknew && length newimages>1) $ do
+            writeFile "real.txt" . show . fromRows . concat . map toRows $ newhs
+
+    return st {new = False, marked = newmarked, imgs=newimages, pts = newpts, hs = newhs}
 
 ------------------------------------------------------
 mydraw xs = do
     pointSize $= 3
     renderPrimitive Points $ mapM_ f xs where
         f [y,x] = vertex (Vertex2 (fromIntegral x::GLfloat) (288-1-fromIntegral y))
+
+mydraw' xs = do
+    pointSize $= 3
+    renderPrimitive Points $ mapM_ f xs where
+        f [x,y] = vertex (Vertex2 x (288-1-y))
 ------------------------------------------------------
 
 --compareBy f = (\a b-> compare (f a) (f b))
@@ -147,3 +192,20 @@ mydraw xs = do
 closest [] p = p
 closest hp p = minimumBy (compareBy $ dist p) hp
     where dist [a,b] [x,y] = (a-x)^2+(b-y)^2
+
+genInterimage views = map (estimateHomography (head views)) (id views)
+
+camera0 ((rho,yh),f) = reshape 3 $ realVector [
+      cr, -ca*sr, -f*sa*sr,
+      sr,  ca*cr,  f*cr*sa,
+      0,  -sa/f ,  ca ]
+    where a = - atan2 f yh
+          ca = cos a
+          sa = sin a
+          cr = cos rho
+          sr = - sin rho
+
+scaling s = desp (192) (144) <> 
+            realMatrix [[s,0,0],
+                        [0,s,0],
+                        [0,0,1]] <> desp (-192) (-144)

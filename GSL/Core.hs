@@ -98,7 +98,7 @@ common f = commonval . map f where
 -- | creates a GSLMatrix from a list of vectors
 fromRows :: (Storable t) => [GSLVector t] -> GSLMatrix t
 fromRows vs = case common size vs of
-    Nothing -> error "fromRows on vectors with different sizes" 
+    Nothing -> error "fromRows applied to [] or to vectors with different sizes"
     Just c  -> reshape c (join vs)
 
 -- | extracts the rows of a matrix as a list of vectors
