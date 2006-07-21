@@ -4,7 +4,7 @@
 --    $ wget http://ditec.um.es/~pedroe/svnvideos/misc/penguin.dv
 --    $ ./hessian penguin.dv
 
-import Ipp
+import Ipp hiding (shift)
 import Typical
 import Draw
 import Camera
@@ -17,6 +17,7 @@ import HEasyVision
 import Data.List(minimumBy)
 import GSL
 import Vision
+import Autofrontal
 
 data MyState = ST { smooth :: Int
                   , marked ::[[Int]]
@@ -63,10 +64,16 @@ keyboard st (Char 'p') Down _ _ = do
 keyboard _ (Char '\27') Down _ _ = do
     exitWith ExitSuccess
 
-keyboard st (MouseButton WheelUp) _ _ _ = do
+keyboard st (MouseButton WheelUp) _ (Modifiers {shift=Down}) _ = do
     modifyIORef st $ \s -> s {ust = (ust s) {smooth = smooth (ust s) + 1}}
-keyboard st (MouseButton WheelDown) _ _ _ = do
+keyboard st (MouseButton WheelDown) _ (Modifiers {shift=Down}) _ = do
     modifyIORef st $ \s -> s {ust = (ust s) {smooth = max (smooth (ust s) - 1) 0}}
+
+keyboard st (MouseButton WheelUp) _ _ _ = do
+
+    modifyIORef st $ \s -> s {ust = (ust s) {yh = yh (ust s) + 0.02}}
+keyboard st (MouseButton WheelDown) _ _ _ = do
+    modifyIORef st $ \s -> s {ust = (ust s) {yh = yh (ust s) - 0.02}}
 
 keyboard st (SpecialKey KeyRight) Down _ _ = do
     modifyIORef st $ \s -> s {ust = (ust s) {toshow = toshow (ust s) + 1}}
@@ -123,9 +130,9 @@ worker inWindow camera st = do
 
     let fix pixs = map f pixs where
         f [r,c] = [x,y] where x  = (fromIntegral c-cm)/cm
-                              y  = (fromIntegral r-rm)/cm
+                              y  = -(fromIntegral r-rm)/cm
 
-    let nor = desp (-1) (-rm/cm) <> diag (realVector [1/cm,1/cm,1])
+    let nor = desp (-1) (rm/cm) <> diag (realVector [1/cm,-1/cm,1])
 
     let newpts = if(oknew)
             then pts st |> fix (take 4 newmarked)
@@ -136,6 +143,7 @@ worker inWindow camera st = do
             then genInterimage newpts
             else hs st
 
+    let f = consistency (AllKnown (repeat 2.8)) (tail newhs)
 
     inWindow "camera" $ do
         display camera
@@ -157,9 +165,9 @@ worker inWindow camera st = do
         let t = inv hb <> ht
         let t' = inv nor <> t <> nor
 
-        let r0 = inv nor <> (camera0 ((rho st, yh st),2.8)) <> nor
+        let r0 = inv nor <> (inv $ camera0 ((rho st, yh st),2.8)) <> nor
         let [a,b] = toList $ inHomog $ r0 <> realVector [192,144,1]
-        let r = inv nor <> (camera0 ((rho st, yh st),2.8)) <> ht <> nor
+        let r = inv nor <> (inv $ camera0 ((rho st, yh st),2.8)) <> ht <> nor
         let r' = scaling 0.2 <> desp (192-a) (144-b) <>r
 
         inWindow "selected" $ do
@@ -170,10 +178,17 @@ worker inWindow camera st = do
             warp (toList t') imt >>= display
         inWindow "rectified" $ do
             warp (toList r') imt >>= display
-        when (oknew && length newimages>1) $ do
-            writeFile "real.txt" . show . fromRows . concat . map toRows $ newhs
 
-    return st {new = False, marked = newmarked, imgs=newimages, pts = newpts, hs = newhs}
+    when (oknew && length newimages>1 ) $ do
+        print(rho st, yh st, f (rho st, yh st))
+
+    
+    let [nr,ny] = if True && oknew && length newimages>1
+                then fst $ findSol f (0, 1.5)
+                else [rho st, yh st]
+
+    return st {new = False, marked = newmarked, imgs=newimages, pts = newpts, hs = newhs,
+               rho = nr, yh = ny}
 
 ------------------------------------------------------
 mydraw xs = do
