@@ -1,6 +1,8 @@
 module Autofrontal (
     camera0,
-    consistency, KnownFs(..),
+    KnownFs(..),
+    extractInfo,
+    consistency,
     findSol
 ) where
 
@@ -15,50 +17,48 @@ import System.Environment (getArgs)
 import Control.Monad (when)
 
 
-quality ihs mbOmgs c = sum qs / fromIntegral (length ihs) where 
-    camscorr = map (<>c) ihs
-    qs = zipWith autoOrthogonality mbOmgs camscorr  
-
 data KnownFs = AllKnown [Double] | F1Known Double | AllUnknown | ConstantUnknown
 
-consistency :: KnownFs -> [Matrix] -> (Double,Double) -> Double
 
--- Esto es lo que me gusta de Haskell...!!! (pero con -O, y sin trace!?)
-consistency (AllKnown fs) hs horiz = r where
-    ihs = map inv hs
+extractInfo :: KnownFs -> [Matrix] -> (Double,Double) -> (Matrix, [Maybe Matrix])
+
+extractInfo (AllKnown fs) hs horiz = (c,mbOmegas) where
     mbOmegas = map (Just . omegaGen) (tail fs)
     c = rectifier' (horiz, head fs)
-    r = quality ihs mbOmegas c
-    
 
-consistency (F1Known f1) hs horiz = r where
-    ihs = map inv hs
+extractInfo (F1Known f1) hs horiz = (c,mbOmegas) where
     mbOmegas = repeat Nothing :: [Maybe Matrix]
     c = rectifier' (horiz,f1)
-    r = quality ihs mbOmegas c
-    
 
-consistency AllUnknown hs horiz = r where
-    ihs = map inv hs
+extractInfo AllUnknown hs horiz = (c,mbOmegas) where
     mf1s = map (estimateFTransfer horiz) hs
-    mf1 = estimatorF mf1s   
+    mf1 = estimatorF mf1s
     c = case mf1 of 
             Just f1 -> rectifier' (horiz,f1)
             Nothing -> ident 3
     mbOmegas = repeat Nothing :: [Maybe Matrix]
-    r = quality ihs mbOmegas c
-    
-    
-consistency ConstantUnknown hs horiz = r where
-    ihs = map inv hs
+
+extractInfo ConstantUnknown hs horiz = (c,mbOmegas) where
     mf1s = map (estimateFTransfer horiz) hs
-    mf1 = estimatorF mf1s   
+    mf1 = estimatorF mf1s
     c = case mf1 of 
             Just f1 -> rectifier' (horiz,f1)
             Nothing -> ident 3
     mbOmega1 = mf1 >>= \f -> Just (omegaGen f)
     mbOmegas = repeat mbOmega1
+
+
+consistency :: KnownFs -> [Matrix] -> (Double,Double) -> Double
+
+consistency info hs horiz = r where
+    ihs = map inv hs
+    (c,mbOmegas) = extractInfo info hs horiz
     r = quality ihs mbOmegas c
+
+quality ihs mbOmgs c = sum qs / fromIntegral (length ihs) where 
+    camscorr = map (<>c) ihs
+    qs = zipWith autoOrthogonality mbOmgs camscorr
+
 
 -- this gives a low value if h is a similar transformation
 similarityDegree h = pnorm 1 (m'-v) where

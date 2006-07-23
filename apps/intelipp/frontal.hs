@@ -1,8 +1,9 @@
 -- TO DO:
 --   put online the demo video
 --   clear earlier points
---   show error surface
 --   clean up callbacks
+--   average world fragments
+--   draw 3d scene with cameras
 
 -- This should work with a firewire camera: 
 --    $ ./a.out /dev/dv1394
@@ -88,11 +89,6 @@ worker inWindow camera st = do
     im  <- scale8u32f 0 1 camera
     h <- suaviza im >>= hessian >>= scale32f (-1.0)
 
-    when False $ inWindow "hessian" $ do
-        auxim <- copy32f im
-        copyROI32f auxim h
-        display auxim {vroi = vroi h}
-
     (mn,mx) <- Typical.minmax h
     hotPoints <- localMax 7 h >>= thresholdVal32f (mx/10) 0.0 ippCmpLess >>= getPoints32f 200
 
@@ -118,7 +114,9 @@ worker inWindow camera st = do
     when (oknew && length newhs > 1) $ do
         writeFile "real.txt" . show . foldr1 (<->) . tail $ newhs
 
-    let f = consistency (AllKnown (repeat 2.8)) (tail newhs)
+    --let f = consistency (AllKnown (repeat 2.8)) (tail newhs)
+    --let f = consistency (F1Known 2.8) (tail newhs)
+    let f = consistency ConstantUnknown (tail newhs)
 
     inWindow "camera" $ do
         display camera
@@ -126,6 +124,11 @@ worker inWindow camera st = do
         mydraw hotPoints
         mycolor 0 0 1
         mydraw newmarked
+
+    when False $ inWindow "hessian" $ do
+        auxim <- copy32f im
+        copyROI32f auxim h
+        display auxim {vroi = vroi h}
 
     when (length newimages>0) $ do
         let ptget = (toshow st) `mod` length newimages
@@ -139,7 +142,8 @@ worker inWindow camera st = do
 
         let t = inv hb <> ht
 
-        let cam0 = camera0 ((rho st, yh st),2.8)
+        --let cam0 = camera0 ((rho st, yh st),2.8)
+        let cam0 = fst (extractInfo ConstantUnknown newhs (rho st, yh st))
         let r0 = inv cam0
         let enc = encuadra r0
         let r = scaling 0.2 <> enc <> r0
@@ -155,13 +159,14 @@ worker inWindow camera st = do
         inWindow "rectified" $ do
             display w
 
-        let f im h = warpOn (adapt $ r <> h) w im
+        let g im h = warpOn (adapt $ r <> h) w im
         inWindow "world" $ do 
-            sequence_ $ zipWith f newimages newhs
+            sequence_ $ zipWith g newimages newhs
             display w
 
-    when (oknew && length newimages>1 ) $ do
-        print(rho st, yh st, f (rho st, yh st))
+        when (oknew && length newimages>1 ) $ do
+            print(rho st, yh st, f (rho st, yh st))
+            mapM_ (print . focal . (<> cam0). inv) newhs
 
 
     let [nr,ny] = if True && oknew && length newimages>1
