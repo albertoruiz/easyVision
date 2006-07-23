@@ -58,6 +58,10 @@ desp x y = realMatrix [[1,0,x],
                        [0,1,y],
                        [0,0,1]]
 
+scaling s = realMatrix [[s,0,0],
+                        [0,s,0],
+                        [0,0,1]]
+
 rotPTR (pan,tilt,roll) = realMatrix 
    [[-cb*cg + ca*sb*sg, -cg*sb - ca*cb*sg, -sa*sg],
     [ ca*cg*sb + cb*sg, -ca*cb*cg + sb*sg, -cg*sa],

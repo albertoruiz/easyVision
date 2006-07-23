@@ -1,4 +1,5 @@
 module Autofrontal (
+    camera0,
     consistency, KnownFs(..),
     findSol
 ) where
@@ -101,6 +102,7 @@ rectifier' ((rho,yh),f) = reshape 3 $ realVector [
           cr = cos rho
           sr = - sin rho      
 
+camera0 = rectifier'
 
 northPoint c = c <> mS <> trans c <> linf    
     
@@ -155,20 +157,7 @@ estimatorF mbfs = mbMedian fs where
     fs = [ f | Just f <- mbfs ]    
 
 
-
-
-
-environment n dr dy (r,y) fun = reshape n $ realVector vals where
-    a = toList $ linspace n (r-dr,r+dr)
-    b = toList $ linspace n (y-dy,y+dy)
-    vals = [ fun (r',y') | r' <- a, y' <- b]
-
-environment' n dr dy (r,y) fun = reshape n $ realVector vals where
-    a = toList $ linspace n (-60*degree,60*degree)
-    b = toList $ linspace n (0,3)
-    vals = [ fun (r',y') | r' <- a, y' <- b]
-
-
+-------------------------------------------------------
 
 mkfun f = g where
     g [a,b] = f (a,b)
