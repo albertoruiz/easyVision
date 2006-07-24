@@ -26,16 +26,22 @@ import GSL
 import Vision
 import Autofrontal
 
-data MyState = ST { smooth :: Int
+type Point = [Double]  -- provisional
+type Pixel = [Int]
+
+data MyState = ST { imgs :: [Img]
+                  , pts  :: [[Point]]
+                  , hs   :: [Matrix]
+                  , cam0 :: Matrix
+
+                  , smooth :: Int
+                  , zoom :: Double
                   , marked ::[[Int]]
-                  , new:: Bool
-                  , imgs::[Img]
-                  , pts :: [[[Double]]]
+                  , new    :: Bool
+
                   , toshow :: Int
                   , basev ::Int
-                  , hs :: [Matrix]
-                  , rho :: Double
-                  , yh :: Double
+
                   }
 
 list =< elem = list ++ [elem]
@@ -58,16 +64,19 @@ main = do
     args <- getArgs
     cam@(_,_,(h,w)) <- openCamera (args!!0) Gray (288,384)
 
-    state <- prepare cam ST { smooth = 1
-                            , marked = []
-                            , new=False
-                            , imgs=[]
+    state <- prepare cam ST { imgs=[]
                             , pts=[]
+                            , hs = []
+                            , cam0 = ident 3
+
+                            , smooth = 1
+                            , zoom = 0.2
+                            , marked = []
+                            , new = False
+
                             , toshow = 0
                             , basev = 0
-                            , hs = []
-                            , rho = 30*degree
-                            , yh = 5
+
                             }
 
     addWindow "camera" (w,h) Nothing marker state
@@ -92,66 +101,73 @@ worker inWindow camera st = do
     (mn,mx) <- Typical.minmax h
     hotPoints <- localMax 7 h >>= thresholdVal32f (mx/10) 0.0 ippCmpLess >>= getPoints32f 200
 
+    let newmark = new st 
+    let st' = if newmark -- a new point is clicked by the user
+                then     -- it is replaced by the closest hot point
+                    let n:other = marked st
+                    in st { new = False,
+                            marked = closest hotPoints n : other }
+                else st
 
-    let newmarked = if (new st)
-            then let n:other = marked st in closest hotPoints n : other
-            else marked st
+    -- when there are four points we add a new view and all required info:
+    let newimage = newmark && length (marked st') == 4
+    let st'' = if newimage
+                then st' { pts  = pts  st' =< fix (marked st'),
+                           marked = [],
+                           imgs = imgs st' =< im,
+                           hs = genInterimage (pts st'')}
+                else st'
 
-    let oknew = new st && length (marked st) `rem` 4 == 0
+    let info = AllKnown (repeat 2.8)
+    -- let info = F1Known 2.8
+    -- let info = ConstantUnknown
 
-    let newimages = if (oknew)
-            then imgs st =< im
-            else imgs st
+    let uhs = tail (hs st'')
+    let f = consistency info uhs
+    let [rho,yh] = fst $ findSol f (0, 2)
+    let sol = extractInfo info uhs (rho, yh)
 
-    let newpts = if(oknew)
-            then pts st =< fix (take 4 newmarked)
-            else pts st
+    let st = if newimage
+               then st'' {cam0 = fst sol}
+               else st''
 
-    let newhs = if(oknew)
-            then genInterimage newpts
-            else hs st
-
-    when (oknew && length newhs > 1) $ do
-        writeFile "real.txt" . show . foldr1 (<->) . tail $ newhs
-
-    --let f = consistency (AllKnown (repeat 2.8)) (tail newhs)
-    --let f = consistency (F1Known 2.8) (tail newhs)
-    let f = consistency ConstantUnknown (tail newhs)
 
     inWindow "camera" $ do
         display camera
         mycolor 1 0 0
         mydraw hotPoints
         mycolor 0 0 1
-        mydraw newmarked
+        mydraw (marked st)
 
     when False $ inWindow "hessian" $ do
         auxim <- copy32f im
         copyROI32f auxim h
         display auxim {vroi = vroi h}
 
-    when (length newimages>0) $ do
-        let ptget = (toshow st) `mod` length newimages
-        let pbase = (basev  st) `mod` length newimages
-        let pt = newpts!!ptget
-        let pb = newpts!!pbase
-        let ht = newhs!!ptget
-        let hb = newhs!!pbase
-        let imt = newimages!!ptget
-        let imb = newimages!!pbase
+    let images = imgs st
+    let nviews = length images
 
-        let t = inv hb <> ht
+    let ptget = (toshow st) `mod` nviews
+    let pbase = (basev  st) `mod` nviews
+    let pt = pts st!!ptget
+    let pb = pts st!!pbase
+    let ht =  hs st!!ptget
+    let hb =  hs st!!pbase
+    let imt = images!!ptget
+    let imb = images!!pbase
 
-        --let cam0 = camera0 ((rho st, yh st),2.8)
-        let cam0 = fst (extractInfo ConstantUnknown newhs (rho st, yh st))
-        let r0 = inv cam0
-        let enc = encuadra r0
-        let r = scaling 0.2 <> enc <> r0
+    let t = inv hb <> ht
+
+    let r0 = inv (cam0 st)
+    let enc = encuadra r0
+    let r = scaling (zoom st) <> enc <> r0
+
+    when (length images>0) $ do
 
         inWindow "selected" $ do
             display imb
-            --mycolor 1 0 1
-            --mydraw' pb
+            mycolor 1 1 0
+            mydraw' pb
         inWindow "warped" $ do
             warp (adapt t) imt >>= display
 
@@ -161,23 +177,17 @@ worker inWindow camera st = do
 
         let g im h = warpOn (adapt $ r <> h) w im
         inWindow "world" $ do 
-            sequence_ $ zipWith g newimages newhs
+            sequence_ $ zipWith g images (hs st)
             display w
 
-        when (oknew && length newimages>1 ) $ do
-            print(rho st, yh st, f (rho st, yh st))
-            mapM_ (print . focal . (<> cam0). inv) newhs
+        when (newimage  && (length images>1)) $ do
+            writeFile "real.txt" . show . foldr1 (<->) $ uhs
+            print(rho, yh, f(rho,yh))
+            mapM_ (print . focal . (<> cam0 st). inv) uhs
+            when False $ do
+                imshow $ environment 100 (20*degree) 0.5 (rho,yh) f
 
-
-    let [nr,ny] = if True && oknew && length newimages>1
-                then fst $ findSol f (0, 2)
-                else [rho st, yh st]
-
-    when (False && oknew) $ do
-        imshow $ environment 100 (20*degree) 0.5 (nr,ny) f
-
-    return st {new = False, marked = newmarked, imgs=newimages, pts = newpts, hs = newhs,
-               rho = nr, yh = ny}
+    return st
 
 ------------------------------------------------------
 mydraw xs = do
@@ -187,10 +197,16 @@ mydraw xs = do
 
 mydraw' xs = do
     pointSize $= 3
-    --ortho2D (-1) (1) (-0.75) (0.75)
-    --loadIdentity
+    matrixMode $= Projection
+    loadIdentity
+    ortho2D (-1) (1) (-0.75) (0.75)
+    matrixMode $= Modelview 0
+    loadIdentity
+
     renderPrimitive Points $ mapM_ f xs where
-        f [x,y] = vertex (Vertex2 x y)
+        f [x,y] = do
+            vertex (Vertex2 x y)
+            
 ------------------------------------------------------
 
 --compareBy f = (\a b-> compare (f a) (f b))
@@ -215,16 +231,10 @@ keyboard st (Char 'p') Down _ _ = do
 keyboard _ (Char '\27') Down _ _ = do
     exitWith ExitSuccess
 
-keyboard st (MouseButton WheelUp) _ (Modifiers {shift=Down}) _ = do
-    modifyIORef st $ \s -> s {ust = (ust s) {smooth = smooth (ust s) + 1}}
-keyboard st (MouseButton WheelDown) _ (Modifiers {shift=Down}) _ = do
-    modifyIORef st $ \s -> s {ust = (ust s) {smooth = max (smooth (ust s) - 1) 0}}
-
 keyboard st (MouseButton WheelUp) _ _ _ = do
-
-    modifyIORef st $ \s -> s {ust = (ust s) {yh = yh (ust s) + 0.02}}
+    modifyIORef st $ \s -> s {ust = (ust s) {zoom = zoom (ust s) *1.2}}
 keyboard st (MouseButton WheelDown) _ _ _ = do
-    modifyIORef st $ \s -> s {ust = (ust s) {yh = yh (ust s) - 0.02}}
+    modifyIORef st $ \s -> s {ust = (ust s) {zoom = zoom (ust s) /1.2}}
 
 keyboard st (SpecialKey KeyRight) Down _ _ = do
     modifyIORef st $ \s -> s {ust = (ust s) {toshow = toshow (ust s) + 1}}

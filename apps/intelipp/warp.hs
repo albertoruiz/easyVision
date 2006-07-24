@@ -72,7 +72,7 @@ warper alpha rho foc sca = toList r where
         <> rot1 alpha <> rot3 rho 
         <> kgen (1/foc) <> desp (-192) (-144)
     [a,b] = toList $ inHomog $ t <> realVector [192,144,1]
-    r = scaling sca <> desp (192-a) (144-b) <>t
+    r = Main.scaling sca <> desp (192-a) (144-b) <>t
 
 ----------------------------------------------------------
 
