@@ -42,6 +42,8 @@ data MyState = ST { imgs :: [Img]
                   , toshow :: Int
                   , basev ::Int
 
+                  , suelo :: Maybe Img
+
                   }
 
 list =< elem = list ++ [elem]
@@ -51,11 +53,12 @@ mycolor r g b = currentColor $= Color4 r g (b::GLfloat) 1
 encuadra h = desp (-a) (-b) where
     [a,b] = toList $ inHomog $ h <> realVector [0,0,1]
 
+htr = ht :: Matrix -> [[Double]] -> [[Double]]
+
 pixel2point (h, w) = (fix, adapt) where
     cm = fromIntegral $ w `quot` 2
     rm = fromIntegral $ h `quot` 2
     nor = desp (-1) (rm/cm) <> diag (realVector [1/cm,-1/cm,1])
-    htr = ht :: Matrix -> [[Double]] -> [[Double]]
     fix = htr nor . map (reverse . map fromIntegral)
     adapt h = toList $ inv nor <> h <> nor
 
@@ -77,6 +80,8 @@ main = do
                             , toshow = 0
                             , basev = 0
 
+                            , suelo = Nothing
+
                             }
 
     addWindow "camera" (w,h) Nothing marker state
@@ -85,6 +90,7 @@ main = do
     addWindow "warped" (w,h) Nothing keyboard state
     addWindow "rectified" (w,h) Nothing keyboard state
     addWindow "world" (w,h) Nothing keyboard state
+    addWindow "3D view" (400,400) (Just draw3d) keyboard state
 
     launch state worker
 
@@ -130,7 +136,6 @@ worker inWindow camera st = do
     let st = if newimage
                then st'' {cam0 = fst sol}
                else st''
-
 
     inWindow "camera" $ do
         display camera
@@ -187,6 +192,9 @@ worker inWindow camera st = do
             when False $ do
                 imshow $ environment 100 (20*degree) 0.5 (rho,yh) f
 
+        inWindow "3D view" $ do
+            postRedisplay Nothing
+
     return st
 
 ------------------------------------------------------
@@ -202,11 +210,9 @@ mydraw' xs = do
     ortho2D (-1) (1) (-0.75) (0.75)
     matrixMode $= Modelview 0
     loadIdentity
+    renderPrimitive Points $ mapM_ (vertex.f) xs where
+        f [x,y] = Vertex2 x y
 
-    renderPrimitive Points $ mapM_ f xs where
-        f [x,y] = do
-            vertex (Vertex2 x y)
-            
 ------------------------------------------------------
 
 --compareBy f = (\a b-> compare (f a) (f b))
@@ -222,6 +228,53 @@ environment n dr dy (r,y) fun = reshape n $ realVector vals where
     a = toList $ linspace n (r-dr,r+dr)
     b = toList $ linspace n (y-dy,y+dy)
     vals = [ fun (r',y') | r' <- a, y' <- b]
+
+
+----------------------------------------------------------------
+
+shcam cam pts = (c,p) where 
+    (h,f) = toCameraSystem cam
+    t1 = h <> diag (realVector [1,1,1,3])
+    c = ht t1 (cameraOutline 1)
+    t2 = t1 <> diag (realVector [1,1,1,f])
+    p = ht t2 (map (++[f]) pts)
+
+for = flip mapM_
+
+draw3d st = do
+    matrixMode $= Projection
+    loadIdentity
+    perspective 40 1 1 100
+    lookAt (Vertex3 0 (0) 20) (Vertex3 0 0 0) (Vector3 0 1 0)
+
+    let rawcam0 = cam0 (ust st)
+    let fixcam0 = inv (encuadra (inv rawcam0) <> inv rawcam0)
+
+    case suelo (ust st) of
+        Nothing -> return ()
+        Just im -> do
+            return ()
+
+    case pts (ust st) of
+        [] -> return ()
+        pts:_ -> do
+            let f [x,y] = Vertex2 x y
+            mycolor 0 0 1
+            lineWidth $= 2
+            renderPrimitive LineLoop $ mapM_ (vertex.f) (htr (inv fixcam0)pts)
+
+    for (hs (ust st)) $ \h -> do
+        let pars = poseGen Nothing (diag (realVector [-1,1,1])<> inv h <> fixcam0)
+        case pars of
+            Nothing -> return ()
+            Just m -> do
+                let pts = fst $ shcam (syntheticCamera m) []
+                lineWidth $= 1
+                mycolor 1 0 0
+                let f [x,y,z] = Vertex3 x y z
+                renderPrimitive LineLoop $ mapM_ (vertex.f) pts
+
+
 
 -----------------------------------------------------------------
 -- callbacks
