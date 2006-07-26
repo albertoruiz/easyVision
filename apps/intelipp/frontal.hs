@@ -11,11 +11,14 @@
 --    $ wget http://ditec.um.es/~pedroe/svnvideos/misc/table.dv  # (not yet online)
 --    $ ./frontal table.dv
 
+module Main where
+
 import Ipp hiding (shift)
 import Typical
 import Draw
 import Camera
 import Graphics.UI.GLUT hiding (Matrix)
+import Graphics.Rendering.OpenGL hiding (Matrix)
 import Data.IORef
 import System.Exit
 import Control.Monad(when)
@@ -26,8 +29,13 @@ import GSL
 import Vision
 import Autofrontal
 
+import Data.Bits ( (.&.) )
+
+
 type Point = [Double]  -- provisional
 type Pixel = [Int]
+
+type ImageDrawer = [[Double]] -> IO ()
 
 data MyState = ST { imgs :: [Img]
                   , pts  :: [[Point]]
@@ -42,7 +50,8 @@ data MyState = ST { imgs :: [Img]
                   , toshow :: Int
                   , basev ::Int
 
-                  , suelo :: Maybe Img
+                  , suelo :: Maybe ImageDrawer
+                  , angle :: Double
 
                   }
 
@@ -81,6 +90,7 @@ main = do
                             , basev = 0
 
                             , suelo = Nothing
+                            , angle = 0
 
                             }
 
@@ -91,6 +101,9 @@ main = do
     addWindow "rectified" (w,h) Nothing keyboard state
     addWindow "world" (w,h) Nothing keyboard state
     addWindow "3D view" (400,400) (Just draw3d) keyboard state
+
+    textureFilter Texture2D $= ((Nearest, Nothing), Nearest)
+    textureFunction $= Decal
 
     launch state worker
 
@@ -123,6 +136,7 @@ worker inWindow camera st = do
                            imgs = imgs st' =< im,
                            hs = genInterimage (pts st'')}
                 else st'
+
 
     let info = AllKnown (repeat 2.8)
     -- let info = F1Known 2.8
@@ -195,7 +209,11 @@ worker inWindow camera st = do
         inWindow "3D view" $ do
             postRedisplay Nothing
 
-    return st
+    if newimage
+        then do
+            f <- genDrawTexture 256 im
+            return st {suelo = Just f}
+        else return st
 
 ------------------------------------------------------
 mydraw xs = do
@@ -245,15 +263,19 @@ draw3d st = do
     matrixMode $= Projection
     loadIdentity
     perspective 40 1 1 100
-    lookAt (Vertex3 0 (0) 20) (Vertex3 0 0 0) (Vector3 0 1 0)
+    let ang = angle (ust st)
+    lookAt (Vertex3 0 (20*sin ang) (20*cos ang)) (Vertex3 0 0 0) (Vector3 0 1 0)
 
     let rawcam0 = cam0 (ust st)
     let fixcam0 = inv (encuadra (inv rawcam0) <> inv rawcam0)
 
     case suelo (ust st) of
         Nothing -> return ()
-        Just im -> do
-            return ()
+        Just f -> do
+            f [[-4,  4, 0],
+               [ 4,  4, 0],
+               [ 4, -4, 0],
+               [-4, -4, 0]]
 
     case pts (ust st) of
         [] -> return ()
@@ -261,19 +283,22 @@ draw3d st = do
             let f [x,y] = Vertex2 x y
             mycolor 0 0 1
             lineWidth $= 2
-            renderPrimitive LineLoop $ mapM_ (vertex.f) (htr (inv fixcam0)pts)
+            renderPrimitive LineLoop $ mapM_ (vertex.f) (htr (inv fixcam0) pts)
 
     for (hs (ust st)) $ \h -> do
-        let pars = poseGen Nothing (diag (realVector [-1,1,1])<> inv h <> fixcam0)
+        let flipx = diag (realVector [-1,1,1])
+        let c' = inv h <> fixcam0
+        let pars = poseGen Nothing c'
         case pars of
             Nothing -> return ()
             Just m -> do
-                let pts = fst $ shcam (syntheticCamera m) []
+                let (pts,coo) = shcam (syntheticCamera m) (map (map (*4)) [[-1,1],[1,1],[1,-1],[-1,-1]])
                 lineWidth $= 1
                 mycolor 1 0 0
                 let f [x,y,z] = Vertex3 x y z
                 renderPrimitive LineLoop $ mapM_ (vertex.f) pts
-
+                let Just f = suelo (ust st)
+                f coo
 
 
 -----------------------------------------------------------------
@@ -284,10 +309,16 @@ keyboard st (Char 'p') Down _ _ = do
 keyboard _ (Char '\27') Down _ _ = do
     exitWith ExitSuccess
 
+keyboard st (MouseButton WheelUp) _ (Modifiers{shift = Down}) _ = do
+    modifyIORef st $ \s -> s {ust = (ust s) {angle = angle (ust s) + 1*degree}}
+keyboard st (MouseButton WheelDown) _ (Modifiers{shift = Down}) _ = do
+    modifyIORef st $ \s -> s {ust = (ust s) {angle = angle (ust s) -1*degree}}
+
 keyboard st (MouseButton WheelUp) _ _ _ = do
     modifyIORef st $ \s -> s {ust = (ust s) {zoom = zoom (ust s) *1.2}}
 keyboard st (MouseButton WheelDown) _ _ _ = do
     modifyIORef st $ \s -> s {ust = (ust s) {zoom = zoom (ust s) /1.2}}
+
 
 keyboard st (SpecialKey KeyRight) Down _ _ = do
     modifyIORef st $ \s -> s {ust = (ust s) {toshow = toshow (ust s) + 1}}
@@ -310,3 +341,6 @@ marker st (MouseButton RightButton) Down _ pos@(Position x y) = do
     modifyIORef st $ \s -> s {ust = (ust s) {marked = tail $ marked (ust s) }}
 
 marker st b s m p = keyboard st b s m p
+
+--------------------------------------------------------------------
+
