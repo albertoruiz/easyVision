@@ -13,23 +13,66 @@ Visual geometry.
 -}
 -----------------------------------------------------------------------------
 
-module Vision.Geometry where
+module Vision.Geometry
+(
+  -- * Camera synthesis and analysis
+  CameraParameters(..)
+, syntheticCamera
+, easyCamera
+, homogZ0
+, factorizeCamera
+, focalFromHomogZ0
+, poseFromHomogZ0
+, poseFromCamera
+  -- * Useful transformations
+, kgen
+, rot1
+, rot2
+, rot3
+, desp
+, scaling
+, mS
+, mA
+, linf
+, cross
+, unitary
+, homog
+, inHomog
+, degree
+, normatdet
+, normat3
+, ht
+, htc
+ -- Estimation of transformations
+, estimateHomographyRansac
+, estimateHomography
+, toCameraSystem
+, cameraOutline 
+-- Stereo Geometry
+
+) where
 
 import GSL
 import Vision.Stat
 import Data.List(transpose,nub,maximumBy,genericLength,elemIndex, genericTake)
 import System.Random 
 import Debug.Trace(trace)
- 
-data CameraParameters
+
+-- | A nice camera parameterization.
+data CameraParameters 
     = CamPar { focalDist                      :: Double
              , panAngle, tiltAngle, rollAngle :: Double
              , cameraCenter                   :: (Double,Double,Double)
              } deriving Show
- 
--- computes the camera parameters given the projection center, 
--- the point imaged in the image center and roll angle
-easyCamera :: Double -> (Double,Double,Double) -> (Double,Double,Double) -> Double -> CameraParameters
+
+
+-- | Computes the camera parameters given the projection center,
+--   the point imaged in the image center and roll angle.
+easyCamera :: Double                   -- ^ field of view
+           -> (Double,Double,Double)   -- ^ camera center
+           -> (Double,Double,Double)   -- ^ a point in front of the camera
+           -> Double                   -- ^ roll angle
+           -> CameraParameters
 easyCamera fov cen@(cx,cy,cz) pun@(px,py,pz) rho  = 
     CamPar { focalDist = f
            , panAngle = beta
@@ -44,35 +87,60 @@ easyCamera fov cen@(cx,cy,cz) pun@(px,py,pz) rho  =
     f = 1 / tan (fov/2)
     beta = atan2 (-dx) dy
     alpha = atan2 dh (-dz) 
- 
- 
- 
+
+-- | Obtains the 3x4 homogeneous transformation from world points to image points.
+syntheticCamera :: CameraParameters -> Matrix
+syntheticCamera campar = flipx <> k <> r <> m where
+    CamPar {focalDist = f, 
+            panAngle = p, tiltAngle = t, rollAngle = q,
+            cameraCenter = (cx,cy,cz)} = campar
+    m = realMatrix [[1,0,0, -cx],
+                    [0,1,0, -cy],
+                    [0,0,1, -cz]]
+    r = rotPTR (p,t,q)
+    k = kgen f
+
+flipx = diag (realVector [-1,1,1])
+
+-- | Matrix of intrinsic parameters of a diag(f,f,1) camera
+kgen :: Double -> Matrix
 kgen f = realMatrix [[f,0,0],
                      [0,f,0],
                      [0,0,1]]
 
+-- | 3x3 rotation around the X-axis
+rot1 :: Double -> Matrix
 rot1 a = realMatrix [[1, 0,0],
                      [0, c,s],
                      [0,-s,c]] 
     where c = cos a 
           s = sin a
-    
+
+-- | 3x3 rotation around the Y-axis
+rot2 :: Double -> Matrix
 rot2 a = realMatrix [[ c,0,s],
                      [ 0,1,0],
                      [-s,0,c]] 
     where c = cos a 
           s = sin a
-    
+
+-- | 3x3 rotation around the Z-axis
+rot3 :: Double -> Matrix
 rot3 a = realMatrix [[ c,s,0],
                      [-s,c,0],
                      [ 0,0,1]] 
     where c = cos a 
           s = sin a
 
-desp x y = realMatrix [[1,0,x],
+-- | Homogeneous 3x3 matrix of a 2D displacement
+desp :: (Double,Double) -- ^ (dx,dy)
+      -> Matrix
+desp (x,y) = realMatrix [[1,0,x],
                        [0,1,y],
                        [0,0,1]]
 
+-- | Homogeneous 3x3 matrix of a isotropic 2D scaling
+scaling :: Double -> Matrix
 scaling s = realMatrix [[s,0,0],
                         [0,s,0],
                         [0,0,1]]
@@ -87,21 +155,15 @@ rotPTR (pan,tilt,roll) = realMatrix
          sa = sin tilt
          cg = cos roll
          sg = sin roll
-    
-syntheticCamera campar = k <> r <> m where
-    CamPar {focalDist = f, 
-            panAngle = p, tiltAngle = t, rollAngle = q,
-            cameraCenter = (cx,cy,cz)} = campar
-    m = realMatrix [[1,0,0, -cx],
-                    [0,1,0, -cy],
-                    [0,0,1, -cz]]
-    r = rotPTR (p,t,q)
-    k = kgen f
-          
+
+-- | Antisymmetric matrix 0 0 1
+mA :: Matrix
 mA = realMatrix [[ 0,1,0],
                  [-1,0,0],
                  [ 0,0,0]] 
 
+-- | diag(1,1,0)
+mS :: Matrix
 mS = realMatrix [[1,0,0],
                  [0,1,0],
                  [0,0,0]] 
@@ -110,13 +172,16 @@ mF = realMatrix [[ 1,1,0],
                  [-1,1,0],
                  [ 0,0,0]] 
 
+-- | the line of the infinity.
+linf :: Vector
 linf = realVector [0,0,1]
 
 inHomog v = subVector 0 l v <> recip (v!:l) where l = size v - 1
 homog v = join [v,1]
 
+-- | Obtains a vector in the same direction with 2-norm=1
+unitary:: Vector -> Vector
 unitary v = v <> recip (norm v)
-
 
 focal' c = res where
     n = c <> mS <> trans c <> linf
@@ -126,8 +191,10 @@ focal' c = res where
     ni = inHomog n
     f = sqrt $ norm (xi - ni) ^2 - norm ni ^2
     res = if f > 0 then Just f else Nothing 
- 
-focal c = res where
+
+-- | Tries to compute the focal dist of a camera given the homography Z0 -> image
+focalFromHomogZ0 :: Matrix -> Maybe Double
+focalFromHomogZ0 c = res where
     [a11,a12,a13, 
      a21,a22,a23, 
      a31,a32,a33] = toList (flatten c)
@@ -137,23 +204,26 @@ focal c = res where
     xiy = (a22 *(-a31 + a32) + a21 *(a31 + a32))/den
     den = a31^2 + a32^2
     f = sqrt $ (xix-nix)^2 +(xiy-niy)^2 - nix^2 - niy^2
-    res = if f > 0 then Just f else Nothing 
- 
- 
- 
-poseGen mbf c = res where
-    cp = CamPar {focalDist = f, 
-                 panAngle = -beta, tiltAngle = alpha, rollAngle = rho,
-                 cameraCenter = (cx, cy, -cz) } 
-    
+    res = if f > 0 then Just f else Nothing
+
+-- | Tries to extract the camera parameters from the homography ground->image.
+poseFromHomogZ0 :: Maybe Double              -- ^ focal distance (if known)
+           -> Matrix                 -- ^ 3x3 floor to image homography
+           -> Maybe CameraParameters
+poseFromHomogZ0 mbf c = res where
+    cp = CamPar {focalDist = f,
+                 panAngle = beta-pi, tiltAngle = alpha, rollAngle = rho,
+                 cameraCenter = (-cx, cy, -cz) }
+
     mf = case mbf of
-            Just givenf -> givenf  -- given, use it
-            Nothing -> focal c     -- unknown, we try to estimate it
+            Nothing -> focalFromHomogZ0 c     -- unknown, we try to estimate it
+            jf -> jf                          -- given, use it
     res = case mf of
-            Just f -> Just cp           -- solution
+            Just f -> Just cp      -- solution
             Nothing -> Nothing     -- cannot be estimated
-    Just f = mf        
-    cnor = c <> signum (det c)
+    Just f = mf
+    cflip = flipx <> c 
+    cnor = cflip <> signum (det $ cflip)
     s = kgen (1/f) <> cnor
     [s1,s2,s3] = toColumns s
     r1 = unitary s1
@@ -168,24 +238,31 @@ poseGen mbf c = res where
     ni = inHomog n
     rho = atan2 (ni!:0) (ni!:1)
     alpha = atan2 f (norm ni)
-        
-    
+
+
+-- | Tries to extract the camera parameters of a diag(f,f,1) camera
+poseFromCamera :: Maybe Double              -- ^ focal distance (if known)
+           -> Matrix                         -- ^ 3x4 camera matrix
+           -> Maybe CameraParameters
+poseFromCamera mf = poseFromHomogZ0 mf. homogZ0
 
 degree = pi / 180    
-    
+
 extractColumns cs = trans . extractRows cs . trans    
-    
-homogZ0 cam = extractColumns [0,1,3] cam    
-    
+
+-- | Obtains the homography floor (Z=0) to image from a camera
+homogZ0 :: Matrix -> Matrix
+homogZ0 cam = extractColumns [0,1,3] cam
+
 asMat v = fromList [[ 0,-c, b],
                     [ c, 0,-a],
                     [-b, a, 0]]
     where a = v!:0
           b = v!:1
           c = v!:2     
-    
+
 cross a b = asMat a <> b    
-            
+
 cameraOutline f = 
     [[0::Double,0,0],
     [-1,1,f],
@@ -206,8 +283,8 @@ cameraOutline f =
 toCameraSystem cam = (inv m, f) where
     (k,r,c) = factorizeCamera cam
     m = (r <|> -r <> c) <-> realVector [0,0,0,1]
-    (f:_):_ = toList k            
-            
+    (f:_):_ = toList k
+
 doublePerp (a,b) (c,d) = (e,f) where
     a' = realVector a
     b' = realVector b
@@ -233,9 +310,7 @@ homogSystem coeffs = sol where
         | otherwise = error "homogSystem with rows<cols-1"
     (_,_,v) = svd mat
     sol = flatten $ dropColumns (c-1) v
-    
-             
-    
+
 estimateHomographyRaw dest orig = h where
     eqs = concat (zipWith eq dest orig)
     h = reshape 3 $ homogSystem eqs
@@ -261,7 +336,7 @@ estimateHomographyRaw dest orig = h where
             t34=bx*ax 
             t35=bx*ay
             t36=bx     
-    
+
 withNormalization lt estimateRelation dest orig = lt wd <> h <> wo where
     std = stat (realMatrix dest)
     sto = stat (realMatrix orig)
@@ -270,9 +345,9 @@ withNormalization lt estimateRelation dest orig = lt wd <> h <> wo where
     h = estimateRelation nd no
     wd = whiteningTransformation std
     wo = whiteningTransformation sto 
-   
+
 estimateHomography = withNormalization inv estimateHomographyRaw   
-    
+
 normat3 m = m <> recip m!!:(rows m -1, cols m -1)
 
 normatdet m = m <> recip k where
@@ -290,8 +365,11 @@ inHomogMat m = ma / (mb `outer` constant 1 (cols ma))
           mb = flatten $ dropColumns (cols m -1) m
 
 
-ht h = toList. inHomogMat . (<> trans h) . homogMat . fromList
-    
+htc h = toList. inHomogMat . (<> trans h) . homogMat . fromList
+
+ht :: Matrix -> [[Double]] -> [[Double]]
+ht = htc
+
 -- | The RQ decomposition, written in terms of the QR. 
 rq :: Matrix -> (Matrix,Matrix) 
 rq m = (r,q) where
@@ -302,8 +380,8 @@ rq m = (r,q) where
     rev2 = fliprl . flipud
 
 
--- | Given a camera matrix it returns (K, R, C)
--- | m' =~= k <> r <> (ident 3 <|> -c)
+-- | Given a camera matrix m it returns (K, R, C)
+--   such as m \=\~\= k \<\> r \<\> (ident 3 \<\|\> -c)
 factorizeCamera :: Matrix -> (Matrix,Matrix,Vector)
 factorizeCamera m = (normat3 k, r <> signum (det r),c) where
     m' = takeColumns 3 m
@@ -314,9 +392,7 @@ factorizeCamera m = (normat3 k, r <> signum (det r),c) where
     k = k'<>s
     r = s<>r'
     c = inHomog $ flatten $ dropColumns 3 v'
-    
-    
-    
+
 estimateCameraRaw image world = h where
     eqs = concat (zipWith eq image world)
     h = reshape 4 $ homogSystem eqs
@@ -348,7 +424,6 @@ estimateCameraRaw image world = h where
             t36=bx*ay
             t37=bx*az
             t38=bx     
-    
 
 estimateCamera = withNormalization inv estimateCameraRaw 
 
@@ -358,12 +433,12 @@ estimateFundamentalRaw l r = f where
     f = reshape 3 $ homogSystem eqs
     eqs = zipWith eq l r
     eq [xl, yl] [xr, yr] = [xl*xr, xl*yr, xl, xr*yl, yl*yr, yl, xr, yr, 1.0]
-    
+
 correctFundamental f = f' where
     (u,s,v) = svd f
     s1:s2:_ = toList s
     f' = u <> diag (fromList [s1,s2,0.0]) <> trans v
-    
+
 estimateFundamental = withNormalization trans f where
     f l r = correctFundamental (estimateFundamentalRaw l r)
 
@@ -372,11 +447,11 @@ distPointLine [x,y,w] [a,b,c] = sqrt $ (a*x + b*y + c*w)^2 / (a^2+b^2) / w^2
 epipolarQuality f l r = zipWith fun l r where
     fun [a1,a2] [b1,b2] = distPointLine [a1,a2,1.0] epb where
         epb = toList (f <> realVector [b1,b2,1.0])
-        
+
 qualityOfEssential e = (s1-s2)/(s1+s2) where
     s1:s2:_ = toList s
-    (_,s,_) = svd e         
-                   
+    (_,s,_) = svd e
+
 estimateEssential f0 fund = (esen,f,err) where
     minimize fun xi = minimizeNMSimplex fun xi (replicate (length xi) 1) 1e-2 100
     cost [x] = qualityOfEssential (kgen x <> fund <> kgen x)
@@ -385,7 +460,7 @@ estimateEssential f0 fund = (esen,f,err) where
     esen' = kgen f <> fund <> kgen f
     (u,s,v) = svd esen'
     esen = u <> diag (realVector [1,1,0]) <> trans v
-    
+
 estimateEssential' (f0,f0') fund = (esen,(f,f'),err) where
     minimize fun xi = minimizeNMSimplex fun xi (replicate (length xi) 1) 1e-2 100
     cost [x,x'] = qualityOfEssential (kgen x' <> fund <> kgen x)
@@ -394,7 +469,7 @@ estimateEssential' (f0,f0') fund = (esen,(f,f'),err) where
     esen' = kgen f' <> fund <> kgen f
     (u,s,v) = svd esen'
     esen = u <> diag (realVector [1,1,0]) <> trans v    
-    
+
 bougnoux fun = sqrt (- a / b) where
     a = (p' <> asMat e' <> i' <> fun <> p) * (p <> trans fun <> p')
     b = (p' <> asMat e' <> i' <> fun <> i' <> trans fun <> p')
@@ -402,7 +477,7 @@ bougnoux fun = sqrt (- a / b) where
     i' = diag $ realVector [1,1,0]
     p = realVector [0,0,1]
     p' = realVector [0,0,1]
-    
+
 sturm fun = fs where    
     (u,s,v) = svd fun
     [a,b,_] = toList s
@@ -426,7 +501,7 @@ sturm fun = fs where
     f3 = sqrt $ (-r1 + d)/2/r2
     f4 = sqrt $ (-r1 - d)/2/r2
     fs = filter (>0) [f1,f2,f3,f4]
-    
+
 camerasFromEssential e = [m1,m2,m3,m4] where
     (u,_,v) = svd e
     [_,_,u3] = toColumns u
@@ -437,7 +512,7 @@ camerasFromEssential e = [m1,m2,m3,m4] where
     m2 = u <>       w <> trans v <|> -u3
     m3 = u <> trans w <> trans v <|>  u3
     m4 = u <> trans w <> trans v <|> -u3
-    
+
 triangulate1 ms ps = x3d where
     eq [[m11, m12, m13, m14],
         [m21, m22, m23, m24],
@@ -448,46 +523,46 @@ triangulate1 ms ps = x3d where
     a = realMatrix eqs
     (_,_,v) = svd a
     x3d = toList $ inHomog $ flatten $ dropColumns 3 v
-    
+
 triangulate mps = xs where
     ms = map fst mps
     ps = transpose (map snd mps)
     xs = map (triangulate1 ms) ps
-    
+
 cameraAtOrigin = ident 3 <|> realVector [0,0,0]
 
 cameraDirection m = unitary (det a <> m3) where
     a = takeColumns 3 m
     [_,_,m3] = toRows a
-    
+
 depthOfPoint p m = (signum (det a) / norm m3) <> w3 where
     a = takeColumns 3 m
     [_,_,m3] = toRows a
     w = m <> homog (realVector p)
     [_,_,w3] = toList w
-    
+
 depthsOfInducedPoint p p' m m' = (d,d') where
     d  = depthOfPoint x m
     d' = depthOfPoint x m'
     x = triangulate1 [m,m'] [p,p']  
-    
+
 selectCamera p p' m ms = m' where
     [m'] = filter f ms 
     f m' = a > 0 && b > 0 where
         (a,b) = depthsOfInducedPoint p p' m m'
-        
+
 epipoles f = (nullspace f, nullspace (trans f)) where
     nullspace f = flatten $ dropColumns 2 v where (_,_,v) = svd f
-        
+
 canonicalCameras f = (cameraAtOrigin, m2) where
     (_,e') = epipoles f
     m2 = asMat e' <> f  <|> e'    
-            
+
 fundamentalFromCameras p p' = asMat e' <> p' <> pinv p where
     e' = p' <> c
     c = flatten $ dropColumns 3 v 
     (_,_,v) = svd (p <-> realVector [0,0,0,0]) 
-    
+
 stereoRectifiers fund pts pts' = (h,h') where    -- HZ p.307
     (e,e') = epipoles fund
     [x,y,w] = toList (unitary e')
@@ -502,7 +577,7 @@ stereoRectifiers fund pts pts' = (h,h') where    -- HZ p.307
                     [0,1,0],
                     [a,0,1]] where a = -1.0/q
     h' = g <> r
-    
+
     h = ha <> h0
     h0 = h' <> m
     (_,m') = canonicalCameras fund
@@ -540,13 +615,13 @@ samples :: Int -> [a] -> [[a]]
 samples n dat = map (map (dat!!)) goodsubsets where
     goodsubsets = filter ((==n).length) $ map nub $ partit n randomIndices
     randomIndices = randomRs (0, length dat -1) (mkStdGen 0)
-    
+
 ransacSize s p eps = 1 + (floor $ log (1-p) / log (1-(1-eps)^s))    ::Integer
-    
+
 position fun l = k where Just k = elemIndex (fun l) l
-        
-        
--- | adaptive ransac  
+
+
+-- | adaptive ransac
 ransac :: ([a]->t) -> (t -> a -> Bool) -> Int -> [a] -> (t,[a])
 ransac estimator isInlier n dat = {-trace (show aux)-} (bestModel,inliers) where 
     models = map estimator (samples n dat)
@@ -558,9 +633,9 @@ ransac estimator isInlier n dat = {-trace (show aux)-} (bestModel,inliers) where
     bestModel = models!!p
     inliers = inls!!p
     aux = map length $ genericTake k inls
-    
+
 --------------------------    
-    
+
 isInlierTrans t h (dst,src) = norm (vd - vde) < t 
     where vd  = realVector dst
           vde = inHomog $ h <> homog (realVector src)
@@ -569,9 +644,9 @@ estimateHomographyRansac dist dst orig = h where
     h = estimateHomography a b where (a,b) = unzip inliers
     (_,inliers) = ransac estimator (isInlierTrans dist) 4 (zip dst orig)
     estimator l = estimateHomographyRaw a b where (a,b) = unzip l
-    
+
 isInlierFund t f (x',x) = head (epipolarQuality f [x'] [x]) < t   
-    
+
 estimateFundamentalRansac dist pts' pts = (f,inliers) where 
     f = estimateFundamental a b where (a,b) = unzip inliers
     (_,inliers) = ransac estimator (isInlierFund dist) 8 (zip pts' pts)

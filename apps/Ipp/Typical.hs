@@ -19,7 +19,9 @@ module Ipp.Typical where
 import Ipp.Core
 import Ipp.Wrappers
 import Foreign
-     
+import Vision hiding ((|-|))
+import GSL
+
 ---------------------------------------     
      
 imgAsR1 roifun im = do 
@@ -156,7 +158,7 @@ minmax im = do
     free mx
     return (a,b)
 
-warpOn h r im = do
+warpOn' h r im = do
     coefs <- newArray (concat h)
     warpPerspective32f (ptr im) (step im) (height im) (width im)
                            (r1 (vroi im)) (r2 (vroi im)) (c1 (vroi im)) (c2 (vroi im))
@@ -165,11 +167,24 @@ warpOn h r im = do
                            coefs inter_LINEAR //checkIPP "warpOn" [im]
     free coefs
 
-warp h im = do
-    r <- imgAs im
+warp' (height, width) h im = do
+    r <- img I32f height width
+    set32f 0.0 r (fullroi r)
+    warpOn' h r im
+    return r
+
+
+adapt dst h src = toList $ inv (pixel2pointTrans dst) <> h <> pixel2pointTrans src
+
+-- | warp with a homography computed on normalized points instead of pixels
+--warp' :: (Matrix) -> Img -> Img
+warp (height, width) h im = do
+    r <- img I32f height width
     set32f 0.0 r (fullroi r)
     warpOn h r im
     return r
+
+warpOn h r im = warpOn' (adapt r h im) r im
 
 
 inter_NN         =  1 :: Int  
@@ -194,3 +209,24 @@ getPoints32f mx im = do
 partit :: Int -> [a] -> [[a]]
 partit _ [] = []
 partit n l  = take n l : partit n (drop n l)
+
+
+------------------------------------------------------------------
+
+
+-- | auxiliary homogeneous transformation from pixels to points
+pixel2pointTrans :: Img -> Matrix
+pixel2pointTrans im = nor where
+    w = fromIntegral (width im) -1
+    h = fromIntegral (height im) -1
+    r = (h+1)/(w+1)
+    nor = realMatrix
+        [[-2/w,      0, 1]
+        ,[   0, -2*r/h, r]
+        ,[   0,      0, 1]]
+
+-- | obtains the trasformation from pixels to normalized points
+pixel2point :: Img -> [[Int]]->[[Double]]
+pixel2point im = fix where
+    nor = pixel2pointTrans im
+    fix = ht nor . Prelude.map (reverse . Prelude.map fromIntegral)

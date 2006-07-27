@@ -22,16 +22,16 @@ import Data.IORef
 import Foreign (touchForeignPtr, withArray)
 
 myDrawPixels m@Img{itype=RGB} = 
-    drawPixels (Size (fromIntegral $ step m `quot` 3) (fromIntegral $ height m))
-               (PixelData GL.RGB UnsignedByte (ptr m))
+    GL.drawPixels (Size (fromIntegral $ step m `quot` 3) (fromIntegral $ height m))
+                  (PixelData GL.RGB UnsignedByte (ptr m))
 
 myDrawPixels m@Img{itype=Gray} = 
-    drawPixels (Size (fromIntegral $ step m `quot` (datasize m)) (fromIntegral $ height m))
-               (PixelData Luminance UnsignedByte (ptr m))
+    GL.drawPixels (Size (fromIntegral $ step m `quot` (datasize m)) (fromIntegral $ height m))
+                  (PixelData Luminance UnsignedByte (ptr m))
 
 myDrawPixels m@Img{itype=I32f} = 
-    drawPixels (Size (fromIntegral $ step m `quot` (datasize m)) (fromIntegral $ height m))
-               (PixelData Luminance Float (ptr m))
+    GL.drawPixels (Size (fromIntegral $ step m `quot` (datasize m)) (fromIntegral $ height m))
+                  (PixelData Luminance Float (ptr m))
 
 display m = do
     matrixMode $= Projection
@@ -57,26 +57,6 @@ drawPolyline xs = do
     currentColor $= Color4 1 0 0 1
     renderPrimitive LineStrip $ mapM_ f xs where
         f [y,x] = vertex (Vertex2 (fromIntegral x::GLfloat) (fromIntegral y))
-
-installWindow name (wid,hei) (Just fun) kbdcallback state = do
-    w <- createWindow name
-    windowSize $= Size (fromIntegral wid) (fromIntegral hei)
-    displayCallback $= draw
-    keyboardMouseCallback $= Just (kbdcallback state)
-    return w
-  where
-    draw = do
-        clear [ColorBuffer]
-        st <- readIORef state
-        fun st
-        swapBuffers  
-
-installWindow name (wid,hei) Nothing kbdcallback state = do
-    w <- createWindow name
-    displayCallback $= return ()
-    windowSize $= Size (fromIntegral wid) (fromIntegral hei)
-    keyboardMouseCallback $= Just (kbdcallback state)
-    return w
 
 --------------------------------------------------------------------------------
 
@@ -109,3 +89,23 @@ genDrawTexture sz im = do
             vert (TexCoord2 0 1) v4
         texture Texture2D $= Disabled
      in return f
+
+
+mycolor r g b = currentColor $= Color4 r g (b::GLfloat) 1
+
+
+drawPixels xs = do
+    pointSize $= 3
+    renderPrimitive Points $ mapM_ f xs where
+        f [y,x] = vertex (Vertex2 (fromIntegral x::GLfloat) (288-1-fromIntegral y))
+
+drawPoints xs = do
+    pointSize $= 3
+    matrixMode $= Projection
+    loadIdentity
+    ortho2D (-1) (1) (-0.75) (0.75)
+    matrixMode $= Modelview 0
+    loadIdentity
+    renderPrimitive Points $ mapM_ (vertex.f) xs where
+        f [x,y] = Vertex2 (-x) y
+

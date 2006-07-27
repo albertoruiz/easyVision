@@ -20,7 +20,7 @@ import Ipp.Core
 import Ipp.Typical
 import Ipp.Draw
 import Ipp.Camera
-import Graphics.UI.GLUT hiding (RGB)
+import Graphics.UI.GLUT hiding (RGB, Matrix)
 import Data.IORef
 import System.Exit
 import Control.Monad(when)
@@ -44,6 +44,9 @@ data State userState =
 prepare cam s = do
     getArgsAndInitialize
     initialDisplayMode $= [DoubleBuffered]
+    textureFilter Texture2D $= ((Nearest, Nothing), Nearest)
+    textureFunction $= Decal
+
     state <- newIORef State {camid = cam, frame = 0, pause = False,
                              camera = undefined, wins = empty, ust = s}
     return state
@@ -65,3 +68,23 @@ inWindow st name f = do
     currentWindow $= Just w
     f
     swapBuffers
+
+installWindow name (wid,hei) (Just fun) kbdcallback state = do
+    w <- createWindow name
+    windowSize $= Size (fromIntegral wid) (fromIntegral hei)
+    displayCallback $= draw
+    keyboardMouseCallback $= Just (kbdcallback state)
+    return w
+  where
+    draw = do
+        clear [ColorBuffer]
+        st <- readIORef state
+        fun st
+        swapBuffers  
+
+installWindow name (wid,hei) Nothing kbdcallback state = do
+    w <- createWindow name
+    displayCallback $= return ()
+    windowSize $= Size (fromIntegral wid) (fromIntegral hei)
+    keyboardMouseCallback $= Just (kbdcallback state)
+    return w

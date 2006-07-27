@@ -24,11 +24,11 @@ main = do
     state <- prepare cam $ Map.fromList 
                              [("alpha",-40*degree) 
                              ,("rho",0) 
-                             ,("foc" , 538)
+                             ,("foc" , 2)
                              ,("sca",1/2)]
 
     addWindow "camera" (w,h) Nothing kbdwarp state
-    addWindow "warped" (w,h) Nothing kbdwarp state
+    addWindow "warped" (500,600) Nothing kbdwarp state
 
     launch state worker
     
@@ -51,24 +51,18 @@ kbdwarp st (SpecialKey KeyLeft) Down _ _ = modify st "rho" (+ (-5*degree))
 kbdwarp st (MouseButton WheelUp) _ _ _ = modify st "sca" (*1.1)
 kbdwarp st (MouseButton WheelDown) _ _ _ = modify st "sca" (*0.9)
 
-kbdwarp st (Char '+') _ _ _ = modify st "foc" (+20)
-kbdwarp st (Char '-') _ _ _ = modify st "foc" $ max 20 . (+(-20)) 
+kbdwarp st (Char '+') _ _ _ = modify st "foc" (*1.2)
+kbdwarp st (Char '-') _ _ _ = modify st "foc" (/1.2)
 
 kbdwarp _ _ _ _ _ = return ()
 -------------------------------------------------------
 
-
-scaling s = desp (192) (144) <> 
-            realMatrix [[s,0,0],
-                        [0,s,0],
-                        [0,0,1]] <> desp (-192) (-144)
-
-warper alpha rho foc sca = toList r where 
-    t = desp 192 144 <> kgen foc 
+warper alpha rho foc sca = r where 
+    t = kgen foc
         <> rot1 alpha <> rot3 rho 
-        <> kgen (1/foc) <> desp (-192) (-144)
-    [a,b] = toList $ inHomog $ t <> realVector [192,144,1]
-    r = Main.scaling sca <> desp (192-a) (144-b) <>t
+        <> kgen (1/foc)
+    [a,b] = toList $ inHomog $ t <> realVector [0,0,1]
+    r = scaling sca <> desp (-a,-b) <> t
 
 ----------------------------------------------------------
 
@@ -78,6 +72,6 @@ worker inWindow camera param = do
     
     let t = warper (param!"alpha") (param!"rho") (param!"foc") (param!"sca")
     inWindow "warped" $ do
-        scale8u32f 0 1 camera >>= warp t >>= display
+        scale8u32f 0 1 camera >>= warp (600,500) t >>= display
 
     return param

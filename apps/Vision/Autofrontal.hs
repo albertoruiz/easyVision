@@ -97,7 +97,7 @@ autoOrthogonality mbOmega c = res where
     res = case mbOmega of
             Just omega -> orthogonality omega c
             Nothing -> auto
-    auto = case focal c of
+    auto = case focalFromHomogZ0 c of
             Just f -> orthogonality (omegaGen f) c
             Nothing -> similarityDegree c
 
@@ -122,7 +122,7 @@ camera0 = rectifier'
 
 northPoint c = c <> mS <> trans c <> linf    
     
-ryf c = focal c >>= \f -> Just ((rho,yh),f) where
+ryf c = focalFromHomogZ0 c >>= \f -> Just ((rho,yh),f) where
     [x,y,w] = toList $ northPoint $ c   
     rho = atan2 x y
     yh = sqrt (nx*nx+ny*ny)

@@ -3,8 +3,7 @@
 module Main where
 
 import Ipp hiding (shift)
-import Graphics.UI.GLUT hiding (Matrix)
-import Graphics.Rendering.OpenGL hiding (Matrix)
+import Graphics.UI.GLUT hiding (Matrix, drawPixels)
 import Data.IORef
 import System.Exit
 import Control.Monad(when)
@@ -30,23 +29,6 @@ data MyState = ST { imgs :: [Img]
 (=<) :: [a] -> a -> [a]
 list =< elem = list ++ [elem]
 
-mycolor r g b = currentColor $= Color4 r g (b::GLfloat) 1
-
-htr = ht :: Matrix -> [[Double]] -> [[Double]]
-
--- | obtains the trasformation from pixels to normalized points
-pixel2point :: Img -> [[Int]]->[[Double]]
-pixel2point img = fix where
-    cm = fromIntegral $ w `quot` 2
-    rm = fromIntegral $ h `quot` 2
-    nor = desp (-1) (rm/cm) <> diag (realVector [1/cm,-1/cm,1])
-    fix = htr nor . map (reverse . map fromIntegral)
-
--- | warp with a homography computed on normalized points instead of pixels
-warp' :: Matrix -> Img -> Img
-warp' h im = warp (adapt h) im where
-    adapt h = toList $ inv nor <> h <> nor
-    nor = pixel2point im
 
 --------------------------------------------------------------
 main = do
@@ -54,44 +36,40 @@ main = do
     cam@(_,_,(h,w)) <- openCamera (args!!0) Gray (288,384)
 
     state <- prepare cam ST { imgs=[]
-                            , pts=[]
-                            , smooth = 1
-                            , zoom = 0.2
                             , marked = []
+                            , pts=[]
+
                             , new = False
 
-                            , toshow = 0
                             , basev = 0
 
-                            , suelo = Nothing
                             , angle = 0
-
                             }
 
     addWindow "camera" (w,h) Nothing marker state
-    --addWindow "hessian" (w,h) Nothing keyboard state
     addWindow "selected" (w,h) Nothing keyboard state
-    addWindow "warped" (w,h) Nothing keyboard state
-    addWindow "rectified" (w,h) Nothing keyboard state
-    addWindow "world" (w,h) Nothing keyboard state
-    addWindow "3D view" (400,400) (Just draw3d) keyboard state
-
-    textureFilter Texture2D $= ((Nearest, Nothing), Nearest)
-    textureFunction $= Decal
+    addWindow "3D view" (400,400) Nothing keyboard state
 
     launch state worker
 
 -------------------------------------------------------------------
+a4 = [[   0,    0::Double]
+     ,[   0, 2.97]
+     ,[2.10, 2.97]
+     ,[2.10,    0]
+     ]
+
 
 worker inWindow camera st = do
 
-    let (fix,adapt) = pixel2point (height camera, width camera)
-    let suaviza = smooth st `times` gauss Mask5x5
+    let fix = pixel2point camera
+
+    let suaviza = 1 `times` gauss Mask5x5
 
     im  <- scale8u32f 0 1 camera
     h <- suaviza im >>= hessian >>= scale32f (-1.0)
 
-    (mn,mx) <- Typical.minmax h
+    (mn,mx) <- Ipp.minmax h
     hotPoints <- localMax 7 h >>= thresholdVal32f (mx/10) 0.0 ippCmpLess >>= getPoints32f 200
 
     let newmark = new st 
@@ -107,120 +85,68 @@ worker inWindow camera st = do
     let st'' = if newimage
                 then st' { pts  = pts  st' =< fix (marked st'),
                            marked = [],
-                           imgs = imgs st' =< im,
-                           hs = genInterimage (pts st'')}
+                           imgs = imgs st' =< im
+                           }
                 else st'
 
-
-    let info = AllKnown (repeat 2.8)
-    -- let info = F1Known 2.8
-    -- let info = ConstantUnknown
-
-    let uhs = tail (hs st'')
-    let f = consistency info uhs
-    let [rho,yh] = fst $ findSol f (0, 2)
-    let sol = extractInfo info uhs (rho, yh)
-
-    let st = if newimage
-               then st'' {cam0 = fst sol}
-               else st''
+    let st = st''
 
     inWindow "camera" $ do
         display camera
         mycolor 1 0 0
-        mydraw hotPoints
+        drawPixels hotPoints
         mycolor 0 0 1
-        mydraw (marked st)
+        drawPixels (marked st)
 
-    when False $ inWindow "hessian" $ do
-        auxim <- copy32f im
-        copyROI32f auxim h
-        display auxim {vroi = vroi h}
+    let n = length (imgs st)
 
-    let images = imgs st
-    let nviews = length images
-
-    let ptget = (toshow st) `mod` nviews
-    let pbase = (basev  st) `mod` nviews
-    let pt = pts st!!ptget
-    let pb = pts st!!pbase
-    let ht =  hs st!!ptget
-    let hb =  hs st!!pbase
-    let imt = images!!ptget
-    let imb = images!!pbase
-
-    let t = inv hb <> ht
-
-    let r0 = inv (cam0 st)
-    let enc = encuadra r0
-    let r = scaling (zoom st) <> enc <> r0
-
-    when (length images>0) $ do
-
+    when (n > 0) $ do
+        let sel = basev st `rem` n
+        let ps = pts st !! sel
+        let h = estimateHomography ps a4
+        let Just pars = poseFromHomogZ0 Nothing h
+        let cam = syntheticCamera pars
+        let invcam = inverseCamera cam
         inWindow "selected" $ do
-            display imb
-            mycolor 1 1 0
-            mydraw' pb
-        inWindow "warped" $ do
-            warp (adapt t) imt >>= display
-
-        w <- warp (adapt $ r <> ht) imt
-        inWindow "rectified" $ do
-            display w
-
-        let g im h = warpOn (adapt $ r <> h) w im
-        inWindow "world" $ do 
-            sequence_ $ zipWith g images (hs st)
-            display w
-
-        when (newimage  && (length images>1)) $ do
-            writeFile "real.txt" . show . foldr1 (<->) $ uhs
-            print(rho, yh, f(rho,yh))
-            mapM_ (print . focal . (<> cam0 st). inv) uhs
-            when False $ do
-                imshow $ environment 100 (20*degree) 0.5 (rho,yh) f
+            display $ imgs st !! sel
+            mycolor 0 1 0
+            drawPoints ps
+            --print $ panAngle pars / degree
+            --print $ tiltAngle pars / degree
+            --print $ rollAngle pars / degree
+            --print pars
 
         inWindow "3D view" $ do
-            postRedisplay Nothing
+            clear [ColorBuffer]
+            matrixMode $= Projection
+            loadIdentity
+            perspective 90 1 1 100
+            let ang = angle st
+            lookAt (Vertex3 0 (20*sin ang) (20*cos ang)) (Vertex3 0 0 0) (Vector3 0 1 0)
+            let f [x,y] = Vertex2 x y
+            mycolor 0 0 1
+            lineWidth $= 2
+            renderPrimitive LineLoop $ mapM_ (vertex.f) a4
+            mycolor 1 1 1
+            lineWidth $= 1
+            let outline = ht invcam (cameraOu 1)
+            let f [x,y,z] = Vertex3 x y z
+            renderPrimitive LineLoop $ mapM_ (vertex.f) outline
 
-    if newimage
-        then do
-            f <- genDrawTexture 256 im
-            return st {suelo = Just f}
-        else return st
-
-------------------------------------------------------
-mydraw xs = do
-    pointSize $= 3
-    renderPrimitive Points $ mapM_ f xs where
-        f [y,x] = vertex (Vertex2 (fromIntegral x::GLfloat) (288-1-fromIntegral y))
-
-mydraw' xs = do
-    pointSize $= 3
-    matrixMode $= Projection
-    loadIdentity
-    ortho2D (-1) (1) (-0.75) (0.75)
-    matrixMode $= Modelview 0
-    loadIdentity
-    renderPrimitive Points $ mapM_ (vertex.f) xs where
-        f [x,y] = Vertex2 x y
+    return st
 
 ------------------------------------------------------
 
---compareBy f = (\a b-> compare (f a) (f b))
+compareBy f = (\a b-> compare (f a) (f b))
 
 closest [] p = p
 closest hp p = minimumBy (compareBy $ dist p) hp
     where dist [a,b] [x,y] = (a-x)^2+(b-y)^2
 
-genInterimage views = map (estimateHomography (head views)) (id views)
-
-
 environment n dr dy (r,y) fun = reshape n $ realVector vals where
     a = toList $ linspace n (r-dr,r+dr)
     b = toList $ linspace n (y-dy,y+dy)
     vals = [ fun (r',y') | r' <- a, y' <- b]
-
 
 ----------------------------------------------------------------
 
@@ -232,59 +158,6 @@ shcam cam pts = (c,p) where
     p = ht t2 (map (++[f]) pts)
 
 for l f = (flip mapM_) l f
-
-draw3d st = do
-    matrixMode $= Projection
-    loadIdentity
-    perspective 40 1 1 100
-    let ang = angle (ust st)
-    lookAt (Vertex3 0 (20*sin ang) (20*cos ang)) (Vertex3 0 0 0) (Vector3 0 1 0)
-
-    let rawcam0 = cam0 (ust st)
-    let fixcam0 = inv (encuadra (inv rawcam0) <> inv rawcam0)
-
-    case suelo (ust st) of
-        Nothing -> return ()
-        Just f -> do
-            f [[-4,  4, 0],
-               [ 4,  4, 0],
-               [ 4, -4, 0],
-               [-4, -4, 0]]
-
-    case pts (ust st) of
-        [] -> return ()
-        pts:_ -> do
-            let f [x,y] = Vertex2 x y
-            mycolor 0 0 1
-            lineWidth $= 2
-            let worldpoints =  (htr (inv fixcam0) pts)
-            let flipx = diag (realVector [-1,1,1])
-            renderPrimitive LineLoop $ mapM_ (vertex.f) worldpoints
-            --let Just pars = poseGen Nothing (estimateHomography (htr (ident 3) pts) worldpoints)
-            let pars = easyCamera' 40 (2,-2,2) (0,0,0) 0
-            let (pts,coo) = shcam (syntheticCamera pars) [[-1,1],[1,1],[1,-1],[-1,-1]]
-            let Just f = suelo (ust st)
-            f coo
-            lineWidth $= 1
-            mycolor 1 0 0
-            let f [x,y,z] = Vertex3 x y z
-            renderPrimitive LineLoop $ mapM_ (vertex.f) pts
-{-
-    for (hs (ust st)) $ \h -> do
-        
-        let c' = inv h <> fixcam0
-        let pars = poseGen Nothing c'
-        case pars of
-            Nothing -> return ()
-            Just m -> do
-                let (pts,coo) = shcam (syntheticCamera m) (map (map (*4)) [[-1,1],[1,1],[1,-1],[-1,-1]])
-                lineWidth $= 1
-                mycolor 1 0 0
-                let f [x,y,z] = Vertex3 x y z
-                renderPrimitive LineLoop $ mapM_ (vertex.f) pts
-                let Just f = suelo (ust st)
-                f coo
--}
 
 -----------------------------------------------------------------
 -- callbacks
@@ -298,17 +171,6 @@ keyboard st (MouseButton WheelUp) _ (Modifiers{shift = Down}) _ = do
     modifyIORef st $ \s -> s {ust = (ust s) {angle = angle (ust s) + 1*degree}}
 keyboard st (MouseButton WheelDown) _ (Modifiers{shift = Down}) _ = do
     modifyIORef st $ \s -> s {ust = (ust s) {angle = angle (ust s) -1*degree}}
-
-keyboard st (MouseButton WheelUp) _ _ _ = do
-    modifyIORef st $ \s -> s {ust = (ust s) {zoom = zoom (ust s) *1.2}}
-keyboard st (MouseButton WheelDown) _ _ _ = do
-    modifyIORef st $ \s -> s {ust = (ust s) {zoom = zoom (ust s) /1.2}}
-
-
-keyboard st (SpecialKey KeyRight) Down _ _ = do
-    modifyIORef st $ \s -> s {ust = (ust s) {toshow = toshow (ust s) + 1}}
-keyboard st (SpecialKey KeyLeft) Down _ _ = do
-    modifyIORef st $ \s -> s {ust = (ust s) {toshow = max (toshow (ust s) - 1) 0}}
 
 keyboard st (SpecialKey KeyUp) Down _ _ = do
     modifyIORef st $ \s -> s {ust = (ust s) {basev = basev (ust s) + 1}}
@@ -329,17 +191,23 @@ marker st b s m p = keyboard st b s m p
 
 --------------------------------------------------------------------
 
-easyCamera' fov cen@(cx,cy,cz) pun@(px,py,pz) rho  = 
-    CamPar { focalDist = f
-           , panAngle = beta
-           , tiltAngle = alpha
-           , rollAngle = rho+pi
-           , cameraCenter = cen
-           } where 
-    dx = px-cx
-    dy = py-cy
-    dz = pz-cz
-    dh = sqrt (dx*dx+dy*dy)
-    f = 1 / tan (fov/2)
-    beta = pi+atan2 (-dx) dy
-    alpha = atan2 dh (dz)
+cameraOu f = 
+    [[0::Double,0,0],
+    [-1,1,f],
+    [1,1,f],
+    [1,-1,f],
+    [-1,-1,f],
+    [-1,1,f],
+    [0,0,0],
+    [1,1,f],
+    [0,0,0],
+    [-1,-1,f],
+    [0,0,0],
+    [1,-1,f],
+    [0,0,0],
+    [0,0,3*f]
+    ]
+
+inverseCamera cam = inv m where
+    (k,r,c) = factorizeCamera cam
+    m = (r <|> -r <> c) <-> realVector [0,0,0,1]
