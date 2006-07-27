@@ -5,15 +5,11 @@
 --    $ ./hessian penguin.dv
 
 import Ipp
-import Typical
-import Draw
-import Camera
 import Graphics.UI.GLUT
 import Data.IORef
 import System.Exit
 import Control.Monad(when)
 import System.Environment(getArgs)
-import HEasyVision
 
 data MyState = ST {smooth :: Int}
 
@@ -52,7 +48,7 @@ worker inWindow camera st = do
     inWindow "hessian" $ do
         display im {vroi = vroi h}
     
-    (mn,mx) <- Typical.minmax h
+    (mn,mx) <- Ipp.minmax h
     hotPoints <- localMax 7 h >>= thresholdVal32f (mx/2) 0.0 ippCmpLess >>= getPoints32f 200 
         
     inWindow "camera" $ do

@@ -4,7 +4,7 @@ module Main where
 
 import Vision
 import GSL 
-import Stat
+
 
 dest a b = [[0,0]
            ,[a,0]

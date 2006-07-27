@@ -2,8 +2,6 @@ import Test.HUnit
  
 import GSL 
 import Vision
-import Stat
-import Classifier
 
 a =~= b = pnorm 1 (flatten (a - b)) < 1E-12
 

@@ -1,6 +1,23 @@
-module Typical where
+-----------------------------------------------------------------------------
+{- |
+Module      :  Vision.Ipp.Typical
+Copyright   :  (c) Alberto Ruiz 2006
+License     :  GPL-style
 
-import Ipp
+Maintainer  :  Alberto Ruiz (aruiz at um dot es)
+Stability   :  very provisional
+Portability :  hmm...
+
+Higher level access to some IPP functions.
+
+-}
+-----------------------------------------------------------------------------
+
+
+module Ipp.Typical where
+
+import Ipp.Core
+import Ipp.Wrappers
 import Foreign
      
 ---------------------------------------     

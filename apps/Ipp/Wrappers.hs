@@ -1,6 +1,22 @@
 {-# OPTIONS -fffi #-}
 
-module IppWrappers where
+-----------------------------------------------------------------------------
+{- |
+Module      :  Ipp.Wrappers
+Copyright   :  (c) Alberto Ruiz 2006
+License     :  GPL-style
+
+Maintainer  :  Alberto Ruiz (aruiz at um dot es)
+Stability   :  very provisional
+Portability :  hmm...
+
+Raw access to some IPP functions.
+
+-}
+-----------------------------------------------------------------------------
+
+
+module Ipp.Wrappers where
 
 import Foreign 
 import Foreign.C.Types

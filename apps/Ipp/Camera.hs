@@ -1,8 +1,23 @@
 {-# OPTIONS -fffi #-} 
+
+-----------------------------------------------------------------------------
+{- |
+Module      :  Ipp.Camera
+Copyright   :  (c) Alberto Ruiz 2006
+License     :  GPL-style
+
+Maintainer  :  Alberto Ruiz (aruiz at um dot es)
+Stability   :  very provisional
+Portability :  hmm...
+
+Interface to Pedro E. López de Teruel driver for IEEE1394 cameras.
+
+-}
+-----------------------------------------------------------------------------
+
+module Ipp.Camera where
  
-module Camera where 
- 
-import Ipp 
+import Ipp.Core 
 import Foreign 
 import Foreign.C.Types 
 import Foreign.C.String(newCString)

@@ -1,8 +1,23 @@
-module Draw where
+-----------------------------------------------------------------------------
+{- |
+Module      :  Ipp.Draw
+Copyright   :  (c) Alberto Ruiz 2006
+License     :  GPL-style
+
+Maintainer  :  Alberto Ruiz (aruiz at um dot es)
+Stability   :  very provisional
+Portability :  hmm...
+
+HOpenGL drawing utilities.
+
+-}
+-----------------------------------------------------------------------------
+
+module Ipp.Draw where
 
 import Graphics.UI.GLUT hiding (RGB)
 import qualified Graphics.UI.GLUT as GL
-import Ipp
+import Ipp.Core
 import Data.IORef
 import Foreign (touchForeignPtr, withArray)
 

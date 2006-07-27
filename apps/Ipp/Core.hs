@@ -1,7 +1,23 @@
 {-# OPTIONS -fffi #-}
 
-module Ipp(module IppWrappers
-          , Img(..), ImageType(..)
+-----------------------------------------------------------------------------
+{- |
+Module      :  Ipp.Core
+Copyright   :  (c) Alberto Ruiz 2006
+License     :  GPL-style
+
+Maintainer  :  Alberto Ruiz (aruiz at um dot es)
+Stability   :  very provisional
+Portability :  hmm...
+
+Basic infrastructure to access the IPP.
+
+-}
+-----------------------------------------------------------------------------
+
+
+module Ipp.Core
+          ( Img(..), ImageType(..)
           , img, imgAs, getData
           , ROI(..), fullroi, shrink, shift, intersection
           , src, dst, checkIPP, (//)
@@ -10,7 +26,7 @@ module Ipp(module IppWrappers
 
 import Foreign hiding (shift)
 import Control.Monad(when)
-import IppWrappers
+import Ipp.Wrappers
  
 ------------------------------------------------------------
 ------------- descriptor of an ipp image -------------------

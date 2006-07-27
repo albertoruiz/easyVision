@@ -1,4 +1,20 @@
-module Autofrontal (
+-----------------------------------------------------------------------------
+{- |
+Module      :  Vision.Autofrontal
+Copyright   :  (c) Alberto Ruiz 2006
+License     :  GPL-style
+
+Maintainer  :  Alberto Ruiz (aruiz at um dot es)
+Stability   :  very provisional
+Portability :  hmm...
+
+Practical Planar Metric Rectification.
+Ruiz et al. BMVC06
+
+-}
+-----------------------------------------------------------------------------
+
+module Vision.Autofrontal (
     camera0,
     KnownFs(..),
     extractInfo,
@@ -9,7 +25,7 @@ module Autofrontal (
 -- experiments on planar rectification
 
 import GSL
-import Vision
+import Vision.Geometry
 import Data.List (elemIndex,sort)
 import Debug.Trace
 import System.Random

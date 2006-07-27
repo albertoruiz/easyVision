@@ -1,4 +1,20 @@
-module Stat where
+-----------------------------------------------------------------------------
+{- |
+Module      :  Vision.Stat
+Copyright   :  (c) Alberto Ruiz 2006
+License     :  GPL-style
+
+Maintainer  :  Alberto Ruiz (aruiz at um dot es)
+Stability   :  very provisional
+Portability :  hmm...
+
+Statistical characterization of multivariate samples and Principal Component Analysis.
+
+-}
+-----------------------------------------------------------------------------
+
+module Vision.Stat where
+
 
 import GSL
 

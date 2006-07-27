@@ -5,8 +5,7 @@
 -}
 
 import GSL
-import Classifier
-import Stat
+import Vision
 
 
 test problem distfun = do

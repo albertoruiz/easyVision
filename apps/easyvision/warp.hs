@@ -5,21 +5,17 @@
 --    $ ./a.out penguin.dv
 
 import Ipp
-import Typical
-import Draw
-import Camera
 import Graphics.UI.GLUT
 import Data.IORef
 import System.Exit
 import Control.Monad(when)
 import System.Environment(getArgs)
-import HEasyVision
 import qualified Data.Map as Map
 import Data.Map((!))
 
 import GSL
 import Vision
-     
+
 
 main = do
     args <- getArgs

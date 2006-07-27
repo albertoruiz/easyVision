@@ -1,7 +1,22 @@
-module Classifier where
+-----------------------------------------------------------------------------
+{- |
+Module      :  Vision.Classifier
+Copyright   :  (c) Alberto Ruiz 2006
+License     :  GPL-style
+
+Maintainer  :  Alberto Ruiz (aruiz at um dot es)
+Stability   :  very provisional
+Portability :  hmm...
+
+Basic Statistical Pattern Recognition algorithms.
+
+-}
+-----------------------------------------------------------------------------
+
+module Vision.Classifier where
 
 import GSL
-import Stat
+import Vision.Stat
 
 import Data.List
 import Data.Array

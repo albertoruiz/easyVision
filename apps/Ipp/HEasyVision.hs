@@ -1,10 +1,25 @@
-module HEasyVision 
+-----------------------------------------------------------------------------
+{- |
+Module      :  Ipp.HEasyVision
+Copyright   :  (c) Alberto Ruiz 2006
+License     :  GPL-style
+
+Maintainer  :  Alberto Ruiz (aruiz at um dot es)
+Stability   :  very provisional
+Portability :  hmm...
+
+A minimalist version of EasyVision [ref.] using HOpenGL.
+
+-}
+-----------------------------------------------------------------------------
+
+module Ipp.HEasyVision
 where
 
-import Ipp
-import Typical
-import Draw
-import Camera
+import Ipp.Core
+import Ipp.Typical
+import Ipp.Draw
+import Ipp.Camera
 import Graphics.UI.GLUT hiding (RGB)
 import Data.IORef
 import System.Exit

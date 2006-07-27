@@ -5,14 +5,10 @@
 --    $ ./player penguin.dv
 
 import Ipp
-import Typical
-import Draw
-import Camera
 import Graphics.UI.GLUT hiding (RGB)
 import Data.IORef
 import System.Exit
 import System.Environment(getArgs)
-import HEasyVision
 
 -----------------------------------------------------------------
 main = do

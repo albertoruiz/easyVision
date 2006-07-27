@@ -1,75 +1,52 @@
--- TO DO:
---   put online the demo video
---   clear earlier points
---   clean up callbacks
---   average world fragments
---   draw 3d scene with cameras
-
--- This should work with a firewire camera: 
---    $ ./a.out /dev/dv1394
--- or with a raw dv video, for instance:
---    $ wget http://ditec.um.es/~pedroe/svnvideos/misc/table.dv  # (not yet online)
---    $ ./frontal table.dv
+-- some checks
 
 module Main where
 
 import Ipp hiding (shift)
-import Typical
-import Draw
-import Camera
 import Graphics.UI.GLUT hiding (Matrix)
 import Graphics.Rendering.OpenGL hiding (Matrix)
 import Data.IORef
 import System.Exit
 import Control.Monad(when)
 import System.Environment(getArgs)
-import HEasyVision
 import Data.List(minimumBy)
 import GSL
 import Vision
-import Autofrontal
-
-import Data.Bits ( (.&.) )
-
 
 type Point = [Double]  -- provisional
 type Pixel = [Int]
 
-type ImageDrawer = [[Double]] -> IO ()
-
 data MyState = ST { imgs :: [Img]
-                  , pts  :: [[Point]]
-                  , hs   :: [Matrix]
-                  , cam0 :: Matrix
-
-                  , smooth :: Int
-                  , zoom :: Double
                   , marked ::[[Int]]
-                  , new    :: Bool
+                  , pts  :: [[Point]]
 
-                  , toshow :: Int
+                  , new    :: Bool
                   , basev ::Int
 
-                  , suelo :: Maybe ImageDrawer
                   , angle :: Double
-
                   }
 
+-- | snoc
+(=<) :: [a] -> a -> [a]
 list =< elem = list ++ [elem]
 
 mycolor r g b = currentColor $= Color4 r g (b::GLfloat) 1
 
-encuadra h = desp (-a) (-b) where
-    [a,b] = toList $ inHomog $ h <> realVector [0,0,1]
-
 htr = ht :: Matrix -> [[Double]] -> [[Double]]
 
-pixel2point (h, w) = (fix, adapt) where
+-- | obtains the trasformation from pixels to normalized points
+pixel2point :: Img -> [[Int]]->[[Double]]
+pixel2point img = fix where
     cm = fromIntegral $ w `quot` 2
     rm = fromIntegral $ h `quot` 2
     nor = desp (-1) (rm/cm) <> diag (realVector [1/cm,-1/cm,1])
     fix = htr nor . map (reverse . map fromIntegral)
+
+-- | warp with a homography computed on normalized points instead of pixels
+warp' :: Matrix -> Img -> Img
+warp' h im = warp (adapt h) im where
     adapt h = toList $ inv nor <> h <> nor
+    nor = pixel2point im
 
 --------------------------------------------------------------
 main = do
@@ -78,9 +55,6 @@ main = do
 
     state <- prepare cam ST { imgs=[]
                             , pts=[]
-                            , hs = []
-                            , cam0 = ident 3
-
                             , smooth = 1
                             , zoom = 0.2
                             , marked = []
@@ -253,11 +227,11 @@ environment n dr dy (r,y) fun = reshape n $ realVector vals where
 shcam cam pts = (c,p) where 
     (h,f) = toCameraSystem cam
     t1 = h <> diag (realVector [1,1,1,3])
-    c = ht t1 (cameraOutline 1)
+    c = ht t1 (cameraOutline f)
     t2 = t1 <> diag (realVector [1,1,1,f])
     p = ht t2 (map (++[f]) pts)
 
-for = flip mapM_
+for l f = (flip mapM_) l f
 
 draw3d st = do
     matrixMode $= Projection
@@ -283,10 +257,21 @@ draw3d st = do
             let f [x,y] = Vertex2 x y
             mycolor 0 0 1
             lineWidth $= 2
-            renderPrimitive LineLoop $ mapM_ (vertex.f) (htr (inv fixcam0) pts)
-
+            let worldpoints =  (htr (inv fixcam0) pts)
+            let flipx = diag (realVector [-1,1,1])
+            renderPrimitive LineLoop $ mapM_ (vertex.f) worldpoints
+            --let Just pars = poseGen Nothing (estimateHomography (htr (ident 3) pts) worldpoints)
+            let pars = easyCamera' 40 (2,-2,2) (0,0,0) 0
+            let (pts,coo) = shcam (syntheticCamera pars) [[-1,1],[1,1],[1,-1],[-1,-1]]
+            let Just f = suelo (ust st)
+            f coo
+            lineWidth $= 1
+            mycolor 1 0 0
+            let f [x,y,z] = Vertex3 x y z
+            renderPrimitive LineLoop $ mapM_ (vertex.f) pts
+{-
     for (hs (ust st)) $ \h -> do
-        let flipx = diag (realVector [-1,1,1])
+        
         let c' = inv h <> fixcam0
         let pars = poseGen Nothing c'
         case pars of
@@ -299,7 +284,7 @@ draw3d st = do
                 renderPrimitive LineLoop $ mapM_ (vertex.f) pts
                 let Just f = suelo (ust st)
                 f coo
-
+-}
 
 -----------------------------------------------------------------
 -- callbacks
@@ -344,3 +329,17 @@ marker st b s m p = keyboard st b s m p
 
 --------------------------------------------------------------------
 
+easyCamera' fov cen@(cx,cy,cz) pun@(px,py,pz) rho  = 
+    CamPar { focalDist = f
+           , panAngle = beta
+           , tiltAngle = alpha
+           , rollAngle = rho+pi
+           , cameraCenter = cen
+           } where 
+    dx = px-cx
+    dy = py-cy
+    dz = pz-cz
+    dh = sqrt (dx*dx+dy*dy)
+    f = 1 / tan (fov/2)
+    beta = pi+atan2 (-dx) dy
+    alpha = atan2 dh (dz)
