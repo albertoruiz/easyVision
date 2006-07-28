@@ -19,11 +19,14 @@ module Vision.Geometry
   CameraParameters(..)
 , syntheticCamera
 , easyCamera
-, homogZ0
+, cameraAtOrigin
 , factorizeCamera
-, focalFromHomogZ0
-, poseFromHomogZ0
+, poseFromFactorization
 , poseFromCamera
+, homogZ0
+, focalFromHomogZ0
+, cameraFromHomogZ0
+, poseFromHomogZ0
   -- * Useful transformations
 , kgen
 , rot1
@@ -206,53 +209,72 @@ focalFromHomogZ0 c = res where
     f = sqrt $ (xix-nix)^2 +(xiy-niy)^2 - nix^2 - niy^2
     res = if f > 0 then Just f else Nothing
 
--- | Tries to extract the camera parameters from the homography ground->image.
-poseFromHomogZ0 :: Maybe Double              -- ^ focal distance (if known)
-           -> Matrix                 -- ^ 3x3 floor to image homography
-           -> Maybe CameraParameters
-poseFromHomogZ0 mbf c = res where
+-- | Obtains the pose of a factorized camera.
+poseFromFactorization :: (Matrix,Matrix,Vector)  -- ^ (k,r,c) as obtained by factorizeCamera
+                         -> CameraParameters
+poseFromFactorization (k,r,c) = cp where
     cp = CamPar {focalDist = f,
-                 panAngle = beta-pi, tiltAngle = alpha, rollAngle = rho,
-                 cameraCenter = (-cx, cy, -cz) }
-
-    mf = case mbf of
-            Nothing -> focalFromHomogZ0 c     -- unknown, we try to estimate it
-            jf -> jf                          -- given, use it
-    res = case mf of
-            Just f -> Just cp      -- solution
-            Nothing -> Nothing     -- cannot be estimated
-    Just f = mf
-    cflip = flipx <> c 
-    cnor = cflip <> signum (det $ cflip)
-    s = kgen (1/f) <> cnor
-    [s1,s2,s3] = toColumns s
-    r1 = unitary s1
-    r3 = unitary (cross s1 s2)
-    r2 = cross r3 r1
-    rot = fromColumns [r1,r2,r3]
-    cen = - (trans rot <> (s3 <> recip (norm s1)))
-    [cx,cy,cz] = toList cen
-    b = trans cnor <> linf
+                 panAngle = -beta,
+                 tiltAngle = alpha,
+                 rollAngle = -rho,
+                 cameraCenter = (cx, cy, cz) }
+    f = (k!!:(0,0)+k!!:(1,1))/2 -- hmm
+    [cx,cy,cz] = toList c
+    [r1,r2,r3] = toColumns r
+    h = fromColumns [r1,r2,-r<>c]
+    b = trans h <> linf
     beta = atan2 (b!:0) (b!:1)
-    n = cnor <> mS <> b
+    n = k <> h <> mS <> b
     ni = inHomog n
     rho = atan2 (ni!:0) (ni!:1)
     alpha = atan2 f (norm ni)
 
+-- | Extracts the camera parameters of a diag(f,f,1) camera
+poseFromCamera :: Matrix               -- ^ 3x4 camera matrix
+                  -> CameraParameters
+poseFromCamera = poseFromFactorization . factorizeCamera
 
--- | Tries to extract the camera parameters of a diag(f,f,1) camera
-poseFromCamera :: Maybe Double              -- ^ focal distance (if known)
-           -> Matrix                         -- ^ 3x4 camera matrix
-           -> Maybe CameraParameters
-poseFromCamera mf = poseFromHomogZ0 mf. homogZ0
+-- | Tries to extract the pose of the camera from the homography of the floor
+poseFromHomogZ0 :: Maybe Double      -- ^ focal distance (if known)
+           -> Matrix                      -- ^ 3x3 floor to image homography
+           -> Maybe CameraParameters      -- ^ solution (the one above the floor)
+poseFromHomogZ0 mbf = fmap poseFromCamera . cameraFromHomogZ0 mbf
 
-degree = pi / 180    
+degree = pi / 180
 
-extractColumns cs = trans . extractRows cs . trans    
+extractColumns cs = trans . extractRows cs . trans
 
 -- | Obtains the homography floor (Z=0) to image from a camera
 homogZ0 :: Matrix -> Matrix
 homogZ0 cam = extractColumns [0,1,3] cam
+
+-- | Recovers a camera matrix from the homography floor (Z=0) to image. There are actually two solutions, above and below the ground. We return the camera over the floor
+cameraFromHomogZ0 :: Maybe Double              -- ^ focal distance (if known)
+           -> Matrix                           -- ^ 3x3 floor to image homography
+           -> Maybe Matrix                     -- ^ 3x4 camera matrix (solution over the floor)
+cameraFromHomogZ0 mbf c = res where
+    mf = case mbf of
+            Nothing -> focalFromHomogZ0 c     -- unknown, we try to estimate it
+            jf -> jf                          -- given, use it
+    res = case mf of
+            Just f -> Just m      -- solution
+            Nothing -> Nothing    -- cannot be estimated
+    Just f = mf
+    s = kgen (1/f) <> c
+    [s1,s2,s3] = toColumns s
+    sc = norm s1
+    t = s3 <> recip sc
+    r1 = unitary s1
+    r3 = unitary (cross s1 s2)
+    r2 = cross r3 r1
+    rot1 = fromColumns [r1,r2,r3]
+    cen1 = - (trans rot1 <> t)
+    m1 = kgen f <> (fromColumns [r1,r2,r3] <|> t)
+    m2 = kgen f <> (fromColumns [-r1,-r2,r3] <|> -t)
+    m = if cen1!:2 > 0 then m1 else m2
+
+
+
 
 asMat v = fromList [[ 0,-c, b],
                     [ c, 0,-a],
@@ -263,8 +285,13 @@ asMat v = fromList [[ 0,-c, b],
 
 cross a b = asMat a <> b    
 
-cameraOutline f = 
-    [[0::Double,0,0],
+cameraOutline f =
+    [
+    [0::Double,0,0],
+    [1,0,0],
+    [0,0,0],
+    [0,0.75,0],
+    [0,0,0],
     [-1,1,f],
     [1,1,f],
     [1,-1,f],
@@ -276,8 +303,8 @@ cameraOutline f =
     [-1,-1,f],
     [0,0,0],
     [1,-1,f],
-    [0,0,0],
-    [0,0,10*f]
+    [0,0,0]
+    --,[0,0,3*f]
     ]
 
 toCameraSystem cam = (inv m, f) where

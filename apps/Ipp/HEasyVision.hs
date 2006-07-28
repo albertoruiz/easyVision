@@ -44,8 +44,6 @@ data State userState =
 prepare cam s = do
     getArgsAndInitialize
     initialDisplayMode $= [DoubleBuffered]
-    textureFilter Texture2D $= ((Nearest, Nothing), Nearest)
-    textureFunction $= Decal
 
     state <- newIORef State {camid = cam, frame = 0, pause = False,
                              camera = undefined, wins = empty, ust = s}

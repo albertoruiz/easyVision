@@ -1,6 +1,6 @@
 import Test.HUnit
 
-import GSL 
+import GSL
 import Vision
 
 a =~= b = pnorm 1 (flatten (a - b)) < 1E-12
@@ -8,6 +8,10 @@ a =~= b = pnorm 1 (flatten (a - b)) < 1E-12
 factorizeCameraTest m = normatdet m =~= normatdet m' where
     (k,r,c) = factorizeCamera m
     m' = k <> r <> (ident 3 <|> -c)
+
+recoverFromHomogZ0Test m = normat3 m =~= normat3 m' where
+    c  = -5 * homogZ0 m
+    Just m' = cameraFromHomogZ0 Nothing c
 
 poseEstimationTest m = normatdet m =~= normatdet m' where
     Just pars = poseFromHomogZ0 Nothing (homogZ0 m)
@@ -22,6 +26,12 @@ m2 = realMatrix [[1,0.1, 1],
                  [0,  0, 1]]  <> m1
 
 m3 = -3 * (syntheticCamera $ easyCamera (90*degree) (0,-2,2) (0,0,0) (5*degree))
+
+m4 = syntheticCamera $ easyCamera (60*degree) (6,6,6) (0,0,0) (20*degree)
+
+m5 = syntheticCamera (CamPar {focalDist = 2, panAngle=0.1, tiltAngle= -0.2, rollAngle=0.3, cameraCenter=(1,2,3)})
+
+m6 = syntheticCamera (CamPar {focalDist = 3, panAngle= -0.1, tiltAngle=0.2, rollAngle= -0.3, cameraCenter=(1,-2,3)})
 
 -------------------------------------------------------------------
 
@@ -65,13 +75,21 @@ ransacTest = assertBool "ransac homography" (normat3 h1 =~= normat3 h) where
 tests = TestList 
     [ TestCase (assertBool "factorize1" (factorizeCameraTest m1))
     , TestCase (assertBool "factorize2" (factorizeCameraTest m2))
-    , TestCase (assertBool "pose"       (poseEstimationTest  m1))
-    , TestCase (assertBool "pose"       (poseEstimationTest  m3))
+    , TestCase (assertBool "pose1"       (poseEstimationTest  m1))
+    , TestCase (assertBool "pose2"       (poseEstimationTest  m3))
+    , TestCase (assertBool "pose3"       (poseEstimationTest  m4))
+    , TestCase (assertBool "pose4"       (poseEstimationTest  m5))
+    , TestCase (assertBool "pose5"       (poseEstimationTest  m6))
+    , TestCase (assertBool "recover1"    (recoverFromHomogZ0Test  m1))
+    , TestCase (assertBool "recover2"    (recoverFromHomogZ0Test  m3))
+    , TestCase (assertBool "recover3"    (recoverFromHomogZ0Test  m4))
+    , TestCase (assertBool "recover4"    (recoverFromHomogZ0Test  m5))
+    , TestCase (assertBool "recover5"    (recoverFromHomogZ0Test  m6))
     , TestCase $ besselTest
     , TestCase $ exponentialTest
     , TestCase $ classifyTest 500 500 129 
     --, TestCase $ classifyTest 4000 1000 63
-    , TestCase $ ransacTest 
+    , TestCase $ ransacTest
     ]
 
 main = runTestTT tests

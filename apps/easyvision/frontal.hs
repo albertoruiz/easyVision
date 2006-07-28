@@ -24,9 +24,6 @@ import Data.List(minimumBy)
 import GSL
 import Vision
 
-import Data.Bits ( (.&.) )
-
-
 type Point = [Double]  -- provisional
 type Pixel = [Int]
 
