@@ -73,8 +73,6 @@ recover pts = c where
     Just c = cameraFromHomogZ0 Nothing h
 
 
-
-
 worker inWindow camera st = do
 
     let fix = pixel2point camera
@@ -99,17 +97,18 @@ worker inWindow camera st = do
     -- when there are four points we add a new view and all required info:
     let newimage = newmark && length (marked st') == 4
     let npts = reverse (fix (marked st'))
+    let cam = recover npts
 
     fun <- if newimage
-            then genDrawTexture 256 im
-            else return (\x->return ())
+            then genDrawCamera 1 256 cam im
+            else return (return ())
 
     let st'' = if newimage
                 then st' { pts  = pts  st' =< npts
                          , marked = []
                          , imgs = imgs st' =< im
-                         , cams = cams st' =< recover npts
-                         , drfuns= drfuns st' =< showcam 1 (recover npts) (Just fun)
+                         , cams = cams st' =< cam
+                         , drfuns= drfuns st' =< fun
                          }
                 else st'
 
@@ -133,23 +132,27 @@ worker inWindow camera st = do
             drawPoints ps
 
         inWindow "3D view" $ do
-            clear [ColorBuffer]
-            matrixMode $= Projection
-            loadIdentity
-            perspective 60 1 1 100
-            let ang = angle st
-            let ang' = angle' st
-            lookAt (Vertex3 (20*sin ang*sin ang') (20*sin ang*cos ang') (20*cos ang)) (Vertex3 0 0 0) (Vector3 0 1 0)
-            let f [x,y] = Vertex2 x y
+            setView st
+
             mycolor 0 0 1
             lineWidth $= 2
+            let f [x,y] = Vertex2 x y
             renderPrimitive LineLoop $ mapM_ (vertex.f) a4
+
             mycolor 1 1 1
             lineWidth $= 1
             sequence_ (drfuns st)
 
     return st
 
+setView st = do
+    clear [ColorBuffer]
+    matrixMode $= Projection
+    loadIdentity
+    perspective 60 1 1 100
+    let ang = angle st
+    let ang' = angle' st
+    lookAt (Vertex3 (20*sin ang*sin ang') (20*sin ang*cos ang') (20*cos ang)) (Vertex3 0 0 0) (Vector3 0 1 0)
 ------------------------------------------------------
 
 compareBy f = (\a b-> compare (f a) (f b))
@@ -157,24 +160,6 @@ compareBy f = (\a b-> compare (f a) (f b))
 closest [] p = p
 closest hp p = minimumBy (compareBy $ dist p) hp
     where dist [a,b] [x,y] = (a-x)^2+(b-y)^2
-
-showcam size cam Nothing = do
-    let (invcam,f) = toCameraSystem cam
-    let outline = ht (invcam<>diagl[1,1,1,1/size]) (cameraOutline f)
-    let f [x,y,z] = Vertex3 x y z
-    renderPrimitive LineLoop $ mapM_ (vertex.f) outline
-
-showcam size cam (Just drfun) = do
-    let (invcam,f) = toCameraSystem cam
-    let m = invcam<>diagl[1,1,1,1/size]
-    let outline = ht m (cameraOutline f)
-    let d [x,y,z] = Vertex3 x y z
-    drfun $ ht m
-              [[ 1,  1, f],
-               [-1,  1, f],
-               [-1, -1, f],
-               [ 1, -1, f]]
-    renderPrimitive LineLoop $ mapM_ (vertex.d) outline
 
 -----------------------------------------------------------------
 -- callbacks

@@ -20,6 +20,8 @@ import qualified Graphics.UI.GLUT as GL
 import Ipp.Core
 import Data.IORef
 import Foreign (touchForeignPtr, withArray)
+import GSL
+import Vision
 
 myDrawPixels m@Img{itype=RGB} = 
     GL.drawPixels (Size (fromIntegral $ step m `quot` 3) (fromIntegral $ height m))
@@ -109,3 +111,26 @@ drawPoints xs = do
     renderPrimitive Points $ mapM_ (vertex.f) xs where
         f [x,y] = Vertex2 (-x) y
 
+-- | It shows the outline of a camera and an optional image in it
+showcam size cam Nothing = do
+    let (invcam,f) = toCameraSystem cam
+    let m = invcam<>diag (realVector[1,1,1,1/size])
+    let outline = ht m (cameraOutline f)
+    let d [x,y,z] = Vertex3 x y z
+    renderPrimitive LineLoop $ mapM_ (vertex.d) outline
+
+showcam size cam (Just drfun) = do
+    let (invcam,f) = toCameraSystem cam
+    let m = invcam<>diag (realVector[1,1,1,1/size])
+    let outline = ht m (cameraOutline f)
+    let d [x,y,z] = Vertex3 x y z
+    drfun $ ht m
+              [[ 1,  1, f],
+               [-1,  1, f],
+               [-1, -1, f],
+               [ 1, -1, f]]
+    renderPrimitive LineLoop $ mapM_ (vertex.d) outline
+
+genDrawCamera size reso cam im = do
+    drfun <- genDrawTexture reso im
+    return $ showcam size cam (Just drfun)
