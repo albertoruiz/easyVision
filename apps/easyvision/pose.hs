@@ -56,13 +56,15 @@ main = do
 
     addWindow "camera" (w,h) Nothing marker state
     addWindow "selected" (w,h) Nothing keyboard state
+
     addWindow "3D view" (400,400) Nothing keyboard state
     textureFilter Texture2D $= ((Nearest, Nothing), Nearest)
     textureFunction $= Decal
+
     launch state worker
 
 -------------------------------------------------------------------
-a4 = [[   0,    0::Double]
+a4 = [[   0,    0]
      ,[   0, 2.97]
      ,[2.10, 2.97]
      ,[2.10,    0]
@@ -73,10 +75,7 @@ recover pts = c where
     Just c = cameraFromHomogZ0 Nothing h
 
 
-worker inWindow camera st = do
-
-    let fix = pixel2point camera
-
+corners camera = do
     let suaviza = 1 `times` gauss Mask5x5
 
     im  <- scale8u32f 0 1 camera
@@ -84,35 +83,11 @@ worker inWindow camera st = do
 
     (mn,mx) <- Ipp.minmax h
     hotPoints <- localMax 7 h >>= thresholdVal32f (mx/10) 0.0 ippCmpLess >>= getPoints32f 200
+    return hotPoints
 
-    let newmark = new st 
-    let st' = if newmark -- a new point is clicked by the user
-                then     -- it is replaced by the closest hot point
-                    let n:other = marked st
-                    in st { new = False
-                          , marked = closest hotPoints n : other
-                          }
-                else st
 
-    -- when there are four points we add a new view and all required info:
-    let newimage = newmark && length (marked st') == 4
-    let npts = reverse (fix (marked st'))
-    let cam = recover npts
-
-    fun <- if newimage
-            then genDrawCamera 1 256 cam im
-            else return (return ())
-
-    let st'' = if newimage
-                then st' { pts  = pts  st' =< npts
-                         , marked = []
-                         , imgs = imgs st' =< im
-                         , cams = cams st' =< cam
-                         , drfuns= drfuns st' =< fun
-                         }
-                else st'
-
-    let st = st''
+worker inWindow camera st@ST{new=False} = do
+    hotPoints <- corners camera
 
     inWindow "camera" $ do
         display camera
@@ -144,6 +119,28 @@ worker inWindow camera st = do
             sequence_ (drfuns st)
 
     return st
+
+
+worker inWindow camera st@ST{ new=True
+                            , marked = m
+                            , pts = ps
+                            , imgs = ims
+                            , cams = cs
+                            , drfuns = funs } = do
+    hotPoints <- corners camera
+    let fix = pixel2point camera
+    let hp = reverse . fix. map (closest hotPoints) $ m
+    im  <- scale8u32f 0 1 camera
+    let cam = recover hp
+    drf <- genDrawCamera 1 256 cam im
+    return st { new=False
+              , marked = []
+              , pts = ps =< hp
+              , imgs = ims =< camera
+              , cams = cs =< cam
+              , drfuns = funs =< drf
+              }
+
 
 setView st = do
     clear [ColorBuffer]
@@ -195,8 +192,12 @@ keyboard _ _ _ _ _ = return ()
 
 ------------------------------------------------------------------
 
-marker st (MouseButton LeftButton) Down _ pos@(Position x y) = do
-    modifyIORef st $ \s -> s {ust = (ust s) {marked = map fromIntegral [y,x]: marked (ust s), new = True }}
+marker str (MouseButton LeftButton) Down _ pos@(Position x y) = do
+    st <- readIORef str
+    let u = ust (st)
+    let m = map fromIntegral [y,x]: marked u
+    writeIORef str st { ust = u {marked = m, new = length m == 4} }
+
 
 marker st (MouseButton RightButton) Down _ pos@(Position x y) = do
     modifyIORef st $ \s -> s {ust = (ust s) {marked = tail $ marked (ust s) }}
