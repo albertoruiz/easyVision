@@ -16,7 +16,7 @@ type Point = [Double]  -- provisional
 type Pixel = [Int]
 
 data MyState = ST { imgs :: [Img]
-                  , marked ::[[Int]]
+                  , corners, marked ::[[Int]]
                   , pts  :: [[Point]]
                   , cams :: [Matrix]
                   , drfuns :: [IO()]
@@ -25,7 +25,6 @@ data MyState = ST { imgs :: [Img]
                   , basev ::Int
 
                   , angle, angle' :: Double
-                  , sccam :: Double
                   }
 
 -- | snoc
@@ -40,7 +39,7 @@ main = do
     cam@(_,_,(h,w)) <- openCamera (args!!0) Gray (288,384)
 
     state <- prepare cam ST { imgs=[]
-                            , marked = []
+                            , corners=[], marked = []
                             , pts=[]
                             , cams=[]
                             , drfuns=[]
@@ -51,7 +50,6 @@ main = do
 
                             , angle = 0
                             , angle' = 0
-                            , sccam = 1
                             }
 
     addWindow "camera" (w,h) Nothing marker state
@@ -75,7 +73,7 @@ recover pts = c where
     Just c = cameraFromHomogZ0 Nothing h
 
 
-corners camera = do
+getCorners camera = do
     let suaviza = 1 `times` gauss Mask5x5
 
     im  <- scale8u32f 0 1 camera
@@ -87,7 +85,7 @@ corners camera = do
 
 
 worker inWindow camera st@ST{new=False} = do
-    hotPoints <- corners camera
+    hotPoints <- getCorners camera
 
     inWindow "camera" $ do
         display camera
@@ -118,7 +116,7 @@ worker inWindow camera st@ST{new=False} = do
             lineWidth $= 1
             sequence_ (drfuns st)
 
-    return st
+    return st {corners = hotPoints}
 
 
 worker inWindow camera st@ST{ new=True
@@ -127,9 +125,8 @@ worker inWindow camera st@ST{ new=True
                             , imgs = ims
                             , cams = cs
                             , drfuns = funs } = do
-    hotPoints <- corners camera
     let fix = pixel2point camera
-    let hp = reverse . fix. map (closest hotPoints) $ m
+    let hp = reverse (fix m)
     im  <- scale8u32f 0 1 camera
     let cam = recover hp
     drf <- genDrawCamera 1 256 cam im
@@ -149,7 +146,11 @@ setView st = do
     perspective 60 1 1 100
     let ang = angle st
     let ang' = angle' st
-    lookAt (Vertex3 (20*sin ang*sin ang') (20*sin ang*cos ang') (20*cos ang)) (Vertex3 0 0 0) (Vector3 0 1 0)
+    lookAt (Vertex3 (20*sin ang*sin ang')
+                    (20*sin ang*cos ang')
+                    (20*cos ang))
+           (Vertex3 0 0 0)
+           (Vector3 0 1 0)
 ------------------------------------------------------
 
 compareBy f = (\a b-> compare (f a) (f b))
@@ -178,11 +179,6 @@ keyboard st (MouseButton WheelUp) _ _ _ = do
 keyboard st (MouseButton WheelDown) _ _ _ = do
     modifyIORef st $ \s -> s {ust = (ust s) {angle = angle (ust s) -1*degree}}
 
-keyboard st (SpecialKey KeyRight) Down _ _ = do
-    modifyIORef st $ \s -> s {ust = (ust s) {sccam = sccam (ust s) + 0.1}}
-keyboard st (SpecialKey KeyLeft) Down _ _ = do
-    modifyIORef st $ \s -> s {ust = (ust s) {sccam = max (sccam (ust s) - 0.1) 0.1}}
-
 keyboard st (SpecialKey KeyUp) Down _ _ = do
     modifyIORef st $ \s -> s {ust = (ust s) {basev = basev (ust s) + 1}}
 keyboard st (SpecialKey KeyDown) Down _ _ = do
@@ -195,7 +191,8 @@ keyboard _ _ _ _ _ = return ()
 marker str (MouseButton LeftButton) Down _ pos@(Position x y) = do
     st <- readIORef str
     let u = ust (st)
-    let m = map fromIntegral [y,x]: marked u
+    let newpoint = closest (corners u) $ map fromIntegral [y,x]
+    let m = newpoint : marked u
     writeIORef str st { ust = u {marked = m, new = length m == 4} }
 
 
