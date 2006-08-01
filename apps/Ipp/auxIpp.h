@@ -1,5 +1,6 @@
 #define SRC void*,int
 #define DST void*,int,double
+#define VSIZE double
 
 int ippiSet_32f_C1R(float,DST);
 int ippiImageJaehne_32f_C1R(DST);
@@ -32,7 +33,13 @@ int auxWarpPerspective_32f_C1R(void * pSrc, int sstep, int sh, int sw,
                                int dr1, int dr2, int dc1, int dc2,
                                const double *h, int interp);
 
-void ippErrorMsg(int err);
+const char* ippGetStatusString(int StsCode);
 
 int getPoints32f(float * pSrc, int sstep, int sr1, int sr2, int sc1, int sc2,
                  int max, int* tot, int* hp);
+
+int auxResize_32f_C1R(void * pSrc, int sstep, int sh, int sw,
+                      int sr1, int sr2, int sc1, int sc2,
+                      void * pDst, int dstep,
+                      int dr1, int dr2, int dc1, int dc2,
+                      int interp);

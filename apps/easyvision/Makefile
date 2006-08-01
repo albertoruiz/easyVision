@@ -4,7 +4,7 @@ LIBS= -i.. ../Ipp/mycvCamera.o ../Ipp/auxIpp.o -L$(IPP)/sharedlib -lguide -lippc
 		
 all: hessian warp player frontal
 
-frontal: frontal.hs
+frontal: auxc frontal.hs
 		ghc -O --make frontal.hs -o frontal $(LIBS)
 
 pose: pose.hs
@@ -19,13 +19,13 @@ player: player.hs
 warp: warp.hs
 		ghc -O --make warp.hs -o warp  $(LIBS)
 		
-auxc: mycvCamera.o auxIpp.o
+auxc: ../Ipp/mycvCamera.o ../Ipp/auxIpp.o
 		
-mycvCamera.o: mycvCamera.c mycvCamera.h
-		gcc -O -c -I$(IPP)/include mycvCamera.c
+../Ipp/mycvCamera.o: ../Ipp/mycvCamera.c ../Ipp/mycvCamera.h
+		gcc -O -c -I$(IPP)/include ../Ipp/mycvCamera.c -o ../Ipp/mycvCamera.o
 		
-auxIpp.o: auxIpp.c auxIpp.h
-		gcc -O -c -I$(IPP)/include auxIpp.c
+../Ipp/auxIpp.o: ../Ipp/auxIpp.c ../Ipp/auxIpp.h
+		gcc -O -c -I$(IPP)/include ../Ipp/auxIpp.c -o ../Ipp/auxIpp.o
 		
 clean:
-		rm -f a.out *.o *.hi
+		rm -f a.out *.o *.hi ../Ipp/*.o ../Ipp/*.hi

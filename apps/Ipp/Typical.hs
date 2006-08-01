@@ -8,11 +8,10 @@ Maintainer  :  Alberto Ruiz (aruiz at um dot es)
 Stability   :  very provisional
 Portability :  hmm...
 
-Higher level access to some IPP functions.
+High level access to some IPP functions.
 
 -}
 -----------------------------------------------------------------------------
-
 
 module Ipp.Typical where
 
@@ -22,11 +21,11 @@ import Foreign
 import Vision hiding ((|-|))
 import GSL
 
----------------------------------------     
-     
+---------------------------------------
+
 imgAsR1 roifun im = do 
     r <- imgAs im
-    return r {vroi = roifun (vroi im)} 
+    return r {vroi = roifun (vroi im)}
 
 cr1 f im r = f // src im (vroi r) // dst r (vroi r)
 
@@ -37,7 +36,7 @@ imgAsR2 roifun im1 im2 = do
 cr2 f im1 im2 r = f // src im1 (vroi r) // src im2 (vroi r)// dst r (vroi r)
 
 ----------------------------------------
-     
+
 set32f v im roi = ippiSet_32f_C1R v // dst im roi // checkIPP "set32f" [im]
 
 scale8u32f vmin vmax im = do
@@ -45,21 +44,21 @@ scale8u32f vmin vmax im = do
     let r = r' {vroi = vroi im}
     (cr1 ippiScale_8u32f_C1R im r) vmin vmax // checkIPP "scale8u32f" [im]
     return r
-       
+
 copyROI32f r im = ippiCopy_32f_C1R // src im (vroi im) // dst r (vroi im) // checkIPP "copyROI32f" [im]
-       
+
 simplefun1 ippfun roifun msg = g where
     g im = do
         r <- imgAsR1 roifun im
         cr1 ippfun im r // checkIPP msg [im]
-        return r       
-       
+        return r 
+
 copy32f = simplefun1 ippiCopy_32f_C1R id "copy32f"
 abs32f  = simplefun1 ippiAbs_32f_C1R  id "abs32f"    
 sqrt32f = simplefun1 ippiSqrt_32f_C1R id "sqrt32f" 
 sobelVert = simplefun1 ippiFilterSobelVert_32f_C1R (shrink (1,1)) "sobelVert"
 sobelHoriz = simplefun1 ippiFilterSobelHoriz_32f_C1R (shrink (1,1)) "sobelHoriz"
- 
+
 data Mask = Mask3x3 | Mask5x5
 code Mask3x3 = 33
 code Mask5x5 = 55
@@ -76,7 +75,7 @@ thresholdVal32f t v code = simplefun1 f id "thresholdVal32f" where
 filterMax32f sz = simplefun1 f (shrink (d,d)) "filterMax32f" where
     d = (sz-1) `quot` 2
     f ps ss pd sd r = ippiFilterMax_32f_C1R ps ss pd sd r (ippRect sz sz) (ippRect d d)
- 
+
 ---------------------------------------------
 
 simplefun2 ippfun roifun msg = g where
@@ -85,7 +84,7 @@ simplefun2 ippfun roifun msg = g where
         cr2 ippfun im1 im2 r // checkIPP msg [im1,im2]
         return r
 
-infixl 7  |*| -- , .*|
+infixl 7  |*|
 infixl 6  |+|, |-|
 (|*|) = simplefun2 ippiMul_32f_C1R intersection "mul32f"
 (|+|) = simplefun2 ippiAdd_32f_C1R intersection "add32f"
@@ -112,7 +111,7 @@ copyMask32f im mask = do
     set32f 0.0 r (fullroi r)
     ippiCopy_32f_C1MR // src im roi // dst r roi // src mask roi // checkIPP "copyMask32f" [im,mask]
     return $ r {vroi = roi}
-    
+
 localMax r g = do
     mg   <- filterMax32f r g
     mask <- compare32f ippCmpEq mg g
@@ -126,7 +125,7 @@ testImage (r,c) = do
     let roi = ROI {r1=100, c1=100, r2 = 200, c2=200}  
     ippiImageJaehne_32f_C1R // dst w roi // checkIPP "ippiSetImageJanehne" [w]
     return w
-    
+
 secondOrder image = do
     gx  <- sobelVert image
     gy  <- sobelHoriz image
@@ -164,7 +163,7 @@ warpOn' h r im = do
                            (r1 (vroi im)) (r2 (vroi im)) (c1 (vroi im)) (c2 (vroi im))
                            (ptr r) (step r)
                            (r1 (vroi r)) (r2 (vroi r)) (c1 (vroi r)) (c2 (vroi r))
-                           coefs inter_LINEAR //checkIPP "warpOn" [im]
+                           coefs inter_LINEAR //warningIPP "warpOn" [im]
     free coefs
 
 warp' (height, width) h im = do
@@ -205,14 +204,12 @@ getPoints32f mx im = do
     free ptot
     free r
     return (partit 2 hp)
-    
+
 partit :: Int -> [a] -> [[a]]
 partit _ [] = []
 partit n l  = take n l : partit n (drop n l)
 
-
 ------------------------------------------------------------------
-
 
 -- | auxiliary homogeneous transformation from pixels to points
 pixel2pointTrans :: Img -> Matrix
@@ -229,4 +226,19 @@ pixel2pointTrans im = nor where
 pixel2point :: Img -> [[Int]]->[[Double]]
 pixel2point im = fix where
     nor = pixel2pointTrans im
-    fix = ht nor . Prelude.map (reverse . Prelude.map fromIntegral)
+    fix = ht nor . map (reverse . map fromIntegral)
+
+--------------------------------------------------------------------
+
+genResize32f dst droi im sroi interp = do
+    c_resize32f (ptr im) (step im) (height im) (width im)
+                 (r1 sroi) (r2 sroi) (c1 sroi) (c2 sroi)
+                 (ptr dst) (step dst)
+                 (r1 droi) (r2 droi) (c1 droi) (c2 droi)
+                 interp // checkIPP "genResize32f" [im]
+
+-- | resizes the roi of an image and puts it in another one
+resize32f (h,w) im = do
+    r <- img I32f h w
+    genResize32f r (fullroi r) im (vroi im) inter_LINEAR
+    return r

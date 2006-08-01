@@ -46,13 +46,13 @@ worker inWindow camera st = do
     copyROI32f im h
     
     inWindow "hessian" $ do
-        display im {vroi = vroi h}
+        drawImage im {vroi = vroi h}
     
     (mn,mx) <- Ipp.minmax h
     hotPoints <- localMax 7 h >>= thresholdVal32f (mx/2) 0.0 ippCmpLess >>= getPoints32f 200 
         
     inWindow "camera" $ do
-        display camera
+        drawImage camera
         mydraw hotPoints
     
     return st

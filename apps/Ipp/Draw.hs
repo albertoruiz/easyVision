@@ -18,6 +18,7 @@ module Ipp.Draw where
 import Graphics.UI.GLUT hiding (RGB)
 import qualified Graphics.UI.GLUT as GL
 import Ipp.Core
+import Ipp.Typical(resize32f)
 import Data.IORef
 import Foreign (touchForeignPtr, withArray)
 import GSL
@@ -35,7 +36,7 @@ myDrawPixels m@Img{itype=I32f} =
     GL.drawPixels (Size (fromIntegral $ step m `quot` (datasize m)) (fromIntegral $ height m))
                   (PixelData Luminance Float (ptr m))
 
-display m = do
+drawImage m = do
     matrixMode $= Projection
     loadIdentity
     let w = width m
@@ -67,34 +68,30 @@ vert t [x,y,z] = do
           multiTexCoord (TextureUnit 0) t
           vertex (Vertex3 x y z)
 
-genDrawTexture sz im = do
-    dat <- getData im
-    let rw = (width im - sz)  `quot` 2
-    let rh = (height im - sz) `quot` 2
-    let q s l = take sz $ drop s $ l
-    let dat' = concat $ q rh $ map (q rw) $ dat
-    let f [v1,v2, v3, v4] = do
-        withArray dat' $ \p-> do
-            texImage2D Nothing
-                       NoProxy
-                       0
-                       Luminance'
-                       (TextureSize2D 256 256)
-                       0
-                       (PixelData Luminance Float p)
 
-        texture Texture2D $= Enabled
-        renderPrimitive Polygon $ do
-            vert (TexCoord2 0 0) v1
-            vert (TexCoord2 1 0) v2
-            vert (TexCoord2 1 1) v3
-            vert (TexCoord2 0 1) v4
-        texture Texture2D $= Disabled
-     in return f
+--avoid sizes which are not a power of 2
+drawTexture im@Img {itype = I32f} [v1,v2,v3,v4] = do
+    {-# SCC "texImage2D" #-} texImage2D Nothing
+                NoProxy
+                0
+                Luminance'
+                (TextureSize2D (fromIntegral $ width im) (fromIntegral $ height im))
+                0
+                (PixelData Luminance Float (ptr im))
 
+    touchForeignPtr (fptr im)
+    texture Texture2D $= Enabled
+    renderPrimitive Polygon $ do
+        vert (TexCoord2 0 0) v1
+        vert (TexCoord2 1 0) v2
+        vert (TexCoord2 1 1) v3
+        vert (TexCoord2 0 1) v4
+    texture Texture2D $= Disabled
 
 mycolor r g b = currentColor $= Color4 r g (b::GLfloat) 1
 
+
+-- TO DO: rewrite the following functions:
 
 drawPixels xs = do
     pointSize $= 3
@@ -102,7 +99,6 @@ drawPixels xs = do
         f [y,x] = vertex (Vertex2 (fromIntegral x::GLfloat) (288-1-fromIntegral y))
 
 drawPoints xs = do
-    pointSize $= 3
     matrixMode $= Projection
     loadIdentity
     ortho2D (-1) (1) (-0.75) (0.75)
@@ -110,6 +106,16 @@ drawPoints xs = do
     loadIdentity
     renderPrimitive Points $ mapM_ (vertex.f) xs where
         f [x,y] = Vertex2 (-x) y
+
+drawPolygon xs = do
+    matrixMode $= Projection
+    loadIdentity
+    ortho2D (-1) (1) (-0.75) (0.75)
+    matrixMode $= Modelview 0
+    loadIdentity
+    renderPrimitive LineLoop $ mapM_ (vertex.f) xs where
+        f [x,y] = Vertex2 (-x) y
+
 
 -- | It shows the outline of a camera and an optional image in it
 showcam size cam Nothing = do
@@ -124,13 +130,19 @@ showcam size cam (Just drfun) = do
     let m = invcam<>diag (realVector[1,1,1,1/size])
     let outline = ht m (cameraOutline f)
     let d [x,y,z] = Vertex3 x y z
+    let q = 1 --0.75                     TO DO: fix this
     drfun $ ht m
-              [[ 1,  1, f],
-               [-1,  1, f],
-               [-1, -1, f],
-               [ 1, -1, f]]
+              [[ q,  q, f],
+               [-q,  q, f],
+               [-q, -q, f],
+               [ q, -q, f]]
     renderPrimitive LineLoop $ mapM_ (vertex.d) outline
 
-genDrawCamera size reso cam im = do
-    drfun <- genDrawTexture reso im
-    return $ showcam size cam (Just drfun)
+drawCamera size cam im = showcam size cam (Just (drawTexture im))
+
+extractSquare sz im = resize32f (sz,sz) im {vroi = roi} where
+    w = width im
+    h = height im
+    d = w-h
+    dm = d `quot` 2
+    roi = (vroi im) {c1=dm-1,c2= dm+h}

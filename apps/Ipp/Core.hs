@@ -20,18 +20,19 @@ module Ipp.Core
           ( Img(..), ImageType(..)
           , img, imgAs, getData
           , ROI(..), fullroi, shrink, shift, intersection
-          , src, dst, checkIPP, (//)
+          , src, dst, checkIPP, warningIPP, (//)
           , ippRect
 ) where
 
 import Foreign hiding (shift)
 import Control.Monad(when)
 import Ipp.Wrappers
- 
+import Foreign.C.String(peekCString)
+
 ------------------------------------------------------------
 ------------- descriptor of an ipp image -------------------
 
-data ImageType = RGB | Gray | I32f 
+data ImageType = RGB | Gray | I32f
 
 data Img = Img { fptr :: ForeignPtr ()
                , ptr  :: Ptr ()
@@ -67,11 +68,11 @@ img' t sz ly r c = do
         , vroi = fullroi res 
         }
     return res
-                
+
 img Gray = img' Gray 1 1
 img I32f = img' I32f 4 1
-img RGB  = img' RGB  1 3                
-                
+img RGB  = img' RGB  1 3
+
 getData :: Img -> IO [[Float]]
 getData (Img {fptr = fp, ptr = p, datasize = d, step = s, height = r, width = c}) = do
     let jump = s `quot` d
@@ -85,7 +86,7 @@ data ROI = ROI { r1, r2, c1, c2 :: Int} deriving Show
 
 starting :: Img -> ROI -> Ptr ()
 starting img roi = plusPtr (ptr img) (r1 roi * step img + c1 roi*(datasize img)*(layers img))
-  
+
 roiSize (ROI { r1=a, r2=b, c1=x, c2=y}) = encodeAsDouble  (y-x+1)  (b-a+1)
 
 encodeAsDouble :: Int -> Int -> Double
@@ -100,40 +101,43 @@ ippRect = encodeAsDouble
 
 fullroi img = ROI {r1=0, r2=height img-1, c1=0, c2=width img-1}
 
-shrink (r,c) roi = 
+shrink (r,c) roi =
     ROI {r1=(r1 roi) +r, 
          r2=(r2 roi) -r,
          c1=(c1 roi) +c,
          c2=(c2 roi) -c}
-    
-shift (r,c) roi = 
+
+shift (r,c) roi =
     ROI {r1=(r1 roi) +r, 
          r2=(r2 roi) +r,
          c1=(c1 roi) +c,
          c2=(c2 roi) +c}
-       
+
 intersection a b = ROI { r1 = max (r1 a) (r1 b)
                        , r2 = min (r2 a) (r2 b)
                        , c1 = max (c1 a) (c1 b)
                        , c2 = min (c2 a) (c2 b)
                        }
-       
-       
--- id, const    
-    
+
+-- id, const
+
 imgAs im = img (itype im) (height im) (width im)
 
 src im roi f = f (starting im roi) (step im)
 dst im roi f = f (starting im roi) (step im) (roiSize roi)
 
-checkIPP msg ls f = do
+genCheckIPP act msg ls f = do
     err <- f
     when (err/=0) $ do
-        putStrLn $ "In " ++ msg ++ ":"
-        ippError err
+        putStrLn $ "WARNING: In " ++ msg ++ ":"
+        ps <- ippGetStatusString err
+        s <- peekCString ps
+        act s
     mapM_ (touchForeignPtr . fptr) ls -- really needed!
     return ()
 
+checkIPP   = genCheckIPP error
+warningIPP = genCheckIPP putStrLn
+
 infixl 0 //
 (//) = flip ($)
-

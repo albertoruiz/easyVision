@@ -68,10 +68,10 @@ warper alpha rho foc sca = r where
 
 worker inWindow camera param = do
         
-    inWindow "camera" (display camera)
+    inWindow "camera" (drawImage camera)
     
     let t = warper (param!"alpha") (param!"rho") (param!"foc") (param!"sca")
     inWindow "warped" $ do
-        scale8u32f 0 1 camera >>= warp (600,500) t >>= display
+        scale8u32f 0 1 camera >>= warp (600,500) t >>= drawImage
 
     return param

@@ -91,8 +91,16 @@ foreign import ccall "auxIpp.h auxWarpPerspective_32f_C1R"
                            Ptr Double -> Int -> 
                            IO Int
 
-foreign import ccall "auxIpp.h ippErrorMsg" ippError :: Int -> IO ()
+foreign import ccall "auxIpp.h ippGetStatusString" ippGetStatusString :: Int -> IO (Ptr CChar)
 
 foreign import ccall "auxIpp.h getPoints32f" 
     c_getPoints32f :: Ptr Float -> Int -> Int -> Int -> Int -> Int ->
                       Int -> Ptr Int -> Ptr Int -> IO Int
+
+foreign import ccall "auxIpp.h auxResize_32f_C1R" 
+     c_resize32f :: Ptr() -> Int -> Int -> Int ->
+                           Int -> Int -> Int -> Int ->
+                           Ptr() -> Int -> 
+                           Int -> Int -> Int -> Int ->  
+                           Int -> 
+                           IO Int

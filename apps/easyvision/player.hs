@@ -41,6 +41,6 @@ keyboard _ _ _ _ _ = return ()
 worker inWindow camera st = do
     
     inWindow "camera" $ do
-        display camera
+        drawImage camera
         
     return st

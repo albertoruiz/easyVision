@@ -88,7 +88,7 @@ worker inWindow camera st@ST{new=False} = do
     hotPoints <- getCorners camera
 
     inWindow "camera" $ do
-        display camera
+        drawImage camera
         mycolor 1 0 0
         drawPixels hotPoints
         mycolor 0 0 1
@@ -100,7 +100,7 @@ worker inWindow camera st@ST{new=False} = do
         let sel = basev st `rem` n
         let ps = pts st !! sel
         inWindow "selected" $ do
-            display $ imgs st !! sel
+            drawImage $ imgs st !! sel
             mycolor 0 1 0
             drawPoints ps
 
@@ -129,13 +129,13 @@ worker inWindow camera st@ST{ new=True
     let hp = reverse (fix m)
     im  <- scale8u32f 0 1 camera
     let cam = recover hp
-    drf <- genDrawCamera 1 256 cam im
+    imt <- extractSquare 128 im
     return st { new=False
               , marked = []
               , pts = ps =< hp
               , imgs = ims =< camera
               , cams = cs =< cam
-              , drfuns = funs =< drf
+              , drfuns = funs =< drawCamera 1 cam imt
               }
 
 

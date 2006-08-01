@@ -22,6 +22,8 @@ import Data.List(minimumBy)
 import GSL
 import Vision
 
+-------------------------------------------------------
+
 type Point = [Double]  -- provisional
 type Pixel = [Int]
 
@@ -108,7 +110,7 @@ worker inWindow camera st@ST{new=False} = do
     hotPoints <- getCorners camera
 
     inWindow "camera" $ do
-        display camera
+        drawImage camera
         mycolor 1 0 0
         drawPixels hotPoints
         mycolor 0 0 1
@@ -123,13 +125,15 @@ worker inWindow camera st@ST{new=False} = do
         let h = inv (hs st !! bv) <> (hs st !! sv) -- from selected to base
 
         inWindow "base" $ do                -- base view
-            display $ imgs st !! bv
-            mycolor 0 1 0
+            drawImage $ imgs st !! bv
+            mycolor 0.75 0 0
+            drawPolygon ps
+            pointSize $= 5
             drawPoints ps
 
         inWindow "selected" $ do            -- selected view warped into the base view
             w <- warp (288,384) h (imgs st !! sv)
-            display w
+            drawImage w
 
         let r = scaling (zoom st) <> inv (cam0 st) -- hmm
         w <- img I32f floorSize floorSize
@@ -138,9 +142,7 @@ worker inWindow camera st@ST{new=False} = do
         sequence_ $ Main.rotate sv $ zipWith g (imgs st) (hs st)
 
         inWindow "world" $ do         -- automatically rectified plane
-            display w
-
-        drwfloor <- genDrawTexture (width w) w 
+            drawImage w
 
         inWindow "3D view" $ do             -- 3D representation
             setView st
@@ -151,7 +153,7 @@ worker inWindow camera st@ST{new=False} = do
 
             let norw = pixel2pointTrans w
 
-            drwfloor $ map (++[0]) $ ht hx [[1,1],[-1,1],[-1,-1],[1,-1]]
+            drawTexture w $ map (++[0]) $ ht hx [[1,1],[-1,1],[-1,-1],[1,-1]]
 
 
             mycolor 0 0 1
@@ -176,6 +178,7 @@ worker inWindow camera st@ST{ new=True
     let fix = pixel2point camera
     let hp = reverse (fix m)
     im  <- scale8u32f 0 1 camera
+    imtext <- extractSquare 128 im
     let images = ims ++ [im]
     let points = ps ++ [hp]
     let interhomog = genInterimage points
@@ -198,7 +201,8 @@ worker inWindow camera st@ST{ new=True
         imshow $ environment 100 (20*degree) 0.5 (rho,yh) f
 
     let cameras = map (cameraFromHomogZ0 Nothing. (<>c0'). inv) interhomog
-    drs <- sequence [genDrawCamera 0.4 256 c i | (Just c,i) <- zip cameras images]
+    textures <- mapM (extractSquare 64) images
+    let drs = [drawCamera 0.4 c t | (Just c,t) <- zip cameras textures]
 
     return st { new=False
               , marked = []
