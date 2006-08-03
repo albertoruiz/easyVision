@@ -1,4 +1,3 @@
--- some checks
 
 module Main where
 
@@ -16,7 +15,7 @@ type Point = [Double]  -- provisional
 type Pixel = [Int]
 
 data MyState = ST { imgs :: [Img]
-                  , corners, marked ::[[Int]]
+                  , corners, marked ::[Point]
                   , pts  :: [[Point]]
                   , cams :: [Matrix]
                   , drfuns :: [IO()]
@@ -72,27 +71,18 @@ recover pts = c where
     h = estimateHomography pts a4
     Just c = cameraFromHomogZ0 Nothing h
 
-
-getCorners camera = do
-    let suaviza = 1 `times` gauss Mask5x5
-
-    im  <- scale8u32f 0 1 camera
-    h <- suaviza im >>= hessian >>= scale32f (-1.0)
-
-    (mn,mx) <- Ipp.minmax h
-    hotPoints <- localMax 7 h >>= thresholdVal32f (mx/10) 0.0 ippCmpLess >>= getPoints32f 200
-    return hotPoints
-
-
 worker inWindow camera st@ST{new=False} = do
-    hotPoints <- getCorners camera
+    hotPoints <- getCorners 1 7 0.1 200 camera
 
     inWindow "camera" $ do
         drawImage camera
+        pixelCoordinates (384,288)
         mycolor 1 0 0
-        drawPixels hotPoints
+        pointSize $= 3
+        renderPrimitive Points (vertices hotPoints)
         mycolor 0 0 1
-        drawPixels (marked st)
+        renderPrimitive Points (vertices (marked st))
+
 
     let n = length (imgs st)
 
@@ -101,16 +91,18 @@ worker inWindow camera st@ST{new=False} = do
         let ps = pts st !! sel
         inWindow "selected" $ do
             drawImage $ imgs st !! sel
-            mycolor 0 1 0
-            drawPoints ps
+            pointCoordinates (4,3)
+            mycolor 0.75 0 0
+            renderPrimitive LineLoop (vertices ps)
+            pointSize $= 5
+            renderPrimitive Points (vertices ps)
 
         inWindow "3D view" $ do
             setView st
 
             mycolor 0 0 1
             lineWidth $= 2
-            let f [x,y] = Vertex2 x y
-            renderPrimitive LineLoop $ mapM_ (vertex.f) a4
+            renderPrimitive LineLoop (vertices a4)
 
             mycolor 1 1 1
             lineWidth $= 1
@@ -191,10 +183,9 @@ keyboard _ _ _ _ _ = return ()
 marker str (MouseButton LeftButton) Down _ pos@(Position x y) = do
     st <- readIORef str
     let u = ust (st)
-    let newpoint = closest (corners u) $ map fromIntegral [y,x]
+    let newpoint = closest (corners u) $ map fromIntegral [x,y]
     let m = newpoint : marked u
     writeIORef str st { ust = u {marked = m, new = length m == 4} }
-
 
 marker st (MouseButton RightButton) Down _ pos@(Position x y) = do
     modifyIORef st $ \s -> s {ust = (ust s) {marked = tail $ marked (ust s) }}

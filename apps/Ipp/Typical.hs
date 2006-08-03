@@ -209,6 +209,23 @@ partit :: Int -> [a] -> [[a]]
 partit _ [] = []
 partit n l  = take n l : partit n (drop n l)
 
+----------------------------------------------------------
+-- TO DO: parameters with a record
+
+getCorners :: Int -> Int -> Float -> Int -> Img -> IO [[Double]]
+getCorners smooth rad prop maxn im@Img{itype = I32f} = do
+    let suaviza = smooth `times` gauss Mask5x5
+    h <- suaviza im >>= hessian >>= scale32f (-1.0)
+    (mn,mx) <- minmax h
+    hotPoints <- localMax rad h
+              >>= thresholdVal32f (mx*prop) 0.0 ippCmpLess
+              >>= getPoints32f maxn
+    --return $ pixel2point im $ map (reverse . map fromIntegral) hotPoints
+    return $ map (reverse . map fromIntegral) hotPoints
+
+getCorners s r p mx im@Img{itype = Gray} =
+    scale8u32f 0 1 im >>= getCorners s r p mx
+
 ------------------------------------------------------------------
 
 -- | auxiliary homogeneous transformation from pixels to points
@@ -223,10 +240,10 @@ pixel2pointTrans im = nor where
         ,[   0,      0, 1]]
 
 -- | obtains the trasformation from pixels to normalized points
-pixel2point :: Img -> [[Int]]->[[Double]]
+pixel2point :: Img -> [[Double]]->[[Double]]
 pixel2point im = fix where
     nor = pixel2pointTrans im
-    fix = ht nor . map (reverse . map fromIntegral)
+    fix = ht nor
 
 --------------------------------------------------------------------
 

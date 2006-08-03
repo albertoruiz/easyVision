@@ -20,7 +20,7 @@ import qualified Graphics.UI.GLUT as GL
 import Ipp.Core
 import Ipp.Typical(resize32f)
 import Data.IORef
-import Foreign (touchForeignPtr, withArray)
+import Foreign (touchForeignPtr)
 import GSL
 import Vision
 
@@ -49,29 +49,18 @@ drawImage m = do
     myDrawPixels m
     touchForeignPtr (fptr m)
     let r = shrink (-1,-1) $ vroi m
-    drawPolyline [[h-1 - r1 r,c1 r],
-                  [h-1 - r2 r,c1 r],
-                  [h-1 - r2 r,c2 r],
-                  [h-1 - r1 r,c2 r],
-                  [h-1 - r1 r,c1 r]]
-
-drawPolyline xs = do 
-    lineWidth $= 1
-    currentColor $= Color4 1 0 0 1
-    renderPrimitive LineStrip $ mapM_ f xs where
-        f [y,x] = vertex (Vertex2 (fromIntegral x::GLfloat) (fromIntegral y))
+    pixelCoordinates (w,h)
+    renderPrimitive LineLoop $ vertices'
+       [[c1 r, r1 r],
+        [c1 r, r2 r],
+        [c2 r, r2 r],
+        [c2 r, r1 r]]
 
 --------------------------------------------------------------------------------
 
-vert :: TexCoord2 GLdouble -> [GLdouble] -> IO ()
-vert t [x,y,z] = do
-          multiTexCoord (TextureUnit 0) t
-          vertex (Vertex3 x y z)
-
-
 --avoid sizes which are not a power of 2
 drawTexture im@Img {itype = I32f} [v1,v2,v3,v4] = do
-    {-# SCC "texImage2D" #-} texImage2D Nothing
+    texImage2D  Nothing
                 NoProxy
                 0
                 Luminance'
@@ -88,57 +77,57 @@ drawTexture im@Img {itype = I32f} [v1,v2,v3,v4] = do
         vert (TexCoord2 0 1) v4
     texture Texture2D $= Disabled
 
+  where
+    vert :: TexCoord2 GLdouble -> [GLdouble] -> IO ()
+    vert t [x,y,z] = do
+          multiTexCoord (TextureUnit 0) t
+          vertex (Vertex3 x y z)
+
+------------------------------------------------------------
+
 mycolor r g b = currentColor $= Color4 r g (b::GLfloat) 1
 
+pointCoordinates (w,h) = draw2Dwith (ortho2D 1 (-1) (-r) r)
+    where r = fromIntegral h / fromIntegral w
 
--- TO DO: rewrite the following functions:
+pixelCoordinates (w,h) = draw2Dwith (ortho2D 0 (fromIntegral w-1) (fromIntegral h-1) 0)
 
-drawPixels xs = do
-    pointSize $= 3
-    renderPrimitive Points $ mapM_ f xs where
-        f [y,x] = vertex (Vertex2 (fromIntegral x::GLfloat) (288-1-fromIntegral y))
-
-drawPoints xs = do
+draw2Dwith ortho = do
     matrixMode $= Projection
     loadIdentity
-    ortho2D (-1) (1) (-0.75) (0.75)
+    ortho
     matrixMode $= Modelview 0
     loadIdentity
-    renderPrimitive Points $ mapM_ (vertex.f) xs where
-        f [x,y] = Vertex2 (-x) y
 
-drawPolygon xs = do
-    matrixMode $= Projection
-    loadIdentity
-    ortho2D (-1) (1) (-0.75) (0.75)
-    matrixMode $= Modelview 0
-    loadIdentity
-    renderPrimitive LineLoop $ mapM_ (vertex.f) xs where
-        f [x,y] = Vertex2 (-x) y
+vertices l = mapM_ (vertex.f) l where
+    f [x,y]   = Vertex3 x y 0
+    f [x,y,z] = Vertex3 x y z
+    f _ = error "vertices without 2 or 3 components"
 
+vertices' = vts . map (map fromIntegral) where
+    vts :: [[Double]] -> IO ()
+    vts = vertices
 
 -- | It shows the outline of a camera and an optional image in it
 showcam size cam Nothing = do
     let (invcam,f) = toCameraSystem cam
     let m = invcam<>diag (realVector[1,1,1,1/size])
     let outline = ht m (cameraOutline f)
-    let d [x,y,z] = Vertex3 x y z
-    renderPrimitive LineLoop $ mapM_ (vertex.d) outline
+    renderPrimitive LineLoop $ vertices outline
 
-showcam size cam (Just drfun) = do
+showcam size cam (Just imgtext) = do
     let (invcam,f) = toCameraSystem cam
     let m = invcam<>diag (realVector[1,1,1,1/size])
     let outline = ht m (cameraOutline f)
-    let d [x,y,z] = Vertex3 x y z
     let q = 1 --0.75                     TO DO: fix this
-    drfun $ ht m
+    drawTexture imgtext $ ht m
               [[ q,  q, f],
                [-q,  q, f],
                [-q, -q, f],
                [ q, -q, f]]
-    renderPrimitive LineLoop $ mapM_ (vertex.d) outline
+    renderPrimitive LineLoop $ vertices outline
 
-drawCamera size cam im = showcam size cam (Just (drawTexture im))
+drawCamera size cam im = showcam size cam (Just im)
 
 extractSquare sz im = resize32f (sz,sz) im {vroi = roi} where
     w = width im

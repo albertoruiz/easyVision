@@ -3,6 +3,7 @@
 -- TO DO:
 --   put online the demo video
 --   average world fragments
+--   online selection of the prior calibration info
 
 -- This should work with a firewire camera: 
 --    $ ./a.out /dev/dv1394
@@ -30,7 +31,7 @@ type Pixel = [Int]
 floorSize = 256
 
 data MyState = ST { imgs :: [Img]             -- selected views
-                  , corners, marked ::[[Int]] -- corners in the current image 
+                  , corners, marked ::[Point] -- corners in the current image
                   , pts  :: [[Point]]         -- homologous points of the selected images
                   , hs   :: [Matrix]          -- interimage homographies
                   , cam0 :: Matrix            -- solution
@@ -87,16 +88,6 @@ encuadra h = desp (-a,-b) where
 
 genInterimage views = map (estimateHomography (head views)) (id views)
 
-getCorners camera = do
-    let suaviza = 1 `times` gauss Mask5x5
-
-    im  <- scale8u32f 0 1 camera
-    h <- suaviza im >>= hessian >>= scale32f (-1.0)
-
-    (mn,mx) <- Ipp.minmax h
-    hotPoints <- localMax 7 h >>= thresholdVal32f (mx/10) 0.0 ippCmpLess >>= getPoints32f 200
-    return hotPoints
-
 environment n dr dy (r,y) fun = reshape n $ realVector vals where
     a = toList $ linspace n (r-dr,r+dr)
     b = toList $ linspace n (y-dy,y+dy)
@@ -107,14 +98,17 @@ rotate n list = take (length list) $ drop n $ cycle list
 ---------------------------------------------------------------------
 
 worker inWindow camera st@ST{new=False} = do
-    hotPoints <- getCorners camera
+    hotPoints <- getCorners 1 7 0.1 200 camera
 
     inWindow "camera" $ do
         drawImage camera
+        pixelCoordinates (384,288)
         mycolor 1 0 0
-        drawPixels hotPoints
+        pointSize $= 3
+        renderPrimitive Points (vertices hotPoints)
         mycolor 0 0 1
-        drawPixels (marked st)
+        renderPrimitive Points (vertices (marked st))
+
 
     let n = length (imgs st)
 
@@ -126,10 +120,11 @@ worker inWindow camera st@ST{new=False} = do
 
         inWindow "base" $ do                -- base view
             drawImage $ imgs st !! bv
+            pointCoordinates (4,3)
             mycolor 0.75 0 0
-            drawPolygon ps
+            renderPrimitive LineLoop (vertices ps)
             pointSize $= 5
-            drawPoints ps
+            renderPrimitive Points (vertices ps)
 
         inWindow "selected" $ do            -- selected view warped into the base view
             w <- warp (288,384) h (imgs st !! sv)
@@ -137,7 +132,7 @@ worker inWindow camera st@ST{new=False} = do
 
         let r = scaling (zoom st) <> inv (cam0 st) -- hmm
         w <- img I32f floorSize floorSize
-        set32f 0 w (fullroi w)
+        set32f 1.0 w (fullroi w)
         let g im h = warpOn (r <> h) w im
         sequence_ $ Main.rotate sv $ zipWith g (imgs st) (hs st)
 
@@ -155,11 +150,9 @@ worker inWindow camera st@ST{new=False} = do
 
             drawTexture w $ map (++[0]) $ ht hx [[1,1],[-1,1],[-1,-1],[1,-1]]
 
-
             mycolor 0 0 1
             lineWidth $= 2
-            let f [x,y] = Vertex2 x y
-            renderPrimitive LineLoop $ mapM_ (vertex.f) ref
+            renderPrimitive LineLoop $ vertices ref
 
             mycolor 1 1 1
             lineWidth $= 1
@@ -175,8 +168,7 @@ worker inWindow camera st@ST{ new=True
                             , imgs = ims
                             , cams = cs
                             , drfuns = funs } = do
-    let fix = pixel2point camera
-    let hp = reverse (fix m)
+    let hp = pixel2point camera m
     im  <- scale8u32f 0 1 camera
     imtext <- extractSquare 128 im
     let images = ims ++ [im]
@@ -279,7 +271,7 @@ keyboard _ _ _ _ _ = return ()
 marker str (MouseButton LeftButton) Down _ pos@(Position x y) = do
     st <- readIORef str
     let u = ust (st)
-    let newpoint = closest (corners u) $ map fromIntegral [y,x]
+    let newpoint = closest (corners u) $ map fromIntegral [x,y]
     let m = newpoint : marked u
     writeIORef str st { ust = u {marked = m, new = length m == 4} }
 
