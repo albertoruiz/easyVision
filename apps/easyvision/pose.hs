@@ -10,6 +10,7 @@ import System.Environment(getArgs)
 import Data.List(minimumBy)
 import GSL
 import Vision
+import Trackball
 
 type Point = [Double]  -- provisional
 type Pixel = [Int]
@@ -23,7 +24,7 @@ data MyState = ST { imgs :: [Img]
                   , new    :: Bool
                   , basev ::Int
 
-                  , angle, angle' :: Double
+                  , quat :: Quaternion, prev :: [Double]
                   }
 
 -- | snoc
@@ -47,17 +48,17 @@ main = do
 
                             , basev = 0
 
-                            , angle = 0
-                            , angle' = 0
+                            , quat = Quat { qs = 1.0, qv = realVector [0,0,0]}
+                            , prev = []
                             }
 
     addWindow "camera" (w,h) Nothing marker state
     addWindow "selected" (w,h) Nothing keyboard state
 
-    addWindow "3D view" (400,400) Nothing keyboard state
+    addWindow "3D view" (400,400) Nothing quatkbd state
     textureFilter Texture2D $= ((Nearest, Nothing), Nearest)
     textureFunction $= Decal
-
+    motionCallback $= Just (quatmot state)
     launch state worker
 
 -------------------------------------------------------------------
@@ -135,14 +136,16 @@ setView st = do
     clear [ColorBuffer]
     matrixMode $= Projection
     loadIdentity
-    perspective 60 1 1 100
-    let ang = angle st
-    let ang' = angle' st
-    lookAt (Vertex3 (20*sin ang*sin ang')
-                    (20*sin ang*cos ang')
-                    (20*cos ang))
+    perspective 40 1 1 100
+    lookAt (Vertex3 0 0 40)
            (Vertex3 0 0 0)
            (Vector3 0 1 0)
+    let m = getRotation (quat st)
+    mat <- newMatrix RowMajor (toList (flatten m)) :: IO (GLmatrix GLdouble)
+    matrixMode $= Modelview 0
+    loadIdentity
+    multMatrix mat
+
 ------------------------------------------------------
 
 compareBy f = (\a b-> compare (f a) (f b))
@@ -160,16 +163,6 @@ keyboard st (Char ' ') Down _ _ = do
     modifyIORef st $ \s -> s {pause = not (pause s)}
 keyboard _ (Char '\27') Down _ _ = do
     exitWith ExitSuccess
-
-keyboard st (MouseButton WheelUp) _ (Modifiers{shift = Down}) _ = do
-    modifyIORef st $ \s -> s {ust = (ust s) {angle' = angle' (ust s) + 1*degree}}
-keyboard st (MouseButton WheelDown) _ (Modifiers{shift = Down}) _ = do
-    modifyIORef st $ \s -> s {ust = (ust s) {angle' = angle' (ust s) -1*degree}}
-
-keyboard st (MouseButton WheelUp) _ _ _ = do
-    modifyIORef st $ \s -> s {ust = (ust s) {angle = angle (ust s) + 1*degree}}
-keyboard st (MouseButton WheelDown) _ _ _ = do
-    modifyIORef st $ \s -> s {ust = (ust s) {angle = angle (ust s) -1*degree}}
 
 keyboard st (SpecialKey KeyUp) Down _ _ = do
     modifyIORef st $ \s -> s {ust = (ust s) {basev = basev (ust s) + 1}}
@@ -193,3 +186,23 @@ marker st (MouseButton RightButton) Down _ pos@(Position x y) = do
 marker st b s m p = keyboard st b s m p
 
 --------------------------------------------------------------------
+
+quatkbd st (MouseButton LeftButton) Down _ pos@(Position x y) = do
+    modifyIORef st $ \s -> s { ust = (ust s) { prev = [(fromIntegral x - 200 )/ 400, -(fromIntegral y -200) / 400]} }
+
+quatkbd st (MouseButton LeftButton) Up _ pos@(Position x y) = do
+    modifyIORef st $ \s -> s { ust = (ust s) {prev = []} }
+
+quatkbd st (Char 'o') Down _ _ = do
+    modifyIORef st $ \s -> s { ust = (ust s) { quat = Quat { qs = 1.0, qv = realVector [0,0,0]}} }
+
+quatkbd st b s m p = keyboard st b s m p
+
+quatmot str pos@(Position x y) = do
+    let [xc,yc] = [(fromIntegral x - 200 )/ 400, -(fromIntegral y -200) / 400]
+    st <- readIORef str
+    case prev (ust st) of
+        [] -> return ()
+        [xp,yp] -> do
+            let q = trackball (xp,yp) (xc,yc) .*. quat (ust st)
+            writeIORef str st {ust = (ust st) {quat = q, prev = [xc,yc]}}
