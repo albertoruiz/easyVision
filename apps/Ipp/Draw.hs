@@ -23,6 +23,7 @@ import Data.IORef
 import Foreign (touchForeignPtr)
 import GSL
 import Vision
+import Ipp.Trackball
 
 myDrawPixels m@Img{itype=RGB} = 
     GL.drawPixels (Size (fromIntegral $ step m `quot` 3) (fromIntegral $ height m))
@@ -119,7 +120,7 @@ showcam size cam (Just imgtext) = do
     let (invcam,f) = toCameraSystem cam
     let m = invcam<>diag (realVector[1,1,1,1/size])
     let outline = ht m (cameraOutline f)
-    let q = 1 --0.75                     TO DO: fix this
+    let q = 0.95 --0.75                     TO DO: fix this
     drawTexture imgtext $ ht m
               [[ q,  q, f],
                [-q,  q, f],
@@ -135,3 +136,5 @@ extractSquare sz im = resize32f (sz,sz) im {vroi = roi} where
     d = w-h
     dm = d `quot` 2
     roi = (vroi im) {c1=dm-1,c2= dm+h}
+
+newTrackball = Ipp.Trackball.newTrackball

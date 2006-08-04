@@ -1,6 +1,4 @@
--- TO DO: adapt size
-
-module Trackball (newTrackball) where
+module Ipp.Trackball (newTrackball) where
 
 import GSL
 import Graphics.UI.GLUT hiding (normalize)

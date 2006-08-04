@@ -43,7 +43,7 @@ data State userState =
 
 prepare cam s = do
     getArgsAndInitialize
-    initialDisplayMode $= [DoubleBuffered]
+    initialDisplayMode $= [DoubleBuffered, WithDepthBuffer]
 
     state <- newIORef State {camid = cam, frame = 0, pause = False,
                              camera = undefined, wins = empty, ust = s}

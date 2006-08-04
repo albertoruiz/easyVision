@@ -10,7 +10,6 @@ import System.Environment(getArgs)
 import Data.List(minimumBy)
 import GSL
 import Vision
-import Trackball
 
 type Point = [Double]  -- provisional
 type Pixel = [Int]
@@ -59,7 +58,7 @@ main = do
     addWindow "3D view" (400,400) Nothing keyboard state
     keyboardMouseCallback $= Just (kc (keyboard state))
     motionCallback $= Just mc
-
+    depthFunc $= Just Less
 
     textureFilter Texture2D $= ((Nearest, Nothing), Nearest)
     textureFunction $= Decal
@@ -103,7 +102,7 @@ worker inWindow camera st@ST{new=False} = do
             renderPrimitive Points (vertices ps)
 
         inWindow "3D view" $ do
-            clear [ColorBuffer]
+            clear [ColorBuffer, DepthBuffer]
             trackball st
 
             mycolor 0 0 1

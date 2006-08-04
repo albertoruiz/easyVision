@@ -14,7 +14,7 @@
 module Main where
 
 import Ipp hiding (shift)
-import Graphics.UI.GLUT hiding (Matrix, drawPixels)
+import Graphics.UI.GLUT hiding (Matrix)
 import Data.IORef
 import System.Exit
 import Control.Monad(when)
@@ -22,7 +22,6 @@ import System.Environment(getArgs)
 import Data.List(minimumBy)
 import GSL
 import Vision
-import Trackball
 
 -------------------------------------------------------
 
@@ -85,6 +84,7 @@ main = do
 
     textureFilter Texture2D $= ((Nearest, Nothing), Nearest)
     textureFunction $= Decal
+    depthFunc $= Just Less
 
     launch state worker
 
@@ -139,7 +139,7 @@ worker inWindow camera st@ST{new=False} = do
 
         let r = scaling (zoom st) <> inv (cam0 st) -- hmm
         w <- img I32f floorSize floorSize
-        set32f 1.0 w (fullroi w)
+        set32f 0.25 w (fullroi w)
         let g im h = warpOn (r <> h) w im
         sequence_ $ Main.rotate sv $ zipWith g (imgs st) (hs st)
 
@@ -147,7 +147,7 @@ worker inWindow camera st@ST{new=False} = do
             drawImage w
 
         inWindow "3D view" $ do             -- 3D representation
-            clear [ColorBuffer]
+            clear [ColorBuffer, DepthBuffer]
             trackball st
 
             let ref = ht (inv (cam0 st)) (pts st !!0) -- the rectified homologous points
@@ -156,7 +156,7 @@ worker inWindow camera st@ST{new=False} = do
 
             let norw = pixel2pointTrans w
 
-            drawTexture w $ map (++[0]) $ ht hx [[1,1],[-1,1],[-1,-1],[1,-1]]
+            drawTexture w $ map (++[-0.01]) $ ht hx [[1,1],[-1,1],[-1,-1],[1,-1]]
 
             mycolor 0 0 1
             lineWidth $= 2
