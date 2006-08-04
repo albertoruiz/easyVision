@@ -22,6 +22,7 @@ import System.Environment(getArgs)
 import Data.List(minimumBy)
 import GSL
 import Vision
+import Trackball
 
 -------------------------------------------------------
 
@@ -38,20 +39,22 @@ data MyState = ST { imgs :: [Img]             -- selected views
                   , cams :: [Matrix]          -- estimated cameras
                   , drfuns :: [IO()]          -- drawing functions of floor and cameras
                   , world :: Maybe Img        -- the reconstruction
+                  , zoom :: Double            -- visualization scale of the rectified image
 
                   , new    :: Bool            -- a new view has been selected
                   , baseView ::Int            -- index of the desired base view 
                   , targetView :: Int         -- index of any other selected view
 
-                  , angle, angle' :: Double   -- provisional state for the viewpoint of the 3D view
-                  , zoom :: Double            -- visualization scale of the rectified image
-                  , dist:: Double             -- distance in the 3d view
+                  , trackball :: IO ()        -- viewpoint generator
+
                   }
 
 --------------------------------------------------------------
 main = do
     args <- getArgs
     cam@(_,_,(h,w)) <- openCamera (args!!0) Gray (288,384)
+
+    (tb,kc,mc) <- newTrackball
 
     state <- prepare cam ST { imgs=[]
                             , corners=[], marked = []
@@ -65,9 +68,10 @@ main = do
 
                             , baseView = 0, targetView = 0
 
-                            , angle = 0, angle' = 0
                             , zoom = 0.2
-                            , dist = 10
+
+                            , trackball = tb
+
                             }
 
     addWindow "camera" (w,h) Nothing marker state            -- shows the live video
@@ -76,6 +80,9 @@ main = do
     addWindow "world" (floorSize,floorSize) Nothing warpkbd state     -- combined metric rectification
 
     addWindow "3D view" (600,600) Nothing keyboard state     -- 3D representation
+    keyboardMouseCallback $= Just (kc (keyboard state))
+    motionCallback $= Just mc
+
     textureFilter Texture2D $= ((Nearest, Nothing), Nearest)
     textureFunction $= Decal
 
@@ -140,7 +147,8 @@ worker inWindow camera st@ST{new=False} = do
             drawImage w
 
         inWindow "3D view" $ do             -- 3D representation
-            setView st
+            clear [ColorBuffer]
+            trackball st
 
             let ref = ht (inv (cam0 st)) (pts st !!0) -- the rectified homologous points
             let wref = ht r (pts st !!0)              -- this same points in image w
@@ -206,21 +214,6 @@ worker inWindow camera st@ST{ new=True
               , drfuns = drs
               }
 
-------------------------------------------------------------------
-
-setView st = do
-    clear [ColorBuffer]
-    matrixMode $= Projection
-    loadIdentity
-    perspective 60 1 1 100
-    let ang = angle st
-    let ang' = angle' st
-    let d = dist st
-    lookAt (Vertex3 (d*sin ang*sin ang')
-                    (d*sin ang*cos ang')
-                    (d*cos ang))
-           (Vertex3 0 0 0)
-           (Vector3 0 1 0)
 ------------------------------------------------------
 
 compareBy f = (\a b-> compare (f a) (f b))
@@ -238,21 +231,6 @@ keyboard st (Char ' ') Down _ _ = do
     modifyIORef st $ \s -> s {pause = not (pause s)}
 keyboard _ (Char '\27') Down _ _ = do
     exitWith ExitSuccess
-
-keyboard st (MouseButton WheelUp) _ (Modifiers{ctrl = Down}) _ = do
-    modifyIORef st $ \s -> s {ust = (ust s) {dist = dist (ust s) *1.1}}
-keyboard st (MouseButton WheelDown) _ (Modifiers{ctrl = Down}) _ = do
-    modifyIORef st $ \s -> s {ust = (ust s) {dist = dist (ust s) /1.1}}
-
-keyboard st (MouseButton WheelUp) _ (Modifiers{shift = Down}) _ = do
-    modifyIORef st $ \s -> s {ust = (ust s) {angle' = angle' (ust s) + 1*degree}}
-keyboard st (MouseButton WheelDown) _ (Modifiers{shift = Down}) _ = do
-    modifyIORef st $ \s -> s {ust = (ust s) {angle' = angle' (ust s) -1*degree}}
-
-keyboard st (MouseButton WheelUp) _ _ _ = do
-    modifyIORef st $ \s -> s {ust = (ust s) {angle = angle (ust s) + 1*degree}}
-keyboard st (MouseButton WheelDown) _ _ _ = do
-    modifyIORef st $ \s -> s {ust = (ust s) {angle = angle (ust s) -1*degree}}
 
 keyboard st (SpecialKey KeyUp) Down _ _ = do
     modifyIORef st $ \s -> s {ust = (ust s) {baseView = min (length (imgs $ ust s)-1) $ baseView (ust s) + 1}}

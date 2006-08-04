@@ -24,7 +24,7 @@ data MyState = ST { imgs :: [Img]
                   , new    :: Bool
                   , basev ::Int
 
-                  , quat :: Quaternion, prev :: [Double]
+                  , trackball :: IO ()
                   }
 
 -- | snoc
@@ -38,6 +38,8 @@ main = do
     args <- getArgs
     cam@(_,_,(h,w)) <- openCamera (args!!0) Gray (288,384)
 
+    (tb,kc,mc) <- newTrackball
+
     state <- prepare cam ST { imgs=[]
                             , corners=[], marked = []
                             , pts=[]
@@ -48,17 +50,19 @@ main = do
 
                             , basev = 0
 
-                            , quat = Quat { qs = 1.0, qv = realVector [0,0,0]}
-                            , prev = []
+                            , trackball = tb
                             }
 
     addWindow "camera" (w,h) Nothing marker state
     addWindow "selected" (w,h) Nothing keyboard state
 
-    addWindow "3D view" (400,400) Nothing quatkbd state
+    addWindow "3D view" (400,400) Nothing keyboard state
+    keyboardMouseCallback $= Just (kc (keyboard state))
+    motionCallback $= Just mc
+
+
     textureFilter Texture2D $= ((Nearest, Nothing), Nearest)
     textureFunction $= Decal
-    motionCallback $= Just (quatmot state)
     launch state worker
 
 -------------------------------------------------------------------
@@ -99,7 +103,8 @@ worker inWindow camera st@ST{new=False} = do
             renderPrimitive Points (vertices ps)
 
         inWindow "3D view" $ do
-            setView st
+            clear [ColorBuffer]
+            trackball st
 
             mycolor 0 0 1
             lineWidth $= 2
@@ -130,21 +135,6 @@ worker inWindow camera st@ST{ new=True
               , cams = cs =< cam
               , drfuns = funs =< drawCamera 1 cam imt
               }
-
-
-setView st = do
-    clear [ColorBuffer]
-    matrixMode $= Projection
-    loadIdentity
-    perspective 40 1 1 100
-    lookAt (Vertex3 0 0 40)
-           (Vertex3 0 0 0)
-           (Vector3 0 1 0)
-    let m = getRotation (quat st)
-    mat <- newMatrix RowMajor (toList (flatten m)) :: IO (GLmatrix GLdouble)
-    matrixMode $= Modelview 0
-    loadIdentity
-    multMatrix mat
 
 ------------------------------------------------------
 
@@ -186,23 +176,3 @@ marker st (MouseButton RightButton) Down _ pos@(Position x y) = do
 marker st b s m p = keyboard st b s m p
 
 --------------------------------------------------------------------
-
-quatkbd st (MouseButton LeftButton) Down _ pos@(Position x y) = do
-    modifyIORef st $ \s -> s { ust = (ust s) { prev = [(fromIntegral x - 200 )/ 400, -(fromIntegral y -200) / 400]} }
-
-quatkbd st (MouseButton LeftButton) Up _ pos@(Position x y) = do
-    modifyIORef st $ \s -> s { ust = (ust s) {prev = []} }
-
-quatkbd st (Char 'o') Down _ _ = do
-    modifyIORef st $ \s -> s { ust = (ust s) { quat = Quat { qs = 1.0, qv = realVector [0,0,0]}} }
-
-quatkbd st b s m p = keyboard st b s m p
-
-quatmot str pos@(Position x y) = do
-    let [xc,yc] = [(fromIntegral x - 200 )/ 400, -(fromIntegral y -200) / 400]
-    st <- readIORef str
-    case prev (ust st) of
-        [] -> return ()
-        [xp,yp] -> do
-            let q = trackball (xp,yp) (xc,yc) .*. quat (ust st)
-            writeIORef str st {ust = (ust st) {quat = q, prev = [xc,yc]}}

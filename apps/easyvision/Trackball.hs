@@ -1,6 +1,10 @@
-module Trackball where
+-- TO DO: adapt size
+
+module Trackball (newTrackball) where
 
 import GSL
+import Graphics.UI.GLUT hiding (normalize)
+import Data.IORef
 
 data Quaternion = Quat {qs::Double, qv::Vector}
 
@@ -11,7 +15,7 @@ infixl 5 .+.
 Quat{ qs = a, qv = u } .+. Quat{ qs = t, qv = v } =
   Quat { qs = a + t , qv = u + v }
 
--- Grassmann product
+-- composition of rotations (Grassmann product)
 infixl 7 .*.
 Quat{ qs = a, qv = u } .*. Quat{ qs = t, qv = v } = normalize $
     Quat { qs = a*t - u<>v, qv = a<>v + t<>u + u >< v }
@@ -22,7 +26,7 @@ axisToQuat phi axis = Quat { qs = cos (phi/2), qv = sin (phi/2) <> v }
     where v = recip (norm axis) <> axis
 
 --------------------------------------
-getRotation Quat {qs = w, qv = v} = reshape 4 $ realVector
+getRotation Quat {qs = w, qv = v} =
     [ 1.0 - 2.0 * (y^2 + z^2)
     , 2.0 * (x*y - w*z)
     , 2.0 * (z*x + w*y)
@@ -98,3 +102,59 @@ trackball (x',y') (x,y)
     phi = 2 * asin t
     t' = norm (p1-p2) / (2*trackballSize)
     t = max (-1) (min 1 t')
+
+----------------------------------------------------------------------
+
+data TrackballState = TBST {quat :: Quaternion, prev :: [Double],
+                            dist ::Double, wsize :: Double}
+
+newTrackball = do
+    st <- newIORef TBST { quat = Quat {qs = 1.0, qv = realVector [0,0,0]},
+                          prev = [], dist = 20, wsize = 400 }
+    let trackball = do
+            s <- readIORef st
+            let rot = getRotation (quat s)
+            mat <- newMatrix RowMajor rot :: IO (GLmatrix GLdouble)
+            matrixMode $= Projection
+            loadIdentity
+            perspective 40 1 1 100
+            lookAt (Vertex3 0 0 (dist s))
+                   (Vertex3 0 0 0)
+                   (Vector3 0 1 0)
+            matrixMode $= Modelview 0
+            loadIdentity
+            multMatrix mat
+            Size sz _ <- get windowSize
+            writeIORef st s {wsize = fromIntegral sz}
+
+    return (trackball, quatkbd st, quatmot st)
+
+
+quatkbd str _ (MouseButton LeftButton) Down _ pos@(Position x y) = do
+    st <- readIORef str
+    let sz = wsize st
+    let sz2 = sz/2
+    writeIORef str st { prev = [(fromIntegral x - sz2 )/ sz,
+                               -(fromIntegral y - sz2) / sz]}
+
+quatkbd str _ (Char 'o') Down _ _ = do
+    modifyIORef str $ \s -> s { quat = Quat { qs = 1.0, qv = realVector [0,0,0]} }
+
+quatkbd st _ (MouseButton WheelUp) _ _ _ = do
+    modifyIORef st $ \s -> s { dist = dist s *1.1}
+quatkbd st _ (MouseButton WheelDown) _ _ _ = do
+    modifyIORef st $ \s -> s { dist = dist s /1.1}
+
+quatkbd _ k b s m p = k b s m p
+
+quatmot str pos@(Position x y) = do
+    st <- readIORef str
+    let sz = wsize st
+    let sz2 = sz/2
+    let [xc,yc] = [(fromIntegral x - sz2 )/ sz,
+                  -(fromIntegral y - sz2) / sz]
+    case prev st of
+        [] -> return ()
+        [xp,yp] -> do
+            let q = trackball (xp,yp) (xc,yc) .*. quat st
+            writeIORef str st {quat = q, prev = [xc,yc]}
