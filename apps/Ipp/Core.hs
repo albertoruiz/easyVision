@@ -18,7 +18,7 @@ Basic infrastructure to access the IPP.
 
 module Ipp.Core
           ( Img(..), ImageType(..)
-          , img, imgAs, getData
+          , img, imgAs, getData, setData32f,
           , ROI(..), fullroi, shrink, shift, intersection
           , src, dst, checkIPP, warningIPP, (//)
           , ippRect
@@ -80,6 +80,14 @@ getData (Img {fptr = fp, ptr = p, datasize = d, step = s, height = r, width = c}
     r <- mapM row [0 .. r-1]
     touchForeignPtr fp
     return r
+
+setData32f :: Img -> [[Float]] -> IO ()
+setData32f Img {fptr = fp, ptr = p,
+               datasize = d, step = s, height = r, width = c} vs = do
+    let jump = s `quot` d
+    touchForeignPtr fp
+    let row k l = pokeArray (advancePtr (castPtr p) (k*jump)) l
+    sequence_ $ zipWith row [0..r-1] vs
 
 
 data ROI = ROI { r1, r2, c1, c2 :: Int} deriving Show

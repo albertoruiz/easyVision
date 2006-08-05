@@ -19,7 +19,7 @@ import Data.IORef
 import System.Exit
 import Control.Monad(when)
 import System.Environment(getArgs)
-import Data.List(minimumBy)
+import Data.List(minimumBy, elemIndex)
 import GSL
 import Vision
 
@@ -37,7 +37,7 @@ data MyState = ST { imgs :: [Img]             -- selected views
                   , cam0 :: Matrix            -- solution
                   , cams :: [Matrix]          -- estimated cameras
                   , drfuns :: [IO()]          -- drawing functions of floor and cameras
-                  , world :: Maybe Img        -- the reconstruction
+                  , cost  :: Maybe Img        -- the cost function
                   , zoom :: Double            -- visualization scale of the rectified image
 
                   , new    :: Bool            -- a new view has been selected
@@ -45,7 +45,6 @@ data MyState = ST { imgs :: [Img]             -- selected views
                   , targetView :: Int         -- index of any other selected view
 
                   , trackball :: IO ()        -- viewpoint generator
-
                   }
 
 --------------------------------------------------------------
@@ -60,7 +59,7 @@ main = do
                             , pts=[]
                             , cams=[], hs = []
                             , cam0 = ident 3
-                            , world = Nothing
+                            , cost = Nothing
                             , drfuns=[]
 
                             , new = False
@@ -77,6 +76,7 @@ main = do
     addWindow "base" (w,h) Nothing keyboard state            -- desired base view
     addWindow "selected" (w,h) Nothing keyboard state        -- target view warped into the base view
     addWindow "world" (floorSize,floorSize) Nothing warpkbd state     -- combined metric rectification
+    addWindow "cost" (100,100) Nothing keyboard state        -- the cost function
 
     addWindow "3D view" (600,600) Nothing keyboard state     -- 3D representation
     keyboardMouseCallback $= Just (kc (keyboard state))
@@ -95,10 +95,13 @@ encuadra h = desp (-a,-b) where
 
 genInterimage views = map (estimateHomography (head views)) (id views)
 
-environment n dr dy (r,y) fun = reshape n $ realVector vals where
+explore n dr dy (r,y) fun = (argmin, partit n vals) where
     a = toList $ linspace n (r-dr,r+dr)
     b = toList $ linspace n (y-dy,y+dy)
-    vals = [ fun (r',y') | r' <- a, y' <- b]
+    args = [ (r',y') | r' <- a, y' <- b]
+    vals = map (fromRational.toRational.fun) args
+    argmin = args!!posMin vals
+    posMin l = k where Just k = elemIndex (minimum l) l
 
 rotate n list = take (length list) $ drop n $ cycle list
 
@@ -119,7 +122,7 @@ worker inWindow camera st@ST{new=False} = do
 
     let n = length (imgs st)
 
-    when (n > 0) $ do
+    when (n > 1) $ do
         let bv = baseView st
         let sv = targetView st
         let ps = pts st !! bv
@@ -141,10 +144,14 @@ worker inWindow camera st@ST{new=False} = do
         w <- img I32f floorSize floorSize
         set32f 0.25 w (fullroi w)
         let g im h = warpOn (r <> h) w im
-        sequence_ $ Main.rotate sv $ zipWith g (imgs st) (hs st)
+        sequence_ $ reverse $ Main.rotate sv $ zipWith g (imgs st) (hs st)
 
         inWindow "world" $ do         -- automatically rectified plane
             drawImage w
+
+        case cost st of
+            Nothing -> return ()
+            Just c  -> inWindow "cost" (resize32f (100,100) c >>= drawImage)
 
         inWindow "3D view" $ do             -- 3D representation
             clear [ColorBuffer, DepthBuffer]
@@ -162,9 +169,14 @@ worker inWindow camera st@ST{new=False} = do
             lineWidth $= 2
             renderPrimitive LineLoop $ vertices ref
 
+            let drawcams = Main.rotate sv (drfuns st)
             mycolor 1 1 1
             lineWidth $= 1
-            sequence_ (drfuns st)
+            sequence_ (tail drawcams)
+
+            mycolor 1 0 0
+            head drawcams
+
 
     return st {corners = hotPoints}
 
@@ -184,21 +196,25 @@ worker inWindow camera st@ST{ new=True
     let interhomog = genInterimage points
 
     let info = AllKnown (repeat 2.8)
-    -- let info = F1Known 2.8
-    -- let info = ConstantUnknown
+    --let info = F1Known 2.8
+    --let info = ConstantUnknown
 
     let uhs = tail interhomog
     let f = consistency info uhs
-    let [rho,yh] = fst $ findSol f (0, 2)
+
+    let explsz = 50                  -- coarse exploration of the error surface
+    costsurf <- img I32f 50 50
+    let (minim,cost) = explore 50 (60*degree) 3 (0,2) f
+    setData32f costsurf cost
+
+    let [rho,yh] = fst $ findSol f minim     -- detailed optimization from the minimum
     let (c0,_) = extractInfo info uhs (rho, yh)
     let r0 = inv (c0<> diag (realVector[-1,1,1])) -- move to Autofrontal.hs ?
     let c0' = inv $ encuadra r0 <> r0
 
     print(rho, yh, f(rho,yh))
     mapM_ (print . focalFromHomogZ0 . (<> c0). inv) uhs
-    when False $ do
-        writeFile "real.txt" . show . foldr1 (<->) $ uhs
-        imshow $ environment 100 (20*degree) 0.5 (rho,yh) f
+    --writeFile "real.txt" . show . foldr1 (<->) $ uhs
 
     let cameras = map (cameraFromHomogZ0 Nothing. (<>c0'). inv) interhomog
     textures <- mapM (extractSquare 64) images
@@ -212,6 +228,7 @@ worker inWindow camera st@ST{ new=True
               , targetView = length images -1
               , cam0 = c0'
               , drfuns = drs
+              , cost = Just costsurf
               }
 
 ------------------------------------------------------
