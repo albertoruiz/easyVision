@@ -45,6 +45,7 @@ data MyState = ST { imgs :: [Img]             -- selected views
                   , targetView :: Int         -- index of any other selected view
 
                   , trackball :: IO ()        -- viewpoint generator
+                  , counter :: Int -- hmm...
                   }
 
 --------------------------------------------------------------
@@ -68,7 +69,7 @@ main = do
 
                             , zoom = 0.2
 
-                            , trackball = tb
+                            , trackball = tb, counter = 0
 
                             }
 
@@ -103,7 +104,7 @@ explore n dr dy (r,y) fun = (argmin, partit n vals) where
     argmin = args!!posMin vals
     posMin l = k where Just k = elemIndex (minimum l) l
 
-rotate n list = take (length list) $ drop n $ cycle list
+rotateList n list = take (length list) $ drop n $ cycle list
 
 ---------------------------------------------------------------------
 
@@ -144,7 +145,7 @@ worker inWindow camera st@ST{new=False} = do
         w <- img I32f floorSize floorSize
         set32f 0.25 w (fullroi w)
         let g im h = warpOn (r <> h) w im
-        sequence_ $ reverse $ Main.rotate sv $ zipWith g (imgs st) (hs st)
+        sequence_ $ reverse $ rotateList sv $ zipWith g (imgs st) (hs st)
 
         inWindow "world" $ do         -- automatically rectified plane
             drawImage w
@@ -156,6 +157,7 @@ worker inWindow camera st@ST{new=False} = do
         inWindow "3D view" $ do             -- 3D representation
             clear [ColorBuffer, DepthBuffer]
             trackball st
+            rotate (fromIntegral (counter st)) $ Vector3 0 0 (1::GLdouble)
 
             let ref = ht (inv (cam0 st)) (pts st !!0) -- the rectified homologous points
             let wref = ht r (pts st !!0)              -- this same points in image w
@@ -169,7 +171,7 @@ worker inWindow camera st@ST{new=False} = do
             lineWidth $= 2
             renderPrimitive LineLoop $ vertices ref
 
-            let drawcams = Main.rotate sv (drfuns st)
+            let drawcams = rotateList sv (drfuns st)
             mycolor 1 1 1
             lineWidth $= 1
             sequence_ (tail drawcams)
@@ -177,8 +179,9 @@ worker inWindow camera st@ST{new=False} = do
             mycolor 1 0 0
             head drawcams
 
+    let c' = counter st + 1
 
-    return st {corners = hotPoints}
+    return st {corners = hotPoints, counter = c'}
 
 --------------------------------------------------------------------------
 
@@ -218,7 +221,7 @@ worker inWindow camera st@ST{ new=True
 
     let cameras = map (cameraFromHomogZ0 Nothing. (<>c0'). inv) interhomog
     textures <- mapM (extractSquare 64) images
-    let drs = [drawCamera 0.4 c t | (Just c,t) <- zip cameras textures]
+    let drs = [drawCamera 0.4 c (Just t) | (Just c,t) <- zip cameras textures]
 
     return st { new=False
               , marked = []

@@ -132,7 +132,7 @@ worker inWindow camera st@ST{ new=True
               , pts = ps =< hp
               , imgs = ims =< camera
               , cams = cs =< cam
-              , drfuns = funs =< drawCamera 1 cam imt
+              , drfuns = funs =< drawCamera 1 cam (Just imt)
               }
 
 ------------------------------------------------------

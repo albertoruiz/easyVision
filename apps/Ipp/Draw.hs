@@ -13,7 +13,17 @@ HOpenGL drawing utilities.
 -}
 -----------------------------------------------------------------------------
 
-module Ipp.Draw where
+module Ipp.Draw
+( drawImage
+, drawTexture
+, mycolor
+, pointCoordinates
+, pixelCoordinates
+, vertices, vertices'
+, drawCamera
+, extractSquare
+, newTrackball
+) where
 
 import Graphics.UI.GLUT hiding (RGB)
 import qualified Graphics.UI.GLUT as GL
@@ -24,6 +34,8 @@ import Foreign (touchForeignPtr)
 import GSL
 import Vision
 import Ipp.Trackball
+
+
 
 myDrawPixels m@Img{itype=RGB} = 
     GL.drawPixels (Size (fromIntegral $ step m `quot` 3) (fromIntegral $ height m))
@@ -110,13 +122,13 @@ vertices' = vts . map (map fromIntegral) where
     vts = vertices
 
 -- | It shows the outline of a camera and an optional image in it
-showcam size cam Nothing = do
+drawCamera size cam Nothing = do
     let (invcam,f) = toCameraSystem cam
     let m = invcam<>diag (realVector[1,1,1,1/size])
     let outline = ht m (cameraOutline f)
     renderPrimitive LineLoop $ vertices outline
 
-showcam size cam (Just imgtext) = do
+drawCamera size cam (Just imgtext) = do
     let (invcam,f) = toCameraSystem cam
     let m = invcam<>diag (realVector[1,1,1,1/size])
     let outline = ht m (cameraOutline f)
@@ -128,13 +140,9 @@ showcam size cam (Just imgtext) = do
                [ q, -q, f]]
     renderPrimitive LineLoop $ vertices outline
 
-drawCamera size cam im = showcam size cam (Just im)
-
 extractSquare sz im = resize32f (sz,sz) im {vroi = roi} where
     w = width im
     h = height im
     d = w-h
     dm = d `quot` 2
     roi = (vroi im) {c1=dm-1,c2= dm+h}
-
-newTrackball = Ipp.Trackball.newTrackball

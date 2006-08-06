@@ -106,6 +106,10 @@ trackball (x',y') (x,y)
 data TrackballState = TBST {quat :: Quaternion, prev :: [Double],
                             dist ::Double, wsize :: Double}
 
+
+{- | This function creates a virtual trackball to control the viewpoint in a 3D window. It returns an @IO()@ which sets the appropriate rotation in the current window and the keyboard and mouse movement callbacks which controls the trackball. The keyboard callback admits a default callback. See usage examples in @pose.hs@ and @frontal.hs@.
+-}
+newTrackball :: IO ( (IO(), KeyboardMouseCallback -> KeyboardMouseCallback, MotionCallback)  )
 newTrackball = do
     st <- newIORef TBST { quat = Quat {qs = 1.0, qv = realVector [0,0,0]},
                           prev = [], dist = 20, wsize = 400 }
