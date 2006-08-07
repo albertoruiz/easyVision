@@ -81,7 +81,7 @@ launch state worker = do
         when (not (pause st)) $ do
             im <- grab (camid st)
             writeIORef state (st {camera = im})
-        st <- readIORef state    
+        st <- readIORef state
         newstate <- worker (inWindow st) (camera st) (ust st)
         writeIORef state st {frame = frame st +1, ust = newstate}
         )
@@ -104,7 +104,7 @@ installWindow name (wid,hei) (Just fun) kbdcallback state = do
         clear [ColorBuffer]
         st <- readIORef state
         fun st
-        swapBuffers  
+        swapBuffers
 
 installWindow name (wid,hei) Nothing kbdcallback state = do
     w <- createWindow name

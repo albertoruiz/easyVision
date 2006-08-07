@@ -35,7 +35,6 @@ data MyState = ST { imgs :: [Img]             -- selected views
                   , pts  :: [[Point]]         -- homologous points of the selected images
                   , hs   :: [Matrix]          -- interimage homographies
                   , cam0 :: Matrix            -- solution
-                  , cams :: [Matrix]          -- estimated cameras
                   , drfuns :: [IO()]          -- drawing functions of floor and cameras
                   , cost  :: Maybe Img        -- the cost function
                   , zoom :: Double            -- visualization scale of the rectified image
@@ -45,7 +44,6 @@ data MyState = ST { imgs :: [Img]             -- selected views
                   , targetView :: Int         -- index of any other selected view
 
                   , trackball :: IO ()        -- viewpoint generator
-                  , counter :: Int -- hmm...
                   }
 
 --------------------------------------------------------------
@@ -58,7 +56,7 @@ main = do
     state <- prepare cam ST { imgs=[]
                             , corners=[], marked = []
                             , pts=[]
-                            , cams=[], hs = []
+                            , hs = []
                             , cam0 = ident 3
                             , cost = Nothing
                             , drfuns=[]
@@ -69,7 +67,7 @@ main = do
 
                             , zoom = 0.2
 
-                            , trackball = tb, counter = 0
+                            , trackball = tb
 
                             }
 
@@ -77,7 +75,7 @@ main = do
     addWindow "base" (w,h) Nothing keyboard state            -- desired base view
     addWindow "selected" (w,h) Nothing keyboard state        -- target view warped into the base view
     addWindow "world" (floorSize,floorSize) Nothing warpkbd state     -- combined metric rectification
-    addWindow "cost" (100,100) Nothing keyboard state        -- the cost function
+    addWindow "cost" (200,200) Nothing keyboard state        -- the cost function
 
     addWindow "3D view" (600,600) Nothing keyboard state     -- 3D representation
     keyboardMouseCallback $= Just (kc (keyboard state))
@@ -120,22 +118,23 @@ worker inWindow camera st@ST{new=False} = do
         mycolor 0 0 1
         renderPrimitive Points (vertices (marked st))
 
-
     let n = length (imgs st)
 
-    when (n > 1) $ do
-        let bv = baseView st
-        let sv = targetView st
-        let ps = pts st !! bv
-        let h = inv (hs st !! bv) <> (hs st !! sv) -- from selected to base
+    let bv = baseView st
+    let sv = targetView st
+    let ps = pts st !! bv
+    let h = inv (hs st !! bv) <> (hs st !! sv) -- from selected to base
 
-        inWindow "base" $ do                -- base view
+    when (n > 0) $ do
+        inWindow "base" $ do                   -- base view
             drawImage $ imgs st !! bv
             pointCoordinates (4,3)
             mycolor 0.75 0 0
             renderPrimitive LineLoop (vertices ps)
             pointSize $= 5
             renderPrimitive Points (vertices ps)
+
+    when (n > 1) $ do
 
         inWindow "selected" $ do            -- selected view warped into the base view
             w <- warp (288,384) h (imgs st !! sv)
@@ -152,12 +151,11 @@ worker inWindow camera st@ST{new=False} = do
 
         case cost st of
             Nothing -> return ()
-            Just c  -> inWindow "cost" (resize32f (100,100) c >>= drawImage)
+            Just c  -> inWindow "cost" (drawImage c)
 
         inWindow "3D view" $ do             -- 3D representation
             clear [ColorBuffer, DepthBuffer]
             trackball st
-            rotate (fromIntegral (counter st)) $ Vector3 0 0 (1::GLdouble)
 
             let ref = ht (inv (cam0 st)) (pts st !!0) -- the rectified homologous points
             let wref = ht r (pts st !!0)              -- this same points in image w
@@ -179,9 +177,7 @@ worker inWindow camera st@ST{new=False} = do
             mycolor 1 0 0
             head drawcams
 
-    let c' = counter st + 1
-
-    return st {corners = hotPoints, counter = c'}
+    return st {corners = hotPoints}
 
 --------------------------------------------------------------------------
 
@@ -189,7 +185,6 @@ worker inWindow camera st@ST{ new=True
                             , marked = m
                             , pts = ps
                             , imgs = ims
-                            , cams = cs
                             , drfuns = funs } = do
     let hp = pixelToPoint camera m
     im  <- scale8u32f 0 1 camera
@@ -206,9 +201,10 @@ worker inWindow camera st@ST{ new=True
     let f = consistency info uhs
 
     let explsz = 50                  -- coarse exploration of the error surface
-    costsurf <- img I32f 50 50
-    let (minim,cost) = explore 50 (60*degree) 3 (0,2) f
-    setData32f costsurf cost
+    costsurf' <- img I32f 50 50
+    let (minim,cost) = explore 50 (60*degree) 3 (0,2) ((0.5*).f)
+    setData32f costsurf' cost
+    costsurf <- resize32f (200,200) costsurf'
 
     let [rho,yh] = fst $ findSol f minim     -- detailed optimization from the minimum
     let (c0,_) = extractInfo info uhs (rho, yh)

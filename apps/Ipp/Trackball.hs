@@ -104,7 +104,7 @@ trackball (x',y') (x,y)
 ----------------------------------------------------------------------
 
 data TrackballState = TBST {quat :: Quaternion, prev :: [Double],
-                            dist ::Double, wsize :: Double}
+                            dist ::Double, wsize :: Double, vertAngle:: Double}
 
 
 {- | This function creates a virtual trackball to control the viewpoint in a 3D window. It returns an @IO()@ which sets the appropriate rotation in the current window and the keyboard and mouse movement callbacks which controls the trackball. The keyboard callback admits a default callback. See usage examples in @pose.hs@ and @frontal.hs@.
@@ -112,7 +112,7 @@ data TrackballState = TBST {quat :: Quaternion, prev :: [Double],
 newTrackball :: IO ( (IO(), KeyboardMouseCallback -> KeyboardMouseCallback, MotionCallback)  )
 newTrackball = do
     st <- newIORef TBST { quat = Quat {qs = 1.0, qv = realVector [0,0,0]},
-                          prev = [], dist = 20, wsize = 400 }
+                          prev = [], dist = 20, wsize = 400, vertAngle = 0 }
     let trackball = do
             s <- readIORef st
             let rot = getRotation (quat s)
@@ -126,6 +126,7 @@ newTrackball = do
             matrixMode $= Modelview 0
             loadIdentity
             multMatrix mat
+            rotate (vertAngle s) (Vector3 0 0 (1::GLdouble))
             Size sz _ <- get windowSize
             writeIORef st s {wsize = fromIntegral sz}
 
@@ -142,10 +143,16 @@ quatkbd str _ (MouseButton LeftButton) Down _ pos@(Position x y) = do
 quatkbd str _ (Char 'o') Down _ _ = do
     modifyIORef str $ \s -> s { quat = Quat { qs = 1.0, qv = realVector [0,0,0]} }
 
+quatkbd st _ (MouseButton WheelUp) _ (Modifiers{shift=Down}) _ = do
+    modifyIORef st $ \s -> s { vertAngle = vertAngle s + 1 }
+quatkbd st _ (MouseButton WheelDown) _ (Modifiers{shift=Down}) _ = do
+    modifyIORef st $ \s -> s { vertAngle = vertAngle s - 1 }
+
 quatkbd st _ (MouseButton WheelUp) _ _ _ = do
     modifyIORef st $ \s -> s { dist = dist s *1.1}
 quatkbd st _ (MouseButton WheelDown) _ _ _ = do
     modifyIORef st $ \s -> s { dist = dist s /1.1}
+
 
 quatkbd _ k b s m p = k b s m p
 
