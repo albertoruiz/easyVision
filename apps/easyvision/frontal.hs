@@ -4,6 +4,8 @@
 --   put online the demo video
 --   average world fragments
 --   online selection of the prior calibration info
+--   user selected horizon by clicking on the error surface
+--   semi-automatic selection of points
 
 -- This should work with a firewire camera: 
 --    $ ./a.out /dev/dv1394
@@ -39,7 +41,6 @@ data MyState = ST { imgs :: [Img]             -- selected views
                   , cost  :: Maybe Img        -- the cost function
                   , zoom :: Double            -- visualization scale of the rectified image
 
-                  , new    :: Bool            -- a new view has been selected
                   , baseView ::Int            -- index of the desired base view 
                   , targetView :: Int         -- index of any other selected view
 
@@ -61,14 +62,11 @@ main = do
                             , cost = Nothing
                             , drfuns=[]
 
-                            , new = False
-
                             , baseView = 0, targetView = 0
 
                             , zoom = 0.2
 
                             , trackball = tb
-
                             }
 
     addWindow "camera" (w,h) Nothing marker state            -- shows the live video
@@ -106,7 +104,7 @@ rotateList n list = take (length list) $ drop n $ cycle list
 
 ---------------------------------------------------------------------
 
-worker inWindow camera st@ST{new=False} = do
+worker inWindow camera st = do
     hotPoints <- getCorners 1 7 0.1 200 camera
 
     inWindow "camera" $ do
@@ -139,6 +137,8 @@ worker inWindow camera st@ST{new=False} = do
         inWindow "selected" $ do            -- selected view warped into the base view
             w <- warp (288,384) h (imgs st !! sv)
             drawImage w
+
+    when (length (drfuns st) > 1) $ do
 
         let r = scaling (zoom st) <> inv (cam0 st) -- hmm
         w <- img I32f floorSize floorSize
@@ -181,23 +181,13 @@ worker inWindow camera st@ST{new=False} = do
 
 --------------------------------------------------------------------------
 
-worker inWindow camera st@ST{ new=True
-                            , marked = m
-                            , pts = ps
-                            , imgs = ims
-                            , drfuns = funs } = do
-    let hp = pixelToPoint camera m
-    im  <- scale8u32f 0 1 camera
-    imtext <- extractSquare 128 im
-    let images = ims ++ [im]
-    let points = ps ++ [hp]
-    let interhomog = genInterimage points
+compute st = do
 
     let info = AllKnown (repeat 2.8)
     --let info = F1Known 2.8
     --let info = ConstantUnknown
 
-    let uhs = tail interhomog
+    let uhs = tail (hs st)
     let f = consistency info uhs
 
     let explsz = 50                  -- coarse exploration of the error surface
@@ -215,17 +205,11 @@ worker inWindow camera st@ST{ new=True
     mapM_ (print . focalFromHomogZ0 . (<> c0). inv) uhs
     --writeFile "real.txt" . show . foldr1 (<->) $ uhs
 
-    let cameras = map (cameraFromHomogZ0 Nothing. (<>c0'). inv) interhomog
-    textures <- mapM (extractSquare 64) images
+    let cameras = map (cameraFromHomogZ0 Nothing. (<>c0'). inv) (hs st)
+    textures <- mapM (extractSquare 64) (imgs st)
     let drs = [drawCamera 0.4 c (Just t) | (Just c,t) <- zip cameras textures]
 
-    return st { new=False
-              , marked = []
-              , pts = points
-              , imgs = images
-              , hs = interhomog
-              , targetView = length images -1
-              , cam0 = c0'
+    return st { cam0 = c0'
               , drfuns = drs
               , cost = Just costsurf
               }
@@ -267,7 +251,19 @@ marker str (MouseButton LeftButton) Down _ pos@(Position x y) = do
     let u = ust (st)
     let newpoint = closest (corners u) $ map fromIntegral [x,y]
     let m = newpoint : marked u
-    writeIORef str st { ust = u {marked = m, new = length m == 4} }
+    if (length m /= 4)
+        then writeIORef str st { ust = u {marked = m} }
+        else do
+            let hp = pixelToPoint (camera st) m
+            im  <- scale8u32f 0 1 (camera st)
+            let u' = u { marked = []
+                       , imgs = imgs u ++ [im]
+                       , pts = pts u ++ [hp]
+                       , hs = genInterimage (pts u')
+                       , targetView = length (imgs u') -1
+                       }
+            v <- compute u' -- automatically updated on the fourth point
+            writeIORef str st { ust = v }
 
 marker st (MouseButton RightButton) Down _ pos@(Position x y) = do
     modifyIORef st $ \s -> s {ust = (ust s) {marked = tail $ marked (ust s) }}
