@@ -40,7 +40,7 @@ worker inWindow camera st = do
 
     (mn,mx) <- Ipp.minmax h
     hotPoints <- localMax 7 h
-             >>= thresholdVal32f (mx/5) 0.0 ippCmpLess
+             >>= thresholdVal32f (mx/5) 0.0 IppCmpLess
              >>= getPoints32f 1000
 
     let corners = map (reverse . map fromIntegral) hotPoints

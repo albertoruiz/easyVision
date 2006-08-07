@@ -122,7 +122,7 @@ worker inWindow camera st@ST{ new=True
                             , imgs = ims
                             , cams = cs
                             , drfuns = funs } = do
-    let fix = pixel2point camera
+    let fix = pixelToPoint camera
     let hp = reverse (fix m)
     im  <- scale8u32f 0 1 camera
     let cam = recover hp

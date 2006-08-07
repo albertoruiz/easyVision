@@ -163,7 +163,7 @@ worker inWindow camera st@ST{new=False} = do
             let wref = ht r (pts st !!0)              -- this same points in image w
             let hx = estimateHomography ref wref
 
-            let norw = pixel2pointTrans w
+            let norw = pixelToPointTrans w
 
             drawTexture w $ map (++[-0.01]) $ ht hx [[1,1],[-1,1],[-1,-1],[1,-1]]
 
@@ -191,7 +191,7 @@ worker inWindow camera st@ST{ new=True
                             , imgs = ims
                             , cams = cs
                             , drfuns = funs } = do
-    let hp = pixel2point camera m
+    let hp = pixelToPoint camera m
     im  <- scale8u32f 0 1 camera
     imtext <- extractSquare 128 im
     let images = ims ++ [im]
