@@ -1,3 +1,5 @@
+{-# OPTIONS -fglasgow-exts #-}
+
 -----------------------------------------------------------------------------
 {- |
 Module      :  Ipp.Draw
@@ -14,18 +16,18 @@ HOpenGL drawing utilities.
 -----------------------------------------------------------------------------
 
 module Ipp.Draw
-( drawImage
+( pointCoordinates
+, pixelCoordinates
+, drawImage
 , drawTexture
 , mycolor
-, pointCoordinates
-, pixelCoordinates
 , vertices, vertices'
 , drawCamera
 , extractSquare
 , newTrackball
 ) where
 
-import Graphics.UI.GLUT hiding (RGB)
+import Graphics.UI.GLUT hiding (RGB, Matrix)
 import qualified Graphics.UI.GLUT as GL
 import Ipp.Core
 import Ipp.Typical(resize32f)
@@ -49,6 +51,8 @@ myDrawPixels m@Img{itype=I32f} =
     GL.drawPixels (Size (fromIntegral $ step m `quot` (datasize m)) (fromIntegral $ height m))
                   (PixelData Luminance Float (ptr m))
 
+-- | Draws an image in the current window.
+drawImage :: Img -> IO ()
 drawImage m = do
     matrixMode $= Projection
     loadIdentity
@@ -71,7 +75,8 @@ drawImage m = do
 
 --------------------------------------------------------------------------------
 
---avoid sizes which are not a power of 2
+-- | Draws an image 32f as a texture in the current window, in the desired 3D coordinates corresponding to (0,0), (1,0), (1,1), (0,1). (Drawing is very fast if the sizes powers of 2.)
+drawTexture :: Img -> [[Double]] -> IO ()
 drawTexture im@Img {itype = I32f} [v1,v2,v3,v4] = do
     texImage2D  Nothing
                 NoProxy
@@ -98,11 +103,17 @@ drawTexture im@Img {itype = I32f} [v1,v2,v3,v4] = do
 
 ------------------------------------------------------------
 
+-- | Sets the current color to the given R, G, and B components.
+mycolor :: Float -> Float -> Float -> IO ()
 mycolor r g b = currentColor $= Color4 r g (b::GLfloat) 1
 
+-- | Sets ortho2D to draw 2D normalized points in a right handed 3D system (x from -1 (left) to +1 (right) and y from -1 (bottom) to +1 (top)).
+pointCoordinates :: (Int,Int) -> IO()
 pointCoordinates (w,h) = draw2Dwith (ortho2D 1 (-1) (-r) r)
     where r = fromIntegral h / fromIntegral w
 
+-- | Sets ortho2D to draw 2D unnormalized pixels as x (column, 0 left) and y (row, 0 top).
+pixelCoordinates :: (Int,Int) -> IO()
 pixelCoordinates (w,h) = draw2Dwith (ortho2D 0 (fromIntegral w-1) (fromIntegral h-1) 0)
 
 draw2Dwith ortho = do
@@ -112,16 +123,21 @@ draw2Dwith ortho = do
     matrixMode $= Modelview 0
     loadIdentity
 
+-- Applies @vertex@ to the @[x,y]@ or @[x,y,z]@ entries in a list, converted to @Vertex3 x y 0@ or @Vertex3 x y z@.
+vertices :: (Num a, Vertex (Vertex3 a)) => [[a]] -> IO ()
 vertices l = mapM_ (vertex.f) l where
     f [x,y]   = Vertex3 x y 0
     f [x,y,z] = Vertex3 x y z
     f _ = error "vertices without 2 or 3 components"
 
+-- | The same as 'vertices' for Int coordinates.
+vertices' :: [[Int]] -> IO ()
 vertices' = vts . map (map fromIntegral) where
     vts :: [[Double]] -> IO ()
     vts = vertices
 
--- | It shows the outline of a camera and an optional image in it
+-- | It shows the outline of a camera and an optional image (texture) in its image plane.
+drawCamera :: Double -> Matrix -> Maybe Img -> IO ()
 drawCamera size cam Nothing = do
     let (invcam,f) = toCameraSystem cam
     let m = invcam<>diag (realVector[1,1,1,1/size])
@@ -140,6 +156,8 @@ drawCamera size cam (Just imgtext) = do
                [ q, -q, f]]
     renderPrimitive LineLoop $ vertices outline
 
+-- | Takes a centered square from an image and resizes it to the desired size (useful to obtain an image texture appropriate for 'drawCamera').
+extractSquare :: Int -> Img -> IO Img
 extractSquare sz im = resize32f (sz,sz) im {vroi = roi} where
     w = width im
     h = height im

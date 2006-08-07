@@ -10,11 +10,18 @@ Portability :  hmm...
 
 A minimalist version of EasyVision [ref.] using HOpenGL.
 
+See the simple examples: player.hs, hessian.hs, warp.hs, etc. in the easyvision folder.
+
 -}
 -----------------------------------------------------------------------------
 
-module Ipp.HEasyVision
-where
+module Ipp.HEasyVision (
+  State(..)
+, prepare
+, addWindow
+, launch
+, InWindow
+) where
 
 import Ipp.Core
 import Ipp.Typical
@@ -27,11 +34,19 @@ import Control.Monad(when)
 import System.Environment(getArgs)
 import Data.Map
 
+-- | creates an HOpenGL window which can be selected inside the worker function.
+addWindow :: String -- ^ window identifier
+             -> (Int, Int)  -- ^ size (width,height)
+             -> Maybe (State userState -> IO t)                    -- ^ optional drawing callback
+             -> (IORef (State userState) -> KeyboardMouseCallback) -- ^ keyboard callback receiving the user defined state
+             -> IORef (State userState)                            -- ^ the user defined state
+             -> IO Window
 addWindow name (w,h) dcallback kcallback state = do
     w <- installWindow name (w,h) dcallback kcallback state
     modifyIORef state $ \s -> s { wins = insert name w (wins s)}
     return w
 
+-- | The state of the application, including the user defined state.
 data State userState = 
     State { wins  :: Map String Window
           , camid :: Camera
@@ -41,6 +56,10 @@ data State userState =
           , ust  :: userState
 }
 
+-- | Initializes the application state with a camera and a user-defined state.
+prepare :: Camera
+           -> userState
+           -> IO (IORef (State userState))
 prepare cam s = do
     getArgsAndInitialize
     initialDisplayMode $= [DoubleBuffered, WithDepthBuffer]
@@ -49,6 +68,13 @@ prepare cam s = do
                              camera = undefined, wins = empty, ust = s}
     return state
 
+-- | Window selector for the HOpenGL functions
+type InWindow = String -> IO () -> IO ()
+
+-- | Starts the application with a worker function (idle callback).
+launch :: IORef (State userState)      -- ^ the state of the application
+          -> (InWindow -> Img -> userState -> IO userState)  -- ^ worker function
+          -> IO ()
 launch state worker = do
     idleCallback $= Just ( do
         st <- readIORef state
