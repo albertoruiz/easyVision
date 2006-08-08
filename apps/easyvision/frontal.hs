@@ -3,7 +3,6 @@
 -- TO DO:
 --   put online the demo video
 --   average world fragments
---   online selection of the prior calibration info
 --   user selected horizon by clicking on the error surface
 --   semi-automatic selection of points
 
@@ -37,13 +36,12 @@ data MyState = ST { imgs :: [Img]             -- selected views
                   , pts  :: [[Point]]         -- homologous points of the selected images
                   , hs   :: [Matrix]          -- interimage homographies
                   , cam0 :: Matrix            -- solution
-                  , drfuns :: [IO()]          -- drawing functions of floor and cameras
+                  , drfuns :: [IO()]          -- camera drawing functions
                   , cost  :: Maybe Img        -- the cost function
                   , zoom :: Double            -- visualization scale of the rectified image
-
+                  , priorInfo :: KnownFs      -- available info about the fs
                   , baseView ::Int            -- index of the desired base view 
                   , targetView :: Int         -- index of any other selected view
-
                   , trackball :: IO ()        -- viewpoint generator
                   }
 
@@ -61,11 +59,9 @@ main = do
                             , cam0 = ident 3
                             , cost = Nothing
                             , drfuns=[]
-
+                            , priorInfo = AllKnown (repeat 2.8)
                             , baseView = 0, targetView = 0
-
                             , zoom = 0.2
-
                             , trackball = tb
                             }
 
@@ -74,6 +70,18 @@ main = do
     addWindow "selected" (w,h) Nothing keyboard state        -- target view warped into the base view
     addWindow "world" (floorSize,floorSize) Nothing warpkbd state     -- combined metric rectification
     addWindow "cost" (200,200) Nothing keyboard state        -- the cost function
+
+    let modInfo info = do
+        st <- readIORef state
+        u <- compute $ (ust st) {priorInfo = info}
+        writeIORef state st { ust = u }
+
+    attachMenu LeftButton $ Menu
+        [MenuEntry "Known f's"    (modInfo $ AllKnown (repeat 2.8))
+        ,MenuEntry "Known f1"     (modInfo $ F1Known 2.8)
+        ,MenuEntry "Constant f"   (modInfo ConstantUnknown)
+        ,MenuEntry "Variable f's" (modInfo AllUnknown)
+        ]
 
     addWindow "3D view" (600,600) Nothing keyboard state     -- 3D representation
     keyboardMouseCallback $= Just (kc (keyboard state))
@@ -182,10 +190,7 @@ worker inWindow camera st = do
 --------------------------------------------------------------------------
 
 compute st = do
-
-    let info = AllKnown (repeat 2.8)
-    --let info = F1Known 2.8
-    --let info = ConstantUnknown
+    let info = priorInfo st
 
     let uhs = tail (hs st)
     let f = consistency info uhs
