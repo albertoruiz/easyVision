@@ -228,10 +228,9 @@ secondOrder image = do
     gxy <- sobelHoriz gx
     return (gx,gy,gxx,gyy,gxy)    
 
--- | Obtains the determinant of the hessian operator in an image32f
-hessian :: Img -> IO Img
-hessian image = do
-    (gx,gy,gxx,gyy,gxy) <- secondOrder image
+-- | Obtains the determinant of the hessian operator from the 'secondOrder' derivatives.
+hessian :: (Img,Img,Img,Img,Img) -> IO Img
+hessian (gx,gy,gxx,gyy,gxy) = do
     ab <- gxx |*| gyy
     cc <- gxy |*| gxy
     h  <- ab  |-| cc
@@ -332,7 +331,7 @@ getCorners :: Int       -- ^ degree of smoothing (e.g. 1)
            -> IO [[Double]]  -- ^ result
 getCorners smooth rad prop maxn im@Img{itype = I32f} = do
     let suaviza = smooth `times` gauss Mask5x5
-    h <- suaviza im >>= hessian >>= scale32f (-1.0)
+    h <- suaviza im >>= secondOrder >>= hessian >>= scale32f (-1.0)
     (mn,mx) <- minmax h
     hotPoints <- localMax rad h
               >>= thresholdVal32f (mx*prop) 0.0 IppCmpLess

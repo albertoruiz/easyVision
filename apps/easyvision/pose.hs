@@ -20,15 +20,10 @@ data MyState = ST { imgs :: [Img]
                   , cams :: [Matrix]
                   , drfuns :: [IO()]
 
-                  , new    :: Bool
                   , basev ::Int
 
                   , trackball :: IO ()
                   }
-
--- | snoc
-(=<) :: [a] -> a -> [a]
-list =< elem = list ++ [elem]
 
 diagl = diag . realVector
 
@@ -44,11 +39,7 @@ main = do
                             , pts=[]
                             , cams=[]
                             , drfuns=[]
-
-                            , new = False
-
                             , basev = 0
-
                             , trackball = tb
                             }
 
@@ -75,7 +66,7 @@ recover pts = c where
     h = estimateHomography pts a4
     Just c = cameraFromHomogZ0 Nothing h
 
-worker inWindow camera st@ST{new=False} = do
+worker inWindow camera st = do
     hotPoints <- getCorners 1 7 0.1 200 camera
 
     inWindow "camera" $ do
@@ -116,25 +107,6 @@ worker inWindow camera st@ST{new=False} = do
     return st {corners = hotPoints}
 
 
-worker inWindow camera st@ST{ new=True
-                            , marked = m
-                            , pts = ps
-                            , imgs = ims
-                            , cams = cs
-                            , drfuns = funs } = do
-    let fix = pixelToPoint camera
-    let hp = reverse (fix m)
-    im  <- scale8u32f 0 1 camera
-    let cam = recover hp
-    imt <- extractSquare 128 im
-    return st { new=False
-              , marked = []
-              , pts = ps =< hp
-              , imgs = ims =< camera
-              , cams = cs =< cam
-              , drfuns = funs =< drawCamera 1 cam (Just imt)
-              }
-
 ------------------------------------------------------
 
 compareBy f = (\a b-> compare (f a) (f b))
@@ -167,11 +139,25 @@ marker str (MouseButton LeftButton) Down _ pos@(Position x y) = do
     let u = ust (st)
     let newpoint = closest (corners u) $ map fromIntegral [x,y]
     let m = newpoint : marked u
-    writeIORef str st { ust = u {marked = m, new = length m == 4} }
+    if (length m /= 4)
+        then writeIORef str st { ust = u {marked = m} }
+        else do
+            let hp = reverse $ pixelToPoint (camera st) m
+            im  <- scale8u32f 0 1 (camera st)
+            let cam = recover hp
+            imt <- extractSquare 128 im
+            let v = u { marked = []
+                       , imgs = imgs u ++ [im]
+                       , pts = pts u ++ [hp]
+                       , cams = cams u ++ [cam]
+                       , drfuns = drfuns u ++ [drawCamera 1 cam (Just imt)]
+                       }
+            writeIORef str st { ust = v }
 
 marker st (MouseButton RightButton) Down _ pos@(Position x y) = do
-    modifyIORef st $ \s -> s {ust = (ust s) {marked = tail $ marked (ust s) }}
+    modifyIORef st $ \s -> s {ust = (ust s) {marked = case marked (ust s) of
+                                                        [] -> []
+                                                        _:t -> t }}
 
 marker st b s m p = keyboard st b s m p
 
---------------------------------------------------------------------

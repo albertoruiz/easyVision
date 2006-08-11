@@ -20,7 +20,7 @@ module Ipp.Core
           ( -- * Image representation
             Img(..), ImageType(..), ROI(..)
             -- * Creation of images
-          , img, imgAs, getData32f, setData32f
+          , img, imgAs, getData32f, setData32f, val32f
             -- * Regions of interest
           , fullroi, shrink, shift, intersection
             -- * Wrapper tools
@@ -84,22 +84,29 @@ img RGB  = img' RGB  1 3
 
 -- | Extracts the data in a I32f image into a list of lists.
 getData32f :: Img -> IO [[Float]]
-getData32f (Img {fptr = fp, ptr = p, datasize = d, step = s, height = r, width = c}) = do
+getData32f Img {fptr = fp, ptr = p, datasize = d, step = s, height = r, width = c} = do
     let jump = s `quot` d
     let row k = peekArray c (advancePtr (castPtr p) (k*jump))
     r <- mapM row [0 .. r-1]
     touchForeignPtr fp
     return r
 
--- | Copies the values of list of lists the data into a I32f image.
+-- | Copies the values of list of lists the data into a I32f image. NO range checking.
 setData32f :: Img -> [[Float]] -> IO ()
 setData32f Img {fptr = fp, ptr = p,
-               datasize = d, step = s, height = r, width = c} vs = do
+               datasize = d, step = s, height = r} vs = do
     let jump = s `quot` d
     touchForeignPtr fp
     let row k l = pokeArray (advancePtr (castPtr p) (k*jump)) l
     sequence_ $ zipWith row [0..r-1] vs
 
+-- | Returns the pixel value of an image at a given row-column. NO range checking.
+val32f :: Img -> Int -> Int -> IO Float
+val32f Img {fptr = fp, ptr = p, datasize = d, step = s} r c = do
+    let jump = s `quot` d
+    v <- peek (advancePtr (castPtr p) (r*jump+c))
+    touchForeignPtr fp
+    return v
 
 data ROI = ROI { r1 :: Int  -- ^ upper row
                , r2 :: Int  -- ^ lower row

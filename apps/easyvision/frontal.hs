@@ -271,7 +271,9 @@ marker str (MouseButton LeftButton) Down _ pos@(Position x y) = do
             writeIORef str st { ust = v }
 
 marker st (MouseButton RightButton) Down _ pos@(Position x y) = do
-    modifyIORef st $ \s -> s {ust = (ust s) {marked = tail $ marked (ust s) }}
+    modifyIORef st $ \s -> s {ust = (ust s) {marked = case marked (ust s) of
+                                                        [] -> []
+                                                        _:t -> t }}
 
 marker st b s m p = keyboard st b s m p
 

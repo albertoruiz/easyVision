@@ -23,6 +23,7 @@ main = do
 
     addWindow "camera" (w,h) Nothing keyboard state
     addWindow "hessian" (w,h) Nothing keyboard state
+    addWindow "saddlepoints" (w,h) Nothing keyboard state
 
     launch state worker
 
@@ -32,7 +33,7 @@ worker inWindow camera st = do
 
     im  <- scale8u32f 0 1 camera
     img <- (smooth st `times` gauss Mask5x5) im
-    h   <- hessian img >>= abs32f >>= sqrt32f
+    h   <- secondOrder img >>= hessian >>= abs32f >>= sqrt32f
     copyROI32f im h
 
     inWindow "hessian" $ do
