@@ -31,4 +31,4 @@ auxc: ../Ipp/mycvCamera.o ../Ipp/auxIpp.o
 		gcc -O -c -I$(IPP)/include ../Ipp/auxIpp.c -o ../Ipp/auxIpp.o
 
 clean:
-		rm -f a.out *.o *.hi ../Ipp/*.o ../Ipp/*.hi
+		rm -f a.out *.o *.hi ../Ipp/*.o ../Ipp/*.hi ../Vision/*.o ../Vision/*.hi

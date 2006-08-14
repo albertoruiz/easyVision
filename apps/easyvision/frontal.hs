@@ -169,8 +169,6 @@ worker inWindow camera st = do
             let wref = ht r (pts st !!0)              -- this same points in image w
             let hx = estimateHomography ref wref
 
-            let norw = pixelToPointTrans w
-
             drawTexture w $ map (++[-0.01]) $ ht hx [[1,1],[-1,1],[-1,-1],[1,-1]]
 
             mycolor 0 0 1

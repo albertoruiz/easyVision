@@ -23,8 +23,8 @@ module Ipp.HEasyVision (
 , InWindow
 ) where
 
-import Ipp.Core
-import Ipp.Typical
+import Ipp.Core hiding (Size)
+--import Ipp.ImageProcessing
 import Ipp.Draw
 import Ipp.Camera
 import Graphics.UI.GLUT hiding (RGB, Matrix)

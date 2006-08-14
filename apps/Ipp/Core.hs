@@ -18,23 +18,37 @@ Experimental interface to Intel Integrated Performance Primitives for image proc
 
 module Ipp.Core
           ( -- * Image representation
-            Img(..), ImageType(..), ROI(..)
+            Img(..), ImageType(..), ROI(..), Size(..)
             -- * Creation of images
-          , img, imgAs, getData32f, setData32f, val32f
+          , img, imgAs, getData32f, setData32f, value
             -- * Regions of interest
           , fullroi, shrink, shift, intersection
             -- * Wrapper tools
           , src, dst, checkIPP, warningIPP, (//)
           , ippRect
+            -- * Image types
+          , Image(..)
+          , ImageRGB(C)
+          , ImageGray(G)
+          , ImageFloat(F)
+          -- * Image coordinates
+          , Pixel (..)
+          , Point (..)
+          , pixelsToPoints, pixelToPointTrans
+          , val32f
 ) where
 
 import Foreign hiding (shift)
 import Control.Monad(when)
 import Ipp.Wrappers
 import Foreign.C.String(peekCString)
+import GSL
+import Vision
 
 ------------------------------------------------------------
 ------------- descriptor of an ipp image -------------------
+
+data Size  = Size  {height :: !Int, width :: !Int} deriving Show
 
 -- | Image type descriptor:
 data ImageType = RGB | Gray | I32f
@@ -46,13 +60,12 @@ data Img = Img { fptr :: ForeignPtr ()  -- ^ automatic allocated memory
                , itype :: ImageType     -- ^ type of image
                , datasize :: Int        -- ^ size in bytes of the base type
                , layers :: Int          -- ^ number of layers
-               , height :: Int          -- ^ number of rows 
-               , width :: Int           -- ^ number of columns
+               , isize :: Size          -- ^ rows and columns of the image
                , vroi :: ROI            -- ^ ROI where data is assumed to be valid
                }
 
 
-img' t sz ly r c = do
+img' t sz ly (Size r c) = do
     let w = c*sz*ly
     let rest = w `mod` 32
     let c' = if rest == 0 then w else w + 32 - rest
@@ -60,9 +73,8 @@ img' t sz ly r c = do
     let p' = unsafeForeignPtrToPtr fp
     let p = alignPtr p' 32
     --print (p', p) -- debug
-    let res = Img { 
-          height = r
-        , width = c
+    let res = Img {
+          isize = Size r c
         , layers = ly
         , datasize = sz
         , fptr = fp
@@ -74,17 +86,13 @@ img' t sz ly r c = do
     return res
 
 -- | Image creation. We use the Haskell gc instead of ippiMalloc and ippiFree.
-img :: ImageType         -- ^ type of image
-       -> Int            -- ^ number of rows (height)
-       -> Int            -- ^ number of columns (width)
-       -> IO Img         -- ^ new image
 img Gray = img' Gray 1 1
-img I32f = img' I32f 4 1
 img RGB  = img' RGB  1 3
+img I32f = img' I32f 4 1
 
 -- | Extracts the data in a I32f image into a list of lists.
 getData32f :: Img -> IO [[Float]]
-getData32f Img {fptr = fp, ptr = p, datasize = d, step = s, height = r, width = c} = do
+getData32f Img {fptr = fp, ptr = p, datasize = d, step = s, isize = Size r c } = do
     let jump = s `quot` d
     let row k = peekArray c (advancePtr (castPtr p) (k*jump))
     r <- mapM row [0 .. r-1]
@@ -94,15 +102,15 @@ getData32f Img {fptr = fp, ptr = p, datasize = d, step = s, height = r, width = 
 -- | Copies the values of list of lists the data into a I32f image. NO range checking.
 setData32f :: Img -> [[Float]] -> IO ()
 setData32f Img {fptr = fp, ptr = p,
-               datasize = d, step = s, height = r} vs = do
+               datasize = d, step = s, isize = Size {height = r}} vs = do
     let jump = s `quot` d
     touchForeignPtr fp
     let row k l = pokeArray (advancePtr (castPtr p) (k*jump)) l
     sequence_ $ zipWith row [0..r-1] vs
 
 -- | Returns the pixel value of an image at a given row-column. NO range checking.
-val32f :: Img -> Int -> Int -> IO Float
-val32f Img {fptr = fp, ptr = p, datasize = d, step = s} r c = do
+value :: (Storable b) => Img -> Int -> Int -> IO b
+value Img {fptr = fp, ptr = p, datasize = d, step = s} r c = do
     let jump = s `quot` d
     v <- peek (advancePtr (castPtr p) (r*jump+c))
     touchForeignPtr fp
@@ -135,7 +143,7 @@ ippRect = encodeAsDouble
 
 -- | Creates a roi with the whole size of an image.
 fullroi :: Img -> ROI
-fullroi img = ROI {r1=0, r2=height img-1, c1=0, c2=width img-1}
+fullroi Img {isize = Size h w} = ROI {r1=0, r2=h-1, c1=0, c2=w-1}
 
 -- | Creates a new roi by reducing in (r,c) units the rows and columns or a given roi. If r or c are negative the roi expands.
 shrink :: (Int,Int)  -> ROI -> ROI
@@ -165,7 +173,7 @@ intersection a b = ROI { r1 = max (r1 a) (r1 b)
 
 -- | Creates an image of the same type and size than a given image. Data is not copied.
 imgAs :: Img -> IO Img
-imgAs im = img (itype im) (height im) (width im)
+imgAs Img {itype=t, isize=s, datasize=d, layers=l} = img t s
 
 -- | Extracts from a source Img the pointer to the starting position taken into account the given roi, and applies it to a ipp function.
 src :: Img -> ROI -> (Ptr () -> Int -> t) -> t
@@ -200,3 +208,74 @@ warningIPP = genCheckIPP putStrLn
 (//) :: x -> (x -> y) -> y
 infixl 0 //
 (//) = flip ($)
+
+--------------------------------------------------------------
+
+-- | Operations supported by the different image types.
+class Image a where
+    -- | creates an image of the given size
+    image :: Size -> IO a
+    -- | returns the size of an image
+    size :: a -> Size  
+
+instance Image ImageFloat where
+    image s = do
+        i <- img I32f s
+        return (F i)
+    size (F Img {isize=s}) = s
+
+instance Image ImageGray where
+    image s = do
+        i <- img Gray s
+        return (G i)
+    size (G Img {isize=s}) = s
+
+instance Image ImageRGB where
+    image s = do
+        i <- img RGB s
+        return (C i)
+    size (C Img {isize=s}) = s
+
+-- | The IPP 8u_C3 image type
+newtype ImageRGB   = C Img
+
+-- | The IPP 8u_C1 image type
+newtype ImageGray  = G Img
+
+-- | The IPP 32f_C1 image type
+newtype ImageFloat = F Img
+
+-- | Normalized image coordinates, with x from +1 to -1 (for a right handed 3D reference system with z pointing forward)
+data Point = Point { px    :: !Double, py :: !Double} deriving Show
+
+-- | Raw image coordinates
+data Pixel = Pixel { row   :: !Int,    col :: !Int } deriving Show
+
+-- | Auxiliary homogeneous transformation from 'Pixel's to 'Point's
+pixelToPointTrans :: Size -> Matrix
+pixelToPointTrans Size {width = w', height = h'} = nor where
+    w = fromIntegral w' -1
+    h = fromIntegral h' -1
+    r = (h+1)/(w+1)
+    nor = realMatrix
+        [[-2/w,      0, 1]
+        ,[   0, -2*r/h, r]
+        ,[   0,      0, 1]]
+
+pixelToList Pixel {row = r, col = c} = [fromIntegral c, fromIntegral r]
+listToPoint [x,y] = Point {px = x, py= y}
+
+-- | Trasformation from pixels to normalized points.
+pixelsToPoints :: Size -> [Pixel]->[Point]
+pixelsToPoints sz = fix where
+    nor = pixelToPointTrans sz
+    fix = map listToPoint. ht nor . map pixelToList
+
+
+-- | Returns the pixel value of an image at a given pixel. NO range checking.
+val32f :: ImageFloat -> Pixel -> IO Float
+val32f (F Img {fptr = fp, ptr = p, datasize = d, step = s}) (Pixel r c) = do
+    let jump = s `quot` d
+    v <- peek (advancePtr (castPtr p) (r*jump+c))
+    touchForeignPtr fp
+    return v

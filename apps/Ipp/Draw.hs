@@ -18,7 +18,7 @@ HOpenGL drawing utilities.
 module Ipp.Draw
 ( pointCoordinates
 , pixelCoordinates
-, drawImage
+, drawImageRGB, drawImageGray, drawImageFloat
 , drawTexture
 , mycolor
 , vertices, vertices'
@@ -27,28 +27,28 @@ module Ipp.Draw
 , newTrackball
 ) where
 
-import Graphics.UI.GLUT hiding (RGB, Matrix)
+import Graphics.UI.GLUT hiding (RGB, Matrix, Size)
 import qualified Graphics.UI.GLUT as GL
 import Ipp.Core
-import Ipp.Typical(resize32f)
+import Ipp.ImageProcessing(resize32f)
 import Data.IORef
 import Foreign (touchForeignPtr)
-import GSL
+import GSL hiding (size)
 import Vision
 import Ipp.Trackball
 
 
 
 myDrawPixels m@Img{itype=RGB} = 
-    GL.drawPixels (Size (fromIntegral $ step m `quot` 3) (fromIntegral $ height m))
+    GL.drawPixels (GL.Size (fromIntegral $ step m `quot` 3) (fromIntegral $ height $ isize m))
                   (PixelData GL.RGB UnsignedByte (ptr m))
 
 myDrawPixels m@Img{itype=Gray} = 
-    GL.drawPixels (Size (fromIntegral $ step m `quot` (datasize m)) (fromIntegral $ height m))
+    GL.drawPixels (GL.Size (fromIntegral $ step m `quot` (datasize m)) (fromIntegral $ height $ isize m))
                   (PixelData Luminance UnsignedByte (ptr m))
 
 myDrawPixels m@Img{itype=I32f} = 
-    GL.drawPixels (Size (fromIntegral $ step m `quot` (datasize m)) (fromIntegral $ height m))
+    GL.drawPixels (GL.Size (fromIntegral $ step m `quot` (datasize m)) (fromIntegral $ height $ isize m))
                   (PixelData Luminance Float (ptr m))
 
 -- | Draws an image in the current window.
@@ -56,8 +56,8 @@ drawImage :: Img -> IO ()
 drawImage m = do
     matrixMode $= Projection
     loadIdentity
-    let w = width m
-    let h = height m
+    let w = width $ isize m
+    let h = height $ isize m
     ortho2D (0) (0.0001+fromIntegral w-1::GLdouble) (0) (0.0001+fromIntegral h-1)
     matrixMode $= Modelview 0
     loadIdentity
@@ -73,16 +73,20 @@ drawImage m = do
         [c2 r, r2 r],
         [c2 r, r1 r]]
 
+drawImageFloat (F im) = drawImage im
+drawImageGray (G im) = drawImage im
+drawImageRGB (C im) = drawImage im
+
 --------------------------------------------------------------------------------
 
 -- | Draws an image 32f as a texture in the current window, in the desired 3D coordinates corresponding to (0,0), (1,0), (1,1), (0,1). (Drawing is very fast if the sizes powers of 2.)
-drawTexture :: Img -> [[Double]] -> IO ()
-drawTexture im@Img {itype = I32f} [v1,v2,v3,v4] = do
+drawTexture :: ImageFloat -> [[Double]] -> IO ()
+drawTexture (F im) [v1,v2,v3,v4] = do
     texImage2D  Nothing
                 NoProxy
                 0
                 Luminance'
-                (TextureSize2D (fromIntegral $ width im) (fromIntegral $ height im))
+                (TextureSize2D (fromIntegral $ width $ isize im) (fromIntegral $ height $ isize im))
                 0
                 (PixelData Luminance Float (ptr im))
 
@@ -137,7 +141,7 @@ vertices' = vts . map (map fromIntegral) where
     vts = vertices
 
 -- | It shows the outline of a camera and an optional image (texture) in its image plane.
-drawCamera :: Double -> Matrix -> Maybe Img -> IO ()
+drawCamera :: Double -> Matrix -> Maybe ImageFloat -> IO ()
 drawCamera size cam Nothing = do
     let (invcam,f) = toCameraSystem cam
     let m = invcam<>diag (realVector[1,1,1,1/size])
@@ -158,9 +162,9 @@ drawCamera size cam (Just imgtext) = do
 
 -- | Takes a centered square from an image and resizes it to the desired size (useful to obtain an image texture appropriate for 'drawCamera').
 extractSquare :: Int -> Img -> IO Img
-extractSquare sz im = resize32f (sz,sz) im {vroi = roi} where
-    w = width im
-    h = height im
+extractSquare sz im = resize32f (Size sz sz) im {vroi = roi} where
+    w = width $ isize im
+    h = height $ isize im
     d = w-h
     dm = d `quot` 2
     roi = (vroi im) {c1=dm-1,c2= dm+h}

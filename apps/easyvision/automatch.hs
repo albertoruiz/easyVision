@@ -1,8 +1,8 @@
 
 module Main where
 
-import Ipp hiding (shift)
-import Graphics.UI.GLUT hiding (Matrix, drawPixels)
+import Ipp
+import Graphics.UI.GLUT hiding (Matrix, drawPixels, Size)
 import Data.IORef
 import System.Exit
 import Control.Monad(when)
@@ -11,16 +11,13 @@ import Data.List(minimumBy,partition)
 import GSL
 import Vision
 
-import Saddle
+import qualified Ipp.Images as I
 
-type Point = [Double]  -- provisional
-type Pixel = [Int]
-
-data MyState = ST { imgs :: [Img]
+data MyState = ST { imgs :: [ImageFloat]
                   , corners, marked, orig::[InterestPoint]
-                  , pts  :: [[Point]]
+                  , pts  :: [[[Double]]]
                   , basev ::Int
-                  , smooth :: Double
+                  , smooth :: Int
                   }
 
 diagl = diag . realVector
@@ -45,9 +42,17 @@ main = do
 -------------------------------------------------------------------
 dist [a,b] [x,y] = sqrt $ (a-x)^2+(b-y)^2
 
+pl (I.Point x y) = [x,y]
+lpl = map (pl.ipPosition)
+
+ql (I.Pixel r c) = [r,c]
+lql = map (ql.ipRawPosition)
+
 worker inWindow camera st = do
 
-    ips <- getSaddlePoints (smooth st) 7 0.05 200 20 10 camera
+    camera32f <- scale8u32f 0 1 (G camera)
+
+    ips <- getSaddlePoints (smooth st) 7 0.05 200 20 10 camera32f
 
     let ps = map (closestBy distComb ips) (marked st)
 
@@ -58,32 +63,33 @@ worker inWindow camera st = do
     let okall = and oks
 
     when (length (orig st) == 5 && okall) $ do
-        let (o:os) = map ipPosition (orig st)
-        let ([px,py]:pss) = map ipPosition ps
+        let (o:os) = lpl (orig st)
+        let ([px,py]:pss) = lpl ps
         let h = estimateHomographyRaw os pss
         let r = inHomog $ h <> realVector [px,py,1]
         when (norm (r - realVector o)<3) $ do
             inWindow "selected" $ do
-                scale8u32f 0 1 camera >>= warp (288,384) h >>= drawImage
+                warp (Size 288 384) h camera32f >>= drawImageFloat
                 pointCoordinates (4,3)
-                renderPrimitive LineLoop (vertices (ht h (map ipPosition ps)))
+                renderPrimitive LineLoop (vertices (ht h (lpl ps)))
 
 
     inWindow "camera" $ do
-        drawImage camera
-        pixelCoordinates (384,288)
+        drawImageGray (G camera)
+        pointCoordinates (384,288)
         mycolor 1 0 0
         pointSize $= 3
-        renderPrimitive Points (vertices (map ipRawPosition ips))
+        renderPrimitive Points (vertices (lpl ips))
         pixelCoordinates (384,288)
         mycolor 0 0 1
-        renderPrimitive Points (vertices (map ipRawPosition $ marked st))
+        renderPrimitive Points (vertices' (lql $ marked st))
+        pointCoordinates (384,288)
         pointSize $= 5
         mycolor 0 0.5 0
-        renderPrimitive Points (vertices (map ipRawPosition ps))
+        renderPrimitive Points (vertices (lpl ps))
 
         pointCoordinates (4,3)
-        let vecs = concat $ map (\IP{ipPosition=[x,y],
+        let vecs = concat $ map (\IP{ipPosition=I.Point x y,
                                      ipOrientation=a} -> [[x,y],[x+0.1*cos a,y+0.1*sin a]]) ps
         renderPrimitive Lines (vertices vecs)
 
@@ -104,11 +110,11 @@ closestBy f [] p = p
 closestBy f hp p = minimumBy (compareBy $ f p) hp
 
 
-distFeat = (dist.:.(realVector.ipDescriptor))
+distFeat = (dist.:.ipDescriptor)
     where dist u v = norm (u-v)
 
 distSpatial = (dist.:.ipRawPosition)
-    where dist [a,b] [x,y] = sqrt $ (a-x)^2+(b-y)^2
+    where dist (I.Pixel a b) (I.Pixel x y) = sqrt $ fromIntegral ((a-x)^2+(b-y)^2)
 
 f .:. g = h where h x y = f (g x) (g y)
 
@@ -138,10 +144,17 @@ keyboard _ _ _ _ _ = return ()
 
 ------------------------------------------------------------------
 
+ip p = IP { ipDescriptor  = 0
+          , ipRawPosition = p
+          , ipPosition    = I.Point 0 0
+          , ipOrientation = 0
+          , ipTime        = 0
+          }
+
 marker str (MouseButton LeftButton) Down _ pos@(Position x y) = do
     st <- readIORef str
     let u = ust (st)
-    let newpoint = closestBy distSpatial (corners u) $ ip (map fromIntegral [x,y])
+    let newpoint = closestBy distSpatial (corners u) $ ip (I.Pixel (fromIntegral y) (fromIntegral x))
     print newpoint
     let m = newpoint : marked u
     if (length m /= 5)
@@ -150,17 +163,6 @@ marker str (MouseButton LeftButton) Down _ pos@(Position x y) = do
                                          , orig = m
                                          }
                                }
-{-
-           do
-            --let hp = reverse $ pixelToPoint (camera st) (map fst m)
-            im  <- scale8u32f 0 1 (camera st)
-            let v = u { marked = []
-                       , imgs = imgs u ++ [im]
-              --         , pts = pts u ++ [hp]
-                       }
-            writeIORef str st { ust = v }
--}
-
 
 marker st (MouseButton RightButton) Down _ pos@(Position x y) = do
     modifyIORef st $ \s -> s {ust = (ust s) {marked = case marked (ust s) of
@@ -169,4 +171,3 @@ marker st (MouseButton RightButton) Down _ pos@(Position x y) = do
                                              orig = [] }}
 
 marker st b s m p = keyboard st b s m p
-

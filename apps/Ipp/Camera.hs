@@ -1,4 +1,4 @@
-{-# OPTIONS -fffi #-} 
+{-# OPTIONS -fffi -fglasgow-exts #-}
 
 -----------------------------------------------------------------------------
 {- |
@@ -19,11 +19,13 @@ module Ipp.Camera (
   Camera
 , openCamera
 , grab
+, Grabable(..)
 )where
 
 import Ipp.Core
+import Ipp.ImageProcessing (scale8u32f)
 import Foreign
-import Foreign.C.Types
+import Foreign.C.Types (CChar)
 import Foreign.C.String(newCString)
 
 ------------------------------------------------------      
@@ -58,9 +60,41 @@ grab (cam,mode,(h,w)) = do
     pstep <- malloc
     dat <- getFrameC cam pstep
     stepc <- peek pstep
-    res <- img mode h w
+    res <- img mode (Size h w)
     copyArray (castPtr $ ptr res) dat (h*stepc)
-    return res 
+    return res
+
 
 -- | Camera descriptor (device id, imagetype, (height,width)).
 type Camera = (Int,ImageType,(Int,Int))
+
+class Image a => Grabable a where
+    grabb :: Camera -> IO a
+
+--instance Image a => Grabable a
+
+instance Grabable ImageGray where
+    grabb = grabGray
+
+instance Grabable ImageRGB where
+    grabb = grabRGB
+
+instance Grabable ImageFloat where
+    grabb = grabFloat
+
+
+grabGray :: Camera -> IO ImageGray
+grabGray c@(_,Gray,_) = do
+    i <- grab c
+    return (G i)
+
+grabFloat :: Camera -> IO ImageFloat
+grabFloat c@(_,Gray,_) = do
+    i <- grab c
+    r <- scale8u32f 0 1 (G i)
+    return r
+
+grabRGB :: Camera -> IO ImageRGB
+grabRGB c@(_,RGB,_) = do
+    i <- grab c
+    return (C i)
