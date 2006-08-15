@@ -25,7 +25,8 @@ diagl = diag . realVector
 --------------------------------------------------------------
 main = do
     args <- getArgs
-    cam@(_,_,(h,w)) <- openCamera (args!!0) Gray (288,384)
+    let sz = Size 288 384
+    cam <- openCamera (args!!0) sz
 
     state <- prepare cam ST { imgs=[]
                             , corners=[], marked = [], orig = []
@@ -34,8 +35,8 @@ main = do
                             , smooth = 3
                             }
 
-    addWindow "camera" (w,h) Nothing marker state
-    addWindow "selected" (w,h) Nothing keyboard state
+    addWindow "camera" sz Nothing marker state
+    addWindow "selected" sz Nothing keyboard state
 
     launch state worker
 
@@ -45,12 +46,10 @@ dist [a,b] [x,y] = sqrt $ (a-x)^2+(b-y)^2
 pl (I.Point x y) = [x,y]
 lpl = map (pl.ipPosition)
 
-ql (I.Pixel r c) = [r,c]
-lql = map (ql.ipRawPosition)
+worker inWindow cam st = do
 
-worker inWindow camera st = do
-
-    camera32f <- scale8u32f 0 1 (G camera)
+    camera <- grab cam
+    camera32f <- scale8u32f 0 1 camera
 
     ips <- getSaddlePoints (smooth st) 7 0.05 200 20 10 camera32f
 
@@ -69,24 +68,24 @@ worker inWindow camera st = do
         let r = inHomog $ h <> realVector [px,py,1]
         when (norm (r - realVector o)<3) $ do
             inWindow "selected" $ do
-                warp (Size 288 384) h camera32f >>= drawImageFloat
+                warp (Size 288 384) h camera32f >>= drawImage
                 pointCoordinates (4,3)
                 renderPrimitive LineLoop (vertices (ht h (lpl ps)))
 
 
     inWindow "camera" $ do
-        drawImageGray (G camera)
+        drawImage camera
         pointCoordinates (384,288)
         mycolor 1 0 0
         pointSize $= 3
-        renderPrimitive Points (vertices (lpl ips))
+        renderPrimitive Points (vertices (map ipPosition ips))
         pixelCoordinates (384,288)
         mycolor 0 0 1
-        renderPrimitive Points (vertices' (lql $ marked st))
+        renderPrimitive Points (vertices (map ipPosition (marked st)))
         pointCoordinates (384,288)
         pointSize $= 5
         mycolor 0 0.5 0
-        renderPrimitive Points (vertices (lpl ps))
+        renderPrimitive Points (vertices (map ipPosition ps))
 
         pointCoordinates (4,3)
         let vecs = concat $ map (\IP{ipPosition=I.Point x y,
@@ -123,10 +122,12 @@ distComb p q = distFeat p q + 0.1*distSpatial p q
 -----------------------------------------------------------------
 -- callbacks
 -----------------------------------------------------------------
-keyboard st (Char 'p') Down _ _ = do
-    modifyIORef st $ \s -> s {pause = not (pause s)}
-keyboard st (Char ' ') Down _ _ = do
-    modifyIORef st $ \s -> s {pause = not (pause s)}
+keyboard str (Char 'p') Down _ _ = do
+    st <- readIORef str
+    pause (camid st)
+keyboard str (Char ' ') Down _ _ = do
+    st <- readIORef str
+    pause (camid st)
 keyboard _ (Char '\27') Down _ _ = do
     exitWith ExitSuccess
 

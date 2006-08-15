@@ -12,6 +12,8 @@ Portability :  hmm...
 
 Type safe interface to the IPP images.
 
+These are the only definitions required by the \"end user\". Lower level programming requires "Ipp.Core".
+
 -}
 -----------------------------------------------------------------------------
 
@@ -22,16 +24,21 @@ module Ipp.Images
 , ImageGray
 , ImageFloat
   -- * Image coordinates
+, Size (..)
 , Pixel (..)
 , Point (..)
 , pixelsToPoints
-, val32f
+--, val32f
 ) where
 
-import GSL hiding (size)
-import Vision
-import Ipp.Core hiding (width, height, img)
-import Ipp.Camera
-import qualified Ipp.Core as Core
-import Foreign
+import Ipp.Core (
+     Image(..)
+   , ImageRGB
+   , ImageGray
+   , ImageFloat
+   , Pixel(..)
+   , Point(..)
+   , Size(..)
+   , pixelsToPoints
+ )
 

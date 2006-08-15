@@ -8,7 +8,7 @@ Maintainer  :  Alberto Ruiz (aruiz at um dot es)
 Stability   :  very provisional
 Portability :  hmm...
 
-Working on a type safe alternative to Ipp.Typical.
+A collection of frequently used image processing functions.
 
 -}
 -----------------------------------------------------------------------------
@@ -26,6 +26,8 @@ module Ipp.ImageProcessing (
 -- * Image manipulation
 , scale8u32f
 , copy32f
+, copy8u
+, copy8uC3
 , copyMask32f
 , resize32f
 , warp, warpOn
@@ -90,34 +92,56 @@ scale8u32f vmin vmax (G im) = do
     return (F r)
 
 -- | Copies the roi of the input image into the destination image.
-copyROI32f :: Img -> Img -> IO ()
-copyROI32f r im = ippiCopy_32f_C1R // src im (vroi im) // dst r (vroi im) // checkIPP "copyROI32f" [im]
+copyROI32f :: ImageFloat -> ImageFloat -> IO ()
+copyROI32f (F r) (F im) = ippiCopy_32f_C1R // src im (vroi im) // dst r (vroi im) // checkIPP "copyROI32f" [im]
 
-simplefun1 ippfun roifun msg = g where
+simplefun1F ippfun roifun msg = g where
     g (F im) = do
         r <- imgAsR1 roifun im
         cr1 ippfun im r // checkIPP msg [im]
         return (F r) 
 
+simplefun1G ippfun roifun msg = g where
+    g (G im) = do
+        r <- imgAsR1 roifun im
+        cr1 ippfun im r // checkIPP msg [im]
+        return (G r)
+
+simplefun1C ippfun roifun msg = g where
+    g (C im) = do
+        r <- imgAsR1 roifun im
+        cr1 ippfun im r // checkIPP msg [im]
+        return (C r)
+
+
 -- | Creates a image of the same size as the source and copies its roi.
 copy32f :: ImageFloat -> IO ImageFloat
-copy32f = simplefun1 ippiCopy_32f_C1R id "copy32f"
+copy32f = simplefun1F ippiCopy_32f_C1R id "copy32f"
+
+-- | Creates a image of the same size as the source and copies its roi.
+copy8u :: ImageGray -> IO ImageGray
+copy8u = simplefun1G ippiCopy_8u_C1R id "copy8u"
+
+-- | Creates a image of the same size as the source and copies its roi.
+copy8uC3 :: ImageRGB -> IO ImageRGB
+copy8uC3 = simplefun1C ippiCopy_8u_C3R id "copy8uC3"
+
 
 -- | The result contains the absolute values of the pixels in the input image.
 abs32f :: ImageFloat -> IO ImageFloat
-abs32f  = simplefun1 ippiAbs_32f_C1R  id "abs32f"    
+abs32f  = simplefun1F ippiAbs_32f_C1R  id "abs32f"
 
 -- | The result contains the square roots of the pixels in the input image.
 sqrt32f :: ImageFloat -> IO ImageFloat
-sqrt32f = simplefun1 ippiSqrt_32f_C1R id "sqrt32f" 
+sqrt32f = simplefun1F ippiSqrt_32f_C1R id "sqrt32f"
 
 -- | Applies a vertical Sobel filter (typically used for computing gradient images).
 sobelVert :: ImageFloat -> IO ImageFloat
-sobelVert = simplefun1 ippiFilterSobelVert_32f_C1R (shrink (1,1)) "sobelVert"
+sobelVert = simplefun1F ippiFilterSobelVert_32f_C1R (shrink (1,1)) "sobelVert"
 
 -- | Applies a horizontal Sobel filter (typically used for computing gradient images).
 sobelHoriz ::ImageFloat -> IO ImageFloat
-sobelHoriz = simplefun1 ippiFilterSobelHoriz_32f_C1R (shrink (1,1)) "sobelHoriz"
+sobelHoriz = simplefun1F ippiFilterSobelHoriz_32f_C1R (shrink (1,1)) "sobelHoriz"
 
 data Mask = Mask3x3 | Mask5x5
 code Mask3x3 = 33
@@ -125,7 +149,7 @@ code Mask5x5 = 55
 
 -- | Convolution with a gaussian mask of the desired size.
 gauss :: Mask -> ImageFloat -> IO ImageFloat
-gauss mask = simplefun1 f (shrink (s,s)) "gauss" where
+gauss mask = simplefun1F f (shrink (s,s)) "gauss" where
     s = case mask of
                 Mask3x3 -> 1
                 Mask5x5 -> 2
@@ -137,12 +161,12 @@ thresholdVal32f :: Float          -- ^ threshold
                 -> IppCmp         -- ^ comparison function
                 -> ImageFloat     -- ^ source image
                 -> IO ImageFloat  -- ^ result
-thresholdVal32f t v cmp = simplefun1 f id "thresholdVal32f" where
+thresholdVal32f t v cmp = simplefun1F f id "thresholdVal32f" where
     f ps ss pd sd r = ippiThreshold_Val_32f_C1R ps ss pd sd r t v (codeCmp cmp)
 
 -- | Changes each pixel by the maximum value in its neighbourhood of given radius.
 filterMax32f :: Int -> ImageFloat -> IO ImageFloat
-filterMax32f sz = simplefun1 f (shrink (d,d)) "filterMax32f" where
+filterMax32f sz = simplefun1F f (shrink (d,d)) "filterMax32f" where
     d = (sz-1) `quot` 2
     f ps ss pd sd r = ippiFilterMax_32f_C1R ps ss pd sd r (ippRect sz sz) (ippRect d d)
 
@@ -170,7 +194,7 @@ infixl 6  |+|, |-|
 
 -- | Multiplies the pixel values of an image by a given value.
 scale32f :: Float -> ImageFloat -> IO ImageFloat
-scale32f v = simplefun1 f id "mulC32f" where
+scale32f v = simplefun1F f id "mulC32f" where
     f ps ss pd sd r = ippiMulC_32f_C1R ps ss v pd sd r
 
 codeCmp IppCmpLess      = 0
@@ -303,7 +327,7 @@ inter_LANCZOS    = 16 :: Int
 --inter_SMOOTH_EDGE = (1 << 31) :: Int
 
 -- | Explores an image and returns a list of pixels (as [row,column]) where the image is greater than 0.0.
-getPoints32f :: Int -> ImageFloat -> IO [[Int]]
+getPoints32f :: Int -> ImageFloat -> IO [Pixel]
 getPoints32f mx (F im) = do
     r <- mallocArray (2*mx)
     ptot <- malloc
@@ -314,12 +338,17 @@ getPoints32f mx (F im) = do
     hp <- peekArray tot r
     free ptot
     free r
-    return (partit 2 hp)
+    return (partitPixel hp)
 
 -- | Partitions a list into a list of lists of a given length.
 partit :: Int -> [a] -> [[a]]
 partit _ [] = []
 partit n l  = take n l : partit n (drop n l)
+
+partitPixel :: [Int] -> [Pixel]
+partitPixel [] = []
+partitPixel [a] = error "partitPixel on a list with odd number of entries"
+partitPixel (r:c:l) = Pixel r c : partitPixel l
 
 ----------------------------------------------------------
 -- TO DO: parameters with a record
@@ -330,7 +359,7 @@ getCorners :: Int       -- ^ degree of smoothing (e.g. 1)
            -> Float     -- ^ fraction of the maximum response allowed (e.g. 0.1)
            -> Int       -- ^ maximum number of interest points
            -> ImageFloat  -- ^ source image
-           -> IO [[Double]]  -- ^ result
+           -> IO [Pixel]  -- ^ result
 getCorners smooth rad prop maxn im = do
     let suaviza = smooth `times` gauss Mask5x5
     h <- suaviza im >>= secondOrder >>= hessian >>= scale32f (-1.0)
@@ -338,8 +367,7 @@ getCorners smooth rad prop maxn im = do
     hotPoints <- localMax rad h
               >>= thresholdVal32f (mx*prop) 0.0 IppCmpLess
               >>= getPoints32f maxn
-    --return $ pixel2point im $ map (reverse . map fromIntegral) hotPoints
-    return $ map (reverse . map fromIntegral) hotPoints
+    return hotPoints
 
 --------------------------------------------------------------------
 
@@ -351,8 +379,8 @@ genResize32f dst droi im sroi interp = do
                  interp // checkIPP "genResize32f" [im]
 
 -- | Resizes the roi of a given image.
-resize32f :: Size -> Img -> IO Img
-resize32f s im = do
+resize32f :: Size -> ImageFloat -> IO ImageFloat
+resize32f s (F im) = do
     r <- img I32f s
     genResize32f r (fullroi r) im (vroi im) inter_LINEAR
-    return r
+    return (F r)

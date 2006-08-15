@@ -1,21 +1,18 @@
 
 module Main where
 
-import Ipp hiding (shift)
-import Graphics.UI.GLUT hiding (Matrix, drawPixels)
+import Ipp
+import Graphics.UI.GLUT hiding (Matrix,Size,Point)
 import Data.IORef
 import System.Exit
 import Control.Monad(when)
 import System.Environment(getArgs)
 import Data.List(minimumBy)
-import GSL
+import GSL hiding (size)
 import Vision
 
-type Point = [Double]  -- provisional
-type Pixel = [Int]
-
-data MyState = ST { imgs :: [Img]
-                  , corners, marked ::[Point]
+data MyState = ST { imgs :: [ImageFloat]
+                  , corners, marked ::[Pixel]
                   , pts  :: [[Point]]
                   , cams :: [Matrix]
                   , drfuns :: [IO()]
@@ -30,7 +27,8 @@ diagl = diag . realVector
 --------------------------------------------------------------
 main = do
     args <- getArgs
-    cam@(_,_,(h,w)) <- openCamera (args!!0) Gray (288,384)
+    let sz = Size 288 384
+    cam <- openCamera (args!!0) sz
 
     (tb,kc,mc) <- newTrackball
 
@@ -43,10 +41,10 @@ main = do
                             , trackball = tb
                             }
 
-    addWindow "camera" (w,h) Nothing marker state
-    addWindow "selected" (w,h) Nothing keyboard state
+    addWindow "camera" sz Nothing marker state
+    addWindow "selected" sz Nothing keyboard state
 
-    addWindow "3D view" (400,400) Nothing keyboard state
+    addWindow "3D view" (Size 400 400) Nothing keyboard state
     keyboardMouseCallback $= Just (kc (keyboard state))
     motionCallback $= Just mc
     depthFunc $= Just Less
@@ -62,11 +60,15 @@ a4 = [[   0,    0]
      ,[2.10,    0]
      ]
 
+pl (Point x y) = [x,y]
+mpl = map pl
+
 recover pts = c where
-    h = estimateHomography pts a4
+    h = estimateHomography (mpl pts) a4
     Just c = cameraFromHomogZ0 Nothing h
 
-worker inWindow camera st = do
+worker inWindow cam st = do
+    camera <- grab cam >>= scale8u32f 0 1
     hotPoints <- getCorners 1 7 0.1 200 camera
 
     inWindow "camera" $ do
@@ -113,15 +115,17 @@ compareBy f = (\a b-> compare (f a) (f b))
 
 closest [] p = p
 closest hp p = minimumBy (compareBy $ dist p) hp
-    where dist [a,b] [x,y] = (a-x)^2+(b-y)^2
+    where dist (Pixel a b) (Pixel x y) = (a-x)^2+(b-y)^2
 
 -----------------------------------------------------------------
 -- callbacks
 -----------------------------------------------------------------
-keyboard st (Char 'p') Down _ _ = do
-    modifyIORef st $ \s -> s {pause = not (pause s)}
-keyboard st (Char ' ') Down _ _ = do
-    modifyIORef st $ \s -> s {pause = not (pause s)}
+keyboard str (Char 'p') Down _ _ = do
+    st <- readIORef str
+    pause (camid st)
+keyboard str (Char ' ') Down _ _ = do
+    st <- readIORef str
+    pause (camid st)
 keyboard _ (Char '\27') Down _ _ = do
     exitWith ExitSuccess
 
@@ -137,13 +141,14 @@ keyboard _ _ _ _ _ = return ()
 marker str (MouseButton LeftButton) Down _ pos@(Position x y) = do
     st <- readIORef str
     let u = ust (st)
-    let newpoint = closest (corners u) $ map fromIntegral [x,y]
+    let newpoint = closest (corners u) (Pixel (fromIntegral y) (fromIntegral x))
     let m = newpoint : marked u
     if (length m /= 4)
         then writeIORef str st { ust = u {marked = m} }
         else do
-            let hp = reverse $ pixelToPoint (camera st) m
-            im  <- scale8u32f 0 1 (camera st)
+            camera <- grab (camid st)
+            let hp = reverse $ pixelsToPoints (size camera) m
+            im  <- scale8u32f 0 1 camera
             let cam = recover hp
             imt <- extractSquare 128 im
             let v = u { marked = []

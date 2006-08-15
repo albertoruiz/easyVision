@@ -5,7 +5,7 @@
 --    $ ./a.out penguin.dv
 
 import Ipp
-import Graphics.UI.GLUT
+import Graphics.UI.GLUT hiding (Size)
 import Data.IORef
 import System.Exit
 import Control.Monad(when)
@@ -16,10 +16,13 @@ import Data.Map((!))
 import GSL
 import Vision
 
+szc = Size 288 384
+szw = Size 600 500
 
 main = do
     args <- getArgs
-    cam@(_,_,(h,w)) <- openCamera (args!!0) Gray (288,384)
+    let sz = Size 288 384
+    cam <- openCamera (args!!0) szc
 
     state <- prepare cam $ Map.fromList 
                              [("alpha",-40*degree) 
@@ -27,18 +30,22 @@ main = do
                              ,("foc" , 2)
                              ,("sca",1/2)]
 
-    addWindow "camera" (w,h) Nothing kbdwarp state
-    addWindow "warped" (500,600) Nothing kbdwarp state
+    addWindow "camera" szc Nothing kbdwarp state
+    addWindow "warped" szw Nothing kbdwarp state
 
     launch state worker
-    
+
 ----------------------------------------------------------------------    
 modify st str fun = do
     modifyIORef st $ \s -> s {ust = Map.insertWith g str 0 (ust s)} 
        where g a b = fun b
 
-kbdwarp st (Char 'p') Down _ _ = do
-    modifyIORef st $ \s -> s {pause = not (pause s)}
+kbdwarp str (Char 'p') Down _ _ = do
+    st <- readIORef str
+    pause (camid st)
+kbdwarp str (Char ' ') Down _ _ = do
+    st <- readIORef str
+    pause (camid st)
 kbdwarp _ (Char '\27') Down _ _ = do
     exitWith ExitSuccess
 
@@ -66,12 +73,13 @@ warper alpha rho foc sca = r where
 
 ----------------------------------------------------------
 
-worker inWindow camera param = do
-        
+worker inWindow cam param = do
+
+    camera <- grab cam
     inWindow "camera" (drawImage camera)
-    
+
     let t = warper (param!"alpha") (param!"rho") (param!"foc") (param!"sca")
     inWindow "warped" $ do
-        scale8u32f 0 1 camera >>= warp (600,500) t >>= drawImage
+        scale8u32f 0 1 camera >>= warp szw t >>= drawImage
 
     return param

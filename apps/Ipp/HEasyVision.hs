@@ -16,18 +16,24 @@ See the simple examples: player.hs, hessian.hs, warp.hs, etc. in the easyvision 
 -----------------------------------------------------------------------------
 
 module Ipp.HEasyVision (
+-- * Application interface
   State(..)
 , prepare
 , addWindow
 , launch
 , InWindow
+-- * Drawing utilities
+, module Ipp.Draw
+-- * DV camera driver
+, module Ipp.Camera
 ) where
 
-import Ipp.Core hiding (Size)
---import Ipp.ImageProcessing
-import Ipp.Draw
 import Ipp.Camera
-import Graphics.UI.GLUT hiding (RGB, Matrix)
+import Ipp.Draw
+import Ipp.Core (Size(..))
+import Ipp.Camera
+import Graphics.UI.GLUT hiding (RGB, Matrix, Size)
+import qualified Graphics.UI.GLUT as GL
 import Data.IORef
 import System.Exit
 import Control.Monad(when)
@@ -36,13 +42,13 @@ import Data.Map
 
 -- | creates an HOpenGL window which can be selected inside the worker function.
 addWindow :: String -- ^ window identifier
-             -> (Int, Int)  -- ^ size (width,height)
+             -> Size -- ^ size
              -> Maybe (State userState -> IO t)                    -- ^ optional drawing callback
              -> (IORef (State userState) -> KeyboardMouseCallback) -- ^ keyboard callback receiving the user defined state
              -> IORef (State userState)                            -- ^ the user defined state
              -> IO Window
-addWindow name (w,h) dcallback kcallback state = do
-    w <- installWindow name (w,h) dcallback kcallback state
+addWindow name s dcallback kcallback state = do
+    w <- installWindow name s dcallback kcallback state
     modifyIORef state $ \s -> s { wins = insert name w (wins s)}
     return w
 
@@ -51,8 +57,6 @@ data State userState =
     State { wins  :: Map String Window
           , camid :: Camera
           , frame :: Int 
-          , pause :: Bool
-          , camera :: Img
           , ust  :: userState
 }
 
@@ -64,8 +68,8 @@ prepare cam s = do
     getArgsAndInitialize
     initialDisplayMode $= [DoubleBuffered, WithDepthBuffer]
 
-    state <- newIORef State {camid = cam, frame = 0, pause = False,
-                             camera = undefined, wins = empty, ust = s}
+    state <- newIORef State {camid = cam, frame = 0,
+                             wins = empty, ust = s}
     return state
 
 -- | Window selector for the HOpenGL functions
@@ -73,16 +77,12 @@ type InWindow = String -> IO () -> IO ()
 
 -- | Starts the application with a worker function (idle callback).
 launch :: IORef (State userState)      -- ^ the state of the application
-          -> (InWindow -> Img -> userState -> IO userState)  -- ^ worker function
+          -> (InWindow -> Camera -> userState -> IO userState)  -- ^ worker function
           -> IO ()
 launch state worker = do
     idleCallback $= Just ( do
         st <- readIORef state
-        when (not (pause st)) $ do
-            im <- grab (camid st)
-            writeIORef state (st {camera = im})
-        st <- readIORef state
-        newstate <- worker (inWindow st) (camera st) (ust st)
+        newstate <- worker (inWindow st) (camid st) (ust st)
         writeIORef state st {frame = frame st +1, ust = newstate}
         )
     mainLoop
@@ -93,9 +93,9 @@ inWindow st name f = do
     f
     swapBuffers
 
-installWindow name (wid,hei) (Just fun) kbdcallback state = do
+installWindow name (Size hei wid) (Just fun) kbdcallback state = do
     w <- createWindow name
-    windowSize $= Size (fromIntegral wid) (fromIntegral hei)
+    windowSize $= GL.Size (fromIntegral wid) (fromIntegral hei)
     displayCallback $= draw
     keyboardMouseCallback $= Just (kbdcallback state)
     return w
@@ -106,9 +106,9 @@ installWindow name (wid,hei) (Just fun) kbdcallback state = do
         fun st
         swapBuffers
 
-installWindow name (wid,hei) Nothing kbdcallback state = do
+installWindow name (Size hei wid) Nothing kbdcallback state = do
     w <- createWindow name
     displayCallback $= return ()
-    windowSize $= Size (fromIntegral wid) (fromIntegral hei)
+    windowSize $= GL.Size (fromIntegral wid) (fromIntegral hei)
     keyboardMouseCallback $= Just (kbdcallback state)
     return w

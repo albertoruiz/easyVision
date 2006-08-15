@@ -5,7 +5,8 @@
 --    $ ./player penguin.dv
 
 import Ipp
-import Graphics.UI.GLUT hiding (RGB)
+import Graphics.UI.GLUT hiding (RGB,Size)
+import qualified Graphics.UI.GLUT as GL
 import Data.IORef
 import System.Exit
 import System.Environment(getArgs)
@@ -14,34 +15,44 @@ import System.Environment(getArgs)
 
 main = do
     args <- getArgs
-    cam@(_,_,(h,w)) <- openCamera (args!!0) RGB (576,720)
+    let sz = Size 576 720
+    cam <- openCamera (args!!0) sz
 
-    state <- prepare cam ()
+    state <- prepare cam True
 
-    addWindow "camera" (w,h) Nothing keyboard state
+    addWindow "camera" sz Nothing keyboard state
 
     attachMenu LeftButton $ Menu 
         [MenuEntry "Quit" (exitWith ExitSuccess)
         ,MenuEntry "fullScreen" fullScreen
-        ,MenuEntry "normal" (do windowSize $= Size 720 576
+        ,MenuEntry "normal" (do windowSize $= GL.Size 720 576
                                 windowPosition $= Position 100 100)
-        ,MenuEntry "pause" $ modifyIORef state $ \s -> s {pause = not (pause s)}
+        ,MenuEntry "pause" $ (do st<- readIORef state
+                                 pause (camid st))
+        , SubMenu "mode" $ Menu [ MenuEntry "RGB" $ modifyIORef state $ \s -> s {ust = True}
+                                , MenuEntry "Gray" $ modifyIORef state $ \s -> s {ust = False}
+                                ]
         ]
 
     launch state worker
 
 -----------------------------------------------------------------
 
-worker inWindow camera st = do
+worker inWindow cam st = do
 
-    inWindow "camera" $ do
-        drawImage camera
+    inWindow "camera" $ case st of
+        True ->  grab cam >>= (drawImage :: ImageRGB  -> IO ())
+        False -> grab cam >>= (drawImage :: ImageGray -> IO ())
 
     return st
 
 ------------------------------------------------------------------
-keyboard st (Char 'p') Down _ _ = do
-    modifyIORef st $ \s -> s {pause = not (pause s)}
+keyboard str (Char 'p') Down _ _ = do
+    st <- readIORef str
+    pause (camid st)
+keyboard str (Char ' ') Down _ _ = do
+    st <- readIORef str
+    pause (camid st)
 keyboard _ (Char '\27') Down _ _ = do
     exitWith ExitSuccess
 keyboard _ _ _ _ _ = return ()

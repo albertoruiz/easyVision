@@ -51,7 +51,7 @@ import Vision
 data Size  = Size  {height :: !Int, width :: !Int} deriving Show
 
 -- | Image type descriptor:
-data ImageType = RGB | Gray | I32f
+data ImageType = RGB | Gray | I32f deriving (Show,Eq)
 
 -- | Image representation:
 data Img = Img { fptr :: ForeignPtr ()  -- ^ automatic allocated memory
@@ -91,8 +91,8 @@ img RGB  = img' RGB  1 3
 img I32f = img' I32f 4 1
 
 -- | Extracts the data in a I32f image into a list of lists.
-getData32f :: Img -> IO [[Float]]
-getData32f Img {fptr = fp, ptr = p, datasize = d, step = s, isize = Size r c } = do
+getData32f :: ImageFloat -> IO [[Float]]
+getData32f (F Img {fptr = fp, ptr = p, datasize = d, step = s, isize = Size r c }) = do
     let jump = s `quot` d
     let row k = peekArray c (advancePtr (castPtr p) (k*jump))
     r <- mapM row [0 .. r-1]
@@ -100,9 +100,9 @@ getData32f Img {fptr = fp, ptr = p, datasize = d, step = s, isize = Size r c } =
     return r
 
 -- | Copies the values of list of lists the data into a I32f image. NO range checking.
-setData32f :: Img -> [[Float]] -> IO ()
-setData32f Img {fptr = fp, ptr = p,
-               datasize = d, step = s, isize = Size {height = r}} vs = do
+setData32f :: ImageFloat -> [[Float]] -> IO ()
+setData32f (F Img {fptr = fp, ptr = p,
+               datasize = d, step = s, isize = Size {height = r}}) vs = do
     let jump = s `quot` d
     touchForeignPtr fp
     let row k l = pokeArray (advancePtr (castPtr p) (k*jump)) l

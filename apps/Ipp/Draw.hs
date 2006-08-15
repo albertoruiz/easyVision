@@ -18,16 +18,16 @@ HOpenGL drawing utilities.
 module Ipp.Draw
 ( pointCoordinates
 , pixelCoordinates
-, drawImageRGB, drawImageGray, drawImageFloat
+, Drawable(..)
 , drawTexture
 , mycolor
-, vertices, vertices'
+, Vertices (..)
 , drawCamera
 , extractSquare
 , newTrackball
 ) where
 
-import Graphics.UI.GLUT hiding (RGB, Matrix, Size)
+import Graphics.UI.GLUT hiding (RGB, Matrix, Size, Point)
 import qualified Graphics.UI.GLUT as GL
 import Ipp.Core
 import Ipp.ImageProcessing(resize32f)
@@ -37,6 +37,20 @@ import GSL hiding (size)
 import Vision
 import Ipp.Trackball
 
+
+-- | Types of images that can be shown in a window
+class Drawable a where
+    -- | Draws an image in the current window (ant its ROI)
+    drawImage :: a -> IO ()
+
+instance Drawable ImageGray where
+    drawImage = drawImageGray
+
+instance Drawable ImageRGB where
+    drawImage = drawImageRGB
+
+instance Drawable ImageFloat where
+    drawImage = drawImageFloat
 
 
 myDrawPixels m@Img{itype=RGB} = 
@@ -52,8 +66,8 @@ myDrawPixels m@Img{itype=I32f} =
                   (PixelData Luminance Float (ptr m))
 
 -- | Draws an image in the current window.
-drawImage :: Img -> IO ()
-drawImage m = do
+drawImage' :: Img -> IO ()
+drawImage' m = do
     matrixMode $= Projection
     loadIdentity
     let w = width $ isize m
@@ -73,9 +87,9 @@ drawImage m = do
         [c2 r, r2 r],
         [c2 r, r1 r]]
 
-drawImageFloat (F im) = drawImage im
-drawImageGray (G im) = drawImage im
-drawImageRGB (C im) = drawImage im
+drawImageFloat (F im) = drawImage' im
+drawImageGray (G im) = drawImage' im
+drawImageRGB (C im) = drawImage' im
 
 --------------------------------------------------------------------------------
 
@@ -127,9 +141,26 @@ draw2Dwith ortho = do
     matrixMode $= Modelview 0
     loadIdentity
 
+
+-- | Things that can be converted into a list of things admitted by vertex.
+class Vertices a where
+    -- runs vertex on the elements in a
+    vertices :: a -> IO ()
+
+instance Vertices [Point] where
+    vertices l = mapM_ (vertex.f) l where
+        f (Point x y) = Vertex2 x y
+
+instance Vertices [Pixel] where
+    vertices l = mapM_ (vertex.f) l where
+        f (Pixel r c) = Vertex2 (fromIntegral c) (fromIntegral r::Double)
+
+instance Vertices [[Double]] where
+    vertices = verticesL
+
 -- Applies @vertex@ to the @[x,y]@ or @[x,y,z]@ entries in a list, converted to @Vertex3 x y 0@ or @Vertex3 x y z@.
-vertices :: (Num a, Vertex (Vertex3 a)) => [[a]] -> IO ()
-vertices l = mapM_ (vertex.f) l where
+verticesL :: (Num a, Vertex (Vertex3 a)) => [[a]] -> IO ()
+verticesL l = mapM_ (vertex.f) l where
     f [x,y]   = Vertex3 x y 0
     f [x,y,z] = Vertex3 x y z
     f _ = error "vertices without 2 or 3 components"
@@ -161,8 +192,8 @@ drawCamera size cam (Just imgtext) = do
     renderPrimitive LineLoop $ vertices outline
 
 -- | Takes a centered square from an image and resizes it to the desired size (useful to obtain an image texture appropriate for 'drawCamera').
-extractSquare :: Int -> Img -> IO Img
-extractSquare sz im = resize32f (Size sz sz) im {vroi = roi} where
+extractSquare :: Int -> ImageFloat -> IO ImageFloat
+extractSquare sz (F im) = resize32f (Size sz sz) (F im {vroi = roi}) where
     w = width $ isize im
     h = height $ isize im
     d = w-h

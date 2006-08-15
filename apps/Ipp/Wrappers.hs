@@ -41,6 +41,9 @@ foreign import ccall "auxIpp.h ippiCopy_32f_C1MR"
 foreign import ccall "auxIpp.h ippiCopy_8u_C1R"
      ippiCopy_8u_C1R :: Ptr() -> Int -> Ptr() -> Int -> ROISize -> IO Int
 
+foreign import ccall "auxIpp.h ippiCopy_8u_C3R"
+     ippiCopy_8u_C3R :: Ptr() -> Int -> Ptr() -> Int -> ROISize -> IO Int
+
 foreign import ccall "auxIpp.h ippiScale_32f8u_C1R"
      ippiScale_32f8u_C1R :: Ptr() -> Int -> Ptr() -> Int -> ROISize -> Float -> Float -> IO Int
 

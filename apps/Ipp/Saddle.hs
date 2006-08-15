@@ -71,13 +71,12 @@ getSaddlePoints smooth rad prop maxn fn fr im = do
     gs <- secondOrder sm
     h <- hessian gs >>= scale32f (-1.0)
     (mn,mx) <- minmax h
-    hotPoints' <- localMax rad h
+    hotPixels  <- localMax rad h
                >>= thresholdVal32f (mx* cDF prop) 0.0 IppCmpLess
                >>= getPoints32f maxn
 
     let ptp = pixelsToPoints (size im)
 
-    let hotPixels = map (\[r,c] -> Pixel r c) hotPoints'
     let hotPoints = ptp hotPixels
 
     let (gx,gy,gxx,gyy,gxy) = gs

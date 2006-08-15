@@ -10,6 +10,7 @@ int ippiFilterSobelHoriz_32f_C1R(SRC,DST);
 int ippiCopy_32f_C1R(SRC,DST);
 int ippiCopy_32f_C1MR(SRC,DST,SRC);
 int ippiCopy_8u_C1R(SRC,DST);
+int ippiCopy_8u_C3R(SRC,DST);
 int ippiScale_8u32f_C1R(SRC,DST,float,float);
 int ippiScale_32f8u_C1R(SRC,DST,float,float);
 int ippiAbs_32f_C1R(SRC,DST);

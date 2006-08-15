@@ -14,30 +14,28 @@
 
 module Main where
 
-import Ipp hiding (shift)
-import Graphics.UI.GLUT hiding (Matrix)
+import Ipp
+import Ipp.Core(image,ImageFloat(F),fullroi,setData32f)
+import Graphics.UI.GLUT hiding (Matrix, Size, Point)
 import Data.IORef
 import System.Exit
 import Control.Monad(when)
 import System.Environment(getArgs)
 import Data.List(minimumBy, elemIndex)
-import GSL
+import GSL hiding (size)
 import Vision
 
 -------------------------------------------------------
 
-type Point = [Double]  -- provisional
-type Pixel = [Int]
-
 floorSize = 256
 
-data MyState = ST { imgs :: [Img]             -- selected views
-                  , corners, marked ::[Point] -- corners in the current image
+data MyState = ST { imgs :: [ImageFloat]             -- selected views
+                  , corners, marked ::[Pixel] -- corners in the current image
                   , pts  :: [[Point]]         -- homologous points of the selected images
                   , hs   :: [Matrix]          -- interimage homographies
                   , cam0 :: Matrix            -- solution
                   , drfuns :: [IO()]          -- camera drawing functions
-                  , cost  :: Maybe Img        -- the cost function
+                  , cost  :: Maybe ImageFloat -- the cost function
                   , zoom :: Double            -- visualization scale of the rectified image
                   , priorInfo :: KnownFs      -- available info about the fs
                   , baseView ::Int            -- index of the desired base view 
@@ -48,7 +46,8 @@ data MyState = ST { imgs :: [Img]             -- selected views
 --------------------------------------------------------------
 main = do
     args <- getArgs
-    cam@(_,_,(h,w)) <- openCamera (args!!0) Gray (288,384)
+    let sz = Size 288 384
+    cam <- openCamera (args!!0) sz
 
     (tb,kc,mc) <- newTrackball
 
@@ -65,11 +64,11 @@ main = do
                             , trackball = tb
                             }
 
-    addWindow "camera" (w,h) Nothing marker state            -- shows the live video
-    addWindow "base" (w,h) Nothing keyboard state            -- desired base view
-    addWindow "selected" (w,h) Nothing keyboard state        -- target view warped into the base view
-    addWindow "world" (floorSize,floorSize) Nothing warpkbd state     -- combined metric rectification
-    addWindow "cost" (200,200) Nothing keyboard state        -- the cost function
+    addWindow "camera" sz Nothing marker state            -- shows the live video
+    addWindow "base" sz Nothing keyboard state            -- desired base view
+    addWindow "selected" sz Nothing keyboard state        -- target view warped into the base view
+    addWindow "world" (Size floorSize floorSize) Nothing warpkbd state     -- combined metric rectification
+    addWindow "cost" (Size 200 200) Nothing keyboard state        -- the cost function
 
     let modInfo info = do
         st <- readIORef state
@@ -83,7 +82,7 @@ main = do
         ,MenuEntry "Variable f's" (modInfo AllUnknown)
         ]
 
-    addWindow "3D view" (600,600) Nothing keyboard state     -- 3D representation
+    addWindow "3D view" (Size 600 600) Nothing keyboard state     -- 3D representation
     keyboardMouseCallback $= Just (kc (keyboard state))
     motionCallback $= Just mc
 
@@ -112,7 +111,16 @@ rotateList n list = take (length list) $ drop n $ cycle list
 
 ---------------------------------------------------------------------
 
-worker inWindow camera st = do
+pl (Point x y) = [x,y]
+mpl = map pl
+
+lp [x,y] = Point x y
+mlp = map lp
+
+htp h = ht h . mpl
+
+worker inWindow cam st = do
+    camera <- grab cam >>= scale8u32f 0 1
     hotPoints <- getCorners 1 7 0.1 200 camera
 
     inWindow "camera" $ do
@@ -143,14 +151,14 @@ worker inWindow camera st = do
     when (n > 1) $ do
 
         inWindow "selected" $ do            -- selected view warped into the base view
-            w <- warp (288,384) h (imgs st !! sv)
+            w <- warp (Size 288 384) h (imgs st !! sv)
             drawImage w
 
     when (length (drfuns st) > 1) $ do
 
         let r = scaling (zoom st) <> inv (cam0 st) -- hmm
-        w <- img I32f floorSize floorSize
-        set32f 0.25 w (fullroi w)
+        w@(F i) <- image (Size floorSize floorSize)
+        set32f 0.25 w (fullroi i)
         let g im h = warpOn (r <> h) w im
         sequence_ $ reverse $ rotateList sv $ zipWith g (imgs st) (hs st)
 
@@ -165,8 +173,8 @@ worker inWindow camera st = do
             clear [ColorBuffer, DepthBuffer]
             trackball st
 
-            let ref = ht (inv (cam0 st)) (pts st !!0) -- the rectified homologous points
-            let wref = ht r (pts st !!0)              -- this same points in image w
+            let ref = htp (inv (cam0 st)) (pts st !!0) -- the rectified homologous points
+            let wref = htp r (pts st !!0)              -- this same points in image w
             let hx = estimateHomography ref wref
 
             drawTexture w $ map (++[-0.01]) $ ht hx [[1,1],[-1,1],[-1,-1],[1,-1]]
@@ -194,10 +202,10 @@ compute st = do
     let f = consistency info uhs
 
     let explsz = 50                  -- coarse exploration of the error surface
-    costsurf' <- img I32f 50 50
+    costsurf' <- image (Size 50 50)
     let (minim,cost) = explore 50 (60*degree) 3 (0,2) ((0.5*).f)
     setData32f costsurf' cost
-    costsurf <- resize32f (200,200) costsurf'
+    costsurf <- resize32f (Size 200 200) costsurf'
 
     let [rho,yh] = fst $ findSol f minim     -- detailed optimization from the minimum
     let (c0,_) = extractInfo info uhs (rho, yh)
@@ -223,15 +231,17 @@ compareBy f = (\a b-> compare (f a) (f b))
 
 closest [] p = p
 closest hp p = minimumBy (compareBy $ dist p) hp
-    where dist [a,b] [x,y] = (a-x)^2+(b-y)^2
+    where dist (Pixel a b) (Pixel x y) = (a-x)^2+(b-y)^2
 
 -----------------------------------------------------------------
 -- callbacks
 -----------------------------------------------------------------
-keyboard st (Char 'p') Down _ _ = do
-    modifyIORef st $ \s -> s {pause = not (pause s)}
-keyboard st (Char ' ') Down _ _ = do
-    modifyIORef st $ \s -> s {pause = not (pause s)}
+keyboard str (Char 'p') Down _ _ = do
+    st <- readIORef str
+    pause (camid st)
+keyboard str (Char ' ') Down _ _ = do
+    st <- readIORef str
+    pause (camid st)
 keyboard _ (Char '\27') Down _ _ = do
     exitWith ExitSuccess
 
@@ -252,17 +262,18 @@ keyboard _ _ _ _ _ = return ()
 marker str (MouseButton LeftButton) Down _ pos@(Position x y) = do
     st <- readIORef str
     let u = ust (st)
-    let newpoint = closest (corners u) $ map fromIntegral [x,y]
+    let newpoint = closest (corners u) (Pixel (fromIntegral y) (fromIntegral x))
     let m = newpoint : marked u
     if (length m /= 4)
         then writeIORef str st { ust = u {marked = m} }
         else do
-            let hp = pixelToPoint (camera st) m
-            im  <- scale8u32f 0 1 (camera st)
+            camera <- grab (camid st)
+            let hp = pixelsToPoints (size camera) m
+            im  <- scale8u32f 0 1 camera
             let u' = u { marked = []
                        , imgs = imgs u ++ [im]
                        , pts = pts u ++ [hp]
-                       , hs = genInterimage (pts u')
+                       , hs = genInterimage (map (mpl) (pts u'))
                        , targetView = length (imgs u') -1
                        }
             v <- compute u' -- automatically updated on the fourth point

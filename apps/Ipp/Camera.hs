@@ -18,15 +18,16 @@ Wrapper to Pedro E. Lopez de Teruel interface to IEEE1394 cameras and dv videos.
 module Ipp.Camera (
   Camera
 , openCamera
-, grab
-, Grabable(..)
+, Grabbable(..)
+, pause
 )where
 
 import Ipp.Core
-import Ipp.ImageProcessing (scale8u32f)
+import Ipp.ImageProcessing (scale8u32f,copy8u,copy8uC3)
 import Foreign
 import Foreign.C.Types (CChar)
 import Foreign.C.String(newCString)
+import Data.IORef
 
 ------------------------------------------------------      
 foreign import ccall "auxIpp.h mycvOpenCamera"
@@ -41,22 +42,30 @@ foreign import ccall "auxIpp.h mycvGetFrameCamera"
 
 -- | Opens a camera.
 openCamera :: String      -- ^ path to the device. A live camera, (e.g \/dev\/dv1394) or a raw file.dv.
-           -> ImageType   -- ^ type of image to grab
-           -> (Int,Int)   -- ^ desired size of the images (height,width)
+           -> Size        -- ^ desired size of the images (height,width)
            -> IO Camera   -- ^ camera descriptor
-openCamera device mode (h,w) = do
+openCamera device (s@(Size h w)) = do
     cdev <- newCString device
     cam <- openCameraC cdev
-    setCameraModeC cam intmode h w
-    return (cam,mode,(h,w))
- where intmode = case mode of
-                   RGB -> 0
-                   Gray -> 1
-                   _ -> error "image type not supported by the camera"
+    setCameraModeC cam (intmode Gray) h w
+    r <- newIORef CameraDescriptor
+        {cid = cam,
+                          ctype = Gray,
+                          csize = s,
+                          cpaused = False,
+                          lastGray = undefined,
+                          lastRGB = undefined
+                          }
+    return (CM r)
+
+intmode mode = case mode of
+            RGB -> 0
+            Gray -> 1
+            _ -> error "image type not supported by the camera"
 
 -- | Grabs an image from a camera.
-grab:: Camera -> IO Img
-grab (cam,mode,(h,w)) = do
+rawGrab:: CameraDescriptor -> IO Img
+rawGrab CameraDescriptor {cid = cam, ctype= mode, csize = (Size h w)} = do
     pstep <- malloc
     dat <- getFrameC cam pstep
     stepc <- peek pstep
@@ -65,36 +74,70 @@ grab (cam,mode,(h,w)) = do
     return res
 
 
--- | Camera descriptor (device id, imagetype, (height,width)).
-type Camera = (Int,ImageType,(Int,Int))
 
-class Image a => Grabable a where
-    grabb :: Camera -> IO a
+data CameraDescriptor = CameraDescriptor
+    { cid   :: Int
+    , ctype :: ImageType
+    , csize :: Size
+    , cpaused :: Bool
+    , lastGray :: ImageGray
+    , lastRGB :: ImageRGB
+    }
 
---instance Image a => Grabable a
+-- | Abstract camera descriptor.
+newtype Camera = CM (IORef CameraDescriptor)
 
-instance Grabable ImageGray where
-    grabb = grabGray
+class Grabbable a where
+    grab :: Camera -> IO a
 
-instance Grabable ImageRGB where
-    grabb = grabRGB
+instance Grabbable ImageGray where
+    grab = grabGray
 
-instance Grabable ImageFloat where
-    grabb = grabFloat
-
+instance Grabbable ImageRGB where
+    grab = grabRGB
 
 grabGray :: Camera -> IO ImageGray
-grabGray c@(_,Gray,_) = do
-    i <- grab c
-    return (G i)
+grabGray (CM rc) = do
+    c <- readIORef rc
+    if cpaused c
+        then do
+            r <- copy8u (lastGray c)
+            return r
+        else if ctype c == Gray
+                then do
+                    i <- rawGrab c
+                    return (G i)
+                else do
+                    setCameraModeC (cid c) (intmode Gray) (height (csize c)) (width (csize c))
+                    writeIORef rc c {ctype=Gray}
+                    i <- grab (CM rc)
+                    return i
 
-grabFloat :: Camera -> IO ImageFloat
-grabFloat c@(_,Gray,_) = do
-    i <- grab c
-    r <- scale8u32f 0 1 (G i)
-    return r
 
 grabRGB :: Camera -> IO ImageRGB
-grabRGB c@(_,RGB,_) = do
-    i <- grab c
-    return (C i)
+grabRGB (CM rc) = do
+    c <- readIORef rc
+    if cpaused c
+        then do
+            r <- copy8uC3 (lastRGB c)
+            return r
+        else if ctype c == RGB
+                then do
+                    i <- rawGrab c
+                    return (C i)
+                else do
+                    setCameraModeC (cid c) (intmode RGB) (height (csize c)) (width (csize c))
+                    writeIORef rc c {ctype=RGB}
+                    i <- grab (CM rc)
+                    return i
+
+-- | Alternatively freezes or unfreezes the camera.
+pause :: Camera -> IO ()
+pause (CM rc) = do
+    c <- readIORef rc
+    if cpaused c
+        then writeIORef rc c {cpaused = False, ctype = Gray} -- the same mode as the last one
+        else do                                              --  in the else branch
+            rgb  <- grab (CM rc)
+            gray <- grab (CM rc)
+            writeIORef rc c {cpaused = True, lastGray = gray, lastRGB = rgb}

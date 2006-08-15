@@ -16,21 +16,13 @@ and a minimalist version of EasyVision.
 -----------------------------------------------------------------------------
 
 module Ipp (
---    module Ipp.Images,
-    module Ipp.Core,
---    module Ipp.Typical,
+    module Ipp.Images,
     module Ipp.ImageProcessing,
-    module Ipp.Draw,
     module Ipp.HEasyVision,
-    module Ipp.Camera,
     module Ipp.Saddle
 ) where
 
-import Ipp.Core
---import Ipp.Images
---import Ipp.Typical
+import Ipp.Images
 import Ipp.ImageProcessing
-import Ipp.Draw
 import Ipp.HEasyVision
-import Ipp.Camera
 import Ipp.Saddle

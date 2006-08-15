@@ -5,7 +5,7 @@
 --    $ ./hessian penguin.dv
 
 import Ipp
-import Graphics.UI.GLUT
+import Graphics.UI.GLUT hiding (Size)
 import Data.IORef
 import System.Exit
 import Control.Monad(when)
@@ -17,47 +17,50 @@ data MyState = ST {smooth :: Int}
 
 main = do
     args <- getArgs
-    cam@(_,_,(h,w)) <- openCamera (args!!0) Gray (288,384)
+    let sz = Size 288 384
+    cam <- openCamera (args!!0) sz
 
     state <- prepare cam ST {smooth = 5}
 
-    addWindow "camera" (w,h) Nothing keyboard state
-    addWindow "hessian" (w,h) Nothing keyboard state
-    addWindow "saddlepoints" (w,h) Nothing keyboard state
+    addWindow "camera" sz Nothing keyboard state
+    addWindow "hessian" sz Nothing keyboard state
 
     launch state worker
 
 --------------------------------------------------------------
 
-worker inWindow camera st = do
+worker inWindow cam st = do
 
+    camera <- grab cam
     im  <- scale8u32f 0 1 camera
     img <- (smooth st `times` gauss Mask5x5) im
     h   <- secondOrder img >>= hessian >>= abs32f >>= sqrt32f
     copyROI32f im h
 
     inWindow "hessian" $ do
-        drawImage im {vroi = vroi h}
+        drawImage h --{vroi = vroi h}
 
     (mn,mx) <- Ipp.minmax h
     hotPoints <- localMax 7 h
              >>= thresholdVal32f (mx/5) 0.0 IppCmpLess
              >>= getPoints32f 1000
 
-    let corners = map (reverse . map fromIntegral) hotPoints
-
     inWindow "camera" $ do
         drawImage camera
         pointSize $= 3
         mycolor 0 0.5 0
         pixelCoordinates (384,288)
-        renderPrimitive Points $ (vertices' corners)
+        renderPrimitive Points $ (vertices hotPoints)
 
     return st
 
 -----------------------------------------------------------------
-keyboard st (Char 'p') Down _ _ = do
-    modifyIORef st $ \s -> s {pause = not (pause s)}
+keyboard str (Char 'p') Down _ _ = do
+    st <- readIORef str
+    pause (camid st)
+keyboard str (Char ' ') Down _ _ = do
+    st <- readIORef str
+    pause (camid st)
 keyboard _ (Char '\27') Down _ _ = do
     exitWith ExitSuccess
 
