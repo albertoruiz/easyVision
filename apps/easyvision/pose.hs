@@ -73,12 +73,12 @@ worker inWindow cam st = do
 
     inWindow "camera" $ do
         drawImage camera
-        pixelCoordinates (384,288)
-        mycolor 1 0 0
+        pixelCoordinates (size camera)
+        setColor 1 0 0
         pointSize $= 3
-        renderPrimitive Points (vertices hotPoints)
-        mycolor 0 0 1
-        renderPrimitive Points (vertices (marked st))
+        renderPrimitive Points (mapM_ vertex hotPoints)
+        setColor 0 0 1
+        renderPrimitive Points (mapM_ vertex (marked st))
 
 
     let n = length (imgs st)
@@ -88,21 +88,21 @@ worker inWindow cam st = do
         let ps = pts st !! sel
         inWindow "selected" $ do
             drawImage $ imgs st !! sel
-            pointCoordinates (4,3)
-            mycolor 0.75 0 0
-            renderPrimitive LineLoop (vertices ps)
+            pointCoordinates (Size 3 4)
+            setColor 0.75 0 0
+            renderPrimitive LineLoop (mapM_ vertex ps)
             pointSize $= 5
-            renderPrimitive Points (vertices ps)
+            renderPrimitive Points (mapM_ vertex ps)
 
         inWindow "3D view" $ do
             clear [ColorBuffer, DepthBuffer]
             trackball st
 
-            mycolor 0 0 1
+            setColor 0 0 1
             lineWidth $= 2
-            renderPrimitive LineLoop (vertices a4)
+            renderPrimitive LineLoop (mapM_ vertex a4)
 
-            mycolor 1 1 1
+            setColor 1 1 1
             lineWidth $= 1
             sequence_ (drfuns st)
 

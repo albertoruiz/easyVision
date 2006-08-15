@@ -20,8 +20,7 @@ module Ipp.Draw
 , pixelCoordinates
 , Drawable(..)
 , drawTexture
-, mycolor
-, Vertices (..)
+, setColor
 , drawCamera
 , extractSquare
 , newTrackball
@@ -40,7 +39,7 @@ import Ipp.Trackball
 
 -- | Types of images that can be shown in a window
 class Drawable a where
-    -- | Draws an image in the current window (ant its ROI)
+    -- | Draws an image in the current window (showing the ROI)
     drawImage :: a -> IO ()
 
 instance Drawable ImageGray where
@@ -80,12 +79,12 @@ drawImage' m = do
     myDrawPixels m
     touchForeignPtr (fptr m)
     let r = shrink (-1,-1) $ vroi m
-    pixelCoordinates (w,h)
-    renderPrimitive LineLoop $ vertices'
-       [[c1 r, r1 r],
-        [c1 r, r2 r],
-        [c2 r, r2 r],
-        [c2 r, r1 r]]
+    pixelCoordinates (isize m)
+    renderPrimitive LineLoop $ mapM_ vertex $
+        Pixel (r1 r) (c1 r) :
+        Pixel (r2 r) (c1 r) :
+        Pixel (r2 r) (c2 r) :
+        Pixel (r1 r) (c2 r) :[]
 
 drawImageFloat (F im) = drawImage' im
 drawImageGray (G im) = drawImage' im
@@ -122,17 +121,17 @@ drawTexture (F im) [v1,v2,v3,v4] = do
 ------------------------------------------------------------
 
 -- | Sets the current color to the given R, G, and B components.
-mycolor :: Float -> Float -> Float -> IO ()
-mycolor r g b = currentColor $= Color4 r g (b::GLfloat) 1
+setColor :: Float -> Float -> Float -> IO ()
+setColor r g b = currentColor $= Color4 r g (b::GLfloat) 1
 
 -- | Sets ortho2D to draw 2D normalized points in a right handed 3D system (x from -1 (left) to +1 (right) and y from -1 (bottom) to +1 (top)).
-pointCoordinates :: (Int,Int) -> IO()
-pointCoordinates (w,h) = draw2Dwith (ortho2D 1 (-1) (-r) r)
+pointCoordinates :: Size -> IO()
+pointCoordinates (Size h w) = draw2Dwith (ortho2D 1 (-1) (-r) r)
     where r = fromIntegral h / fromIntegral w
 
 -- | Sets ortho2D to draw 2D unnormalized pixels as x (column, 0 left) and y (row, 0 top).
-pixelCoordinates :: (Int,Int) -> IO()
-pixelCoordinates (w,h) = draw2Dwith (ortho2D 0 (fromIntegral w-1) (fromIntegral h-1) 0)
+pixelCoordinates :: Size -> IO()
+pixelCoordinates (Size h w) = draw2Dwith (ortho2D 0 (fromIntegral w-1) (fromIntegral h-1) 0)
 
 draw2Dwith ortho = do
     matrixMode $= Projection
@@ -142,34 +141,20 @@ draw2Dwith ortho = do
     loadIdentity
 
 
--- | Things that can be converted into a list of things admitted by vertex.
-class Vertices a where
-    -- runs vertex on the elements in a
-    vertices :: a -> IO ()
+instance Vertex Pixel where
+    vertex (Pixel r c) = vertex (Vertex2 (fromIntegral c) (fromIntegral r::GLint))
+    vertexv = undefined
 
-instance Vertices [Point] where
-    vertices l = mapM_ (vertex.f) l where
-        f (Point x y) = Vertex2 x y
+instance Vertex Point where
+    vertex (Point x y) = vertex (Vertex2 x y)
+    vertexv = undefined
 
-instance Vertices [Pixel] where
-    vertices l = mapM_ (vertex.f) l where
-        f (Pixel r c) = Vertex2 (fromIntegral c) (fromIntegral r::Double)
+instance Vertex [Double] where
+    vertex [x,y]   = vertex (Vertex2 x y)
+    vertex [x,y,z] = vertex (Vertex3 x y z)
+    vertex _  = error "vertex on list without two or three elements"
+    vertexv = undefined
 
-instance Vertices [[Double]] where
-    vertices = verticesL
-
--- Applies @vertex@ to the @[x,y]@ or @[x,y,z]@ entries in a list, converted to @Vertex3 x y 0@ or @Vertex3 x y z@.
-verticesL :: (Num a, Vertex (Vertex3 a)) => [[a]] -> IO ()
-verticesL l = mapM_ (vertex.f) l where
-    f [x,y]   = Vertex3 x y 0
-    f [x,y,z] = Vertex3 x y z
-    f _ = error "vertices without 2 or 3 components"
-
--- | The same as 'vertices' for Int coordinates.
-vertices' :: [[Int]] -> IO ()
-vertices' = vts . map (map fromIntegral) where
-    vts :: [[Double]] -> IO ()
-    vts = vertices
 
 -- | It shows the outline of a camera and an optional image (texture) in its image plane.
 drawCamera :: Double -> Matrix -> Maybe ImageFloat -> IO ()
@@ -177,7 +162,7 @@ drawCamera size cam Nothing = do
     let (invcam,f) = toCameraSystem cam
     let m = invcam<>diag (realVector[1,1,1,1/size])
     let outline = ht m (cameraOutline f)
-    renderPrimitive LineLoop $ vertices outline
+    renderPrimitive LineLoop $ mapM_ vertex outline
 
 drawCamera size cam (Just imgtext) = do
     let (invcam,f) = toCameraSystem cam
@@ -189,7 +174,7 @@ drawCamera size cam (Just imgtext) = do
                [-q,  q, f],
                [-q, -q, f],
                [ q, -q, f]]
-    renderPrimitive LineLoop $ vertices outline
+    renderPrimitive LineLoop $ mapM_ vertex outline
 
 -- | Takes a centered square from an image and resizes it to the desired size (useful to obtain an image texture appropriate for 'drawCamera').
 extractSquare :: Int -> ImageFloat -> IO ImageFloat

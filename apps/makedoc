@@ -1,0 +1,20 @@
+#! /bin/bash
+
+echo "Preparing the documentation..."
+rm -f doc/*
+haddock Vision.hs \
+        Vision/Stat.hs \
+        Vision/Classifier.hs \
+        Vision/Geometry.hs \
+        Vision/Autofrontal.hs \
+        Ipp.hs \
+        Ipp/Core.hs \
+        Ipp/Images.hs \
+        Ipp/Wrappers.hs \
+        Ipp/ImageProcessing.hs \
+        Ipp/HEasyVision.hs \
+        Ipp/Camera.hs \
+        Ipp/Draw.hs \
+        Ipp/Trackball.hs --hide=Ipp.Trackball \
+        Ipp/Saddle.hs \
+        -o doc -h -t Vision # 2> /dev/null

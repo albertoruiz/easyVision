@@ -8,7 +8,7 @@ import System.Exit
 import Control.Monad(when)
 import System.Environment(getArgs)
 import Data.List(minimumBy,partition)
-import GSL
+import GSL hiding (size)
 import Vision
 
 import qualified Ipp.Images as I
@@ -69,28 +69,25 @@ worker inWindow cam st = do
         when (norm (r - realVector o)<3) $ do
             inWindow "selected" $ do
                 warp (Size 288 384) h camera32f >>= drawImage
-                pointCoordinates (4,3)
-                renderPrimitive LineLoop (vertices (ht h (lpl ps)))
+                pointCoordinates (Size 3 4)
+                renderPrimitive LineLoop (mapM_ vertex (ht h (lpl ps)))
 
 
     inWindow "camera" $ do
         drawImage camera
-        pointCoordinates (384,288)
-        mycolor 1 0 0
+        pointCoordinates (size camera)
+        setColor 1 0 0
         pointSize $= 3
-        renderPrimitive Points (vertices (map ipPosition ips))
-        pixelCoordinates (384,288)
-        mycolor 0 0 1
-        renderPrimitive Points (vertices (map ipPosition (marked st)))
-        pointCoordinates (384,288)
+        renderPrimitive Points (mapM_ vertex (map ipPosition ips))        
+        setColor 0 0 1
+        renderPrimitive Points (mapM_ vertex (map ipPosition (marked st)))
         pointSize $= 5
-        mycolor 0 0.5 0
-        renderPrimitive Points (vertices (map ipPosition ps))
+        setColor 0 0.5 0
+        renderPrimitive Points (mapM_ vertex (map ipPosition ps))
 
-        pointCoordinates (4,3)
         let vecs = concat $ map (\IP{ipPosition=I.Point x y,
                                      ipOrientation=a} -> [[x,y],[x+0.1*cos a,y+0.1*sin a]]) ps
-        renderPrimitive Lines (vertices vecs)
+        renderPrimitive Lines (mapM_ vertex vecs)
 
 
     let sel True p _ = p

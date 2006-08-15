@@ -48,9 +48,9 @@ worker inWindow cam st = do
     inWindow "camera" $ do
         drawImage camera
         pointSize $= 3
-        mycolor 0 0.5 0
-        pixelCoordinates (384,288)
-        renderPrimitive Points $ (vertices hotPoints)
+        setColor 0 0.5 0
+        pixelCoordinates (size camera)
+        renderPrimitive Points $ mapM_ vertex hotPoints
 
     return st
 
