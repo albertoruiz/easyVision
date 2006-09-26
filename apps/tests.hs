@@ -37,11 +37,17 @@ m6 = syntheticCamera (CamPar {focalDist = 3, panAngle= -0.1, tiltAngle=0.2, roll
 
 classifyTest n1 n2 numErr = do
     m <- gslReadMatrix "mnist.txt" (5000,785)
-    let rawproblem = prepareProblem (takeRows n1 m) (dropRows (5000-n2) m)
-    let st = stat (designSamples rawproblem)
+    let vs = toRows (takeColumns 784 m)
+    let ls = map (show.round) $ toList $ flatten $ dropColumns 784 m
+    let mnist = zip vs ls
+    let (train',test') = (take n1 mnist, drop (5000-n2) mnist)
+
+    let st = stat (fromRows $ map fst train')
     let codec = pca (ReconstructionQuality 0.8) st
-    let problem = preprocessProblem codec rawproblem
-    let (f,e,m) = prepareClasif (mahalanobisDist.stat) problem
+    let (train,test) = (preprocess codec train', preprocess codec test')
+    let c = fst $ distance mahalanobis train
+    let e = errorRate test c
+    let m = confusion test c
     let errors = (sum.toList.flatten $ m) - (sum.toList.diag $ m)
     assertEqual ("classifyTest "++show (n1,n2)++", ") numErr errors
 

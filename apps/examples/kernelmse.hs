@@ -9,6 +9,9 @@ module Main where
 
 import GSL 
 import System.Environment (getArgs)
+import Data.List(sortBy)
+import System.Random
+import Vision
 
 matrix = realMatrix
 vector = realVector
@@ -18,13 +21,14 @@ partit n l  = take n l : partit n (drop n l)
 
 table f l1 l2 = partit (length l1) $ [f x y | x <- l1, y <- l2]
 
+
 kernelMSE :: (x -> x -> Double) -> [x] -> [Double] -> ( x-> Double)
 kernelMSE kernel objs labels = fun where
     fun z = expan z <> a
     a = {-# SCC "pinv" #-} pinv (matrix (table kernel objs objs)) <> vector labels
     expan z = vector $ map (kernel z) objs
-    
-    
+
+
 kernelMSEgen :: (x-> x -> Double) -> Int -> Double -> [x] -> [Double] -> (x->Double)
 kernelMSEgen kernel step tol objs labels = fun where
     fun z = expan z <> a
@@ -32,7 +36,7 @@ kernelMSEgen kernel step tol objs labels = fun where
     subobjs = [ x | (x,k) <- zip objs [0 ..], k `mod` step ==0]
     k = matrix (table kernel objs subobjs)
     a = {-# SCC "pinvTol" #-} pinvTol tol k <> fromList labels 
-    
+
 polykernel :: Int -> Vector -> Vector -> Double    
 polykernel n x y = (x<>y + 1)^n
 
@@ -41,6 +45,7 @@ polykernel' :: Int -> [Double] -> [Double] -> Double
 polykernel' n [a,b] [x,y] = (a*x+b*y + 1)^n
 
 gausskernel s [a,b] [x,y] = exp (- ((a-x)^2+(b-y)^2)/ s^2)
+
 
 main = do
     -- 60 example vectors
@@ -64,11 +69,10 @@ main = do
     let frac = 1
     let tol = 1.0
     let sigma = 2.0
-    
+
     let g1 = kernelMSE (polykernel' 5) exs labs
     let z1 = table f x y where f a b = tanh (g1 [a,b])
     imshow (matrix z1)
     let g2 = kernelMSEgen (gausskernel sigma) frac tol exs labs
     let z2 = table f x y where f a b = tanh (g2 [a,b])
     imshow (matrix z2)
-    
