@@ -22,6 +22,10 @@ import System.Random
 import System
 import Data.Array
 import Vision.Stat
+import Debug.Trace
+
+debug x = trace (show x) x
+debug' msg x = trace (msg ++ show x) x
 
 matrix = realMatrix
 vector = realVector
@@ -325,7 +329,7 @@ singlestump :: Learner
 singlestump = multiclass (\(g1,g2) -> stumps (g1,g2) (constant 1 (length g1+length g2)) )
 
 classstumps :: Int -> Learner
-classstumps n = multiclass (adaFun.adaboostST n stumps)
+classstumps n = multiclass (adaboost n stumps)
 
 stumps :: WeightedDicotomizer
 stumps p = stumpsOk (prepro p)
@@ -339,7 +343,7 @@ prepro (g1,g2) = ((g1,g2),lbs,xs,oxs,is) where
     oxs = map (map fst) s
     is  = map (map snd) s
 
-stumpsOk ((g1,g2),lbs,xs,oxs,is) d = f where
+stumpsOk' ((g1,g2),lbs,xs,oxs,is) d = f where
     wl = lbs*d
     owls = map (map (wl!:)) is
     cs = map (sel .dt . scanl1 (+)) owls
@@ -356,8 +360,35 @@ stumpsOk ((g1,g2),lbs,xs,oxs,is) d = f where
         n = length l - 1
     k = posMax (map (abs.fst) r)
     (_,(v,s)) = r!!k
-    f x =  (-s) * signum' (x !: k - v)
+    f x = (-s) * signum' (x !: k - v)
     signum' x = if x > 0 then 1 else -1
+
+stumpsOk ((g1,g2),lbs,xs,oxs,is) d = f where
+    wl = lbs*d
+    n1 = length g1
+    n2 = length g2
+    d1 = pnorm 1 $ subVector  0 n1 d
+    d2 = pnorm 1 $ subVector n1 n2 d
+
+    owls = map (map (wl!:)) is
+    cs = map (sel .dt . scanl (+) 0 . init) owls
+    dt x = ((k,v),(q,w)) where
+        k = posMin x
+        v = (x!!k) + d2
+        q = posMax x
+        w = d1 - (x!!q)
+    sel ((k,v),(q,w)) = if v < w then (k,v,1) else (q,w,-1)
+    r = map g $ zip oxs cs
+    g (l,(k,v,s)) = (v,(h l k, s))
+    h l k = 0.5*(l'!!(k) + l'!!(k+1)) where
+        l' = (l!!0 - (l!!1-l!!0)) : l -- ++ [l!!n + (l!!n - l!!(n-1))]
+        -- n = length l - 1
+    k = posMin (map (abs.fst) r)
+    (_,(v,s)) = r!!k
+    f x = (s) * signum' (x !: k - v)
+    signum' x = if x > 0 then 1 else -1
+
+
 
 ----------------------------------------------------------
 -- more complex weak learners, rather bad

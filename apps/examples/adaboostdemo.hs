@@ -2,7 +2,7 @@ import Vision
 import GSL
 import System.Random
 import Debug.Trace
-import Data.List(inits)
+import Data.List(inits, sort)
 import Control.Monad(when)
 
 debug x = trace (show x) x
@@ -11,9 +11,42 @@ debug' msg x = trace (msg ++ show x) x
 selectClasses :: [Label] -> Sample -> Sample
 selectClasses validset exs = filter ( (`elem` validset) .snd) exs where
 
+
+withPCA rq method prob = (c,f) where
+    st = stat $ fromRows (map fst prob)
+    codec = pca rq st
+    prob' = preprocess codec prob
+    (c',f') = method prob'
+    c = c' . encodeVector codec
+    f = f' . encodeVector codec
+
 ----------------------------------------------------------------------
 
-main = do
+-- | Naive Bayes with gaussian pdf
+nbayesg :: Double -> [Vector] -> Vector -> Double
+nbayesg eps vs = f where
+    x = fromRows vs
+    m = meanVector (stat x)
+    m2 = meanVector (stat (x*x))
+    s = sqrt (m2 - m*m)
+    maxv = maximum (toList s)
+    tol = eps * maxv
+    s' = vmap pr s
+    d = vmap pr' s
+    pr x = if x < tol then maxv else x
+    pr' x = if x < tol then 0 else 1
+    k = sum (map log (toList s'))
+    f v = k + 0.5*(norm (d*(v-m)/s'))^2
+
+
+closestNeighbor :: [Vector] -> Vector -> Double
+closestNeighbor vs v = minimum (map (dist v) vs)
+    where dist x y = norm (x-y)
+
+
+main = adamnistraw
+
+main' = do
     let prob = sshape 2000
     -- let method = mse
     -- let method = distance mahalanobis
@@ -23,6 +56,18 @@ main = do
 
     study prob method
 
+
+pruprob = zip [vector [k,0] | k <- [0,0.1 .. ]] ["a","a","a","a","a","b","b","a","a","a"]
+
+pru = do
+    seed <- randomIO
+    let prob = (breakTies seed 0.001 pruprob)
+    let (c,f) = classstumps 1 prob
+    print (errorRate prob c)
+    print (confusion prob c)
+    print (map (posMax.f.fst) prob)
+    print (map (c.fst) prob)
+    combined 100 1 (fromIntegral.posMax.f) prob
 
 study prob meth = do
     seed <- randomIO
@@ -63,7 +108,7 @@ testMNIST = do
 adamnist = do
     (train', test') <- mnist 20 4000
     --(train', test') <- mnistraw 4000
-    let sel = ["9","7"]
+    let sel = ["9","7","4"]
     let (train,test) = (selectClasses sel train', selectClasses sel test')
     putStrLn "ordinary distance"
     let (c,f) = distance ordinary train
@@ -86,6 +131,30 @@ adamnist = do
     print (errorRate test c)
     print (confusion test c)
 
+adamnistraw = do
+    (train', test') <- mnistraw 4000
+    let sel = ["9","7","4"]
+    let (train,test) = (breakTies 100 0.001 $ selectClasses sel train', selectClasses sel test')
+    putStrLn "ordinary distance"
+    let (c,f) = distance ordinary train
+    print (errorRate train c)
+    print (errorRate test c)
+    print (confusion test c)
+    when False $ do
+        putStrLn "adaboost 20"
+        let (c,f) = classstumps 20 train
+        print (errorRate train c)
+        print (errorRate test c)
+        print (confusion test c)
+        putStrLn "adaboost 100"
+        let (c,f) = classstumps 100 train
+        print (errorRate train c)
+        print (errorRate test c)
+        print (confusion test c)
+    let (c,f) = (distance closestNeighbor) train
+    --print (errorRate train c)
+    print (errorRate test c)
+    print (confusion test c)
 
 
 -- to show the learning curve of adaboost
@@ -128,6 +197,44 @@ prucurves 2 = do
     seed <- randomIO
     let prob = splitProportion 0.5 $ scramble seed $ sshape 2000
     adaboostCurves 30 stumps prob
+
+prunaive 1 = do
+    --seed <- randomIO
+    (train', test') <- mnistraw 4000
+    let sel = ["9","7"]
+    let (train,test) = (selectClasses sel train', selectClasses sel test')
+    let c = fst $ distance (nbayesg 1E-6) train
+    print (errorRate test c)
+    print (confusion test c)
+    let c = fst $ withPCA (ReconstructionQuality 0.5) (distance (nbayesg 1E-6)) train
+    print (errorRate test c)
+    print (confusion test c)
+    let c = fst $ distance (ordinary) train
+    print (errorRate test c)
+    print (confusion test c)
+
+-- mnist requires mahalanobis, features are not independent
+
+prunaive 2 = do
+    --seed <- randomIO
+    (train, test) <- mnistraw 4000
+    let c = fst $ distance (nbayesg 1E-6) train
+    print (errorRate test c)
+    print (confusion test c)
+    let c = fst $ withPCA (ReconstructionQuality 0.5) (distance (nbayesg 1E-6)) train
+    print (errorRate test c)
+    print (confusion test c)
+    let c = fst $ withPCA (ReconstructionQuality 0.95) (distance (nbayesg 1E-6)) train
+    print (errorRate test c)
+    print (confusion test c)
+    let c = fst $ distance (ordinary) train
+    print (errorRate test c)
+    print (confusion test c)
+    let c = fst $ classstumps 50 train
+    print (errorRate train c)
+    print (errorRate test c)
+    print (confusion test c)
+
 
 
 adaboostCurves :: Int -> WeightedDicotomizer -> (Sample,Sample) -> IO ()
