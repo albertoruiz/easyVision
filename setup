@@ -23,6 +23,9 @@ haddock GSL.hs \
         GSL/Instances.hs --hide=GSL.Instances \
         -o doc -h -p GSL/prologue -t GSLHaskell # 2> /dev/null
 
+# -D doc/GSL.haddock \
+# --use-package=base \
+
 echo "Performing some tests..."
 (cd apps; runhaskell tests)
 exit 0

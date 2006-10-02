@@ -2,23 +2,20 @@ import Vision
 import GSL
 import System.Random
 import Debug.Trace
-import Data.List(inits, sort)
+import Data.List(inits, sort, partition)
 import Control.Monad(when)
+
+matrix = realMatrix
+vector = realVector
 
 debug x = trace (show x) x
 debug' msg x = trace (msg ++ show x) x
 
-selectClasses :: [Label] -> Sample -> Sample
-selectClasses validset exs = filter ( (`elem` validset) .snd) exs where
 
+-- | a learner which adaboosts the stumps weak learner
+classstumps :: Int -> Learner
+classstumps n = multiclass (adaboost n stumps)
 
-withPCA rq method prob = (c,f) where
-    st = stat $ fromRows (map fst prob)
-    codec = pca rq st
-    prob' = preprocess codec prob
-    (c',f') = method prob'
-    c = c' . encodeVector codec
-    f = f' . encodeVector codec
 
 ----------------------------------------------------------------------
 
@@ -39,22 +36,24 @@ nbayesg eps vs = f where
     f v = k + 0.5*(norm (d*(v-m)/s'))^2
 
 
-closestNeighbor :: [Vector] -> Vector -> Double
-closestNeighbor vs v = minimum (map (dist v) vs)
-    where dist x y = norm (x-y)
 
 
 main = adamnistraw
 
 main' = do
     let prob = sshape 2000
-    -- let method = mse
+    -- let method = multiclass mse
     -- let method = distance mahalanobis
     -- let method = distance ordinary
     -- let method = singlestump
     let method = multiclass (adaboost 40 stumps)
 
     study prob method
+
+
+-- 6 levels of function combinators!
+tremen :: Learner
+tremen = multiclass $ adaboost 50 $ weight 117 $ treeOf (branch 20) (unweight stumps)
 
 
 pruprob = zip [vector [k,0] | k <- [0,0.1 .. ]] ["a","a","a","a","a","b","b","a","a","a"]
@@ -69,6 +68,7 @@ pru = do
     print (map (c.fst) prob)
     combined 100 1 (fromIntegral.posMax.f) prob
 
+study :: Sample -> Learner -> IO ()
 study prob meth = do
     seed <- randomIO
     let (train,test) = splitProportion 0.5 $ scramble seed prob
@@ -85,7 +85,7 @@ study prob meth = do
 
 testMNIST = do
     (train, test) <- mnist 20 4000
-    let (c,f) = mse train
+    let (c,f) = multiclass mse train
     print (errorRate test c)
     print (confusion test c)
     let (c,f) = distance ordinary train
@@ -151,8 +151,24 @@ adamnistraw = do
         print (errorRate train c)
         print (errorRate test c)
         print (confusion test c)
-    let (c,f) = (distance closestNeighbor) train
-    --print (errorRate train c)
+        putStrLn "nearest neighbour"
+        let (c,f) = (distance closestNeighbour) train
+        --print (errorRate train c)
+        print (errorRate test c)
+        print (confusion test c)
+        putStrLn "tree of stumps"
+        let (c,f) = multiclass (treeOf (branch 20) (unweight stumps)) train
+        print (errorRate train c)
+        print (errorRate test c)
+        print (confusion test c)
+        putStrLn "mse"
+    let (c,f) = multiclass mse train
+    print (errorRate train c)
+    print (errorRate test c)
+    print (confusion test c)
+    putStrLn "pca mse"
+    let (c,f) = withPCA (ReconstructionQuality 0.8) (multiclass mse) train
+    print (errorRate train c)
     print (errorRate test c)
     print (confusion test c)
 

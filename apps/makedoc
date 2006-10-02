@@ -17,4 +17,5 @@ haddock Vision.hs \
         Ipp/Draw.hs \
         Ipp/Trackball.hs --hide=Ipp.Trackball \
         Ipp/Saddle.hs \
+        --use-package=base --use-package=OpenGL \
         -o doc -h -t Vision # 2> /dev/null
