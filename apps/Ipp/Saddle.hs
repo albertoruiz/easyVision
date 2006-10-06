@@ -45,7 +45,6 @@ getSaddlePoints ::
            -> ImageFloat  -- ^ source image
            -> IO [InterestPoint]  -- ^ result
 
-
 cDF a = (fromRational.toRational) a
 
 taylor gx gy gxx gyy gxy = (delta,vp) where

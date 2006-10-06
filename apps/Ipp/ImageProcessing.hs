@@ -54,7 +54,7 @@ where
 import Ipp.Core
 import Ipp.Wrappers
 import Foreign
-import Vision hiding ((|-|),(|+|))
+import Vision --hiding ((|-|),(|+|))
 import GSL hiding (size)
 
 ---------------------------------------

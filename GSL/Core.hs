@@ -307,7 +307,7 @@ The elements are efficiently copied using @withStorableArray@ and @copyArray@.
 -}
 fromStorableArrayV :: Storable t => StorableArray Int t -> IO (GSLVector t) 
 fromStorableArrayV arr = do
-    let (l,u) = bounds arr
+    (l,u) <- getBounds arr
     let n = u-l+1
     let f n p = do 
         withStorableArray arr $ \ptr -> copyArray p ptr n
@@ -329,7 +329,7 @@ toStorableArrayV (V n p) = do
 -}
 fromStorableArrayM :: Storable t => StorableArray (Int,Int) t -> IO (GSLMatrix t) 
 fromStorableArrayM arr = do
-    let ((r1,c1),(r2,c2)) = bounds arr
+    ((r1,c1),(r2,c2)) <- getBounds arr
     let r = r2-r1+1
     let c = c2-c1+1
     let f r c p = do 

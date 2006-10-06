@@ -15,7 +15,7 @@ Extensions:         ForeignFunctionInterface,
                     MultiParamTypeClasses,
                     FunctionalDependencies
 --ghc-options:      -Wall
-ghc-options:        -O
+--ghc-options:        -O
 Exposed-modules:    GSL, GSL.Base, GSL.Utils,
                          --GSL.Vector,
                          --GSL.Matrix, 

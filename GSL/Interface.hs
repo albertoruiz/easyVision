@@ -694,7 +694,8 @@ Eigenvalues and eigenvectors of a complex hermitian matrix, using /gsl_eigen_her
  
 instance Eig Double where
  eig m | isSymmetric m = eigS m
-       | otherwise     = error "eig received a nonsymmetric real matrix"
+       | otherwise     = error $ "eig received a nonsymmetric real matrix: " ++
+                                  show (pnorm 1 (flatten $ m |-| (trans m)))
  
 instance Eig (Complex Double) where
  eig m | isHermitian m = eigH m 

@@ -43,6 +43,7 @@ module Vision.Geometry
 , inHomog
 , degree
 , normatdet
+, normat
 , normat3
 , ht
 , htc
@@ -53,7 +54,18 @@ module Vision.Geometry
 , toCameraSystem
 , cameraOutline 
 -- Stereo Geometry
-
+, estimateFundamental
+, epipolarQuality
+, qualityOfEssential
+, estimateEssential
+, estimateEssential'
+, camerasFromEssential
+, bougnoux
+, sturm
+, selectCamera
+, triangulate
+, stereoRectifiers
+, epipoles
 ) where
 
 import GSL

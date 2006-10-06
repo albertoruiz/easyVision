@@ -1,7 +1,7 @@
 #! /bin/bash
 
 echo "Cabal user install..."
-runhaskell Setup.hs configure -p --prefix=$HOME
+runhaskell Setup.hs configure --prefix=$HOME
 runhaskell Setup.hs build
 runhaskell Setup.hs install --user
 

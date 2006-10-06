@@ -2,8 +2,11 @@ import Test.HUnit
 
 import GSL
 import Vision
+import System.Random
 
 a =~= b = pnorm 1 (flatten (a - b)) < 1E-12
+
+randomMatrix seed (n,m) = reshape m $ realVector $ take (n*m) $ randomRs (-100,100) $ mkStdGen seed 
 
 factorizeCameraTest m = normatdet m =~= normatdet m' where
     (k,r,c) = factorizeCamera m
@@ -99,3 +102,4 @@ tests = TestList
     ]
 
 main = runTestTT tests
+

@@ -2,12 +2,12 @@
 % measuring Octave computing times
 
 t0=time();
-load /home/alberto/space/data/mnist.txt       
+load mnist.txt
 disp("load");
 disp(time()-t0)
 
 
-x = mnist(:,1:784);          
+x = mnist(:,1:784);
 d = mnist(:,785);
 
 
