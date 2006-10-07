@@ -22,7 +22,7 @@ module GSL.Fourier (
 
 import GSL.Core
 
-genfft code x@(V n _) = createV "fft" n $ v (c_fft code) x
+genfft code x@(V n p) = createV [p] "fft" n $ v (c_fft code) x
 foreign import ccall "gslaux.h fft" c_fft ::  Int -> TCVCV
 
 

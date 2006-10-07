@@ -59,7 +59,7 @@ cols (M _ c _) = c
 -- | Creates a vector from a list.  
 fromList1 :: (Storable a) => [a] -> GSLVector a
 fromList1 [] = error "trying to create an empty GSL vector"
-fromList1 l = createV "fromList1" (length l) $
+fromList1 l = createV [] "fromList1" (length l) $
     \n p -> do pokeArray p l
                return 0
 
@@ -136,9 +136,9 @@ subVector :: (Storable t) =>   Int       -- ^ index of the starting element
                             -> Int       -- ^ number of elements to extract 
                             -> GSLVector t  -- ^ source
                             -> GSLVector t  -- ^ result
-subVector k l x@(V n _) 
+subVector k l x@(V n pt) 
     | k<0 || k >= n || k+l > n || l < 0 = error "subVector out of range"         
-    | otherwise = createV "subVector" l $ v f x 
+    | otherwise = createV [pt] "subVector" l $ v f x 
  where f n p l q = do copyArray q (advancePtr p k) l 
                       return 0
 
@@ -165,76 +165,79 @@ infixl 9 !!:
 -- | creates a new GSLVector by joining a list of Vectors
 join :: (Storable t) => [GSLVector t] -> GSLVector t
 join [] = error "joining an empty list"
-join as = createV "join" tot (joiner as) where
+join as = createV pas "join" tot (joiner as) where
     tot = sum (map size as)
     joiner [] _ _ = return 0
     joiner (V n b : cs) _ p = do
         withForeignPtr b  $ \b' -> copyArray p b' n
         joiner cs 0 (advancePtr p n)  -- the length of the result is not used in joiner
-            
+    pas = map (\(V _ p) -> p) as
+
 ---------------------------------------------------------------------
 ------ creation of one or several vectors/matrices using a function f
 ---------------------------------------------------------------------
-createV s n f = unsafePerformIO $ do
+-- I don't really like this method, but it seems to work.
+-- I will try to find a better method for keeping alive the foreign
+-- pointers.
+
+createV ps s n f = unsafePerformIO $ do
     p <- mallocForeignPtrArray n
     prot s $ withForeignPtr p (f n)
+    mapM_ touchForeignPtr ps
     return (V n p)
-                 
-createM s r c f = unsafePerformIO $ do
+
+createM ps s r c f = unsafePerformIO $ do
     p <- mallocForeignPtrArray (r*c)
     prot s $ withForeignPtr p (f r c)
+    mapM_ touchForeignPtr ps
     return (M r c p)
 
-createVM s n r c f = unsafePerformIO $ do
+createVM ps s n r c f = unsafePerformIO $ do
     p <- mallocForeignPtrArray n
     q <- mallocForeignPtrArray (r*c)
     prot s $
-     withForeignPtr p $ \p -> 
-      withForeignPtr q $ \q -> 
+     withForeignPtr p $ \p ->
+      withForeignPtr q $ \q ->
        f n p r c q
+    mapM_ touchForeignPtr ps
     return (V n p, M r c q)
-    
-createMM s r1 c1 r2 c2 f = unsafePerformIO $ do
+
+createMM ps s r1 c1 r2 c2 f = unsafePerformIO $ do
     p <- mallocForeignPtrArray (r1*c1)
     q <- mallocForeignPtrArray (r2*c2)
     prot s $
-     withForeignPtr p $ \p -> 
-      withForeignPtr q $ \q -> 
+     withForeignPtr p $ \p ->
+      withForeignPtr q $ \q ->
        f r1 c1 p r2 c2 q
-    return (M r1 c1 p, M r2 c2 q)    
+    mapM_ touchForeignPtr ps
+    return (M r1 c1 p, M r2 c2 q)
 
-createMVM t r1 c1 n r2 c2 f = unsafePerformIO $ do
+createMVM ps t r1 c1 n r2 c2 f = unsafePerformIO $ do
     p <- mallocForeignPtrArray (r1*c1)
     s <- mallocForeignPtrArray n
     q <- mallocForeignPtrArray (r2*c2)
     prot t $
-     withForeignPtr p $ \p -> 
-      withForeignPtr s $ \s -> 
-       withForeignPtr q $ \q -> 
+     withForeignPtr p $ \p ->
+      withForeignPtr s $ \s ->
+       withForeignPtr q $ \q ->
         f r1 c1 p n s r2 c2 q
+    mapM_ touchForeignPtr ps
     return (M r1 c1 p, V n s, M r2 c2 q)
-        
-----------------------------------------------------------------        
-
 
 ---------------------------------------------------------
 -------------- argument transformers --------------------
 ---------------------------------------------------------
-v f (V n p) = unsafePerformIO $ do
-    let p' = unsafeForeignPtrToPtr p 
-    let res = f n p'
-    touchForeignPtr p
-    return res
+-- the foreign pointers must be touched by the above create functions.
+-- (the previous approch doesn't work)
 
-m f (M r c p) = unsafePerformIO $ do
-    let p' = unsafeForeignPtrToPtr p 
-    let res = f r c p'
-    touchForeignPtr p
-    return res
+v f (V n p) = f n (unsafeForeignPtrToPtr p)
 
-vv f a = v ((v f) a)
-mm f a = m ((m f) a)
-vvv f a b = v ((v f a) b)
+m f (M r c p) = f r c (unsafeForeignPtrToPtr p)
+
+vv f a b = v (v f a) b
+mm f a b = m (m f a) b
+vvv f a b c = v (v f a b) c
+
 ------------------------------------------------
 ---------- signatures of the C functions -------
 ------------------------------------------------
@@ -312,7 +315,8 @@ fromStorableArrayV arr = do
     let f n p = do 
         withStorableArray arr $ \ptr -> copyArray p ptr n
         return 0
-    return $ createV "fromStorableArrayV" n f
+    touchStorableArray arr
+    return $ createV [] "fromStorableArrayV" n f
 
 {- | Creates a @StorableArray@ indexed by @(Int)@ from a GSLVector. The elements are efficiently copied using @withStorableArray@ and @copyArray@.
 
@@ -335,7 +339,8 @@ fromStorableArrayM arr = do
     let f r c p = do 
         withStorableArray arr $ \ptr -> copyArray p ptr (r*c)
         return 0
-    return $ createM "fromStorableArrayM" r c f
+    touchStorableArray arr
+    return $ createM [] "fromStorableArrayM" r c f
     
 {- | Creates @StorableArray@ indexed by @(Int,Int)@ from a matrix.
 

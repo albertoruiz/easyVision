@@ -14,8 +14,8 @@ Build-Depends:      base, haskell98, HGL, OpenGL, GLUT, HUnit, X11
 Extensions:         ForeignFunctionInterface,
                     MultiParamTypeClasses,
                     FunctionalDependencies
---ghc-options:      -Wall
---ghc-options:        -O
+--ghc-options:        -Wall
+ghc-options:        -O
 Exposed-modules:    GSL, GSL.Base, GSL.Utils,
                          --GSL.Vector,
                          --GSL.Matrix, 
@@ -25,7 +25,7 @@ Exposed-modules:    GSL, GSL.Base, GSL.Utils,
                          GSL.Differentiation,
                          GSL.Integration,
                          GSL.Minimization,
-                        GSL.Special
+                         GSL.Special
 Other-modules:      GSL.Core, GSL.Derived, GSL.Wrappers,
                     GSL.Interface, GSL.Drawing, GSL.Instances 
 C-sources:          GSL/gslaux.c

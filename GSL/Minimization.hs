@@ -34,11 +34,11 @@ minimizeV :: (Vector -> Double)       -- ^ function to minimize
           -> Vector                   -- ^ initial solution
           -> Vector                   -- ^ sizes of the search box
           -> Matrix                   -- ^ matrix with solution, info and trajectory
-minimizeV f tol maxit xi@(V n _) sz = unsafePerformIO $ do
+minimizeV f tol maxit xi@(V n p) sz = unsafePerformIO $ do
     fp <- mkVecfun (iv f)
-    let sol = createM "minimizeVList" maxit (n+3) $ vv (c_minimizeList fp tol maxit) xi sz
-    --freeHaskellFunPtr fp
-    return sol
+    return $ createM [p] "minimizeVList" maxit (n+3) $ vv (c_minimizeList fp tol maxit) xi sz
+    --freeHaskellFunPtr fp --??
+    --return sol
 foreign import ccall "gslaux.h minimize" 
  c_minimizeList:: FunPtr (Int -> Ptr Double -> Double) -> Double -> Int -> TVVM
 
@@ -52,13 +52,13 @@ minimizeDerivV :: (Vector -> Double)  -- ^ function to minimize
           -> Double              -- ^ initial step size
           -> Double              -- ^ minimization parameter
           -> Matrix                   -- ^ matrix with solution, info and trajectory
-minimizeDerivV f df tol maxit xi@(V n _) istep minimpar = unsafePerformIO $ do
+minimizeDerivV f df tol maxit xi@(V n p) istep minimpar = unsafePerformIO $ do
     fp <- mkVecfun (iv f)
     dfp <- mkVecVecfun (aux_vTov df)
-    let sol = createM "minimizeDerivV" maxit (n+2) $ 
-                v (c_minimizeDeriv fp dfp istep minimpar tol maxit) xi
+    return $ createM [p] "minimizeDerivV" maxit (n+2) $
+                     v (c_minimizeDeriv fp dfp istep minimpar tol maxit) xi
     --freeHaskellFunPtr fp
-    return sol
+    --return sol
 foreign import ccall "gslaux.h minimizeWithDeriv" 
  c_minimizeDeriv:: FunPtr (Int -> Ptr Double -> Double) -> FunPtr (Int -> Ptr Double -> Ptr Double -> IO ())  -> Double -> Double -> Double -> Int -> TVM
 
@@ -177,7 +177,7 @@ minimizeConjugateGradient istep minimpar tol maxit f df xi = (sol, path) where
 
 ---------------------------------------------------------------------
 iv :: (Vector -> Double) -> (Int -> Ptr Double -> Double)
-iv f n p = f (createV "iv" n copy) where
+iv f n p = f (createV [] "iv" n copy) where
     copy n q = do 
         copyArray q p n
         return 0
@@ -191,7 +191,7 @@ foreign import ccall "wrapper" mkVecVecfun:: (Int -> Ptr Double -> Ptr Double ->
 aux_vTov :: (Vector -> Vector) -> (Int -> Ptr Double -> Ptr Double -> IO()) 
 aux_vTov f n p r = g where
     (V _ pr) = f x
-    x = createV "aux_vTov" n copy
+    x = createV [] "aux_vTov" n copy
     copy n q = do 
         copyArray q p n
         return 0

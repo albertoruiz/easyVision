@@ -23,7 +23,7 @@ import Foreign.C.Types
 
 type ROISize = Double
 
-foreign import ccall "ippiImageJaehne_32f_C1R"
+foreign import ccall "auxIpp.h ippiImageJaehne_32f_C1R"
   ippiImageJaehne_32f_C1R :: Ptr() -> Int -> ROISize -> IO Int
 
 foreign import ccall "auxIpp.h ippiSet_32f_C1R"

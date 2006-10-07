@@ -22,27 +22,27 @@ import Foreign.C.Types
 
 -- | creates a constant vector
 constantV :: Double -> Int -> Vector
-constantV val n = createV "constant" n (c_constant val)
+constantV val n = createV [] "constant" n (c_constant val)
 foreign import ccall "gslaux.h constant" c_constant :: Double -> TV
 
 -- | diagonal matrix from a real vector
 diagR :: Vector -> Matrix
-diagR x@(V n _) = createM "diagR" n n $ v c_diagR x
+diagR x@(V n p) = createM [p] "diagR" n n $ v c_diagR x
 foreign import ccall "gslaux.h diagR" c_diagR :: TVM
 
 -- | diagonal matrix from a real vector
 diagC :: ComplexVector -> ComplexMatrix
-diagC x@(V n _) = createM "diagC" n n $ v c_diagC x
+diagC x@(V n p) = createM [p] "diagC" n n $ v c_diagC x
 foreign import ccall "gslaux.h diagC" c_diagC :: TCVCM
 
 -- | extracts the diagonal of a real matrix
 takeDiag :: Matrix -> Vector
-takeDiag x@(M r c _) = createV "take_diagonal" (min r c) $ m c_take_diagonal x
+takeDiag x@(M r c p) = createV [p] "take_diagonal" (min r c) $ m c_take_diagonal x
 foreign import ccall "gslaux.h take_diagonal" c_take_diagonal :: TMV
 
 -- | extracts the diagonal of a complex matrix
 takeDiagC :: ComplexMatrix -> ComplexVector
-takeDiagC x@(M r c _) = createV "take_diagonalC" (min r c) $ m c_take_diagonalC x
+takeDiagC x@(M r c p) = createV [p] "take_diagonalC" (min r c) $ m c_take_diagonalC x
 foreign import ccall "gslaux.h take_diagonalC" c_take_diagonalC :: TCMCV
 
 {- | eigendecomposition of a real symmetric matrix using /gsl_eigen_symmv/.
@@ -61,7 +61,7 @@ foreign import ccall "gslaux.h take_diagonalC" c_take_diagonalC :: TCMCV
 
 -}
 eigS :: Matrix -> (Vector, Matrix)
-eigS x@(M r _ _) = createVM "eigensystemS" r r r $ m c_eigensystem x
+eigS x@(M r _ p) = createVM [p] "eigensystemS" r r r $ m c_eigensystem x
 foreign import ccall "gslaux.h eigensystemR" c_eigensystem :: TMVM
 
 {- | eigendecomposition of a complex hermitian matrix using /gsl_eigen_hermv/
@@ -81,7 +81,7 @@ foreign import ccall "gslaux.h eigensystemR" c_eigensystem :: TMVM
 
 -}
 eigH :: ComplexMatrix -> (Vector, ComplexMatrix)
-eigH x@(M r _ _) = createVM "eigensystemH" r r r $ m c_eigensystemC x
+eigH x@(M r _ p) = createVM [p] "eigensystemH" r r r $ m c_eigensystemC x
 foreign import ccall "gslaux.h eigensystemC" c_eigensystemC :: TCMVCM
 
 
@@ -107,7 +107,7 @@ foreign import ccall "gslaux.h eigensystemC" c_eigensystemC :: TCMVCM
 
 -}
 svd :: Matrix -> (Matrix, Vector, Matrix)
-svd' x@(M r c _) = createMVM "svd" r c c c c $ m c_svd x
+svd' x@(M r c p) = createMVM [p] "svd" r c c c c $ m c_svd x
 foreign import ccall "gslaux.h svd" c_svd :: TMMVM
 svd x@(M r c _) = if r>=c 
     then svd' x
@@ -131,7 +131,7 @@ svd x@(M r c _) = if r>=c
 
 -}
 qr :: Matrix -> (Matrix, Matrix)
-qr x@(M r c _) = createMM "QR" r r r c $ m c_qr x
+qr x@(M r c p) = createMM [p] "QR" r r r c $ m c_qr x
 foreign import ccall "gslaux.h QR" c_qr :: TMMM
 
 {- | Cholesky decomposition of a symmetric positive definite real matrix using /gsl_linalg_cholesky_decomp/.
@@ -148,60 +148,70 @@ foreign import ccall "gslaux.h QR" c_qr :: TMMM
 
 -}
 chol :: Matrix -> Matrix
-chol x@(M r _ _) = createM "chol" r r $ m c_chol x
+chol x@(M r _ p) = createM [p] "chol" r r $ m c_chol x
 foreign import ccall "gslaux.h chol" c_chol :: TMM
 
 
 -- | real matrix product using /gsl_blas_dgemm/
 multiply :: Matrix -> Matrix -> Matrix
-multiply x@(M r _ _) y@(M _ c _) = createM "multiplyR" r c $ mm c_multiplyR x y
+multiply x@(M r _ p) y@(M _ c q) = createM [p,q] "multiplyR" r c $ mm c_multiplyR x y
 foreign import ccall "gslaux.h multiplyR" c_multiplyR :: TMMM
+
+-- Explicit version
+multiply' x@(M r1 c1 p) y@(M r2 c2 q) =
+  unsafePerformIO $ do
+    r <- mallocForeignPtrArray (r1*c2)
+    withForeignPtr p $ \p ->
+        withForeignPtr q $ \q ->
+            withForeignPtr r $ \r->
+                prot "multiplyR" $ c_multiplyR r1 c1 p r2 c2 q r1 c2 r
+    return (M r1 c2 r)
 
 -- | complex matrix product /using gsl_blas_zgemm/
 multiplyC :: ComplexMatrix -> ComplexMatrix -> ComplexMatrix
-multiplyC x@(M r _ _) y@(M _ c _) = createM "multiplyC" r c $ mm c_multiplyC x y
+multiplyC x@(M r _ p) y@(M _ c q) = createM [p,q] "multiplyC" r c $ mm c_multiplyC x y
 foreign import ccall "gslaux.h multiplyC" c_multiplyC :: TCMCMCM
 
 -- | transpose of real matrix
 transR :: Matrix -> Matrix
-transR x@(M r c _) = createM "transR" c r $ m c_trans x
+transR x@(M r c p) = createM [p] "transR" c r $ m c_trans x
 foreign import ccall "gslaux.h trans" c_trans :: TMM
 
 -- | transpose of real matrix
 transC :: ComplexMatrix -> ComplexMatrix
-transC x@(M r c _) = createM "transC" c r $ m c_transC x
+transC x@(M r c p) = createM [p] "transC" c r $ m c_transC x
 foreign import ccall "gslaux.h transC" c_transC :: TCMCM
 
 -- | extraction of a submatrix of a real matrix
 subMatrixR :: (Int,Int) -- ^ (r0,c0) starting position 
            -> (Int,Int) -- ^ (rt,ct) dimensions of submatrix
            -> Matrix -> Matrix 
-subMatrixR (r0,c0) (rt,ct) x@(M r c _) = createM "submatrixR" rt ct $ m (c_submatrixR r0 (r0+rt-1) c0 (c0+ct-1)) x
+subMatrixR (r0,c0) (rt,ct) x@(M r c p) = createM [p] "submatrixR" rt ct $ m (c_submatrixR r0 (r0+rt-1) c0 (c0+ct-1)) x
 foreign import ccall "gslaux.h submatrixR" c_submatrixR :: Int -> Int -> Int -> Int -> TMM
 
 -- | scaling of a real vector
 scale :: Double -> Vector -> Vector
-scale a x = createV "vector_scale" (size x) $ v (c_vectorScale a) x
+scale a x@(V n p) = createV [p] "vector_scale" n $ v (c_vectorScale a) x
 foreign import ccall "gslaux.h vector_scale" c_vectorScale :: Double -> TVV
             
 -- | add constant to a real vector
 offset :: Double -> Vector -> Vector
-offset a x = createV "vector_offset" (size x) $ v (c_vectorOffset a) x
+offset a x@(V n p) = createV [p] "vector_offset" n $ v (c_vectorOffset a) x
 foreign import ccall "gslaux.h vector_offset" c_vectorOffset :: Double -> TVV
 
 -- | obtains different functions of a vector: norm1, norm2, max, min, posmax, posmin, etc.
 toScalar :: Int -> Vector -> Double
-toScalar code x =  (createV "toScalar" 1 $ v (c_toScalar code) x) !: 0
+toScalar code x@(V n p) =  (createV [p] "toScalar" 1 $ v (c_toScalar code) x) !: 0
 foreign import ccall "gslaux.h toScalar" c_toScalar :: Int -> TVV
 
 -- | Mapeo de vectores con una función deseada
 vectorMap :: Int -> Vector -> Vector
-vectorMap code x = createV "vectorMap" (size x) $ v (c_vectorMap code) x 
+vectorMap code x@(V n p) = createV [p] "vectorMap" n $ v (c_vectorMap code) x
 foreign import ccall "gslaux.h vectorMap" c_vectorMap :: Int -> TVV 
 
 -- | elementwise operation on vectors
 vectorZip :: Int -> Vector -> Vector -> Vector
-vectorZip code x y = createV "vectorZip" (size x) $ vv (c_vectorZip code) x y
+vectorZip code x@(V n p) y@(V _ q) = createV [p,q] "vectorZip" n $ vv (c_vectorZip code) x y
 foreign import ccall "gslaux.h vectorZip" c_vectorZip :: Int -> TVVV
 
 
@@ -210,26 +220,26 @@ foreign import ccall "gslaux.h vectorZip" c_vectorZip :: Int -> TVVV
 {- | efficient multiplication by the inverse of a matrix (for real matrices). 
 -}
 luSolveR :: Matrix -> Matrix -> Matrix
-luSolveR a@(M r1 c1 _) b@(M r2 c2 _) = createM "luSolveR" r1 c2 $ mm c_luSolveR a b
+luSolveR a@(M r1 c1 p) b@(M r2 c2 q) = createM [p,q] "luSolveR" r1 c2 $ mm c_luSolveR a b
 foreign import ccall "gslaux.h luSolveR" c_luSolveR ::  TMMM
-    
+
 {- | efficient multiplication by the inverse of a matrix (for complex matrices). 
 -}
 luSolveC :: ComplexMatrix -> ComplexMatrix -> ComplexMatrix
-luSolveC a@(M r1 c1 _) b@(M r2 c2 _) = createM "luSolveC" r1 c2 $ mm c_luSolveC a b
+luSolveC a@(M r1 c1 p) b@(M r2 c2 q) = createM [p,q] "luSolveC" r1 c2 $ mm c_luSolveC a b
 foreign import ccall "gslaux.h luSolveC" c_luSolveC ::  TCMCMCM
-                     
+
 {- | lu decomposition of real matrix (packed as a vector including l, u, the permutation and sign)
--}                     
+-}
 luRaux  :: Matrix -> Vector
-luRaux a@(M r1 c1 _) = createV "luR" (r1*r1+r1+1) $ m c_luRaux a
-foreign import ccall "gslaux.h luRaux" c_luRaux :: TMV                   
-                     
+luRaux a@(M r1 c1 p) = createV [p] "luR" (r1*r1+r1+1) $ m c_luRaux a
+foreign import ccall "gslaux.h luRaux" c_luRaux :: TMV
+
 {- | lu decomposition of complex matrix (packed as a vector including l, u, the permutation and sign)
--}                     
+-}
 luCaux  :: ComplexMatrix -> ComplexVector
-luCaux a@(M r1 c1 _) = createV "luC" (r1*r1+r1+1) $ m c_luCaux a
-foreign import ccall "gslaux.h luCaux" c_luCaux :: TCMCV                   
+luCaux a@(M r1 c1 p) = createV [p] "luC" (r1*r1+r1+1) $ m c_luCaux a
+foreign import ccall "gslaux.h luCaux" c_luCaux :: TCMCV
 
 --------------------------------------------------------------
 
@@ -237,9 +247,9 @@ foreign import ccall "gslaux.h luCaux" c_luCaux :: TCMCV
 gslReadMatrix :: FilePath -> (Int,Int) -> IO Matrix
 gslReadMatrix filename (r,c) = do
     charname <- newArray0 (toEnum . fromEnum $ 0) (map (toEnum.fromEnum) filename) 
-    let m = createM "gslReadMatrix" r c $ c_gslReadMatrix charname
-    --free charname  TO DO: free the auxiliary CString
-    return m
+    return $ createM [] "gslReadMatrix" r c $ c_gslReadMatrix charname
+    --free charname  -- TO DO: free the auxiliary CString
+    --return m
 foreign import ccall "gslaux.h matrix_fscanf" c_gslReadMatrix:: Ptr CChar -> TM
 
 ---------------------------------------------------------------------------

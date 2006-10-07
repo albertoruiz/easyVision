@@ -38,5 +38,5 @@ The example in the GSL manual: To find the roots of x^5 -1 = 0:
 
 -}  
 polySolve :: Vector -> ComplexVector
-polySolve x@(V n _) = createV "polySolve" (n-1) $ v c_polySolve x
+polySolve x@(V n p) = createV [p] "polySolve" (n-1) $ v c_polySolve x
 foreign import ccall "gslaux.h polySolve" c_polySolve:: TVCV
