@@ -1,7 +1,5 @@
 {- Principal component analysis
-   To download the data file:
-        $ wget http://dis.um.es/~alberto/material/sp/mnist.txt.gz
-        $ gunzip mnist.txt.gz
+  We work with the mnist.txt datafile automatically downloaded by tests.hs
 -}
 
 import GSL
@@ -28,7 +26,7 @@ pca n dataSet = (encode,decode)
     vp = takeRows n (trans v)
     
 main = do
-    m <- gslReadMatrix "mnist.txt" (5000,785)
+    m <- gslReadMatrix "../apps/examples/mnist.txt" (5000,785)
     let xs = takeColumns (cols m -1) m -- the last column is the digit type (class label)
     let x = toRows xs !! 4  -- an arbitrary test vector
     let (pe,pd) = pca 10 (takeRows 200 xs)

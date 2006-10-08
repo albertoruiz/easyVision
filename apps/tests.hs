@@ -2,7 +2,10 @@ import Test.HUnit
 
 import GSL
 import Vision
-import System.Random
+import System.Random(randomRs,mkStdGen)
+import System.Directory(doesFileExist)
+import System(system)
+import Control.Monad(when)
 
 a =~= b = pnorm 1 (flatten (a - b)) < 1E-12
 
@@ -39,7 +42,14 @@ m6 = syntheticCamera (CamPar {focalDist = 3, panAngle= -0.1, tiltAngle=0.2, roll
 -------------------------------------------------------------------
 
 classifyTest n1 n2 numErr = do
-    m <- gslReadMatrix "mnist.txt" (5000,785)
+    ok <- doesFileExist ("examples/mnist.txt")
+    when (not ok)  $ do
+        putStrLn "\nTrying to download test datafile..."
+        system("wget -nv http://dis.um.es/~alberto/material/sp/mnist.txt.gz")
+        system("gunzip mnist.txt.gz")
+        system("mv mnist.txt examples")
+        return ()
+    m <- gslReadMatrix "examples/mnist.txt" (5000,785)
     let vs = toRows (takeColumns 784 m)
     let ls = map (show.round) $ toList $ flatten $ dropColumns 784 m
     let mnist = zip vs ls

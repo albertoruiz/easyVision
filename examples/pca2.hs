@@ -1,8 +1,4 @@
-{- Improved PCA, including illustrative graphics
-   To download the data file:
-        $ wget http://dis.um.es/~alberto/material/sp/mnist.txt.gz
-        $ gunzip mnist.txt.gz
--}
+-- Improved PCA, including illustrative graphics
 
 import GSL
    
@@ -51,7 +47,7 @@ test st prec x = do
     shdigit (pd y)    
     
 main = do
-    m <- gslReadMatrix "mnist.txt" (5000,785) 
+    m <- gslReadMatrix "../apps/examples/mnist.txt" (5000,785)
     let xs = takeColumns (cols m -1) m
     let x = toRows xs !! 4  -- an arbitrary test vector
     shdigit x
