@@ -29,7 +29,7 @@ main = do
     m <- gslReadMatrix "../apps/examples/mnist.txt" (5000,785)
     let xs = takeColumns (cols m -1) m -- the last column is the digit type (class label)
     let x = toRows xs !! 4  -- an arbitrary test vector
-    let (pe,pd) = pca 10 (takeRows 200 xs)
+    let (pe,pd) = pca 10 xs
     let y = pe x
     disp 2 y  -- compressed version
     print $ norm (x - pd y) / norm x --reconstruction quality

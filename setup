@@ -1,39 +1,53 @@
 #! /bin/bash
 
-echo "Cabal user install..."
-runhaskell Setup.hs configure -p --prefix=$HOME
-runhaskell Setup.hs build
-runhaskell Setup.hs install --user
+function cabal {
+    echo "Cabal user install..."
+    runhaskell Setup.hs configure -p --prefix=$HOME
+    runhaskell Setup.hs build
+    runhaskell Setup.hs install --user
+}
 
-echo "Preparing the documentation..."
-rm -f doc/*
-haddock GSL.hs \
-        GSL/Base.hs GSL/Utils.hs \
-        GSL/Fourier.hs \
-        GSL/Differentiation.hs \
-        GSL/Integration.hs \
-        GSL/Polynomials.hs \
-        GSL/Minimization.hs \
-        GSL/Special.hs \
-        GSL/Core.hs --hide=GSL.Core \
-        GSL/Wrappers.hs --hide=GSL.Wrappers \
-        GSL/Derived.hs --hide=GSL.Derived \
-        GSL/Interface.hs --hide=GSL.Interface \
-        GSL/Drawing.hs --hide=GSL.Drawing \
-        GSL/Instances.hs --hide=GSL.Instances \
-        -o doc -h -p GSL/prologue -t GSLHaskell # 2> /dev/null
+function docs {
+    rm -f doc/*
+    haddock GSL.hs \
+            GSL/Base.hs GSL/Utils.hs \
+            GSL/Fourier.hs \
+            GSL/Differentiation.hs \
+            GSL/Integration.hs \
+            GSL/Polynomials.hs \
+            GSL/Minimization.hs \
+            GSL/Special.hs \
+            GSL/Core.hs --hide=GSL.Core \
+            GSL/Wrappers.hs --hide=GSL.Wrappers \
+            GSL/Derived.hs --hide=GSL.Derived \
+            GSL/Interface.hs --hide=GSL.Interface \
+            GSL/Drawing.hs --hide=GSL.Drawing \
+            GSL/Instances.hs --hide=GSL.Instances \
+            -o doc -h -p GSL/prologue -t GSLHaskell # 2> /dev/null
+}
 
 # -D doc/GSL.haddock \
 # --use-package=base \
 
-echo "Performing some tests..."
-(cd apps; runhaskell tests)
-exit 0
+function tests {
+    echo "Performing some tests..."
+    (cd apps; runhaskell tests)
+}
 
-echo "Compiling the C wrappers..."
-gcc -O2 -Wall `gsl-config --cflags` -c GSL/gslaux.c -o GSL/gslaux.o
+#echo "Compiling the C wrappers..."
+#gcc -O2 -Wall `gsl-config --cflags` -c GSL/gslaux.c -o GSL/gslaux.o
 
-echo "Compiling the C wrappers with debugging information..."
-gcc  -DDBG -Wall `gsl-config --cflags` -c GSL/gslaux.c -o GSL/debuggslaux.o
+#echo "Compiling the C wrappers with debugging information..."
+#gcc  -DDBG -Wall `gsl-config --cflags` -c GSL/gslaux.c -o GSL/debuggslaux.o
 
-echo "OK"
+#echo "OK"
+
+case $1 in
+
+    *)
+       cabal
+       docs
+       tests
+       ;;
+
+esac

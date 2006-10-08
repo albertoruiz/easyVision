@@ -1,81 +1,73 @@
-REQUIREMENTS -----------------------------------------------------------
+REQUIREMENTS
 
-The GNU Scientific Library (http://www.gnu.org/software/gsl).
-For instance, in a Fedora Core Linux system you can install it using yum:
+1) GNU Scientific Library (http://www.gnu.org/software/gsl) development packages
+   for your system (typically "gsl" and "gsl-devel").
 
-# yum install gsl gsl-devel
+2) You may also need some packages required by HOpenGL or by other Haskell libraries
+   (e.g., gxorg-x11-devel freeglut-devel, etc.)
 
-Other required packages: xorg-x11-devel freeglut-devel
+--------------------------------------------------------------------------------------
+INSTALLATION 
 
-INSTALLATION -----------------------------------------------------------
-
-$ runhaskell Setup.hs configure --prefix=$HOME
+$ runhaskell Setup.hs configure -p --prefix=$HOME
 $ runhaskell Setup.hs build
 $ runhaskell Setup.hs install --user
 
 (You should also repeat these steps after a darcs pull.)
 
-These commands and a few tests can be also invoked by the script:
+Alternatively, these commands and a few tests are automatically invoked by the script:
 
+$ chmod u+x setup
 $ ./setup
 
-NOTE: The library should be used from another directory.
-For instance, to run the examples:
+NOTE: The library must be used from another directory. For instance:
 
 $ cd examples
 
 Interactive:
 
-$ ghci demo.hs
-> main
+examples$ ghci
+Prelude> :m + GSL
+Prelude GSL> realVector [1,0.5,3] <> complexVector [5,-i,3+i]
+(loading packages...)
+14.0 :+ 2.5
+Prelude GSL> integrateQNG 1E-10 (^2) 0 1
+(0.3333333333333333,3.700743415417188e-15)
+Prelude GSL> :q
+Leaving GHCi.
 
-Script:
-
-$ runhaskell demo.hs
+examples$ ghci demo.hs
+*Main> main
 
 Compiled:
 
-$ ghc --make demo.hs -o demo
+examples$ ghc --make demo.hs
+examples$ ./demo
 
-If --make is not given we need -package GSL:
+Script:
 
-$ ghc demo.hs -o demo -package GSL
+examples$ runhaskell demo.hs
 
-USING ATLAS OPTIMIZED LIBRARIES ----------------------------------------
+--------------------------------------------------------------------------------------
+USING ATLAS OPTIMIZED LIBRARIES
 
-The performance of some linear algebra computations with big matrices 
-significantly increases using ATLAS (http://math-atlas.sourceforge.net/).
+The performance of some linear algebra computations with big matrices can
+be significantly improved using ATLAS (http://math-atlas.sourceforge.net/).
 
-In Fedora Core >= 4 you can install it using yum: 
+They can be installed as a standalone package or as part of other systems.
+For instance, GNU-Octave includes useful packages like atlas, fftw, gnuplot, etc.
 
-# yum install atlas
+To use the optimized libraries you only need a symbolic link to the
+appropriate atlas blas available in your distribution. For instance,
+in my ubuntu distribution I have added:
 
-or better:
+~/lib/GSL-0.5/ghc-6.5.20061004/libgslcblas.so -> /usr/lib/atlas/libblas.so.3.0
 
-# yum install octave
-
-which includes other useful packages such as atlas, fftw, gnuplot, etc.
-
-(You can also download precompiled atlas libraries from https://sourceforge.net/project/showfiles.php?group_id=23725)
-
-To use the atlas cblas library you can simply 
-include it in the command line:
-
-$ ghc --make pca1.hs /usr/lib/atlas/libcblas.so.3
-
-Another possibility is to change the following line in GSLHaskell.cabal:
-
-- extra-libraries:    gsl gslcblas
-+ extra-libraries:    gsl cblas
-
-and reinstall the library.
-
-(But in this case, in Fedora Core 4 I need a symbolic link:
-root# ln -s /usr/lib/atlas/libcblas.so.3 /usr/local/lib/libcblas.so
-)
-
-ACKNOWLEDGEMENTS ------------------------------------------------------------
+--------------------------------------------------------------------------------------
+ACKNOWLEDGEMENTS
 
 The author thanks all the people in the Haskell mailing lists for their help.
 
 - Nico Mahlo discovered a bug in the eigendecomposition wrapper.
+
+- Frederik Eaton discovered a bug in the design of the wrappers.
