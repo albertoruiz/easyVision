@@ -162,15 +162,20 @@ adamnistraw = do
         print (errorRate test c)
         print (confusion test c)
         putStrLn "mse"
-    let (c,f) = multiclass mse train
-    print (errorRate train c)
-    print (errorRate test c)
-    print (confusion test c)
-    putStrLn "pca mse"
-    let (c,f) = withPCA (ReconstructionQuality 0.8) (multiclass mse) train
-    print (errorRate train c)
-    print (errorRate test c)
-    print (confusion test c)
+        let (c,f) = multiclass mse train
+        print (errorRate train c)
+        print (errorRate test c)
+        print (confusion test c)
+        putStrLn "pca mse"
+        let (c,f) = withPCA (ReconstructionQuality 0.8) (multiclass mse) train
+        print (errorRate train c)
+        print (errorRate test c)
+        print (confusion test c)
+        putStrLn "pca kernel mse poly 2"
+        let (c,f) = withPCA (ReconstructionQuality 0.8) (multiclass (kernelMSE (polyK 2))) train
+        print (errorRate train c)
+        print (errorRate test c)
+        print (confusion test c)
 
 
 -- to show the learning curve of adaboost

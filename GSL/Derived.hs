@@ -270,7 +270,7 @@ ident = diagR . constantV 1
 
 isSquare (M r c _) = r==c
 
-{- | creates real vector containing a range of values:
+{- | Creates a real vector containing a range of values:
 
 > > linspace 10 (-2,2)
 >-2. -1.556 -1.111 -0.667 -0.222 0.222 0.667 1.111 1.556 2.

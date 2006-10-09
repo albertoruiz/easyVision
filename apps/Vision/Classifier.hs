@@ -30,6 +30,8 @@ module Vision.Classifier (
      treeOf, branch,
 -- ** PCA preprocessing
      withPCA,
+-- * Kernel machines
+     Kernel, polyK, gaussK, kernelMSE, kernelMSE',
 -- * Utilities
      errorRate, confusion, combined, group, ungroup, createClassifier, scramble, breakTies, selectClasses, splitProportion, posMax, preprocess,
 -- * 2D toy problems
@@ -581,3 +583,39 @@ treeOf stopQ method gs@(g1,g2) = if stopQ gs || not improved then leaf else node
 -- | stopping criterium for 'treeOf'. A new decision node is created if the minoritary class has more than n samples
 branch :: Int -> (TwoGroups -> Bool)
 branch n (g1,g2) = min (length g1) (length g2) <= n
+
+------------------------------------------------------------------------
+
+-- our nice kernel MSE algorithm
+
+-- | Generalized inner product, corresponding to the ordinary dot product in an implicit feature space.
+type Kernel = (Vector -> Vector -> Double)
+-- (it should be more general)
+
+delta f l1 l2 = matrix $ partit (length l1) $ [f x y | x <- l1, y <- l2]
+
+-- | minimum squared error linear machine in the implicit feature space induced by the given 'Kernel'
+kernelMSE :: Kernel -> Dicotomizer
+kernelMSE kernel (g1,g2) = fun where
+    fun z = expan z <> a
+    expan z = vector $ map (kernel z) objs
+    a = pinv (delta kernel objs objs) <> labels
+    objs = g1 ++ g2
+    labels = join [constant 1 (length g1), constant (-1) (length g2)]
+
+-- | the same as 'kernelMSE'' with control of the numeric tolerance of the pseudoinverse.
+kernelMSE' :: Double -> Kernel -> Dicotomizer
+kernelMSE' tol kernel (g1,g2) = fun where
+    fun z = expan z <> a
+    expan z = vector $ map (kernel z) objs
+    a = pinvTol tol (delta kernel objs objs) <> labels
+    objs = g1 ++ g2
+    labels = join [constant 1 (length g1), constant (-1) (length g2)]
+
+-- | polynomial 'Kernel' of order n
+polyK :: Int -> Kernel
+polyK n x y = (x<>y + 1)^n
+
+-- | gaussian 'Kernel' of with width sigma
+gaussK :: Double -> Kernel
+gaussK s x y = exp (-(norm (x-y) / s)^2)
