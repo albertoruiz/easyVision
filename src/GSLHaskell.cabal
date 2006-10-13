@@ -17,16 +17,17 @@ Extensions:         ForeignFunctionInterface,
 --ghc-options:        -Wall
 ghc-options:        -O
 Exposed-modules:    GSL, GSL.Base, GSL.Utils,
-                         --GSL.Vector,
-                         --GSL.Matrix, 
-                         --GSL.LinearAlgebra,
+                         GSL.LinearAlgebra,
+                         GSL.LinearAlgebra.Matrix,
+                         GSL.LinearAlgebra.Storable,
+                         GSL.LinearAlgebra.Unboxed,
                          GSL.Fourier,
                          GSL.Polynomials,
                          GSL.Differentiation,
                          GSL.Integration,
                          GSL.Minimization,
                          GSL.Special
-Other-modules:      GSL.Core, GSL.Derived, GSL.Wrappers,
+Other-modules:      GSL.Core, GSL.Derived, GSL.Wrappers, GSL.GSL
                     GSL.Interface, GSL.Drawing, GSL.Instances 
 C-sources:          GSL/gslaux.c
 extra-libraries:    gsl gslcblas

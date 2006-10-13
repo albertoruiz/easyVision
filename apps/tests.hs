@@ -87,7 +87,7 @@ ransacTest = assertBool "ransac homography" (normat3 h1 =~= normat3 h) where
     h2 = realMatrix [[2,0,-0.5],
                     [0,1,0],
                     [0.02,0,1]]
-    h = estimateHomographyRansac 0.001 dest orig                
+    h = estimateHomographyRansac 0.001 dest orig
 
 -------------------------------------------------------------------
 

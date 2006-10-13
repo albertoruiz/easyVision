@@ -9,16 +9,17 @@ REQUIREMENTS
 --------------------------------------------------------------------------------------
 INSTALLATION 
 
-$ runhaskell Setup.hs configure -p --prefix=$HOME
-$ runhaskell Setup.hs build
-$ runhaskell Setup.hs install --user
+$ cd src
+src$ runhaskell Setup.hs configure -p --prefix=$HOME
+src$ runhaskell Setup.hs build
+src$ runhaskell Setup.hs install --user
 
 (You should also repeat these steps after a darcs pull.)
 
 Alternatively, these commands and a few tests are automatically invoked by the script:
 
-$ chmod u+x setup
-$ ./setup
+src$ chmod u+x install
+src$ ./install
 
 NOTE: The library must be used from another directory. For instance:
 

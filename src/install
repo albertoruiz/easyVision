@@ -1,8 +1,14 @@
 #! /bin/bash
 
-function cabal {
+function cabalprof {
     echo "Cabal user install..."
     runhaskell Setup.hs configure -p --prefix=$HOME
+    runhaskell Setup.hs build
+    runhaskell Setup.hs install --user
+}
+
+function cabal {
+    runhaskell Setup.hs configure --prefix=$HOME
     runhaskell Setup.hs build
     runhaskell Setup.hs install --user
 }
@@ -17,13 +23,17 @@ function docs {
             GSL/Polynomials.hs \
             GSL/Minimization.hs \
             GSL/Special.hs \
+            GSL/LinearAlgebra/Storable.hs \
+            GSL/LinearAlgebra/Matrix.hs \
+            GSL/LinearAlgebra/Unboxed.hs \
+            GSL/LinearAlgebra.hs \
             GSL/Core.hs --hide=GSL.Core \
             GSL/Wrappers.hs --hide=GSL.Wrappers \
             GSL/Derived.hs --hide=GSL.Derived \
             GSL/Interface.hs --hide=GSL.Interface \
             GSL/Drawing.hs --hide=GSL.Drawing \
             GSL/Instances.hs --hide=GSL.Instances \
-            -o doc -h -p GSL/prologue -t GSLHaskell # 2> /dev/null
+            -o ../doc -h -p GSL/prologue -t GSLHaskell # 2> /dev/null
 }
 
 # -D doc/GSL.haddock \
@@ -31,7 +41,7 @@ function docs {
 
 function tests {
     echo "Performing some tests..."
-    (cd apps; runhaskell tests)
+    (cd ../apps; runhaskell tests)
 }
 
 #echo "Compiling the C wrappers..."
@@ -44,8 +54,20 @@ function tests {
 
 case $1 in
 
-    *)
+    build)
        cabal
+       ;;
+
+    tests)
+       tests
+       ;;
+
+    docs)
+       docs
+       ;;
+
+    *)
+       cabalprof
        docs
        tests
        ;;
