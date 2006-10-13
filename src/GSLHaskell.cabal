@@ -9,7 +9,7 @@ Package-url:
 Synopsis:           Functional interface to the GNU Scientific Library
 Description:
 Category:           Numerical
-tested-with:        GHC ==6.5
+tested-with:        GHC ==6.6
 Build-Depends:      base, haskell98, HGL, OpenGL, GLUT, HUnit, X11
 Extensions:         ForeignFunctionInterface,
                     MultiParamTypeClasses,
