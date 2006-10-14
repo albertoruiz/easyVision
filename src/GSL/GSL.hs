@@ -18,12 +18,23 @@ module GSL.GSL where
 
 import Foreign
 import Foreign.C.Types
+import Complex
+
+----------------------------------------------------------------------
+instance (Storable a, RealFloat a) => Storable (Complex a) where    --
+    alignment x = alignment (realPart x)                            --
+    sizeOf x    = 2 * sizeOf (realPart x)                           --
+    peek p = do                                                     --
+        [re,im] <- peekArray 2 (castPtr p)                          --
+        return (re :+ im)                                           --
+    poke p (a :+ b) = pokeArray (castPtr p) [a,b]                   --
+----------------------------------------------------------------------
 
 ------------------------------------------------
 ---------- signatures of the C functions -------
 ------------------------------------------------
 type PD = Ptr Double                          --
-type PC = Ptr Double --(Complex Double)       --
+type PC = (Complex Double)                    --
 type TV = Int -> PD -> IO Int                 --
 type TVV = Int -> PD -> TV                    --
 type TVVV = Int -> PD -> TVV                  -- 
@@ -98,3 +109,14 @@ foreign import ccall "gslaux.h luCaux" c_luCaux :: TCMCV
 foreign import ccall "gslaux.h matrix_fscanf" c_gslReadMatrix:: Ptr CChar -> TM
 
 foreign import ccall "gslaux.h mesh" c_mesh :: Int -> Int -> Ptr Double -> IO Int
+
+
+prot msg f = do
+    errorcode <- f
+    case errorcode of
+        0    -> return ()
+        1000 -> error $ "size problem in the GSL wrapper: " ++ msg
+        1001 -> error $ "unknown opcode in the GSL wrapper: " ++ msg
+        1002 -> error $ "memory allocation problem in GSL wrapper: " ++ msg
+        1003 -> error $ "wrong file name in GSL wrapper: " ++ msg
+

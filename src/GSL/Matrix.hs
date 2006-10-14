@@ -226,3 +226,13 @@ reshape (r,c) v | l <- elems v, r*c == (length l) = listArray ((0,0),(r-1,c-1)) 
 reshape' :: (Int,Int) -> UCVector -> UCMatrix
 reshape' (r,c) v | l <- elems v, r*c == (length l `quot` 2) = listArray ((0,0,Re),(r-1,c-1,Im)) l
                  | otherwise = error "reshape'"
+
+-- | loads a matrix efficiently from formatted ASCII text file (the number of rows and columns must be known in advance).
+fscanf :: FilePath -> (Int,Int) -> IO (IOMatrix)
+fscanf filename (r,c) = do
+    charname <- newCString filename
+    m <- newM r c
+    withStorableArray m $ \pm ->
+        prot "gslReadMatrix" $ c_gslReadMatrix charname r c pm
+    --free charname  -- TO DO: free the auxiliary CString
+    return m

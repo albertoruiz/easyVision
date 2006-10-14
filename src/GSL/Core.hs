@@ -228,7 +228,7 @@ createMVM ps t r1 c1 n r2 c2 f = unsafePerformIO $ do
 -------------- argument transformers --------------------
 ---------------------------------------------------------
 -- the foreign pointers must be touched by the above create functions.
--- (the previous approch doesn't work)
+-- (the previous approach didn't work)
 
 v f (V n p) = f n (unsafeForeignPtrToPtr p)
 
