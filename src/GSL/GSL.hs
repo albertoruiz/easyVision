@@ -34,7 +34,7 @@ instance (Storable a, RealFloat a) => Storable (Complex a) where    --
 ---------- signatures of the C functions -------
 ------------------------------------------------
 type PD = Ptr Double                          --
-type PC = (Complex Double)                    --
+type PC = Ptr (Complex Double)                --
 type TV = Int -> PD -> IO Int                 --
 type TVV = Int -> PD -> TV                    --
 type TVVV = Int -> PD -> TVV                  -- 
@@ -82,7 +82,7 @@ foreign import ccall "gslaux.h multiplyR" c_mulR :: TMMM
 
 foreign import ccall "gslaux.h multiplyC" c_mulC :: TCMCMCM
 
-foreign import ccall "gslaux.h trans" c_trans :: TMM
+foreign import ccall "gslaux.h trans" c_transR :: TMM
 
 foreign import ccall "gslaux.h transC" c_transC :: TCMCM
 

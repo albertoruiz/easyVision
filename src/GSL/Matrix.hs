@@ -1,7 +1,7 @@
 {-# OPTIONS  #-}
 -----------------------------------------------------------------------------
 {- |
-Module      :  GSL.LinearAlgebra.Matrix
+Module      :  GSL.Matrix
 Copyright   :  (c) Alberto Ruiz 2006
 License     :  GPL-style
 
@@ -9,7 +9,7 @@ Maintainer  :  Alberto Ruiz (aruiz at um dot es)
 Stability   :  provisional
 Portability :  uses ffi
 
-Matrix and Vector representation in terms of UArrays.
+Basic operations on matrices
 
 (In construction...)
 
@@ -17,19 +17,6 @@ Matrix and Vector representation in terms of UArrays.
 -----------------------------------------------------------------------------
 module GSL.LinearAlgebra.Matrix (
 
-    module Complex,
-    module Data.Array.Unboxed,
-    UMatrix, UVector, UCMatrix, UCVector, Cx(..),
-    dim, dims, rows, cols, dim', dims', rows', cols',
-    trans, trans',
-    diag, diag',
-    disp, disp', elems',
-    toRows, toCols, fromRows, fromCols,
-    toRows', toCols', fromRows', fromCols',
-    fromBlocks, fromBlocks',
-    eye, constantV, constantM,
-    complexV, complexM, partV, partM, conjV, conjM,
-    flatten, reshape, flatten', reshape'
 
 ) where
 

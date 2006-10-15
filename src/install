@@ -23,10 +23,7 @@ function docs {
             GSL/Polynomials.hs \
             GSL/Minimization.hs \
             GSL/Special.hs \
-            GSL/LinearAlgebra/Storable.hs \
-            GSL/LinearAlgebra/Matrix.hs \
-            GSL/LinearAlgebra/Unboxed.hs \
-            GSL/LinearAlgebra.hs \
+            GSL/Vector.hs \
             GSL/Core.hs --hide=GSL.Core \
             GSL/Wrappers.hs --hide=GSL.Wrappers \
             GSL/Derived.hs --hide=GSL.Derived \
