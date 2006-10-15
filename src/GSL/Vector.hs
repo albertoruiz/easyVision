@@ -15,26 +15,21 @@ Basic operations on vectors.
 -----------------------------------------------------------------------------
 module GSL.Vector (
     GSLVector,
-    size,
+    size, (!:),
     fromList, toList,
     fromArray, toArray,
-    (!:),
     subVector, join,
-    complex, parts
+    fromComplex, toComplex,
+    constant, linspace
 ) where
 
 import GSL.GSL
+import GSL.Internal
 import Foreign
 import Data.Complex
 import Data.Array.Storable
 import Data.Array(Array)
 
--- | Generic GSL vector (C array 1D)
-data GSLVector t = V Int (ForeignPtr t)
-
--- | Number of elements of a vector.
-size :: GSLVector t -> Int
-size (V n _) = n
 
 -- | Creates a vector from a list.  
 fromList :: (Storable a) => [a] -> GSLVector a
@@ -50,20 +45,6 @@ fromList l = unsafePerformIO $ do
 toList :: (Storable t) => GSLVector t -> [t]
 toList (V n p) = unsafePerformIO $ withForeignPtr p $ peekArray n
 
--- | creates a GSLVector taking a number of consecutive elements from another GSLVector
-subVector :: (Storable t) =>   Int       -- ^ index of the starting element
-                            -> Int       -- ^ number of elements to extract 
-                            -> GSLVector t  -- ^ source
-                            -> GSLVector t  -- ^ result
-
-subVector k l (V n p)
-    | k<0 || k >= n || k+l > n || l < 0 = error "subVector out of range"
-    | otherwise = unsafePerformIO $ do
-        q <- mallocForeignPtrArray l
-        withForeignPtr p $ \p ->
-            withForeignPtr q $ \ q ->
-                copyArray q (advancePtr p k) l
-        return (V l q)
 
 
 -- | Reading a vector position
@@ -76,19 +57,6 @@ infixl 9 !:
                             peek (advancePtr p k) 
 
 
--- | creates a new GSLVector by joining a list of Vectors
-join :: (Storable t) => [GSLVector t] -> GSLVector t
-join [] = error "joining an empty list"
-join as = unsafePerformIO $ do
-    let tot = sum (map size as)
-    p <- mallocForeignPtrArray tot
-    withForeignPtr p $ \p ->
-        joiner as tot p
-    return (V tot p)
-  where joiner [] _ _ = return ()
-        joiner (V n b : cs) _ p = do
-            withForeignPtr b  $ \b' -> copyArray p b' n
-            joiner cs 0 (advancePtr p n)
 
 {- | Creates a vector from a standard Haskell @StorableArray@ indexed by @(Int)@:
 
@@ -147,34 +115,29 @@ instance (Storable a, Show a) => Show (GSLVector a) where
 
 -------------------------------------------------------------------------
 
-complex :: (GSLVector Double, GSLVector Double) -> GSLVector (Complex Double)
-complex (r,i)
-    | size r /= size i = error "trying to build a complex vector from parts with different sizes"
-    | otherwise = unsafePerformIO $ do
-        let (V n p) = join [r,i]
-        let m = n `quot` 2
-        q <- mallocForeignPtrArray n
-        withForeignPtr p $ \p ->
-            withForeignPtr q $ \q ->
-                prot "complex" $ c_transR 2 m p m 2 q
-        return $ asComplex $ V n q
+-- | creates a complex vector from vectors with real and imaginary parts
+toComplex :: (GSLVector Double, GSLVector Double) ->  GSLVector (Complex Double)
+toComplex (r,i) = asComplex $ flatten $ fromColumnsR [r,i]
 
-parts :: GSLVector (Complex Double) -> (GSLVector Double, GSLVector Double) 
-parts c = unsafePerformIO $ do
-    let (V n p) = asReal c
-    let m = n `quot` 2
-    q <- mallocForeignPtrArray n
+-- | extracts the real and imaginary parts of a complex vector
+fromComplex :: GSLVector (Complex Double) -> (GSLVector Double, GSLVector Double)
+fromComplex m = (a,b) where [a,b] = toColumnsR $ reshape 2 $ asReal m
+
+
+
+constant :: Double -> Int -> GSLVector Double
+constant v n = unsafePerformIO $ do
+    p <- mallocForeignPtrArray n
     withForeignPtr p $ \p ->
-        withForeignPtr q $ \q ->
-            prot "parts" $ c_transR m 2 p 2 m q
-    let r = V n q
-    return (subVector 0 m r, subVector m m r)
+        prot "constant" $ c_constant v n p
+    return (V n p)
 
+{- | Creates a real vector containing a range of values:
 
--- | transforms a complex vector into a real vector with alternating real and imaginary parts 
-asReal :: GSLVector (Complex Double) -> GSLVector Double 
-asReal (V n p) = V (2*n) (castForeignPtr p)
+> > linspace 10 (-2,2)
+>-2. -1.556 -1.111 -0.667 -0.222 0.222 0.667 1.111 1.556 2.
 
--- | transforms a real vector into a complex vector with alternating real and imaginary parts
-asComplex :: GSLVector Double -> GSLVector (Complex Double)
-asComplex (V n p) = V (n `quot` 2) (castForeignPtr p)
+-}
+linspace :: Int -> (Double, Double) -> GSLVector Double
+linspace n (a,b) = fromList [a::Double,a+delta .. b]
+    where delta = (b-a)/(fromIntegral n -1)

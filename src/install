@@ -24,6 +24,9 @@ function docs {
             GSL/Minimization.hs \
             GSL/Special.hs \
             GSL/Vector.hs \
+            GSL/Matrix.hs \
+            GSL/GSL.hs \
+            GSL/Internal.hs \
             GSL/Core.hs --hide=GSL.Core \
             GSL/Wrappers.hs --hide=GSL.Wrappers \
             GSL/Derived.hs --hide=GSL.Derived \

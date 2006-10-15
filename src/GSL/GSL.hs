@@ -14,21 +14,12 @@
 --
 -----------------------------------------------------------------------------
 
+-- #hide
 module GSL.GSL where
 
 import Foreign
 import Foreign.C.Types
 import Complex
-
-----------------------------------------------------------------------
-instance (Storable a, RealFloat a) => Storable (Complex a) where    --
-    alignment x = alignment (realPart x)                            --
-    sizeOf x    = 2 * sizeOf (realPart x)                           --
-    peek p = do                                                     --
-        [re,im] <- peekArray 2 (castPtr p)                          --
-        return (re :+ im)                                           --
-    poke p (a :+ b) = pokeArray (castPtr p) [a,b]                   --
-----------------------------------------------------------------------
 
 ------------------------------------------------
 ---------- signatures of the C functions -------
