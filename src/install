@@ -14,7 +14,7 @@ function cabal {
 }
 
 function docs {
-    rm -f doc/*
+    rm -f ../doc/*
     haddock GSL.hs \
             GSL/Base.hs GSL/Utils.hs \
             GSL/Fourier.hs \
@@ -23,10 +23,6 @@ function docs {
             GSL/Polynomials.hs \
             GSL/Minimization.hs \
             GSL/Special.hs \
-            GSL/Vector.hs \
-            GSL/Matrix.hs \
-            GSL/GSL.hs \
-            GSL/Internal.hs \
             GSL/Core.hs --hide=GSL.Core \
             GSL/Wrappers.hs --hide=GSL.Wrappers \
             GSL/Derived.hs --hide=GSL.Derived \
