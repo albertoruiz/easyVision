@@ -192,7 +192,7 @@ foreign import ccall "gslaux.h submatrixR" c_submatrixR :: Int -> Int -> Int -> 
 -- | scaling of a real vector
 scale :: Double -> Vector -> Vector
 scale a x@(V n p) = createV [p] "vector_scale" n $ v (c_vectorScale a) x
-foreign import ccall "gslaux.h vector_scale" c_vectorScale :: Double -> TVV
+foreign import ccall "gslaux.h vector_scaleR" c_vectorScale :: Double -> TVV
             
 -- | add constant to a real vector
 offset :: Double -> Vector -> Vector

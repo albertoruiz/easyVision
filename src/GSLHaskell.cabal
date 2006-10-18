@@ -1,5 +1,5 @@
 Name:               GSL
-Version:            0.5
+Version:            0.6
 License:            GPL
 Author:             Alberto Ruiz
 Maintainer:         aruiz@um.es
@@ -17,9 +17,7 @@ Extensions:         ForeignFunctionInterface,
 --ghc-options:        -Wall
 ghc-options:        -O
 Exposed-modules:    GSL, GSL.Base, GSL.Utils,
-                         --GSL.LinearAlgebra,
-                         --GSL.Matrix,
-                         --GSL.Vector,
+                         G.Matrix, G.LinearAlgebra,
                          GSL.Fourier,
                          GSL.Polynomials,
                          GSL.Differentiation,
@@ -27,7 +25,8 @@ Exposed-modules:    GSL, GSL.Base, GSL.Utils,
                          GSL.Minimization,
                          GSL.Special
 Other-modules:      GSL.Core, GSL.Derived, GSL.Wrappers,
-                    GSL.Interface, GSL.Drawing, GSL.Instances 
+                    GSL.Interface, GSL.Drawing, GSL.Instances,
+                    G.Types, G.Wrappers, G.Common
 C-sources:          GSL/gslaux.c
 extra-libraries:    gsl gslcblas
 cc-options:         -Wall -O2

@@ -11,9 +11,10 @@
 
 int constant(double val, DVEC(r));
 
-int vectorZip(int code, KDVEC(a), KDVEC(b), DVEC(r));        
+int vectorZip(int code, KDVEC(a), KDVEC(b), DVEC(r));
         
-int vector_scale(double alpha, KDVEC(x), DVEC(r));
+int vector_scaleR(double alpha, KDVEC(x), DVEC(r));
+int vector_scaleC(double ar, double ac, KCVEC(x), CVEC(r));
         
 int vector_offset(double offs, KDVEC(x), DVEC(r));
 

@@ -48,9 +48,11 @@
 
 #define DVVIEW(A) gsl_vector_view A = gsl_vector_view_array(A##p,A##n)
 #define DMVIEW(A) gsl_matrix_view A = gsl_matrix_view_array(A##p,A##r,A##c)
+#define CVVIEW(A) gsl_vector_complex_view A = gsl_vector_complex_view_array(A##p,A##n)
 #define CMVIEW(A) gsl_matrix_complex_view A = gsl_matrix_complex_view_array(A##p,A##r,A##c)
 #define KDVVIEW(A) gsl_vector_const_view A = gsl_vector_const_view_array(A##p,A##n)
 #define KDMVIEW(A) gsl_matrix_const_view A = gsl_matrix_const_view_array(A##p,A##r,A##c)
+#define KCVVIEW(A) gsl_vector_complex_const_view A = gsl_vector_complex_const_view_array(A##p,A##n)
 #define KCMVIEW(A) gsl_matrix_complex_const_view A = gsl_matrix_complex_const_view_array(A##p,A##r,A##c)
 
 #define V(a) (&a.vector)
@@ -157,7 +159,7 @@ int toScalar(int code, KDVEC(x), DVEC(r)) {
 }
 
 
-int vector_scale(double alpha, KDVEC(x), DVEC(r)) {
+int vector_scaleR(double alpha, KDVEC(x), DVEC(r)) {
     REQUIRES(xn == rn,BAD_SIZE);
     DEBUGMSG("vector_scale");
     KDVVIEW(x);
@@ -168,6 +170,21 @@ int vector_scale(double alpha, KDVEC(x), DVEC(r)) {
     OK
 }
 
+int vector_scaleC(double ar, double ac, KCVEC(x), CVEC(r)) {
+    REQUIRES(xn == rn,BAD_SIZE);
+    DEBUGMSG("vector_scale");
+    //KCVVIEW(x);
+    CVVIEW(r);
+    gsl_complex alpha;
+    GSL_SET_COMPLEX(&alpha,ar,ac);
+    gsl_vector_const_view vrx = gsl_vector_const_view_array(xp,xn*2);
+    gsl_vector_view vrr = gsl_vector_view_array(rp,rn*2);
+    CHECK(gsl_vector_memcpy(V(vrr),V(vrx)) , MEM);
+    gsl_blas_zscal(alpha,V(r)); // void !
+    int res = 0; 
+    CHECK(res,res);
+    OK
+}
 
 int vector_offset(double offs, KDVEC(x), DVEC(r)) { 
     REQUIRES(xn == rn,BAD_SIZE);    
