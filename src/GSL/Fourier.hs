@@ -21,6 +21,7 @@ module GSL.Fourier (
 ) where
 
 import GSL.Types
+import GSL.Wrappers
 
 genfft code x@(V n p) = createV [p] "fft" n $ v (c_fft code) x
 foreign import ccall "gslaux.h fft" c_fft ::  Int -> TCVCV
@@ -32,7 +33,7 @@ foreign import ccall "gslaux.h fft" c_fft ::  Int -> TCVCV
 10.  -2.+2.i  -2.  -2.-2.i@
 
 -}
-fft :: ComplexVector -> ComplexVector
+fft :: Vector (Complex Double) -> Vector (Complex Double)
 fft = genfft 0
 
 {- | inverse 'fft' using /gsl_fft_complex_inverse/.
@@ -41,5 +42,5 @@ fft = genfft 0
 1.  1.  -1.  -1.@
 
 -}
-ifft :: ComplexVector->ComplexVector
+ifft :: Vector (Complex Double) -> Vector (Complex Double)
 ifft = genfft 1

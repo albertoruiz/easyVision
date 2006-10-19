@@ -38,7 +38,7 @@ common f = commonval . map f where
 
 
 -- | Creates a vector from a list.  
-fromList :: (Storable a) => [a] -> GSLVector a
+fromList :: (Storable a) => [a] -> Vector a
 fromList [] = error "trying to create an empty GSL vector"
 fromList l = unsafePerformIO $ do
     let n = length l
@@ -48,15 +48,15 @@ fromList l = unsafePerformIO $ do
     return (V n p)
 
 -- | Creates a list from a vector.
-toList :: (Storable t) => GSLVector t -> [t]
+toList :: (Storable t) => Vector t -> [t]
 toList (V n p) = unsafePerformIO $ withForeignPtr p $ peekArray n
 
 
--- | creates a GSLVector taking a number of consecutive toList from another GSLVector
+-- | creates a Vector taking a number of consecutive toList from another Vector
 subVector :: (Storable t) =>   Int       -- ^ index of the starting element
                             -> Int       -- ^ number of toList to extract
-                            -> GSLVector t  -- ^ source
-                            -> GSLVector t  -- ^ result
+                            -> Vector t  -- ^ source
+                            -> Vector t  -- ^ result
 subVector k l (V n p)
     | k<0 || k >= n || k+l > n || l < 0 = error "subVector out of range"
     | otherwise = unsafePerformIO $ do
@@ -66,8 +66,8 @@ subVector k l (V n p)
                 copyArray q (advancePtr p k) l
         return (V l q)
 
--- | creates a new GSLVector by joining a list of Vectors
-join :: (Storable t) => [GSLVector t] -> GSLVector t
+-- | creates a new Vector by joining a list of Vectors
+join :: (Storable t) => [Vector t] -> Vector t
 join [] = error "joining an empty list"
 join as = unsafePerformIO $ do
     let tot = sum (map size as)
@@ -81,25 +81,25 @@ join as = unsafePerformIO $ do
             joiner cs 0 (advancePtr p n)
 
 -- | adapts a function on vectors to work on all the toList of matrices
-asVector :: (GSLVector a -> GSLVector b) -> GSLMatrix a -> GSLMatrix b
+asVector :: (Vector a -> Vector b) -> Matrix a -> Matrix b
 asVector f m = reshape (cols m) . f . flatten $ m
 
 sameShape (M r1 c1 _) (M r2 c2 _) = r1==r2 && c1 == c2 
 
 -- | adapts a function on two vectors to work on all the toList of two matrices
-asVector2 :: (GSLVector a -> GSLVector b -> GSLVector c) -> GSLMatrix a -> GSLMatrix b -> GSLMatrix c
+asVector2 :: (Vector a -> Vector b -> Vector c) -> Matrix a -> Matrix b -> Matrix c
 asVector2 f m1 m2 
     | sameShape m1 m2 = reshape (cols m1) $ f (flatten m1) (flatten m2)
     | otherwise = error "inconsistent matrix dimensions" 
 
--- | creates a GSLMatrix from a list of vectors
-fromRows :: (Storable t) => [GSLVector t] -> GSLMatrix t
+-- | creates a Matrix from a list of vectors
+fromRows :: (Storable t) => [Vector t] -> Matrix t
 fromRows vs = case common size vs of
     Nothing -> error "fromRows applied to [] or to vectors with different sizes"
     Just c  -> reshape c (join vs)
 
 -- | extracts the rows of a matrix as a list of vectors
-toRows :: (Storable t) => GSLMatrix t -> [GSLVector t]
+toRows :: (Storable t) => Matrix t -> [Vector t]
 toRows x = toRows' 0 where
     v = flatten x
     r = rows x
@@ -108,17 +108,17 @@ toRows x = toRows' 0 where
               | otherwise = subVector k c v : toRows' (k+c)
 
 class (Storable t) => Field t where
-    transM :: GSLMatrix t -> GSLMatrix t
-    subMatrixM :: (Int,Int)-> (Int,Int) -> GSLMatrix t -> GSLMatrix t
-    diagM :: GSLVector t -> GSLMatrix t
-    takeDiagM :: GSLMatrix t -> GSLVector t
-    multiplyM :: GSLMatrix t -> GSLMatrix t -> GSLMatrix t
-    scaleV :: t -> GSLVector t -> GSLVector t
-    addV :: GSLVector t -> GSLVector t -> GSLVector t
-    scaleM :: t -> GSLMatrix t -> GSLMatrix t
-    addM :: GSLMatrix t -> GSLMatrix t -> GSLMatrix t
-    pnormV :: Int -> GSLVector t -> Double
-    pnormM :: Int -> GSLMatrix t -> Double
+    transM :: Matrix t -> Matrix t
+    subMatrixM :: (Int,Int)-> (Int,Int) -> Matrix t -> Matrix t
+    diagM :: Vector t -> Matrix t
+    takeDiagM :: Matrix t -> Vector t
+    multiplyM :: Matrix t -> Matrix t -> Matrix t
+    scaleV :: t -> Vector t -> Vector t
+    addV :: Vector t -> Vector t -> Vector t
+    scaleM :: t -> Matrix t -> Matrix t
+    addM :: Matrix t -> Matrix t -> Matrix t
+    pnormV :: Int -> Vector t -> Double
+    pnormM :: Int -> Matrix t -> Double
 
 instance Field Double where
     transM = transR
@@ -149,11 +149,11 @@ instance Field (Complex Double) where
 likeReal f x y = asComplex $ f (asReal x) (asReal y)
 
 
-diag :: Field a => GSLVector a -> GSLMatrix a
+diag :: Field a => Vector a -> Matrix a
 diag = diagM
 
 
-takeDiag :: Field a => GSLMatrix a -> GSLVector a
+takeDiag :: Field a => Matrix a -> Vector a
 takeDiag = takeDiagM
 
 
@@ -168,7 +168,7 @@ class Container t where
     scaleG :: Field a => a -> t a -> t a
     pnormG :: Field a => Int -> t a -> Double 
 
-instance Container GSLVector where
+instance Container Vector where
     mapG f = fromList . map f . toList
     toComplexG = toComplexV
     fromComplexG = fromComplexV
@@ -178,7 +178,7 @@ instance Container GSLVector where
     scaleG = scaleV
     pnormG = pnormV
 
-instance Container GSLMatrix where
+instance Container Matrix where
     mapG f = asVector (mapG f)
     toComplexG = toComplexM
     fromComplexG = fromComplexM
@@ -192,7 +192,7 @@ gmap :: (Field a, Field b, Container c) => (a -> b) -> c a -> c b
 gmap = mapG
 
 -- | obtains the complex conjugate of a complex vector
-conjV :: ComplexVector -> ComplexVector
+conjV :: CVector -> CVector
 conjV v = asComplex $ flatten $ reshape 2 (asReal v) `multiplyR` diag (fromList [1,-1])
 
 
@@ -206,32 +206,32 @@ fromComplex = fromComplexG
 
 
 -- | transpose of a matrix
-trans :: Field t => GSLMatrix t -> GSLMatrix t
+trans :: Field t => Matrix t -> Matrix t
 trans = transM
 
 -- | extraction of a submatrix from a matrix
 subMatrix :: Field t
            => (Int,Int) -- ^ (r0,c0) starting position
            -> (Int,Int) -- ^ (rt,ct) dimensions of submatrix
-           -> GSLMatrix t -> GSLMatrix t
+           -> Matrix t -> Matrix t
 subMatrix = subMatrixM
 
 -- | Creates a matrix from a list of vectors, as columns
-fromColumns :: (Field t) => [GSLVector t] -> GSLMatrix t
+fromColumns :: (Field t) => [Vector t] -> Matrix t
 fromColumns m = trans . fromRows $ m
 
 -- | Creates a list of vectors from the columns of a matrix
-toColumns :: (Field t) => GSLMatrix t -> [GSLVector t]
+toColumns :: (Field t) => Matrix t -> [Vector t]
 toColumns m = toRows . trans $ m
 
 -- | creates a matrix from a vertical list of matrices
-joinVert :: (Storable t) => [GSLMatrix t] -> GSLMatrix t
+joinVert :: (Storable t) => [Matrix t] -> Matrix t
 joinVert ms = case common cols ms of
     Nothing -> error "joinVert on matrices with different number of columns"
     Just c  -> reshape c $ join (map flatten ms)
 
 -- | creates a matrix from a horizontal list of matrices
-joinHoriz :: (Field t) => [GSLMatrix t] -> GSLMatrix t
+joinHoriz :: (Field t) => [Matrix t] -> Matrix t
 joinHoriz ms = trans. joinVert . map trans $ ms
 
 {- | Creates a matrix from blocks given as a list of lists of matrices:
@@ -247,31 +247,31 @@ joinHoriz ms = trans. joinVert . map trans $ ms
 -1. -1. -1. -1.  0.  0.  2.@
 
 -}
-fromBlocks :: (Field t) => [[GSLMatrix t]] -> GSLMatrix t
+fromBlocks :: (Field t) => [[Matrix t]] -> Matrix t
 fromBlocks = joinVert . map joinHoriz 
 
 -- | creates a complex vector from vectors with real and imaginary parts
-toComplexV :: (GSLVector Double, GSLVector Double) ->  GSLVector (Complex Double)
+toComplexV :: (Vector Double, Vector Double) ->  Vector (Complex Double)
 toComplexV (r,i) = asComplex $ flatten $ fromColumns [r,i]
 
 -- | extracts the real and imaginary parts of a complex vector
-fromComplexV :: GSLVector (Complex Double) -> (GSLVector Double, GSLVector Double)
+fromComplexV :: Vector (Complex Double) -> (Vector Double, Vector Double)
 fromComplexV m = (a,b) where [a,b] = toColumns $ reshape 2 $ asReal m
 
 -- | creates a complex matrix from matrices with real and imaginary parts
-toComplexM :: (GSLMatrix Double, GSLMatrix Double) ->  GSLMatrix (Complex Double)
+toComplexM :: (Matrix Double, Matrix Double) ->  Matrix (Complex Double)
 toComplexM (r,i) = reshape (cols r) $ asComplex $ flatten $ fromColumns [flatten r, flatten i]
 
 -- | extracts the real and imaginary parts of a complex matrix
-fromComplexM :: GSLMatrix (Complex Double) -> (GSLMatrix Double, GSLMatrix Double)
+fromComplexM :: Matrix (Complex Double) -> (Matrix Double, Matrix Double)
 fromComplexM m = (reshape c a, reshape c b)
     where c = cols m
           [a,b] = toColumns $ reshape 2 $ asReal $ flatten m 
 
-asRow :: Field a => GSLVector a -> GSLMatrix a
+asRow :: Field a => Vector a -> Matrix a
 asRow v = reshape (size v) v
 
-asColumn :: Field a => GSLVector a -> GSLMatrix a
+asColumn :: Field a => Vector a -> Matrix a
 asColumn v = reshape 1 v
 
 complex :: Container t => t Double -> t (Complex Double)
@@ -289,7 +289,7 @@ complex = asComplexG
 >    print (bounds hv)
 >    els <- getElems hv
 >    print els
->    v <- fromStorableArray1D hv :: IO (ComplexVector)
+>    v <- fromStorableArray1D hv :: IO (CVector)
 >    print v
 >    print (norm v)
 >
@@ -303,7 +303,7 @@ complex = asComplexG
 The toList are efficiently copied using @withStorableArray@ and @copyArray@.
 
 -}
-fromStorableArray1D :: Storable t => StorableArray Int t -> IO (GSLVector t)
+fromStorableArray1D :: Storable t => StorableArray Int t -> IO (Vector t)
 fromStorableArray1D arr = do
     (l,u) <- getBounds arr
     let n = u-l+1
@@ -314,25 +314,25 @@ fromStorableArray1D arr = do
     return (V n p)
 
 
-{- | Creates a @StorableArray@ indexed by @(Int)@ from a GSLVector. The toList are efficiently copied using @withStorableArray@ and @copyArray@.
+{- | Creates a @StorableArray@ indexed by @(Int)@ from a Vector. The toList are efficiently copied using @withStorableArray@ and @copyArray@.
 
 -}
-toStorableArray1D :: Storable t => GSLVector t -> IO(StorableArray Int t)
+toStorableArray1D :: Storable t => Vector t -> IO(StorableArray Int t)
 toStorableArray1D (V n p) = do
     arr <- newArray_ (0, n-1) 
     withForeignPtr p $ \p ->
         withStorableArray arr $ \parr -> copyArray parr p n
     return arr
 
-fromArray1D :: Storable t => Array Int t -> GSLVector t
+fromArray1D :: Storable t => Array Int t -> Vector t
 fromArray1D arr = unsafePerformIO $ thaw arr >>= fromStorableArray1D
 
-toArray1D :: Storable t => GSLVector t -> Array Int t
+toArray1D :: Storable t => Vector t -> Array Int t
 toArray1D v = unsafePerformIO $ toStorableArray1D v >>= freeze
 
 -------------------------------------------------------------------------
 
-instance (Field a, Show a) => Show (GSLVector a) where
+instance (Field a, Show a) => Show (Vector a) where
     show v@(V n _) = "vector ("++show n++") "++show (toList v)
 
 -------------------------------------------------------------------------
@@ -343,14 +343,14 @@ instance (Field a, Show a) => Show (GSLVector a) where
 >-2. -1.556 -1.111 -0.667 -0.222 0.222 0.667 1.111 1.556 2.
 
 -}
-linspace :: Int -> (Double, Double) -> GSLVector Double
+linspace :: Int -> (Double, Double) -> Vector Double
 linspace n (a,b) = fromList [a::Double,a+delta .. b]
     where delta = (b-a)/(fromIntegral n -1)
 
 --------------------------------------------------------------------------
 
 -- | Reading a matrix position.
-(@@>) :: (Storable t) => GSLMatrix t -> (Int,Int) -> t
+(@@>) :: (Storable t) => Matrix t -> (Int,Int) -> t
 infixl 9 @@> 
 (M r c p) @@> (i,j)
     | i<0 || i>=r || j<0 || j>=c = error "matrix indexing out of range"
@@ -360,7 +360,7 @@ infixl 9 @@>
 
 ----------------------------------------------------------------------------
 
-instance (Field a, Show a) => Show (GSLMatrix a) where
+instance (Field a, Show a) => Show (Matrix a) where
     show m@(M r c _) = "matrix ("++show r++"x"++show c++") "++show (toList $ flatten m)
 
 -----------------------------------------------------------------------------
@@ -368,7 +368,7 @@ instance (Field a, Show a) => Show (GSLMatrix a) where
 {- | Creates a matrix from a standard Haskell @StorableArray@ indexed by @(Int,Int)@. The toList are efficiently copied using @withStorableArray@ and @copyArray@.
 
 -}
-fromStorableArray2D :: Storable t => StorableArray (Int,Int) t -> IO (GSLMatrix t)
+fromStorableArray2D :: Storable t => StorableArray (Int,Int) t -> IO (Matrix t)
 fromStorableArray2D arr = do
     ((r1,c1),(r2,c2)) <- getBounds arr
     let r = r2-r1+1
@@ -384,43 +384,43 @@ fromStorableArray2D arr = do
 The toList are efficiently copied using @withStorableArray@ and @copyArray@.
 
 -}
-toStorableArray2D :: Storable t => GSLMatrix t -> IO(StorableArray (Int,Int) t)
+toStorableArray2D :: Storable t => Matrix t -> IO(StorableArray (Int,Int) t)
 toStorableArray2D (M r c p) = do
     arr <- newArray_ ((0,0),(r-1,c-1)) 
     withForeignPtr p $ \p ->
         withStorableArray arr $ \ptr -> copyArray ptr p (r*c)
     return arr
 
-fromArray2D :: Storable t => Array (Int,Int) t -> GSLMatrix t
+fromArray2D :: Storable t => Array (Int,Int) t -> Matrix t
 fromArray2D arr = unsafePerformIO $ thaw arr >>= fromStorableArray2D
 
-toArray2D :: Storable t => GSLMatrix t -> Array (Int,Int) t
+toArray2D :: Storable t => Matrix t -> Array (Int,Int) t
 toArray2D m = unsafePerformIO $ toStorableArray2D m >>= freeze
 
 ---------------------------------------------------------------
 
 -- | Creates a matrix from a list of lists (considered as rows). Related functions: 'GSL.Interface.realMatrix', 'GSL.Interface.complexMatrix', 'fromRows', 'fromColumns', 'fromStorableArray2D', 'fromFile', and 'gslReadMatrix'.
-fromLists :: Storable t => [[t]] -> GSLMatrix t
+fromLists :: Storable t => [[t]] -> Matrix t
 fromLists = fromRows . map fromList
 
 -- | Creates a list of lists from the rows o a matrix
-toLists :: Storable t => GSLMatrix t -> [[t]]
+toLists :: Storable t => Matrix t -> [[t]]
 toLists = map toList . toRows
 
 
 ----------------------------------------------------------------
 
 -- | Creates a matrix with the first n rows of another matrix
-takeRows :: Field t => Int -> GSLMatrix t -> GSLMatrix t
+takeRows :: Field t => Int -> Matrix t -> Matrix t
 takeRows n mat = subMatrix (0,0) (n, cols mat) mat
 -- | Creates a copy of a matrix without the first n rows
-dropRows :: Field t => Int -> GSLMatrix t -> GSLMatrix t
+dropRows :: Field t => Int -> Matrix t -> Matrix t
 dropRows n mat = subMatrix (n,0) (rows mat - n, cols mat) mat
 -- |Creates a matrix with the first n columns of another matrix
-takeColumns :: Field t => Int -> GSLMatrix t -> GSLMatrix t
+takeColumns :: Field t => Int -> Matrix t -> Matrix t
 takeColumns n mat = subMatrix (0,0) (rows mat, n) mat
 -- | Creates a copy of a matrix without the first n columns
-dropColumns :: Field t => Int -> GSLMatrix t -> GSLMatrix t
+dropColumns :: Field t => Int -> Matrix t -> Matrix t
 dropColumns n mat = subMatrix (0,n) (rows mat, cols mat - n) mat
 
 -----------------------------------------------------------------
@@ -434,38 +434,44 @@ dropColumns n mat = subMatrix (0,n) (rows mat, cols mat - n) mat
 > 0. 0. 0. 1.
 
 -}
-ident :: Int -> Matrix
+ident :: Int -> RMatrix
 ident = diag . constant 1
 
 -------------------------------------------------------------------
 
 -- | matrix product
-mXm :: Field t => GSLMatrix t -> GSLMatrix t -> GSLMatrix t
+mXm :: Field t => Matrix t -> Matrix t -> Matrix t
 mXm = multiplyM
 
 -- | euclidean inner product
-dot :: Field t => GSLVector t -> GSLVector t -> t
+dot :: Field t => Vector t -> Vector t -> t
 dot u v = (asRow u `mXm` asColumn v) @@>(0,0)
 
 -- | matrix x vector
-mXv :: Field t => GSLMatrix t -> GSLVector t -> GSLVector t
+mXv :: Field t => Matrix t -> Vector t -> Vector t
 mXv m v = flatten $ m `mXm` (asColumn v)
 
 -- | vector x matrix
-vXm :: Field t => GSLVector t -> GSLMatrix t -> GSLVector t
+vXm :: Field t => Vector t -> Matrix t -> Vector t
 vXm v m = flatten $ (asRow v) `mXm` m
 
-offsetC :: Complex Double -> ComplexVector -> ComplexVector
+offsetC :: Complex Double -> CVector -> CVector
 offsetC x = fromList . map (+x). toList
 
-norm2 :: Vector -> Double
+norm2 :: RVector -> Double
 norm2 = toScalar 1 
 
-norm1 :: Vector -> Double
+norm1 :: RVector -> Double
 norm1 = toScalar 2 
 
-normInf :: Vector -> Double
-normInf = toScalar 4 
+vectorMax :: RVector -> Double
+vectorMax = toScalar 4
+vectorMin :: RVector -> Double
+vectorMin = toScalar 6
+vectorMaxIndex :: RVector -> Int
+vectorMaxIndex = round . toScalar 3
+vectorMinIndex :: RVector -> Int
+vectorMinIndex = round . toScalar 5
 
 -------------------------------------------------------------------
 
@@ -481,25 +487,25 @@ vmap = gmap
 
 pnormRV 2 = norm2
 pnormRV 1 = norm1
-pnormRV 0 = normInf . vectorMap 3
+pnormRV 0 = vectorMax . vectorMap 3
 pnormRV _ = error "p norm not yet defined"
 
 pnormCV 2 = norm2 . asReal
 pnormCV 1 = norm1 . vmap magnitude
-pnormCV 0 = normInf . vmap magnitude
+pnormCV 0 = vectorMax . vmap magnitude
 pnormCV _ = error "p norm not yet defined"
 
 pnormRM 2 m = head (toList s) where (_,s,_) = svd m
-pnormRM 1 m = normInf $ constant 1 (rows m) `vXm` asVector (vectorMap 3) m
-pnormRM 0 m = normInf $ asVector (vectorMap 3) m `mXv` constant 1 (cols m)
+pnormRM 1 m = vectorMax $ constant 1 (rows m) `vXm` asVector (vectorMap 3) m
+pnormRM 0 m = vectorMax $ asVector (vectorMap 3) m `mXv` constant 1 (cols m)
 pnormRM _ _ = error "p norm not yet defined"
 
 pnormCM 2 m = maxvalsing m
   where maxvalsing m = sqrt . abs . head . toList . fst . eigH $ mm
         mm = if (rows m) > (cols m) then (conj.trans) m `mXm` m
                                     else m `mXm` (conj.trans) m
-pnormCM 1 m = normInf $ constant 1 (rows m) `vXm` asVector (vmap magnitude) m
-pnormCM 0 m = normInf $ asVector (vmap magnitude) m `mXv` constant 1 (cols m)
+pnormCM 1 m = vectorMax $ constant 1 (rows m) `vXm` asVector (vmap magnitude) m
+pnormCM 0 m = vectorMax $ asVector (vmap magnitude) m `mXv` constant 1 (cols m)
 pnormCM _ _ = error "p norm not yet defined"
 
 -- | computes the p-norm of a matrix or vector (with the same definitions as GNU-octave). pnorm 0 denotes \\inf-norm. See also 'norm'.
@@ -524,15 +530,15 @@ triang r c h v = reshape c $ fromList [el i j | i<-[0..r-1], j<-[0..c-1]]
 > 0. 1. 0. 0.
 
 -}
-extractRows :: (Storable t) => [Int] -> GSLMatrix t -> GSLMatrix t
+extractRows :: (Storable t) => [Int] -> Matrix t -> Matrix t
 extractRows l m = fromRows $ extract (toRows $ m) l
 
 ------------------------------------------------------------------------------
 
 -- | Reverse rows 
-flipud :: Storable t => GSLMatrix t -> GSLMatrix t
+flipud :: Storable t => Matrix t -> Matrix t
 flipud m = fromRows . reverse . toRows $ m
 
 -- | Reverse columns
-fliprl :: Field t => GSLMatrix t -> GSLMatrix t
+fliprl :: Field t => Matrix t -> Matrix t
 fliprl m = fromColumns . reverse . toColumns $ m   

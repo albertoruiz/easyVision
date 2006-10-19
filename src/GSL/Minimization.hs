@@ -21,16 +21,18 @@ module GSL.Minimization (
 ) where
 
 import Foreign
+import GSL.Types
+import GSL.Wrappers
 import GSL.Matrix
 
 -- | auxiliary function used by 'minimize'
 
-minimizeV :: (Vector -> Double)       -- ^ function to minimize
+minimizeV :: (Vector Double -> Double)       -- ^ function to minimize
           -> Double              -- ^ error tolerance
           -> Int                 -- ^ maximum number of iterations
-          -> Vector                   -- ^ initial solution
-          -> Vector                   -- ^ sizes of the search box
-          -> Matrix                   -- ^ matrix with solution, info and trajectory
+          -> Vector Double       -- ^ initial solution
+          -> Vector Double       -- ^ sizes of the search box
+          -> Matrix Double       -- ^ matrix with solution, info and trajectory
 minimizeV f tol maxit xi@(V n p) sz = unsafePerformIO $ do
     fp <- mkVecfun (iv f)
     return $ createM [p] "minimizeVList" maxit (n+3) $ vv (c_minimizeList fp tol maxit) xi sz
@@ -41,14 +43,14 @@ foreign import ccall "gslaux.h minimize"
 
 --------------------------------------------------------------
 
-minimizeDerivV :: (Vector -> Double)  -- ^ function to minimize
-          -> (Vector -> Vector)            -- ^ gradient
+minimizeDerivV :: (Vector Double -> Double)  -- ^ function to minimize
+          -> (Vector Double -> Vector Double)       -- ^ gradient
           -> Double              -- ^ error tolerance
           -> Int                 -- ^ maximum number of iterations
-          -> Vector                   -- ^ initial solution
+          -> Vector Double       -- ^ initial solution
           -> Double              -- ^ initial step size
           -> Double              -- ^ minimization parameter
-          -> Matrix                   -- ^ matrix with solution, info and trajectory
+          -> Matrix Double       -- ^ matrix with solution, info and trajectory
 minimizeDerivV f df tol maxit xi@(V n p) istep minimpar = unsafePerformIO $ do
     fp <- mkVecfun (iv f)
     dfp <- mkVecVecfun (aux_vTov df)
@@ -111,22 +113,19 @@ minimizeNMSimplex :: ([Double] -> Double) -- ^ function to minimize
           -> [Double]            -- ^ sizes of the initial search box
           -> Double              -- ^ desired precision of the solution
           -> Int                 -- ^ maximum number of iterations allowed
-          -> ([Double], Matrix)   
+          -> ([Double], Matrix Double)
           -- ^ solution vector, and the optimization trajectory followed by the algorithm
 minimizeNMSimplex f xi sz tol maxit = (drop 3 sol, path) where
     rawpath = minimizeV (f.toList) tol maxit (fromList xi) (fromList sz)
-    it = round (rawpath !!: (maxit-1,0))
+    it = round (rawpath @@> (maxit-1,0))
     path = takeRows it rawpath
-    [sol] = toList $ dropRows (it-1) path
+    [sol] = toLists $ dropRows (it-1) path
 
 ----------------------------------------------------------------------------------
 
 {- | The Fletcher-Reeves conjugate gradient algorithm /gsl_multimin_fminimizer_conjugate_fr/. This is the example in the GSL manual:
 
-@minimize f df xi = minimizeConjugateGradient 1E-2 1E-4 1E-3 30 
-\                                             (f . 'toList') 
-\                                             ('fromList' . df . 'toList') 
-\                                             ('fromList' xi)
+@minimize = minimizeConjugateGradient 1E-2 1E-4 1E-3 30
 f [x,y] = 10*(x-1)^2 + 20*(y-2)^2 + 30
 \ 
 df [x,y] = [20*(x-1), 40*(y-2)]
@@ -162,18 +161,20 @@ minimizeConjugateGradient ::
     -> Double        -- ^ minimization parameter   
     -> Double        -- ^ desired precision of the solution (gradient test)
     -> Int           -- ^ maximum number of iterations allowed
-    -> (Vector -> Double) -- ^ function to minimize
-    -> (Vector -> Vector)      -- ^ gradient  
-    -> Vector             -- ^ starting point
-    -> (Vector, Matrix)        -- ^ solution vector, and the optimization trajectory followed by the algorithm      
+    -> ([Double] -> Double) -- ^ function to minimize
+    -> ([Double] -> [Double])      -- ^ gradient
+    -> [Double]             -- ^ starting point
+    -> ([Double], Matrix Double)        -- ^ solution vector, and the optimization trajectory followed by the algorithm
 minimizeConjugateGradient istep minimpar tol maxit f df xi = (sol, path) where
-    rawpath = minimizeDerivV f df tol maxit xi istep minimpar
-    it = round (rawpath !!: (maxit-1,0))
+    rawpath = minimizeDerivV f' df' tol maxit (fromList xi) istep minimpar
+    it = round (rawpath @@> (maxit-1,0))
     path = takeRows it rawpath
-    sol = flatten $ dropColumns 2 $ dropRows (it-1) path
+    sol = toList $ flatten $ dropColumns 2 $ dropRows (it-1) path
+    f' = f . toList
+    df' = (fromList . df . toList)
 
 ---------------------------------------------------------------------
-iv :: (Vector -> Double) -> (Int -> Ptr Double -> Double)
+iv :: (Vector Double -> Double) -> (Int -> Ptr Double -> Double)
 iv f n p = f (createV [] "iv" n copy) where
     copy n q = do 
         copyArray q p n
@@ -185,7 +186,7 @@ foreign import ccall "wrapper" mkVecfun:: (Int -> Ptr Double -> Double) -> IO( F
 -- | another required conversion 
 foreign import ccall "wrapper" mkVecVecfun:: (Int -> Ptr Double -> Ptr Double -> IO ()) -> IO( FunPtr (Int -> Ptr Double -> Ptr Double->IO()))            
 
-aux_vTov :: (Vector -> Vector) -> (Int -> Ptr Double -> Ptr Double -> IO()) 
+aux_vTov :: (Vector Double -> Vector Double) -> (Int -> Ptr Double -> Ptr Double -> IO()) 
 aux_vTov f n p r = g where
     (V _ pr) = f x
     x = createV [] "aux_vTov" n copy

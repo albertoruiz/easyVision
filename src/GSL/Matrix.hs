@@ -20,11 +20,11 @@ module GSL.Matrix (
     -- | This library works with ...
     Field, Container,
     -- * Vectors
-    GSLVector, size, (@>),
+    Vector, size, (@>),
     fromList, toList,
     fromArray1D, toArray1D,
     -- * Matrices
-    GSLMatrix, rows, cols, (@@>),
+    Matrix, rows, cols, (@@>),
     fromLists, toLists,
     fromArray2D, toArray2D,
     -- * Matrix manipulation
@@ -39,7 +39,7 @@ module GSL.Matrix (
     -- * Utilities
     diag, takeDiag, conj,
     trans, ident,
-    constant, linspace
+    constant, linspace, vectorMax, vectorMin, vectorMaxIndex, vectorMinIndex
 
 ) where
 

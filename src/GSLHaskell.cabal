@@ -10,7 +10,7 @@ Synopsis:           Functional interface to the GNU Scientific Library
 Description:
 Category:           Numerical
 tested-with:        GHC ==6.6
-Build-Depends:      base, haskell98, HGL, OpenGL, GLUT, HUnit, X11
+Build-Depends:      base, haskell98
 Extensions:         ForeignFunctionInterface,
                     MultiParamTypeClasses,
                     FunctionalDependencies
@@ -18,13 +18,14 @@ Extensions:         ForeignFunctionInterface,
 ghc-options:        -O
 Exposed-modules:    GSL,
                          GSL.Matrix, GSL.LinearAlgebra,
+                         GSL.Wrappers,  GSL.Types, GSL.Common
                          GSL.Fourier,
                          GSL.Polynomials,
                          GSL.Differentiation,
                          GSL.Integration,
                          GSL.Minimization,
                          GSL.Special
-Other-modules:      GSL.Types, GSL.Wrappers, GSL.Common
+Other-modules:
 C-sources:          GSL/gslaux.c
 extra-libraries:    gsl gslcblas
 cc-options:         -Wall -O2

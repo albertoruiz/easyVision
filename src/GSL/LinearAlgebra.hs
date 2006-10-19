@@ -17,7 +17,7 @@ Some linear algebra algorithms, implemented by means of the GSL or Lapack.
 -----------------------------------------------------------------------------
 module GSL.LinearAlgebra (
     -- * Data types
-    module Complex, module G.Matrix,
+    module Complex, module GSL.Matrix,
     -- * Basic linear algebra
     mXm, mXv, vXm, dot, outer, scale, add, pnorm,
     -- * Matrix factorizations
@@ -55,7 +55,7 @@ import GSL.Wrappers
 10. -5.@
 
 -}
-pinv :: Matrix -> Matrix
+pinv :: Matrix Double -> Matrix Double
 pinv m = pinvTol 1 m
 
 {- | Pseudoinverse of a real matrix with the desired tolerance, expressed as a
@@ -76,7 +76,7 @@ multiplicative factor of the default tolerance used by GNU-Octave (see 'pinv').
 0. 0. 1.@
 
 -}
-pinvTol :: Double -> Matrix -> Matrix
+pinvTol :: Double -> Matrix Double -> Matrix Double
 pinvTol t m = v `mXm` diag s' `mXm` trans u where
     (u,s,v) = svd m
     sl@(g:_) = toList s
@@ -116,5 +116,5 @@ eps =  2.22044604925031e-16
 21.  0.  6.i  3.+3.i@
 
 -}
-outer :: Field a => GSLVector a -> GSLVector a -> GSLMatrix a
+outer :: Field a => Vector a -> Vector a -> Matrix a
 outer u v = reshape 1 u `mXm` reshape (size v) v

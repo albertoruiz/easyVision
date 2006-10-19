@@ -1,6 +1,7 @@
 module Main where
 
 import GSL
+import Drawing
 
 x = linspace 1000 (0,2*pi)
 

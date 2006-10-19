@@ -13,7 +13,6 @@ This module reexports the basic functionality and a collection of utilities.
 -}
 
 module GSL (
-    module GSL.Matrix,
     module GSL.LinearAlgebra,
     module GSL.Fourier,
     module GSL.Differentiation,

@@ -20,6 +20,7 @@ module GSL.Polynomials (
 ) where
 
 import GSL.Types
+import GSL.Wrappers
 
 {- | Solution of general polynomial equations, using /gsl_poly_complex_solve/. For example,
      the three solutions of x^3 + 8 = 0
@@ -37,6 +38,6 @@ The example in the GSL manual: To find the roots of x^5 -1 = 0:
 1.0 :+ 0.0]@
 
 -}  
-polySolve :: Vector -> ComplexVector
+polySolve :: Vector Double -> Vector (Complex Double)
 polySolve x@(V n p) = createV [p] "polySolve" (n-1) $ v c_polySolve x
 foreign import ccall "gslaux.h polySolve" c_polySolve:: TVCV

@@ -1,5 +1,6 @@
 -- the multidimensional minimization example in the GSL manual
 import GSL
+import Drawing
 
 -- the function to be minimized 
 f [x,y] = 10*(x-1)^2 + 20*(y-2)^2 + 30
@@ -8,10 +9,7 @@ f [x,y] = 10*(x-1)^2 + 20*(y-2)^2 + 30
 df [x,y] = [20*(x-1), 40*(y-2)]
 
 -- the conjugate gradient method
-minimizeCG f df xi = minimizeConjugateGradient 1E-2 1E-4 1E-3 30 
-                                              (f.toList) 
-                                              (fromList.df.toList) 
-                                              (fromList xi)
+minimizeCG = minimizeConjugateGradient 1E-2 1E-4 1E-3 30
 
 -- a minimization algorithm which does not require the gradient
 minimizeS f xi = minimizeNMSimplex f xi (replicate (length xi) 1) 1E-2 100
