@@ -25,23 +25,26 @@ module Vision.Stat
 
 import GSL
 
+type RVector = Vector Double
+type RMatrix = Matrix Double
+
 -- | 1st and 2nd order statistics and other useful information extracted from a multivariate sample, where observations are given as rows of a matrix.
 
-data Stat = Stat { meanVector :: Vector
-                 , covarianceMatrix :: Matrix
-                 , eigenvalues :: Vector
-                 , eigenvectors :: Matrix
-                 , invCov :: Matrix
-                 , normalizedData :: Matrix
-                 , whiteningTransformation :: Matrix
+data Stat = Stat { meanVector :: RVector
+                 , covarianceMatrix :: RMatrix
+                 , eigenvalues :: RVector
+                 , eigenvectors :: RMatrix
+                 , invCov :: RMatrix
+                 , normalizedData :: RMatrix
+                 , whiteningTransformation :: RMatrix
                  }
 
 -- | Creates a 'Stat' structure from a matrix. Of course, due to lazyness, only the fields required by the particular application will be actually computed.
-stat :: Matrix -> Stat
+stat :: RMatrix -> Stat
 stat x = s where
     m = sumColumns x / fromIntegral (rows x)
     xc = x |-| m
-    c = (trans xc <> xc) / fromIntegral (rows x -1)
+    c = (trans xc `mXm` xc) / fromIntegral (rows x -1)
     (l,v) = eigS c
     lastrow = fromLists [replicate (cols x) 0 ++[1]]
     w = diag (1/sqrt l) <> v
@@ -50,12 +53,12 @@ stat x = s where
              , eigenvalues = l
              , eigenvectors = trans v
              , invCov = inv c
-             , whiteningTransformation = fromBlocks [[w, asColumn (-w <>m)],
-                                                     lastrow              ]
-             , normalizedData = xc <> trans w
+             , whiteningTransformation = fromBlocks [[w, asColumn (-w `mXv` m)],
+                                                     [lastrow]                ]
+             , normalizedData = xc `mXm` trans w
              }
 
-sumColumns m = constant 1 (rows m) <> m
+sumColumns m = constant 1 (rows m) `vXm` m
 
 infixl 7 <>
 (<>) = mXm
@@ -69,10 +72,10 @@ mat |+| vec = mat + constant 1 (rows mat) `outer` vec
 -- | This structure contains functions to encode and decode individual vectors (or collection of vectors packed into a matrix) obtained by some suitable criterion (e.g. 'pca').
 
 data Codec = 
-    Codec { encodeVector :: Vector -> Vector
-          , decodeVector :: Vector -> Vector
-          , encodeMatrix :: Matrix -> Matrix
-          , decodeMatrix :: Matrix -> Matrix
+    Codec { encodeVector :: RVector -> RVector
+          , decodeVector :: RVector -> RVector
+          , encodeMatrix :: RMatrix -> RMatrix
+          , decodeMatrix :: RMatrix -> RMatrix
           , encodeList   :: [Double] -> [Double]
           , decodeList   :: [Double] -> [Double]
 }
@@ -87,13 +90,13 @@ pca :: PCARequest -> Stat -> Codec
 pca (NewDimension n) st =
     Codec { encodeVector = encv
           , decodeVector = decv
-          , encodeMatrix = \x -> (x |-| m) <> trans vp
-          , decodeMatrix = \y -> y <> vp |+| m
+          , encodeMatrix = \x -> (x |-| m) `mXm` trans vp
+          , decodeMatrix = \y -> (y `mXm` vp) |+| m
           , encodeList = toList . encv . fromList
           , decodeList = toList . decv . fromList
 } where
-    encv x = vp <> (x - m)
-    decv x = x <> vp + m
+    encv x = vp `mXv` (x - m)
+    decv x = (x `vXm` vp) + m
     vp = takeRows n (eigenvectors st)
     m = meanVector st
 

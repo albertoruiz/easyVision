@@ -771,7 +771,7 @@ int minimizeWithDeriv(double f(int, double*), void df(int, double*, double*),
 
 
 
-
+/*
 #include <GL/gl.h>
 #include <GL/glu.h>
 int mesh(KDMAT(x)) {
@@ -787,6 +787,7 @@ int mesh(KDMAT(x)) {
     }
     OK
 }
+*/
 
 int deriv(int code, double f(double, void*), double x, double h, double * result, double * abserr)
 {

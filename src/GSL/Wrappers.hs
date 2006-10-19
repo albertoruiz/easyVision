@@ -458,9 +458,9 @@ foreign import ccall "gslaux.h matrix_fscanf" c_gslReadMatrix:: Ptr CChar -> TM
 ---------------------------------------------------------------------------
 
 -- | experiment to send to opengl a mesh from C
-meshC :: RMatrix -> IO Int
-meshC x =  m c_mesh x
-foreign import ccall "gslaux.h mesh" c_mesh :: Int -> Int -> Ptr Double -> IO Int
+--meshC :: RMatrix -> IO Int
+--meshC x =  m c_mesh x
+--foreign import ccall "gslaux.h mesh" c_mesh :: Int -> Int -> Ptr Double -> IO Int
 
 {- | conversion of Haskell functions into function pointers that can be used in the C side
 -}
