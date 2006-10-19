@@ -16,11 +16,11 @@
 
 -- #hide
 
-module G.Common where
+module GSL.Common where
 
 import Foreign
-import G.Types
-import G.Wrappers
+import GSL.Types
+import GSL.Wrappers
 import Data.Array.Storable
 import Data.Array(Array)
 

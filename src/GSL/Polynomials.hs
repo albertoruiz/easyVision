@@ -19,7 +19,7 @@ module GSL.Polynomials (
     polySolve
 ) where
 
-import GSL.Core
+import GSL.Types
 
 {- | Solution of general polynomial equations, using /gsl_poly_complex_solve/. For example,
      the three solutions of x^3 + 8 = 0

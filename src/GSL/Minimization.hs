@@ -21,10 +21,7 @@ module GSL.Minimization (
 ) where
 
 import Foreign
-import GSL.Core
-import GSL.Base(toList,fromList)
-import GSL.Utils(takeRows,dropRows,dropColumns)
-
+import GSL.Matrix
 
 -- | auxiliary function used by 'minimize'
 

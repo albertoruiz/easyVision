@@ -23,13 +23,11 @@ function docs {
             GSL/Polynomials.hs \
             GSL/Minimization.hs \
             GSL/Special.hs \
-            G/Types.hs G/Wrappers.hs G/Common.hs G/Matrix.hs G/LinearAlgebra.hs\
-            GSL/Core.hs --hide=GSL.Core \
-            GSL/Wrappers.hs --hide=GSL.Wrappers \
-            GSL/Derived.hs --hide=GSL.Derived \
-            GSL/Interface.hs --hide=GSL.Interface \
-            GSL/Drawing.hs --hide=GSL.Drawing \
-            GSL/Instances.hs --hide=GSL.Instances \
+            GSL/Types.hs \
+            GSL/Wrappers.hs \
+            GSL/Common.hs \
+            GSL/Matrix.hs \
+            GSL/LinearAlgebra.hs \
             -o ../doc -h -p GSL/prologue -t GSLHaskell # 2> /dev/null
 }
 

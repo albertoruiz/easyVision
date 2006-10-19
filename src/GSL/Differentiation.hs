@@ -23,8 +23,7 @@ module GSL.Differentiation (
 ) where
 
 import Foreign
-import GSL.Core(mkfun)
-
+import GSL.Wrappers(mkfun)
 
 derivGen ::
     Int                   -- ^ type: 0 central, 1 forward, 2 backward

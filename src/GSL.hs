@@ -13,9 +13,8 @@ This module reexports the basic functionality and a collection of utilities.
 -}
 
 module GSL (
-    module GSL.Base,
-    module GSL.Utils,
-    module GSL.Instances,
+    module GSL.Matrix,
+    module GSL.LinearAlgebra,
     module GSL.Fourier,
     module GSL.Differentiation,
     module GSL.Integration,
@@ -24,9 +23,8 @@ module GSL (
     module GSL.Special
 ) where
 
-import GSL.Base
-import GSL.Utils
-import GSL.Instances
+import GSL.Matrix
+import GSL.LinearAlgebra
 import GSL.Fourier
 import GSL.Differentiation
 import GSL.Integration

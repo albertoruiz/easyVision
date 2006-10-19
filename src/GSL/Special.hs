@@ -24,7 +24,7 @@ module GSL.Special (
 where
 
 import Foreign
-import GSL.Core(prot)
+import GSL.Wrappers(prot)
 
 ----------------------------------------------------------------
 -------------------- simple functions --------------------------

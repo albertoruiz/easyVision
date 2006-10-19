@@ -21,7 +21,8 @@ module GSL.Integration (
 ) where
 
 import Foreign
-import GSL.Core(mkfun)
+import GSL.Wrappers(mkfun)
+
 
 --------------------------------------------------------------------
 {- | Numerical integration using /gsl_integration_qags/ (adaptive integration with singularities). For example:

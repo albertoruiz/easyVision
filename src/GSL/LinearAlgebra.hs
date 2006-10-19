@@ -15,7 +15,7 @@ Some linear algebra algorithms, implemented by means of the GSL or Lapack.
 
 -}
 -----------------------------------------------------------------------------
-module G.LinearAlgebra (
+module GSL.LinearAlgebra (
     -- * Data types
     module Complex, module G.Matrix,
     -- * Basic linear algebra
@@ -31,9 +31,9 @@ module G.LinearAlgebra (
 ) where
 
 import Complex
-import G.Matrix
-import G.Common
-import G.Wrappers
+import GSL.Matrix
+import GSL.Common
+import GSL.Wrappers
 
 ------------------------------------------------------------------------------
 

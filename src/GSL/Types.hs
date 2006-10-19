@@ -15,8 +15,8 @@
 -----------------------------------------------------------------------------
 
 -- #hide
-module G.Types(
-    GSLVector(..), GSLMatrix(..),
+module GSL.Types(
+    Vector(..), Matrix(..),
     size, rows, cols,
     module Complex
 ) where
@@ -34,19 +34,19 @@ instance (Storable a, RealFloat a) => Storable (Complex a) where    --
     poke p (a :+ b) = pokeArray (castPtr p) [a,b]                   --
 ----------------------------------------------------------------------
 
--- | Generic GSL vector (C array 1D)
-data GSLVector t = V Int (ForeignPtr t)
+-- | 1D array
+data Vector t = V Int (ForeignPtr t)
 
--- | Number of elements of a vector.
-size :: GSLVector t -> Int
+-- | Number of elements of a 'Vector'.
+size :: Vector t -> Int
 size (V n _) = n
 
--- | Generic GSL matrix (C array 2D)
-data GSLMatrix t = M Int Int (ForeignPtr t)
+-- | 2D array
+data Matrix t = M Int Int (ForeignPtr t)
 
--- | Number of rows of a matrix.
-rows :: GSLMatrix t -> Int
+-- | Number of rows of a 'Matrix'.
+rows :: Matrix t -> Int
 rows (M r _ _) = r
--- | Number of columns of a matrix.
-cols :: GSLMatrix t -> Int
+-- | Number of columns of a 'Matrix'.
+cols :: Matrix t -> Int
 cols (M _ c _) = c

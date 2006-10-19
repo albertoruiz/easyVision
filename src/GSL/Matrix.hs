@@ -15,7 +15,7 @@ Basic operations on vectors and matrices
 
 -}
 -----------------------------------------------------------------------------
-module G.Matrix (
+module GSL.Matrix (
     -- * Base types
     -- | This library works with ...
     Field, Container,
@@ -43,6 +43,6 @@ module G.Matrix (
 
 ) where
 
-import G.Types
-import G.Wrappers
-import G.Common
+import GSL.Types
+import GSL.Wrappers
+import GSL.Common
