@@ -96,7 +96,7 @@ int vectorZip(int code, KDVEC(a), KDVEC(b), DVEC(r)) {
         }
     }
     gsl_vector_memcpy(V(r),V(a));
-    int res;        
+    int res;
     switch(code) {
         case 1: {
             DEBUGMSG("gsl_vector_mul") 
@@ -109,7 +109,7 @@ int vectorZip(int code, KDVEC(a), KDVEC(b), DVEC(r)) {
             res = gsl_vector_div(V(r),V(b));
             CHECK(res,res);
             OK
-        }    
+        }
         case 3: {
             DEBUGMSG("gsl_vector_add") 
             res = gsl_vector_add(V(r),V(b));

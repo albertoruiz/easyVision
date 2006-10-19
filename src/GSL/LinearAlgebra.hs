@@ -26,14 +26,17 @@ module GSL.LinearAlgebra (
     svd,
     qr,
     chol,
+    luSolveR,
+    luSolveC,
     -- * Utilities
-    pinv, pinvTol, i, eps
+    inv, pinv, pinvTol, i, eps
 ) where
 
 import Complex
 import GSL.Matrix
 import GSL.Common
 import GSL.Wrappers
+import GSL.Instances
 
 ------------------------------------------------------------------------------
 
@@ -118,3 +121,16 @@ eps =  2.22044604925031e-16
 -}
 outer :: Field a => Vector a -> Vector a -> Matrix a
 outer u v = reshape 1 u `mXm` reshape (size v) v
+
+
+{- | Inverse of a square matrix (shortcut for m \<\\> 'ident' ('rows' m)).
+
+@\>inv ('fromLists' [[1,4]
+                 ,[0,2]])
+1.   -2.
+0. 0.500@
+-}
+inv :: Matrix Double -> Matrix Double
+inv m = if rows m == cols m
+    then m `luSolveR` ident (rows m)
+    else error "inv of nonsquare matrix"

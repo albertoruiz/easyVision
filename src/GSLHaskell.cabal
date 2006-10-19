@@ -18,7 +18,7 @@ Extensions:         ForeignFunctionInterface,
 ghc-options:        -O
 Exposed-modules:    GSL,
                          GSL.Matrix, GSL.LinearAlgebra,
-                         GSL.Wrappers,  GSL.Types, GSL.Common
+                         GSL.Wrappers, GSL.Types, GSL.Common, GSL.Instances
                          GSL.Fourier,
                          GSL.Polynomials,
                          GSL.Differentiation,

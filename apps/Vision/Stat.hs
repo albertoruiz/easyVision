@@ -42,24 +42,27 @@ stat x = s where
     m = sumColumns x / fromIntegral (rows x)
     xc = x |-| m
     c = (trans xc <> xc) / fromIntegral (rows x -1)
-    (l,v) = eig c 
-    lastrow = realVector (replicate (cols x) 0 ++[1])
+    (l,v) = eigS c
+    lastrow = fromLists [replicate (cols x) 0 ++[1]]
     w = diag (1/sqrt l) <> v
     s = Stat { meanVector = m
              , covarianceMatrix = c
              , eigenvalues = l
              , eigenvectors = trans v
              , invCov = inv c
-             , whiteningTransformation = w <|> -w<>m <-> lastrow  
+             , whiteningTransformation = fromBlocks [[w, asColumn (-w <>m)],
+                                                     lastrow              ]
              , normalizedData = xc <> trans w
-}
+             }
 
-sumColumns m = constant 1 (rows m) <> m   
+sumColumns m = constant 1 (rows m) <> m
 
+infixl 7 <>
+(<>) = mXm
+
+infixl 5 |-|, |+|
 mat |-| vec = mat - constant 1 (rows mat) `outer` vec
 mat |+| vec = mat + constant 1 (rows mat) `outer` vec
---mat |/| vec = mat / constant 1 (rows mat) `outer` vec
---mat |*| vec = mat * constant 1 (rows mat) `outer` vec
 
 ----------------------------------------------------------------------
 
@@ -81,24 +84,23 @@ data PCARequest = ReconstructionQuality Double -- ^ ratio of spectral power
 -- | Given the desired compression criterion, from the 'Stat'istics of a dataset it creates a linear 'Codec' based on principal component analysis  (which maximizes mean squared reconstruction error).
 pca :: PCARequest -> Stat -> Codec
 
-pca (NewDimension n) st = 
+pca (NewDimension n) st =
     Codec { encodeVector = encv
           , decodeVector = decv
           , encodeMatrix = \x -> (x |-| m) <> trans vp
           , decodeMatrix = \y -> y <> vp |+| m
           , encodeList = toList . encv . fromList
           , decodeList = toList . decv . fromList
-} where    
+} where
     encv x = vp <> (x - m)
     decv x = x <> vp + m
     vp = takeRows n (eigenvectors st)
-    m = meanVector st    
+    m = meanVector st
 
 pca (ReconstructionQuality prec) st = pca (NewDimension n) st where    
     s = toList (eigenvalues st)
     n = 1 + (length $ fst $ span (< (prec'*sum s)) $ cumSum s)
-    cumSum = tail . scanl (+) 0.0     
+    cumSum = tail . scanl (+) 0.0
     prec' = if prec <=0.0 || prec >= 1.0
                 then error "the reconstruction quality must be 0<prec<1"
-                else prec   
-
+                else prec

@@ -36,6 +36,7 @@ module GSL.Matrix (
     asRow, asColumn,
     toComplex, fromComplex, complex,
     flipud, fliprl, extractRows, triang,
+    gmap, gzip,
     -- * Utilities
     diag, takeDiag, conj,
     trans, ident,

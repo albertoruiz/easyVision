@@ -160,6 +160,7 @@ takeDiag = takeDiagM
 
 class Container t where
     mapG :: (Field a, Field b) => (a ->  b) -> t a ->  t b
+    zipG :: (Field a, Field b, Field c) => (a -> b -> c) -> t a -> t b -> t c
     toComplexG :: (t Double, t Double) ->  t (Complex Double)
     fromComplexG :: t (Complex Double) -> (t Double, t Double)
     conjG :: t (Complex Double) -> t (Complex Double)
@@ -170,6 +171,7 @@ class Container t where
 
 instance Container Vector where
     mapG f = fromList . map f . toList
+    zipG f a b = fromList $ zipWith f (toList a) (toList b)
     toComplexG = toComplexV
     fromComplexG = fromComplexV
     conjG = conjV
@@ -180,6 +182,7 @@ instance Container Vector where
 
 instance Container Matrix where
     mapG f = asVector (mapG f)
+    zipG f = asVector2 (zipG f)
     toComplexG = toComplexM
     fromComplexG = fromComplexM
     conjG = asVector conjV
@@ -190,6 +193,9 @@ instance Container Matrix where
 
 gmap :: (Field a, Field b, Container c) => (a -> b) -> c a -> c b
 gmap = mapG
+
+gzip :: (Field a, Field b, Field c, Container k) => (a -> b -> c) -> k a -> k b -> k c
+gzip = zipG
 
 -- | obtains the complex conjugate of a complex vector
 conjV :: CVector -> CVector

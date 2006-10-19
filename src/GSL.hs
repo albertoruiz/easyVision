@@ -22,7 +22,6 @@ module GSL (
     module GSL.Special
 ) where
 
-import GSL.Matrix
 import GSL.LinearAlgebra
 import GSL.Fourier
 import GSL.Differentiation

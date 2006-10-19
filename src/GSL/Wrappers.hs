@@ -253,8 +253,8 @@ scaleC (a:+b) x@(V n p) = createV [p] "scaleC" n $ v (c_scaleC a b) x
 foreign import ccall "gslaux.h vector_scaleC" c_scaleC :: Double -> Double -> TCVCV
 
 -- | add constant to a real vector
-offset :: Double -> RVector -> RVector
-offset a x@(V n p) = createV [p] "vector_offset" n $ v (c_vectorOffset a) x
+addConstant :: Double -> RVector -> RVector
+addConstant a x@(V n p) = createV [p] "vector_offset" n $ v (c_vectorOffset a) x
 foreign import ccall "gslaux.h vector_offset" c_vectorOffset :: Double -> TVV
 
 -- | obtains different functions of a vector: norm1, norm2, max, min, posmax, posmin, etc.
