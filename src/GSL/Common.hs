@@ -449,6 +449,7 @@ ident = diag . constant 1
 mXm :: Field t => Matrix t -> Matrix t -> Matrix t
 mXm = multiplyM
 
+
 -- | euclidean inner product
 dot :: Field t => Vector t -> Vector t -> t
 dot u v = (asRow u `mXm` asColumn v) @@>(0,0)
@@ -548,3 +549,54 @@ flipud m = fromRows . reverse . toRows $ m
 -- | Reverse columns
 fliprl :: Field t => Matrix t -> Matrix t
 fliprl m = fromColumns . reverse . toColumns $ m   
+
+-------------------------------------------------------------------------------
+
+
+class Joinable a b c | a b -> c where
+    joinH :: a -> b -> c
+    joinV :: a -> b -> c
+
+instance Joinable RMatrix RVector RMatrix where
+    joinH m v = fromBlocks [[m,reshape 1 v]]
+    joinV m v = fromBlocks [[m],[reshape (size v) v]]
+
+instance Joinable RVector RMatrix RMatrix where
+    joinH v m = fromBlocks [[reshape 1 v,m]]
+    joinV v m = fromBlocks [[reshape (size v) v],[m]]
+
+instance Joinable RMatrix RMatrix RMatrix where
+    joinH m1 m2 = fromBlocks [[m1,m2]]
+    joinV m1 m2 = fromBlocks [[m1],[m2]]
+
+instance Joinable CMatrix CVector CMatrix where
+    joinH m v = fromBlocks [[m,reshape 1 v]]
+    joinV m v = fromBlocks [[m],[reshape (size v) v]]
+
+instance Joinable CVector CMatrix CMatrix where
+    joinH v m = fromBlocks [[reshape 1 v,m]]
+    joinV v m = fromBlocks [[reshape (size v) v],[m]]
+
+instance Joinable CMatrix CMatrix CMatrix where
+    joinH m1 m2 = fromBlocks [[m1,m2]]
+    joinV m1 m2 = fromBlocks [[m1],[m2]]
+
+infixl 3 <|>, <->
+
+{- | Horizontal concatenation of matrices and vectors:
+
+@\> 'ident' 3 \<-\> i\<\>'ident' 3 \<|\> 'realVector' [1..6]
+ 1.   0.   0.  1.
+ 0.   1.   0.  2.
+ 0.   0.   1.  3.
+1.i   0.   0.  4.
+ 0.  1.i   0.  5.
+ 0.   0.  1.i  6.@
+-}
+(<|>) :: (Joinable a b c) => a -> b -> c
+a <|> b = joinH a b
+
+-- | Vertical concatenation of matrices and vectors.
+(<->) :: (Joinable a b c) => a -> b -> c
+a <-> b = joinV a b
+

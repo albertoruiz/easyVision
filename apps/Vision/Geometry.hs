@@ -68,11 +68,23 @@ module Vision.Geometry
 , epipoles
 ) where
 
-import GSL
+import GSL hiding (Matrix, Vector)
+import qualified GSL as G
 import Vision.Stat
 import Data.List(transpose,nub,maximumBy,genericLength,elemIndex, genericTake)
 import System.Random 
 import Debug.Trace(trace)
+
+type Matrix = G.Matrix Double
+type Vector = G.Vector Double
+
+matrix = fromLists :: [[Double]] -> Matrix
+vector = fromList ::  [Double] -> Vector
+
+
+(!:) = (@>)
+(!!:) = (@@>)
+
 
 -- | A nice camera parameterization.
 data CameraParameters 
@@ -110,23 +122,23 @@ syntheticCamera campar = flipx <> k <> r <> m where
     CamPar {focalDist = f, 
             panAngle = p, tiltAngle = t, rollAngle = q,
             cameraCenter = (cx,cy,cz)} = campar
-    m = realMatrix [[1,0,0, -cx],
+    m = matrix [[1,0,0, -cx],
                     [0,1,0, -cy],
                     [0,0,1, -cz]]
     r = rotPTR (p,t,q)
     k = kgen f
 
-flipx = diag (realVector [-1,1,1])
+flipx = diag (vector [-1,1,1])
 
 -- | Matrix of intrinsic parameters of a diag(f,f,1) camera
 kgen :: Double -> Matrix
-kgen f = realMatrix [[f,0,0],
+kgen f = matrix [[f,0,0],
                      [0,f,0],
                      [0,0,1]]
 
 -- | 3x3 rotation around the X-axis
 rot1 :: Double -> Matrix
-rot1 a = realMatrix [[1, 0,0],
+rot1 a = matrix [[1, 0,0],
                      [0, c,s],
                      [0,-s,c]] 
     where c = cos a 
@@ -134,7 +146,7 @@ rot1 a = realMatrix [[1, 0,0],
 
 -- | 3x3 rotation around the Y-axis
 rot2 :: Double -> Matrix
-rot2 a = realMatrix [[ c,0,s],
+rot2 a = matrix [[ c,0,s],
                      [ 0,1,0],
                      [-s,0,c]] 
     where c = cos a 
@@ -142,7 +154,7 @@ rot2 a = realMatrix [[ c,0,s],
 
 -- | 3x3 rotation around the Z-axis
 rot3 :: Double -> Matrix
-rot3 a = realMatrix [[ c,s,0],
+rot3 a = matrix [[ c,s,0],
                      [-s,c,0],
                      [ 0,0,1]] 
     where c = cos a 
@@ -151,17 +163,17 @@ rot3 a = realMatrix [[ c,s,0],
 -- | Homogeneous 3x3 matrix of a 2D displacement
 desp :: (Double,Double) -- ^ (dx,dy)
       -> Matrix
-desp (x,y) = realMatrix [[1,0,x],
+desp (x,y) = matrix [[1,0,x],
                        [0,1,y],
                        [0,0,1]]
 
 -- | Homogeneous 3x3 matrix of a isotropic 2D scaling
 scaling :: Double -> Matrix
-scaling s = realMatrix [[s,0,0],
+scaling s = matrix [[s,0,0],
                         [0,s,0],
                         [0,0,1]]
 
-rotPTR (pan,tilt,roll) = realMatrix 
+rotPTR (pan,tilt,roll) = matrix
    [[-cb*cg + ca*sb*sg, -cg*sb - ca*cb*sg, -sa*sg],
     [ ca*cg*sb + cb*sg, -ca*cb*cg + sb*sg, -cg*sa],
     [            sa*sb,            -cb*sa,     ca]]
@@ -174,23 +186,23 @@ rotPTR (pan,tilt,roll) = realMatrix
 
 -- | Antisymmetric matrix 0 0 1
 mA :: Matrix
-mA = realMatrix [[ 0,1,0],
+mA = matrix [[ 0,1,0],
                  [-1,0,0],
                  [ 0,0,0]] 
 
 -- | diag(1,1,0)
 mS :: Matrix
-mS = realMatrix [[1,0,0],
+mS = matrix [[1,0,0],
                  [0,1,0],
                  [0,0,0]] 
 
-mF = realMatrix [[ 1,1,0],
+mF = matrix [[ 1,1,0],
                  [-1,1,0],
                  [ 0,0,0]] 
 
 -- | the line of the infinity.
 linf :: Vector
-linf = realVector [0,0,1]
+linf = vector [0,0,1]
 
 inHomog v = subVector 0 l v <> recip (v!:l) where l = size v - 1
 homog v = join [v,1]
@@ -289,9 +301,9 @@ cameraFromHomogZ0 mbf c = res where
 
 
 
-asMat v = fromList [[ 0,-c, b],
-                    [ c, 0,-a],
-                    [-b, a, 0]]
+asMat v = matrix [[ 0,-c, b],
+                  [ c, 0,-a],
+                  [-b, a, 0]]
     where a = v!:0
           b = v!:1
           c = v!:2     
@@ -322,14 +334,14 @@ cameraOutline f =
 
 toCameraSystem cam = (inv m, f) where
     (k,r,c) = factorizeCamera cam
-    m = (r <|> -r <> c) <-> realVector [0,0,0,1]
-    (f:_):_ = toList k
+    m = (r <|> -r <> c) <-> vector [0,0,0,1]
+    (f:_):_ = toLists k
 
 doublePerp (a,b) (c,d) = (e,f) where
-    a' = realVector a
-    b' = realVector b
-    c' = realVector c
-    d' = realVector d
+    a' = vector a
+    b' = vector b
+    c' = vector c
+    d' = vector d
     v = cross (b'-a') (d'-c')
     coef = fromColumns [b'-a', v, c'-d']
     term = c'-a'
@@ -345,8 +357,8 @@ homogSystem :: [[Double]] -> Vector
 homogSystem coeffs = sol where
     r = length coeffs
     c = length (head coeffs)
-    mat | r >= c   = realMatrix coeffs
-        | r == c-1 = realMatrix (head coeffs : coeffs)
+    mat | r >= c   = matrix coeffs
+        | r == c-1 = matrix (head coeffs : coeffs)
         | otherwise = error "homogSystem with rows<cols-1"
     (_,_,v) = svd mat
     sol = flatten $ dropColumns (c-1) v
@@ -378,10 +390,10 @@ estimateHomographyRaw dest orig = h where
             t36=bx     
 
 withNormalization lt estimateRelation dest orig = lt wd <> h <> wo where
-    std = stat (realMatrix dest)
-    sto = stat (realMatrix orig)
-    nd = toList (normalizedData std)
-    no = toList (normalizedData sto)
+    std = stat (matrix dest)
+    sto = stat (matrix orig)
+    nd = toLists (normalizedData std)
+    no = toLists (normalizedData sto)
     h = estimateRelation nd no
     wd = whiteningTransformation std
     wo = whiteningTransformation sto 
@@ -405,7 +417,7 @@ inHomogMat m = ma / (mb `outer` constant 1 (cols ma))
           mb = flatten $ dropColumns (cols m -1) m
 
 
-htc h = toList. inHomogMat . (<> trans h) . homogMat . fromList
+htc h = toLists. inHomogMat . (<> trans h) . homogMat . fromLists
 
 ht :: Matrix -> [[Double]] -> [[Double]]
 ht = htc
@@ -426,7 +438,7 @@ factorizeCamera :: Matrix -> (Matrix,Matrix,Vector)
 factorizeCamera m = (normat3 k, r <> signum (det r),c) where
     m' = takeColumns 3 m
     (k',r') = rq m'
-    s = diag(signum (diag k'))
+    s = diag(signum (takeDiag k'))
     (_,_,v) = svd m
     (v',_) = qr v
     k = k'<>s
@@ -486,7 +498,7 @@ distPointLine [x,y,w] [a,b,c] = sqrt $ (a*x + b*y + c*w)^2 / (a^2+b^2) / w^2
 
 epipolarQuality f l r = zipWith fun l r where
     fun [a1,a2] [b1,b2] = distPointLine [a1,a2,1.0] epb where
-        epb = toList (f <> realVector [b1,b2,1.0])
+        epb = toList (f <> vector [b1,b2,1.0])
 
 qualityOfEssential e = (s1-s2)/(s1+s2) where
     s1:s2:_ = toList s
@@ -499,7 +511,7 @@ estimateEssential f0 fund = (esen,f,err) where
     err = cost [f]
     esen' = kgen f <> fund <> kgen f
     (u,s,v) = svd esen'
-    esen = u <> diag (realVector [1,1,0]) <> trans v
+    esen = u <> diag (vector [1,1,0]) <> trans v
 
 estimateEssential' (f0,f0') fund = (esen,(f,f'),err) where
     minimize fun xi = minimizeNMSimplex fun xi (replicate (length xi) 1) 1e-2 100
@@ -508,25 +520,25 @@ estimateEssential' (f0,f0') fund = (esen,(f,f'),err) where
     err = cost [f,f']
     esen' = kgen f' <> fund <> kgen f
     (u,s,v) = svd esen'
-    esen = u <> diag (realVector [1,1,0]) <> trans v    
+    esen = u <> diag (vector [1,1,0]) <> trans v
 
 bougnoux fun = sqrt (- a / b) where
     a = (p' <> asMat e' <> i' <> fun <> p) * (p <> trans fun <> p')
     b = (p' <> asMat e' <> i' <> fun <> i' <> trans fun <> p')
     (_,e') = epipoles fun
-    i' = diag $ realVector [1,1,0]
-    p = realVector [0,0,1]
-    p' = realVector [0,0,1]
+    i' = diag $ vector [1,1,0]
+    p = vector [0,0,1]
+    p' = vector [0,0,1]
 
 sturm fun = fs where    
     (u,s,v) = svd fun
     [a,b,_] = toList s
     [[u11, u12, u13],
      [u21, u22, u23],
-     [  _,   _,   _]] = toList (trans u)
+     [  _,   _,   _]] = toLists (trans u)
     [[v11, v12, v13],
      [v21, v22, v23],
-     [  _,   _,   _]] = toList (trans v) 
+     [  _,   _,   _]] = toLists (trans v) 
     k = a*u13*v13+b*u23*v23
     p0 = u23*v13*k
     q0 = u13*v23*k
@@ -545,7 +557,7 @@ sturm fun = fs where
 camerasFromEssential e = [m1,m2,m3,m4] where
     (u,_,v) = svd e
     [_,_,u3] = toColumns u
-    w = realMatrix [[ 0,1,0],
+    w = matrix [[ 0,1,0],
                     [-1,0,0],
                     [ 0,0,1]]
     m1 = u <>       w <> trans v <|>  u3
@@ -559,8 +571,8 @@ triangulate1 ms ps = x3d where
         [m31, m32, m33, m34]] [x,y] = [[ m21-y*m31,   m22-y*m32,    m23-y*m33,   m24-y*m34],
                                        [-m11+x*m31,  -m12+x*m32,   -m13+x*m33,  -m14+x*m34],
                                        [y*m11-x*m21, y*m12-x*m22, y*m13-x*m23, y*m14-x*m24]]
-    eqs = concat $ zipWith eq (map toList ms) ps
-    a = realMatrix eqs
+    eqs = concat $ zipWith eq (map toLists ms) ps
+    a = matrix eqs
     (_,_,v) = svd a
     x3d = toList $ inHomog $ flatten $ dropColumns 3 v
 
@@ -569,22 +581,23 @@ triangulate mps = xs where
     ps = transpose (map snd mps)
     xs = map (triangulate1 ms) ps
 
-cameraAtOrigin = ident 3 <|> realVector [0,0,0]
+cameraAtOrigin = ident 3 <|> vector [0,0,0]
 
 cameraDirection m = unitary (det a <> m3) where
     a = takeColumns 3 m
     [_,_,m3] = toRows a
 
+--depthOfPoint :: [Double] -> Matrix -> Double
 depthOfPoint p m = (signum (det a) / norm m3) <> w3 where
     a = takeColumns 3 m
     [_,_,m3] = toRows a
-    w = m <> homog (realVector p)
+    w = m <> homog (vector p)
     [_,_,w3] = toList w
 
 depthsOfInducedPoint p p' m m' = (d,d') where
     d  = depthOfPoint x m
     d' = depthOfPoint x m'
-    x = triangulate1 [m,m'] [p,p']  
+    x = triangulate1 [m,m'] [p,p']
 
 selectCamera p p' m ms = m' where
     [m'] = filter f ms 
@@ -596,12 +609,12 @@ epipoles f = (nullspace f, nullspace (trans f)) where
 
 canonicalCameras f = (cameraAtOrigin, m2) where
     (_,e') = epipoles f
-    m2 = asMat e' <> f  <|> e'    
+    m2 = asMat e' <> f  <|> e'
 
 fundamentalFromCameras p p' = asMat e' <> p' <> pinv p where
     e' = p' <> c
     c = flatten $ dropColumns 3 v 
-    (_,_,v) = svd (p <-> realVector [0,0,0,0]) 
+    (_,_,v) = svd (p <-> vector [0,0,0,0])
 
 stereoRectifiers fund pts pts' = (h,h') where    -- HZ p.307
     (e,e') = epipoles fund
@@ -613,22 +626,22 @@ stereoRectifiers fund pts pts' = (h,h') where    -- HZ p.307
         else atan2 y' x'
     r = rot3 (roll)
     q = sqrt (x'^2 + y'^2)
-    g = realMatrix [[1,0,0],  -- HZ p.305, better than a conjugate rotation
-                    [0,1,0],
-                    [a,0,1]] where a = -1.0/q
+    g = matrix [[1,0,0],  -- HZ p.305, better than a conjugate rotation
+                [0,1,0],
+                [a,0,1]] where a = -1.0/q
     h' = g <> r
 
     h = ha <> h0
     h0 = h' <> m
     (_,m') = canonicalCameras fund
-    m = takeColumns 3 m' + outer e' (realVector [1,1,1]) -- hmmm
-    ha = realMatrix [[a,b,c],
+    m = takeColumns 3 m' + outer e' (vector [1,1,1]) -- hmmm
+    ha = matrix [[a,b,c],
                      [0,1,0],
                      [0,0,1]]
     t' = ht h' pts'
     t =  ht h0 pts
     eq [x,y] [x',_] = [x,y,1,x']
-    eqs = realMatrix $ zipWith eq t t'
+    eqs = matrix $ zipWith eq t t'
     coef = takeColumns 3 eqs
     term = flatten $ dropColumns 3 eqs
     [a,b,c] = toList $ pinv coef <> term
@@ -677,8 +690,8 @@ ransac estimator isInlier n dat = {-trace (show aux)-} (bestModel,inliers) where
 --------------------------    
 
 isInlierTrans t h (dst,src) = norm (vd - vde) < t 
-    where vd  = realVector dst
-          vde = inHomog $ h <> homog (realVector src)
+    where vd  = vector dst
+          vde = inHomog $ h <> homog (vector src)
 
 estimateHomographyRansac dist dst orig = h where 
     h = estimateHomography a b where (a,b) = unzip inliers

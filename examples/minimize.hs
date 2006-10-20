@@ -20,24 +20,23 @@ gradient f v = [partialDerivative k f v | k <- [0 .. length v -1]]
 partialDerivative n f v = fst (derivCentral 0.01 g (v!!n)) where
     g x = f (concat [a,x:b])
     (a,_:b) = splitAt n v
-        
+
 main = do
     -- conjugate gradient with true gradient
     let (s,p) = minimizeCG f df [5,7]
     print s -- solution
-    print p -- evolution of the algorithm
+    dispR 2 p -- evolution of the algorithm
     let [x,y] = drop 2 (toColumns p)
-    hplot [x,y]  -- path from the starting point to the solution
-    
+    mplot [x,y]  -- path from the starting point to the solution
+
     -- conjugate gradient with estimated gradient
     let (s,p) = minimizeCG f (gradient f) [5,7]
     print s
-    print p
-    hplot $ drop 2 (toColumns p)
+    dispR 2 p
+    mplot $ drop 2 (toColumns p)
 
     -- without gradient, using the NM Simplex method
     let (s,p) = minimizeS f [5,7]
     print s
-    print p
-    hplot $ drop 3 (toColumns p)
-    
+    dispR 2 p
+    mplot $ drop 3 (toColumns p)

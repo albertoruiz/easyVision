@@ -7,6 +7,9 @@ import System.Directory(doesFileExist)
 import System(system)
 import Control.Monad(when)
 
+realMatrix = fromLists :: [[Double]] -> Matrix Double
+realVector = fromList ::  [Double] -> Vector Double
+
 a =~= b = pnorm 1 (flatten (a - b)) < 1E-12
 
 randomMatrix seed (n,m) = reshape m $ realVector $ take (n*m) $ randomRs (-100,100) $ mkStdGen seed 
@@ -49,7 +52,7 @@ classifyTest n1 n2 numErr = do
         system("gunzip mnist.txt.gz")
         system("mv mnist.txt examples")
         return ()
-    m <- gslReadMatrix "examples/mnist.txt" (5000,785)
+    m <- fromFile "examples/mnist.txt" (5000,785)
     let vs = toRows (takeColumns 784 m)
     let ls = map (show.round) $ toList $ flatten $ dropColumns 784 m
     let mnist = zip vs ls
@@ -61,7 +64,7 @@ classifyTest n1 n2 numErr = do
     let c = fst $ distance mahalanobis train
     let e = errorRate test c
     let m = confusion test c
-    let errors = (sum.toList.flatten $ m) - (sum.toList.diag $ m)
+    let errors = (sum.toList.flatten $ m) - (sum.toList.takeDiag $ m)
     assertEqual ("classifyTest "++show (n1,n2)++", ") numErr errors
 
 -------------------------------------------------------------------

@@ -44,24 +44,23 @@ stat :: RMatrix -> Stat
 stat x = s where
     m = sumColumns x / fromIntegral (rows x)
     xc = x |-| m
-    c = (trans xc `mXm` xc) / fromIntegral (rows x -1)
+    c = (trans xc <> xc) / fromIntegral (rows x -1)
     (l,v) = eigS c
-    lastrow = fromLists [replicate (cols x) 0 ++[1]]
+    lastrow = fromList $ replicate (cols x) 0 ++[1.0::Double]
     w = diag (1/sqrt l) <> v
     s = Stat { meanVector = m
              , covarianceMatrix = c
              , eigenvalues = l
              , eigenvectors = trans v
              , invCov = inv c
-             , whiteningTransformation = fromBlocks [[w, asColumn (-w `mXv` m)],
-                                                     [lastrow]                ]
-             , normalizedData = xc `mXm` trans w
+             , whiteningTransformation = w <|> -w <> m
+                                           <->
+                                         lastrow
+             , normalizedData = xc <> trans w
              }
 
-sumColumns m = constant 1 (rows m) `vXm` m
+sumColumns m = constant 1 (rows m) <> m
 
-infixl 7 <>
-(<>) = mXm
 
 infixl 5 |-|, |+|
 mat |-| vec = mat - constant 1 (rows mat) `outer` vec
@@ -90,13 +89,13 @@ pca :: PCARequest -> Stat -> Codec
 pca (NewDimension n) st =
     Codec { encodeVector = encv
           , decodeVector = decv
-          , encodeMatrix = \x -> (x |-| m) `mXm` trans vp
-          , decodeMatrix = \y -> (y `mXm` vp) |+| m
+          , encodeMatrix = \x -> (x |-| m) <> trans vp
+          , decodeMatrix = \y -> (y <> vp) |+| m
           , encodeList = toList . encv . fromList
           , decodeList = toList . decv . fromList
 } where
-    encv x = vp `mXv` (x - m)
-    decv x = (x `vXm` vp) + m
+    encv x = vp <> (x - m)
+    decv x = (x <> vp) + m
     vp = takeRows n (eigenvectors st)
     m = meanVector st
 

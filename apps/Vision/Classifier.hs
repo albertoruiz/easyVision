@@ -52,12 +52,13 @@ import Debug.Trace
 debug x = trace (show x) x
 debug' msg x = trace (msg ++ show x) x
 
-matrix = realMatrix
-vector = realVector
+matrix = fromLists :: [[Double]] -> Matrix Double
+vector = fromList ::  [Double] -> Vector Double
+
 
 ------------------- General definitions ----------------------------
 
-type Attributes = Vector
+type Attributes = Vector Double
 type Label = String
 type Example = (Attributes, String)
 type Sample = [Example]
@@ -79,7 +80,7 @@ type TwoGroups = ([Attributes],[Attributes]) -- +/-
 -- | A learning machine for binary classification problems. See 'multiclass'.
 type Dicotomizer = TwoGroups -> Feature
 
-type Weights = Vector
+type Weights = Vector Double
 -- | An improved 'Dicotomizer' which admits a distribution on the given examples.
 type WeightedDicotomizer = TwoGroups -> Weights -> Feature
 
@@ -157,14 +158,14 @@ errorRate exs c  = fromIntegral ok / fromIntegral (length exs) where
     ok = length [1 | (v,l)<-exs, l /= c v]
 
 -- | Computes the confusion matrix of a classifier on a sample
-confusion ::Sample -> Classifier -> Matrix
+confusion ::Sample -> Classifier -> Matrix Double
 confusion exs c = confusionMatrix where
     lbs = extractLabels exs
     l = getIndex lbs
     estimatedLabels = map (l.c.fst) exs
     te = zip (map (l.snd) exs) estimatedLabels 
     nc = length (labels lbs)
-    confusionMatrix = fromArray $ 
+    confusionMatrix = fromArray2D $ 
         accumArray (+) (0::Double) ((0::Int,0::Int),(nc-1,nc-1)) (zip te [1,1 ..])
 
 
@@ -218,12 +219,13 @@ gnuplot command = do
 
 prep = (++"e\n") . unlines . map (unwords . (map show))
 
-
+{-
 show2Dfun :: Int -> Double -> (Vector -> Double) -> IO ()
 show2Dfun n r f = imshow (trans z) where
     l1 = toList $ linspace n (-r,r)
     l2 = reverse $ toList $ linspace n (-r,r)
-    z = realMatrix $ partit (length l1) $ [ f (realVector [x,y]) | x <- l1, y <- l2]
+    z = fromLists $ partit (length l1) $ [ f (fromList [x,y]) | x <- l1, y <- l2]
+-}
 
 {- | 2D representation of a 2D feature.
 
@@ -249,12 +251,12 @@ study prob meth = do
           (multiclass (treeOf (branch 0) (unweight stumps)))@
 
 -}
-combined :: Int -> Double -> (Vector->Double) -> Sample -> IO ()
+combined :: Int -> Double -> (Vector Double ->Double) -> Sample -> IO ()
 combined n r f exs = act where
     (gs,_) = group exs
     l1 = toList $ linspace n (-r,r)
     l2 = toList $ linspace n (-r,r)
-    z = [[x,y, f (realVector [x,y])] | x <- l1, y <- l2]
+    z = [[x,y, f (fromList [x,y])] | x <- l1, y <- l2]
     z' = concat $ map (++[[]]) $ partit n z
     g m = toList m ++ [0]
     preps = concat (map p gs) where p gi = prep (map g gi)
@@ -336,7 +338,7 @@ nosep n = dat1 ++ dat2 ++ dat3 where
 mnist :: Int -> Int -> IO (Sample, Sample)
 
 mnist dim n = do
-    m <- gslReadMatrix "mnist.txt" (5000,785)
+    m <- fromFile "mnist.txt" (5000,785)
     let vs = toRows (takeColumns 784 m)
     let ls = map (show.round) $ toList $ flatten $ dropColumns 784 m
     let mnist = zip vs ls
@@ -351,7 +353,7 @@ mnist dim n = do
 -- | the mnist raw data
 mnistraw :: Int -> IO (Sample,Sample)
 mnistraw n = do
-    m <- gslReadMatrix "mnist.txt" (5000,785)
+    m <- fromFile "mnist.txt" (5000,785)
     let vs = toRows (takeColumns 784 m)
     let ls = map (show.round) $ toList $ flatten $ dropColumns 784 m
     let mnist = zip vs ls
@@ -454,7 +456,7 @@ stumpsOk ((g1,g2),lbs,xs,oxs,is) d = f where
     d1 = pnorm 1 $ subVector  0 n1 d
     d2 = pnorm 1 $ subVector n1 n2 d
 
-    owls = map (map (wl!:)) is
+    owls = map (map (wl@>)) is
     cs = map (sel .dt . scanl (+) 0 . init) owls
     dt x = ((k,v),(q,w)) where
         k = posMin x
@@ -470,7 +472,7 @@ stumpsOk ((g1,g2),lbs,xs,oxs,is) d = f where
     k = posMin (map (abs.fst) r)
     (_,(v,s)) = r!!k
 
-    f x = s * signum' (x !: k - v)
+    f x = s * signum' (x @> k - v)
     signum' x = if x > 0 then 1 else -1
 
 ----------------------------------------------------------
@@ -514,7 +516,7 @@ distWeighted (g1,g2) d = f where
 
 
 -- | weak learner trained by the adaboost algorithm
-type ADBST = (Feature, Vector, Double, Double)
+type ADBST = (Feature, Vector Double, Double, Double)
 
 
 -- this works with a partially applied WeightedDicotomizer to reuse any
@@ -589,7 +591,7 @@ branch n (g1,g2) = min (length g1) (length g2) <= n
 -- our nice kernel MSE algorithm
 
 -- | Generalized inner product, corresponding to the ordinary dot product in an implicit feature space.
-type Kernel = (Vector -> Vector -> Double)
+type Kernel = (Vector Double -> Vector Double -> Double)
 -- (it should be more general)
 
 delta f l1 l2 = matrix $ partit (length l1) $ [f x y | x <- l1, y <- l2]
@@ -597,7 +599,7 @@ delta f l1 l2 = matrix $ partit (length l1) $ [f x y | x <- l1, y <- l2]
 -- | minimum squared error linear machine in the implicit feature space induced by the given 'Kernel'
 kernelMSE :: Kernel -> Dicotomizer
 kernelMSE kernel (g1,g2) = fun where
-    fun z = expan z <> a
+    fun z = expan z `dot` a
     expan z = vector $ map (kernel z) objs
     a = pinv (delta kernel objs objs) <> labels
     objs = g1 ++ g2
@@ -606,7 +608,7 @@ kernelMSE kernel (g1,g2) = fun where
 -- | the same as 'kernelMSE'' with control of the numeric tolerance of the pseudoinverse.
 kernelMSE' :: Double -> Kernel -> Dicotomizer
 kernelMSE' tol kernel (g1,g2) = fun where
-    fun z = expan z <> a
+    fun z = expan z `dot` a
     expan z = vector $ map (kernel z) objs
     a = pinvTol tol (delta kernel objs objs) <> labels
     objs = g1 ++ g2
@@ -614,7 +616,7 @@ kernelMSE' tol kernel (g1,g2) = fun where
 
 -- | polynomial 'Kernel' of order n
 polyK :: Int -> Kernel
-polyK n x y = (x<>y + 1)^n
+polyK n x y = (x `dot` y + 1)^n
 
 -- | gaussian 'Kernel' of with width sigma
 gaussK :: Double -> Kernel

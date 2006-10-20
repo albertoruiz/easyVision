@@ -4,32 +4,35 @@
 
 import GSL
 
+type Vec = Vector Double
+type Mat = Matrix Double
+
 sumColumns m = constant 1 (rows m) <> m   
-   
--- vector with the mean value of the columns of a matrix
+
+-- Vec with the mean value of the columns of a Mat
 mean x = sumColumns x / fromIntegral (rows x)
 
--- covariance matrix of a list of observations as rows of a matrix
+-- covariance Mat of a list of observations as rows of a Mat
 cov x = (trans xc <> xc) / fromIntegral (rows x -1)
     where xc = center x
           center m = m - constant 1 (rows m) `outer` mean m
-   
+
 -- creates the compression and decompression functions from the desired number of components
-pca :: Int -> Matrix -> (Vector -> Vector , Vector -> Vector)    
-pca n dataSet = (encode,decode)    
+pca :: Int -> Mat -> (Vec -> Vec , Vec -> Vec)
+pca n dataSet = (encode,decode)
   where    
     encode x = vp <> (x - m)
     decode x = x <> vp + m
     m = mean dataSet
     c = cov dataSet
-    (_,v) = eig c
+    (_,v) = eigS c
     vp = takeRows n (trans v)
-    
+
 main = do
-    m <- gslReadMatrix "../apps/examples/mnist.txt" (5000,785)
+    m <- fromFile "../apps/examples/mnist.txt" (5000,785)
     let xs = takeColumns (cols m -1) m -- the last column is the digit type (class label)
-    let x = toRows xs !! 4  -- an arbitrary test vector
+    let x = toRows xs !! 4  -- an arbitrary test Vec
     let (pe,pd) = pca 10 xs
     let y = pe x
-    disp 2 y  -- compressed version
+    print y  -- compressed version
     print $ norm (x - pd y) / norm x --reconstruction quality

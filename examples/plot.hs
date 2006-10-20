@@ -1,4 +1,5 @@
 import GSL
+import Drawing
 
 sombrero n = f x y where 
     (x,y) = meshdom range range
@@ -13,7 +14,7 @@ cumdist x = 0.5 * (1+ erf (x/sqrt 2))
 
 main = do
     let x = linspace 1000 (-4,4)
-    hplot [f x]
-    hplot [x, vmap cumdist x,  vmap gaussianPDF x]
+    mplot [f x]
+    mplot [x, gmap cumdist x,  gmap gaussianPDF x]
     mesh (sombrero 40)
-    meshOpenGL $ const (sombrero 40)
+    --meshOpenGL $ const (sombrero 40)

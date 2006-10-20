@@ -24,7 +24,8 @@ module Vision.Autofrontal (
 
 -- experiments on planar rectification
 
-import GSL
+import GSL hiding (Matrix, Vector)
+import qualified GSL as G
 import Vision.Geometry
 import Data.List (elemIndex,sort)
 import Debug.Trace
@@ -32,6 +33,13 @@ import System.Random
 import System.Environment (getArgs)
 import Control.Monad (when)
 
+type Matrix = G.Matrix Double
+type Vector = G.Vector Double
+
+matrix = fromLists :: [[Double]] -> Matrix
+vector = fromList ::  [Double] -> Vector
+
+(!:) = (@>)
 
 data KnownFs = AllKnown [Double] | F1Known Double | AllUnknown | ConstantUnknown
 
@@ -78,7 +86,7 @@ quality ihs mbOmgs c = sum qs / fromIntegral (length ihs) where
 
 -- this gives a low value if h is a similar transformation
 similarityDegree h = pnorm 1 (m'-v) where
-    v = realVector [1,0,0,0,1,0,0,0,0]
+    v = vector [1,0,0,0,1,0,0,0,0]
     m = flatten (h <> mS <> trans h)
     m' = m <> recip (m!:0)
 
@@ -87,7 +95,7 @@ omegaGen f = kgen (recip (f*f))
 
 -- this gives a measure of the difference with a camera homography, for known f
 orthogonality omega c = pnorm 1 (m'-v) where
-    v = realVector [1,0,0,1]
+    v = vector [1,0,0,1]
     m = flatten $ subMatrix (0,0) (2,2) q
     m' = m <> recip (m!:0)
     q = trans c <> omega <> c 
@@ -108,7 +116,7 @@ rectifier ((rho,yh),f) = kgen f <> rot1 (atan2 f yh) <> rot3 (-rho) <> kgen (rec
 -- associated camera (the inverse of the above)
 --rectifier' ((rho,yh),f) = kgen f <> rot3 rho <> rot1 (- atan2 f yh) <> kgen (recip f)
 --rectifier' = inv.rectifier 
-rectifier' ((rho,yh),f) = reshape 3 $ realVector [ 
+rectifier' ((rho,yh),f) = reshape 3 $ vector [
       cr, -ca*sr, -f*sa*sr,
       sr,  ca*cr,  f*cr*sa,
       0,  -sa/f ,  ca ]
@@ -134,7 +142,7 @@ ryf c = focalFromHomogZ0 c >>= \f -> Just ((rho,yh),f) where
 polarHoriz :: (Double,Double) -> Vector
 polarHoriz (r',y) = h where
     r = -(r'+3*pi/2)
-    n = realVector [y* cos r, y* sin r , 1]  
+    n = vector [y* cos r, y* sin r , 1]
     h = cross n (mA<>n)
     
   
@@ -186,15 +194,9 @@ gradient f v = [partialDerivative k f v | k <- [0 .. length v -1]]
 partialDerivative n f v = fst (derivCentral 0.01 g (v!!n)) where
     g x = f (concat [a,x:b])
     (a,_:b) = splitAt n v    
-    
+
 -- the conjugate gradient method
-minimizeCG f df xi = minimizeConjugateGradient 1E-2 1E-4 1E-3 30 
-                                              (f.toList) 
-                                              (fromList.df.toList) 
-                                              (fromList xi)    
-    
+minimizeCG f df xi = minimizeConjugateGradient 1E-2 1E-4 1E-3 30
+
 findSol' fun (rinit,hinit) = minimizeCG (mkfun fun) (gradient (mkfun fun)) [rinit,hinit] 
-        
-            
-shpoly l = hplot $ toColumns $ realMatrix (l!!3 :l)            
-    
+

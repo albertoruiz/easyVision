@@ -19,17 +19,17 @@ module GSL.LinearAlgebra (
     -- * Data types
     module Complex, module GSL.Matrix,
     -- * Basic linear algebra
-    mXm, mXv, vXm, dot, outer, scale, add, pnorm,
+    (<>), mXv, vXm, dot, outer, scale, add, pnorm,
     -- * Matrix factorizations
     eigS,
     eigH,
     svd,
     qr,
     chol,
-    luSolveR,
-    luSolveC,
+    luSolveR, luR,
+    luSolveC, luC, det,
     -- * Utilities
-    inv, pinv, pinvTol, i, eps
+    inv, pinv, pinvTol, i, eps, norm
 ) where
 
 import Complex
@@ -37,6 +37,7 @@ import GSL.Matrix
 import GSL.Common
 import GSL.Wrappers
 import GSL.Instances
+
 
 ------------------------------------------------------------------------------
 
@@ -134,3 +135,90 @@ inv :: Matrix Double -> Matrix Double
 inv m = if rows m == cols m
     then m `luSolveR` ident (rows m)
     else error "inv of nonsquare matrix"
+
+
+{- | Shortcut for the 2-norm ('pnorm' 2)
+
+@ > norm $ 'hilb' 5
+1.5670506910982311
+@
+
+@\> norm $ 'complexVector' [1,-1,'i',-'i']
+2.0@
+
+-}
+
+norm x = pnorm 2 x
+
+----------------------------------------------------------------
+
+{- | The LU decomposition of a square matrix. Is based on /gsl_linalg_LU_decomp/ and  /gsl_linalg_complex_LU_decomp/ as described in <http://www.gnu.org/software/gsl/manual/gsl-ref_13.html#SEC223>.
+
+@\> let m = 'complexMatrix' [[1,2,-3],[2+3*'i',-7,0],[1,-'i',2*'i']]
+\> let (l,u,p,s) = lu m@
+
+L is the lower triangular:
+
+@\> l
+          1.            0.  0.
+0.154-0.231i            1.  0.
+0.154-0.231i  0.624-0.522i  1.@
+
+U is the upper triangular:
+
+@\> u
+2.+3.i           -7.            0.
+    0.  3.077-1.615i           -3.
+    0.            0.  1.873+0.433i@
+
+p is a permutation:
+
+@\> p
+[1,0,2]@
+
+L \* U obtains a permuted version of the original matrix:
+
+@\> 'extractRows' p m
+  2.+3.i   -7.   0.
+      1.    2.  -3.
+      1.  -1.i  2.i
+\ 
+\> l \<\> u
+ 2.+3.i   -7.   0.
+     1.    2.  -3.
+     1.  -1.i  2.i@
+
+s is the sign of the permutation, required to obtain sign of the determinant:
+
+@\> s * product ('toList' $ 'takeDiag' u)
+(-18.0) :+ (-16.000000000000004)
+\> 'det' m
+(-18.0) :+ (-16.000000000000004)@
+
+ -}
+luR :: Matrix Double -> (Matrix Double, Matrix Double, [Int], Double)
+luR m = (l,u,p, fromIntegral s') where
+    r = rows m
+    v = luRaux m
+    lu = reshape r $ subVector 0 (r*r) v
+    s':p = map round . toList . subVector (r*r) (r+1) $ v 
+    u = triang r r 0 1 * lu
+    l = triang r r 0 0 * lu + ident r
+
+luC :: Matrix (Complex Double) -> (Matrix (Complex Double), Matrix (Complex Double), [Int], Complex Double)
+luC m = (l,u,p, fromIntegral s') where
+    r = rows m
+    v = luCaux m
+    lu = reshape r $ subVector 0 (r*r) v
+    s':p = map (round.realPart) . toList . subVector (r*r) (r+1) $ v 
+    u = complex (triang r r 0 1) * lu
+    l = complex (triang r r 0 0) * lu + complex (ident r)
+
+{- | Determinant of a square matrix, computed from the 'lu' decomposition.
+
+@\> det ('realMatrix' [[7,2],[3,8]])
+50.0@
+
+-}
+det m = s * (product $ toList $ takeDiag $ u)
+    where (_,u,_,s) = luR m 
