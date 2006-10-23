@@ -157,16 +157,16 @@ instance Vertex [Double] where
 
 
 -- | It shows the outline of a camera and an optional image (texture) in its image plane.
-drawCamera :: Double -> Matrix -> Maybe ImageFloat -> IO ()
+drawCamera :: Double -> Matrix Double -> Maybe ImageFloat -> IO ()
 drawCamera size cam Nothing = do
     let (invcam,f) = toCameraSystem cam
-    let m = invcam<>diag (realVector[1,1,1,1/size])
+    let m = invcam<>diag (fromList[1,1,1,1/size])
     let outline = ht m (cameraOutline f)
     renderPrimitive LineLoop $ mapM_ vertex outline
 
 drawCamera size cam (Just imgtext) = do
     let (invcam,f) = toCameraSystem cam
-    let m = invcam<>diag (realVector[1,1,1,1/size])
+    let m = invcam<>diag (fromList[1,1,1,1/size])
     let outline = ht m (cameraOutline f)
     let q = 0.95 --0.75                     TO DO: fix this
     drawTexture imgtext $ ht m

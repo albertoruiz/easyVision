@@ -1,7 +1,6 @@
 -- Improved PCA, including illustrative graphics
 
 import GSL
-import Drawing
 
 type Vec = Vector Double
 type Mat = Matrix Double

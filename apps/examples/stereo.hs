@@ -8,6 +8,9 @@ import Data.List(genericLength)
 import System(system)
 import System
 
+matrix m = fromLists m :: Matrix Double
+vector v = fromList v :: Vector Double
+vmap = gmap
 
 mean l = sum l / genericLength l
          
@@ -15,7 +18,7 @@ prep = (++"e\n") . unlines . map (unwords . (map show))
          
 gnuplot command = do
     writeFile "gnuplotcommand" $ command ++ "; pause -1 'Press return to continue...'"
-    system "gnuplot gnuplotcommand" 
+    system "gnuplot -persist gnuplotcommand"
     system "rm gnuplotcommand"
     
 plotpoints l = do
@@ -26,23 +29,23 @@ flipx = \[x,y]->[-x,y]
     
 shcam cam pts = (c,p) where 
     (h,f) = toCameraSystem cam
-    t1 = h <> diag (realVector [1,1,1,3])
+    t1 = h <> diag (vector [1,1,1,3])
     c = ht t1 (cameraOutline 1)
-    t2 = t1 <> diag (realVector [1,1,1,f])
+    t2 = t1 <> diag (vector [1,1,1,f])
     p = ht t2 (map (++[f]) pts)
     
     
 stereo datafile = do    
-    correspondences <- fromFile datafile
+    correspondences <- readMatrix `fmap` readFile datafile
     gnuplot $ "set size square; plot [-120:120] [-120:120] '"++datafile++"' using 1:2 with points title 'first view'"
     gnuplot $ "set size square; plot [-120:120] [-120:120] '"++datafile++"' using 3:4 with points title 'second view'"
-    let raw  = toList $ takeColumns 2 correspondences
-    let raw'  = toList $ dropColumns 2 correspondences
+    let raw  = toLists $ takeColumns 2 correspondences
+    let raw'  = toLists $ dropColumns 2 correspondences
     let pts = map flipx raw
     let pts' = map flipx raw' 
     let f = estimateFundamental pts' pts
     putStrLn "Fundamental matrix:"
-    disp 8 (normat f)
+    dispR 8 (normat f)
     putStr "mean epipolar distance: "
     print $ mean $ epipolarQuality f pts' pts
         
@@ -73,7 +76,7 @@ stereo datafile = do
     print $ map (\x -> qualityOfEssential (kgen x <> f <> kgen x)) fs
     
     putStrLn "Essential matrix: "
-    disp 8 (normat e)
+    dispR 8 (normat e)
     putStrLn "candidate cameras:" 
     print $ camerasFromEssential e
     let m = kgen df <> cameraAtOrigin
@@ -105,14 +108,14 @@ stereo datafile = do
    
 
 rectif datafile = do
-    correspondences <- fromFile datafile
-    let raw  = toList $ takeColumns 2 correspondences
-    let raw'  = toList $ dropColumns 2 correspondences
+    correspondences <- readMatrix `fmap` readFile datafile
+    let raw  = toLists $ takeColumns 2 correspondences
+    let raw'  = toLists $ dropColumns 2 correspondences
     let pts = map flipx raw
     let pts' = map flipx raw' 
     let f = estimateFundamental pts' pts
     putStrLn "Fundamental matrix:"
-    disp 8 (normat f)
+    dispR 8 (normat f)
     putStr "mean epipolar distance: "
     print $ mean $ epipolarQuality f pts' pts
       
@@ -123,9 +126,9 @@ rectif datafile = do
     let (h, h') = stereoRectifiers f pts pts'
     let rec = ht h pts
     let rec' = ht h' pts'
-    let ax = realMatrix (map flipx rec)
-    let ax' = realMatrix (map flipx rec')
-    let auxmat = toList $ ax <|> ax'- ax
+    let ax = matrix (map flipx rec)
+    let ax' = matrix (map flipx rec')
+    let auxmat = toLists $ ax <|> ax'- ax
     writeFile "dispar.txt" $ unlines $ map unwords $ map (map show) auxmat
     gnuplot "set size square; plot [-120:120] [-120:120] 'dispar.txt' with vectors"
     system "rm dispar.txt"

@@ -10,8 +10,9 @@ import System.Environment(getArgs)
 import Data.List(minimumBy,partition)
 import GSL hiding (size)
 import Vision
-
 import qualified Ipp.Images as I
+
+vector v = fromList v :: Vector Double
 
 data MyState = ST { imgs :: [ImageFloat]
                   , corners, marked, orig::[InterestPoint]
@@ -20,7 +21,7 @@ data MyState = ST { imgs :: [ImageFloat]
                   , smooth :: Int
                   }
 
-diagl = diag . realVector
+diagl = diag . vector
 
 --------------------------------------------------------------
 main = do
@@ -65,8 +66,8 @@ worker inWindow cam st = do
         let (o:os) = lpl (orig st)
         let ([px,py]:pss) = lpl ps
         let h = estimateHomographyRaw os pss
-        let r = inHomog $ h <> realVector [px,py,1]
-        when (norm (r - realVector o)<3) $ do
+        let r = inHomog $ h <> vector [px,py,1]
+        when (norm (r - vector o)<3) $ do
             inWindow "selected" $ do
                 warp (Size 288 384) h camera32f >>= drawImage
                 pointCoordinates (Size 3 4)

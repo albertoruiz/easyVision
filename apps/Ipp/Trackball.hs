@@ -1,10 +1,13 @@
 module Ipp.Trackball (newTrackball) where
 
 import GSL
-import Graphics.UI.GLUT hiding (normalize)
+import Graphics.UI.GLUT hiding (normalize, Matrix, matrix)
 import Data.IORef
 
-data Quaternion = Quat {qs::Double, qv::Vector}
+vector v = fromList  v :: Vector Double
+matrix m = fromLists m :: Matrix Double
+
+data Quaternion = Quat {qs::Double, qv::Vector Double}
 
 normalize Quat{ qs = s, qv = v } = Quat { qs = s/m, qv = recip m <> v }
     where m = sqrt $ s^2 + norm v ^ 2
@@ -50,12 +53,12 @@ getRotation Quat {qs = w, qv = v} =
 infixl 7 ><
 a >< b = asMat a <> b
 
-asMat v = realMatrix [[ 0,-c, b],
+asMat v = matrix [[ 0,-c, b],
                       [ c, 0,-a],
                       [-b, a, 0]]
-    where a = v!:0
-          b = v!:1
-          c = v!:2
+    where a = v@>0
+          b = v@>1
+          c = v@>2
 
 -------------------------------------------------------
 
@@ -88,14 +91,14 @@ projectToSphere r (x,y) = z where
 -}
 
 trackball (x',y') (x,y)
-    | x'==x && y'==y = Quat { qs = 1.0, qv = realVector [0,0,0]}  -- zero rotation
+    | x'==x && y'==y = Quat { qs = 1.0, qv = vector [0,0,0]}  -- zero rotation
     | otherwise = axisToQuat phi axis
   where
     trackballSize = 0.8
 
     axis = p1 >< p2
-    p1 = realVector [x',y',projectToSphere trackballSize (x',y')]
-    p2 = realVector [x, y, projectToSphere trackballSize (x ,y )]
+    p1 = vector [x',y',projectToSphere trackballSize (x',y')]
+    p2 = vector [x, y, projectToSphere trackballSize (x ,y )]
 
     phi = 2 * asin t
     t' = norm (p1-p2) / (2*trackballSize)
@@ -111,7 +114,7 @@ data TrackballState = TBST {quat :: Quaternion, prev :: [Double],
 -}
 newTrackball :: IO ( (IO(), KeyboardMouseCallback -> KeyboardMouseCallback, MotionCallback)  )
 newTrackball = do
-    st <- newIORef TBST { quat = Quat {qs = 1.0, qv = realVector [0,0,0]},
+    st <- newIORef TBST { quat = Quat {qs = 1.0, qv = vector [0,0,0]},
                           prev = [], dist = 20, wsize = 400, vertAngle = 0 }
     let trackball = do
             s <- readIORef st
@@ -141,7 +144,7 @@ quatkbd str _ (MouseButton LeftButton) Down _ pos@(Position x y) = do
                                -(fromIntegral y - sz2) / sz]}
 
 quatkbd str _ (Char 'o') Down _ _ = do
-    modifyIORef str $ \s -> s { quat = Quat { qs = 1.0, qv = realVector [0,0,0]} }
+    modifyIORef str $ \s -> s { quat = Quat { qs = 1.0, qv = vector [0,0,0]} }
 
 quatkbd st _ (MouseButton WheelUp) _ (Modifiers{shift=Down}) _ = do
     modifyIORef st $ \s -> s { vertAngle = vertAngle s + 1 }

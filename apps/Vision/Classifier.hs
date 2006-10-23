@@ -213,8 +213,8 @@ withPCA rq method prob = (c,f) where
 ------------------------- drawing utilities --------------------------
 
 gnuplot command = do
-    writeFile "gnuplotcommand" $ command ++ "; pause -1 'Press return to continue...'"
-    system "gnuplot gnuplotcommand" 
+    writeFile "gnuplotcommand" $ command
+    system "gnuplot -persist gnuplotcommand" 
     system "rm gnuplotcommand"
 
 prep = (++"e\n") . unlines . map (unwords . (map show))

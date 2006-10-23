@@ -51,6 +51,8 @@ module Vision.Geometry
 , estimateHomographyRansac
 , estimateHomography
 , estimateHomographyRaw
+, estimateCamera
+, estimateCameraRaw
 , toCameraSystem
 , cameraOutline 
 -- Stereo Geometry

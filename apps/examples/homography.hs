@@ -5,6 +5,12 @@ module Main where
 import Vision
 import GSL 
 
+matrix m = fromLists m :: Matrix Double
+vector v = fromList v  :: Vector Double
+
+infixl 5 |-|, |+|
+mat |-| vec = mat - constant 1 (rows mat) `outer` vec
+mat |+| vec = mat + constant 1 (rows mat) `outer` vec
 
 dest a b = [[0,0]
            ,[a,0]
@@ -13,7 +19,7 @@ dest a b = [[0,0]
            ,[a-b,a+b]
            ,[a+b,a+b]
            ,[a+b,a-b]]
-             
+
 orig     = [[0,0]
            ,[1,0]
            ,[0,1]
@@ -21,12 +27,12 @@ orig     = [[0,0]
            ,[1,1]
            ,[1,1]
            ,[1,1]]
-             
+
 h1 = estimateHomographyRaw (dest 100 1) orig
 h2 = estimateHomography (dest 100 1) orig
 
-e1 = (realMatrix $ ht h1 orig) - 100 * realMatrix orig
-e2 = (realMatrix $ ht h2 orig) - 100 * realMatrix orig 
+e1 = (matrix $ ht h1 orig) - 100 * matrix orig
+e2 = (matrix $ ht h2 orig) - 100 * matrix orig
 
 
 world = [[0, 2, -1]
@@ -49,25 +55,29 @@ imageCen=[[-123,   2]
         ,[  40,  18]
         ,[  91, -40]]
 
-image = toList $ realMatrix imageCen |+| realVector [200,150]
+image = toLists $ matrix imageCen |+| vector [200,150]
 
 m1 = estimateCameraRaw image world
 m2 = estimateCamera image world
-e3 = (realMatrix $ ht m1 world) - (realMatrix image)
-e4 = (realMatrix $ ht m2 world) - (realMatrix image)
+e3 = (matrix $ ht m1 world) - (matrix image)
+e4 = (matrix $ ht m2 world) - (matrix image)
+
+printm = dispR 3
 
 main = do
-    print (normat3 h1)
-    print (normat3 h2)
-    print e1
-    print e2
+    putStrLn "homography estimation"
+    printm (normat3 h1)
+    printm (normat3 h2)
+    printm e1
+    printm e2
     print (pnorm 1 $ flatten e1)
     print (pnorm 1 $ flatten e2)
     putStrLn ""
-    print (normat3 m1)
-    print (normat3 m2)
-    print e3
-    print e4
+    putStrLn "camera estimation"
+    printm (normat3 m1)
+    printm (normat3 m2)
+    printm e3
+    printm e4
     print (pnorm 1 $ flatten e3)
     print (pnorm 1 $ flatten e4)
     putStrLn ""

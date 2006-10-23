@@ -19,7 +19,8 @@ module GSL (
     module GSL.Integration,
     module GSL.Polynomials,
     module GSL.Minimization,
-    module GSL.Special
+    module GSL.Special,
+    module GSL.Plot
 ) where
 
 import GSL.LinearAlgebra
@@ -29,4 +30,5 @@ import GSL.Integration
 import GSL.Polynomials
 import GSL.Minimization
 import GSL.Special
+import GSL.Plot
 

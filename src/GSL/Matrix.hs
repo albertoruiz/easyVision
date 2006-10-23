@@ -41,7 +41,7 @@ module GSL.Matrix (
     diag, takeDiag, conj,
     trans, ident,
     constant, linspace, vectorMax, vectorMin, vectorMaxIndex, vectorMinIndex,
-    format, disp, dispR, dispC, fromFile
+    format, disp, dispR, dispC, fromFile, readMatrix
 
 ) where
 
@@ -69,13 +69,17 @@ dsp sep as = unlines . map unwords' $ transpose mtp where
     mt = transpose as
     longs = map (maximum . map length) mt
     mtp = zipWith (\a b -> map (pad a) b) longs mt
-    pad n str = replicate (n - length str) '_' ++ str
+    pad n str = replicate (n - length str) ' ' ++ str
     unwords' = concat . intersperse sep
 
 format :: (Field t) => String -> (t -> String) -> Matrix t -> String
 format sep f m = dsp sep . map (map f) . toLists $ m
 
-disp m f = putStrLn $ "matrix ("++show (rows m) ++"x"++ show (cols m) ++")\n"++format "_|_" f m
+disp m f = putStrLn $ "matrix ("++show (rows m) ++"x"++ show (cols m) ++")\n"++format " | " f m
 
 dispR d m = disp m (shf d)
 dispC d m = disp m (shfc d)
+
+-- | creates a matrix from a table of numbers.
+readMatrix :: String -> Matrix Double
+readMatrix = fromLists . map (map read). map words . lines

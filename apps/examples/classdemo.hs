@@ -7,12 +7,15 @@
 import GSL
 import Vision
 
+shErr d c = putStrLn $ (show $ 100 * errorRate d c) ++ " %"
+shConf d c = putStrLn $ format " " (show.round) (confusion d c)
+
 work (train,test) method = do
     let  c = fst $ method train
     putStr "Estimated error probability: "
-    print $ errorRate test c
+    shErr test c
     putStrLn "Confusion matrix: "
-    print $ confusion test c
+    shConf test c
 
 comparedist (train,test) codec = do
     let problem = (preprocess codec train, preprocess codec test)
@@ -26,7 +29,7 @@ comparedist (train,test) codec = do
     work problem (distance ordinary)
 
 main = do
-    m <- gslReadMatrix "mnist.txt" (5000,785)
+    m <- fromFile "mnist.txt" (5000,785)
     let vs = toRows (takeColumns 784 m)
     let ls = map (show.round) $ toList $ flatten $ dropColumns 784 m
     let mnist = zip vs ls

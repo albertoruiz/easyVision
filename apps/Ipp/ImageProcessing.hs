@@ -297,11 +297,11 @@ warp' s h im = do
     return r
 
 
-adapt dst h src = toList $ inv (pixelToPointTrans (size dst)) <> h <> pixelToPointTrans (size src)
+adapt dst h src = toLists $ inv (pixelToPointTrans (size dst)) <> h <> pixelToPointTrans (size src)
 
 -- | Apply a homography (defined on normalized points, see 'pixelsToPoints') to an image.
 warp :: Size              -- ^ desired size of the result
-     -> Matrix            -- ^ homography (GSL Matrix)
+     -> Matrix Double     -- ^ homography
      -> ImageFloat        -- ^ source image
      -> IO ImageFloat     -- ^ result
 warp s h im = do
@@ -312,7 +312,7 @@ warp s h im = do
     return r
 
 -- | The same as 'warp', but the result is written over a preexisting image.
-warpOn :: Matrix          -- ^ homography (GSL Matrix)
+warpOn :: Matrix Double   -- ^ homography
        -> ImageFloat      -- ^ destination image
        -> ImageFloat      -- ^ source image
        -> IO ()

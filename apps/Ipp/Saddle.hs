@@ -29,7 +29,7 @@ data InterestPoint = IP {
                           ipRawPosition :: Pixel
                         , ipPosition    :: Point
                         , ipOrientation :: Double
-                        , ipDescriptor  :: Vector
+                        , ipDescriptor  :: Vector Double
                         , ipTime        :: Int
                         } deriving Show
 
@@ -98,7 +98,7 @@ getSaddlePoints smooth rad prop maxn fn fr im = do
     let sp = map fst info
     let cs = zipWith (circle fn fr) hotPixels dirs
     feats' <-  mapM (extractList sm) cs
-    let feats = map (realVector . map cDF) feats'
+    let feats = map (fromList . map cDF) feats'
 
     let r = zipWith5 IP sp (ptp sp) (map cDF dirs) feats (repeat 0)
 

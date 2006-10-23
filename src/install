@@ -28,6 +28,7 @@ function docs {
             GSL/Matrix.hs \
             GSL/LinearAlgebra.hs \
             GSL/Instances.hs \
+            GSL/Plot.hs \
             -o ../doc -h -p GSL/prologue -t GSLHaskell # 2> /dev/null
 }
 

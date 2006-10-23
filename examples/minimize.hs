@@ -1,6 +1,5 @@
 -- the multidimensional minimization example in the GSL manual
 import GSL
-import Drawing
 
 -- the function to be minimized 
 f [x,y] = 10*(x-1)^2 + 20*(y-2)^2 + 30

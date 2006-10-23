@@ -2,7 +2,7 @@
 import GSL
 
 expand :: Int -> Vector Double -> Matrix Double
-expand n x = fromColumns $ map (x^) [1 .. n]
+expand n x = fromColumns $ constant 1 (size x): map (x^) [1 .. n]
 
 polynomialModel :: Matrix Double -> Int -> (Vector Double -> Vector Double)
 polynomialModel d n = f where
@@ -11,8 +11,8 @@ polynomialModel d n = f where
     [x,b] = toColumns d 
     a = expand n x
 
-readMatrix :: String -> Matrix Double
-readMatrix = fromLists . map (map read). map words . lines
+mk fv = f where
+    f x = fv (fromList [x]) @> 0
 
 main = do
     d <- readMatrix `fmap` readFile "data.txt"
@@ -20,5 +20,6 @@ main = do
     let pol = polynomialModel d
     let view = [x, y, pol 1 x, pol 2 x, pol 3 x]
     dispR 2 $ fromColumns view
-    print $ fromColumns view
-    --hplot view
+    mplot view
+    let f = mk (pol 2)
+    print (f 2.5)

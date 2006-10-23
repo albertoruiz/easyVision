@@ -252,12 +252,12 @@ data Point = Point { px    :: !Double, py :: !Double} deriving Show
 data Pixel = Pixel { row   :: !Int,    col :: !Int } deriving Show
 
 -- | Auxiliary homogeneous transformation from 'Pixel's to 'Point's
-pixelToPointTrans :: Size -> Matrix
+pixelToPointTrans :: Size -> Matrix Double
 pixelToPointTrans Size {width = w', height = h'} = nor where
     w = fromIntegral w' -1
     h = fromIntegral h' -1
     r = (h+1)/(w+1)
-    nor = realMatrix
+    nor = fromLists
         [[-2/w,      0, 1]
         ,[   0, -2*r/h, r]
         ,[   0,      0, 1]]

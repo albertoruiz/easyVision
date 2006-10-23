@@ -11,10 +11,12 @@ import Data.List(minimumBy)
 import GSL hiding (size)
 import Vision
 
+vector v = fromList v :: Vector Double
+
 data MyState = ST { imgs :: [ImageFloat]
                   , corners, marked ::[Pixel]
                   , pts  :: [[Point]]
-                  , cams :: [Matrix]
+                  , cams :: [Matrix Double]
                   , drfuns :: [IO()]
 
                   , basev ::Int
@@ -22,7 +24,7 @@ data MyState = ST { imgs :: [ImageFloat]
                   , trackball :: IO ()
                   }
 
-diagl = diag . realVector
+diagl = diag . vector
 
 --------------------------------------------------------------
 main = do

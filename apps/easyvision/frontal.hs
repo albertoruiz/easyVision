@@ -27,13 +27,15 @@ import Vision
 
 -------------------------------------------------------
 
+vector v = fromList v :: Vector Double
+
 floorSize = 256
 
 data MyState = ST { imgs :: [ImageFloat]             -- selected views
                   , corners, marked ::[Pixel] -- corners in the current image
                   , pts  :: [[Point]]         -- homologous points of the selected images
-                  , hs   :: [Matrix]          -- interimage homographies
-                  , cam0 :: Matrix            -- solution
+                  , hs   :: [Matrix Double]   -- interimage homographies
+                  , cam0 :: Matrix Double     -- solution
                   , drfuns :: [IO()]          -- camera drawing functions
                   , cost  :: Maybe ImageFloat -- the cost function
                   , zoom :: Double            -- visualization scale of the rectified image
@@ -95,7 +97,7 @@ main = do
 -------------------------------------------------------------------
 
 encuadra h = desp (-a,-b) where
-    [a,b] = toList $ inHomog $ h <> realVector [0,0,1]
+    [a,b] = toList $ inHomog $ h <> vector [0,0,1]
 
 genInterimage views = map (estimateHomography (head views)) (id views)
 
@@ -209,7 +211,7 @@ compute st = do
 
     let [rho,yh] = fst $ findSol f minim     -- detailed optimization from the minimum
     let (c0,_) = extractInfo info uhs (rho, yh)
-    let r0 = inv (c0<> diag (realVector[-1,1,1])) -- move to Autofrontal.hs ?
+    let r0 = inv (c0<> diag (vector[-1,1,1])) -- move to Autofrontal.hs ?
     let c0' = inv $ encuadra r0 <> r0
 
     print(rho, yh, f(rho,yh))

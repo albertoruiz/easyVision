@@ -64,11 +64,13 @@ kbdwarp st (Char '-') _ _ _ = modify st "foc" (/1.2)
 kbdwarp _ _ _ _ _ = return ()
 -------------------------------------------------------
 
+vector v = fromList v :: Vector Double
+
 warper alpha rho foc sca = r where 
     t = kgen foc
         <> rot1 alpha <> rot3 rho 
         <> kgen (1/foc)
-    [a,b] = toList $ inHomog $ t <> realVector [0,0,1]
+    [a,b] = toList $ inHomog $ t <> vector [0,0,1]
     r = scaling sca <> desp (-a,-b) <> t
 
 ----------------------------------------------------------

@@ -25,6 +25,7 @@ Exposed-modules:    GSL,
                          GSL.Integration,
                          GSL.Minimization,
                          GSL.Special
+                         GSL.Plot
 Other-modules:
 C-sources:          GSL/gslaux.c
 extra-libraries:    gsl gslcblas
