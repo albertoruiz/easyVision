@@ -333,7 +333,7 @@ foreign import ccall "gslaux.h eigensystemC" c_eigH :: TCMVCM
 
 {- | Singular value decomposition of a real matrix, using /gsl_linalg_SV_decomp_mod/:
 
-@\> let (u,s,v) = svd $ 'GSL.Interface.realMatrix' [[1,2,3],[-4,1,7]]
+@\> let (u,s,v) = svd $ 'GSL.Interface.fromLists' [[1,2,3],[-4,1,7]]
 \ 
 \> u
 0.310 -0.951

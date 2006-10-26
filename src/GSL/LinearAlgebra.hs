@@ -23,7 +23,7 @@ module GSL.LinearAlgebra (
     -- * Matrix factorizations
     eigS,
     eigH,
-    svd,
+    svd, full_svd_R,
     qr,
     chol,
     luSolveR, luR,
@@ -37,7 +37,7 @@ import GSL.Matrix
 import GSL.Common
 import GSL.Wrappers
 import GSL.Instances
-
+import GSL.Lapack
 
 ------------------------------------------------------------------------------
 

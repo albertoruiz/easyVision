@@ -20,7 +20,8 @@
 #define REQUIRES(COND, CODE) MACRO(if(!(COND)) {ERROR(CODE);})
 
  
-#define MIN(A,B) ((A)<(B)?(A):(B)) 
+#define MIN(A,B) ((A)<(B)?(A):(B))
+#define MAX(A,B) ((A)>(B)?(A):(B))
  
 #ifdef DBG
 #define DEBUGMSG(M) printf("GSL Wrapper "M": "); size_t t0 = time(NULL);

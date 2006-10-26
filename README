@@ -3,66 +3,70 @@ REQUIREMENTS
 1) GNU Scientific Library (http://www.gnu.org/software/gsl) development packages
    for your system (typically "gsl" and "gsl-devel").
 
-2) You may also need some packages required by HOpenGL or by other Haskell libraries
-   (e.g., gxorg-x11-devel freeglut-devel, etc.)
+2) LAPACK (http://www.netlib.org/lapack). It usually comes with GNU-Octave.
 
 --------------------------------------------------------------------------------------
-INSTALLATION 
+INSTALLATION
 
 $ cd src
 src$ runhaskell Setup.hs configure -p --prefix=$HOME
 src$ runhaskell Setup.hs build
 src$ runhaskell Setup.hs install --user
 
-(You should also repeat these steps after a darcs pull.)
-
-Alternatively, these commands and a few tests are automatically invoked by the script:
-
-src$ chmod u+x install
-src$ ./install
-
 NOTE: The library must be used from another directory. For instance:
 
-$ cd examples
+$ cd ../examples
 
 Interactive:
+------------
 
 examples$ ghci
 Prelude> :m + GSL
-Prelude GSL> realVector [1,0.5,3] <> complexVector [5,-i,3+i]
-(loading packages...)
-14.0 :+ 2.5
-Prelude GSL> integrateQNG 1E-10 (^2) 0 1
+Prelude GSL> let quad = integrateQNG 1E-10
+Loading package haskell98 ... linking ... done.
+Loading package GSL-0.6 ... linking ... done.
+Prelude GSL> quad (^2) 0 1
 (0.3333333333333333,3.700743415417188e-15)
+Prelude GSL> fst $ quad (\x->4/(1+x^2)) 0 1
+3.141592653589793
+Prelude GSL> pi
+3.141592653589793
 Prelude GSL> :q
 Leaving GHCi.
 
-examples$ ghci demo.hs
+examples$ ghci plot.hs
 *Main> main
 
 Compiled:
+---------
 
-examples$ ghc --make demo.hs
-examples$ ./demo
+examples$ ghc --make plot.hs
+examples$ ./plot
 
 Script:
+-------
 
-examples$ runhaskell demo.hs
+examples$ runhaskell plot.hs
 
 --------------------------------------------------------------------------------------
-USING ATLAS OPTIMIZED LIBRARIES
+USING ATLAS OPTIMIZED LIBRARIES AND LAPACK
 
 The performance of some linear algebra computations with big matrices can
 be significantly improved using ATLAS (http://math-atlas.sourceforge.net/).
 
 They can be installed as a standalone package or as part of other systems.
-For instance, GNU-Octave includes useful packages like atlas, fftw, gnuplot, etc.
+For instance, GNU-Octave includes useful packages like atlas, lapack, fftw,
+gnuplot, etc.
 
 To use the optimized libraries you only need a symbolic link to the
 appropriate atlas blas available in your distribution. For instance,
 in my ubuntu distribution I have added:
 
-~/lib/GSL-0.5/ghc-6.5.20061004/libgslcblas.so -> /usr/lib/atlas/libblas.so.3.0
+~/lib/GSL-0.6/ghc-6.6/libcblas.so -> /usr/lib/atlas/libblas.so.3.0
+
+In ubuntu I also need a symbolick link to the LAPACK library:
+
+~/lib/GSL-0.6/ghc-6.6/liblapack.so -> /usr/lib/atlas/liblapack.so.3.0
 
 --------------------------------------------------------------------------------------
 ACKNOWLEDGEMENTS

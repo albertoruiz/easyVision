@@ -18,7 +18,7 @@ Extensions:         ForeignFunctionInterface,
 ghc-options:        -O
 Exposed-modules:    GSL,
                          GSL.Matrix, GSL.LinearAlgebra,
-                         GSL.Wrappers, GSL.Types, GSL.Common, GSL.Instances
+                         GSL.Wrappers, GSL.Lapack, GSL.Types, GSL.Common, GSL.Instances
                          GSL.Fourier,
                          GSL.Polynomials,
                          GSL.Differentiation,
@@ -27,7 +27,7 @@ Exposed-modules:    GSL,
                          GSL.Special
                          GSL.Plot
 Other-modules:
-C-sources:          GSL/gslaux.c
-extra-libraries:    gsl gslcblas
+C-sources:          GSL/gslaux.c GSL/lapack-aux.c
+extra-libraries:    gsl cblas lapack
 cc-options:         -Wall -O2
 ghc-prof-options:   -auto-all

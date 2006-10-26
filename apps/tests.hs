@@ -10,6 +10,7 @@ import Control.Monad(when)
 realMatrix = fromLists :: [[Double]] -> Matrix Double
 realVector = fromList ::  [Double] -> Vector Double
 
+infixl 2 =~=
 a =~= b = pnorm 1 (flatten (a - b)) < 1E-12
 
 randomMatrix seed (n,m) = reshape m $ realVector $ take (n*m) $ randomRs (-100,100) $ mkStdGen seed 
@@ -94,6 +95,17 @@ ransacTest = assertBool "ransac homography" (normat3 h1 =~= normat3 h) where
 
 -------------------------------------------------------------------
 
+disp m = putStrLn (format " " show m)
+
+ms = realMatrix [[1,2,3]
+                ,[-4,1,7]]
+
+fullsvdTest m = do
+    let (u,s,vt) = full_svd_R m
+    assertBool "fullsvd" (u <> s <> trans vt =~= m)
+
+--------------------------------------------------------------------
+
 tests = TestList 
     [ TestCase (assertBool "factorize1" (factorizeCameraTest m1))
     , TestCase (assertBool "factorize2" (factorizeCameraTest m2))
@@ -109,9 +121,13 @@ tests = TestList
     , TestCase (assertBool "recover5"    (recoverFromHomogZ0Test  m6))
     , TestCase $ besselTest
     , TestCase $ exponentialTest
+    , TestCase $ ransacTest
+    , TestCase $ fullsvdTest $ ms
+    , TestCase $ fullsvdTest $ trans ms
+    , TestCase $ fullsvdTest $ ms <|> ms
+    , TestCase $ fullsvdTest $ trans $ ms <|> ms
     , TestCase $ classifyTest 500 500 129 
     --, TestCase $ classifyTest 4000 1000 63
-    , TestCase $ ransacTest
     ]
 
 main = runTestTT tests

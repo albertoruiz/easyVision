@@ -29,6 +29,7 @@ function docs {
             GSL/LinearAlgebra.hs \
             GSL/Instances.hs \
             GSL/Plot.hs \
+            GSL/Lapack.hs \
             -o ../doc -h -p GSL/prologue -t GSLHaskell # 2> /dev/null
 }
 
