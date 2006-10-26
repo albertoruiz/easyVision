@@ -9,4 +9,7 @@
 #define KDMAT(A) int A##r, int A##c, const double* A##p
 #define KCMAT(A) int A##r, int A##c, const double* A##p 
 
-int svd_l(KDMAT(x),DMAT(u), DVEC(s),DMAT(v));
+int svd_l_R(KDMAT(x),DMAT(u), DVEC(s),DMAT(v));
+int svd_l_Rdd(KDMAT(x),DMAT(u), DVEC(s),DMAT(v));
+
+int svd_l_C(KCMAT(a),CMAT(u), DVEC(s),CMAT(v));

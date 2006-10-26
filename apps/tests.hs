@@ -11,7 +11,7 @@ realMatrix = fromLists :: [[Double]] -> Matrix Double
 realVector = fromList ::  [Double] -> Vector Double
 
 infixl 2 =~=
-a =~= b = pnorm 1 (flatten (a - b)) < 1E-12
+a =~= b = pnorm 1 (flatten (a - b)) < 1E-9
 
 randomMatrix seed (n,m) = reshape m $ realVector $ take (n*m) $ randomRs (-100,100) $ mkStdGen seed 
 
@@ -100,9 +100,13 @@ disp m = putStrLn (format " " show m)
 ms = realMatrix [[1,2,3]
                 ,[-4,1,7]]
 
-fullsvdTest m = do
-    let (u,s,vt) = full_svd_R m
-    assertBool "fullsvd" (u <> s <> trans vt =~= m)
+ms' = randomMatrix 27 (50,100)
+
+ms'' = toComplex (randomMatrix 100 (50,100),randomMatrix 101 (50,100))
+
+fullsvdTest method mat msg = do
+    let (u,s,vt) = method mat
+    assertBool msg (u <> s <> trans vt =~= mat)
 
 --------------------------------------------------------------------
 
@@ -122,10 +126,14 @@ tests = TestList
     , TestCase $ besselTest
     , TestCase $ exponentialTest
     , TestCase $ ransacTest
-    , TestCase $ fullsvdTest $ ms
-    , TestCase $ fullsvdTest $ trans ms
-    , TestCase $ fullsvdTest $ ms <|> ms
-    , TestCase $ fullsvdTest $ trans $ ms <|> ms
+    , TestCase $ fullsvdTest full_svd_R ms "fullsvdR small"
+    , TestCase $ fullsvdTest full_svd_R (trans ms) "fullsvdR small"
+    , TestCase $ fullsvdTest full_svd_R ms' "fullsvdR"
+    , TestCase $ fullsvdTest full_svd_R (trans ms') "fullsvdR"
+    , TestCase $ fullsvdTest full_svd_Rd ms' "fullsvdRd"
+    , TestCase $ fullsvdTest full_svd_Rd (trans ms') "fullsvdRd"
+    , TestCase $ fullsvdTest full_svd_C ms'' "fullsvdC"
+    , TestCase $ fullsvdTest full_svd_C (trans ms'') "fullsvdC"
     , TestCase $ classifyTest 500 500 129 
     --, TestCase $ classifyTest 4000 1000 63
     ]

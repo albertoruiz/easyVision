@@ -91,6 +91,7 @@ type TCVCM = Int -> PC -> TCM                 --
 type TCMCM = Int -> Int -> PC -> TCM          -- 
 type TVCM = Int -> PD -> TCM                  --
 type TCMVCM = Int -> Int -> PC -> TVCM        --
+type TCMCMVCM = Int -> Int -> PC -> TCMVCM    --
 type TCMCMCM = Int -> Int -> PC -> TCMCM      -- 
 type TCV = Int -> PC -> IO Int                -- 
 type TCVCV = Int -> PC -> TCV                 --
