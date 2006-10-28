@@ -110,6 +110,15 @@ fullsvdTest method mat msg = do
 
 --------------------------------------------------------------------
 
+mcu = toComplex (randomMatrix 33 (20,20),randomMatrix 34 (20,20))
+
+eigCTest m = do
+    let (s,v) = eigC m
+    assertBool "eigC" $ v <> trans m =~= diag s <> v
+
+
+--------------------------------------------------------------------
+
 tests = TestList 
     [ TestCase (assertBool "factorize1" (factorizeCameraTest m1))
     , TestCase (assertBool "factorize2" (factorizeCameraTest m2))
@@ -126,6 +135,7 @@ tests = TestList
     , TestCase $ besselTest
     , TestCase $ exponentialTest
     , TestCase $ ransacTest
+    , TestCase $ eigCTest mcu
     , TestCase $ fullsvdTest full_svd_R ms "fullsvdR small"
     , TestCase $ fullsvdTest full_svd_R (trans ms) "fullsvdR small"
     , TestCase $ fullsvdTest full_svd_R ms' "fullsvdR"

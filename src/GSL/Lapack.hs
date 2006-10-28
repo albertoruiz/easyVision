@@ -74,3 +74,14 @@ full_svd_C m@(M r c _) = (unfortran u, s, trans_unfortran vt)
 
 svd_l_C x@(M r c p) = createMVM [p] "svd_l_C" r r (min r c) c c $ m c_svd_l_C x
 foreign import ccall "lapack-aux.h svd_l_C" c_svd_l_C :: TCMCMVCM
+
+-- | wrapper to lapack zgeev, which computes the eigenvalues and right eigenvectors of a general complex matrix:
+--
+-- if @(l,v)=eigC m@ then @v \<\> trans m = v \<\> diag l@.
+eigC :: Matrix (Complex Double)
+        -> (Vector (Complex Double), Matrix (Complex Double))
+eigC m@(M r c _) = (s, trans_unfortran v)
+    where (_,s,v) = eig_l_C (fortran m)
+
+eig_l_C x@(M r c p) = createMVM [p] "eig_l_C" 1 1 r r r $ m c_eig_l_C x
+foreign import ccall "lapack-aux.h eig_l_C" c_eig_l_C :: TCMCMCVCM

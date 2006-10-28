@@ -23,6 +23,7 @@ module GSL.LinearAlgebra (
     -- * Matrix factorizations
     eigS,
     eigH,
+    eigC,
     svd, full_svd_R, full_svd_Rd, full_svd_C,
     qr,
     chol,

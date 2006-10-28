@@ -28,7 +28,7 @@
 
 //////////////////// real svd ////////////////////////////////////
 
-void dgesdd_ (int*,
+void dgesdd_ (char*,
               int*,int*,double*,int*,
               double*,
               double*,int*,
@@ -49,7 +49,7 @@ int svd_l_Rdd(KDMAT(a),DMAT(u), DVEC(s),DMAT(v)) {
     int* iwk = (int*) malloc(8*q*sizeof(int));
     CHECK(!iwk,MEM);
     int lwk = -1;
-    int job = 'A';
+    char job = 'A';
     int res;
     // ask for optimal lwk
     double ans;
@@ -68,7 +68,7 @@ int svd_l_Rdd(KDMAT(a),DMAT(u), DVEC(s),DMAT(v)) {
     OK
 }
 
-void dgesvd_ (int*,int*,              // jobu, jobvt
+void dgesvd_ (char*,char*,            // jobu, jobvt
               int*,int*,double*,int*, // m, n, a, lda
               double*,                // s 
               double*,int*,           // u, ldu
@@ -86,8 +86,8 @@ int svd_l_R(KDMAT(a),DMAT(u), DVEC(s),DMAT(v)) {
     CHECK(!B,MEM);
     memcpy(B,ap,m*n*sizeof(double));
     int lwork = -1;
-    int jobu  = 'A';
-    int jobvt = 'A';
+    char jobu  = 'A';
+    char jobvt = 'A';
     int res;
     // ask for optimal lwork
     double ans;
@@ -161,11 +161,67 @@ int svd_l_C(KCMAT(a),CMAT(u), DVEC(s),CMAT(v)) {
     //printf("ans = %d\n",lwork);
     double * work = (double*)malloc(lwork*2*sizeof(double));
     CHECK(!work,MEM);
-    //printf("dgesdd\n");
+    //printf("dgesvd\n");
     zgesvd_ (&jobu,&jobvt,
              &m,&n,B,&m,
              sp,
              up,&m,
+             vp,&n,
+             work, &lwork,
+             rwork,
+             &res);
+    CHECK(res,res);
+    free(work);
+    free(rwork);
+    free(B);
+    OK
+}
+
+//////////////////// general complex eigensystem ////////////
+
+void zgeev_  (char*,char*,              // jobvl, jobvr
+              int*,double*,int*,      // n, a, lda
+              double*,                // w
+              double*,int*,           // vl, ldvl
+              double*,int*,           // vr, ldvr
+              double*,int*,           // work, lwork
+              double*,                // rwork
+              int*);                  // info
+
+int eig_l_C(KCMAT(a),CMAT(u), CVEC(s),CMAT(v)) {
+    int n = ar;
+    REQUIRES((ur==1 || (ur==n && uc==n)) && sn==n && vr==n && vc==n,BAD_SIZE);
+    DEBUGMSG("eig_l_C");
+    double *B = (double*)malloc(2*n*n*sizeof(double));
+    CHECK(!B,MEM);
+    memcpy(B,ap,n*n*2*sizeof(double));
+
+    double *rwork = (double*) malloc(2*n*sizeof(double));
+    CHECK(!rwork,MEM);
+    int lwork = -1;
+    char jobvl = ur==1?'N':'V';
+    char jobvr = 'V';
+    int res;
+    // ask for optimal lwork
+    double ans;
+    //printf("ask zgeev\n");
+    zgeev_  (&jobvl,&jobvr,
+             &n,B,&n,
+             sp,
+             up,&n,
+             vp,&n,
+             &ans, &lwork,
+             rwork,
+             &res);
+    lwork = ceil(ans);
+    //printf("ans = %d\n",lwork);
+    double * work = (double*)malloc(lwork*2*sizeof(double));
+    CHECK(!work,MEM);
+    //printf("dgeev\n");
+    zgeev_  (&jobvl,&jobvr,
+             &n,B,&n,
+             sp,
+             up,&n,
              vp,&n,
              work, &lwork,
              rwork,

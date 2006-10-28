@@ -13,3 +13,5 @@ int svd_l_R(KDMAT(x),DMAT(u), DVEC(s),DMAT(v));
 int svd_l_Rdd(KDMAT(x),DMAT(u), DVEC(s),DMAT(v));
 
 int svd_l_C(KCMAT(a),CMAT(u), DVEC(s),CMAT(v));
+
+int eig_l_C(KCMAT(a),CMAT(u), CVEC(s),CMAT(v));
