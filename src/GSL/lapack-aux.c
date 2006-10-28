@@ -190,7 +190,7 @@ void zgeev_  (char*,char*,              // jobvl, jobvr
 
 int eig_l_C(KCMAT(a),CMAT(u), CVEC(s),CMAT(v)) {
     int n = ar;
-    REQUIRES((ur==1 || (ur==n && uc==n)) && sn==n && vr==n && vc==n,BAD_SIZE);
+    REQUIRES(n>=2 && (ur==1 || (ur==n && uc==n)) && sn==n && (vr==1 || (vr==n && vc==n)),BAD_SIZE);
     DEBUGMSG("eig_l_C");
     double *B = (double*)malloc(2*n*n*sizeof(double));
     CHECK(!B,MEM);
@@ -200,7 +200,7 @@ int eig_l_C(KCMAT(a),CMAT(u), CVEC(s),CMAT(v)) {
     CHECK(!rwork,MEM);
     int lwork = -1;
     char jobvl = ur==1?'N':'V';
-    char jobvr = 'V';
+    char jobvr = vr==1?'N':'V';
     int res;
     // ask for optimal lwork
     double ans;
@@ -217,7 +217,7 @@ int eig_l_C(KCMAT(a),CMAT(u), CVEC(s),CMAT(v)) {
     //printf("ans = %d\n",lwork);
     double * work = (double*)malloc(lwork*2*sizeof(double));
     CHECK(!work,MEM);
-    //printf("dgeev\n");
+    //printf("zgeev\n");
     zgeev_  (&jobvl,&jobvr,
              &n,B,&n,
              sp,
@@ -229,6 +229,55 @@ int eig_l_C(KCMAT(a),CMAT(u), CVEC(s),CMAT(v)) {
     CHECK(res,res);
     free(work);
     free(rwork);
+    free(B);
+    OK
+}
+
+//////////////////// general real eigensystem ////////////
+
+void dgeev_  (char*,char*,            // jobvl, jobvr
+              int*,double*,int*,      // n, a, lda
+              double*, double*,       // wr, wi
+              double*,int*,           // vl, ldvl
+              double*,int*,           // vr, ldvr
+              double*,int*,           // work, lwork
+              int*);                  // info
+
+int eig_l_R(KDMAT(a),DMAT(u), CVEC(s),DMAT(v)) {
+    int n = ar;
+    REQUIRES(n>=2 && (ur==1 || (ur==n && uc==n)) && sn==n && (vr==1 || (vr==n && vc==n)),BAD_SIZE);
+    DEBUGMSG("eig_l_R");
+    double *B = (double*)malloc(n*n*sizeof(double));
+    CHECK(!B,MEM);
+    memcpy(B,ap,n*n*sizeof(double));
+    int lwork = -1;
+    char jobvl = ur==1?'N':'V';
+    char jobvr = vr==1?'N':'V';
+    int res;
+    // ask for optimal lwork
+    double ans;
+    //printf("ask dgeev\n");
+    dgeev_  (&jobvl,&jobvr,
+             &n,B,&n,
+             sp, sp+n,
+             up,&n,
+             vp,&n,
+             &ans, &lwork,
+             &res);
+    lwork = ceil(ans);
+    //printf("ans = %d\n",lwork);
+    double * work = (double*)malloc(lwork*sizeof(double));
+    CHECK(!work,MEM);
+    //printf("dgeev\n");
+    dgeev_  (&jobvl,&jobvr,
+             &n,B,&n,
+             sp, sp+n,
+             up,&n,
+             vp,&n,
+             work, &lwork,
+             &res);
+    CHECK(res,res);
+    free(work);
     free(B);
     OK
 }

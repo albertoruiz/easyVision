@@ -34,8 +34,8 @@ trans_unfortran (M r c p) = M c r p
 -- | wrapper to lapack dgesvd, which computes the full svd decomposition of a real matrix.
 --
 -- @(u,s,v)=full_svd_R m@ so that @m=u \<\> s \<\> 'trans' v@.
-full_svd_R :: Matrix Double -> (Matrix Double, Matrix Double , Matrix Double)
-full_svd_R m@(M r c _) = (unfortran u, s, trans_unfortran vt)
+svdR :: Matrix Double -> (Matrix Double, Matrix Double , Matrix Double)
+svdR m@(M r c _) = (unfortran u, s, trans_unfortran vt)
     where (u,s',vt) = svd_l_R (fortran m)
           s | r == c    = diag s'
             | r < c     = diag s' <|> zeros (r,c-r)
@@ -63,9 +63,9 @@ foreign import ccall "lapack-aux.h svd_l_Rdd" c_svd_l_Rdd :: TMMVM
 -- | wrapper to lapack zgesvd, which computes the full svd decomposition of a complex matrix.
 --
 -- @(u,s,v)=full_svd_C m@ so that @m=u \<\> s \<\> 'trans' v@.
-full_svd_C :: Matrix (Complex Double)
+svdC :: Matrix (Complex Double)
            -> (Matrix (Complex Double), Matrix Double, Matrix (Complex Double))
-full_svd_C m@(M r c _) = (unfortran u, s, trans_unfortran vt)
+svdC m@(M r c _) = (unfortran u, s, trans_unfortran vt)
     where (u,s',vt) = svd_l_C (fortran m)
           s | r == c    = diag s'
             | r < c     = diag s' <|> zeros (r,c-r)
@@ -85,3 +85,23 @@ eigC m@(M r c _) = (s, trans_unfortran v)
 
 eig_l_C x@(M r c p) = createMVM [p] "eig_l_C" 1 1 r r r $ m c_eig_l_C x
 foreign import ccall "lapack-aux.h eig_l_C" c_eig_l_C :: TCMCMCVCM
+
+-- | wrapper to lapack dgeev, which computes the eigenvalues and right eigenvectors of a general real matrix:
+--
+-- if @(l,v)=eigR m@ then @v \<\> trans m = v \<\> diag l@.
+eigR :: Matrix Double -> (Vector (Complex Double), Matrix (Complex Double))
+eigR m@(M r c _) = (s', v'')
+    where (_,s,v) = eig_l_R (fortran m)
+          s' = toComplex (subVector 0 r (asReal s), subVector r r (asReal s))
+          v' = toRows $ trans_unfortran v
+          v'' = fromRows $ fixeig (toList s') v'
+
+eig_l_R x@(M r c p) = createMVM [p] "eig_l_R" 1 1 r r r $ m c_eig_l_R x
+foreign import ccall "lapack-aux.h eig_l_R" c_eig_l_R :: TMMCVM
+
+fixeig  []  _ =  []
+fixeig [r] [v] = [complex v]
+fixeig ((r1:+i1):(r2:+i2):r) (v1:v2:vs)
+    | r1 == r2 && i1 == (-i2) = toComplex (v1,v2) : toComplex (v1,scale (-1) v2) : fixeig r vs
+    | otherwise = complex v1 : fixeig ((r2:+i2):r) (v2:vs)
+

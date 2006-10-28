@@ -112,10 +112,11 @@ fullsvdTest method mat msg = do
 
 mcu = toComplex (randomMatrix 33 (20,20),randomMatrix 34 (20,20))
 
-eigCTest m = do
-    let (s,v) = eigC m
-    assertBool "eigC" $ v <> trans m =~= diag s <> v
+mcur = randomMatrix 35 (40,40)
 
+eigTest method m msg = do
+    let (s,v) = method m
+    assertBool msg $ v <> trans m =~= diag s <> v
 
 --------------------------------------------------------------------
 
@@ -135,15 +136,16 @@ tests = TestList
     , TestCase $ besselTest
     , TestCase $ exponentialTest
     , TestCase $ ransacTest
-    , TestCase $ eigCTest mcu
-    , TestCase $ fullsvdTest full_svd_R ms "fullsvdR small"
-    , TestCase $ fullsvdTest full_svd_R (trans ms) "fullsvdR small"
-    , TestCase $ fullsvdTest full_svd_R ms' "fullsvdR"
-    , TestCase $ fullsvdTest full_svd_R (trans ms') "fullsvdR"
+    , TestCase $ eigTest eigC mcu "eigC" 
+    , TestCase $ eigTest eigR mcur "eigR"
+    , TestCase $ fullsvdTest svdR ms "fullsvdR small"
+    , TestCase $ fullsvdTest svdR (trans ms) "fullsvdR small"
+    , TestCase $ fullsvdTest svdR ms' "fullsvdR"
+    , TestCase $ fullsvdTest svdR (trans ms') "fullsvdR"
     , TestCase $ fullsvdTest full_svd_Rd ms' "fullsvdRd"
     , TestCase $ fullsvdTest full_svd_Rd (trans ms') "fullsvdRd"
-    , TestCase $ fullsvdTest full_svd_C ms'' "fullsvdC"
-    , TestCase $ fullsvdTest full_svd_C (trans ms'') "fullsvdC"
+    , TestCase $ fullsvdTest svdC ms'' "fullsvdC"
+    , TestCase $ fullsvdTest svdC (trans ms'') "fullsvdC"
     , TestCase $ classifyTest 500 500 129 
     --, TestCase $ classifyTest 4000 1000 63
     ]

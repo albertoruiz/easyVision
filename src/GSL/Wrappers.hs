@@ -89,6 +89,7 @@ type TMMVM = Int -> Int -> PD -> TMVM         --
 type TCM = Int -> Int -> PC -> IO Int         --
 type TCVCM = Int -> PC -> TCM                 --
 type TCMCVCM = Int -> Int -> PC -> TCVCM      --
+type TMCMCVCM = Int -> Int -> PD -> TCMCVCM   --
 type TCMCMCVCM = Int -> Int -> PC -> TCMCVCM  --
 type TCMCM = Int -> Int -> PC -> TCM          -- 
 type TVCM = Int -> PD -> TCM                  --
@@ -98,7 +99,10 @@ type TCMCMCM = Int -> Int -> PC -> TCMCM      --
 type TCV = Int -> PC -> IO Int                -- 
 type TCVCV = Int -> PC -> TCV                 --
 type TCMCV = Int -> Int -> PC -> TCV          --
-type TVCV = Int -> PD -> TCV                  -- 
+type TVCV = Int -> PD -> TCV                  --
+type TCVM = Int -> PC -> TM                   --
+type TMCVM = Int -> Int -> PD -> TCVM         --
+type TMMCVM = Int -> Int -> PD -> TMCVM       --
 ------------------------------------------------
 
 prot :: String -> IO Int -> IO ()
