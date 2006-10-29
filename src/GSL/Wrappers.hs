@@ -295,14 +295,14 @@ foreign import ccall "gslaux.h vectorZip" c_vectorZip :: Int -> TVVV
 > 2.000 1.000
 
 -}
-eigS :: RMatrix -> (RVector, RMatrix)
-eigS x@(M r c p) = unsafePerformIO $ do
+eigSg :: Matrix Double -> (Vector Double, Matrix Double)
+eigSg x@(M r c p) = unsafePerformIO $ do
     l <- mallocForeignPtrArray r
     v <- mallocForeignPtrArray (r*r)
     withForeignPtr p $ \pp ->
         withForeignPtr l $ \pl ->
             withForeignPtr v $ \pv ->
-                prot "eigS" $ c_eigS r c pp r pl r r pv
+                prot "eigSg" $ c_eigS r c pp r pl r r pv
     return (V r l, M r r v)
 foreign import ccall "gslaux.h eigensystemR" c_eigS :: TMVM
 
@@ -326,14 +326,14 @@ foreign import ccall "gslaux.h eigensystemR" c_eigS :: TMVM
 > (2.000,-1.000)         3.000
 
 -}
-eigH :: CMatrix -> (RVector, CMatrix)
-eigH x@(M r c p) = unsafePerformIO $ do
+eigHg :: Matrix (Complex Double)-> (Vector Double, Matrix (Complex Double))
+eigHg x@(M r c p) = unsafePerformIO $ do
     l <- mallocForeignPtrArray r
     v <- mallocForeignPtrArray (r*r)
     withForeignPtr p $ \pp ->
         withForeignPtr l $ \pl ->
             withForeignPtr v $ \pv ->
-                prot "eigH" $ c_eigH r c pp r pl r r pv
+                prot "eigHg" $ c_eigH r c pp r pl r r pv
     return (V r l, M r r v)
 foreign import ccall "gslaux.h eigensystemC" c_eigH :: TCMVCM
 

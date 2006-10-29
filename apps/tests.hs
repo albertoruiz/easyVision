@@ -114,9 +114,10 @@ mcu = toComplex (randomMatrix 33 (20,20),randomMatrix 34 (20,20))
 
 mcur = randomMatrix 35 (40,40)
 
+-- eigenvectors are columns
 eigTest method m msg = do
     let (s,v) = method m
-    assertBool msg $ v <> trans m =~= diag s <> v
+    assertBool msg $ m <> v =~= v <> diag s
 
 --------------------------------------------------------------------
 
@@ -138,6 +139,10 @@ tests = TestList
     , TestCase $ ransacTest
     , TestCase $ eigTest eigC mcu "eigC" 
     , TestCase $ eigTest eigR mcur "eigR"
+    , TestCase $ eigTest eigS (mcur+trans mcur) "eigS"
+    , TestCase $ eigTest eigSg (mcur+trans mcur) "eigSg"
+    , TestCase $ eigTest eigH (mcu+ (conj.trans) mcu) "eigH"
+    , TestCase $ eigTest eigHg (mcu+ (conj.trans) mcu) "eigHg"
     , TestCase $ fullsvdTest svdR ms "fullsvdR small"
     , TestCase $ fullsvdTest svdR (trans ms) "fullsvdR small"
     , TestCase $ fullsvdTest svdR ms' "fullsvdR"

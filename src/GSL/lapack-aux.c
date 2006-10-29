@@ -281,3 +281,89 @@ int eig_l_R(KDMAT(a),DMAT(u), CVEC(s),DMAT(v)) {
     free(B);
     OK
 }
+
+//////////////////// symmetric real eigensystem ////////////
+
+void dsyev_  (char*,char*,            // jobz, uplo
+              int*,double*,int*,      // n, a, lda
+              double*,                // w
+              double*,int*,           // work, lwork
+              int*);                  // info
+
+int eig_l_S(KDMAT(a),DVEC(s),DMAT(v)) {
+    int n = ar;
+    REQUIRES(n>=2 && sn==n && (vr==1 || (vr==n && vc==n)),BAD_SIZE);
+    DEBUGMSG("eig_l_R");
+    memcpy(vp,ap,n*n*sizeof(double));
+    int lwork = -1;
+    char jobz = vr==1?'N':'V';
+    char uplo = 'U';
+    int res;
+    // ask for optimal lwork
+    double ans;
+    //printf("ask dsyev\n");
+    dsyev_  (&jobz,&uplo,
+             &n,vp,&n,
+             sp,
+             &ans, &lwork,
+             &res);
+    lwork = ceil(ans);
+    //printf("ans = %d\n",lwork);
+    double * work = (double*)malloc(lwork*sizeof(double));
+    CHECK(!work,MEM);
+    //printf("dsyev\n");
+    dsyev_  (&jobz,&uplo,
+             &n,vp,&n,
+             sp,
+             work, &lwork,
+             &res);
+    CHECK(res,res);
+    free(work);
+    OK
+}
+
+//////////////////// hermitian complex eigensystem ////////////
+
+void zheev_  (char*,char*,            // jobz, uplo
+              int*,double*,int*,      // n, a, lda
+              double*,                // w
+              double*,int*,           // work, lwork
+              double*,                // rwork
+              int*);                  // info
+
+int eig_l_H(KCMAT(a),DVEC(s),CMAT(v)) {
+    int n = ar;
+    REQUIRES(n>=2 && sn==n && (vr==1 || (vr==n && vc==n)),BAD_SIZE);
+    DEBUGMSG("eig_l_H");
+    memcpy(vp,ap,2*n*n*sizeof(double));
+    double *rwork = (double*) malloc((3*n-2)*sizeof(double));
+    CHECK(!rwork,MEM);
+    int lwork = -1;
+    char jobz = vr==1?'N':'V';
+    char uplo = 'U';
+    int res;
+    // ask for optimal lwork
+    double ans;
+    //printf("ask dsyev\n");
+    zheev_  (&jobz,&uplo,
+             &n,vp,&n,
+             sp,
+             &ans, &lwork,
+             rwork,
+             &res);
+    lwork = ceil(ans);
+    //printf("ans = %d\n",lwork);
+    double * work = (double*)malloc(lwork*2*sizeof(double));
+    CHECK(!work,MEM);
+    //printf("dsyev\n");
+    zheev_  (&jobz,&uplo,
+             &n,vp,&n,
+             sp,
+             work, &lwork,
+             rwork,
+             &res);
+    CHECK(res,res);
+    free(work);
+    free(rwork);
+    OK
+}

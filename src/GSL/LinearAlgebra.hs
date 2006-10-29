@@ -9,7 +9,7 @@ Maintainer  :  Alberto Ruiz (aruiz at um dot es)
 Stability   :  provisional
 Portability :  uses ffi
 
-Some linear algebra algorithms, implemented by means of the GSL or Lapack.
+Some linear algebra algorithms, implemented by means of BLAS, LAPACK or GSL.
 
 (In construction...)
 
@@ -21,20 +21,27 @@ module GSL.LinearAlgebra (
     -- * Basic linear algebra
     (<>), mXv, vXm, dot, outer, scale, add, pnorm,
     -- * Matrix factorizations
-    eigS,
-    eigH,
-    eigC,
+    -- ** Eigensystems
     eigR,
+    eigS,
+    eigSg,
+    eigC,
+    eigH,
+    eigHg,
+    -- ** Singular values
     svd,
     svdR,
     full_svd_Rd,
     svdC,
+    -- ** QR
     qr,
+    -- ** Cholesky
     chol,
+    -- ** LU
     luSolveR, luR,
-    luSolveC, luC, det,
+    luSolveC, luC,
     -- * Utilities
-    inv, pinv, pinvTol, i, eps, norm
+     det, inv, pinv, pinvTol, i, eps, norm
 ) where
 
 import Complex

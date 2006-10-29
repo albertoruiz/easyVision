@@ -508,7 +508,7 @@ pnormRM 0 m = vectorMax $ asVector (vectorMap 3) m `mXv` constant 1 (cols m)
 pnormRM _ _ = error "p norm not yet defined"
 
 pnormCM 2 m = maxvalsing m
-  where maxvalsing m = sqrt . abs . head . toList . fst . eigH $ mm
+  where maxvalsing m = sqrt . abs . head . toList . fst . eigHg $ mm
         mm = if (rows m) > (cols m) then (conj.trans) m `mXm` m
                                     else m `mXm` (conj.trans) m
 pnormCM 1 m = vectorMax $ constant 1 (rows m) `vXm` asVector (vmap magnitude) m
