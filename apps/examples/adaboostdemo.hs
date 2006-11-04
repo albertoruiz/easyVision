@@ -12,6 +12,8 @@ vmap = gmap
 debug x = trace (show x) x
 debug' msg x = trace (msg ++ show x) x
 
+withPCA rq = withPreprocess (mef rq)
+
 
 -- | a learner which adaboosts the stumps weak learner
 classstumps :: Int -> Learner

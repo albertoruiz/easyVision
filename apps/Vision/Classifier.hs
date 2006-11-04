@@ -28,8 +28,9 @@ module Vision.Classifier (
      adaboost, adaboostST, adaFun,
 -- ** Decision tree
      treeOf, branch,
--- ** PCA preprocessing
-     withPCA,
+-- ** Linear feature extraction
+     withPreprocess,
+     mef, mdf,
 -- * Kernel machines
      Kernel, polyK, gaussK, kernelMSE, kernelMSE',
 -- * Utilities
@@ -169,9 +170,9 @@ confusion exs c = confusionMatrix where
         accumArray (+) (0::Double) ((0::Int,0::Int),(nc-1,nc-1)) (zip te [1,1 ..])
 
 
--- | Applies some preprocessing to the Attributes of a Sample
-preprocess :: Codec -> Sample -> Sample
-preprocess Codec {encodeVector = f} exs = [(f v, l) | (v,l) <- exs]
+-- | Applies some preprocessing function to the Attributes of a Sample
+preprocess :: (Vector Double -> Vector Double) -> Sample -> Sample
+preprocess f exs = [(f v, l) | (v,l) <- exs]
 
 
 
@@ -199,16 +200,38 @@ selectClasses :: [Label] -> Sample -> Sample
 selectClasses validset exs = filter ( (`elem` validset) .snd) exs
 
 
+-- | combines a learner with a given preprocessing stage
+withPreprocess :: ([Example] -> (Vector Double -> Vector Double))
+                -> Learner -> Learner
+withPreprocess method learner prob = (c,f) where
+    t = method prob
+    prob' = preprocess t prob
+    (c',f') = learner prob'
+    c = c' . t
+    f = f' . t 
 
--- | combines a learner with pca dimensionality reduction
-withPCA :: PCARequest -> Learner -> Learner
-withPCA rq method prob = (c,f) where
-    st = stat $ fromRows (map fst prob)
-    codec = pca rq st
-    prob' = preprocess codec prob
-    (c',f') = method prob'
-    c = c' . encodeVector codec
-    f = f' . encodeVector codec
+mean = meanVector . stat
+cov  = covarianceMatrix . stat
+meancov x = (m,c) where
+    m = meanVector st
+    c = covarianceMatrix st
+    st = stat x
+
+-- warning: we assume descending order in eigR (!?)
+-- | Most discriminant linear features
+mdf :: [Example] -> (Vector Double -> Vector Double)
+mdf exs = f where
+    f x = (x - m) <> v'
+    n = length gs - 1
+    gs = fst$ group exs
+    (v',_) = fromComplex$ takeColumns n v
+    (l,v) = eigR (inv c <> cm)
+    (m,c) = meancov$ fromRows$ map fst exs
+    cm = cov$ fromRows$ map (mean.fromRows) $ gs
+
+-- | Most expressive linear features (pca)
+mef :: PCARequest -> [Example] -> (Vector Double -> Vector Double)
+mef rq exs = encodeVector . pca rq . stat . fromRows . map fst $ exs
 
 ------------------------- drawing utilities --------------------------
 
@@ -345,10 +368,10 @@ mnist dim n = do
     let (train, test) = splitAt n mnist
 
     let st = stat (fromRows $ map fst train)
-    let codec = pca (NewDimension dim) st
+    let f = encodeVector $ pca (NewDimension dim) st
 
-    return (preprocess codec train,
-            preprocess codec test)
+    return (preprocess f train,
+            preprocess f test)
 
 -- | the mnist raw data
 mnistraw :: Int -> IO (Sample,Sample)

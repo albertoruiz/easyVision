@@ -18,7 +18,8 @@ work (train,test) method = do
     shConf test c
 
 comparedist (train,test) codec = do
-    let problem = (preprocess codec train, preprocess codec test)
+    let t = encodeVector codec
+    let problem = (preprocess t train, preprocess t test)
     putStr "Reduced dimension: "
     print $ size $ fst $ head $ fst problem
     putStrLn "-- with Mahalanobis distance --"
