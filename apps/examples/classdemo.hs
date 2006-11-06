@@ -28,7 +28,7 @@ study prob (meth, title) = do
 
 
 
-(r,err) = learnNetwork 0.1 0.05 (createNet 100 2 [10,20,10] 1)  (adaptNet xor)
+(r,err) = learnNetwork 0.1 0.05 100 (createNet 100 2 [10,20,10] 1)  (adaptNet xor)
 
 
 xor :: Sample
@@ -51,9 +51,10 @@ machines = [ (distance ordinary, "ordinary distance")
            , (multiclass (kernelMSE (polyK 2)), "kernel mse poly 2")
            , (multiclass (kernelMSE (polyK 5)), "kernel mse poly 5")
            , (multiclass (kernelMSE (gaussK 0.2)), "kernel mse gaussK 0.2")
+           , (multiclass $ adaboost 10 $ weight 17 ( treeOf (branch 5) (perceptron 0.1 0.1 10 [2])),"combination")
            ]
 
-problem = breakTies 0 0.1 (sshape 500)
+problem = breakTies 0 0.1 (sshape 500) -- rings 500
 
 main = mapM_ (study problem) machines
 

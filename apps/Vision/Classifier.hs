@@ -32,7 +32,7 @@ module Vision.Classifier (
      withPreprocess,
      mef, mdf,
 -- * Multilayer perceptron
-     learnNetwork, neural, createNet, adaptNet,
+     learnNetwork, neural, createNet, adaptNet, perceptron, neural',
 -- * Kernel machines
      Kernel, polyK, gaussK, kernelMSE, kernelMSE',
 -- * Utilities
@@ -705,13 +705,13 @@ updateNetwork alpha n (v,o) = n {weights = zipWith (+) (weights n) corr}
 
 backprop alpha n prob = scanl (updateNetwork alpha) n (cycle prob)
 
-learnNetwork alpha eps n prob = (r,e) where
+learnNetwork alpha eps maxepochs n prob = (r,e) where
     nets = backprop alpha n prob
     errs = map ((flip mseerror) prob) nets
     evol = zip nets errs `zip` [0..]
     step = 1*length prob
     selected = [evol!!k | k <- [0,step ..]]
-    conv = takeWhile (\((r,e),k)-> e>eps && k<10000) selected
+    conv = takeWhile (\((r,e),k)-> e>eps && k<step*maxepochs) selected
     r = fst$ fst$ last$ conv
     e = map (snd.fst) conv
 
@@ -725,15 +725,31 @@ adaptNet s = x where
 -- | multilayer perceptron with alpha parameter and desired number of units in the hidden units
 neural :: Double -> [Int] -> Learner
 neural alpha hidden prob = (c,f) where
+    (result, err) = neural' alpha 0.05 100 hidden prob
+    c = createClassifier (snd$ group prob) f
+    f = toList . last . forward result
+
+-- | useful for monitorization of convergence
+neural' alpha eps mxep hidden prob = (network, err) where
     prob' = adaptNet prob
     n = size$ fst$ head prob'
     m = size$ snd$ head prob'
-    initial = (createNet 100 n hidden m)
-    (result, err) = learnNetwork alpha 0.05 initial prob'
-    c = createClassifier (snd$ group prob) f
-    f = toList . last . forward result
+    initial = createNet 100 n hidden m
+    (network, err) = learnNetwork alpha eps mxep initial prob'
+
 
 mseerror r p = sum (map f p) / fromIntegral ( (size$ snd$ head$ p) * length p)
     where f (x,y) = norm (last (forward r x) - y)
 
-
+-- | useful for metaalgorithms (treeOf, adaboost)
+perceptron :: Double -- ^ alpha (e.g. 0.1)
+           -> Double -- ^ maxerr (e.g. 0.05)
+           -> Int    -- ^ maxepochs (100-1000) 
+           -> [Int]  -- ^ hidden units
+           -> Dicotomizer
+perceptron alpha eps maxep hidden (g1,g2) = f where
+    b = (replicate (length g1) 1 ++ replicate (length g2) (-1))
+    exs = scramble 1001 (zip (g1++g2) (replicate (length g1) 1 ++ replicate (length g2) (-1)))
+    initial = createNet 100 (size$ head$ g1) hidden 1
+    (result, err) = learnNetwork alpha eps maxep initial exs
+    f = (@>0) . last . forward result
