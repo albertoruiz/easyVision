@@ -31,10 +31,12 @@ module Vision.Classifier (
 -- ** Linear feature extraction
      withPreprocess,
      mef, mdf,
+-- * Multilayer perceptron
+     learnNetwork, neural, createNet, adaptNet,
 -- * Kernel machines
      Kernel, polyK, gaussK, kernelMSE, kernelMSE',
 -- * Utilities
-     errorRate, confusion, combined, group, ungroup, createClassifier, scramble, breakTies, selectClasses, splitProportion, posMax, preprocess,
+     errorRate, confusion, combined, InfoLabels(..), group, ungroup, createClassifier, scramble, breakTies, selectClasses, splitProportion, posMax, preprocess,
 -- * 2D toy problems
 -- | You can take a look at them using 'combined'.
      linsep, linsepmulti, nosep, ring, moon, rings, sshape, mnist, mnistraw
@@ -274,8 +276,8 @@ study prob meth = do
           (multiclass (treeOf (branch 0) (unweight stumps)))@
 
 -}
-combined :: Int -> Double -> (Vector Double ->Double) -> Sample -> IO ()
-combined n r f exs = act where
+combined :: String -> Int -> Double -> (Vector Double ->Double) -> Sample -> IO ()
+combined title n r f exs = act where
     (gs,_) = group exs
     l1 = toList $ linspace n (-r,r)
     l2 = toList $ linspace n (-r,r)
@@ -283,15 +285,17 @@ combined n r f exs = act where
     z' = concat $ map (++[[]]) $ partit n z
     g m = toList m ++ [0]
     preps = concat (map p gs) where p gi = prep (map g gi)
-    hs' = map ("\"-\" with points " ++) (map show [1 .. length gs])
+    hs' = map ("\"-\" with points " ++) (map (show.code) [1 .. length gs])
     hs = concat (intersperse "," hs') ++ "\n"
     act = do
         gnuplot $ "set size square; set pm3d map explicit; set style data pm3d; set palette gray; "
+                  ++ "set title " ++ show title ++ ";"
                   ++ "splot \"-\" with pm3d, "
                   ++ hs
                   ++ prep z'
                   ++ preps
         return ()
+    code = ((38:57:83:18:30:[1..])!!)
 
 ---------------------------- some toy classification problems ---------------------------
 
@@ -644,3 +648,92 @@ polyK n x y = (x `dot` y + 1)^n
 -- | gaussian 'Kernel' of with width sigma
 gaussK :: Double -> Kernel
 gaussK s x y = exp (-(norm (x-y) / s)^2)
+
+-------------------------- Multilayer perceptron -----------------------
+
+randomMatrix seed (n,m) = reshape m $ vector $ take (n*m) $ randomRs (-w,w) $ mkStdGen seed
+    where w = 2  / sqrt (fromIntegral m)
+
+
+data NeuralNet = NN { layers:: Int,
+                      sizes :: [Int],
+                      weights :: [Matrix Double]
+                    } deriving Show
+
+--createNet :: Int -> Int -> [Int] -> Int -> NeuralNet
+createNet seed i hs o = NN ly szs ws where
+    ly = 1 + length hs
+    szs = i:hs++[o]
+    ws = zipWith randomMatrix [seed, seed+1 .. ] dims
+    dims = zip (hs++[o]) ((i+1):hs)
+
+createNet' seed i hs o = NN ly szs ws where
+    ly = 1 + length hs
+    szs = i:hs++[o]
+    ws = zipWith randomMatrix [seed, seed+1 .. ] dims
+    dims = zip (hs++[o]) (map (+1) (i:hs))
+
+-- given a network and an input we obtain the activations of all nodes
+forward :: NeuralNet -> Vector Double -> [Vector Double]
+forward n v = scanl f (join [v,1]) (weights n)
+    where f v m = tanh (m <> v)
+
+forward' n v = scanl f v (weights n)
+    where f v m = tanh (m <> join [v,1])
+
+
+-- given a network, activations and desired output it computes the gradient
+deltas :: NeuralNet -> [Vector Double] -> Vector Double ->  [Matrix Double]
+deltas n xs o = zipWith outer (tail ds) (init xs) where
+    dl = (last xs - o) * gp (last xs)
+    ds = scanr f dl (zip xs (weights n))
+    f (x,m) d = gp x * (trans m <> d)
+    gp = gmap $ \x -> (1+x)*(1-x)
+
+deltas' n xs o = zipWith outer (tail ds) (map add1 $ init xs) where
+    dl = (last xs - o) * gp (last xs)
+    ds = scanr f dl (zip xs (weights n))
+    f (x,m) d = gp x * drp (trans m <> d)
+    gp = gmap $ \x -> (1+x)*(1-x)
+    drp v = subVector 0 (size v -1) v
+    add1 v = join [v,1]
+
+updateNetwork alpha n (v,o) = n {weights = zipWith (+) (weights n) corr}
+    where xs = forward n v
+          ds = deltas n xs o
+          corr = map (scale (-alpha)) ds
+
+backprop alpha n prob = scanl (updateNetwork alpha) n (cycle prob)
+
+learnNetwork alpha eps n prob = (r,e) where
+    nets = backprop alpha n prob
+    errs = map ((flip mseerror) prob) nets
+    evol = zip nets errs `zip` [0..]
+    step = 1*length prob
+    selected = [evol!!k | k <- [0,step ..]]
+    conv = takeWhile (\((r,e),k)-> e>eps && k<10000) selected
+    r = fst$ fst$ last$ conv
+    e = map (snd.fst) conv
+
+--adaptNet :: Sample -> [(Vector Double, Vector Double)]
+adaptNet s = x where
+    lbs = snd (group s)
+    c = length (labels lbs)
+    des k c = vector$ replicate (k-1) (-1) ++ [1] ++ replicate (c-k) (-1)
+    x = [(v, des (1+getIndex lbs l) c) | (v,l) <- s]
+
+-- | multilayer perceptron with alpha parameter and desired number of units in the hidden units
+neural :: Double -> [Int] -> Learner
+neural alpha hidden prob = (c,f) where
+    prob' = adaptNet prob
+    n = size$ fst$ head prob'
+    m = size$ snd$ head prob'
+    initial = (createNet 100 n hidden m)
+    (result, err) = learnNetwork alpha 0.05 initial prob'
+    c = createClassifier (snd$ group prob) f
+    f = toList . last . forward result
+
+mseerror r p = sum (map f p) / fromIntegral ( (size$ snd$ head$ p) * length p)
+    where f (x,y) = norm (last (forward r x) - y)
+
+

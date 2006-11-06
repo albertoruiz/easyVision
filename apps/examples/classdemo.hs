@@ -1,54 +1,59 @@
-{- Classifying handwritten digits using Mahalanobis distance.
-   To download the data file:
-        $ wget http://dis.um.es/~alberto/material/sp/mnist.txt.gz
-        $ gunzip mnist.txt.gz
+{- comparison of different learning machines on a 2D toy problem
 -}
 
 import GSL
 import Vision
+import System.Random
+import Debug.Trace
 
-shErr d c = putStrLn $ (show $ 100 * errorRate d c) ++ " %"
+matrix m = fromLists m :: Matrix Double
+vector v = fromList v :: Vector Double
+
+shErr d c = (show $ (/100) $ fromIntegral $ round $ 10000 * errorRate d c) ++ " %"
 shConf d c = putStrLn $ format " " (show.round) (confusion d c)
 
-work (train,test) method = do
-    let  c = fst $ method train
-    putStr "Estimated error probability: "
-    shErr test c
-    putStrLn "Confusion matrix: "
+study :: Sample -> (Learner, String) -> IO ()
+study prob (meth, title) = do
+    seed <- randomIO
+    let (train,test) = splitProportion 0.5 $ scramble seed prob
+    let (c,f) = meth train
+    putStrLn title
+    let e = shErr test c
+    putStrLn $ "Test error: " ++ e
     shConf test c
+    putStrLn $ "Training error: " ++ shErr train c
+    shConf train c
+    putStrLn "-----------------"
+    combined (title++"   ["++ e ++"]") 100 2.5 (fromIntegral.posMax.f) test
 
-comparedist (train,test) codec = do
-    let t = encodeVector codec
-    let problem = (preprocess t train, preprocess t test)
-    putStr "Reduced dimension: "
-    print $ size $ fst $ head $ fst problem
-    putStrLn "-- with Mahalanobis distance --"
-    work problem (distance mahalanobis)
-    putStrLn "-- with Mahalanobis distance + log det sigma --"
-    work problem (distance mahalanobis')
-    putStrLn "-- with ordinary distance --"
-    work problem (distance ordinary)
 
-main = do
-    m <- fromFile "mnist.txt" (5000,785)
-    let vs = toRows (takeColumns 784 m)
-    let ls = map (show.round) $ toList $ flatten $ dropColumns 784 m
-    let mnist = zip vs ls
-    let rawproblem = splitAt 4000 mnist
 
-    putStr "Original dimension: "
-    print $ size $ fst $ head $ fst rawproblem
+(r,err) = learnNetwork 0.1 0.05 (createNet 100 2 [10,20,10] 1)  (adaptNet xor)
 
-    let st = stat (fromRows $ map fst (fst rawproblem))
 
-    let codec = pca (ReconstructionQuality 0.8) st
-    putStrLn "---- ReconstructionQuality 0.8 ----"
-    comparedist rawproblem codec
+xor :: Sample
+xor = [
+ (vector [-1,-1], "b"),
+ (vector [-1,1], "a"),
+ (vector [1,-1], "a"),
+ (vector [1,1], "b")
+ ]
 
-    let codec = pca (NewDimension 20) st
-    putStrLn "---- NewDimension 20 ----"
-    comparedist rawproblem codec
 
-    let codec = pca (ReconstructionQuality 0.5) st
-    putStrLn "---- ReconstructionQuality 0.5 ----"
-    comparedist rawproblem codec
+machines = [ (distance ordinary, "ordinary distance")
+           , (distance mahalanobis', "Mahalanobis distance")
+           , (distance closestNeighbour, "nearest Neigbour")
+           , (multiclass mse, "linear mse")
+           , (multiclass (treeOf (branch 0) (unweight stumps)), "tree of stumps")
+           , (multiclass (adaboost 50 stumps), "adaboost 50 stumps")
+           , (neural 0.1 [10], "neural 10")
+           , (neural 0.05 [20,10,5], "neural 20 10 5")
+           , (multiclass (kernelMSE (polyK 2)), "kernel mse poly 2")
+           , (multiclass (kernelMSE (polyK 5)), "kernel mse poly 5")
+           , (multiclass (kernelMSE (gaussK 0.2)), "kernel mse gaussK 0.2")
+           ]
+
+problem = breakTies 0 0.1 (sshape 500)
+
+main = mapM_ (study problem) machines
+

@@ -69,7 +69,7 @@ pru = do
     dispR 2 (confusion prob c)
     print (map (posMax.f.fst) prob)
     print (map (c.fst) prob)
-    combined 100 1 (fromIntegral.posMax.f) prob
+    combined "debug" 100 1 (fromIntegral.posMax.f) prob
 
 shErr d c = putStrLn $ (show $ 100 * errorRate d c) ++ " %"
 shConf d c = putStrLn $ format " " (show.round) (confusion d c)
@@ -85,7 +85,7 @@ study prob meth = do
     putStr "Training error: "
     shErr train c
     shConf train c
-    combined 100 2.5 (fromIntegral.posMax.f) train
+    combined "" 100 2.5 (fromIntegral.posMax.f) train
 
 --------------------------------------------------------------------------------
 
@@ -203,8 +203,8 @@ pruada n = do
     mplot [vector [1 .. fromIntegral n], vector e1, vector e2]
 
     let comb = adaFun st
-    combined 50 2.5 comb train
-    combined 100 2.5 (signum.comb) train
+    combined "" 50 2.5 comb train
+    combined "" 100 2.5 (signum.comb) train
     let c = last combis
     print (errorRate train c)
     print (errorRate test c)

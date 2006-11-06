@@ -1,3 +1,7 @@
+{- Experiments with linear dimension reduction
+   using the mnist dataset
+-}
+
 import GSL
 import Vision
 import System.Random
@@ -6,30 +10,13 @@ import Debug.Trace
 matrix m = fromLists m :: Matrix Double
 vector v = fromList v :: Vector Double
 
-shErr d c = putStrLn $ (show $ 100 * errorRate d c) ++ " %"
-shConf d c = putStrLn $ format " " (show.round) (confusion d c)
-
-study :: Sample -> Learner -> IO ()
-study prob meth = do
-    seed <- randomIO
-    let (train,test) = splitProportion 0.5 $ scramble seed prob
-    let (c,f) = meth train
-    putStr "Test error: "
-    shErr test c
-    shConf test c
-    putStr "Training error: "
-    shErr train c
-    shConf train c
-    combined 100 2.5 (fromIntegral.posMax.f) train
-
------------------------------------------------------------------------
-
-
-showDist2d = combined 100 0.1 tonta where tonta = (@>0)
-
 withPCA rq = withPreprocess (mef rq)
 withMDF = withPreprocess mdf
 
+shErr d c = putStrLn $ (show $ 100 * errorRate d c) ++ " %"
+shConf d c = putStrLn $ format " " (show.round) (confusion d c)
+
+showDist2d = combined 100 0.1 (@>0)
 
 study' prob meth = do
     let (train,test) = prob
@@ -40,7 +27,6 @@ study' prob meth = do
     putStr "Test error: "
     shErr test c
     shConf test c
-
 
 main = do
     m <- fromFile "mnist.txt" (5000,785)
@@ -73,4 +59,3 @@ main = do
     study' rawproblem (withPCA (ReconstructionQuality 0.9) $ distance mahalanobis')
     putStr "mdf pca .9 maha "
     study' rawproblem (withPCA (ReconstructionQuality 0.9) $ withMDF $ distance mahalanobis')
-
