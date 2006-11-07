@@ -52,3 +52,39 @@ main = do
     let codec = pca (ReconstructionQuality 0.5) st
     putStrLn "---- ReconstructionQuality 0.5 ----"
     comparedist rawproblem codec
+
+withPCA rq = withPreprocess (mef rq)
+
+main' = do
+    m <- fromFile "mnist.txt" (5000,785)
+    let vs = toRows (takeColumns 784 m)
+    let ls = map (show.round) $ toList $ flatten $ dropColumns 784 m
+    let mnist = zip vs ls
+    let (train, test) = splitAt 4000 mnist
+    --let g = normalizeAttr train
+    --let (r,e) = neural' 0.001 0.01 10 [20] (take 1000 (preprocess g train))
+    --mplot [fromList e]
+    --let c = fst$ withPCA (NewDimension 10) (withPreprocess normalizeAttr (neural 0.01 0.1 10 [20])) (train)
+    let c = fst$ (withPreprocess normalizeAttr (neural 0.001 0.01 50 [30,20])) (train)
+    putStr "Estimated error probability: "
+    shErr test c
+    putStrLn "Confusion matrix: "
+    shConf test c
+    shErr train c
+
+{-
+9.700000000000001 %
+Confusion matrix:
+97   0  0  0   0  0  1   0  0  2
+ 0 114  3  0   0  1  1   0  0  0
+ 1   2 79  1   0  0  4   0  4  0
+ 0   2  1 89   0  3  0   4  1  1
+ 0   1  0  0 100  0  0   0  0  4
+ 4   0  0  4   1 70  3   0  1  1
+ 2   0  3  0   0  3 85   0  1  2
+ 1   0  0  0   2  0  0 109  0  5
+ 2   0  5  3   6  1  0   1 69  2
+ 0   0  0  1   3  0  1   2  0 91
+
+1.15 %
+-}

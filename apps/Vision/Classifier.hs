@@ -36,7 +36,7 @@ module Vision.Classifier (
 -- * Kernel machines
      Kernel, polyK, gaussK, kernelMSE, kernelMSE',
 -- * Utilities
-     errorRate, confusion, combined, InfoLabels(..), group, ungroup, createClassifier, scramble, breakTies, selectClasses, splitProportion, posMax, preprocess,
+     errorRate, confusion, combined, InfoLabels(..), group, ungroup, createClassifier, scramble, breakTies, selectClasses, splitProportion, posMax, preprocess, normalizeAttr,
 -- * 2D toy problems
 -- | You can take a look at them using 'combined'.
      linsep, linsepmulti, nosep, ring, moon, rings, sshape, mnist, mnistraw
@@ -234,6 +234,15 @@ mdf exs = f where
 -- | Most expressive linear features (pca)
 mef :: PCARequest -> [Example] -> (Vector Double -> Vector Double)
 mef rq exs = encodeVector . pca rq . stat . fromRows . map fst $ exs
+
+
+-- | Attribute normalization
+normalizeAttr :: Sample -> (Vector Double -> Vector Double)
+normalizeAttr exs = f where
+    f x = (x-m)/(1+d)
+    xs = fromRows $ map fst exs
+    m = mean xs
+    d = sqrt (mean (xs*xs) - m*m)
 
 ------------------------- drawing utilities --------------------------
 
@@ -667,20 +676,26 @@ createNet seed i hs o = NN ly szs ws where
     ws = zipWith randomMatrix [seed, seed+1 .. ] dims
     dims = zip (hs++[o]) ((i+1):hs)
 
+-- the prime versions work with explicit constants in all layers, which is
+-- not really required
+
+{-
 createNet' seed i hs o = NN ly szs ws where
     ly = 1 + length hs
     szs = i:hs++[o]
     ws = zipWith randomMatrix [seed, seed+1 .. ] dims
     dims = zip (hs++[o]) (map (+1) (i:hs))
+-}
 
 -- given a network and an input we obtain the activations of all nodes
 forward :: NeuralNet -> Vector Double -> [Vector Double]
 forward n v = scanl f (join [v,1]) (weights n)
     where f v m = tanh (m <> v)
 
+{-
 forward' n v = scanl f v (weights n)
     where f v m = tanh (m <> join [v,1])
-
+-}
 
 -- given a network, activations and desired output it computes the gradient
 deltas :: NeuralNet -> [Vector Double] -> Vector Double ->  [Matrix Double]
@@ -690,6 +705,7 @@ deltas n xs o = zipWith outer (tail ds) (init xs) where
     f (x,m) d = gp x * (trans m <> d)
     gp = gmap $ \x -> (1+x)*(1-x)
 
+{-
 deltas' n xs o = zipWith outer (tail ds) (map add1 $ init xs) where
     dl = (last xs - o) * gp (last xs)
     ds = scanr f dl (zip xs (weights n))
@@ -697,23 +713,27 @@ deltas' n xs o = zipWith outer (tail ds) (map add1 $ init xs) where
     gp = gmap $ \x -> (1+x)*(1-x)
     drp v = subVector 0 (size v -1) v
     add1 v = join [v,1]
+-}
 
 updateNetwork alpha n (v,o) = n {weights = zipWith (+) (weights n) corr}
     where xs = forward n v
           ds = deltas n xs o
           corr = map (scale (-alpha)) ds
 
-backprop alpha n prob = scanl (updateNetwork alpha) n (cycle prob)
+epoch alpha n prob = foldl (updateNetwork alpha) n prob
+
+backprop alpha n prob = scanl (epoch alpha) n (repeat prob)
 
 learnNetwork alpha eps maxepochs n prob = (r,e) where
     nets = backprop alpha n prob
     errs = map ((flip mseerror) prob) nets
-    evol = zip nets errs `zip` [0..]
-    step = 1*length prob
-    selected = [evol!!k | k <- [0,step ..]]
-    conv = takeWhile (\((r,e),k)-> e>eps && k<step*maxepochs) selected
-    r = fst$ fst$ last$ conv
-    e = map (snd.fst) conv
+    evol = zip nets errs
+    step = 1 -- *length prob
+    selected = [evol!!(k*step) | k <- [0 .. maxepochs]]
+    conv = takeWhile (\(r,e)-> {-debug-} e >eps) selected
+    r = fst$ last$ conv
+    e = map (snd) conv
+
 
 --adaptNet :: Sample -> [(Vector Double, Vector Double)]
 adaptNet s = x where
@@ -723,9 +743,13 @@ adaptNet s = x where
     x = [(v, des (1+getIndex lbs l) c) | (v,l) <- s]
 
 -- | multilayer perceptron with alpha parameter and desired number of units in the hidden units
-neural :: Double -> [Int] -> Learner
-neural alpha hidden prob = (c,f) where
-    (result, err) = neural' alpha 0.05 100 hidden prob
+neural     :: Double -- ^ alpha (e.g. 0.1)
+           -> Double -- ^ maxerr (e.g. 0.05)
+           -> Int    -- ^ maxepochs (100-1000) 
+           -> [Int]  -- ^ hidden units
+           -> Learner
+neural alpha eps maxep hidden prob = (c,f) where
+    (result, err) = neural' alpha eps maxep hidden prob
     c = createClassifier (snd$ group prob) f
     f = toList . last . forward result
 
