@@ -20,7 +20,7 @@ module Vision.Classifier (
      Feature, TwoGroups, Dicotomizer, multiclass,
      Weights, WeightedDicotomizer, unweight, weight, 
 -- * Simple classifiers
-     Distance, distance, ordinary, mahalanobis, mahalanobis', closestNeighbour,
+     Distance, distance, ordinary, mahalanobis, mahalanobis', closestNeighbour, subspace,
      mse, mseWeighted, distWeighted,
      stumps,
 -- * Meta algorithms
@@ -437,6 +437,11 @@ closestNeighbour :: Distance
 closestNeighbour vs v = minimum (map (dist v) vs)
     where dist x y = norm (x-y)
 
+-- | distance to the pca subspace of each class
+subspace :: PCARequest -> Distance
+subspace rq vs = f where
+    Codec {encodeVector = e, decodeVector = d} = pca rq (stat (fromRows vs))
+    f v = norm (v - (d.e) v)
 
 -- | A generic distance-based learning machine.
 distance :: Distance -> Learner

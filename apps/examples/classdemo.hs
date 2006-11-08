@@ -58,3 +58,4 @@ problem = breakTies 0 0.1 (sshape 500) -- rings 500
 
 main = mapM_ (study problem) machines
 
+

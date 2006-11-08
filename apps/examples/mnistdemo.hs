@@ -55,6 +55,7 @@ main = do
 
 withPCA rq = withPreprocess (mef rq)
 
+-- a multilayer perceptron
 main' = do
     m <- fromFile "mnist.txt" (5000,785)
     let vs = toRows (takeColumns 784 m)
@@ -88,3 +89,37 @@ Confusion matrix:
 
 1.15 %
 -}
+
+-- distance to pca subspace
+main'' = do
+    m <- fromFile "mnist.txt" (5000,785)
+    let vs = toRows (takeColumns 784 m)
+    let ls = map (show.round) $ toList $ flatten $ dropColumns 784 m
+    let mnist = zip vs ls
+    let (train, test) = splitAt 4000 mnist
+    let c = fst$ distance (subspace (ReconstructionQuality 0.8)) (train)
+    putStr "Estimated error probability: "
+    shErr test c
+    putStrLn "Confusion matrix: "
+    shConf test c
+    shErr train c
+
+partit _ [] = []
+partit n l  = take n l : partit n (drop n l)
+
+-- show eigenvectors
+showeig k = do
+    m <- fromFile "mnist.txt" (5000,785)
+    let vs = toRows (takeColumns 784 m)
+    let ls = map (show.round) $ toList $ flatten $ dropColumns 784 m
+    let mnist = zip vs ls
+    let (train, test) = splitAt 4000 mnist
+    let gs = fst $ group train
+    let g = gs!!k
+    let images = map (reshape 28) g
+    imshow $ fromBlocks $ partit 4 $ take 16 images
+    let Stat {meanVector = m, eigenvectors = v'} = stat (fromRows g)
+    let v = toRows v'
+    imshow $ fromBlocks $ map (map (reshape 28)) $ partit 4 $ take 16 v
+    imshow $ fromBlocks $ map (map (reshape 28)) $  
+        [[ m + 1000*v!!k, m - 1000*v!!k] | k <- [0..5]]
