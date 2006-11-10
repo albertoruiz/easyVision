@@ -60,8 +60,8 @@ classifyTest n1 n2 numErr = do
     let (train',test') = (take n1 mnist, drop (5000-n2) mnist)
 
     let st = stat (fromRows $ map fst train')
-    let codec = pca (ReconstructionQuality 0.8) st
-    let (train,test) = (preprocess codec train', preprocess codec test')
+    let f = encodeVector $ pca (ReconstructionQuality 0.8) st
+    let (train,test) = (preprocess f train', preprocess f test')
     let c = fst $ distance mahalanobis train
     let e = errorRate test c
     let m = confusion test c

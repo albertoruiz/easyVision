@@ -6,6 +6,10 @@
 
 import GSL
 import Vision
+import Debug.Trace
+
+debug x = trace (show x) x
+debug' msg x = trace (msg ++ show x) x
 
 shErr d c = putStrLn $ (show $ 100 * errorRate d c) ++ " %"
 shConf d c = putStrLn $ format " " (show.round) (confusion d c)
@@ -56,22 +60,7 @@ main = do
 withPCA rq = withPreprocess (mef rq)
 
 -- a multilayer perceptron
-main' = do
-    m <- fromFile "mnist.txt" (5000,785)
-    let vs = toRows (takeColumns 784 m)
-    let ls = map (show.round) $ toList $ flatten $ dropColumns 784 m
-    let mnist = zip vs ls
-    let (train, test) = splitAt 4000 mnist
-    --let g = normalizeAttr train
-    --let (r,e) = neural' 0.001 0.01 10 [20] (take 1000 (preprocess g train))
-    --mplot [fromList e]
-    --let c = fst$ withPCA (NewDimension 10) (withPreprocess normalizeAttr (neural 0.01 0.1 10 [20])) (train)
-    let c = fst$ (withPreprocess normalizeAttr (neural 0.001 0.01 50 [30,20])) (train)
-    putStr "Estimated error probability: "
-    shErr test c
-    putStrLn "Confusion matrix: "
-    shConf test c
-    shErr train c
+main' = study $ withPreprocess normalizeAttr (neural 0.001 0.01 50 [30,20])
 
 {-
 9.700000000000001 %
@@ -90,19 +79,23 @@ Confusion matrix:
 1.15 %
 -}
 
--- distance to pca subspace
-main'' = do
+
+study method = do
     m <- fromFile "mnist.txt" (5000,785)
     let vs = toRows (takeColumns 784 m)
     let ls = map (show.round) $ toList $ flatten $ dropColumns 784 m
     let mnist = zip vs ls
     let (train, test) = splitAt 4000 mnist
-    let c = fst$ distance (subspace (ReconstructionQuality 0.8)) (train)
+    let c = fst$ method train
     putStr "Estimated error probability: "
     shErr test c
     putStrLn "Confusion matrix: "
     shConf test c
     shErr train c
+
+-- distance to pca subspace
+main'' = study $ distance (subspace (ReconstructionQuality 0.8))
+
 
 partit _ [] = []
 partit n l  = take n l : partit n (drop n l)
