@@ -21,16 +21,19 @@ module GSL.Polynomials (
 
 import GSL.Types
 import GSL.Wrappers
+import GSL.Common(fromList, toList)
 
 {- | Solution of general polynomial equations, using /gsl_poly_complex_solve/. For example,
      the three solutions of x^3 + 8 = 0
 
-@\> polySolve $ 'realVector' [8,0,0,1]
--2.  1.+1.732i  1.-1.732i@
+@\> polySolve [8,0,0,1]
+[(-1.9999999999999998) :+ 0.0,
+ 1.0 :+ 1.732050807568877,
+ 1.0 :+ (-1.732050807568877)]@
 
 The example in the GSL manual: To find the roots of x^5 -1 = 0:
 
-@\> 'GSL.Interface.toList' $ polySolve ('realVector' [-1, 0, 0, 0, 0, 1]) 
+@\> polySolve [-1, 0, 0, 0, 0, 1]
 [(-0.8090169943749475) :+ 0.5877852522924731,
 (-0.8090169943749475) :+ (-0.5877852522924731),
 0.30901699437494734 :+ 0.9510565162951536,
@@ -38,6 +41,9 @@ The example in the GSL manual: To find the roots of x^5 -1 = 0:
 1.0 :+ 0.0]@
 
 -}  
-polySolve :: Vector Double -> Vector (Complex Double)
-polySolve x@(V n p) = createV [p] "polySolve" (n-1) $ v c_polySolve x
+polySolve :: [Double] -> [Complex Double]
+polySolve = toList . polySolve' . fromList
+
+polySolve' :: Vector Double -> Vector (Complex Double)
+polySolve' x@(V n p) = createV [p] "polySolve" (n-1) $ v c_polySolve x
 foreign import ccall "gslaux.h polySolve" c_polySolve:: TVCV
