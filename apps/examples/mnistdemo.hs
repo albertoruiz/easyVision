@@ -80,12 +80,37 @@ Confusion matrix:
 -}
 
 
+horiz x =  (reshape 28 x) <> constant (1/28::Double) 28
+vert x = constant (1/28::Double) 28 <> (reshape 28 x)
+
+both x = join [horiz x,vert x]
+
+-- use withPreprocess (const both) (or const horiz, etc.)
+-- the results with projections are clearly worse
+{-
+study (withPreprocess (const both)$ withPCA (ReconstructionQuality 0.9) $ distance mahalanobis')
+Estimated error probability: 13.4 %
+Confusion matrix:
+98   1  0  0  0  0  1   0  0  0
+ 1 110  1  1  0  3  0   1  2  0
+ 0   0 72  5  1  6  4   0  3  0
+ 0   0  2 79  0 11  0   2  6  1
+ 0   0  2  0 98  0  0   0  0  5
+ 0   0  2  9  1 57  2   4  6  3
+ 1   1  2  0  0  052.5 91   0  1  0
+ 1   0  1  2  0  1  0 109  0  3
+ 0   6  2  1  0  4  1   2 72  1
+ 0   0  3  1  9  1  0   4  0 80
+
+12.6 %
+
+mahalanobis (basic) 20%, ordinary 34%, closestNeighbour -> 16.8, subspace ( ReconstructionQuality 0.9) -> 32%
+
+with mahalanobis': horiz -> 20.7, vert -> 51.4
+-}
+
 study method = do
-    m <- fromFile "mnist.txt" (5000,785)
-    let vs = toRows (takeColumns 784 m)
-    let ls = map (show.round) $ toList $ flatten $ dropColumns 784 m
-    let mnist = zip vs ls
-    let (train, test) = splitAt 4000 mnist
+    (train, test) <- mnistraw 4000
     let c = fst$ method train
     putStr "Estimated error probability: "
     shErr test c
@@ -102,11 +127,7 @@ partit n l  = take n l : partit n (drop n l)
 
 -- show eigenvectors
 showeig k = do
-    m <- fromFile "mnist.txt" (5000,785)
-    let vs = toRows (takeColumns 784 m)
-    let ls = map (show.round) $ toList $ flatten $ dropColumns 784 m
-    let mnist = zip vs ls
-    let (train, test) = splitAt 4000 mnist
+    (train, test) <- mnistraw 4000
     let gs = fst $ group train
     let g = gs!!k
     let images = map (reshape 28) g

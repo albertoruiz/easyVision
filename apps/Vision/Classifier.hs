@@ -44,7 +44,7 @@ module Vision.Classifier (
 ) where
 
 import GSL
-import Data.List(sortBy, sort, nub, elemIndex, intersperse, transpose, partition)
+import Data.List(sortBy, sort, nub, elemIndex, intersperse, transpose, partition, delete)
 import qualified Data.Map as Map
 import System.Random
 import System
@@ -183,6 +183,9 @@ rot k (x:xs) = rot (k-1) (xs++[x])
 rots l = map ((flip rot) l) [0 .. length l - 1]
 auxgroup l = map (\(x:xs) -> (x, concat xs)) (rots l)
 
+-- auxgroup x = zip x (map (concat . flip delete x) x)
+
+
 -- | Constructs a (multiclass) 'Learner' given any 'Dicotomizer' (by creating n features to discriminate each class against the rest)
 multiclass :: Dicotomizer -> Learner
 multiclass bin exs = (createClassifier lbs f, f) where
@@ -220,7 +223,7 @@ meancov x = (m,c) where
     st = stat x
 
 -- warning: we assume descending order in eigR (!?)
--- | Most discriminant linear features
+-- | Most discriminant linear features (lda)
 mdf :: [Example] -> (Vector Double -> Vector Double)
 mdf exs = f where
     f x = (x - m) <> v'
@@ -747,7 +750,7 @@ adaptNet s = x where
     des k c = vector$ replicate (k-1) (-1) ++ [1] ++ replicate (c-k) (-1)
     x = [(v, des (1+getIndex lbs l) c) | (v,l) <- s]
 
--- | multilayer perceptron with alpha parameter and desired number of units in the hidden units
+-- | multilayer perceptron with alpha parameter and desired number of units in the hidden layers
 neural     :: Double -- ^ alpha (e.g. 0.1)
            -> Double -- ^ maxerr (e.g. 0.05)
            -> Int    -- ^ maxepochs (100-1000) 
