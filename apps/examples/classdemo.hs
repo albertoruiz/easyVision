@@ -41,8 +41,8 @@ xor = [
 
 
 machines = [ (distance ordinary, "ordinary distance")
-           , (distance mahalanobis', "Mahalanobis distance")
-           , (distance closestNeighbour, "nearest Neigbour")
+           , (distance gaussian, "gaussian distance")
+           , (distance nearestNeighbour, "nearest Neigbour")
            , (multiclass mse, "linear mse")
            , (multiclass (treeOf (branch 0) (unweight stumps)), "tree of stumps")
            , (multiclass (adaboost 50 stumps), "adaboost 50 stumps")
@@ -54,8 +54,6 @@ machines = [ (distance ordinary, "ordinary distance")
            , (multiclass $ adaboost 10 $ weight 17 ( treeOf (branch 5) (perceptron 0.1 0.1 10 [2])),"combination")
            ]
 
-problem = breakTies 0 0.1 (sshape 500) -- rings 500
+problem = addNoise 0 0.1 (sshape 500) -- rings 500
 
 main = mapM_ (study problem) machines
-
-

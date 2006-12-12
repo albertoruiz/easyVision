@@ -20,7 +20,7 @@ module Vision.Classifier (
      Feature, TwoGroups, Dicotomizer, multiclass,
      Weights, WeightedDicotomizer, unweight, weight, 
 -- * Simple classifiers
-     Distance, distance, ordinary, mahalanobis, mahalanobis', closestNeighbour, subspace,
+     Distance, distance, ordinary, mahalanobis, gaussian, nearestNeighbour, subspace, robustLoc,
      mse, mseWeighted, distWeighted,
      stumps,
 -- * Meta algorithms
@@ -36,7 +36,7 @@ module Vision.Classifier (
 -- * Kernel machines
      Kernel, polyK, gaussK, kernelMSE, kernelMSE',
 -- * Utilities
-     errorRate, confusion, combined, InfoLabels(..), group, ungroup, createClassifier, scramble, breakTies, selectClasses, splitProportion, posMax, preprocess, normalizeAttr,
+     errorRate, confusion, combined, InfoLabels(..), group, ungroup, createClassifier, scramble, addNoise, selectClasses, splitProportion, posMax, preprocess, normalizeAttr,
 -- * 2D toy problems
 -- | You can take a look at them using 'combined'.
      linsep, linsepmulti, nosep, ring, moon, rings, sshape, mnist, mnistraw
@@ -116,9 +116,9 @@ scramble :: Int -> [a] -> [a]
 scramble seed l = map fst $ sortBy (compareBy snd) randomTuples where
     randomTuples = zip l (randomRs (0, 1::Double) (mkStdGen seed))
 
--- | add noise to break ties
-breakTies :: Int -> Double -> Sample -> Sample
-breakTies seed sz l = zip rvs lbs where
+-- | add noise to the attributes
+addNoise :: Int -> Double -> Sample -> Sample
+addNoise seed sz l = zip rvs lbs where
     (vs,lbs) = unzip l
     n = size (head vs)
     randomVectors = map vector $ partit n $ randomRs (-sz, sz::Double) (mkStdGen seed)
@@ -278,13 +278,13 @@ study prob meth = do
     print (confusion test c)
     combined 100 2.5 (fromIntegral.posMax.f) train@
 
-@\> study (nosep 500) (distance mahalanobis')@
+@\> study (nosep 500) (distance gaussian)@
 
 @\> study (nosep 500) (multiclass mse)@
 
 @\> study (rings 2000) (multiclass (adaboost 100 stumps))@
 
-@\> study (breakTies 100 0.00001 (rings 2000))
+@\> study (addNoise 100 0.00001 (rings 2000))
           (multiclass (treeOf (branch 0) (unweight stumps)))@
 
 -}
@@ -423,8 +423,8 @@ mahalanobis vs = f where
     f x = (x-m) <> ic <> (x-m)
 
 -- | gaussian -log likelihood (mahalanobis + 1\/2 log sqrt det cov)
-mahalanobis' :: Distance
-mahalanobis' vs = f where
+gaussian :: Distance
+gaussian vs = f where
     Stat {meanVector = m, invCov = ic} = stat (fromRows vs)
     k = -log (sqrt (abs( det ic)))
     f x = k + 0.5*((x-m) <> ic <> (x-m))
@@ -436,8 +436,8 @@ ordinary vs = f where
     f x = norm (x-m)
 
 -- | distance to the nearest neighbour
-closestNeighbour :: Distance
-closestNeighbour vs v = minimum (map (dist v) vs)
+nearestNeighbour :: Distance
+nearestNeighbour vs v = minimum (map (dist v) vs)
     where dist x y = norm (x-y)
 
 -- | distance to the pca subspace of each class
@@ -445,6 +445,15 @@ subspace :: PCARequest -> Distance
 subspace rq vs = f where
     Codec {encodeVector = e, decodeVector = d} = pca rq (stat (fromRows vs))
     f v = norm (v - (d.e) v)
+
+-- | distance to the robust location (with proportion prop)
+robustLoc :: Double -> Distance
+robustLoc prop l = f where
+    dist x y = norm (x-y)
+    f = dist m
+    m = fst (ds!!k)
+    ds = robustLocation dist l
+    k = round (prop*fromIntegral(length l)) -- wrong
 
 -- | A generic distance-based learning machine.
 distance :: Distance -> Learner
@@ -471,7 +480,7 @@ weight seed dic (g1,g2) w = dic (g1',g2') where
     rs = take (length ac) $ randomRs (0, 1::Double) (mkStdGen seed)
     rul = zip ac s
     elm pos = snd $ head $ fst $ partition ((>pos).fst) rul
-    [g1',g2'] = fst (group (breakTies seed 0.0001 $ map elm rs))
+    [g1',g2'] = fst (group (addNoise seed 0.0001 $ map elm rs))
 
 
 -- | an extremely simple learning machine

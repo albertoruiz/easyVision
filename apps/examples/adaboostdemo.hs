@@ -63,7 +63,7 @@ pruprob = zip [vector [k,0] | k <- [0,0.1 .. ]] ["a","a","a","a","a","b","b","a"
 
 pru = do
     seed <- randomIO
-    let prob = (breakTies seed 0.001 pruprob)
+    let prob = (addNoise seed 0.001 pruprob)
     let (c,f) = classstumps 1 prob
     print (errorRate prob c)
     dispR 2 (confusion prob c)
@@ -100,7 +100,7 @@ testMNIST = do
     let (c,f) = distance mahalanobis train
     print (errorRate test c)
     dispR 2 (confusion test c)
-    let (c,f) = distance mahalanobis' train
+    let (c,f) = distance gaussian train
     print (errorRate test c)
     dispR 2 (confusion test c)
     let (c,f) = classstumps 10 train
@@ -122,7 +122,7 @@ adamnist = do
     print (errorRate test c)
     dispR 2 (confusion test c)
     putStrLn "mahalanobis distance"
-    let (c,f) = distance mahalanobis' train
+    let (c,f) = distance gaussian train
     print (errorRate train c)
     print (errorRate test c)
     dispR 2 (confusion test c)
@@ -140,7 +140,7 @@ adamnist = do
 adamnistraw = do
     (train', test') <- mnistraw 4000
     let sel = ["9","7","4"]
-    let (train,test) = (breakTies 100 0.001 $ selectClasses sel train', selectClasses sel test')
+    let (train,test) = (addNoise 100 0.001 $ selectClasses sel train', selectClasses sel test')
     putStrLn "ordinary distance"
     let (c,f) = distance ordinary train
     print (errorRate train c)
@@ -158,7 +158,7 @@ adamnistraw = do
         print (errorRate test c)
         dispR 2 (confusion test c)
         putStrLn "nearest neighbour"
-        let (c,f) = (distance closestNeighbour) train
+        let (c,f) = (distance nearestNeighbour) train
         --print (errorRate train c)
         print (errorRate test c)
         dispR 2 (confusion test c)
@@ -216,7 +216,7 @@ prucurves 1 = do
     seed <- randomIO
     (train', test') <- mnistraw 4000
     let sel = ["9","7"]
-    let (train,test) = (breakTies seed 0.001 (selectClasses sel train'),
+    let (train,test) = (addNoise seed 0.001 (selectClasses sel train'),
                                                 selectClasses sel test')
     adaboostCurves 100 stumps (train,test)
 

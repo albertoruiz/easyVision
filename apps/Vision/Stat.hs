@@ -21,9 +21,12 @@ module Vision.Stat
 
 , PCARequest(..)
 , pca
+
+, robustLocation
 ) where
 
 import GSL
+import Data.List(transpose,sortBy,minimumBy)
 
 type RVector = Vector Double
 type RMatrix = Matrix Double
@@ -106,3 +109,19 @@ pca (ReconstructionQuality prec) st = pca (NewDimension n) st where
     prec' = if prec <=0.0 || prec >= 1.0
                 then error "the reconstruction quality must be 0<prec<1"
                 else prec
+
+
+on f g = \x y -> f (g x) (g y)
+
+{- | PedroE's algorithm. For example, with @dist x y = abs (x-y)@ we have:
+
+@> robustLocation dist [1,2,3,11,12,13,14,15::Double]
+[(1.0,0.0),(1.0,1.0),(2.0,1.0),(12.0,2.0),(13.0,2.0),(11.0,8.0),(11.0,9.0),(11.0,10.0)]@
+
+-}
+robustLocation :: Ord b => (a -> a -> b) -> [a] -> [(a,b)]
+robustLocation dis l = mins where
+    mins = map (minimumBy (compare `on` snd)) dst
+    dst = transpose ds
+    ds = map getdis l
+    getdis p = sortBy (compare `on` snd) [(p, dis p y) | y<-l]

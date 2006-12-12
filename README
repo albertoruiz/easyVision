@@ -13,6 +13,11 @@ src$ runhaskell Setup.hs configure -p --prefix=$HOME
 src$ runhaskell Setup.hs build
 src$ runhaskell Setup.hs install --user
 
+A local version of the documentation can be generated in dist/doc/html by
+
+src$ runhaskell Setup.hs haddock
+
+
 NOTE: The library must be used from another directory. For instance:
 
 $ cd ../examples

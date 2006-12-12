@@ -29,7 +29,7 @@ comparedist (train,test) codec = do
     putStrLn "-- with Mahalanobis distance --"
     work problem (distance mahalanobis)
     putStrLn "-- with Mahalanobis distance + log det sigma --"
-    work problem (distance mahalanobis')
+    work problem (distance gaussian)
     putStrLn "-- with ordinary distance --"
     work problem (distance ordinary)
 
@@ -104,9 +104,9 @@ Confusion matrix:
 
 12.6 %
 
-mahalanobis (basic) 20%, ordinary 34%, closestNeighbour -> 16.8, subspace ( ReconstructionQuality 0.9) -> 32%
+mahalanobis (basic) 20%, ordinary 34%, nearestNeighbour -> 16.8, subspace ( ReconstructionQuality 0.9) -> 32%
 
-with mahalanobis': horiz -> 20.7, vert -> 51.4
+with gaussian: horiz -> 20.7, vert -> 51.4
 -}
 
 study method = do

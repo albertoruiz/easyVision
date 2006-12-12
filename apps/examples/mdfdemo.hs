@@ -16,7 +16,7 @@ withMDF = withPreprocess mdf
 shErr d c = putStrLn $ (show $ 100 * errorRate d c) ++ " %"
 shConf d c = putStrLn $ format " " (show.round) (confusion d c)
 
-showDist2d = combined 100 0.1 (@>0)
+showDist2d = combined "notitle" 100 0.1 (@>0)
 
 study' prob meth = do
     let (train,test) = prob
@@ -52,10 +52,10 @@ main = do
     putStr "mdf pca .9 dist "
     study' rawproblem (withPCA (ReconstructionQuality 0.9) $ withMDF $ distance ordinary)
     putStr "pca 20 maha "
-    study' rawproblem (withPCA (NewDimension 20) $ distance mahalanobis')
+    study' rawproblem (withPCA (NewDimension 20) $ distance gaussian)
     putStr "mdf pca 20 maha "
-    study' rawproblem (withPCA (NewDimension 20) $ withMDF $ distance mahalanobis')
+    study' rawproblem (withPCA (NewDimension 20) $ withMDF $ distance gaussian)
     putStr "pca .9 maha "
-    study' rawproblem (withPCA (ReconstructionQuality 0.9) $ distance mahalanobis')
+    study' rawproblem (withPCA (ReconstructionQuality 0.9) $ distance gaussian)
     putStr "mdf pca .9 maha "
-    study' rawproblem (withPCA (ReconstructionQuality 0.9) $ withMDF $ distance mahalanobis')
+    study' rawproblem (withPCA (ReconstructionQuality 0.9) $ withMDF $ distance gaussian)
