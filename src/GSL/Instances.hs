@@ -18,7 +18,8 @@ Creates reasonable numeric instances for Vectors and Matrices. In the context of
 module GSL.Instances where
 
 import GSL.Types
-import GSL.Matrix
+import GSL.LinearAlgebra.Vector
+import GSL.LinearAlgebra.Matrix
 import GSL.Wrappers
 import GSL.Common
 import Complex

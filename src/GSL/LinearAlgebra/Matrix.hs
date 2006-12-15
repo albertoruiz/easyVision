@@ -1,7 +1,7 @@
 {-# OPTIONS  #-}
 -----------------------------------------------------------------------------
 {- |
-Module      :  GSL.Matrix
+Module      :  GSL.LinearAlgebra.Matrix
 Copyright   :  (c) Alberto Ruiz 2006
 License     :  GPL-style
 
@@ -15,32 +15,21 @@ Basic operations on vectors and matrices
 
 -}
 -----------------------------------------------------------------------------
-module GSL.Matrix (
-    -- * Base types
-    -- | This library works with ...
-    Field, Container,
-    -- * Vectors
-    Vector, size, (@>),
-    fromList, toList,
-    fromArray1D, toArray1D,
-    -- * Matrices
+module GSL.LinearAlgebra.Matrix (
+    -- * The matrix type
     Matrix, rows, cols, (@@>),
     fromLists, toLists,
     fromArray2D, toArray2D,
     -- * Matrix manipulation
-    subVector, join,
     subMatrix, fromBlocks, (<|>), (<->),
     fromRows, toRows, fromColumns, toColumns,
     takeRows, takeColumns, dropRows, dropColumns,
     reshape, flatten,
     asRow, asColumn,
-    toComplex, fromComplex, complex,
     flipud, fliprl, extractRows, triang,
-    gmap, gzip,
-    -- * Utilities
-    diag, takeDiag, conj,
+    diag, takeDiag, 
     trans, ident,
-    constant, linspace, vectorMax, vectorMin, vectorMaxIndex, vectorMinIndex,
+    -- * Utilities
     format, disp, dispR, dispC, fromFile, readMatrix
 
 ) where

@@ -10,7 +10,7 @@
 -- Stability   :  provisional
 -- Portability :  portable (uses FFI)
 --
--- basic definitions useful for both vectors and matrices
+-- Fundamental types
 --
 -----------------------------------------------------------------------------
 

@@ -27,20 +27,15 @@ genfft code x@(V n p) = createV [p] "fft" n $ v (c_fft code) x
 foreign import ccall "gslaux.h fft" c_fft ::  Int -> TCVCV
 
 
-{- | fast 1D Fourier transform of a vector using /gsl_fft_complex_forward/. It uses the same scaling conventions as GNU Octave.
+{- | Fast 1D Fourier transform of a 'Vector' @(@'Complex' 'Double'@)@ using /gsl_fft_complex_forward/. It uses the same scaling conventions as GNU Octave.
 
-@> fft ('complexVector' [1,2,3,4])
-10.  -2.+2.i  -2.  -2.-2.i@
+@> fft ('GSL.Matrix.fromList' [1,2,3,4])
+vector (4) [10.0 :+ 0.0,(-2.0) :+ 2.0,(-2.0) :+ 0.0,(-2.0) :+ (-2.0)]@
 
 -}
 fft :: Vector (Complex Double) -> Vector (Complex Double)
 fft = genfft 0
 
-{- | inverse 'fft' using /gsl_fft_complex_inverse/.
-
-@> ifft ('complexVector' [0,2-2*'i',0,2+2*'i'])
-1.  1.  -1.  -1.@
-
--}
+-- | The inverse of 'fft', using /gsl_fft_complex_inverse/.
 ifft :: Vector (Complex Double) -> Vector (Complex Double)
 ifft = genfft 1

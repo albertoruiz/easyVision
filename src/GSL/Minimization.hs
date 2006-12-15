@@ -23,7 +23,8 @@ module GSL.Minimization (
 import Foreign
 import GSL.Types
 import GSL.Wrappers
-import GSL.Matrix
+import GSL.LinearAlgebra.Vector
+import GSL.LinearAlgebra.Matrix
 
 -- | auxiliary function used by 'minimize'
 

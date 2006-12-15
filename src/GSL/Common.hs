@@ -37,7 +37,7 @@ common f = commonval . map f where
     commonval (a:b:xs) = if a==b then commonval (b:xs) else Nothing
 
 
--- | Creates a vector from a list.  
+-- | Creates a 'Vector' from a list.
 fromList :: (Storable a) => [a] -> Vector a
 fromList [] = error "trying to create an empty GSL vector"
 fromList l = unsafePerformIO $ do
@@ -47,7 +47,7 @@ fromList l = unsafePerformIO $ do
         pokeArray p l
     return (V n p)
 
--- | Creates a list from a vector.
+-- | The inverse of 'fromList'.
 toList :: (Storable t) => Vector t -> [t]
 toList (V n p) = unsafePerformIO $ withForeignPtr p $ peekArray n
 
@@ -155,7 +155,6 @@ diag = diagM
 
 takeDiag :: Field a => Matrix a -> Vector a
 takeDiag = takeDiagM
-
 
 
 class Container t where
@@ -285,30 +284,6 @@ complex = asComplexG
 
 ------------------------------------------------------------------
 
-{- | Creates a vector from a standard Haskell @StorableArray@ indexed by @(Int)@:
-
->import GSL
->import Data.Array.Storable
->
->main = do 
->    hv <- newArray (1,10) 37 
->    print (bounds hv)
->    els <- getElems hv
->    print els
->    v <- fromStorableArray1D hv :: IO (CVector)
->    print v
->    print (norm v)
->
->> main
->(1,10)
->[37.0 :+ 0.0,37.0 :+ 0.0,37.0 :+ 0.0, (etc.),37.0 :+ 0.0]
->37.  37.  37.  37.  37.  37.  37.  37.  37.  37.
->
->117.00427342623003
-
-The toList are efficiently copied using @withStorableArray@ and @copyArray@.
-
--}
 fromStorableArray1D :: Storable t => StorableArray Int t -> IO (Vector t)
 fromStorableArray1D arr = do
     (l,u) <- getBounds arr
@@ -319,10 +294,6 @@ fromStorableArray1D arr = do
             copyArray p parr n
     return (V n p)
 
-
-{- | Creates a @StorableArray@ indexed by @(Int)@ from a Vector. The toList are efficiently copied using @withStorableArray@ and @copyArray@.
-
--}
 toStorableArray1D :: Storable t => Vector t -> IO(StorableArray Int t)
 toStorableArray1D (V n p) = do
     arr <- newArray_ (0, n-1) 
@@ -330,9 +301,11 @@ toStorableArray1D (V n p) = do
         withStorableArray arr $ \parr -> copyArray parr p n
     return arr
 
+-- | Creates a 'Vector' from an ordinary Haskell 'Array' @(@'Int'@)@. (It is transformed into a 'StorableArray' and then efficiently copied using 'withStorableArray' and 'copyArray'.)
 fromArray1D :: Storable t => Array Int t -> Vector t
 fromArray1D arr = unsafePerformIO $ thaw arr >>= fromStorableArray1D
 
+-- | The inverse of 'fromArray1D'.
 toArray1D :: Storable t => Vector t -> Array Int t
 toArray1D v = unsafePerformIO $ toStorableArray1D v >>= freeze
 
@@ -371,9 +344,6 @@ instance (Field a, Show a) => Show (Matrix a) where
 
 -----------------------------------------------------------------------------
 
-{- | Creates a matrix from a standard Haskell @StorableArray@ indexed by @(Int,Int)@. The toList are efficiently copied using @withStorableArray@ and @copyArray@.
-
--}
 fromStorableArray2D :: Storable t => StorableArray (Int,Int) t -> IO (Matrix t)
 fromStorableArray2D arr = do
     ((r1,c1),(r2,c2)) <- getBounds arr
@@ -385,11 +355,6 @@ fromStorableArray2D arr = do
             copyArray p parr (r*c)
     return (M r c p)
 
-{- | Creates @StorableArray@ indexed by @(Int,Int)@ from a matrix.
-
-The toList are efficiently copied using @withStorableArray@ and @copyArray@.
-
--}
 toStorableArray2D :: Storable t => Matrix t -> IO(StorableArray (Int,Int) t)
 toStorableArray2D (M r c p) = do
     arr <- newArray_ ((0,0),(r-1,c-1)) 
@@ -397,22 +362,23 @@ toStorableArray2D (M r c p) = do
         withStorableArray arr $ \ptr -> copyArray ptr p (r*c)
     return arr
 
+-- | Creates a 'Matrix' from an ordinary Haskell 'Array' @(@'Int'@,@'Int'@)@. (It is transformed into a 'StorableArray' and then efficiently copied using 'withStorableArray' and 'copyArray'.)
 fromArray2D :: Storable t => Array (Int,Int) t -> Matrix t
 fromArray2D arr = unsafePerformIO $ thaw arr >>= fromStorableArray2D
 
+-- | The inverse of 'fromArray2D'.
 toArray2D :: Storable t => Matrix t -> Array (Int,Int) t
 toArray2D m = unsafePerformIO $ toStorableArray2D m >>= freeze
 
 ---------------------------------------------------------------
 
--- | Creates a matrix from a list of lists (considered as rows). Related functions: 'GSL.Interface.realMatrix', 'GSL.Interface.complexMatrix', 'fromRows', 'fromColumns', 'fromStorableArray2D', 'fromFile', and 'gslReadMatrix'.
+-- | Creates a 'Matrix' from a list of lists (considered as rows).
 fromLists :: Storable t => [[t]] -> Matrix t
 fromLists = fromRows . map fromList
 
--- | Creates a list of lists from the rows o a matrix
+-- | The inverse of 'fromLists'
 toLists :: Storable t => Matrix t -> [[t]]
 toLists = map toList . toRows
-
 
 ----------------------------------------------------------------
 
@@ -599,4 +565,26 @@ a <|> b = joinH a b
 -- | Vertical concatenation of matrices and vectors.
 (<->) :: (Joinable a b c) => a -> b -> c
 a <-> b = joinV a b
+
+{- | Machine precision of a Double.     
+
+>> eps
+> 2.22044604925031e-16
+
+(The value used by GNU-Octave)
+
+-}
+eps :: Double
+eps =  2.22044604925031e-16
+
+{- | The imaginary unit
+
+@> 'ident' 3 \<\> i
+1.i   0.   0.
+ 0.  1.i   0.
+ 0.   0.  1.i@
+
+-}
+i :: Complex Double
+i = 0:+1 
 
