@@ -43,7 +43,7 @@ asComplex (V n p) = V (n `quot` 2) (castForeignPtr p)
 
 {- | Creates a matrix from a vector by grouping the elements in rows with the desired number of columns.
 
-@\> reshape 4 ('GSL.Interface.realVector' [1..12])
+@\> reshape 4 ('fromList' [1..12])
 1.  2.  3.  4.
 5.  6.  7.  8.
 9. 10. 11. 12.@
@@ -61,10 +61,8 @@ reshape c (V n p) | n `rem` c /= 0 = error "reshape"
 flatten :: Matrix t -> Vector t
 flatten (M r c p) = V (r*c) p
 
--- | Reads a vector position
-(@>) :: (Storable t) => Vector t -> Int -> t
-infixl 9 @>
-(V n p) @> k
+
+(V n p) `at` k
     | k<0 || k>=n = error "vector indexing out of range"
     | otherwise   = unsafePerformIO $ do
                         withForeignPtr p $ \p ->
@@ -266,7 +264,7 @@ foreign import ccall "gslaux.h vector_offset" c_vectorOffset :: Double -> TVV
 
 -- | obtains different functions of a vector: norm1, norm2, max, min, posmax, posmin, etc.
 toScalar :: Int -> RVector -> Double
-toScalar code x@(V n p) =  (createV [p] "toScalar" 1 $ v (c_toScalar code) x) @> 0
+toScalar code x@(V n p) =  (createV [p] "toScalar" 1 $ v (c_toScalar code) x) `at` 0
 foreign import ccall "gslaux.h toScalar" c_toScalar :: Int -> TVV
 
 -- | Mapeo de vectores con una función deseada
@@ -295,7 +293,7 @@ foreign import ccall "gslaux.h vectorZip" c_vectorZip :: Int -> TVVV
 > 2.000 1.000
 
 -}
-eigSg :: Matrix Double -> (Vector Double, Matrix Double)
+--eigSg :: Matrix Double -> (Vector Double, Matrix Double)
 eigSg x@(M r c p) = unsafePerformIO $ do
     l <- mallocForeignPtrArray r
     v <- mallocForeignPtrArray (r*r)
@@ -326,7 +324,7 @@ foreign import ccall "gslaux.h eigensystemR" c_eigS :: TMVM
 > (2.000,-1.000)         3.000
 
 -}
-eigHg :: Matrix (Complex Double)-> (Vector Double, Matrix (Complex Double))
+--eigHg :: Matrix (Complex Double)-> (Vector Double, Matrix (Complex Double))
 eigHg x@(M r c p) = unsafePerformIO $ do
     l <- mallocForeignPtrArray r
     v <- mallocForeignPtrArray (r*r)
@@ -340,7 +338,7 @@ foreign import ccall "gslaux.h eigensystemC" c_eigH :: TCMVCM
 
 {- | Singular value decomposition of a real matrix, using /gsl_linalg_SV_decomp_mod/:
 
-@\> let (u,s,v) = svd $ 'GSL.Interface.fromLists' [[1,2,3],[-4,1,7]]
+@\> let (u,s,v) = svdg $ 'fromLists' [[1,2,3],[-4,1,7]]
 \ 
 \> u
 0.310 -0.951
@@ -354,21 +352,21 @@ foreign import ccall "gslaux.h eigensystemC" c_eigH :: TCMVCM
  0.185 -0.570
  0.893 -0.243
 \  
-\> u \<\> 'GSL.Interface.diag' s \<\> 'GSL.Derived.trans' v
+\> u \<\> 'diag' s \<\> 'trans' v
  1. 2. 3.
 -4. 1. 7.@
 
 -}
-svd :: RMatrix -> (RMatrix, RVector, RMatrix)
+--svdg :: Matrix Double -> (Matrix Double, Vector Double, Matrix Double)
 svd' x@(M r c p) = createMVM [p] "svd" r c c c c $ m c_svd x
 foreign import ccall "gslaux.h svd" c_svd :: TMMVM
-svd x@(M r c _) = if r>=c 
+svdg x@(M r c _) = if r>=c 
     then svd' x
     else (v, s, u) where (u,s,v) = svd' (transR x)
 
 {- | QR decomposition of a real matrix using /gsl_linalg_QR_decomp/ and /gsl_linalg_QR_unpack/.
 
-@\> let (q,r) = qr $ 'GSL.Interface.realMatrix' [[1,3,5,7],[2,0,-2,4]]
+@\> let (q,r) = qr $ 'fromLists' [[1,3,5,7],[2,0,-2,4]]
 \ 
 \> q
 -0.447 -0.894
@@ -383,24 +381,24 @@ svd x@(M r c _) = if r>=c
 2.000    0. -2.000 4.000@
 
 -}
-qr :: RMatrix -> (RMatrix, RMatrix)
+qr :: Matrix Double -> (Matrix Double, Matrix Double)
 qr x@(M r c p) = createMM [p] "QR" r r r c $ m c_qr x
 foreign import ccall "gslaux.h QR" c_qr :: TMMM
 
 {- | Cholesky decomposition of a symmetric positive definite real matrix using /gsl_linalg_cholesky_decomp/.
 
-@\> let c = chol $ 'GSL.Interface.realMatrix' [[5,4],[4,5]]
+@\> let c = chol $ 'fromLists' [[5,4],[4,5]]
 \ 
 \> c
 2.236    0.
 1.789 1.342
 \ 
-\> c \<\> 'GSL.Derived.trans' c
+\> c \<\> 'trans' c
 5.000 4.000
 4.000 5.000@
 
 -}
-chol :: RMatrix -> RMatrix
+chol :: Matrix Double -> Matrix Double
 chol x@(M r _ p) = createM [p] "chol" r r $ m c_chol x
 foreign import ccall "gslaux.h chol" c_chol :: TMM
 
@@ -427,13 +425,13 @@ foreign import ccall "gslaux.h multiplyC" c_multiplyC :: TCMCMCM
 
 {- | efficient multiplication by the inverse of a matrix (for real matrices). 
 -}
-luSolveR :: RMatrix -> RMatrix -> RMatrix
+luSolveR :: Matrix Double -> Matrix Double -> Matrix Double
 luSolveR a@(M r1 c1 p) b@(M r2 c2 q) = createM [p,q] "luSolveR" r1 c2 $ mm c_luSolveR a b
 foreign import ccall "gslaux.h luSolveR" c_luSolveR ::  TMMM
 
 {- | efficient multiplication by the inverse of a matrix (for complex matrices). 
 -}
-luSolveC :: CMatrix -> CMatrix -> CMatrix
+luSolveC :: Matrix (Complex Double) -> Matrix (Complex Double) -> Matrix (Complex Double)
 luSolveC a@(M r1 c1 p) b@(M r2 c2 q) = createM [p,q] "luSolveC" r1 c2 $ mm c_luSolveC a b
 foreign import ccall "gslaux.h luSolveC" c_luSolveC ::  TCMCMCM
 

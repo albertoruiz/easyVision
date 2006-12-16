@@ -83,6 +83,7 @@ type Vector = G.Vector Double
 matrix = fromLists :: [[Double]] -> Matrix
 vector = fromList ::  [Double] -> Vector
 
+svd = svdR'
 
 (!:) = (@>)
 (!!:) = (@@>)

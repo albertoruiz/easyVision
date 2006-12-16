@@ -17,7 +17,10 @@ Some linear algebra algorithms, implemented by means of BLAS, LAPACK or GSL.
 -----------------------------------------------------------------------------
 module GSL.LinearAlgebra.Algorithms (
     -- * Basic linear algebra
-    (<>), mXv, vXm, dot, outer, scale, add, pnorm,
+    -- | The operators of the numeric instances of 'Vector' and 'Matrix' are defined element by element.
+    (<>), mXm, mXv, vXm, dot, outer, scale, --add,
+    -- * Linear Systems
+    luSolveR, luSolveC, inv, pinv, pinvTol, det, 
     -- * Matrix factorizations
     -- ** Eigensystems
     eigR,
@@ -26,20 +29,20 @@ module GSL.LinearAlgebra.Algorithms (
     eigC,
     eigH,
     eigHg,
-    -- ** Singular values
-    svd,
-    svdR,
+    -- ** Singular value decomposition
+    svdg,
+    svdR, svdR',
     full_svd_Rd,
-    svdC,
+    svdC, svdC',
     -- ** QR
     qr,
     -- ** Cholesky
     chol,
     -- ** LU
-    luSolveR, luR,
-    luSolveC, luC,
+    luR,
+    luC,
     -- * Utilities
-     det, inv, pinv, pinvTol, norm
+     pnorm, norm
 ) where
 
 import Complex
@@ -54,7 +57,7 @@ import GSL.Lapack
 
 {- | Pseudoinverse of a real matrix with the default tolerance used by GNU-Octave: the singular values less than max (rows, colums) * greatest singular value * 'eps' are ignored. See 'pinvTol'.
 
-@\> let m = 'realMatrix' [[ 1, 2]
+@\> let m = 'fromLists' [[ 1, 2]
                      ,[ 5, 8]
                      ,[10,-5]]
 \> pinv m
@@ -73,7 +76,7 @@ pinv m = pinvTol 1 m
 {- | Pseudoinverse of a real matrix with the desired tolerance, expressed as a
 multiplicative factor of the default tolerance used by GNU-Octave (see 'pinv').
 
-@\> let m = 'realMatrix' [[1,0,    0]
+@\> let m = 'fromLists' [[1,0,    0]
                      ,[0,1,    0]
                      ,[0,0,1e-10]]
 \ 
@@ -90,7 +93,7 @@ multiplicative factor of the default tolerance used by GNU-Octave (see 'pinv').
 -}
 pinvTol :: Double -> Matrix Double -> Matrix Double
 pinvTol t m = v `mXm` diag s' `mXm` trans u where
-    (u,s,v) = svd m
+    (u,s,v) = svdg m
     sl@(g:_) = toList s
     s' = fromList . map rec $ sl
     rec x = if x < g*tol then 1 else 1/x
@@ -100,10 +103,14 @@ pinvTol t m = v `mXm` diag s' `mXm` trans u where
 
 {- | Outer product of two vectors.
 
-@\> 'realVector' [1,2,3] \`outer\` 'complexVector' [7,0,2*'i',1+'i']
- 7.  0.  2.i  1.+1.i
-14.  0.  4.i  2.+2.i
-21.  0.  6.i  3.+3.i@
+@\> 'fromList' [1,2,3] \`outer\` 'fromList' [7,0,2*'i',1+'i']
+matrix (3x4) [7.0 :+ 0.0,0.0 :+ 0.0,0.0 :+ 2.0,1.0 :+ 1.0,14.0 :+ 0.0,0.0 :+ 0.0,0.0 :+
+4.0,2.0 :+ 2.0,21.0 :+ 0.0,0.0 :+ 0.0,0.0 :+ 6.0,3.0 :+ 3.0]
+\> dispC 2 it
+matrix (3x4)
+ 7. | 0. | 2.i | 1.+1.i
+14. | 0. | 4.i | 2.+2.i
+21. | 0. | 6.i | 3.+3.i@
 
 -}
 outer :: Field a => Vector a -> Vector a -> Matrix a
@@ -129,7 +136,7 @@ inv m = if rows m == cols m
 1.5670506910982311
 @
 
-@\> norm $ 'complexVector' [1,-1,'i',-'i']
+@\> norm $ 'fromList' [1,-1,'i',-'i']
 2.0@
 
 -}
@@ -140,8 +147,8 @@ norm x = pnorm 2 x
 
 {- | The LU decomposition of a square matrix. Is based on /gsl_linalg_LU_decomp/ and  /gsl_linalg_complex_LU_decomp/ as described in <http://www.gnu.org/software/gsl/manual/gsl-ref_13.html#SEC223>.
 
-@\> let m = 'complexMatrix' [[1,2,-3],[2+3*'i',-7,0],[1,-'i',2*'i']]
-\> let (l,u,p,s) = lu m@
+@\> let m = 'fromLists' [[1,2,-3],[2+3*'i',-7,0],[1,-'i',2*'i']]
+\> let (l,u,p,s) = luR m@
 
 L is the lower triangular:
 
@@ -191,6 +198,7 @@ luR m = (l,u,p, fromIntegral s') where
     u = triang r r 0 1 * lu
     l = triang r r 0 0 * lu + ident r
 
+-- | Complex version of 'luR'.
 luC :: Matrix (Complex Double) -> (Matrix (Complex Double), Matrix (Complex Double), [Int], Complex Double)
 luC m = (l,u,p, fromIntegral s') where
     r = rows m
@@ -202,9 +210,10 @@ luC m = (l,u,p, fromIntegral s') where
 
 {- | Determinant of a square matrix, computed from the 'lu' decomposition.
 
-@\> det ('realMatrix' [[7,2],[3,8]])
+@\> det ('fromLists' [[7,2],[3,8]])
 50.0@
 
 -}
+det :: Matrix Double -> Double
 det m = s * (product $ toList $ takeDiag $ u)
-    where (_,u,_,s) = luR m 
+    where (_,u,_,s) = luR m

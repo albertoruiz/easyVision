@@ -38,7 +38,7 @@ common f = commonval . map f where
 
 
 -- | Creates a 'Vector' from a list.
-fromList :: (Storable a) => [a] -> Vector a
+fromList :: Field a => [a] -> Vector a
 fromList [] = error "trying to create an empty GSL vector"
 fromList l = unsafePerformIO $ do
     let n = length l
@@ -48,15 +48,14 @@ fromList l = unsafePerformIO $ do
     return (V n p)
 
 -- | The inverse of 'fromList'.
-toList :: (Storable t) => Vector t -> [t]
+toList :: Field t => Vector t -> [t]
 toList (V n p) = unsafePerformIO $ withForeignPtr p $ peekArray n
 
-
 -- | creates a Vector taking a number of consecutive toList from another Vector
-subVector :: (Storable t) =>   Int       -- ^ index of the starting element
-                            -> Int       -- ^ number of toList to extract
-                            -> Vector t  -- ^ source
-                            -> Vector t  -- ^ result
+subVector :: Field t => Int       -- ^ index of the starting element
+                     -> Int       -- ^ number of toList to extract
+                     -> Vector t  -- ^ source
+                     -> Vector t  -- ^ result
 subVector k l (V n p)
     | k<0 || k >= n || k+l > n || l < 0 = error "subVector out of range"
     | otherwise = unsafePerformIO $ do
@@ -67,7 +66,7 @@ subVector k l (V n p)
         return (V l q)
 
 -- | creates a new Vector by joining a list of Vectors
-join :: (Storable t) => [Vector t] -> Vector t
+join :: Field t => [Vector t] -> Vector t
 join [] = error "joining an empty list"
 join as = unsafePerformIO $ do
     let tot = sum (map size as)
@@ -93,13 +92,13 @@ asVector2 f m1 m2
     | otherwise = error "inconsistent matrix dimensions" 
 
 -- | creates a Matrix from a list of vectors
-fromRows :: (Storable t) => [Vector t] -> Matrix t
+fromRows :: Field t => [Vector t] -> Matrix t
 fromRows vs = case common size vs of
     Nothing -> error "fromRows applied to [] or to vectors with different sizes"
     Just c  -> reshape c (join vs)
 
 -- | extracts the rows of a matrix as a list of vectors
-toRows :: (Storable t) => Matrix t -> [Vector t]
+toRows :: Field t => Matrix t -> [Vector t]
 toRows x = toRows' 0 where
     v = flatten x
     r = rows x
@@ -222,37 +221,38 @@ subMatrix :: Field t
 subMatrix = subMatrixM
 
 -- | Creates a matrix from a list of vectors, as columns
-fromColumns :: (Field t) => [Vector t] -> Matrix t
+fromColumns :: Field t => [Vector t] -> Matrix t
 fromColumns m = trans . fromRows $ m
 
 -- | Creates a list of vectors from the columns of a matrix
-toColumns :: (Field t) => Matrix t -> [Vector t]
+toColumns :: Field t => Matrix t -> [Vector t]
 toColumns m = toRows . trans $ m
 
 -- | creates a matrix from a vertical list of matrices
-joinVert :: (Storable t) => [Matrix t] -> Matrix t
+joinVert :: Field t => [Matrix t] -> Matrix t
 joinVert ms = case common cols ms of
     Nothing -> error "joinVert on matrices with different number of columns"
     Just c  -> reshape c $ join (map flatten ms)
 
 -- | creates a matrix from a horizontal list of matrices
-joinHoriz :: (Field t) => [Matrix t] -> Matrix t
+joinHoriz :: Field t => [Matrix t] -> Matrix t
 joinHoriz ms = trans. joinVert . map trans $ ms
 
 {- | Creates a matrix from blocks given as a list of lists of matrices:
 
-@\> let a = 'GSL.Interface.diag' $ 'GSL.Interface.realVector' [5,7,2]
-\> let b = 'GSL.Interface.constant' (-1) (3::Int,4::Int)
-\> fromBlocks [[a,b],[b,a]]
- 5.  0.  0. -1. -1. -1. -1.
- 0.  7.  0. -1. -1. -1. -1.
- 0.  0.  2. -1. -1. -1. -1.
--1. -1. -1. -1.  5.  0.  0.
--1. -1. -1. -1.  0.  7.  0.
--1. -1. -1. -1.  0.  0.  2.@
+@\> let a = 'diag' $ 'fromList' [5,7,2]
+\> let b = 'reshape' 4 $ 'constant' (-1) 12
+\> dispR 2 $ fromBlocks [[a,b],[b,a]]
+matrix (6x7)
+ 5. |  0. |  0. | -1. | -1. | -1. | -1.
+ 0. |  7. |  0. | -1. | -1. | -1. | -1.
+ 0. |  0. |  2. | -1. | -1. | -1. | -1.
+-1. | -1. | -1. | -1. |  5. |  0. |  0.
+-1. | -1. | -1. | -1. |  0. |  7. |  0.
+-1. | -1. | -1. | -1. |  0. |  0. |  2.@
 
 -}
-fromBlocks :: (Field t) => [[Matrix t]] -> Matrix t
+fromBlocks :: Field t => [[Matrix t]] -> Matrix t
 fromBlocks = joinVert . map joinHoriz 
 
 -- | creates a complex vector from vectors with real and imaginary parts
@@ -302,11 +302,11 @@ toStorableArray1D (V n p) = do
     return arr
 
 -- | Creates a 'Vector' from an ordinary Haskell 'Array' @(@'Int'@)@. (It is transformed into a 'StorableArray' and then efficiently copied using 'withStorableArray' and 'copyArray'.)
-fromArray1D :: Storable t => Array Int t -> Vector t
+fromArray1D :: Field t => Array Int t -> Vector t
 fromArray1D arr = unsafePerformIO $ thaw arr >>= fromStorableArray1D
 
 -- | The inverse of 'fromArray1D'.
-toArray1D :: Storable t => Vector t -> Array Int t
+toArray1D :: Field t => Vector t -> Array Int t
 toArray1D v = unsafePerformIO $ toStorableArray1D v >>= freeze
 
 -------------------------------------------------------------------------
@@ -328,8 +328,13 @@ linspace n (a,b) = fromList [a::Double,a+delta .. b]
 
 --------------------------------------------------------------------------
 
--- | Reading a matrix position.
-(@@>) :: (Storable t) => Matrix t -> (Int,Int) -> t
+-- | Reads a vector position.
+(@>) :: Field t => Vector t -> Int -> t
+infixl 9 @>
+(@>) = at
+
+-- | Reads a matrix position.
+(@@>) :: Field t => Matrix t -> (Int,Int) -> t
 infixl 9 @@> 
 (M r c p) @@> (i,j)
     | i<0 || i>=r || j<0 || j>=c = error "matrix indexing out of range"
@@ -363,21 +368,21 @@ toStorableArray2D (M r c p) = do
     return arr
 
 -- | Creates a 'Matrix' from an ordinary Haskell 'Array' @(@'Int'@,@'Int'@)@. (It is transformed into a 'StorableArray' and then efficiently copied using 'withStorableArray' and 'copyArray'.)
-fromArray2D :: Storable t => Array (Int,Int) t -> Matrix t
+fromArray2D :: Field t => Array (Int,Int) t -> Matrix t
 fromArray2D arr = unsafePerformIO $ thaw arr >>= fromStorableArray2D
 
 -- | The inverse of 'fromArray2D'.
-toArray2D :: Storable t => Matrix t -> Array (Int,Int) t
+toArray2D :: Field t => Matrix t -> Array (Int,Int) t
 toArray2D m = unsafePerformIO $ toStorableArray2D m >>= freeze
 
 ---------------------------------------------------------------
 
 -- | Creates a 'Matrix' from a list of lists (considered as rows).
-fromLists :: Storable t => [[t]] -> Matrix t
+fromLists :: Field t => [[t]] -> Matrix t
 fromLists = fromRows . map fromList
 
 -- | The inverse of 'fromLists'
-toLists :: Storable t => Matrix t -> [[t]]
+toLists :: Field t => Matrix t -> [[t]]
 toLists = map toList . toRows
 
 ----------------------------------------------------------------
@@ -406,7 +411,7 @@ dropColumns n mat = subMatrix (0,n) (rows mat, cols mat - n) mat
 > 0. 0. 0. 1.
 
 -}
-ident :: Int -> RMatrix
+ident :: Int -> Matrix Double
 ident = diag . constant 1
 
 -------------------------------------------------------------------
@@ -420,11 +425,11 @@ mXm = multiplyM
 dot :: Field t => Vector t -> Vector t -> t
 dot u v = (asRow u `mXm` asColumn v) @@>(0,0)
 
--- | matrix x vector
+-- | matrix - vector product
 mXv :: Field t => Matrix t -> Vector t -> Vector t
 mXv m v = flatten $ m `mXm` (asColumn v)
 
--- | vector x matrix
+-- | vector - matrix product
 vXm :: Field t => Vector t -> Matrix t -> Vector t
 vXm v m = flatten $ (asRow v) `mXm` m
 
@@ -437,13 +442,13 @@ norm2 = toScalar 1
 norm1 :: RVector -> Double
 norm1 = toScalar 2 
 
-vectorMax :: RVector -> Double
+vectorMax :: Vector Double -> Double
 vectorMax = toScalar 4
-vectorMin :: RVector -> Double
+vectorMin :: Vector Double -> Double
 vectorMin = toScalar 6
-vectorMaxIndex :: RVector -> Int
+vectorMaxIndex :: Vector Double -> Int
 vectorMaxIndex = round . toScalar 3
-vectorMinIndex :: RVector -> Int
+vectorMinIndex :: Vector Double -> Int
 vectorMinIndex = round . toScalar 5
 
 -------------------------------------------------------------------
@@ -468,7 +473,7 @@ pnormCV 1 = norm1 . vmap magnitude
 pnormCV 0 = vectorMax . vmap magnitude
 pnormCV _ = error "p norm not yet defined"
 
-pnormRM 2 m = head (toList s) where (_,s,_) = svd m
+pnormRM 2 m = head (toList s) where (_,s,_) = svdg m
 pnormRM 1 m = vectorMax $ constant 1 (rows m) `vXm` asVector (vectorMap 3) m
 pnormRM 0 m = vectorMax $ asVector (vectorMap 3) m `mXv` constant 1 (cols m)
 pnormRM _ _ = error "p norm not yet defined"
@@ -503,18 +508,18 @@ triang r c h v = reshape c $ fromList [el i j | i<-[0..r-1], j<-[0..c-1]]
 > 0. 1. 0. 0.
 
 -}
-extractRows :: (Storable t) => [Int] -> Matrix t -> Matrix t
+extractRows :: Field t => [Int] -> Matrix t -> Matrix t
 extractRows l m = fromRows $ extract (toRows $ m) l
 
 ------------------------------------------------------------------------------
 
 -- | Reverse rows 
-flipud :: Storable t => Matrix t -> Matrix t
+flipud :: Field t => Matrix t -> Matrix t
 flipud m = fromRows . reverse . toRows $ m
 
 -- | Reverse columns
 fliprl :: Field t => Matrix t -> Matrix t
-fliprl m = fromColumns . reverse . toColumns $ m   
+fliprl m = fromColumns . reverse . toColumns $ m
 
 -------------------------------------------------------------------------------
 
@@ -551,7 +556,7 @@ infixl 3 <|>, <->
 
 {- | Horizontal concatenation of matrices and vectors:
 
-@\> 'ident' 3 \<-\> i\<\>'ident' 3 \<|\> 'realVector' [1..6]
+@\> 'ident' 3 \<-\> i\<\>'ident' 3 \<|\> 'fromList' [1..6]
  1.   0.   0.  1.
  0.   1.   0.  2.
  0.   0.   1.  3.

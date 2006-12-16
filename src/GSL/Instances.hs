@@ -210,12 +210,15 @@ instance Floating (Matrix (Complex Double)) where
 
 class Mul a b c | a b -> c where
  infixl 7 <>
-{- | Matrix product, matrix-vector product, dot product and scaling of vectors and matrices. Using this operator you can freely combine real and complex objects:
+{- | An overloaded operator for matrix products, matrix-vector and vector-matrix products, dot products and scaling of vectors and matrices. Type consistency is statically checked. Alternatively, you can use the specific functions described below, but using this operator you can automatically combine real and complex objects.
 
-@v = 'realVector' [1,2,3]
-cv = 'complexVector' [1+'i',2]
-m = 'realMatrix' [[1,2,3],[4,5,7]]
-cm = 'complexMatrix' [[1,2],[3+'i',7*'i'],['i',1]]
+@v  = 'fromList' [1,2,3]    :: Vector Double
+cv = 'fromList' [1+'i',2]
+m  = 'fromLists' [[1,2,3],
+                [4,5,7]] :: Matrix Double
+cm = 'fromLists' [[  1,  2],
+                [3+'i',7*'i'],
+                [  'i',  1]]
 \ 
 \> m \<\> v
 14. 35.

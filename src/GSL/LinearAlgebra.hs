@@ -17,6 +17,7 @@ Some linear algebra algorithms, implemented by means of BLAS, LAPACK or GSL.
 -----------------------------------------------------------------------------
 module GSL.LinearAlgebra (
     -- * Data types
+    -- | The library works with vectors and matrices of real and complex numbers:
     Container, Field,
     module GSL.LinearAlgebra.Vector,
     module GSL.LinearAlgebra.Matrix,
