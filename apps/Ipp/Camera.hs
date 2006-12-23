@@ -16,6 +16,9 @@ Wrapper to Pedro E. Lopez de Teruel interface to IEEE1394 cameras and dv videos.
 -----------------------------------------------------------------------------
 
 module Ipp.Camera (
+  -- * MPlayer interface
+  cameraRGB,
+  -- * Explicit DV decodification
   Camera
 , openCamera
 , Grabbable(..)
@@ -25,7 +28,7 @@ module Ipp.Camera (
 import Ipp.Core
 import Ipp.ImageProcessing (scale8u32f,copy8u,copy8uC3)
 import Foreign
-import Foreign.C.Types (CChar)
+import Foreign.C.Types (CChar,CUChar)
 import Foreign.C.String(newCString)
 import Data.IORef
 
@@ -141,3 +144,27 @@ pause (CM rc) = do
             rgb  <- grab (CM rc)
             gray <- grab (CM rc)
             writeIORef rc c {cpaused = True, lastGray = gray, lastRGB = rgb}
+
+--------------------------------------------------------------------------------
+
+-- Interfaz to MPlayer
+
+foreign import ccall "../Ipp/auxIpp.h openMPlayer"
+    openMPlayer :: Ptr CChar -> Int -> Int -> Int -> IO Int
+
+foreign import ccall "../Ipp/auxIpp.h getFrame"
+    getFrame :: Int -> Ptr CUChar -> IO Int
+
+-- | Creates a MPlayer RGB camera from a given device and optional size
+cameraRGB :: FilePath -> Maybe Size -> IO (IO ImageRGB)
+cameraRGB file Nothing = cameraRGB file (Just (Size 240 320))
+cameraRGB file (Just (Size rows cols)) = do
+    pc <- newCString file
+    mplayer <- openMPlayer pc 0 rows cols
+    free pc
+    return $ do
+        im <- img RGB (Size rows cols)
+        getFrame mplayer (castPtr $ ptr im)
+        return (C im)
+
+-----------------------------------------------------------------
