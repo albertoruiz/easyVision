@@ -1,10 +1,4 @@
-{-# OPTIONS -fffi #-}
-
--- This should work with a firewire camera: 
---    $ ./a.out /dev/dv1394
--- or with a raw dv video, for instance:
---    $ wget http://ditec.um.es/~pedroe/svnvideos/misc/penguin.dv
---    $ ./player penguin.dv
+-- This should work with any video source
 
 import Ipp
 import Graphics.UI.GLUT hiding (RGB,Size)
@@ -12,23 +6,19 @@ import qualified Graphics.UI.GLUT as GL
 import Data.IORef
 import System.Exit
 import System.Environment(getArgs)
-import Foreign
-import Foreign.C.Types
-import Foreign.C.String(newCString)
-import Ipp.Core
 
 
 main = do
     args <- getArgs
-    let sz = Size 576 720
-    cam <- openCamera (args!!0) sz
+    --let sz = Size 576 720
+    --cam <- openCamera (args!!0) sz
 
     let szmp = Size 480 640
 
 
-    mplayer <- cameraRGB (args!!1) {-Nothing --or-} (Just szmp)
+    mplayer <- cameraRGB (args!!0) {-Nothing --or-} (Just szmp)
 
-    state <- prepare cam (True,mplayer)
+    state <- prepare undefined (True,mplayer)
 
     --addWindow "camera" sz Nothing keyboard state
 
@@ -52,18 +42,10 @@ main = do
 -----------------------------------------------------------------
 
 worker inWindow cam (st,mp) = do
-{-
-    inWindow "camera" $ case st of
-        True ->  grab cam >>= (drawImage :: ImageRGB  -> IO ())
-        False -> grab cam >>= (drawImage :: ImageGray -> IO ())
--}
-    inWindow "mplayer" $ do
-        --im <- img RGB (Size 480 640)
-        --getFrame mp (castPtr $ ptr im)
-        --drawImage (C im)
-        im <- mp
-        drawImage im
-        --print "."
+
+    inWindow "mplayer" $ case st of
+        True ->  mp >>= drawImage
+        False -> mp >>= rgbToGray >>= drawImage
 
     return (st,mp)
 

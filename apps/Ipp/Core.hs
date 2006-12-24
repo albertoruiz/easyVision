@@ -31,6 +31,7 @@ module Ipp.Core
           , ImageRGB(C)
           , ImageGray(G)
           , ImageFloat(F)
+          , ImageYUV (Y)
           -- * Image coordinates
           , Pixel (..)
           , Point (..)
@@ -51,7 +52,7 @@ import Vision
 data Size  = Size  {height :: !Int, width :: !Int} deriving Show
 
 -- | Image type descriptor:
-data ImageType = RGB | Gray | I32f deriving (Show,Eq)
+data ImageType = RGB | Gray | I32f | YUV deriving (Show,Eq)
 
 -- | Image representation:
 data Img = Img { fptr :: ForeignPtr ()  -- ^ automatic allocated memory
@@ -89,6 +90,7 @@ img' t sz ly (Size r c) = do
 img Gray = img' Gray 1 1
 img RGB  = img' RGB  1 3
 img I32f = img' I32f 4 1
+img YUV  = undefined -- img' YUV ? ? -- hmm.. is 4:2:0
 
 -- | Extracts the data in a I32f image into a list of lists.
 getData32f :: ImageFloat -> IO [[Float]]
@@ -236,6 +238,13 @@ instance Image ImageRGB where
         return (C i)
     size (C Img {isize=s}) = s
 
+instance Image ImageYUV where
+    image s = do
+        i <- img YUV s
+        return (Y i)
+    size (Y Img {isize=s}) = s
+
+
 -- | The IPP 8u_C3 image type
 newtype ImageRGB   = C Img
 
@@ -244,6 +253,9 @@ newtype ImageGray  = G Img
 
 -- | The IPP 32f_C1 image type
 newtype ImageFloat = F Img
+
+-- | The yuv 4:2:0 image obtained by mplayer -vo yuv4mpeg
+newtype ImageYUV = Y Img
 
 -- | Normalized image coordinates, with x from +1 to -1 (for a right handed 3D reference system with z pointing forward)
 data Point = Point { px    :: !Double, py :: !Double} deriving Show

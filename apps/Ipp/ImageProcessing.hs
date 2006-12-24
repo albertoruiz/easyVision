@@ -24,6 +24,7 @@ module Ipp.ImageProcessing (
 , times
 , partit
 -- * Image manipulation
+, rgbToGray
 , scale8u32f
 , copy32f
 , copy8u
@@ -79,6 +80,16 @@ set32f :: Float      -- ^ desired value
        -> ROI        -- ^ roi
        -> IO ()
 set32f v (F im) roi = ippiSet_32f_C1R v // dst im roi // checkIPP "set32f" [im]
+
+-- | Creates a 8u Gray image from a 8uC3 RGB image
+rgbToGray :: ImageRGB      -- ^ input image
+          -> IO ImageGray  -- ^ result
+rgbToGray (C im) = do
+    r' <- img Gray (isize im)
+    let r = r' {vroi = vroi im}
+    cr1 ippiRGBToGray_8u_C3C1R im r // checkIPP "RGBToGray" [im]
+    return (G r)
+
 
 -- | Creates a 32f image from an 8u image.
 scale8u32f :: Float             -- ^ desired value corresponding to 0

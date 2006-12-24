@@ -17,7 +17,10 @@ Wrapper to Pedro E. Lopez de Teruel interface to IEEE1394 cameras and dv videos.
 
 module Ipp.Camera (
   -- * MPlayer interface
+  -- | These cameras read any kind of video source supported by MPlayer. For simplicity, video size and format cannot be changed during operation.
   cameraRGB,
+  cameraGray,
+  cameraYUV,
   -- * Explicit DV decodification
   Camera
 , openCamera
@@ -163,8 +166,30 @@ cameraRGB file (Just (Size rows cols)) = do
     mplayer <- openMPlayer pc 0 rows cols
     free pc
     return $ do
-        im <- img RGB (Size rows cols)
+        C im <- image (Size rows cols)
         getFrame mplayer (castPtr $ ptr im)
         return (C im)
 
------------------------------------------------------------------
+-- | Creates a MPlayer Gray camera from a given device and optional size
+cameraGray :: FilePath -> Maybe Size -> IO (IO ImageGray)
+cameraGray file Nothing = cameraGray file (Just (Size 240 320))
+cameraGray file (Just (Size rows cols)) = do
+    pc <- newCString file
+    mplayer <- openMPlayer pc 1 rows cols
+    free pc
+    return $ do
+        G im <- image (Size rows cols)
+        getFrame mplayer (castPtr $ ptr im)
+        return (G im)
+
+-- | Creates a MPlayer YUV camera from a given device and optional size
+cameraYUV :: FilePath -> Maybe Size -> IO (IO ImageYUV)
+cameraYUV file Nothing = cameraYUV file (Just (Size 240 320))
+cameraYUV file (Just (Size rows cols)) = do
+    pc <- newCString file
+    mplayer <- openMPlayer pc 2 rows cols
+    free pc
+    return $ do
+        Y im <- image (Size rows cols)
+        getFrame mplayer (castPtr $ ptr im)
+        return (Y im)

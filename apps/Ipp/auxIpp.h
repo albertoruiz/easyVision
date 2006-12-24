@@ -23,10 +23,14 @@ int ippiThreshold_Val_32f_C1R(SRC,DST,float,float,int);
 int ippiSqrt_32f_C1R(SRC,DST);
 int ippiMinMax_32f_C1R(DST,float*,float*);
 int ippiMulC_32f_C1R(SRC,float,DST);
+int ippiRGBToGray_8u_C3C1R(SRC,DST);
 
 int mycvOpenCamera(char *filename);
 void mycvSetModeCamera(int camera,int mode,int rows,int cols);
 char* mycvGetFrameCamera(int camera,int *step_bytes);
+
+int openMPlayer(char*filename,int mode,int rows,int cols);
+int getFrame(int camera, unsigned char* buf);
 
 int auxWarpPerspective_32f_C1R(void * pSrc, int sstep, int sh, int sw,
                                int sr1, int sr2, int sc1, int sc2,

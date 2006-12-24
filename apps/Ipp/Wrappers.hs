@@ -10,7 +10,7 @@ Maintainer  :  Alberto Ruiz (aruiz at um dot es)
 Stability   :  very provisional
 Portability :  hmm...
 
-Raw access to some IPP functions. You can use them directly, with the help of "Ipp.Core", but it is probably easier to use the higher level interface supplied by "Ipp.Typical".
+Raw access to some IPP functions. You can use them directly, with the help of "Ipp.Core", but it is probably easier to use the higher level interface supplied by "Ipp.ImageProcessing".
 
 -}
 -----------------------------------------------------------------------------
@@ -85,6 +85,9 @@ foreign import ccall "auxIpp.h ippiMinMax_32f_C1R"
 
 foreign import ccall "auxIpp.h ippiMulC_32f_C1R"
      ippiMulC_32f_C1R :: Ptr() -> Int -> Float -> Ptr() -> Int -> ROISize -> IO Int
+
+foreign import ccall "auxIpp.h ippiRGBToGray_8u_C3C1R"
+    ippiRGBToGray_8u_C3C1R :: Ptr() -> Int -> Ptr() -> Int -> ROISize -> IO Int
 
 foreign import ccall "auxIpp.h auxWarpPerspective_32f_C1R"
      warpPerspective32f :: Ptr() -> Int -> Int -> Int ->
