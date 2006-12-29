@@ -24,6 +24,7 @@ import Ipp.ImageProcessing
 import Debug.Trace(trace)
 import Data.List(zipWith5)
 import GSL hiding (size)
+import GHC.Float(float2Double,double2Float)
 
 data InterestPoint = IP {
                           ipRawPosition :: Pixel
@@ -45,7 +46,6 @@ getSaddlePoints ::
            -> ImageFloat  -- ^ source image
            -> IO [InterestPoint]  -- ^ result
 
-cDF a = (fromRational.toRational) a
 
 taylor gx gy gxx gyy gxy = (delta,vp) where
     d = sqrt (gxx*gxx + gyy*gyy + 4*gxy*gxy - 2*gxx*gyy)
@@ -71,7 +71,7 @@ getSaddlePoints smooth rad prop maxn fn fr im = do
     h <- hessian gs >>= scale32f (-1.0)
     (mn,mx) <- minmax h
     hotPixels  <- localMax rad h
-               >>= thresholdVal32f (mx* cDF prop) 0.0 IppCmpLess
+               >>= thresholdVal32f (mx* double2Float prop) 0.0 IppCmpLess
                >>= getPoints32f maxn
 
     let ptp = pixelsToPoints (size im)
@@ -98,9 +98,9 @@ getSaddlePoints smooth rad prop maxn fn fr im = do
     let sp = map fst info
     let cs = zipWith (circle fn fr) hotPixels dirs
     feats' <-  mapM (extractList sm) cs
-    let feats = map (fromList . map cDF) feats'
+    let feats = map (fromList . map float2Double) feats'
 
-    let r = zipWith5 IP sp (ptp sp) (map cDF dirs) feats (repeat 0)
+    let r = zipWith5 IP sp (ptp sp) (map float2Double dirs) feats (repeat 0)
 
     return r
 

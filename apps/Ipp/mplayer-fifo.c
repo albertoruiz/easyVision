@@ -130,3 +130,8 @@ int getFrame(int camera, unsigned char * buf)
 }
 
 
+int sendCommand(int camera, char* command) {
+    printf(command);
+    printf("\n");
+    return 0;
+}

@@ -158,17 +158,25 @@ foreign import ccall "../Ipp/auxIpp.h openMPlayer"
 foreign import ccall "../Ipp/auxIpp.h getFrame"
     getFrame :: Int -> Ptr CUChar -> IO Int
 
+foreign import ccall "../Ipp/auxIpp.h sendCommand"
+    sendCommand :: Int -> Ptr CChar -> IO Int
+
 -- | Creates a MPlayer RGB camera from a given device and optional size
-cameraRGB :: FilePath -> Maybe Size -> IO (IO ImageRGB)
+cameraRGB :: FilePath -> Maybe Size -> IO (IO ImageRGB, String -> IO ())
 cameraRGB file Nothing = cameraRGB file (Just (Size 240 320))
 cameraRGB file (Just (Size rows cols)) = do
     pc <- newCString file
     mplayer <- openMPlayer pc 0 rows cols
     free pc
-    return $ do
+    let cam = do
         C im <- image (Size rows cols)
         getFrame mplayer (castPtr $ ptr im)
         return (C im)
+    let ctrl s = do
+        pc <- newCString s
+        sendCommand mplayer pc
+        free pc
+    return (cam,ctrl)
 
 -- | Creates a MPlayer Gray camera from a given device and optional size
 cameraGray :: FilePath -> Maybe Size -> IO (IO ImageGray)

@@ -26,6 +26,7 @@ module Ipp.ImageProcessing (
 -- * Image manipulation
 , rgbToGray
 , scale8u32f
+, scale32f8u
 , copy32f
 , copy8u
 , copy8uC3
@@ -39,6 +40,7 @@ module Ipp.ImageProcessing (
 , compare32f
 , thresholdVal32f
 , minmax
+, integral
 -- * Basic image processing
 , gauss
 , sobelVert, sobelHoriz
@@ -101,6 +103,28 @@ scale8u32f vmin vmax (G im) = do
     let r = r' {vroi = vroi im}
     (cr1 ippiScale_8u32f_C1R im r) vmin vmax // checkIPP "scale8u32f" [im]
     return (F r)
+
+-- | Creates a 8u image from an 32f image.
+scale32f8u :: Float             -- ^ desired value corresponding to 0
+           -> Float             -- ^ desired value corresponding to 255
+           -> ImageFloat        -- ^ input image
+           -> IO ImageGray      -- ^ result
+scale32f8u vmin vmax (F im) = do
+    r' <- img Gray (isize im)
+    let r = r' {vroi = vroi im}
+    (cr1 ippiScale_32f8u_C1R im r) vmin vmax // checkIPP "scale8u32f" [im]
+    return (G r)
+
+-- | Creates an integral (cumulative sum) 32f image from an 8u image. Obtains a roi of the same size, but each pixel has the sum of the pixels strictly less than its position, so the first row and column contains zeroes and the last ones are not taken into account (sorry for the sentence).
+integral :: ImageGray -> IO ImageFloat
+integral (G im) = do
+    r' <- img I32f (isize im)
+    -- strange roi ...
+    let ROI r1 r2 c1 c2 = vroi im
+    let roi = ROI r1 (r2-1) c1 (c2-1)-- `intersection` vroi r'
+    let r = r' {vroi = roi}
+    (cr1 ippiIntegral_8u32f_C1R im r) 0 // checkIPP "integral" [im]
+    return (F r {vroi = vroi im})
 
 -- | Copies the roi of the input image into the destination image.
 copyROI32f :: ImageFloat -> ImageFloat -> IO ()

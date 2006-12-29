@@ -7,22 +7,18 @@ import Data.IORef
 import System.Exit
 import System.Environment(getArgs)
 
+import Ipp.Core
 
 main = do
     args <- getArgs
-    --let sz = Size 576 720
-    --cam <- openCamera (args!!0) sz
 
-    let szmp = Size 480 640
+    let sz = Size 480 640
 
+    (cam, ctrl)  <- cameraRGB (args!!0) {-Nothing --or-} (Just sz)
 
-    mplayer <- cameraRGB (args!!0) {-Nothing --or-} (Just szmp)
+    state <- prepare undefined (1,cam)
 
-    state <- prepare undefined (True,mplayer)
-
-    --addWindow "camera" sz Nothing keyboard state
-
-    addWindow "mplayer" szmp Nothing keyboard state
+    addWindow "mplayer" sz Nothing keyboard state
 
 
     attachMenu LeftButton $ Menu 
@@ -32,8 +28,11 @@ main = do
                                 windowPosition $= Position 100 100)
         ,MenuEntry "pause" $ (do st<- readIORef state
                                  pause (camid st))
-        , SubMenu "mode" $ Menu [ MenuEntry "RGB" $ modifyIORef state $ \s -> s {ust = (True,mplayer)}
-                                , MenuEntry "Gray" $ modifyIORef state $ \s -> s {ust = (False,mplayer)}
+
+        ,MenuEntry "pause'" (ctrl "pause")
+        , SubMenu "mode" $ Menu [ MenuEntry "RGB" $ modifyIORef state $ \s -> s {ust = (1,cam)}
+                                , MenuEntry "Gray" $ modifyIORef state $ \s -> s {ust = (2,cam)}
+                                , MenuEntry "Integral" $ modifyIORef state $ \s -> s {ust = (3,cam)}
                                 ]
         ]
 
@@ -41,13 +40,17 @@ main = do
 
 -----------------------------------------------------------------
 
-worker inWindow cam (st,mp) = do
+k = 1/(640*480*128)
 
-    inWindow "mplayer" $ case st of
-        True ->  mp >>= drawImage
-        False -> mp >>= rgbToGray >>= drawImage
 
-    return (st,mp)
+worker inWindow cam (op,mp) = do
+
+    inWindow "mplayer" $ case op of
+        1 -> mp >>= drawImage
+        2 -> mp >>= rgbToGray >>= drawImage
+        3 -> mp >>= rgbToGray >>= integral >>= scale32f k >>= drawImage
+
+    return (op,mp)
 
 ------------------------------------------------------------------
 keyboard str (Char 'p') Down _ _ = do
