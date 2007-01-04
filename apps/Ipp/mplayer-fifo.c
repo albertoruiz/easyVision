@@ -18,8 +18,8 @@
 int ROWS;
 int COLS;
 int MODE; // 0: RGB, 1: Gray, 2: yuv
-int frames;
-int fifo2;
+//int frames;
+//int fifo2;
 
 int openMPlayer(char*filename, int mode, int rows, int cols)
 //int main(int argc, char *argv[])
@@ -28,6 +28,7 @@ int openMPlayer(char*filename, int mode, int rows, int cols)
     COLS=cols;
     MODE=mode;
     int file;
+    int fifo2;
     char str[100]="";
     //unsigned char buf[ROWS*COLS*3];
     
@@ -95,9 +96,8 @@ int openMPlayer(char*filename, int mode, int rows, int cols)
           printf("Error opening fifo for reading\n");
           exit(1);
     }
-    frames = 0;
 
-    return 1; // camera identifier
+    return fifo2; // camera identifier
 }
 
 int getFrame(int camera, unsigned char * buf)
@@ -115,7 +115,7 @@ int getFrame(int camera, unsigned char * buf)
     // in a single read):
     totbytes = 0;
     while(totbytes != total) {
-        nbytes = read(fifo2,buf+totbytes,total-totbytes);
+        nbytes = read(camera,buf+totbytes,total-totbytes);
         //printf("  partial read = %d\n",nbytes);
         if(nbytes == 0) {
             break;
@@ -123,7 +123,7 @@ int getFrame(int camera, unsigned char * buf)
         totbytes += nbytes;
     }
     if(nbytes == 0) { // The other extreme has been closed; it is the end.
-        close(fifo2);
+        close(camera);
         return 0;
     }
     return 1;

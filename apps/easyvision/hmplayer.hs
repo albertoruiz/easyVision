@@ -16,50 +16,47 @@ main = do
 
     (cam, ctrl)  <- cameraRGB (args!!0) {-Nothing --or-} (Just sz)
 
-    state <- prepare undefined (1,cam)
+    state <- prepare undefined 1
 
-    addWindow "mplayer" sz Nothing keyboard state
+    giveme <- createParameters [("umb",(50,2)),("kk",(20,1)),("x",(75,1))] state
+
+    addWindow "mplayer" sz Nothing (const (kbdcam ctrl)) state
 
 
     attachMenu LeftButton $ Menu 
         [MenuEntry "Quit" (exitWith ExitSuccess)
         ,MenuEntry "fullScreen" fullScreen
-        ,MenuEntry "normal" (do windowSize $= GL.Size 720 576
+        ,MenuEntry "normal" (do windowSize $= GL.Size (fromIntegral $ width sz) (fromIntegral $ height sz)
                                 windowPosition $= Position 100 100)
-        ,MenuEntry "pause" $ (do st<- readIORef state
-                                 pause (camid st))
 
         ,MenuEntry "pause'" (ctrl "pause")
-        , SubMenu "mode" $ Menu [ MenuEntry "RGB" $ modifyIORef state $ \s -> s {ust = (1,cam)}
-                                , MenuEntry "Gray" $ modifyIORef state $ \s -> s {ust = (2,cam)}
-                                , MenuEntry "Integral" $ modifyIORef state $ \s -> s {ust = (3,cam)}
+        , SubMenu "mode" $ Menu [ MenuEntry "RGB" $ modifyIORef state $ \s -> s {ust = 1}
+                                , MenuEntry "Gray" $ modifyIORef state $ \s -> s {ust = 2}
+                                , MenuEntry "Integral" $ modifyIORef state $ \s -> s {ust = 3}
+                                , MenuEntry "Umbral" $ modifyIORef state $ \s -> s {ust = 4}
                                 ]
         ]
 
-    launch state worker
+    launch state (worker cam (giveme))
 
 -----------------------------------------------------------------
 
 k = 1/(640*480*128)
 
+worker cam param inWindow _ op = do
 
-worker inWindow cam (op,mp) = do
+    ith <- param "umb"
+    let th = fromIntegral ith / 100
 
     inWindow "mplayer" $ case op of
-        1 -> mp >>= drawImage
-        2 -> mp >>= rgbToGray >>= drawImage
-        3 -> mp >>= rgbToGray >>= integral >>= scale32f k >>= drawImage
+        1 -> cam >>= drawImage
+        2 -> cam >>= rgbToGray >>= drawImage
+        3 -> cam >>= rgbToGray >>= integral >>= scale32f k >>= drawImage
+        4 -> cam >>=
+             rgbToGray >>=
+             scale8u32f 0 1 >>=
+             thresholdVal32f th 0 IppCmpLess >>=
+             thresholdVal32f th 1 IppCmpGreater >>=
+             drawImage
 
-    return (op,mp)
-
-------------------------------------------------------------------
-keyboard str (Char 'p') Down _ _ = do
-    st <- readIORef str
-    pause (camid st)
-keyboard str (Char ' ') Down _ _ = do
-    st <- readIORef str
-    pause (camid st)
-keyboard _ (Char '\27') Down _ _ = do
-    exitWith ExitSuccess
-keyboard _ _ _ _ _ = return ()
--------------------------------------------------------------------
+    return op

@@ -75,7 +75,9 @@ drawImage' m = do
     matrixMode $= Modelview 0
     loadIdentity
     rasterPos (Vertex2 (0::GLfloat) (fromIntegral h-1.0001))
-    pixelZoom $= (1,-1)
+    GL.Size vw vh <- get windowSize
+    pixelZoom $= (fromIntegral vw/ fromIntegral w,- fromIntegral vh/ fromIntegral h)
+    --pixelZoom $= (1,-1)
     myDrawPixels m
     touchForeignPtr (fptr m)
     let r = shrink (-1,-1) $ vroi m
