@@ -13,6 +13,7 @@ haddock Vision.hs \
         Ipp/Wrappers.hs \
         Ipp/ImageProcessing.hs \
         Ipp/HEasyVision.hs \
+        Ipp/Parameters.hs \
         Ipp/Camera.hs \
         Ipp/Draw.hs \
         Ipp/Trackball.hs --hide=Ipp.Trackball \

@@ -19,10 +19,12 @@ module Ipp (
     module Ipp.Images,
     module Ipp.ImageProcessing,
     module Ipp.HEasyVision,
+    module Ipp.Parameters,
     module Ipp.Saddle
 ) where
 
 import Ipp.Images
 import Ipp.ImageProcessing
 import Ipp.HEasyVision
+import Ipp.Parameters
 import Ipp.Saddle

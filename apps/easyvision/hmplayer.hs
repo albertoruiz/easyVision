@@ -18,7 +18,7 @@ main = do
 
     state <- prepare undefined 1
 
-    giveme <- createParameters [("umb",(50,2)),("kk",(20,1)),("x",(75,1))] state
+    giveme <- createParameters [("umb",50),("kk",20),("x",75)] state
 
     addWindow "mplayer" sz Nothing (const (kbdcam ctrl)) state
 
