@@ -24,16 +24,17 @@ main = do
     let sz = Size 288 384
     cam <- openCamera (args!!0) szc
 
-    state <- prepare cam $ Map.fromList 
-                             [("alpha",-40*degree) 
-                             ,("rho",0) 
-                             ,("foc" , 2)
-                             ,("sca",1/2)]
+    state <- prepare cam ()
+
+    param <- createParameters state [("alpha", realParam (-40) (-100) (100))
+                                     ,("rho",  realParam 0 (-180) (180))
+                                     ,("foc",  listParam 2 [0.5, 0.7, 1, 2, 5,5.5, 9,10])
+                                     ,("sca",  listParam 0.5 [1.1**k|k<-[-20..20]])]
 
     addWindow "camera" szc Nothing kbdwarp state
     addWindow "warped" szw Nothing kbdwarp state
 
-    launch state worker
+    launch state (worker param)
 
 ----------------------------------------------------------------------    
 modify st str fun = do
@@ -49,18 +50,6 @@ kbdwarp str (Char ' ') Down _ _ = do
 kbdwarp _ (Char '\27') Down _ _ = do
     exitWith ExitSuccess
 
-kbdwarp st (SpecialKey KeyUp) Down _ _ = modify st "alpha" (+5*degree)
-kbdwarp st (SpecialKey KeyDown) Down _ _ = modify st "alpha" (+ (-5*degree))
-
-kbdwarp st (SpecialKey KeyRight) Down _ _ = modify st "rho" (+5*degree)
-kbdwarp st (SpecialKey KeyLeft) Down _ _ = modify st "rho" (+ (-5*degree))
-
-kbdwarp st (MouseButton WheelUp) _ _ _ = modify st "sca" (*1.1)
-kbdwarp st (MouseButton WheelDown) _ _ _ = modify st "sca" (*0.9)
-
-kbdwarp st (Char '+') _ _ _ = modify st "foc" (*1.2)
-kbdwarp st (Char '-') _ _ _ = modify st "foc" (/1.2)
-
 kbdwarp _ _ _ _ _ = return ()
 -------------------------------------------------------
 
@@ -75,13 +64,18 @@ warper alpha rho foc sca = r where
 
 ----------------------------------------------------------
 
-worker inWindow cam param = do
+worker param inWindow cam st = do
 
     camera <- grab cam
     inWindow "camera" (drawImage camera)
 
-    let t = warper (param!"alpha") (param!"rho") (param!"foc") (param!"sca")
+    alpha <- getParam param "alpha"
+    rho   <- getParam param "rho"
+    foc   <- getParam param "foc"
+    sca   <- getParam param "sca"
+
+    let t = warper (alpha*degree) (rho*degree) foc sca
     inWindow "warped" $ do
         scale8u32f 0 1 camera >>= warp szw t >>= drawImage
 
-    return param
+    return st

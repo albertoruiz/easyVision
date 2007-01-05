@@ -22,7 +22,7 @@ player: auxc player.hs
 hmplayer: auxc hmplayer.hs
 		ghc -O --make hmplayer.hs -o hmplayer $(LIBS)
 
-warp: auxc warp.hs
+warp: auxc warp.hs 
 		ghc -O --make warp.hs -o warp  $(LIBS)
 
 auxc: ../Ipp/mycvCamera.o ../Ipp/auxIpp.o ../Ipp/mplayer-fifo.o
