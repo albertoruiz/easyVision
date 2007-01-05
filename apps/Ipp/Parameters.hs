@@ -16,7 +16,7 @@ A \'global\' parameter list with its own control window. See the example warp.hs
 module Ipp.Parameters (
    Parameters,
    createParameters,
-   listParam, realParam, percent,
+   listParam, realParam, percent, intParam,
    getParam
 ) where
 
@@ -122,33 +122,42 @@ listParam v list = RLParam {rVal = list!!k,
 percent :: Int -> Parameter
 percent = Percent
 
--- | Creates a 'Parameter' of type Double, between a minimum and maximum value, with 100
+-- | Creates a 'Parameter' of type Double, between a minimum and maximum value, with 100 divisions.
 realParam :: Double -> Double -> Double -> Parameter
 realParam = RealParam
 
+-- | Creates a 'Parameter' of type Int, between a minimum and maximum value
+intParam :: Int -> Int -> Int -> Parameter
+intParam = IntParam
+
 incre (Percent v)   = Percent (min 100 (v+1))
 incre (RealParam v a b)   = RealParam (min b (v+(b-a)/100)) a b
+incre (IntParam v a b) = IntParam (min b (v+1)) a b
 incre (x@RLParam {}) = x {rVal = rList x !! k, rPos = k}
     where k = min (rLength x -1) (rPos x + 1)
 
 decre (Percent v)   = Percent (max 0 (v-1))
 decre (RealParam v a b)   = RealParam (max a (v-(b-a)/100)) a b
+decre (IntParam v a b) = IntParam (max a (v-1)) a b
 decre (x@RLParam {}) = x {rVal = rList x !! k, rPos = k}
     where k = max 0 (rPos x - 1)
 
 
 setpo p (Percent _) = Percent (fromIntegral p `div` 2)
 setpo p (RealParam v a b) = RealParam (a+(b-a)/100*fromIntegral p / 2) a b
+setpo p (IntParam v a b) = IntParam (a+ round (fromIntegral (b-a)*fromIntegral p / 200)) a b
 setpo p (x@RLParam {}) = x {rVal = rList x !! k, rPos = k}
     where k = round $ (fromIntegral $ rLength x) * fromIntegral p / 200
 
 posi (Percent v)    = v
 posi (RealParam v a b)    = round $ 100*(v-a)/(b-a)
+posi (IntParam v a b)   = round $ 100*fromIntegral (v-a)/fromIntegral(b-a)
 posi (RLParam {rPos = i, rLength = l}) = (200*i) `div` (2*(l-1))
 
 info (Percent v) = show v ++ "%"
 info (RealParam v _ _) = showFFloat (Just 2) v ""
 info (RLParam {rVal = v}) = showFFloat (Just 2) v ""
+info (IntParam v _ _) = show v
 
 class Param a where
     param :: Parameter -> a

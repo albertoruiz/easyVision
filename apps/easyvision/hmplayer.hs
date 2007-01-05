@@ -18,7 +18,7 @@ main = do
 
     state <- prepare undefined "RGB"
 
-    o <- createParameters state [("umbral",realParam 0.5 0 1),("h",percent 20)]
+    o <- createParameters state [("umbral",realParam 0.5 0 1),("h",percent 20),("smooth",intParam 3 0 10)]
 
     addWindow "mplayer" sz Nothing (const (kbdcam ctrl)) state
 
@@ -47,6 +47,7 @@ worker cam param inWindow _ op = do
     ph <- getParam param "h" :: IO Int
     let h1 = fromIntegral ph / 100
     let h2 = fromIntegral ph / 100 -- different types: Float and Double...
+    smooth <- getParam param "smooth"
 
     inWindow "mplayer" $ case op of
         "RGB"  ->
@@ -64,26 +65,30 @@ worker cam param inWindow _ op = do
              drawImage
         "Hessian" ->
              cam >>= rgbToGray >>= scale8u32f 0 1 >>=
-             3 `times` gauss Mask5x5 >>= secondOrder >>= hessian >>=
+             smooth `times` gauss Mask5x5 >>= secondOrder >>= hessian >>=
              abs32f >>= sqrt32f >>= drawImage
         "Corners" -> do
              im <- cam >>= rgbToGray >>= scale8u32f 0 1
-             ips <- getCorners 3 7 h1 500 im
+             ips <- getCorners smooth 7 h1 500 im
              drawImage im
              pixelCoordinates (size im)
              setColor 1 0 0
              pointSize $= 3
              renderPrimitive Points (mapM_ vertex ips)
-             print (length ips)
+             text2D 10 20 (show $ length ips)
         "Features" -> do
              orig <- cam
              im <- rgbToGray orig >>= scale8u32f 0 1
-             ips <- getSaddlePoints 3 7 h2 500 20 10 im
+             ips <- getSaddlePoints smooth 7 h2 500 20 10 im
              drawImage orig
              pointCoordinates (size im)
              setColor 1 0 0
              pointSize $= 3
-             print (length ips)
+             text2D 0.9 0 (show $ length ips)
              renderPrimitive Points (mapM_ vertex (map ipPosition ips))
 
     return op
+
+text2D x y s = do
+    rasterPos (Vertex2 x (y::GLfloat))
+    renderString Helvetica12 s
