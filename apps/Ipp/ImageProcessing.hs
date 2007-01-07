@@ -40,6 +40,7 @@ module Ipp.ImageProcessing (
 , compare32f
 , thresholdVal32f
 , minmax
+, maxIndx
 , integral
 -- * Basic image processing
 , gauss
