@@ -22,6 +22,7 @@ int ippiCompare_32f_C1R(SRC,SRC,DST,int);
 int ippiThreshold_Val_32f_C1R(SRC,DST,float,float,int);
 int ippiSqrt_32f_C1R(SRC,DST);
 int ippiMinMax_32f_C1R(DST,float*,float*);
+int ippiMaxIndx_32f_C1R(DST,float*,int*,int*);
 int ippiMulC_32f_C1R(SRC,float,DST);
 int ippiRGBToGray_8u_C3C1R(SRC,DST);
 int ippiIntegral_8u32f_C1R(SRC,DST,float);

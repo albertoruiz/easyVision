@@ -314,6 +314,25 @@ minmax (F im) = do
     free mx
     return (a,b)
 
+
+-- | Returns the maximum value and its position in an image32f
+maxIndx :: ImageFloat -> IO (Float,Pixel)
+maxIndx (F im) = do
+    mx <- malloc
+    px <- malloc
+    py <- malloc
+    (ippiMaxIndx_32f_C1R // dst im (vroi im)) mx px py // checkIPP "maxIndx" [im]
+    v <- peek mx
+    x <- peek px
+    y <- peek py
+    free mx
+    free px
+    free py
+    return (v,Pixel y x)
+
+
+
+
 warpOn' h (F r) (F im) = do
     coefs <- newArray (concat h)
     let Size h w = isize im

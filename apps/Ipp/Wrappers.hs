@@ -83,6 +83,10 @@ foreign import ccall "auxIpp.h ippiSqrt_32f_C1R"
 foreign import ccall "auxIpp.h ippiMinMax_32f_C1R"
      ippiMinMax_32f_C1R :: Ptr() -> Int -> ROISize -> Ptr Float -> Ptr Float -> IO Int
 
+foreign import ccall "auxIpp.h ippiMaxIndx_32f_C1R"
+     ippiMaxIndx_32f_C1R :: Ptr() -> Int -> ROISize -> Ptr Float -> Ptr Int -> Ptr Int -> IO Int
+
+
 foreign import ccall "auxIpp.h ippiMulC_32f_C1R"
      ippiMulC_32f_C1R :: Ptr() -> Int -> Float -> Ptr() -> Int -> ROISize -> IO Int
 
