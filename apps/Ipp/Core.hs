@@ -106,9 +106,9 @@ setData32f :: ImageFloat -> [[Float]] -> IO ()
 setData32f (F Img {fptr = fp, ptr = p,
                datasize = d, step = s, isize = Size {height = r}}) vs = do
     let jump = s `quot` d
-    touchForeignPtr fp
     let row k l = pokeArray (advancePtr (castPtr p) (k*jump)) l
     sequence_ $ zipWith row [0..r-1] vs
+    touchForeignPtr fp --hmm
 
 -- | Returns the pixel value of an image at a given row-column. NO range checking.
 value :: (Storable b) => Img -> Int -> Int -> IO b

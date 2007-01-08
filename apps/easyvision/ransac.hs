@@ -10,8 +10,9 @@ import Data.List(minimumBy)
 import GSL hiding (size)
 import qualified GSL
 import Control.Monad(when)
-import GHC.Float(double2Float)
+import GHC.Float(double2Float,isDoubleNaN)
 import Ipp.Core
+import Vision
 
 main = do
     args <- getArgs
@@ -20,38 +21,41 @@ main = do
 
     (cam, ctrl)  <- cameraRGB (args!!0) (Just sz)
 
-    state <- prepare undefined (0,Nothing, Nothing)
+    state <- prepare undefined (3,Nothing, Nothing)
 
     o <- createParameters state [("h",percent 20),
                                  ("smooth",intParam 3 0 10),
                                  ("alpha",realParam 0.9 0 1),
                                  ("see",realParam 1 0 10),
-                                 ("umb",realParam 0.1 0 0.3)]
+                                 ("umb",realParam 0.1 0 0.3),
+                                 ("ranumb", realParam 0.01 0 0.1)]
 
     addWindow "camera" sz Nothing (const (kbdcam ctrl)) state
     addWindow "left"   sz Nothing (kbdcont 1)  state
     addWindow "right"  sz Nothing (kbdcont 2) state
     addWindow "cost"  (Size 300 300) Nothing undefined state
-    addWindow "mixture" sz Nothing undefined state
+    addWindow "track" sz Nothing undefined state
+    addWindow "warp" (Size 400 400) Nothing undefined state
 
     launch state (worker cam o)
 
 -----------------------------------------------------------------
 
 worker cam param inWindow _ (k,v1,v2) = do
- 
+
     ph <- getParam param "h" :: IO Int
     let h = fromIntegral ph / 100
     smooth <- getParam param "smooth"
     alpha <- getParam param "alpha"
     see <- getParam param "see"
     umb <- getParam param "umb"
+    ranumb <- getParam param "umb"
 
 
     orig <- cam
     im <- rgbToGray orig >>= scale8u32f 0 1
-    ips <- getSaddlePoints smooth 7 h 500 20 10 im
 
+    ips <- getSaddlePoints smooth 7 h 500 20 10 im
 
     inWindow "camera" $ do
         drawImage orig
@@ -65,10 +69,10 @@ worker cam param inWindow _ (k,v1,v2) = do
 
 
     (v1',v2') <- case k of
-        0 -> return (Just (ips,im),v1) --return (v1,v2)
+        0 -> return (v1,v2)
         1 -> return (Just (ips,im), v2)
         2 -> return (v1,Just (ips,im))
-
+        3 -> return (Just (ips,im),v1) -- track
 
     when (k>=0) $ case (v1',v2') of
         (Just (pl@(_:_),im1),Just(ql@(_:_),im2)) -> do
@@ -76,13 +80,17 @@ worker cam param inWindow _ (k,v1,v2) = do
             let n2 = length ql
             --print (n1,n2)
             c <- image (Size n1 n2)
-            setData32f c [[double2Float $ distComb alpha p q | q <- ql] | p <- pl]
+            let t = [[double2Float $ - distComb alpha p q | q <- ql] | p <- pl]
+            setData32f c t
+            --print t
             inWindow "cost" $ do
                 scale32f (-see) c >>= drawImage
 
-            corrs <- corresp umb n1 n2 c
+            corrs <- corresp umb n1 n2 c (inWindow "left")
             let pizq = map ((pl!!).row) corrs
             let pder = map ((ql!!).col) corrs
+            let h = estimateHomographyRansac ranumb  (prep pder) (prep pizq)
+            --dispR 2 h
 
             inWindow "left" $ do
                     drawImage im1
@@ -98,7 +106,7 @@ worker cam param inWindow _ (k,v1,v2) = do
                     pointSize $= 3
                     renderPrimitive Points (mapM_ vertex (map ipPosition pder))
 
-            inWindow "mixture" $ do
+            inWindow "track" $ do
                 a <- scale32f 0.5 im1
                 b <- scale32f 0.5 im2
                 c <- a |+| b
@@ -110,14 +118,20 @@ worker cam param inWindow _ (k,v1,v2) = do
                 setColor 1 0 0
                 pointSize $= 3
                 renderPrimitive Points (mapM_ vertex (map ipPosition pizq))
-                renderPrimitive Points (mapM_ vertex (map ipPosition pder))
+                --renderPrimitive Points (mapM_ vertex (map ipPosition pder))
+                setColor 0.5 0 0
+                let g a b = [a,b]
+                renderPrimitive Lines $ mapM_ vertex $ concat (zipWith g (map ipPosition pizq) (map ipPosition pder))
+
+            inWindow "warp" $ do
+                warp (Size 400 400) h im >>= drawImage
 
         _ -> return ()
 
 
+    let k' = if k==3 then 3 else 0
 
-
-    return (0,v1',v2')
+    return (k',v1',v2')
 
 text2D x y s = do
     rasterPos (Vertex2 x (y::GLfloat))
@@ -140,17 +154,29 @@ distFeat = (dist `on` ipDescriptor)
     where dist u v = norm (u-v)/ fromIntegral (GSL.size u)
 
 distSpatial = (dist `on` ipPosition)
-    where dist (Point a b) (Point x y) = sqrt ((a-x)^2+(b-y)^2)
+    where dist (Point a b) (Point x y) = sqrt $ abs ((a-x)^2+(b-y)^2)
 
-distComb alpha p q = -(alpha*distFeat p q + (1-alpha)*distSpatial p q)
+distComb alpha p q = chk $ alpha*distFeat p q + (1-alpha)*distSpatial p q
 
+chk x | isDoubleNaN x == 0 = x 
+      | otherwise          = 500 -- error "NaN"
 -----------------------------------------------------------
 
-corresp umb h w simil = do
+corresp umb h w simil iw = do
     (v, p@(Pixel r c)) <- maxIndx simil
     --print (-v,p)
+    if (r>=h || c>=w) then do val <- getData32f simil
+                              print (length val, length (head val))
+                              mapM_ print val
+                              error "problemas"
+                      else return ()
     if (-v) > umb then return []
              else do set32f (-1000) simil ROI {r1=r,r2=r,c1=0,c2=w-1}
                      set32f (-1000) simil ROI {r1=0,r2=h-1,c1=c,c2=c}
-                     sig <- corresp umb h w simil
+                     --iw $ scale32f (-1) simil >>= drawImage
+                     --getChar
+                     sig <- corresp umb h w simil iw
                      return (p:sig)
+
+
+prep = map (g.ipPosition) where g (Point x y) = [x,y]
