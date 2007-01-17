@@ -696,7 +696,7 @@ isInlierTrans t h (dst,src) = norm (vd - vde) < t
     where vd  = vector dst
           vde = inHomog $ h <> homog (vector src)
 
-estimateHomographyRansac dist dst orig = h where 
+estimateHomographyRansac dist dst orig = (h,inliers) where 
     h = estimateHomography a b where (a,b) = unzip inliers
     (_,inliers) = ransac estimator (isInlierTrans dist) 4 (zip dst orig)
     estimator l = estimateHomographyRaw a b where (a,b) = unzip l
