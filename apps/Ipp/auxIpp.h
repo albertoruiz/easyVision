@@ -1,6 +1,6 @@
 #define SRC void*,int
-#define DST void*,int,double
 #define VSIZE double
+#define DST void*,int,VSIZE
 
 int ippiSet_32f_C1R(float,DST);
 int ippiImageJaehne_32f_C1R(DST);
@@ -26,6 +26,8 @@ int ippiMaxIndx_32f_C1R(DST,float*,int*,int*);
 int ippiMulC_32f_C1R(SRC,float,DST);
 int ippiRGBToGray_8u_C3C1R(SRC,DST);
 int ippiIntegral_8u32f_C1R(SRC,DST,float);
+int ippiCannyGetSize(VSIZE,int*);
+int ippiCanny_32f8u_C1R(SRC,SRC,DST,float,float,void*);
 
 int mycvOpenCamera(char *filename);
 void mycvSetModeCamera(int camera,int mode,int rows,int cols);

@@ -1,7 +1,7 @@
 -- This should work with any video source
 
 import Ipp
-import Graphics.UI.GLUT hiding (RGB,Size)
+import Graphics.UI.GLUT hiding (RGB,Size,minmax)
 import qualified Graphics.UI.GLUT as GL
 import Data.IORef
 import System.Exit
@@ -12,13 +12,17 @@ import Ipp.Core
 main = do
     args <- getArgs
 
-    let sz = Size (480`div`1) (640`div`1)
+    --let sz = Size (480`div`1) (640`div`1)
+    --let sz = Size (480`div`2) (640`div`2)
+    let sz = Size 288 384
 
     (cam, ctrl)  <- cameraRGB (args!!0) {-Nothing --or-} (Just sz)
 
     state <- prepare undefined "RGB"
 
-    o <- createParameters state [("umbral",realParam 0.5 0 1),("h",percent 20),("smooth",intParam 3 0 10)]
+    o <- createParameters state [("umbral",realParam 0.5 0 1),
+                                 ("h",percent 20),
+                                 ("smooth",intParam 3 0 10)]
 
     addWindow "mplayer" sz Nothing (const (kbdcam ctrl)) state
 
@@ -32,7 +36,9 @@ main = do
 
         ,MenuEntry "pause'" (ctrl "pause")
         , SubMenu "mode" $ Menu $ map mode
-            ["RGB","Gray","Integral","Umbraliza","Hessian", "Corners", "Features"]
+            ["RGB","Gray","Float"
+            ,"Integral","Umbraliza","Hessian"
+            ,"Corners", "Features", "Canny"]
         ]
 
     launch state (worker cam o)
@@ -54,6 +60,8 @@ worker cam param inWindow _ op = do
              cam >>= drawImage
         "Gray" ->
              cam >>= rgbToGray >>= drawImage
+        "Float" ->
+             cam >>= rgbToGray >>= scale8u32f 0 1 >>= drawImage
         "Integral" ->
              cam >>= rgbToGray >>= integral >>= scale32f k >>= drawImage
         "Umbraliza" ->
@@ -86,6 +94,15 @@ worker cam param inWindow _ op = do
              pointSize $= 3
              text2D 0.9 0 (show $ length ips)
              renderPrimitive Points (mapM_ vertex (map ipPosition ips))
+        "Canny" -> do
+             orig <- cam
+             im <- rgbToGray orig >>= scale8u32f 0 1
+             s <- (smooth `times` gauss Mask5x5) im
+             gx <- sobelVert s
+             gy <- sobelHoriz  s
+             c <- canny (gx,gy) (th/3,th) >>= scale8u32f 0 1
+             copyROI32f im c
+             drawImage im
 
     return op
 

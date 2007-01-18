@@ -96,6 +96,13 @@ foreign import ccall "auxIpp.h ippiRGBToGray_8u_C3C1R"
 foreign import ccall "auxIpp.h ippiIntegral_8u32f_C1R"
      ippiIntegral_8u32f_C1R :: Ptr() -> Int -> Ptr() -> Int -> ROISize -> Float -> IO Int
 
+foreign import ccall "auxIpp.h ippiCannyGetSize"
+     ippiCannyGetSize :: ROISize -> Ptr Int -> IO Int
+
+foreign import ccall "auxIpp.h ippiCanny_32f8u_C1R"
+     ippiCanny_32f8u_C1R :: Ptr() -> Int -> Ptr() -> Int
+                         -> Ptr() -> Int -> ROISize -> Float -> Float -> Ptr() -> IO Int
+
 
 foreign import ccall "auxIpp.h auxWarpPerspective_32f_C1R"
      warpPerspective32f :: Ptr() -> Int -> Int -> Int ->

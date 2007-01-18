@@ -25,7 +25,7 @@ module Ipp.Core
           , fullroi, shrink, shift, intersection
             -- * Wrapper tools
           , src, dst, checkIPP, warningIPP, (//)
-          , ippRect
+          , ippRect, roiSize
             -- * Image types
           , Image(..)
           , ImageRGB(C)

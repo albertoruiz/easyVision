@@ -52,6 +52,8 @@ module Ipp.ImageProcessing (
 , getPoints32f
 -- * Computation of interest points
 , getCorners
+-- * Edges
+, canny
 )
 where
 
@@ -439,3 +441,22 @@ resize32f s (F im) = do
     r <- img I32f s
     genResize32f r (fullroi r) im (vroi im) inter_LINEAR
     return (F r)
+
+----------------------------------------------------------------------
+
+-- | Canny's edge detector.
+canny :: (ImageFloat,ImageFloat) -- ^ image gradient (dx,dy)
+      -> (Float,Float)           -- ^ low and high threshold
+      -> IO ImageGray               -- ^ resulting image
+canny (F dx, F dy) (l,h) = do
+    r <- img Gray (isize dx)
+    ps <- malloc
+    let roi = intersection (vroi dx) (vroi dy)
+    ippiCannyGetSize (roiSize roi) ps // checkIPP "ippiCannyGetSize" []
+    s <- peek ps
+    buffer <- mallocBytes s
+    (ippiCanny_32f8u_C1R // src dx roi // src dy roi // dst r roi) l h buffer
+                         // checkIPP "ippiCanny_32f8u_C1R" [dx,dy]
+    free buffer
+    free ps
+    return (G r {vroi = roi})
