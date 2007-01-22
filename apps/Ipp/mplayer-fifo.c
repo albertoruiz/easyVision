@@ -59,7 +59,7 @@ int openMPlayer(char*filename, int mode, int rows, int cols)
         // Of course, we can play with parameters as needed. Here, we just set an arbitrary size,
         // but we could deinterlace, or perform any other filter, for example.
         execlp("mplayer","mplayer",filename,"-vo","yuv4mpeg:file=/tmp/fifo-mplayer-1","-vf",
-                str,"-ao","null","-slave","-loop","0",
+                str,"-slave","-nosound","-loop","0",
                 "-tv","driver=v4l:width=640:height=480",
                 NULL);
 

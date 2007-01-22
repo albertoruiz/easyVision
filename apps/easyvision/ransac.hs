@@ -32,8 +32,8 @@ main = do
 
     (cam, ctrl)  <- cameraRGB (args!!0) (Just sz)
 
-    ocam <- openCamera (args!!0) sz
-    --let ocam = undefined
+    --ocam <- openCamera (args!!0) sz
+    let ocam = undefined
 
     st <- empty
 
@@ -51,6 +51,8 @@ main = do
     addWindow "track" sz Nothing undefined state
     addWindow "warp" (Size 400 400) Nothing undefined state
 
+    10 `times` (const cam) $ undefined
+
     launch state (worker cam o)
 
 -----------------------------------------------------------------
@@ -61,8 +63,8 @@ worker cam param inWindow ocam st = do
     let h = fromIntegral ph / 100
     smooth <- getParam param "smooth"
 
-    orig <- grab ocam
-    --orig <- cam
+    --orig <- grab ocam
+    orig <- cam
     im <- rgbToGray orig >>= scale8u32f 0 1
 
     ips <- getSaddlePoints smooth 7 h 500 20 10 im

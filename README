@@ -6,7 +6,10 @@ REQUIREMENTS
 2) LAPACK (http://www.netlib.org/lapack). It usually comes with GNU-Octave.
 
 --------------------------------------------------------------------------------------
-INSTALLATION
+INSTALLATION 
+
+(More detailed information is included in the "tutorial",
+available in the web page of the project.)
 
 $ cd src
 src$ runhaskell Setup.hs configure -p --prefix=$HOME
@@ -81,3 +84,6 @@ The author thanks all the people in the Haskell mailing lists for their help.
 - Nico Mahlo discovered a bug in the eigendecomposition wrapper.
 
 - Frederik Eaton discovered a bug in the design of the wrappers.
+
+- Eric Kidd has created a wiki page explaining the installation on MacOS X:
+  http://www.haskell.org/haskellwiki/GSLHaskell_on_MacOS_X
