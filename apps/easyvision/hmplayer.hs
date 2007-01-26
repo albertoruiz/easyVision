@@ -36,7 +36,7 @@ main = do
 
         ,MenuEntry "pause'" (ctrl "pause")
         , SubMenu "mode" $ Menu $ map mode
-            ["RGB","Gray","Float"
+            ["RGB","Gray","Float", "Median"
             ,"Integral","Umbraliza","Hessian"
             ,"Corners", "Features", "Canny"]
         ]
@@ -103,6 +103,12 @@ worker cam param inWindow _ op = do
              c <- canny (gx,gy) (th/3,th) >>= scale8u32f 0 1
              copyROI32f im c
              drawImage im
+
+        "Median" -> do
+             orig <- cam
+             im <- rgbToGray orig
+             s <- (smooth `times` median Mask5x5) im
+             drawImage s
 
     return op
 

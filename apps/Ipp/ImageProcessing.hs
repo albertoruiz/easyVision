@@ -44,6 +44,7 @@ module Ipp.ImageProcessing (
 , integral
 -- * Basic image processing
 , gauss
+, median
 , sobelVert, sobelHoriz
 , secondOrder
 , hessian
@@ -192,6 +193,18 @@ gauss mask = simplefun1F f (shrink (s,s)) "gauss" where
                 Mask3x3 -> 1
                 Mask5x5 -> 2
     f ps ss pd sd r = ippiFilterGauss_32f_C1R ps ss pd sd r (code mask)
+
+-- | Median Filter
+median :: Mask -> ImageGray -> IO ImageGray
+median mask = simplefun1G f (shrink (s,s)) "median" where
+    s = case mask of
+                Mask3x3 -> 1
+                Mask5x5 -> 2
+    mk = case mask of
+                Mask3x3 -> ippRect 3 3
+                Mask5x5 -> ippRect 5 5
+    f ps ss pd sd r = ippiFilterMedian_8u_C1R ps ss pd sd r mk (ippRect s s)
+
 
 -- | The result is the source image in which the pixels verifing the comparation with a threshold are set to a desired value.
 thresholdVal32f :: Float          -- ^ threshold

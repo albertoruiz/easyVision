@@ -28,6 +28,7 @@ int ippiRGBToGray_8u_C3C1R(SRC,DST);
 int ippiIntegral_8u32f_C1R(SRC,DST,float);
 int ippiCannyGetSize(VSIZE,int*);
 int ippiCanny_32f8u_C1R(SRC,SRC,DST,float,float,void*);
+int ippiFilterMedian_8u_C1R(SRC,DST,VSIZE,VSIZE);
 
 int mycvOpenCamera(char *filename);
 void mycvSetModeCamera(int camera,int mode,int rows,int cols);

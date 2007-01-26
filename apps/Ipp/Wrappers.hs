@@ -22,6 +22,7 @@ import Foreign
 import Foreign.C.Types
 
 type ROISize = Double
+type IPPPoint = Double
 
 foreign import ccall "auxIpp.h ippiImageJaehne_32f_C1R"
   ippiImageJaehne_32f_C1R :: Ptr() -> Int -> ROISize -> IO Int
@@ -103,6 +104,8 @@ foreign import ccall "auxIpp.h ippiCanny_32f8u_C1R"
      ippiCanny_32f8u_C1R :: Ptr() -> Int -> Ptr() -> Int
                          -> Ptr() -> Int -> ROISize -> Float -> Float -> Ptr() -> IO Int
 
+foreign import ccall "auxIpp.h ippiFilterMedian_8u_C1R"
+     ippiFilterMedian_8u_C1R :: Ptr() -> Int -> Ptr() -> Int -> ROISize -> ROISize -> IPPPoint -> IO Int
 
 foreign import ccall "auxIpp.h auxWarpPerspective_32f_C1R"
      warpPerspective32f :: Ptr() -> Int -> Int -> Int ->
