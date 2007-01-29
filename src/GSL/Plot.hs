@@ -87,7 +87,7 @@ splot f rx ry n = mesh' z where
     (x,y) = meshdom (linspace n rx) (linspace n ry)
     z = f x y
 
-{- | plots several vectors against the first onw -}
+{- | plots several vectors against the first one -}
 mplot :: [Vector Double] -> IO ()
 mplot m = gnuplotX (commands++dats) where
     commands = if length m == 1 then command1 else commandmore
