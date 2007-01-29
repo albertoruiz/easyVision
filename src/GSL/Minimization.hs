@@ -106,7 +106,7 @@ main = do
 
 The path to the solution can be graphically shown by means of:
 
-@'GSL.Drawing.hplot' $ drop 3 ('toColumns' p)@
+@'GSL.Drawing.mplot' $ drop 3 ('toColumns' p)@
 
 -}
 minimizeNMSimplex :: ([Double] -> Double) -- ^ function to minimize
@@ -154,7 +154,7 @@ main = do
 
 The path to the solution can be graphically shown by means of:
 
-@'GSL.Drawing.hplot' $ drop 2 ('toColumns' p)@
+@'GSL.Drawing.mplot' $ drop 2 ('toColumns' p)@
 
 -}     
 minimizeConjugateGradient :: 
