@@ -9,6 +9,7 @@ import System.Environment(getArgs)
 
 import Ipp.Core
 
+
 main = do
     args <- getArgs
 
@@ -25,6 +26,9 @@ main = do
                                  ("smooth",intParam 3 0 10)]
 
     addWindow "mplayer" sz Nothing (const (kbdcam ctrl)) state
+                                   ---- or undefined ---
+
+    getRoi <- roiControl (ROI 0 (height sz) (width sz`div`2) (width sz)) (kbdcam ctrl)
 
     let mode m = MenuEntry m $ modifyIORef state $ \s -> s {ust = m}
 
@@ -41,13 +45,13 @@ main = do
             ,"Corners", "Features", "Canny"]
         ]
 
-    launch state (worker cam o)
+    launch state (worker cam o getRoi)
 
 -----------------------------------------------------------------
 
 k = 1/(640*480*128)
 
-worker cam param inWindow _ op = do
+worker cam param getRoi inWindow _ op = do
 
     th <- getParam param "umbral"
     ph <- getParam param "h" :: IO Int
@@ -95,11 +99,12 @@ worker cam param inWindow _ op = do
              text2D 0.9 0 (show $ length ips)
              renderPrimitive Points (mapM_ vertex (map ipPosition ips))
         "Canny" -> do
+             roi <- getRoi
              orig <- cam
              im <- rgbToGray orig >>= scale8u32f 0 1
-             s <- (smooth `times` gauss Mask5x5) im
-             gx <- sobelVert s
-             gy <- sobelHoriz  s
+             F s <- (smooth `times` gauss Mask5x5) im
+             gx <- sobelVert $ F s {vroi = roi `intersection` vroi s}
+             gy <- sobelHoriz $ F s {vroi = roi `intersection` vroi s}
              c <- canny (gx,gy) (th/3,th) >>= scale8u32f 0 1
              copyROI32f im c
              drawImage im

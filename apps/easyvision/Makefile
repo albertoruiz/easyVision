@@ -5,7 +5,7 @@ LIBS= -i.. ../Ipp/mycvCamera.o ../Ipp/auxIpp.o ../Ipp/mplayer-fifo.o -L$(IPP)/sh
 all: hessian warp player frontal pose automatch hmplayer ransac
 
 automatch: auxc automatch.hs
-		ghc -O -prof -auto-all --make automatch.hs -o automatch $(LIBS)
+		ghc -O       -auto-all --make automatch.hs -o automatch $(LIBS)
 
 frontal: auxc frontal.hs
 		ghc -O --make frontal.hs -o frontal $(LIBS)

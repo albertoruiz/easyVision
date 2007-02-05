@@ -10,7 +10,7 @@ Portability :  hmm...
 
 A minimalist version of EasyVision [ref.] using HOpenGL.
 
-See the simple examples: player.hs, hessian.hs, warp.hs, etc. in the easyvision folder.
+See the simple examples: hmplayer.hs, hessian.hs, warp.hs, etc. in the easyvision folder.
 
 -}
 -----------------------------------------------------------------------------
@@ -22,7 +22,7 @@ module Ipp.HEasyVision (
 , addWindow
 , launch
 , InWindow
-, kbdcam
+, kbdcam, roiControl
 -- * Drawing utilities
 , module Ipp.Draw
 -- * DV camera driver
@@ -125,3 +125,24 @@ kbdcam ctrl = kbd where
     kbd (Char ' ') Down _ _ = ctrl "pause"
     kbd (Char '\27') Down _ _ = exitWith ExitSuccess
     kbd _ _ _ _ = return ()
+
+-- | Installs mouse support for interactive selection of a 'ROI' (region of interest) in a window. The ROI is selected with the right button. The initial ROI can be recovered with the key R.
+roiControl :: ROI                    -- ^ initial roi
+           -> KeyboardMouseCallback  -- ^ keyboard callback for the window
+           -> IO (IO ROI)            -- ^ function to retrieve the current roi
+roiControl initROI defaultFunc = do
+    r <- newIORef initROI
+    keyboardMouseCallback $= Just (kbd r defaultFunc)
+    motionCallback $= Just (mv r)
+    return (readIORef r)
+        where
+            kbd r _ (MouseButton RightButton) Down _ pos@(Position x y) =
+                modifyIORef r (\ (ROI _ r2 _ c2) ->
+                                  ROI (min (r2-10) (fromIntegral y)) r2
+                                      (min (c2-10) (fromIntegral x)) c2)
+            kbd r _ (Char 'r') Down _ _ = writeIORef r initROI
+            kbd _ defaultFunc a b c d = defaultFunc a b c d
+            mv r (Position x y) =
+                modifyIORef r (\ (ROI r1 _ c1 _) ->
+                                  ROI r1 (max (r1+10) (fromIntegral y))
+                                      c1 (max (c1+10) (fromIntegral x)))
