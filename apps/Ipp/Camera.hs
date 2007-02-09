@@ -21,6 +21,7 @@ module Ipp.Camera (
   cameraRGB,
   cameraGray,
   cameraYUV,
+  mplayer, mpSize,
   -- * Explicit DV decodification
   Camera
 , openCamera
@@ -34,6 +35,8 @@ import Foreign
 import Foreign.C.Types (CChar,CUChar)
 import Foreign.C.String(newCString)
 import Data.IORef
+import System.IO
+import System
 
 ------------------------------------------------------      
 foreign import ccall "auxIpp.h mycvOpenCamera"
@@ -201,3 +204,53 @@ cameraYUV file (Just (Size rows cols)) = do
         Y im <- image (Size rows cols)
         getFrame mplayer (castPtr $ ptr im)
         return (Y im)
+
+-----------------------------------------------------------------
+
+-- | Computes a 4/3 'good' size for both mplayer and IPP. mpSize 20 = 640x480
+mpSize :: Int -> Size
+mpSize k | k > 0     = Size (k*24) (k*32)
+         | otherwise = error "mpSize"
+
+
+-- | Interface to mplayer.
+mplayer :: Int                -- ^ camera index (to be removed in the future)
+        -> String             -- ^ any url admitted by mplayer
+        -> Size               -- ^ desired image size (see 'mpsize')
+        -> IO (IO ImageYUV)   -- ^ function returning a new frame
+mplayer c url (Size h w) = do
+
+    let fifo = "/tmp/mplayer-fifo-"++(show c)
+    system $ "rm "++fifo
+    system $ "mkfifo "++fifo
+
+    k <- mallocBytes 1
+
+    let mpcommand =
+             url++" -vo yuv4mpeg:file="++fifo++
+             " -vf scale="++show w++":"++show h++" -nosound -slave -loop 0 "++
+             "-tv driver=v4l:width="++show w++":height="++show h
+
+    --(i,o,e,p) <- runInteractiveProcess "mplayer" (words mpcommand) Nothing Nothing
+    --(i,o,e,p) <- runInteractiveCommand ("mplayer " ++mpcommand)
+
+    system $ "mplayer "++ mpcommand ++" >/dev/null 2>/dev/null &"
+
+    f <- openFile fifo ReadMode
+
+    let find = do
+        hGetBuf f k 1
+        v <- peek (castPtr k)
+        putChar v
+        if v=='\n' then return () else find
+    find
+
+    let readMPlayer = do
+        Y im <- image (Size h w)
+        --hGetLine f >>= print
+        hGetBuf f (castPtr (ptr im)) 6 -- find?
+        n <- hGetBuf f (castPtr (ptr im)) (w*h*3`div`2)
+        --print n
+        return (Y im)
+
+    return readMPlayer

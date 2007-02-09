@@ -8,14 +8,30 @@ import System.Exit
 import System.Environment(getArgs)
 
 import Ipp.Core
+import System
+import System.Process
+import System.IO
+import Foreign
+import System.IO.Error
+import Control.Concurrent
 
+-----------------------------------------------------------
+
+
+
+------------------------------------------------------------
 
 main = do
     args <- getArgs
 
-    --let sz = Size (480`div`1) (640`div`1)
+    let sz = Size (480`div`1) (640`div`1)
     --let sz = Size (480`div`2) (640`div`2)
-    let sz = Size 288 384
+    --let sz = Size 288 384
+
+    
+
+    --sequence $ replicate 5 (readMPlayer k)
+
 
     (cam, ctrl)  <- cameraRGB (args!!0) {-Nothing --or-} (Just sz)
 
@@ -38,9 +54,9 @@ main = do
         ,MenuEntry "normal" (do windowSize $= GL.Size (fromIntegral $ width sz) (fromIntegral $ height sz)
                                 windowPosition $= Position 100 100)
 
-        ,MenuEntry "pause'" (ctrl "pause")
+        --,MenuEntry "pause'" (ctrl "pause")
         , SubMenu "mode" $ Menu $ map mode
-            ["RGB","Gray","Float", "Median"
+            ["prueba","RGB","Gray","Float", "Median"
             ,"Integral","Umbraliza","Hessian"
             ,"Corners", "Features", "Canny"]
         ]
@@ -60,6 +76,7 @@ worker cam param getRoi inWindow _ op = do
     smooth <- getParam param "smooth"
 
     inWindow "mplayer" $ case op of
+
         "RGB"  ->
              cam >>= drawImage
         "Gray" ->

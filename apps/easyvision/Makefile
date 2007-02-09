@@ -2,7 +2,7 @@ IPP=/opt/intel/ipp/5.0/ia32/
 
 LIBS= -i.. ../Ipp/mycvCamera.o ../Ipp/auxIpp.o ../Ipp/mplayer-fifo.o -L$(IPP)/sharedlib -lguide -lippcore -lippi -lipps -lippcc -lippvc -lippcv -lraw1394 -ldc1394_control
 
-all: hessian warp player frontal pose automatch hmplayer ransac
+all: hessian warp player frontal pose automatch hmplayer ransac borrar
 
 automatch: auxc automatch.hs
 		ghc -O       -auto-all --make automatch.hs -o automatch $(LIBS)
@@ -21,6 +21,9 @@ player: auxc player.hs
 
 hmplayer: auxc hmplayer.hs
 		ghc -O --make hmplayer.hs -o hmplayer $(LIBS)
+
+borrar: auxc borrar.hs
+		ghc -O --make borrar.hs -o borrar $(LIBS)
 
 warp: auxc warp.hs 
 		ghc -O --make warp.hs -o warp  $(LIBS)

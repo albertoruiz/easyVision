@@ -90,7 +90,7 @@ img' t sz ly (Size r c) = do
 img Gray = img' Gray 1 1
 img RGB  = img' RGB  1 3
 img I32f = img' I32f 4 1
-img YUV  = undefined -- img' YUV ? ? -- hmm.. is 4:2:0
+img YUV  = img' YUV  1 2 -- img' YUV ? ? -- hmm.. is 4:2:0
 
 -- | Extracts the data in a I32f image into a list of lists.
 getData32f :: ImageFloat -> IO [[Float]]
