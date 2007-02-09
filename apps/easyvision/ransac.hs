@@ -30,7 +30,7 @@ main = do
 
     let sz = Size (480`div`2) (640`div`2)
 
-    (cam, ctrl)  <- cameraRGB (args!!0) (Just sz)
+    (cam, ctrl)  <- mplayer (args!!0) sz
 
     --ocam <- openCamera (args!!0) sz
     let ocam = undefined
@@ -65,12 +65,12 @@ worker cam param inWindow ocam st = do
 
     --orig <- grab ocam
     orig <- cam
-    im <- rgbToGray orig >>= scale8u32f 0 1
+    im <- yuvToGray orig >>= scale8u32f 0 1
 
     ips <- getSaddlePoints smooth 7 h 500 20 10 im
 
     inWindow "camera" $ do
-        drawImage orig
+        drawImage im
         pointCoordinates (size im)
         setColor 0 0 1
         pointSize $= 3

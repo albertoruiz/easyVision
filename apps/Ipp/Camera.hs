@@ -10,19 +10,17 @@ Maintainer  :  Alberto Ruiz (aruiz at um dot es)
 Stability   :  very provisional
 Portability :  hmm...
 
-Wrapper to Pedro E. Lopez de Teruel interface to IEEE1394 cameras and dv videos.
+Image acquisition from real cameras and other video sources.
 
 -}
 -----------------------------------------------------------------------------
 
 module Ipp.Camera (
   -- * MPlayer interface
-  -- | These cameras read any kind of video source supported by MPlayer. For simplicity, video size and format cannot be changed during operation.
-  cameraRGB,
-  cameraGray,
-  cameraYUV,
+  -- | This camera works with any kind of video source accepted by MPlayer.
   mplayer, mpSize,
   -- * Explicit DV decodification
+  -- | Wrapper to Pedro E. Lopez de Teruel interface to IEEE1394 cameras and dv videos.
   Camera
 , openCamera
 , Grabbable(..)
@@ -153,75 +151,20 @@ pause (CM rc) = do
 
 --------------------------------------------------------------------------------
 
--- Interfaz to MPlayer
-
-foreign import ccall "../Ipp/auxIpp.h openMPlayer"
-    openMPlayer :: Ptr CChar -> Int -> Int -> Int -> IO Int
-
-foreign import ccall "../Ipp/auxIpp.h getFrame"
-    getFrame :: Int -> Ptr CUChar -> IO Int
-
-foreign import ccall "../Ipp/auxIpp.h sendCommand"
-    sendCommand :: Int -> Ptr CChar -> IO Int
-
--- | Creates a MPlayer RGB camera from a given device and optional size
-cameraRGB :: FilePath -> Maybe Size -> IO (IO ImageRGB, String -> IO ())
-cameraRGB file Nothing = cameraRGB file (Just (Size 240 320))
-cameraRGB file (Just (Size rows cols)) = do
-    pc <- newCString file
-    mplayer <- openMPlayer pc 0 rows cols
-    free pc
-    let cam = do
-        C im <- image (Size rows cols)
-        getFrame mplayer (castPtr $ ptr im)
-        return (C im)
-    let ctrl s = do
-        pc <- newCString s
-        sendCommand mplayer pc
-        free pc
-    return (cam,ctrl)
-
--- | Creates a MPlayer Gray camera from a given device and optional size
-cameraGray :: FilePath -> Maybe Size -> IO (IO ImageGray)
-cameraGray file Nothing = cameraGray file (Just (Size 240 320))
-cameraGray file (Just (Size rows cols)) = do
-    pc <- newCString file
-    mplayer <- openMPlayer pc 1 rows cols
-    free pc
-    return $ do
-        G im <- image (Size rows cols)
-        getFrame mplayer (castPtr $ ptr im)
-        return (G im)
-
--- | Creates a MPlayer YUV camera from a given device and optional size
-cameraYUV :: FilePath -> Maybe Size -> IO (IO ImageYUV)
-cameraYUV file Nothing = cameraYUV file (Just (Size 240 320))
-cameraYUV file (Just (Size rows cols)) = do
-    pc <- newCString file
-    mplayer <- openMPlayer pc 2 rows cols
-    free pc
-    return $ do
-        Y im <- image (Size rows cols)
-        getFrame mplayer (castPtr $ ptr im)
-        return (Y im)
-
------------------------------------------------------------------
-
--- | Computes a 4/3 'good' size for both mplayer and IPP. mpSize 20 = 640x480
+-- | Computes a 4\/3 \'good\' size for both mplayer and IPP. mpSize 20 = 640x480
 mpSize :: Int -> Size
 mpSize k | k > 0     = Size (k*24) (k*32)
          | otherwise = error "mpSize"
 
 
--- | Interface to mplayer.
-mplayer :: Int                -- ^ camera index (to be removed in the future)
-        -> String             -- ^ any url admitted by mplayer
-        -> Size               -- ^ desired image size (see 'mpsize')
-        -> IO (IO ImageYUV)   -- ^ function returning a new frame
-mplayer c url (Size h w) = do
+-- | Interface to mplayer (implemented using a pipe and the format yuv4mpeg)
+mplayer :: String               -- ^ any url admitted by mplayer
+        -> Size                 -- ^ desired image size (see 'mpsize')
+        -> IO (IO ImageYUV,
+               String -> IO ()) -- ^ function returning a new frame and camera controller
+mplayer url (Size h w) = do
 
-    let fifo = "/tmp/mplayer-fifo-"++(show c)
-    system $ "rm "++fifo
+    let fifo = "/tmp/mplayer-fifo-"
     system $ "mkfifo "++fifo
 
     k <- mallocBytes 1
@@ -243,9 +186,14 @@ mplayer c url (Size h w) = do
         v <- peek (castPtr k)
         putChar v
         if v=='\n' then return () else find
-    find
 
-    let readMPlayer = do
+    find
+    system $ "rm "++fifo
+
+    paused    <- newIORef False
+    frozen <- newIORef undefined
+
+    let rawgrab = do
         Y im <- image (Size h w)
         --hGetLine f >>= print
         hGetBuf f (castPtr (ptr im)) 6 -- find?
@@ -253,4 +201,16 @@ mplayer c url (Size h w) = do
         --print n
         return (Y im)
 
-    return readMPlayer
+    let control command = do
+        case command of
+         "pause" -> do modifyIORef paused not
+                       p <- readIORef paused
+                       if p then rawgrab >>= writeIORef frozen
+                            else return ()
+
+    let grab = do
+        p <- readIORef paused
+        if p then readIORef frozen
+             else rawgrab
+
+    return (grab,control)
