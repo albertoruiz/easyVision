@@ -97,6 +97,9 @@ foreign import ccall "auxIpp.h ippiRGBToGray_8u_C3C1R"
 foreign import ccall "auxIpp.h ippiYUV420ToRGB_8u_P3C3R"
      ippiYUV420ToRGB_8u_P3C3R :: Ptr () -> Ptr Int -> Ptr() -> Int -> ROISize -> IO Int
 
+foreign import ccall "auxIpp.h ippiYUV420ToRGB_8u_P3R"
+     ippiYUV420ToRGB_8u_P3R :: Ptr () -> Ptr Int -> Ptr() -> Int -> ROISize -> IO Int
+
 foreign import ccall "auxIpp.h ippiIntegral_8u32f_C1R"
      ippiIntegral_8u32f_C1R :: Ptr() -> Int -> Ptr() -> Int -> ROISize -> Float -> IO Int
 

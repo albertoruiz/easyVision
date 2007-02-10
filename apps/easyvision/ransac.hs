@@ -30,7 +30,7 @@ main = do
 
     let sz = Size (480`div`2) (640`div`2)
 
-    (cam, ctrl)  <- mplayer (args!!0) sz
+    (cam, ctrl)  <- mplayer (args!!0) sz >>= withPause
 
     --ocam <- openCamera (args!!0) sz
     let ocam = undefined

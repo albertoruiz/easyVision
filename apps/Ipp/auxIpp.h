@@ -26,6 +26,7 @@ int ippiMaxIndx_32f_C1R(DST,float*,int*,int*);
 int ippiMulC_32f_C1R(SRC,float,DST);
 int ippiRGBToGray_8u_C3C1R(SRC,DST);
 int ippiYUV420ToRGB_8u_P3C3R(void*,int*,DST);
+int ippiYUV420ToRGB_8u_P3R(void*,int*,DST);
 int ippiIntegral_8u32f_C1R(SRC,DST,float);
 int ippiCannyGetSize(VSIZE,int*);
 int ippiCanny_32f8u_C1R(SRC,SRC,DST,float,float,void*);

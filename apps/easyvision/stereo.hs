@@ -23,8 +23,8 @@ main = do
                  else Size (read $ findWithDefault "480" "--rows" opts)
                            (read $ findWithDefault "640" "--cols" opts)
 
-    (cam1,ctrl1) <- mplayer (args!!0) sz
-    (cam2,ctrl2) <- mplayer (args!!1) sz
+    (cam1,ctrl1) <- mplayer (args!!0) sz >>= withPause
+    (cam2,ctrl2) <- mplayer (args!!1) sz >>= withPause
 
     state <- prepare undefined ()
 

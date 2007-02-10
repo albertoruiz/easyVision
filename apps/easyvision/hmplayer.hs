@@ -1,7 +1,7 @@
 -- This should work with any video source
 
 import Ipp
-import Graphics.UI.GLUT hiding (RGB,Size,minmax)
+import Graphics.UI.GLUT hiding (RGB,Size,minmax,histogram)
 import qualified Graphics.UI.GLUT as GL
 import Data.IORef
 import System.Exit
@@ -22,7 +22,7 @@ main = do
                  else Size (read $ Map.findWithDefault "480" "--rows" opts)
                            (read $ Map.findWithDefault "640" "--cols" opts)
 
-    (cam, ctrl)  <- mplayer (args!!0) sz
+    (cam, ctrl)  <- mplayer (args!!0) sz >>= withPause
 
     state <- prepare undefined "RGB"
 
@@ -38,7 +38,7 @@ main = do
     let mode m = MenuEntry m $ modifyIORef state $ \s -> s {ust = m}
 
     attachMenu LeftButton $ Menu $ map mode
-        ["RGB","Gray","Float", "Median"
+        ["RGB","Gray","Float","Median","Histogram"
         ,"Integral","Umbraliza","Hessian"
         ,"Corners", "Features", "Canny"]
 {-
@@ -120,12 +120,16 @@ worker cam param getRoi inWindow _ op = do
              c <- canny (gx,gy) (th/3,th) >>= scale8u32f 0 1
              copyROI32f im c
              drawImage im
-
         "Median" -> do
              orig <- cam
              im <- yuvToGray orig
              s <- (smooth `times` median Mask5x5) im
              drawImage s
+        "Histogram" -> do
+             im <- cam >>= yuvToGray
+             drawImage im
+             pointCoordinates (size im)
+             histogram [0,64 .. 256] im >>= return . show >>= text2D 0.9 0.7
 
     return op
 

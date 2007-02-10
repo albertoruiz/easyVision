@@ -19,6 +19,10 @@ module Ipp.Camera (
   -- * MPlayer interface
   -- | This camera works with any kind of video source accepted by MPlayer.
   mplayer, mpSize,
+  -- | * Camera combinators
+  -- | The following combinators create cameras from other cameras
+  withPause,
+  virtualCamera,
   -- * Explicit DV decodification
   -- | Wrapper to Pedro E. Lopez de Teruel interface to IEEE1394 cameras and dv videos.
   Camera
@@ -35,6 +39,7 @@ import Foreign.C.String(newCString)
 import Data.IORef
 import System.IO
 import System
+import System.IO.Unsafe(unsafeInterleaveIO)
 
 ------------------------------------------------------      
 foreign import ccall "auxIpp.h mycvOpenCamera"
@@ -160,8 +165,7 @@ mpSize k | k > 0     = Size (k*24) (k*32)
 -- | Interface to mplayer (implemented using a pipe and the format yuv4mpeg)
 mplayer :: String               -- ^ any url admitted by mplayer
         -> Size                 -- ^ desired image size (see 'mpsize')
-        -> IO (IO ImageYUV,
-               String -> IO ()) -- ^ function returning a new frame and camera controller
+        -> IO (IO ImageYUV)          -- ^ function returning a new frame and camera controller
 mplayer url (Size h w) = do
 
     let fifo = "/tmp/mplayer-fifo-"
@@ -190,10 +194,7 @@ mplayer url (Size h w) = do
     find
     system $ "rm "++fifo
 
-    paused    <- newIORef False
-    frozen <- newIORef undefined
-
-    let rawgrab = do
+    let grab = do
         Y im <- image (Size h w)
         --hGetLine f >>= print
         hGetBuf f (castPtr (ptr im)) 6 -- find?
@@ -201,16 +202,45 @@ mplayer url (Size h w) = do
         --print n
         return (Y im)
 
+    return grab
+
+-------------------------------------------------
+
+-- | Adds a pause control to a camera (the \"pause\" command toggles the state)
+withPause :: IO ImageYUV                       -- ^ original camera
+          -> IO (IO ImageYUV, String -> IO ()) -- ^ camera and controller
+withPause grab = do
+    paused    <- newIORef False
+    frozen <- newIORef undefined
+
     let control command = do
         case command of
          "pause" -> do modifyIORef paused not
                        p <- readIORef paused
-                       if p then rawgrab >>= writeIORef frozen
+                       if p then grab >>= writeIORef frozen
                             else return ()
 
-    let grab = do
+    let virtual = do
         p <- readIORef paused
         if p then readIORef frozen
-             else rawgrab
+             else grab
 
-    return (grab,control)
+    return (virtual,control)
+
+-----------------------------------------------
+
+createGrab l = do
+    pl <- newIORef l
+    return $ do
+        h:t <- readIORef pl
+        writeIORef pl t
+        return h
+
+grabAll grab = do
+    im <- grab
+    rest <- unsafeInterleaveIO (grabAll grab)
+    return (im:rest)
+
+-- | Creates a virtual camera by some desired processing of the infinite list of images produced by another camera.
+virtualCamera :: ([ImageYUV]-> IO [ImageYUV]) -> IO ImageYUV -> IO (IO ImageYUV)
+virtualCamera filt grab = grabAll grab >>= filt >>= createGrab
