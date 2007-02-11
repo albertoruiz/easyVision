@@ -69,6 +69,13 @@ foreign import ccall "auxIpp.h ippiSub_32f_C1R"
 foreign import ccall "auxIpp.h ippiMul_32f_C1R"
      ippiMul_32f_C1R :: Ptr() -> Int -> Ptr() -> Int -> Ptr() -> Int -> ROISize -> IO Int
 
+foreign import ccall "auxIpp.h ippiAbsDiff_8u_C1R"
+     ippiAbsDiff_8u_C1R :: Ptr() -> Int -> Ptr() -> Int -> Ptr() -> Int -> ROISize -> IO Int
+
+foreign import ccall "auxIpp.h ippiSum_8u_C1R"
+     ippiSum_8u_C1R :: Ptr() -> Int -> ROISize -> Ptr Double -> IO Int
+
+
 foreign import ccall "auxIpp.h ippiFilterMax_32f_C1R"
      ippiFilterMax_32f_C1R :: Ptr() -> Int -> Ptr() -> Int -> ROISize -> Double -> Double -> IO Int
 
@@ -132,6 +139,14 @@ foreign import ccall "auxIpp.h getPoints32f"
 
 foreign import ccall "auxIpp.h auxResize_32f_C1R"
      c_resize32f :: Ptr() -> Int -> Int -> Int ->
+                           Int -> Int -> Int -> Int ->
+                           Ptr() -> Int ->
+                           Int -> Int -> Int -> Int ->
+                           Int ->
+                           IO Int
+
+foreign import ccall "auxIpp.h auxResize_8u_C1R"
+     c_resize8u :: Ptr() -> Int -> Int -> Int ->
                            Int -> Int -> Int -> Int ->
                            Ptr() -> Int ->
                            Int -> Int -> Int -> Int ->

@@ -17,6 +17,8 @@ int ippiAbs_32f_C1R(SRC,DST);
 int ippiAdd_32f_C1R(SRC,SRC,DST);
 int ippiSub_32f_C1R(SRC,SRC,DST);
 int ippiMul_32f_C1R(SRC,SRC,DST);
+int ippiAbsDiff_8u_C1R(SRC,SRC,DST);
+int ippiSum_8u_C1R(DST,double*);
 int ippiFilterMax_32f_C1R(SRC,DST,double,double);
 int ippiCompare_32f_C1R(SRC,SRC,DST,int);
 int ippiThreshold_Val_32f_C1R(SRC,DST,float,float,int);
@@ -49,6 +51,12 @@ int getPoints32f(float * pSrc, int sstep, int sr1, int sr2, int sc1, int sc2,
                  int max, int* tot, int* hp);
 
 int auxResize_32f_C1R(void * pSrc, int sstep, int sh, int sw,
+                      int sr1, int sr2, int sc1, int sc2,
+                      void * pDst, int dstep,
+                      int dr1, int dr2, int dc1, int dc2,
+                      int interp);
+
+int auxResize_8u_C1R(void * pSrc, int sstep, int sh, int sw,
                       int sr1, int sr2, int sc1, int sc2,
                       void * pDst, int dstep,
                       int dr1, int dr2, int dc1, int dc2,

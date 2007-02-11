@@ -123,6 +123,8 @@ kbdcam :: (String->IO ()) -> KeyboardMouseCallback
 kbdcam ctrl = kbd where
     kbd (Char 'p') Down _ _ = ctrl "pause"
     kbd (Char ' ') Down _ _ = ctrl "pause"
+    kbd (Char 's') Down _ _ = ctrl "step"
+    kbd (Char 'q') Down _ _ = exitWith ExitSuccess
     kbd (Char '\27') Down _ _ = exitWith ExitSuccess
     kbd _ _ _ _ = return ()
 

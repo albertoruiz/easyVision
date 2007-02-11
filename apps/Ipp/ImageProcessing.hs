@@ -35,10 +35,13 @@ module Ipp.ImageProcessing (
 , copy8uC3
 , copyMask32f
 , resize32f
+, resize8u
 , warp, warpOn
 -- * Image arithmetic
 , scale32f
 , (|*|), (|+|), (|-|)
+, absDiff8u
+, sum8u
 , abs32f, sqrt32f
 , compare32f
 , thresholdVal32f
@@ -281,6 +284,13 @@ simplefun2 ippfun roifun msg = g where
         cr2 ippfun im1 im2 r // checkIPP msg [im1,im2]
         return (F r)
 
+simplefun2G ippfun roifun msg = g where
+    g (G im1) (G im2) = do
+        r <- imgAsR2 roifun im1 im2
+        cr2 ippfun im1 im2 r // checkIPP msg [im1,im2]
+        return (G r)
+
+
 infixl 7  |*|
 infixl 6  |+|, |-|
 -- | Pixel by pixel multiplication.
@@ -294,6 +304,18 @@ infixl 6  |+|, |-|
 -- | Pixel by pixel substraction.
 (|-|) :: ImageFloat -> ImageFloat -> IO ImageFloat
 (|-|) = flip $ simplefun2 ippiSub_32f_C1R intersection "sub32f" -- more natural argument order
+
+-- | Absolute difference
+absDiff8u :: ImageGray -> ImageGray -> IO ImageGray
+absDiff8u = simplefun2G ippiAbsDiff_8u_C1R intersection "absDiff8u"
+
+-- | Sum of all pixels in the roi a 8u image
+sum8u :: ImageGray -> IO Double
+sum8u (G im) = do
+    pf <- malloc
+    (ippiSum_8u_C1R // dst im (vroi im)) pf // checkIPP "sum8u" [im]
+    r <- peek pf
+    return r
 
 -- | Multiplies the pixel values of an image by a given value.
 scale32f :: Float -> ImageFloat -> IO ImageFloat
@@ -506,6 +528,20 @@ resize32f s (F im) = do
     r <- img I32f s
     genResize32f r (fullroi r) im (vroi im) inter_LINEAR
     return (F r)
+
+genResize8u dst droi im sroi interp = do
+    c_resize8u (ptr im) (step im) (height $ isize im) (width $ isize im)
+                 (r1 sroi) (r2 sroi) (c1 sroi) (c2 sroi)
+                 (ptr dst) (step dst)
+                 (r1 droi) (r2 droi) (c1 droi) (c2 droi)
+                 interp // checkIPP "genResize8u" [im]
+
+-- | Resizes the roi of a given image.
+resize8u :: Size -> ImageGray -> IO ImageGray
+resize8u s (G im) = do
+    r <- img Gray s
+    genResize8u r (fullroi r) im (vroi im) inter_LINEAR
+    return (G r)
 
 ----------------------------------------------------------------------
 

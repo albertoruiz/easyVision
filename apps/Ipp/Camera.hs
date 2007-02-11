@@ -19,7 +19,7 @@ module Ipp.Camera (
   -- * MPlayer interface
   -- | This camera works with any kind of video source accepted by MPlayer.
   mplayer, mpSize,
-  -- | * Camera combinators
+  -- * Camera combinators
   -- | The following combinators create cameras from other cameras
   withPause,
   virtualCamera,
@@ -206,12 +206,20 @@ mplayer url (Size h w) = do
 
 -------------------------------------------------
 
--- | Adds a pause control to a camera (the \"pause\" command toggles the state)
-withPause :: IO ImageYUV                       -- ^ original camera
-          -> IO (IO ImageYUV, String -> IO ()) -- ^ camera and controller
+{- | Adds a pause control to a camera. Commands:
+
+    \"pause\" -> toggles the pause state
+
+    \"step\"  -> toggles the frame by frame state (the next frame is obtained by \"pause\")
+
+-}
+withPause :: IO a                       -- ^ original camera
+          -> IO (IO a, String -> IO ()) -- ^ camera and controller
 withPause grab = do
-    paused    <- newIORef False
+    paused <- newIORef False
     frozen <- newIORef undefined
+    step   <- newIORef False
+    
 
     let control command = do
         case command of
@@ -219,10 +227,18 @@ withPause grab = do
                        p <- readIORef paused
                        if p then grab >>= writeIORef frozen
                             else return ()
+         "step"   -> do modifyIORef step not
 
     let virtual = do
+        s <- readIORef step
         p <- readIORef paused
-        if p then readIORef frozen
+        if not s && p
+             then readIORef frozen
+             else 
+                if s then if p then readIORef frozen
+                               else do writeIORef paused True
+                                       grab >>= writeIORef frozen
+                                       readIORef frozen
              else grab
 
     return (virtual,control)
@@ -242,5 +258,5 @@ grabAll grab = do
     return (im:rest)
 
 -- | Creates a virtual camera by some desired processing of the infinite list of images produced by another camera.
-virtualCamera :: ([ImageYUV]-> IO [ImageYUV]) -> IO ImageYUV -> IO (IO ImageYUV)
+virtualCamera :: ([a]-> IO [b]) -> IO a -> IO (IO b)
 virtualCamera filt grab = grabAll grab >>= filt >>= createGrab
