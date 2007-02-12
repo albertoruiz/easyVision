@@ -5,7 +5,6 @@ import System.Environment(getArgs)
 import System.IO.Unsafe
 import Data.Map hiding (map,size)
 import System
-import System.IO
 
 dropFrames n (h:t) = h : dropFrames n (drop n t)
 
@@ -40,10 +39,6 @@ main = do
 
     let th = read $ findWithDefault "0.01" "--sensi" opts
 
-    let saving = Data.Map.lookup "--save" opts :: Maybe String
-
-    --let save = read $ findWithDefault "motion.yuv" "--save" opts
-
     (cam,ctrl) <- mplayer (args!!0) sz
                   >>= addSmall (Size 90 120)
                   >>= virtualCamera (return . detectMov (th*255*90*120<))
@@ -53,7 +48,8 @@ main = do
 
     addWindow "motion" sz Nothing  (const (kbdcam ctrl)) state
 
-    sv <- openYUV4Mpeg sz saving
+    sv <- openYUV4Mpeg sz (Data.Map.lookup "--save" opts)
+                          (read `fmap` Data.Map.lookup "--limit" opts)
 
     launch state (worker cam sv)
 
@@ -64,7 +60,7 @@ worker cam save inWindow _ _ = do
     inWindow "motion" $ do
         orig <- cam >>= return . fst
         yuvToRGB orig >>= drawImage
-        system "artsplay /usr/share/sounds/KDE_Notify.wav"
+        --system "artsplay /usr/share/sounds/KDE_Notify.wav"
         save orig
         return ()
 

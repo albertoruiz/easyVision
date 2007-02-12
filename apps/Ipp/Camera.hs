@@ -215,14 +215,28 @@ saveYUV4Mpeg handle (Y im) = do
     touchForeignPtr (fptr im)
 
 
--- | creates a function to save frames in the mplayer yuv4mpeg format
-openYUV4Mpeg :: Size -> Maybe FilePath -> IO (ImageYUV -> IO())
-openYUV4Mpeg (Size h w) (Just filename) = do
+yuvHeader h w filename = do
     handle <- openFile filename WriteMode
     hPutStrLn handle $ "YUV4MPEG2 W"++show w++" H"++show h++" F25000000:1000000 Ip A0:0"
+    return handle
+
+-- | creates a function to save frames in the mplayer yuv4mpeg format
+openYUV4Mpeg :: Size -> Maybe FilePath -> Maybe Int -> IO (ImageYUV -> IO())
+
+openYUV4Mpeg _ Nothing _ = return $ const (return ())
+
+openYUV4Mpeg (Size h w) (Just filename) Nothing = do
+    handle <- yuvHeader h w filename
     return (saveYUV4Mpeg handle)
 
-openYUV4Mpeg _ Nothing = return $ const (return ())
+openYUV4Mpeg (Size h w) (Just filename) (Just limit) = do
+    handle <- yuvHeader h w filename
+    framesSaved <- newIORef 0
+    return $ \im -> do
+        saveYUV4Mpeg handle im
+        fs <- readIORef framesSaved
+        if fs < limit then writeIORef framesSaved (fs+1)
+                      else exitWith ExitSuccess
 
 -------------------------------------------------
 
