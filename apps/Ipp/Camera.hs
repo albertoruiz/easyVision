@@ -23,6 +23,7 @@ module Ipp.Camera (
   -- | The following combinators create cameras from other cameras
   withPause,
   virtualCamera,
+  openYUV4Mpeg,
   -- * Explicit DV decodification
   -- | Wrapper to Pedro E. Lopez de Teruel interface to IEEE1394 cameras and dv videos.
   Camera
@@ -203,6 +204,25 @@ mplayer url (Size h w) = do
         return (Y im)
 
     return grab
+
+------------------------------------------------
+
+saveYUV4Mpeg handle (Y im) = do
+    let Size h w = isize im
+    hPutStrLn handle "FRAME"
+    hPutBuf handle (castPtr (ptr im)) (w*h*3`div`2)
+    hFlush handle
+    touchForeignPtr (fptr im)
+
+
+-- | creates a function to save frames in the mplayer yuv4mpeg format
+openYUV4Mpeg :: Size -> Maybe FilePath -> IO (ImageYUV -> IO())
+openYUV4Mpeg (Size h w) (Just filename) = do
+    handle <- openFile filename WriteMode
+    hPutStrLn handle $ "YUV4MPEG2 W"++show w++" H"++show h++" F25000000:1000000 Ip A0:0"
+    return (saveYUV4Mpeg handle)
+
+openYUV4Mpeg _ Nothing = return $ const (return ())
 
 -------------------------------------------------
 
