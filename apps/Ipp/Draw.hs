@@ -29,7 +29,7 @@ module Ipp.Draw
 import Graphics.UI.GLUT hiding (RGB, Matrix, Size, Point)
 import qualified Graphics.UI.GLUT as GL
 import Ipp.Core
-import Ipp.ImageProcessing(resize32f)
+import Ipp.ImageProcessing(resize32f,yuvToRGB)
 import Data.IORef
 import Foreign (touchForeignPtr)
 import GSL hiding (size)
@@ -51,6 +51,8 @@ instance Drawable ImageRGB where
 instance Drawable ImageFloat where
     drawImage = drawImageFloat
 
+instance Drawable ImageYUV where
+    drawImage = drawImageYUV
 
 myDrawPixels m@Img{itype=RGB} = 
     GL.drawPixels (GL.Size (fromIntegral $ step m `quot` 3) (fromIntegral $ height $ isize m))
@@ -63,6 +65,11 @@ myDrawPixels m@Img{itype=Gray} =
 myDrawPixels m@Img{itype=I32f} = 
     GL.drawPixels (GL.Size (fromIntegral $ step m `quot` (datasize m)) (fromIntegral $ height $ isize m))
                   (PixelData Luminance Float (ptr m))
+
+myDrawPixels m@Img{itype=YUV} = 
+    GL.drawPixels (GL.Size (fromIntegral $ step m `quot` (datasize m)) (fromIntegral $ height $ isize m))
+                  (PixelData CMYK UnsignedByte (ptr m))
+
 
 -- | Draws an image in the current window.
 drawImage' :: Img -> IO ()
@@ -82,6 +89,8 @@ drawImage' m = do
     touchForeignPtr (fptr m)
     let r = shrink (-1,-1) $ vroi m
     pixelCoordinates (isize m)
+    setColor 1 1 1
+    lineWidth $= 1
     renderPrimitive LineLoop $ mapM_ vertex $
         Pixel (r1 r) (c1 r) :
         Pixel (r2 r) (c1 r) :
@@ -91,6 +100,7 @@ drawImage' m = do
 drawImageFloat (F im) = drawImage' im
 drawImageGray (G im) = drawImage' im
 drawImageRGB (C im) = drawImage' im
+drawImageYUV (Y im) = yuvToRGB (Y im) >>= drawImageRGB -- drawImage' im
 
 --------------------------------------------------------------------------------
 

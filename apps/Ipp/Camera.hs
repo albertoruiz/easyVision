@@ -18,12 +18,11 @@ Image acquisition from real cameras and other video sources.
 module Ipp.Camera (
   -- * MPlayer interface
   -- | This camera works with any kind of video source accepted by MPlayer.
-  mplayer, mpSize,
+  mplayer, mpSize, openYUV4Mpeg,
   -- * Camera combinators
   -- | The following combinators create cameras from other cameras
   withPause,
   virtualCamera,
-  openYUV4Mpeg,
   -- * Explicit DV decodification
   -- | Wrapper to Pedro E. Lopez de Teruel interface to IEEE1394 cameras and dv videos.
   Camera

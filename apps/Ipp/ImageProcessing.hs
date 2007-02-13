@@ -21,6 +21,7 @@ module Ipp.ImageProcessing (
 , jaehne32f
 , set32f
 , copyROI32f
+, copyROI8u
 , times
 , partit
 -- * Image manipulation
@@ -188,6 +189,11 @@ integral (G im) = do
 -- | Copies the roi of the input image into the destination image.
 copyROI32f :: ImageFloat -> ImageFloat -> IO ()
 copyROI32f (F r) (F im) = ippiCopy_32f_C1R // src im (vroi im) // dst r (vroi im) // checkIPP "copyROI32f" [im]
+
+-- | Copies the roi of the input image into the destination image.
+copyROI8u :: ImageGray -> ImageGray -> IO ()
+copyROI8u (G r) (G im) = ippiCopy_8u_C1R // src im (vroi im) // dst r (vroi im) // checkIPP "copyROI8u" [im]
+
 
 simplefun1F ippfun roifun msg = g where
     g (F im) = do

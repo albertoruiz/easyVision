@@ -3,7 +3,8 @@
 import Ipp
 import System.Environment(getArgs)
 import System.IO.Unsafe
-import Data.Map hiding (map,size)
+import Data.Map as Map hiding (map,size)
+import Graphics.UI.GLUT hiding (Size)
 import System
 
 dropFrames n (h:t) = h : dropFrames n (drop n t)
@@ -48,8 +49,8 @@ main = do
 
     addWindow "motion" sz Nothing  (const (kbdcam ctrl)) state
 
-    sv <- openYUV4Mpeg sz (Data.Map.lookup "--save" opts)
-                          (read `fmap` Data.Map.lookup "--limit" opts)
+    sv <- openYUV4Mpeg sz (Map.lookup "--save" opts)
+                          (read `fmap` Map.lookup "--limit" opts)
 
     launch state (worker cam sv)
 
@@ -62,6 +63,7 @@ worker cam save inWindow _ _ = do
         yuvToRGB orig >>= drawImage
         --system "artsplay /usr/share/sounds/KDE_Notify.wav"
         save orig
+        windowStatus $= Shown
         return ()
 
 

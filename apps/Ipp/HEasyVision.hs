@@ -138,13 +138,14 @@ roiControl initROI defaultFunc = do
     motionCallback $= Just (mv r)
     return (readIORef r)
         where
+            d = 20
             kbd r _ (MouseButton RightButton) Down _ pos@(Position x y) =
                 modifyIORef r (\ (ROI _ r2 _ c2) ->
-                                  ROI (min (r2-10) (fromIntegral y)) r2
-                                      (min (c2-10) (fromIntegral x)) c2)
+                                  ROI (min (r2-d) (fromIntegral y)) r2
+                                      (min (c2-d) (fromIntegral x)) c2)
             kbd r _ (Char 'r') Down _ _ = writeIORef r initROI
             kbd _ defaultFunc a b c d = defaultFunc a b c d
             mv r (Position x y) =
                 modifyIORef r (\ (ROI r1 _ c1 _) ->
-                                  ROI r1 (max (r1+10) (fromIntegral y))
-                                      c1 (max (c1+10) (fromIntegral x)))
+                                  ROI r1 (max (r1+d) (fromIntegral y))
+                                      c1 (max (c1+d) (fromIntegral x)))
