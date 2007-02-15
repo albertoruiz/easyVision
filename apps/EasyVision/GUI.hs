@@ -8,9 +8,8 @@ Maintainer  :  Alberto Ruiz (aruiz at um dot es)
 Stability   :  very provisional
 Portability :  hmm...
 
-A minimalist version of EasyVision [ref.] using HOpenGL.
+The GUI of EasyVision, based on HOpenGL.
 
-See the simple examples: hmplayer.hs, hessian.hs, warp.hs, etc. in the easyvision folder.
 
 -}
 -----------------------------------------------------------------------------
@@ -25,7 +24,7 @@ module EasyVision.GUI (
 , kbdcam, roiControl
 -- * Drawing utilities
 , module EasyVision.Draw
--- * DV camera driver
+-- * Camera
 , module EasyVision.Camera
 ) where
 

@@ -12,6 +12,8 @@ Portability :  Requires HOpenGL and uses MPlayer
 A minimalist version of EasyVision, a system for fast prototyping of
 computer vision and image processing applications.
 
+A few example programs can be found in the compvis folder.
+
 -}
 -----------------------------------------------------------------------------
 

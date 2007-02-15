@@ -7,16 +7,17 @@ haddock Vision.hs \
         Vision/Classifier.hs \
         Vision/Geometry.hs \
         Vision/Autofrontal.hs \
-        Ipp.hs \
-        Ipp/Core.hs \
-        Ipp/Images.hs \
-        Ipp/Wrappers.hs \
-        Ipp/ImageProcessing.hs \
-        Ipp/HEasyVision.hs \
-        Ipp/Parameters.hs \
-        Ipp/Camera.hs \
-        Ipp/Draw.hs \
-        Ipp/Trackball.hs --hide=Ipp.Trackball \
-        Ipp/Saddle.hs \
+        ImagProc.hs \
+        ImagProc/Ipp/Core.hs \
+        ImagProc/Images.hs \
+        ImagProc/Ipp/Wrappers.hs \
+        ImagProc/ImageProcessing.hs \
+        ImagProc/Saddle.hs \
+        EasyVision.hs \
+        EasyVision/GUI.hs \
+        EasyVision/Parameters.hs \
+        EasyVision/Camera.hs \
+        EasyVision/Draw.hs \
+        EasyVision/Trackball.hs --hide=Ipp.Trackball \
         --use-package=base --use-package=OpenGL \
         -o doc -h -t Vision # 2> /dev/null
