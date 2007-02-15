@@ -1,6 +1,6 @@
 -----------------------------------------------------------------------------
 {- |
-Module      :  Ipp.Saddle
+Module      :  ImagProc.Saddle
 Copyright   :  (c) Alberto Ruiz 2006
 License     :  GPL-style
 
@@ -13,14 +13,14 @@ We extract points with high negative det hessian response (Saddle points in a qu
 -}
 -----------------------------------------------------------------------------
 
-module Ipp.Saddle (
+module ImagProc.Saddle (
  InterestPoint(..),
  getSaddlePoints
 )
 where
 
-import Ipp.Core
-import Ipp.ImageProcessing
+import ImagProc.Ipp.Core
+import ImagProc.ImageProcessing
 import Debug.Trace(trace)
 import Data.List(zipWith5)
 import GSL hiding (size)

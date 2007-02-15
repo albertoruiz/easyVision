@@ -1,6 +1,6 @@
 -- example of virtual camera
 
-import Ipp
+import EasyVision
 import System.Environment(getArgs)
 import System.IO.Unsafe
 import Data.Map as Map hiding (map,size)
@@ -45,7 +45,7 @@ main = do
                   >>= virtualCamera (return . detectMov (th*255*90*120<))
                   >>= withPause
 
-    state <- prepare undefined ()
+    state <- prepare ()
 
     addWindow "motion" sz Nothing  (const (kbdcam ctrl)) state
 
@@ -56,12 +56,12 @@ main = do
 
 -----------------------------------------------------------------
 
-worker cam save inWindow _ _ = do
+worker cam save inWindow _ = do
 
     inWindow "motion" $ do
         orig <- cam >>= return . fst
         yuvToRGB orig >>= drawImage
-        --system "artsplay /usr/share/sounds/KDE_Notify.wav"
+        system "artsplay /usr/share/sounds/KDE_Notify.wav"
         save orig
         windowStatus $= Shown
         return ()

@@ -1,4 +1,4 @@
-module Ipp.Trackball (newTrackball) where
+module EasyVision.Trackball (newTrackball) where
 
 import GSL
 import Graphics.UI.GLUT hiding (normalize, Matrix, matrix)

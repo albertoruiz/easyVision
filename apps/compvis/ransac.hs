@@ -1,6 +1,6 @@
 -- This should work with any video source
 
-import Ipp
+import EasyVision
 import Graphics.UI.GLUT hiding (RGB,Size,Point,Matrix)
 import qualified Graphics.UI.GLUT as GL
 import Data.IORef
@@ -11,7 +11,7 @@ import GSL hiding (size)
 import qualified GSL
 import Control.Monad(when)
 import GHC.Float(double2Float,isDoubleNaN)
-import Ipp.Core
+import ImagProc.Ipp.Core
 import Vision
 
 
@@ -32,12 +32,9 @@ main = do
 
     (cam, ctrl)  <- mplayer (args!!0) sz >>= withPause
 
-    --ocam <- openCamera (args!!0) sz
-    let ocam = undefined
-
     st <- empty
 
-    state <- prepare ocam st
+    state <- prepare st
 
     o <- createParameters state [("h",percent 20),
                                  ("smooth",intParam 3 0 10),
@@ -57,7 +54,7 @@ main = do
 
 -----------------------------------------------------------------
 
-worker cam param inWindow ocam st = do
+worker cam param inWindow st = do
 
     ph <- getParam param "h" :: IO Int
     let h = fromIntegral ph / 100

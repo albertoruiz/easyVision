@@ -1,6 +1,5 @@
--- This should work with any video source
 
-import Ipp
+import EasyVision
 import Graphics.UI.GLUT hiding (RGB,Size,minmax,histogram)
 import qualified Graphics.UI.GLUT as GL
 import Data.IORef
@@ -26,7 +25,7 @@ main = do
     (cam1,ctrl1) <- mplayer (args!!0) sz >>= withPause
     (cam2,ctrl2) <- mplayer (args!!1) sz >>= withPause
 
-    state <- prepare undefined ()
+    state <- prepare ()
 
     addWindow "left" sz Nothing  (const (kbdcam ctrl1)) state
     addWindow "right" sz Nothing (const (kbdcam ctrl2)) state
@@ -37,7 +36,7 @@ main = do
 -----------------------------------------------------------------
 
 
-worker cam1 cam2 inWindow _ _ = do
+worker cam1 cam2 inWindow _ = do
 
     im1 <- cam1 >>= yuvToRGB 
     im2 <- cam2 >>= yuvToGray >>= scale8u32f 0 1

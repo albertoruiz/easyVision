@@ -1,7 +1,7 @@
 
 module Main where
 
-import Ipp
+import EasyVision
 import Graphics.UI.GLUT hiding (Matrix, drawPixels, Size)
 import Data.IORef
 import System.Exit
@@ -10,7 +10,7 @@ import System.Environment(getArgs)
 import Data.List(minimumBy,partition)
 import GSL hiding (size)
 import Vision
-import qualified Ipp.Images as I
+import qualified ImagProc.Images as I
 
 vector v = fromList v :: Vector Double
 
@@ -19,6 +19,7 @@ data MyState = ST { imgs :: [ImageFloat]
                   , pts  :: [[[Double]]]
                   , basev ::Int
                   , smooth :: Int
+                  , camera :: IO(ImageYUV)    -- the camera
                   }
 
 diagl = diag . vector
@@ -27,19 +28,20 @@ diagl = diag . vector
 main = do
     args <- getArgs
     let sz = Size 288 384
-    cam <- openCamera (args!!0) sz
+    (cam,ctrl) <- mplayer (args!!0) sz >>= withPause
 
-    state <- prepare cam ST { imgs=[]
-                            , corners=[], marked = [], orig = []
-                            , pts=[]
-                            , basev = 0
-                            , smooth = 3
-                            }
+    state <- prepare ST { imgs=[]
+                        , corners=[], marked = [], orig = []
+                        , pts=[]
+                        , basev = 0
+                        , smooth = 3
+                        , camera = cam
+                        }
 
-    addWindow "camera" sz Nothing marker state
+    addWindow "camera" sz Nothing (marker (const (kbdcam ctrl))) state
     addWindow "selected" sz Nothing keyboard state
 
-    launch state worker
+    launch state (worker cam)
 
 -------------------------------------------------------------------
 dist [a,b] [x,y] = sqrt $ (a-x)^2+(b-y)^2
@@ -47,9 +49,9 @@ dist [a,b] [x,y] = sqrt $ (a-x)^2+(b-y)^2
 pl (I.Point x y) = [x,y]
 lpl = map (pl.ipPosition)
 
-worker inWindow cam st = do
+worker grab inWindow st = do
 
-    camera <- grab cam
+    camera <- grab >>= yuvToGray
     camera32f <- scale8u32f 0 1 camera
 
     ips <- getSaddlePoints (smooth st) 7 0.05 200 20 10 camera32f
@@ -120,14 +122,6 @@ distComb p q = distFeat p q + 0.1*distSpatial p q
 -----------------------------------------------------------------
 -- callbacks
 -----------------------------------------------------------------
-keyboard str (Char 'p') Down _ _ = do
-    st <- readIORef str
-    pause (camid st)
-keyboard str (Char ' ') Down _ _ = do
-    st <- readIORef str
-    pause (camid st)
-keyboard _ (Char '\27') Down _ _ = do
-    exitWith ExitSuccess
 
 keyboard st (SpecialKey KeyUp) Down _ _ = do
     modifyIORef st $ \s -> s {ust = (ust s) {basev = basev (ust s) + 1}}
@@ -150,7 +144,7 @@ ip p = IP { ipDescriptor  = 0
           , ipTime        = 0
           }
 
-marker str (MouseButton LeftButton) Down _ pos@(Position x y) = do
+marker _ str (MouseButton LeftButton) Down _ pos@(Position x y) = do
     st <- readIORef str
     let u = ust (st)
     let newpoint = closestBy distSpatial (corners u) $ ip (I.Pixel (fromIntegral y) (fromIntegral x))
@@ -163,10 +157,10 @@ marker str (MouseButton LeftButton) Down _ pos@(Position x y) = do
                                          }
                                }
 
-marker st (MouseButton RightButton) Down _ pos@(Position x y) = do
+marker _ st (MouseButton RightButton) Down _ pos@(Position x y) = do
     modifyIORef st $ \s -> s {ust = (ust s) {marked = case marked (ust s) of
                                                         [] -> []
                                                         _:t -> t,
                                              orig = [] }}
 
-marker st b s m p = keyboard st b s m p
+marker def st b s m p = def st b s m p

@@ -13,7 +13,7 @@ A collection of frequently used image processing functions.
 -}
 -----------------------------------------------------------------------------
 
-module Ipp.ImageProcessing (
+module ImagProc.ImageProcessing (
 -- * IPP auxiliary structures
   Mask(..)
 , IppCmp(..)
@@ -66,8 +66,8 @@ module Ipp.ImageProcessing (
 )
 where
 
-import Ipp.Core
-import Ipp.Wrappers
+import ImagProc.Ipp.Core
+import ImagProc.Ipp.Wrappers
 import Foreign
 import Foreign.C.Types(CUChar)
 import Vision --hiding ((|-|),(|+|))

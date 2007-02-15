@@ -1,6 +1,6 @@
 -----------------------------------------------------------------------------
 {- |
-Module      :  Ipp.Parameters
+Module      :  EasyVision.Parameters
 Copyright   :  (c) Alberto Ruiz 2006
 License     :  GPL-style
 
@@ -13,15 +13,15 @@ A \'global\' parameter list with its own control window. See the example warp.hs
 -}
 -----------------------------------------------------------------------------
 
-module Ipp.Parameters (
+module EasyVision.Parameters (
    Parameters,
    createParameters,
    listParam, realParam, percent, intParam,
    getParam
 ) where
 
-import Ipp.Core
-import Ipp.HEasyVision
+import ImagProc.Ipp.Core
+import EasyVision.GUI
 import Graphics.UI.GLUT hiding (RGB, Matrix, Size)
 import qualified Graphics.UI.GLUT as GL
 import Data.IORef

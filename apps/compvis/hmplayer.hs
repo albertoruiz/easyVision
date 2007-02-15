@@ -1,6 +1,5 @@
--- This should work with any video source
 
-import Ipp
+import EasyVision
 import Graphics.UI.GLUT hiding (RGB,Size,minmax,histogram)
 import qualified Graphics.UI.GLUT as GL
 import Data.IORef
@@ -8,7 +7,7 @@ import System.Exit
 import System.Environment(getArgs)
 import qualified Data.Map as Map
 
-import Ipp.Core
+import ImagProc.Ipp.Core
 
 ------------------------------------------------------------
 
@@ -24,7 +23,7 @@ main = do
 
     (cam, ctrl)  <- mplayer (args!!0) sz >>= withPause
 
-    state <- prepare undefined "RGB"
+    state <- prepare "RGB"
 
     o <- createParameters state [("umbral",realParam 0.5 0 1),
                                  ("h",percent 20),
@@ -62,7 +61,7 @@ main = do
 
 k = 1/(640*480*128)
 
-worker cam param getRoi inWindow _ op = do
+worker cam param getRoi inWindow op = do
 
     th <- getParam param "umbral"
     ph <- getParam param "h" :: IO Int

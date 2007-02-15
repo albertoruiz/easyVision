@@ -2,7 +2,7 @@
 
 -----------------------------------------------------------------------------
 {- |
-Module      :  Ipp.Core
+Module      :  ImagProc.Ipp.Core
 Copyright   :  (c) Alberto Ruiz 2006
 License     :  GPL-style
 
@@ -16,7 +16,7 @@ Experimental interface to Intel Integrated Performance Primitives for image proc
 -----------------------------------------------------------------------------
 
 
-module Ipp.Core
+module ImagProc.Ipp.Core
           ( -- * Image representation
             Img(..), ImageType(..), ROI(..), Size(..)
             -- * Creation of images
@@ -41,7 +41,7 @@ module Ipp.Core
 
 import Foreign hiding (shift)
 import Control.Monad(when)
-import Ipp.Wrappers
+import ImagProc.Ipp.Wrappers
 import Foreign.C.String(peekCString)
 import GSL
 import Vision

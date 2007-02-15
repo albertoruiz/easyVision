@@ -1,6 +1,6 @@
 -----------------------------------------------------------------------------
 {- |
-Module      :  Ipp.HEasyVision
+Module      :  EasyVision.GUI
 Copyright   :  (c) Alberto Ruiz 2006
 License     :  GPL-style
 
@@ -15,7 +15,7 @@ See the simple examples: hmplayer.hs, hessian.hs, warp.hs, etc. in the easyvisio
 -}
 -----------------------------------------------------------------------------
 
-module Ipp.HEasyVision (
+module EasyVision.GUI (
 -- * Application interface
   State(..)
 , prepare
@@ -24,15 +24,15 @@ module Ipp.HEasyVision (
 , InWindow
 , kbdcam, roiControl
 -- * Drawing utilities
-, module Ipp.Draw
+, module EasyVision.Draw
 -- * DV camera driver
-, module Ipp.Camera
+, module EasyVision.Camera
 ) where
 
-import Ipp.Camera
-import Ipp.Draw
-import Ipp.Core -- (Size(..))
-import Ipp.Camera
+import EasyVision.Camera
+import EasyVision.Draw
+import ImagProc.Ipp.Core -- (Size(..))
+import EasyVision.Camera
 import Graphics.UI.GLUT hiding (RGB, Matrix, Size)
 import qualified Graphics.UI.GLUT as GL
 import Data.IORef
@@ -60,21 +60,20 @@ addWindow name s dcallback kcallback state = do
 -- | The state of the application, including the user defined state.
 data State userState = 
     State { wins  :: Map String Window
-          , camid :: Camera
           , frame :: Int 
           , ust  :: userState
 }
 
 -- | Initializes the application state with a camera and a user-defined state.
-prepare :: Camera
-           -> userState
-           -> IO (IORef (State userState))
-prepare cam s = do
+prepare :: userState
+        -> IO (IORef (State userState))
+prepare s = do
     getArgsAndInitialize
     initialDisplayMode $= [DoubleBuffered, WithDepthBuffer]
 
-    state <- newIORef State {camid = cam, frame = 0,
-                             wins = empty, ust = s}
+    state <- newIORef State {frame = 0,
+                             wins = empty, 
+                             ust = s}
     return state
 
 -- | Window selector for the HOpenGL functions
@@ -82,12 +81,12 @@ type InWindow = String -> IO () -> IO ()
 
 -- | Starts the application with a worker function (idle callback).
 launch :: IORef (State userState)      -- ^ the state of the application
-          -> (InWindow -> Camera -> userState -> IO userState)  -- ^ worker function
+          -> (InWindow -> userState -> IO userState)  -- ^ worker function
           -> IO ()
 launch state worker = do
     idleCallback $= Just ( do
         st <- readIORef state
-        newstate <- worker (inWindow st) (camid st) (ust st)
+        newstate <- worker (inWindow st) (ust st)
         writeIORef state st {frame = frame st +1, ust = newstate}
         )
     mainLoop

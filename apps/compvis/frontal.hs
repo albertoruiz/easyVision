@@ -14,8 +14,8 @@
 
 module Main where
 
-import Ipp
-import Ipp.Core(image,ImageFloat(F),fullroi,setData32f)
+import EasyVision
+import ImagProc.Ipp.Core(image,ImageFloat(F),fullroi,setData32f)
 import Graphics.UI.GLUT hiding (Matrix, Size, Point)
 import Data.IORef
 import System.Exit
@@ -31,7 +31,7 @@ vector v = fromList v :: Vector Double
 
 floorSize = 256
 
-data MyState = ST { imgs :: [ImageFloat]             -- selected views
+data MyState = ST { imgs :: [ImageFloat]      -- selected views
                   , corners, marked ::[Pixel] -- corners in the current image
                   , pts  :: [[Point]]         -- homologous points of the selected images
                   , hs   :: [Matrix Double]   -- interimage homographies
@@ -43,34 +43,36 @@ data MyState = ST { imgs :: [ImageFloat]             -- selected views
                   , baseView ::Int            -- index of the desired base view 
                   , targetView :: Int         -- index of any other selected view
                   , trackball :: IO ()        -- viewpoint generator
+                  , camera :: IO(ImageYUV)    -- the camera
                   }
 
 --------------------------------------------------------------
 main = do
     args <- getArgs
     let sz = Size 288 384
-    cam <- openCamera (args!!0) sz
+    (cam,ctrl) <- mplayer (args!!0) sz >>= withPause
 
     (tb,kc,mc) <- newTrackball
 
-    state <- prepare cam ST { imgs=[]
-                            , corners=[], marked = []
-                            , pts=[]
-                            , hs = []
-                            , cam0 = ident 3
-                            , cost = Nothing
-                            , drfuns=[]
-                            , priorInfo = AllKnown (repeat 2.8)
-                            , baseView = 0, targetView = 0
-                            , zoom = 0.2
-                            , trackball = tb
-                            }
+    state <- prepare ST { imgs=[]
+                        , corners=[], marked = []
+                        , pts=[]
+                        , hs = []
+                        , cam0 = ident 3
+                        , cost = Nothing
+                        , drfuns=[]
+                        , priorInfo = AllKnown (repeat 2.8)
+                        , baseView = 0, targetView = 0
+                        , zoom = 0.2
+                        , trackball = tb
+                        , camera = cam
+                        }
 
-    addWindow "camera" sz Nothing marker state            -- shows the live video
-    addWindow "base" sz Nothing keyboard state            -- desired base view
-    addWindow "selected" sz Nothing keyboard state        -- target view warped into the base view
-    addWindow "world" (Size floorSize floorSize) Nothing warpkbd state     -- combined metric rectification
-    addWindow "cost" (Size 200 200) Nothing keyboard state        -- the cost function
+    addWindow "camera" sz Nothing (marker (const (kbdcam ctrl))) state   -- shows the live video
+    addWindow "base" sz Nothing keyboard state                           -- desired base view
+    addWindow "selected" sz Nothing keyboard state                       -- target view warped into the base view
+    addWindow "world" (Size floorSize floorSize) Nothing warpkbd state   -- combined metric rectification
+    addWindow "cost" (Size 200 200) Nothing keyboard state               -- the cost function
 
     let modInfo info = do
         st <- readIORef state
@@ -92,7 +94,7 @@ main = do
     textureFunction $= Decal
     depthFunc $= Just Less
 
-    launch state worker
+    launch state (worker cam)
 
 -------------------------------------------------------------------
 
@@ -121,8 +123,8 @@ mlp = map lp
 
 htp h = ht h . mpl
 
-worker inWindow cam st = do
-    camera <- grab cam >>= scale8u32f 0 1
+worker cam inWindow st = do
+    camera <- cam >>= yuvToGray >>= scale8u32f 0 1
     hotPoints <- getCorners 1 7 0.1 200 camera
 
     inWindow "camera" $ do
@@ -238,14 +240,6 @@ closest hp p = minimumBy (compareBy $ dist p) hp
 -----------------------------------------------------------------
 -- callbacks
 -----------------------------------------------------------------
-keyboard str (Char 'p') Down _ _ = do
-    st <- readIORef str
-    pause (camid st)
-keyboard str (Char ' ') Down _ _ = do
-    st <- readIORef str
-    pause (camid st)
-keyboard _ (Char '\27') Down _ _ = do
-    exitWith ExitSuccess
 
 keyboard st (SpecialKey KeyUp) Down _ _ = do
     modifyIORef st $ \s -> s {ust = (ust s) {baseView = min (length (imgs $ ust s)-1) $ baseView (ust s) + 1}}
@@ -261,7 +255,7 @@ keyboard _ _ _ _ _ = return ()
 
 ------------------------------------------------------------------
 
-marker str (MouseButton LeftButton) Down _ pos@(Position x y) = do
+marker _ str (MouseButton LeftButton) Down _ pos@(Position x y) = do
     st <- readIORef str
     let u = ust (st)
     let newpoint = closest (corners u) (Pixel (fromIntegral y) (fromIntegral x))
@@ -269,7 +263,7 @@ marker str (MouseButton LeftButton) Down _ pos@(Position x y) = do
     if (length m /= 4)
         then writeIORef str st { ust = u {marked = m} }
         else do
-            camera <- grab (camid st)
+            camera <- camera (ust st) >>= yuvToGray
             let hp = pixelsToPoints (size camera) m
             im  <- scale8u32f 0 1 camera
             let u' = u { marked = []
@@ -281,12 +275,12 @@ marker str (MouseButton LeftButton) Down _ pos@(Position x y) = do
             v <- compute u' -- automatically updated on the fourth point
             writeIORef str st { ust = v }
 
-marker st (MouseButton RightButton) Down _ pos@(Position x y) = do
+marker _ st (MouseButton RightButton) Down _ pos@(Position x y) = do
     modifyIORef st $ \s -> s {ust = (ust s) {marked = case marked (ust s) of
                                                         [] -> []
                                                         _:t -> t }}
 
-marker st b s m p = keyboard st b s m p
+marker def st b s m p = def st b s m p
 
 --------------------------------------------------------------------
 

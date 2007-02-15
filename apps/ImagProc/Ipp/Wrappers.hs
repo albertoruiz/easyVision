@@ -2,7 +2,7 @@
 
 -----------------------------------------------------------------------------
 {- |
-Module      :  Ipp.Wrappers
+Module      :  ImagProc.Ipp.Wrappers
 Copyright   :  (c) Alberto Ruiz 2006
 License     :  GPL-style
 
@@ -10,13 +10,13 @@ Maintainer  :  Alberto Ruiz (aruiz at um dot es)
 Stability   :  very provisional
 Portability :  hmm...
 
-Raw access to some IPP functions. You can use them directly, with the help of "Ipp.Core", but it is probably easier to use the higher level interface supplied by "Ipp.ImageProcessing".
+Raw access to some IPP functions. You can use them directly, with the help of "ImagProc.Ipp.Core", but it is probably easier to use the higher level interface supplied by "ImagProc.ImageProcessing".
 
 -}
 -----------------------------------------------------------------------------
 
 
-module Ipp.Wrappers where
+module ImagProc.Ipp.Wrappers where
 
 import Foreign
 import Foreign.C.Types

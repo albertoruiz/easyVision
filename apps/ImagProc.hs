@@ -1,7 +1,7 @@
 {-# OPTIONS  #-}
 -----------------------------------------------------------------------------
 {- |
-Module      :  Ipp
+Module      :  ImagProc
 Copyright   :  (c) Alberto Ruiz 2006
 License     :  GPL-style
 
@@ -10,21 +10,16 @@ Stability   :  very provisional
 Portability :  hmm...
 
 Experimental interface to Intel's IPP image processing libraries
-and a minimalist version of EasyVision.
 
 -}
 -----------------------------------------------------------------------------
 
-module Ipp (
-    module Ipp.Images,
-    module Ipp.ImageProcessing,
-    module Ipp.HEasyVision,
-    module Ipp.Parameters,
-    module Ipp.Saddle
+module ImagProc (
+    module ImagProc.Images,
+    module ImagProc.ImageProcessing,
+    module ImagProc.Saddle
 ) where
 
-import Ipp.Images
-import Ipp.ImageProcessing
-import Ipp.HEasyVision
-import Ipp.Parameters
-import Ipp.Saddle
+import ImagProc.Images
+import ImagProc.ImageProcessing
+import ImagProc.Saddle

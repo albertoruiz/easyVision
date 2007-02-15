@@ -35,10 +35,6 @@ int ippiCanny_32f8u_C1R(SRC,SRC,DST,float,float,void*);
 int ippiFilterMedian_8u_C1R(SRC,DST,VSIZE,VSIZE);
 int ippiHistogramRange_8u_C1R(DST,int*, int*, int);
 
-int mycvOpenCamera(char *filename);
-void mycvSetModeCamera(int camera,int mode,int rows,int cols);
-char* mycvGetFrameCamera(int camera,int *step_bytes);
-
 int auxWarpPerspective_32f_C1R(void * pSrc, int sstep, int sh, int sw,
                                int sr1, int sr2, int sc1, int sc2,
                                void * pDst, int dstep,

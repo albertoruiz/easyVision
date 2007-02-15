@@ -2,7 +2,7 @@
 
 -----------------------------------------------------------------------------
 {- |
-Module      :  Ipp.Images
+Module      :  ImagProc.Images
 Copyright   :  (c) Alberto Ruiz 2006
 License     :  GPL-style
 
@@ -17,12 +17,13 @@ These are the only definitions required by the \"end user\". Lower level program
 -}
 -----------------------------------------------------------------------------
 
-module Ipp.Images
+module ImagProc.Images
 ( -- * Image types
   Image (size)
 , ImageRGB
 , ImageGray
 , ImageFloat
+, ImageYUV
   -- * Image coordinates
 , Size (..)
 , Pixel (..)
@@ -31,11 +32,12 @@ module Ipp.Images
 --, val32f
 ) where
 
-import Ipp.Core (
+import ImagProc.Ipp.Core (
      Image(..)
    , ImageRGB
    , ImageGray
    , ImageFloat
+   , ImageYUV
    , Pixel(..)
    , Point(..)
    , Size(..)

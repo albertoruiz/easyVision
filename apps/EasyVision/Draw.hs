@@ -2,7 +2,7 @@
 
 -----------------------------------------------------------------------------
 {- |
-Module      :  Ipp.Draw
+Module      :  EasyVision.Draw
 Copyright   :  (c) Alberto Ruiz 2006
 License     :  GPL-style
 
@@ -15,7 +15,7 @@ HOpenGL drawing utilities.
 -}
 -----------------------------------------------------------------------------
 
-module Ipp.Draw
+module EasyVision.Draw
 ( pointCoordinates
 , pixelCoordinates
 , Drawable(..)
@@ -28,13 +28,13 @@ module Ipp.Draw
 
 import Graphics.UI.GLUT hiding (RGB, Matrix, Size, Point)
 import qualified Graphics.UI.GLUT as GL
-import Ipp.Core
-import Ipp.ImageProcessing(resize32f,yuvToRGB)
+import ImagProc.Ipp.Core
+import ImagProc.ImageProcessing(resize32f,yuvToRGB)
 import Data.IORef
 import Foreign (touchForeignPtr)
 import GSL hiding (size)
 import Vision
-import Ipp.Trackball
+import EasyVision.Trackball
 
 
 -- | Types of images that can be shown in a window

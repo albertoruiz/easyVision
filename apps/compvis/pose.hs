@@ -1,7 +1,7 @@
 
 module Main where
 
-import Ipp
+import EasyVision
 import Graphics.UI.GLUT hiding (Matrix,Size,Point)
 import Data.IORef
 import System.Exit
@@ -22,6 +22,7 @@ data MyState = ST { imgs :: [ImageFloat]
                   , basev ::Int
 
                   , trackball :: IO ()
+                  , camera :: IO ImageYUV
                   }
 
 diagl = diag . vector
@@ -30,20 +31,21 @@ diagl = diag . vector
 main = do
     args <- getArgs
     let sz = Size 288 384
-    cam <- openCamera (args!!0) sz
+    (cam,ctrl) <- mplayer (args!!0) sz >>= withPause
 
     (tb,kc,mc) <- newTrackball
 
-    state <- prepare cam ST { imgs=[]
-                            , corners=[], marked = []
-                            , pts=[]
-                            , cams=[]
-                            , drfuns=[]
-                            , basev = 0
-                            , trackball = tb
-                            }
+    state <- prepare ST { imgs=[]
+                        , corners=[], marked = []
+                        , pts=[]
+                        , cams=[]
+                        , drfuns=[]
+                        , basev = 0
+                        , trackball = tb
+                        , camera = cam
+                        }
 
-    addWindow "camera" sz Nothing marker state
+    addWindow "camera" sz Nothing (marker (const (kbdcam ctrl))) state
     addWindow "selected" sz Nothing keyboard state
 
     addWindow "3D view" (Size 400 400) Nothing keyboard state
@@ -53,7 +55,7 @@ main = do
 
     textureFilter Texture2D $= ((Nearest, Nothing), Nearest)
     textureFunction $= Decal
-    launch state worker
+    launch state (worker cam)
 
 -------------------------------------------------------------------
 a4 = [[   0,    0]
@@ -69,8 +71,8 @@ recover pts = c where
     h = estimateHomography (mpl pts) a4
     Just c = cameraFromHomogZ0 Nothing h
 
-worker inWindow cam st = do
-    camera <- grab cam >>= scale8u32f 0 1
+worker grab inWindow st = do
+    camera <- grab >>= yuvToGray >>= scale8u32f 0 1
     hotPoints <- getCorners 1 7 0.1 200 camera
 
     inWindow "camera" $ do
@@ -122,14 +124,6 @@ closest hp p = minimumBy (compareBy $ dist p) hp
 -----------------------------------------------------------------
 -- callbacks
 -----------------------------------------------------------------
-keyboard str (Char 'p') Down _ _ = do
-    st <- readIORef str
-    pause (camid st)
-keyboard str (Char ' ') Down _ _ = do
-    st <- readIORef str
-    pause (camid st)
-keyboard _ (Char '\27') Down _ _ = do
-    exitWith ExitSuccess
 
 keyboard st (SpecialKey KeyUp) Down _ _ = do
     modifyIORef st $ \s -> s {ust = (ust s) {basev = basev (ust s) + 1}}
@@ -140,7 +134,7 @@ keyboard _ _ _ _ _ = return ()
 
 ------------------------------------------------------------------
 
-marker str (MouseButton LeftButton) Down _ pos@(Position x y) = do
+marker def str (MouseButton LeftButton) Down _ pos@(Position x y) = do
     st <- readIORef str
     let u = ust (st)
     let newpoint = closest (corners u) (Pixel (fromIntegral y) (fromIntegral x))
@@ -148,9 +142,9 @@ marker str (MouseButton LeftButton) Down _ pos@(Position x y) = do
     if (length m /= 4)
         then writeIORef str st { ust = u {marked = m} }
         else do
-            camera <- grab (camid st)
-            let hp = reverse $ pixelsToPoints (size camera) m
-            im  <- scale8u32f 0 1 camera
+            orig <- camera (ust st) >>= yuvToGray
+            let hp = reverse $ pixelsToPoints (size orig) m
+            im  <- scale8u32f 0 1 orig
             let cam = recover hp
             imt <- extractSquare 128 im
             let v = u { marked = []
@@ -161,10 +155,10 @@ marker str (MouseButton LeftButton) Down _ pos@(Position x y) = do
                        }
             writeIORef str st { ust = v }
 
-marker st (MouseButton RightButton) Down _ pos@(Position x y) = do
+marker def st (MouseButton RightButton) Down _ pos@(Position x y) = do
     modifyIORef st $ \s -> s {ust = (ust s) {marked = case marked (ust s) of
                                                         [] -> []
                                                         _:t -> t }}
 
-marker st b s m p = keyboard st b s m p
+marker def st b s m p = def st b s m p
 
