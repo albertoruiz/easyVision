@@ -49,18 +49,17 @@ int svd_l_Rdd(KDMAT(a),DMAT(u), DVEC(s),DMAT(v)) {
     int* iwk = (int*) malloc(8*q*sizeof(int));
     CHECK(!iwk,MEM);
     int lwk = -1;
-    char job = 'A';
     int res;
     // ask for optimal lwk
     double ans;
     //printf("ask dgesdd\n");
-    dgesdd_ (&job,&m,&n,B,&m,sp,up,&m,vp,&n,&ans,&lwk,iwk,&res);
+    dgesdd_ ("A",&m,&n,B,&m,sp,up,&m,vp,&n,&ans,&lwk,iwk,&res);
     lwk = 2*ceil(ans); // ????? otherwise 50x100 rejects lwk
     //printf("lwk = %d\n",lwk);
     double * workv = (double*)malloc(lwk*sizeof(double));
     CHECK(!workv,MEM);
     //printf("dgesdd\n");
-    dgesdd_ (&job,&m,&n,B,&m,sp,up,&m,vp,&n,workv,&lwk,iwk,&res);
+    dgesdd_ ("A",&m,&n,B,&m,sp,up,&m,vp,&n,workv,&lwk,iwk,&res);
     CHECK(res,res);
     free(iwk);
     free(workv);
@@ -86,13 +85,11 @@ int svd_l_R(KDMAT(a),DMAT(u), DVEC(s),DMAT(v)) {
     CHECK(!B,MEM);
     memcpy(B,ap,m*n*sizeof(double));
     int lwork = -1;
-    char jobu  = 'A';
-    char jobvt = 'A';
     int res;
     // ask for optimal lwork
     double ans;
     //printf("ask zgesvd\n");
-    dgesvd_ (&jobu,&jobvt,
+    dgesvd_ ("A","A",
              &m,&n,B,&m,
              sp,
              up,&m,
@@ -104,7 +101,7 @@ int svd_l_R(KDMAT(a),DMAT(u), DVEC(s),DMAT(v)) {
     double * work = (double*)malloc(lwork*sizeof(double));
     CHECK(!work,MEM);
     //printf("dgesdd\n");
-    dgesvd_ (&jobu,&jobvt,
+    dgesvd_ ("A","A",
              &m,&n,B,&m,
              sp,
              up,&m,
@@ -121,7 +118,7 @@ int svd_l_R(KDMAT(a),DMAT(u), DVEC(s),DMAT(v)) {
 
 //////////////////// complex svd ////////////////////////////////////
 
-void zgesvd_ (int*,int*,              // jobu, jobvt
+void zgesvd_ (char*,char*,              // jobu, jobvt
               int*,int*,double*,int*, // m, n, a, lda
               double*,                // s 
               double*,int*,           // u, ldu
@@ -143,13 +140,11 @@ int svd_l_C(KCMAT(a),CMAT(u), DVEC(s),CMAT(v)) {
     double *rwork = (double*) malloc(5*q*sizeof(double));
     CHECK(!rwork,MEM);
     int lwork = -1;
-    int jobu  = 'A';
-    int jobvt = 'A';
     int res;
     // ask for optimal lwork
     double ans;
     //printf("ask zgesvd\n");
-    zgesvd_ (&jobu,&jobvt,
+    zgesvd_ ("A","A",
              &m,&n,B,&m,
              sp,
              up,&m,
@@ -162,7 +157,7 @@ int svd_l_C(KCMAT(a),CMAT(u), DVEC(s),CMAT(v)) {
     double * work = (double*)malloc(lwork*2*sizeof(double));
     CHECK(!work,MEM);
     //printf("dgesvd\n");
-    zgesvd_ (&jobu,&jobvt,
+    zgesvd_ ("A","A",
              &m,&n,B,&m,
              sp,
              up,&m,

@@ -87,3 +87,5 @@ The author thanks all the people in the Haskell mailing lists for their help.
 
 - Eric Kidd has created a wiki page explaining the installation on MacOS X:
   http://www.haskell.org/haskellwiki/GSLHaskell_on_MacOS_X
+
+- Fawzi Mohamed discovered a portability bug in the lapack wrappers.
