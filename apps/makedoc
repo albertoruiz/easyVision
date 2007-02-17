@@ -8,7 +8,8 @@ haddock Vision.hs \
         Vision/Geometry.hs \
         Vision/Autofrontal.hs \
         ImagProc.hs \
-        ImagProc/Ipp/Core.hs \
+        ImagProc/Ipp.hs \
+	ImagProc/Ipp/Core.hs \
         ImagProc/Images.hs \
         ImagProc/Ipp/Wrappers.hs \
         ImagProc/ImageProcessing.hs \
@@ -16,7 +17,7 @@ haddock Vision.hs \
         EasyVision.hs \
         EasyVision/GUI.hs \
         EasyVision/Parameters.hs \
-        EasyVision/Camera.hs \
+        ImagProc/Camera.hs \
         EasyVision/Draw.hs \
         EasyVision/Trackball.hs --hide=Ipp.Trackball \
         --use-package=base --use-package=OpenGL \

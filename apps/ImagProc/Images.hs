@@ -19,7 +19,7 @@ These are the only definitions required by the \"end user\". Lower level program
 
 module ImagProc.Images
 ( -- * Image types
-  Image (size)
+  Image (..)
 , ImageRGB
 , ImageGray
 , ImageFloat

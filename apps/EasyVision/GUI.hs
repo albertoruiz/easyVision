@@ -24,14 +24,10 @@ module EasyVision.GUI (
 , kbdcam, roiControl
 -- * Drawing utilities
 , module EasyVision.Draw
--- * Camera
-, module EasyVision.Camera
 ) where
 
-import EasyVision.Camera
 import EasyVision.Draw
 import ImagProc.Ipp.Core -- (Size(..))
-import EasyVision.Camera
 import Graphics.UI.GLUT hiding (RGB, Matrix, Size)
 import qualified Graphics.UI.GLUT as GL
 import Data.IORef

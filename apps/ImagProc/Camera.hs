@@ -2,7 +2,7 @@
 
 -----------------------------------------------------------------------------
 {- |
-Module      :  EasyVision.Camera
+Module      :  ImagProc.Camera
 Copyright   :  (c) Alberto Ruiz 2006
 License     :  GPL-style
 
@@ -15,7 +15,7 @@ Image acquisition from real cameras and other video sources.
 -}
 -----------------------------------------------------------------------------
 
-module EasyVision.Camera (
+module ImagProc.Camera (
   -- * MPlayer interface
   -- | This camera works with any kind of video source accepted by MPlayer.
   mplayer, mpSize, openYUV4Mpeg,

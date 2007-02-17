@@ -16,10 +16,12 @@ Experimental interface to Intel's IPP image processing libraries
 
 module ImagProc (
     module ImagProc.Images,
+    module ImagProc.Camera,
     module ImagProc.ImageProcessing,
     module ImagProc.Saddle
 ) where
 
 import ImagProc.Images
+import ImagProc.Camera
 import ImagProc.ImageProcessing
 import ImagProc.Saddle

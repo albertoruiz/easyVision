@@ -218,31 +218,43 @@ class Image a where
     -- | creates an image of the given size
     image :: Size -> IO a
     -- | returns the size of an image
-    size :: a -> Size  
+    size :: a -> Size
+    -- | gets the 'ROI' of the image
+    theROI :: a -> ROI
+    -- | modifies the 'ROI' of an image
+    modifyROI :: (ROI->ROI) -> a -> a
 
 instance Image ImageFloat where
     image s = do
         i <- img I32f s
         return (F i)
     size (F Img {isize=s}) = s
+    theROI (F im) = vroi im
+    modifyROI f (F im) = F im { vroi = f (vroi im) }
 
 instance Image ImageGray where
     image s = do
         i <- img Gray s
         return (G i)
     size (G Img {isize=s}) = s
+    theROI (G im) = vroi im
+    modifyROI f (G im) = G im { vroi = f (vroi im) }
 
 instance Image ImageRGB where
     image s = do
         i <- img RGB s
         return (C i)
     size (C Img {isize=s}) = s
+    theROI (C im) = vroi im
+    modifyROI f (C im) = C im { vroi = f (vroi im) }
 
 instance Image ImageYUV where
     image s = do
         i <- img YUV s
         return (Y i)
     size (Y Img {isize=s}) = s
+    theROI (Y im) = vroi im
+    modifyROI f (Y im) = Y im { vroi = f (vroi im) }
 
 
 -- | The IPP 8u_C3 image type
