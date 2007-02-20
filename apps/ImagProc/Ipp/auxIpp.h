@@ -57,3 +57,13 @@ int auxResize_8u_C1R(void * pSrc, int sstep, int sh, int sw,
                       void * pDst, int dstep,
                       int dr1, int dr2, int dc1, int dc2,
                       int interp);
+
+int auxDCTFwd_32f_C1R(float * pSrc, int sstep,
+                      int sr1, int sr2, int sc1, int sc2,
+                      float * pDst, int dstep,
+                      int dr1, int dr2, int dc1, int dc2);
+
+int auxDCTInv_32f_C1R(float * pSrc, int sstep,
+                      int sr1, int sr2, int sc1, int sc2,
+                      float * pDst, int dstep,
+                      int dr1, int dr2, int dc1, int dc2);

@@ -152,3 +152,17 @@ foreign import ccall "auxIpp.h auxResize_8u_C1R"
                            Int -> Int -> Int -> Int ->
                            Int ->
                            IO Int
+
+foreign import ccall "auxIpp.h auxDCTFwd_32f_C1R"
+     auxDCTFwd_32f_C1R :: Ptr Float -> Int ->
+                          Int -> Int -> Int -> Int ->
+                          Ptr Float -> Int ->
+                          Int -> Int -> Int -> Int ->
+                          IO Int
+
+foreign import ccall "auxIpp.h auxDCTInv_32f_C1R"
+     auxDCTInv_32f_C1R :: Ptr Float -> Int ->
+                          Int -> Int -> Int -> Int ->
+                          Ptr Float -> Int ->
+                          Int -> Int -> Int -> Int ->
+                          IO Int

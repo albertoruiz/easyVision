@@ -39,7 +39,7 @@ main = do
     attachMenu LeftButton $ Menu $ map mode
         ["RGB","Gray","Float","Median","Histogram"
         ,"Integral","Umbraliza","Hessian"
-        ,"Corners", "Features", "Canny"]
+        ,"Corners", "Features", "Canny", "DCT"]
 {-
     attachMenu LeftButton $ Menu 
         [MenuEntry "Quit" (exitWith ExitSuccess)
@@ -129,7 +129,13 @@ worker cam param getRoi inWindow op = do
              drawImage im
              pointCoordinates (size im)
              histogram [0,64 .. 256] im >>= return . show >>= text2D 0.9 0.7
-
+        "DCT" -> do
+             orig <- cam
+             roi <- getRoi
+             im <- yuvToGray orig >>= scale8u32f 0 1
+             d <- dct (modifyROI (intersection roi) im) >>= abs32f >>= sqrt32f
+             copyROI32f im d
+             drawImage im
     return op
 
 text2D x y s = do

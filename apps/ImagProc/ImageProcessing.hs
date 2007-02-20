@@ -59,6 +59,8 @@ module ImagProc.ImageProcessing (
 , filterMax32f
 , localMax
 , getPoints32f
+-- * Spectral Analysis
+, dct, idct
 -- * Computation of interest points
 , getCorners
 -- * Edges
@@ -582,3 +584,24 @@ histogram bins (G im) = do
     free pbins
     free pr
     return r
+
+-----------------------------------------------------------------------
+
+-- | Discrete cosine transform of a 32f image.
+dct :: ImageFloat -> IO ImageFloat
+dct = genDCT auxDCTFwd_32f_C1R "dct"
+
+-- | Inverse discrete cosine transform of a 32f image.
+idct :: ImageFloat -> IO ImageFloat
+idct = genDCT auxDCTInv_32f_C1R "idct"
+
+genDCT auxfun name (F im) = do
+    r <- imgAsR1 id im
+    --set32f 0.5 (F r) (fullroi r)
+    auxfun (castPtr (ptr im)) (step im)
+           (r1 (vroi im)) (r2 (vroi im)) (c1 (vroi im)) (c2 (vroi im))
+           (castPtr (ptr r)) (step r)
+           (r1 (vroi r)) (r2 (vroi r)) (c1 (vroi r)) (c2 (vroi r))
+           // checkIPP name [im]
+    return (F r)
+

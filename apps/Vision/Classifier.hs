@@ -132,7 +132,7 @@ splitProportion r l = splitAt n l where n = round (r * fromIntegral (length l))
 createClassifier :: InfoLabels -> Estimator -> Classifier
 createClassifier ilbs f = getLabel ilbs . posMax . f
 
--- | returns the position of the maximum element in a list
+-- | returns the position of the maximum element in a list. TODO: remove irrefutable pattern
 posMax :: Ord a => [a] -> Int
 posMax l = p where
     Just p = elemIndex (maximum l) l
