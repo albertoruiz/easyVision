@@ -166,3 +166,18 @@ foreign import ccall "auxIpp.h auxDCTInv_32f_C1R"
                           Ptr Float -> Int ->
                           Int -> Int -> Int -> Int ->
                           IO Int
+
+foreign import ccall "auxIpp.h ippiFFTInitAlloc_R_32f"
+    ippiFFTInitAlloc_R_32f :: Ptr (Ptr()) -> Int -> Int -> Int -> Int -> IO Int
+
+foreign import ccall "auxIpp.h ippiFFTFree_R_32f"
+    ippiFFTFree_R_32f :: Ptr () -> IO Int
+
+foreign import ccall "auxIpp.h ippiFFTGetBufSize_R_32f"
+    ippiFFTGetBufSize_R_32f :: Ptr () -> Ptr Int -> IO Int
+
+foreign import ccall "auxIpp.h ippiFFTFwd_RToPack_32f_C1R"
+    ippiFFTFwd_RToPack_32f_C1R :: Ptr () -> Int -> Ptr() -> Int -> Ptr() -> Ptr() -> IO Int
+
+foreign import ccall "auxIpp.h ippiMagnitudePack_32f_C1R"
+    ippiMagnitudePack_32f_C1R :: Ptr () -> Int -> Ptr() -> Int -> ROISize -> IO Int

@@ -39,7 +39,7 @@ main = do
     attachMenu LeftButton $ Menu $ map mode
         ["RGB","Gray","Float","Median","Histogram"
         ,"Integral","Umbraliza","Hessian"
-        ,"Corners", "Features", "Canny", "DCT"]
+        ,"Corners", "Features", "Canny", "DCT", "FFT"]
 {-
     attachMenu LeftButton $ Menu 
         [MenuEntry "Quit" (exitWith ExitSuccess)
@@ -55,13 +55,15 @@ main = do
         ]
 -}
 
-    launch state (worker cam o getRoi)
+    fft <- genFFT 8 8 4 0
+
+    launch state (worker cam o getRoi fft)
 
 -----------------------------------------------------------------
 
 k = 1/(640*480*128)
 
-worker cam param getRoi inWindow op = do
+worker cam param getRoi fft inWindow op = do
 
     th <- getParam param "umbral"
     ph <- getParam param "h" :: IO Int
@@ -134,6 +136,14 @@ worker cam param getRoi inWindow op = do
              roi <- getRoi
              im <- yuvToGray orig >>= scale8u32f 0 1
              d <- dct (modifyROI (intersection roi) im) >>= abs32f >>= sqrt32f
+             copyROI32f im d
+             drawImage im
+        "FFT" -> do
+             orig <- cam
+             roi <- getRoi
+             let p2roi = roi `intersection`ROI (r1 roi) (r1 roi + 2^8-1) (c1 roi) (c1 roi + 2^8-1)
+             im <- yuvToGray orig >>= scale8u32f 0 1
+             d <- fft (modifyROI (const p2roi) im) >>= magnitudePack >>= sqrt32f
              copyROI32f im d
              drawImage im
     return op

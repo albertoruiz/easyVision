@@ -61,6 +61,7 @@ module ImagProc.ImageProcessing (
 , getPoints32f
 -- * Spectral Analysis
 , dct, idct
+, genFFT, magnitudePack
 -- * Computation of interest points
 , getCorners
 -- * Edges
@@ -605,3 +606,26 @@ genDCT auxfun name (F im) = do
            // checkIPP name [im]
     return (F r)
 
+------------------------------------------------------------------------
+
+-- | Creates a function to compute the FFT of a 32f image (ROI's dimensions must be powers of two). 
+genFFT ordx ordy flag alg = do
+    ptrSt <- malloc
+    ippiFFTInitAlloc_R_32f ptrSt ordx ordy flag alg // checkIPP "FFTInitAlloc" []
+    st <- peek ptrSt
+    pn <- malloc
+    ippiFFTGetBufSize_R_32f st pn // checkIPP "FFTGetBufSize" []
+    n <- peek pn
+    buf <- mallocBytes n
+    let fft (F im) = do
+        r <- imgAsR1 id im
+        (ippiFFTFwd_RToPack_32f_C1R // src im (vroi im) // src r (vroi r)) st buf // checkIPP "FFTFwd_RToPack_32f_C1R" [im]
+        return (F r)
+    return fft
+
+--IPP_FFT_DIV_FWD_BY_N = 1
+--IPP_FFT_DIV_INV_BY_N = 2
+--IPP_FFT_DIV_BY_SQRTN = 4
+--IPP_FFT_NODIV_BY_ANY = 8
+
+magnitudePack = simplefun1F ippiMagnitudePack_32f_C1R id "magnitudePack"

@@ -67,3 +67,9 @@ int auxDCTInv_32f_C1R(float * pSrc, int sstep,
                       int sr1, int sr2, int sc1, int sc2,
                       float * pDst, int dstep,
                       int dr1, int dr2, int dc1, int dc2);
+
+int ippiFFTInitAlloc_R_32f(void** st, int orderx, int ordery, int flat, int alg);
+int ippiFFTFree_R_32f(void* st);
+int ippiFFTGetBufSize_R_32f(void* st, int* size);
+int ippiFFTFwd_RToPack_32f_C1R(void*,int,void*,int,void*st,void*buf);
+int ippiMagnitudePack_32f_C1R(SRC,DST);
