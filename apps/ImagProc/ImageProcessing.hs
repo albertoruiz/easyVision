@@ -17,6 +17,7 @@ module ImagProc.ImageProcessing (
 -- * IPP auxiliary structures
   Mask(..)
 , IppCmp(..)
+, AlgHint(..)
 -- * Utilities
 , jaehne32f
 , set32f
@@ -59,9 +60,9 @@ module ImagProc.ImageProcessing (
 , filterMax32f
 , localMax
 , getPoints32f
--- * Spectral Analysis
+-- * Frequential Analysis
 , dct, idct
-, genFFT, magnitudePack
+, genFFT, magnitudePack, FFTNormalization(..)
 -- * Computation of interest points
 , getCorners
 -- * Edges
@@ -248,6 +249,11 @@ sobelHoriz = simplefun1F ippiFilterSobelHoriz_32f_C1R (shrink (1,1)) "sobelHoriz
 data Mask = Mask3x3 | Mask5x5
 code Mask3x3 = 33
 code Mask5x5 = 55
+
+data AlgHint = AlgHintNone | AlgHintFast | AlgHintAccurate
+codeAlgHint AlgHintNone     = 0
+codeAlgHint AlgHintFast     = 1
+codeAlgHint AlgHintAccurate = 2
 
 -- | Convolution with a gaussian mask of the desired size.
 gauss :: Mask -> ImageFloat -> IO ImageFloat
@@ -608,10 +614,15 @@ genDCT auxfun name (F im) = do
 
 ------------------------------------------------------------------------
 
--- | Creates a function to compute the FFT of a 32f image (ROI's dimensions must be powers of two). 
+-- | Creates a function to compute the FFT of a 32f image. The resulting function produces 32f images in complex packed format. The dimensions of the ROI must be powers of two.
+genFFT :: Int -- ^ ordx
+       -> Int -- ^ ordy
+       -> FFTNormalization
+       -> AlgHint
+       -> IO (ImageFloat -> IO (ImageFloat)) -- ^ resulting FFT function
 genFFT ordx ordy flag alg = do
     ptrSt <- malloc
-    ippiFFTInitAlloc_R_32f ptrSt ordx ordy flag alg // checkIPP "FFTInitAlloc" []
+    ippiFFTInitAlloc_R_32f ptrSt ordx ordy (codeFFTFlag flag) (codeAlgHint alg) // checkIPP "FFTInitAlloc" []
     st <- peek ptrSt
     pn <- malloc
     ippiFFTGetBufSize_R_32f st pn // checkIPP "FFTGetBufSize" []
@@ -623,9 +634,13 @@ genFFT ordx ordy flag alg = do
         return (F r)
     return fft
 
---IPP_FFT_DIV_FWD_BY_N = 1
---IPP_FFT_DIV_INV_BY_N = 2
---IPP_FFT_DIV_BY_SQRTN = 4
---IPP_FFT_NODIV_BY_ANY = 8
+-- | Normalization options for the FFT
+data FFTNormalization = DivFwdByN | DivInvByN | DivBySqrtN | NoDivByAny
+codeFFTFlag DivFwdByN  = 1
+codeFFTFlag DivInvByN  = 2
+codeFFTFlag DivBySqrtN = 4
+codeFFTFlag NoDivByAny = 8
 
+-- | Computes the magnitude of a complex packed 32f image (typically produced by the FFT computed by the result of 'genFFT')
+magnitudePack :: ImageFloat -> IO (ImageFloat)
 magnitudePack = simplefun1F ippiMagnitudePack_32f_C1R id "magnitudePack"

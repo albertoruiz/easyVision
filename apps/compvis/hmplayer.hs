@@ -55,7 +55,7 @@ main = do
         ]
 -}
 
-    fft <- genFFT 8 8 4 0
+    fft <- genFFT 8 8 DivBySqrtN AlgHintFast
 
     launch state (worker cam o getRoi fft)
 

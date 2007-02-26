@@ -48,10 +48,11 @@ mplayer :: String               -- ^ any url admitted by mplayer
         -> IO (IO ImageYUV)          -- ^ function returning a new frame and camera controller
 mplayer url (Size h w) = do
 
-    let fifo = "/tmp/mplayer-fifo-"
+    let fifo = "/tmp/mplayer-fifo"
     system $ "mkfifo "++fifo
 
     k <- mallocBytes 1
+    poke k '\0'         -- essential!!
 
     let mpcommand =
              url++" -vo yuv4mpeg:file="++fifo++
@@ -66,7 +67,8 @@ mplayer url (Size h w) = do
     f <- openFile fifo ReadMode
 
     let find = do
-        hGetBuf f k 1
+        n <- hGetBuf f k 1
+        --print n
         v <- peek (castPtr k)
         putChar v
         if v=='\n' then return () else find
