@@ -62,7 +62,7 @@ module ImagProc.ImageProcessing (
 , getPoints32f
 -- * Frequential Analysis
 , dct, idct
-, genFFT, magnitudePack, FFTNormalization(..)
+, genFFT, FFTNormalization(..), magnitudePack, powerSpectrum
 -- * Computation of interest points
 , getCorners
 -- * Edges
@@ -71,7 +71,7 @@ module ImagProc.ImageProcessing (
 where
 
 import ImagProc.Ipp
-import Foreign
+import Foreign hiding (shift)
 import Foreign.C.Types(CUChar)
 import Vision --hiding ((|-|),(|+|))
 import GSL hiding (size)
@@ -419,7 +419,7 @@ minmax (F im) = do
     return (a,b)
 
 
--- | Returns the maximum value and its position in an image32f
+-- | Returns the maximum value and its position in the roi of an image32f. The position is relative to the ROI.
 maxIndx :: ImageFloat -> IO (Float,Pixel)
 maxIndx (F im) = do
     mx <- malloc
@@ -644,3 +644,25 @@ codeFFTFlag NoDivByAny = 8
 -- | Computes the magnitude of a complex packed 32f image (typically produced by the FFT computed by the result of 'genFFT')
 magnitudePack :: ImageFloat -> IO (ImageFloat)
 magnitudePack = simplefun1F ippiMagnitudePack_32f_C1R id "magnitudePack"
+
+-- | Relocates the low frequencies of 'magnitudePack' in the center of the ROI.
+powerSpectrum :: ImageFloat -> IO (ImageFloat)
+powerSpectrum (F im) = do
+    r <- imgAs im
+    let ROI r1 r2 c1 c2 = vroi im
+    set32f 0 (F r) (vroi im)
+    let cm = ((c2-c1+1) `div` 2)
+    let rm = ((r2-r1+1) `div` 2)
+    let sroi = ROI r1 (r1+rm-1) c1 (c1+cm-1)
+    let droi = shift (rm,cm) sroi
+    ippiCopy_32f_C1R // src im sroi // dst r droi // checkIPP "powerSpectrum-1" [im]
+    let droi = ROI r1 (r1+rm-1) c1 (c1+cm-1)
+    let sroi = shift (rm,cm) droi
+    ippiCopy_32f_C1R // src im sroi // dst r droi // checkIPP "powerSpectrum-2" [im]
+    let sroi = ROI r1 (r1+rm-1) (c1+cm) c2
+    let droi = shift (rm,-cm) sroi
+    ippiCopy_32f_C1R // src im sroi // dst r droi // checkIPP "powerSpectrum-3" [im]
+    let droi = ROI r1 (r1+rm-1) (c1+cm) c2
+    let sroi = shift (rm,-cm) droi
+    ippiCopy_32f_C1R // src im sroi // dst r droi // checkIPP "powerSpectrum-4" [im]
+    return (F r {vroi = vroi im})

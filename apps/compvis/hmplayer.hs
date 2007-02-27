@@ -55,7 +55,7 @@ main = do
         ]
 -}
 
-    fft <- genFFT 8 8 DivBySqrtN AlgHintFast
+    fft <- genFFT 8 8 DivFwdByN AlgHintFast
 
     launch state (worker cam o getRoi fft)
 
@@ -142,12 +142,24 @@ worker cam param getRoi fft inWindow op = do
              orig <- cam
              roi <- getRoi
              let p2roi = roi `intersection`ROI (r1 roi) (r1 roi + 2^8-1) (c1 roi) (c1 roi + 2^8-1)
-             im <- yuvToGray orig >>= scale8u32f 0 1
-             d <- fft (modifyROI (const p2roi) im) >>= magnitudePack >>= sqrt32f
-             copyROI32f im d
+             im <- yuvToGray orig  >>= scale8u32f 0 1 >>= (smooth `times` gauss Mask5x5)
+             d <- fft (modifyROI (const p2roi) im) >>= magnitudePack >>= powerSpectrum
+             let c@(Pixel r0 c0) = cent (theROI d)
+             set32f 0 d (roiFrom2Pixels c c)
+             (m,Pixel rm cm) <- maxIndx d
+             let ROI r1 _ c1 _ = p2roi
+             print $ (rm+r1-r0,cm+c1-c0)
+             print $ norm (rm+r1-r0,cm+c1-c0)
+             sc <- scale32f (1/m) d
+             copyROI32f im sc
              drawImage im
     return op
 
 text2D x y s = do
     rasterPos (Vertex2 x (y::GLfloat))
     renderString Helvetica12 s
+
+cent (ROI r1 r2 c1 c2) = Pixel (r1 + (r2-r1+1)`div`2) (c1 + (c2-c1+1)`div`2)
+roiFrom2Pixels (Pixel r1 c1) (Pixel r2 c2) = ROI (min r1 r2) (max r1 r2) (min c1 c2) (max c1 c2)
+
+norm (a,b) = sqrt $ fromIntegral a^2 + fromIntegral b^2
