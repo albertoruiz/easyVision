@@ -15,7 +15,8 @@ We extract points with high negative det hessian response (Saddle points in a qu
 
 module ImagProc.Saddle (
  InterestPoint(..),
- getSaddlePoints
+ getSaddlePoints,
+ basicMatches
 )
 where
 
@@ -112,3 +113,29 @@ circle n rad (Pixel r c) ang = cir where
     d = 2*pi/fromIntegral n
     cir = [Pixel (round $ fromIntegral r-rad*sin (ang+k))
                  (round $ fromIntegral c+rad*cos (ang+k))| k <- [0, d .. 2*pi-d]]
+
+----------------------------------------------------
+
+corresp umb h w simil = do
+    (v, p@(Pixel r c)) <- maxIndx simil
+    if (-v) > umb then return []
+             else do set32f (-1000) simil ROI {r1=r,r2=r,c1=0,c2=w-1}
+                     set32f (-1000) simil ROI {r1=0,r2=h-1,c1=c,c2=c}
+                     sig <- corresp umb h w simil
+                     return (p:sig)
+
+basicMatches :: ([a],[a]) -> (a -> a -> Double) -> Double -> IO ([a],[a],ImageFloat)
+basicMatches (pl,ql) dist umb {-dbgfun-} = do
+    let n1 = length pl
+    let n2 = length ql
+    c <- image (Size n1 n2)
+    let t = [[double2Float $ - dist p q | q <- ql] | p <- pl]
+    setData32f c t
+    --case dbgfun of
+    --    Nothing -> return ()
+    --    Just f  -> f c
+    let fumb = double2Float umb
+    corrs <- corresp fumb n1 n2 c
+    let pizq = map ((pl!!).row) corrs
+    let pder = map ((ql!!).col) corrs
+    return (pizq,pder,c)

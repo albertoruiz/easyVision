@@ -44,7 +44,6 @@ main = do
                                  ("ranumb", realParam 0.001 0 0.01)]
 
     addWindow "camera" sz Nothing (const (kbdcam ctrl)) state
-    addWindow "cost"  (Size 300 300) Nothing undefined state
     addWindow "track" sz Nothing undefined state
     addWindow "warp" (Size 400 400) Nothing undefined state
 
@@ -89,7 +88,7 @@ worker3 param inWindow (pl,im) st = do
     umb    <- getParam param "umb"
     ranumb <- getParam param "ranumb"
 
-    (pnew, pold, _) <- basicMatches (pl, points st) (distComb alpha) umb Nothing
+    (pnew, pold, _) <- basicMatches (pl, points st) (distComb alpha) umb
                                             --(Just $ \c ->
                                             --inWindow "cost" (scale32f (-see) c >>= drawImage))
 
@@ -150,30 +149,6 @@ distComb alpha p q = chk $ alpha*distFeat p q + (1-alpha)*distSpatial p q
 chk x | isDoubleNaN x == 0 = x 
       | otherwise          = 500 -- error "NaN"
 -----------------------------------------------------------
-
-corresp umb h w simil = do
-    (v, p@(Pixel r c)) <- maxIndx simil
-    if (-v) > umb then return []
-             else do set32f (-1000) simil ROI {r1=r,r2=r,c1=0,c2=w-1}
-                     set32f (-1000) simil ROI {r1=0,r2=h-1,c1=c,c2=c}
-                     sig <- corresp umb h w simil
-                     return (p:sig)
-
-basicMatches (pl,ql) dist umb dbgfun = do
-    let n1 = length pl
-    let n2 = length ql
-    c <- image (Size n1 n2)
-    let t = [[double2Float $ - dist p q | q <- ql] | p <- pl]
-    setData32f c t
-    case dbgfun of
-        Nothing -> return ()
-        Just f  -> f c
-    corrs <- corresp umb n1 n2 c
-    let pizq = map ((pl!!).row) corrs
-    let pder = map ((ql!!).col) corrs
-    return (pizq,pder,c)
-
----------------------------------------------------------------------
 
 prep = map (g.ipPosition) where g (Point x y) = [x,y]
 
