@@ -144,7 +144,8 @@ int svd_l_C(KCMAT(a),CMAT(u), DVEC(s),CMAT(v)) {
     // ask for optimal lwork
     double ans;
     //printf("ask zgesvd\n");
-    zgesvd_ ("A","A",
+    char* job = "A";
+    zgesvd_ (job,job,
              &m,&n,B,&m,
              sp,
              up,&m,
@@ -157,7 +158,7 @@ int svd_l_C(KCMAT(a),CMAT(u), DVEC(s),CMAT(v)) {
     double * work = (double*)malloc(lwork*2*sizeof(double));
     CHECK(!work,MEM);
     //printf("dgesvd\n");
-    zgesvd_ ("A","A",
+    zgesvd_ (job,job,
              &m,&n,B,&m,
              sp,
              up,&m,
@@ -246,13 +247,13 @@ int eig_l_R(KDMAT(a),DMAT(u), CVEC(s),DMAT(v)) {
     CHECK(!B,MEM);
     memcpy(B,ap,n*n*sizeof(double));
     int lwork = -1;
-    char jobvl = ur==1?'N':'V';
-    char jobvr = vr==1?'N':'V';
+    //char jobvl = ur==1?'N':'V';
+    //char jobvr = vr==1?'N':'V';
     int res;
     // ask for optimal lwork
     double ans;
     //printf("ask dgeev\n");
-    dgeev_  (&jobvl,&jobvr,
+    dgeev_  ("N","V",
              &n,B,&n,
              sp, sp+n,
              up,&n,
@@ -264,7 +265,7 @@ int eig_l_R(KDMAT(a),DMAT(u), CVEC(s),DMAT(v)) {
     double * work = (double*)malloc(lwork*sizeof(double));
     CHECK(!work,MEM);
     //printf("dgeev\n");
-    dgeev_  (&jobvl,&jobvr,
+    dgeev_  ("N","V",
              &n,B,&n,
              sp, sp+n,
              up,&n,
@@ -334,13 +335,13 @@ int eig_l_H(KCMAT(a),DVEC(s),CMAT(v)) {
     double *rwork = (double*) malloc((3*n-2)*sizeof(double));
     CHECK(!rwork,MEM);
     int lwork = -1;
-    char jobz = vr==1?'N':'V';
-    char uplo = 'U';
+    //char jobz = vr==1?'N':'V';
+    //char uplo = 'U';
     int res;
     // ask for optimal lwork
     double ans;
     //printf("ask dsyev\n");
-    zheev_  (&jobz,&uplo,
+    zheev_  ("V","U",
              &n,vp,&n,
              sp,
              &ans, &lwork,
@@ -351,7 +352,7 @@ int eig_l_H(KCMAT(a),DVEC(s),CMAT(v)) {
     double * work = (double*)malloc(lwork*2*sizeof(double));
     CHECK(!work,MEM);
     //printf("dsyev\n");
-    zheev_  (&jobz,&uplo,
+    zheev_  ("V","U",
              &n,vp,&n,
              sp,
              work, &lwork,
