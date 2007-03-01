@@ -32,5 +32,5 @@ Exposed-modules:    GSL,
 Other-modules:
 C-sources:          GSL/gslaux.c GSL/lapack-aux.c
 extra-libraries:    gsl cblas lapack
-cc-options:         -Wall -O0
+--cc-options:         -Wall -O2
 ghc-prof-options:   -auto-all
