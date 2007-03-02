@@ -15,4 +15,4 @@ auxc: ../ImagProc/Ipp/auxIpp.o
 	gcc -O -c -I$(IPP)/include ../ImagProc/Ipp/auxIpp.c -o ../ImagProc/Ipp/auxIpp.o
 
 clean:
-	rm -f $(ALL) *.o *.hi ../EasyVision/*.o ../EasyVision/*.hi ../ImagProc/*.o ../ImagProc/*.hi ../ImagProc/Ipp/*.o ../ImagProc/Ipp/*.hi ../Vision/*.o ../Vision/*.hi
+	rm -f $(ALL) *.o *.hi ../*.o ../*.hi ../EasyVision/*.o ../EasyVision/*.hi ../ImagProc/*.o ../ImagProc/*.hi ../ImagProc/Ipp/*.o ../ImagProc/Ipp/*.hi ../Vision/*.o ../Vision/*.hi
