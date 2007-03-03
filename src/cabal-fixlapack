@@ -30,7 +30,7 @@ Exposed-modules:    GSL,
                          GSL.Special
                          GSL.Plot
 Other-modules:
-C-sources:          GSL/gslaux.c GSL/lapack-aux.c
-extra-libraries:    gsl cblas lapack
+C-sources:          GSL/gslaux.c
+extra-libraries:    gsl cblas auxlapack lapack
 cc-options:         -O4
 ghc-prof-options:   -auto-all
