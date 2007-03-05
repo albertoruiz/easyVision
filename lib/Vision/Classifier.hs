@@ -377,7 +377,7 @@ nosep n = dat1 ++ dat2 ++ dat3 where
 mnist :: Int -> Int -> IO (Sample, Sample)
 
 mnist dim n = do
-    m <- fromFile "mnist.txt" (5000,785)
+    m <- fromFile "../data/mnist.txt" (5000,785)
     let vs = toRows (takeColumns 784 m)
     let ls = map (show.round) $ toList $ flatten $ dropColumns 784 m
     let mnist = zip vs ls
@@ -392,7 +392,7 @@ mnist dim n = do
 -- | the mnist raw data
 mnistraw :: Int -> IO (Sample,Sample)
 mnistraw n = do
-    m <- fromFile "mnist.txt" (5000,785)
+    m <- fromFile "../data/mnist.txt" (5000,785)
     let vs = toRows (takeColumns 784 m)
     let ls = map (show.round) $ toList $ flatten $ dropColumns 784 m
     let mnist = zip vs ls

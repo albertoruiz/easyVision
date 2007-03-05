@@ -29,7 +29,7 @@ study' prob meth = do
     shConf test c
 
 main = do
-    m <- fromFile "mnist.txt" (5000,785)
+    m <- fromFile "../data/mnist.txt" (5000,785)
     let vs = toRows (takeColumns 784 m)
     let ls = map (show.round) $ toList $ flatten $ dropColumns 784 m
     let mnist = zip vs ls
