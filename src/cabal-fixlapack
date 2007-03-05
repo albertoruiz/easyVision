@@ -1,6 +1,7 @@
 Name:               GSL
 Version:            0.6
 License:            GPL
+License-file:       LICENSE
 Author:             Alberto Ruiz
 Maintainer:         aruiz@um.es
 Stability:          provisional
