@@ -1,8 +1,0 @@
-This library provides a simple functional interface to standard matrix computations (eigensystems, singular values, pseudoinverses, etc.) and other numeric algorithms. It is based on high level wrappers for the GNU Scientific Library GSL (<http://www.gnu.org/software/gsl>)
-and LAPACK (<http://www.netlib.org/lapack>).
-
-This is a work in progress. The most recent version can be obtained from: 
-
-darcs get http:\/\/dis.um.es\/\~alberto\/GSLHaskell --partial
-
-Any kind of help is welcome!

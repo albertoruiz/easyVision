@@ -1,91 +1,9 @@
-REQUIREMENTS
+easyVision is a system for fast prototyping of computer vision and image processing applications.
 
-1) GNU Scientific Library (http://www.gnu.org/software/gsl) development packages
-   for your system (typically "gsl" and "gsl-devel").
+It requires GSLHaskell, HOpenGL, MPlayer and IPP (Intel's Integrated Performance Primitives).
 
-2) LAPACK (http://www.netlib.org/lapack). It usually comes with GNU-Octave.
+TODO: more complete description
 
---------------------------------------------------------------------------------------
-INSTALLATION 
+TODO: manual.pdf in the project's web page
 
-(More detailed information is included in the "tutorial",
-available in the web page of the project.)
-
-$ cd src
-src$ runhaskell Setup.hs configure -p --prefix=$HOME
-src$ runhaskell Setup.hs build
-src$ runhaskell Setup.hs install --user
-
-A local version of the documentation can be generated in src/dist/doc/html by
-
-src$ runhaskell Setup.hs haddock
-
-
-NOTE: The library must be used from another directory. For instance:
-
-$ cd ../examples
-
-Interactive:
-------------
-
-examples$ ghci
-Prelude> :m + GSL
-Prelude GSL> let quad = integrateQNG 1E-10
-Loading package haskell98 ... linking ... done.
-Loading package GSL-0.6 ... linking ... done.
-Prelude GSL> quad (^2) 0 1
-(0.3333333333333333,3.700743415417188e-15)
-Prelude GSL> fst $ quad (\x->4/(1+x^2)) 0 1
-3.141592653589793
-Prelude GSL> pi
-3.141592653589793
-Prelude GSL> :q
-Leaving GHCi.
-
-examples$ ghci plot.hs
-*Main> main
-
-Compiled:
----------
-
-examples$ ghc --make plot.hs
-examples$ ./plot
-
-Script:
--------
-
-examples$ runhaskell plot.hs
-
---------------------------------------------------------------------------------------
-USING ATLAS OPTIMIZED LIBRARIES AND LAPACK
-
-The performance of some linear algebra computations with big matrices can
-be significantly improved using ATLAS (http://math-atlas.sourceforge.net/).
-
-They can be installed as a standalone package or as part of other systems.
-For instance, GNU-Octave includes useful packages like atlas, lapack, fftw,
-gnuplot, etc.
-
-To use the optimized libraries you only need a symbolic link to the
-appropriate atlas blas available in your distribution. For instance,
-in my ubuntu distribution I have added:
-
-~/lib/GSL-0.6/ghc-6.6/libcblas.so -> /usr/lib/atlas/libblas.so.3.0
-
-In ubuntu I also need a symbolick link to the LAPACK library:
-
-~/lib/GSL-0.6/ghc-6.6/liblapack.so -> /usr/lib/atlas/liblapack.so.3.0
-
---------------------------------------------------------------------------------------
-ACKNOWLEDGEMENTS
-
-The author thanks all the people in the Haskell mailing lists for their help.
-
-- Nico Mahlo discovered a bug in the eigendecomposition wrapper.
-
-- Frederik Eaton discovered a bug in the design of the wrappers.
-
-- Eric Kidd has created a wiki page explaining the installation on MacOS X:
-  http://www.haskell.org/haskellwiki/GSLHaskell_on_MacOS_X
-
-- Fawzi Mohamed discovered a portability bug in the lapack wrappers.
+This is a work in progress.

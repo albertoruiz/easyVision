@@ -46,14 +46,13 @@ m6 = syntheticCamera (CamPar {focalDist = 3, panAngle= -0.1, tiltAngle=0.2, roll
 -------------------------------------------------------------------
 
 classifyTest n1 n2 numErr = do
-    ok <- doesFileExist ("examples/mnist.txt")
+    ok <- doesFileExist ("mnist.txt")
     when (not ok)  $ do
         putStrLn "\nTrying to download test datafile..."
         system("wget -nv http://dis.um.es/~alberto/material/sp/mnist.txt.gz")
         system("gunzip mnist.txt.gz")
-        system("mv mnist.txt examples")
         return ()
-    m <- fromFile "examples/mnist.txt" (5000,785)
+    m <- fromFile "mnist.txt" (5000,785)
     let vs = toRows (takeColumns 784 m)
     let ls = map (show.round) $ toList $ flatten $ dropColumns 784 m
     let mnist = zip vs ls
