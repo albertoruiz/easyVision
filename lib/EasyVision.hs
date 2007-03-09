@@ -20,9 +20,11 @@ A few example programs can be found in the compvis folder.
 module EasyVision (
     module EasyVision.GUI,
     module EasyVision.Parameters,
+    module EasyVision.Combinators,
     module ImagProc
 ) where
 
 import EasyVision.GUI
 import EasyVision.Parameters
+import EasyVision.Combinators
 import ImagProc

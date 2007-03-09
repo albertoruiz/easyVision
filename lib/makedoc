@@ -16,6 +16,7 @@ haddock Vision.hs \
         ImagProc/Saddle.hs \
         EasyVision.hs \
         EasyVision/GUI.hs \
+        EasyVision/Combinators.hs \
         EasyVision/Parameters.hs \
         ImagProc/Camera.hs \
         EasyVision/Draw.hs \

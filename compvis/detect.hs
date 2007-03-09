@@ -14,18 +14,6 @@ rever ims = (a++b++a++rever c) where
     b = reverse a
     c = drop 40 ims
 
-detectMov cond ((a,f):(b,g):t) =
-    if cond (absdif f g)
-        then (a,f) : detectMov cond ((b,g):t)
-        else detectMov cond ((b,g):t)
-
-absdif a b = unsafePerformIO $ absDiff8u a b >>= sum8u -- hmm
-
-addSmall sz grab = return $ do
-    im <- grab
-    f <- yuvToGray im >>= resize8u sz
-    return (im,f)
-
 ------------------------------------------------------------
 
 main = do
@@ -42,7 +30,7 @@ main = do
 
     (cam,ctrl) <- mplayer (args!!0) sz
                   >>= addSmall (Size 90 120)
-                  >>= virtualCamera (return . detectMov (th*255*90*120<))
+                  >>= detectMov (th*255*90*120<)
                   >>= withPause
 
     state <- prepare ()
