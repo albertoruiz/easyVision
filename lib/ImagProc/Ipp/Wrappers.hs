@@ -181,3 +181,9 @@ foreign import ccall "auxIpp.h ippiFFTFwd_RToPack_32f_C1R"
 
 foreign import ccall "auxIpp.h ippiMagnitudePack_32f_C1R"
     ippiMagnitudePack_32f_C1R :: Ptr () -> Int -> Ptr() -> Int -> ROISize -> IO Int
+
+foreign import ccall "auxIpp.h ippiDistanceTransform_3x3_8u32f_C1R" 
+    ippiDistanceTransform_3x3_8u32f_C1R :: Ptr () -> Int -> Ptr() -> Int -> ROISize -> Ptr Float -> IO Int
+
+foreign import ccall "auxIpp.h ippiDistanceTransform_5x5_8u32f_C1R" 
+    ippiDistanceTransform_5x5_8u32f_C1R :: Ptr () -> Int -> Ptr() -> Int -> ROISize -> Ptr Float -> IO Int

@@ -38,7 +38,7 @@ main = do
 
     attachMenu LeftButton $ Menu $ map mode
         ["RGB","Gray","Float","Median","Histogram"
-        ,"Integral","Umbraliza","Hessian"
+        ,"Integral","Umbraliza","Distance", "Hessian"
         ,"Corners", "Features", "Canny", "DCT", "FFT"]
 {-
     attachMenu LeftButton $ Menu 
@@ -87,6 +87,16 @@ worker cam param getRoi fft inWindow op = do
              scale8u32f 0 1 >>=
              thresholdVal32f th 0 IppCmpLess >>=
              thresholdVal32f th 1 IppCmpGreater >>=
+             drawImage
+        "Distance" ->
+             cam >>=
+             yuvToGray >>=
+             scale8u32f 0 1 >>=
+             thresholdVal32f th 0 IppCmpLess >>=
+             thresholdVal32f th 1 IppCmpGreater >>=
+             scale32f8u 0 1 >>=
+             distanceTransform [1,1.4,2.2] >>=
+             scale32f (1/30) >>=
              drawImage
         "Hessian" ->
              cam >>= yuvToGray >>= scale8u32f 0 1 >>=

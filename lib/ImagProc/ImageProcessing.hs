@@ -67,6 +67,8 @@ module ImagProc.ImageProcessing (
 , getCorners
 -- * Edges
 , canny
+-- * Distance Transform
+, distanceTransform
 )
 where
 
@@ -666,3 +668,20 @@ powerSpectrum (F im) = do
     let sroi = shift (rm,-cm) droi
     ippiCopy_32f_C1R // src im sroi // dst r droi // checkIPP "powerSpectrum-4" [im]
     return (F r {vroi = vroi im})
+
+-- | Distance transform: Given an 8u image with feature pixels = 0, computes a 32f image with the distance from each pixel to the nearest feature pixel. The argument metrics is a list of float with two (for a 3x3 mask) or three elements (for a 5x5 mask), which specify respectively the distances between pixels which share an edge, a corner and pixels at distance of chess knight move. For example, for L2 metrics we use [1,1.4] (3x3 mask) or [1,1.4,2.2] (5x5 mask). If metrics is not valid (e.g. []), then [1,1.4] is used.
+distanceTransform :: [Float]       -- ^ metrics
+                  -> ImageGray     -- ^ source image 
+                  -> IO ImageFloat -- ^ result
+
+distanceTransform (m@[_,_]) = genDistanceTransform ippiDistanceTransform_3x3_8u32f_C1R m
+distanceTransform (m@[_,_,_]) = genDistanceTransform ippiDistanceTransform_5x5_8u32f_C1R m
+distanceTransform _ = distanceTransform [1,1.4]
+
+genDistanceTransform f metrics (G im) = do
+    pmetrics <- newArray metrics
+    r' <- img I32f (isize im)
+    let r = r' {vroi = vroi im}
+    (f // src im (vroi im) // dst r (vroi r)) pmetrics // checkIPP "ippiDistanceTransform_?_8u32f_C1R" [im]
+    free pmetrics
+    return (F r)

@@ -73,3 +73,6 @@ int ippiFFTFree_R_32f(void* st);
 int ippiFFTGetBufSize_R_32f(void* st, int* size);
 int ippiFFTFwd_RToPack_32f_C1R(void*,int,void*,int,void*st,void*buf);
 int ippiMagnitudePack_32f_C1R(SRC,DST);
+
+int ippiDistanceTransform_3x3_8u32f_C1R(SRC, DST, float* pMetrics);
+int ippiDistanceTransform_5x5_8u32f_C1R(SRC, DST, float* pMetrics);
