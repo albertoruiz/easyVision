@@ -162,7 +162,7 @@ worker cam inWindow st = do
 
         let r = scaling (zoom st) <> inv (cam0 st) -- hmm
         w@(F i) <- image (Size floorSize floorSize)
-        set32f 0.25 w (fullroi i)
+        set32f 0.25 (fullroi i) w
         let g im h = warpOn (r <> h) w im
         sequence_ $ reverse $ rotateList sv $ zipWith g (imgs st) (hs st)
 

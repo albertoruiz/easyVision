@@ -3,6 +3,7 @@ import EasyVision
 import Graphics.UI.GLUT hiding (Size,minmax)
 import Data.IORef
 import System.Environment(getArgs)
+import ImagProc.Ipp
 
 data MyState = ST {smooth :: Int}
 
@@ -22,13 +23,21 @@ main = do
 
 --------------------------------------------------------------
 
+hess s im = purifyWith (copyROI32f im) (iohess s im)
+
+iohess s im =
+    (s `times` gauss Mask5x5) im
+    >>= secondOrder
+    >>= hessian
+    >>= abs32f
+    >>= sqrt32f
+
+--------------------------------------------------------------
+
 worker cam inWindow st = do
 
-    camera <- cam >>= yuvToGray
-    im  <- scale8u32f 0 1 camera
-    img <- (smooth st `times` gauss Mask5x5) im
-    h   <- secondOrder img >>= hessian >>= abs32f >>= sqrt32f
-    copyROI32f im h
+    camera <- cam >>= yuvToGray >>= scale8u32f 0 1
+    let h = hess (smooth st) camera
 
     inWindow "hessian" $ do
         drawImage h --{vroi = vroi h}

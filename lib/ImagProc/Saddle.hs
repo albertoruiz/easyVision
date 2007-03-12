@@ -119,8 +119,8 @@ circle n rad (Pixel r c) ang = cir where
 corresp umb h w simil = do
     (v, p@(Pixel r c)) <- maxIndx simil
     if (-v) > umb then return []
-             else do set32f (-1000) simil ROI {r1=r,r2=r,c1=0,c2=w-1}
-                     set32f (-1000) simil ROI {r1=0,r2=h-1,c1=c,c2=c}
+             else do set32f (-1000) ROI {r1=r,r2=r,c1=0,c2=w-1} simil
+                     set32f (-1000) ROI {r1=0,r2=h-1,c1=c,c2=c} simil
                      sig <- corresp umb h w simil
                      return (p:sig)
 

@@ -22,9 +22,9 @@ module ImagProc.Ipp.Core
             -- * Creation of images
           , img, imgAs, getData32f, setData32f, value
             -- * Regions of interest
-          , fullroi, shrink, shift, intersection
+          , fullroi, shrink, shift, intersection, invalidROIs
             -- * Wrapper tools
-          , src, dst, checkIPP, warningIPP, (//)
+          , src, dst, checkIPP, warningIPP, (//), purifyWith
           , ippRect, roiSize
             -- * Image types
           , Image(..)
@@ -43,7 +43,7 @@ import Foreign hiding (shift)
 import Control.Monad(when)
 import ImagProc.Ipp.Wrappers
 import Foreign.C.String(peekCString)
-import GSL
+import qualified GSL
 import Vision
 
 ------------------------------------------------------------
@@ -213,6 +213,24 @@ infixl 0 //
 
 --------------------------------------------------------------
 
+-- | Given an image, invalidROIs im computes a list of ROIs surrounding the valid ROI of im.
+invalidROIs :: Image a => a -> [ROI]
+invalidROIs img = [r | Just r <- thefour] where
+    thefour = [ if r1>0   then Just $ ROI 0 (r1-1) 0 (w-1)     else Nothing
+              , if r2<h-1 then Just $ ROI (r2+1) (h-1) 0 (w-1) else Nothing
+              , if c1>0   then Just $ ROI r1 r2 0 (c1-1)       else Nothing
+              , if c2<w-1 then Just $ ROI r1 r2 (c2+1) (w-1)   else Nothing
+              ]
+    ROI r1 r2 c1 c2 = theROI img
+    Size h w = size img
+
+-- | Given an IO function which is essentially pure except for possibly undefined data outside the ROI, it creates a pure function with the same effect, which applies a given initialization to the region outside the roi. For example, @purifyWith ("set32f" 0) (iofun args)@ creates a pure fun equal to iofun with zero pixels outside the ROI; to copy the data from an image you can use @("copyROI32f" im)@, etc.
+purifyWith :: (ROI -> ImageFloat -> IO ()) -> (IO ImageFloat) -> ImageFloat
+purifyWith roifun imgfun = unsafePerformIO $ do
+    r <- imgfun
+    mapM_ ((flip roifun) r) (invalidROIs r)
+    return r
+
 -- | Operations supported by the different image types.
 class Image a where
     -- | creates an image of the given size
@@ -276,12 +294,12 @@ data Point = Point { px    :: !Double, py :: !Double} deriving Show
 data Pixel = Pixel { row   :: !Int,    col :: !Int } deriving Show
 
 -- | Auxiliary homogeneous transformation from 'Pixel's to 'Point's
-pixelToPointTrans :: Size -> Matrix Double
+pixelToPointTrans :: Size -> GSL.Matrix Double
 pixelToPointTrans Size {width = w', height = h'} = nor where
     w = fromIntegral w' -1
     h = fromIntegral h' -1
     r = (h+1)/(w+1)
-    nor = fromLists
+    nor = GSL.fromLists
         [[-2/w,      0, 1]
         ,[   0, -2*r/h, r]
         ,[   0,      0, 1]]

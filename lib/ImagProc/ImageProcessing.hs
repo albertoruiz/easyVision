@@ -96,10 +96,10 @@ cr2 f im1 im2 r = f // src im1 (vroi r) // src im2 (vroi r)// dst r (vroi r)
 
 -- | Writes into a existing image a desired value in a specified roi.
 set32f :: Float      -- ^ desired value
-       -> ImageFloat -- ^ input image
        -> ROI        -- ^ roi
+       -> ImageFloat -- ^ destination image
        -> IO ()
-set32f v (F im) roi = ippiSet_32f_C1R v // dst im roi // checkIPP "set32f" [im]
+set32f v roi (F im) = ippiSet_32f_C1R v // dst im roi // checkIPP "set32f" [im]
 
 -- | Creates a 8u Gray image from a 8uC3 RGB image
 rgbToGray :: ImageRGB      -- ^ input image
@@ -191,9 +191,15 @@ integral (G im) = do
     (cr1 ippiIntegral_8u32f_C1R im r) 0 // checkIPP "integral" [im]
     return (F r {vroi = vroi im})
 
--- | Copies the roi of the input image into the destination image.
-copyROI32f :: ImageFloat -> ImageFloat -> IO ()
-copyROI32f (F r) (F im) = ippiCopy_32f_C1R // src im (vroi im) // dst r (vroi im) // checkIPP "copyROI32f" [im]
+
+-- | Copies a given region of the input image into a destination image. I
+copyROI32f :: ImageFloat -- ^ input image
+           -> ROI        -- ^ region to copy
+           -> ImageFloat -- ^ destination image
+           -> IO ()
+copyROI32f (F im) roi (F r) = ippiCopy_32f_C1R // src im roi // dst r roi // checkIPP "copyROI32f" [im]
+
+
 
 -- | Copies the roi of the input image into the destination image.
 copyROI8u :: ImageGray -> ImageGray -> IO ()
@@ -361,7 +367,7 @@ copyMask32f :: ImageFloat    -- ^ source image
 copyMask32f (F im) (G mask) = do
     r <- imgAs im
     let roi = intersection (vroi im) (vroi mask)
-    set32f 0.0 (F r) (fullroi r)
+    set32f 0.0 (fullroi r) (F r)
     ippiCopy_32f_C1MR // src im roi // dst r roi // src mask roi // checkIPP "copyMask32f" [im,mask]
     return $ F r {vroi = roi}
 
@@ -452,7 +458,7 @@ warpOn' h (F r) (F im) = do
 warp' s h im = do
     r' <- img I32f s
     let r = F r'
-    set32f 0.0 r (fullroi r')
+    set32f 0.0 (fullroi r') r
     warpOn' h r im
     return r
 
@@ -467,7 +473,7 @@ warp :: Size              -- ^ desired size of the result
 warp s h im = do
     r' <- img I32f s
     let r = F r'
-    set32f 0.0 r (fullroi r')
+    set32f 0.0 (fullroi r') r
     warpOn h r im
     return r
 
@@ -606,7 +612,7 @@ idct = genDCT auxDCTInv_32f_C1R "idct"
 
 genDCT auxfun name (F im) = do
     r <- imgAsR1 id im
-    --set32f 0.5 (F r) (fullroi r)
+    --set32f 0.5 (fullroi r) (F r)
     auxfun (castPtr (ptr im)) (step im)
            (r1 (vroi im)) (r2 (vroi im)) (c1 (vroi im)) (c2 (vroi im))
            (castPtr (ptr r)) (step r)
@@ -652,7 +658,7 @@ powerSpectrum :: ImageFloat -> IO (ImageFloat)
 powerSpectrum (F im) = do
     r <- imgAs im
     let ROI r1 r2 c1 c2 = vroi im
-    set32f 0 (F r) (vroi im)
+    set32f 0 (vroi im) (F r)
     let cm = ((c2-c1+1) `div` 2)
     let rm = ((r2-r1+1) `div` 2)
     let sroi = ROI r1 (r1+rm-1) c1 (c1+cm-1)
