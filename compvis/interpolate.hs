@@ -10,26 +10,12 @@ import System
 -----------------------------------------------------------
 
 interpolate = virtualCamera (return . inter)
-    where
-        inter (a:b:rest) = a: (a.+.b) :inter (b:rest)
-            where a .+. b = unsafePerformIO $ do
-                                a' <- scale32f 0.5 a
-                                b' <- scale32f 0.5 b
-                                c <- a' |+| b'
-                                return c
+    where inter (a:b:rest) = a: (0.5.*a |+| 0.5.*b) :inter (b:rest)
 
 drift alpha = virtualCamera (return . drifter)
-    where
-        drifter (a:b:rest) = an : drifter (bn:rest)
-            where (an, bn) = unsafePerformIO $ do
-                                a' <- scale32f alpha a
-                                b' <- scale32f (1-alpha) b
-                                an <- a' |+| b'
-                                return (a',an)
-
+    where drifter (a:b:rest) = a : drifter ((alpha .* a |+| (1-alpha).* b):rest)
 
 asFloat grab = return $ grab >>= yuvToGray >>= scale8u32f 0 1
-
 
 ------------------------------------------------------------
 
@@ -46,7 +32,8 @@ main = do
     let alpha = read $ findWithDefault "0.9" "--alpha" opts
 
     (cam,ctrl) <- mplayer (args!!0) sz
-                  >>= asFloat >>=  drift alpha >>= interpolate 
+                  >>= asFloat
+                  >>= drift alpha >>= interpolate 
                   >>= withPause
 
     state <- prepare ()

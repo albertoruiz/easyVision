@@ -14,18 +14,18 @@ Some image processing routines expressed as pure functions, instead the IO appro
 -----------------------------------------------------------------------------
 
 module ImagProc.Pure (
-    (*#),
-    (#+#),(#-#),(#*#)
+    (.*),
+    (|+|),(|-|),(|*|)
 )
 where
 
 import ImagProc.Ipp.Core
 import ImagProc.ImageProcessing
 
-infixl 7  #*#, *#
-infixl 6  #+#, #-#
+infixl 7  |*|, .*
+infixl 6  |+|, |-|
 
-v *# im = purifyWith (set32f 0) (scale32f v im)
-a #+# b = purifyWith (set32f 0) (a |+| b)
-a #-# b = purifyWith (set32f 0) (a |-| b)
-a #*# b = purifyWith (set32f 0) (a |*| b)
+v .* im = purifyWith (set32f 0) (scale32f v im)
+a |+| b = purifyWith (set32f 0) (a `add32f` b)
+a |-| b = purifyWith (set32f 0) (a `sub32f` b)
+a |*| b = purifyWith (set32f 0) (a `mul32f` b)

@@ -41,7 +41,7 @@ module ImagProc.ImageProcessing (
 , warp, warpOn
 -- * Image arithmetic
 , scale32f
-, (|*|), (|+|), (|-|)
+, mul32f, add32f, sub32f
 , absDiff8u
 , sum8u
 , abs32f, sqrt32f
@@ -313,19 +313,19 @@ simplefun2G ippfun roifun msg = g where
         return (G r)
 
 
-infixl 7  |*|
-infixl 6  |+|, |-|
+infixl 7  `mul32f`
+infixl 6  `add32f`, `sub32f`
 -- | Pixel by pixel multiplication.
-(|*|) :: ImageFloat -> ImageFloat -> IO ImageFloat
-(|*|) = simplefun2 ippiMul_32f_C1R intersection "mul32f"
+mul32f :: ImageFloat -> ImageFloat -> IO ImageFloat
+mul32f = simplefun2 ippiMul_32f_C1R intersection "mul32f"
 
 -- | Pixel by pixel addition.
-(|+|) :: ImageFloat -> ImageFloat -> IO ImageFloat
-(|+|) = simplefun2 ippiAdd_32f_C1R intersection "add32f"
+add32f :: ImageFloat -> ImageFloat -> IO ImageFloat
+add32f = simplefun2 ippiAdd_32f_C1R intersection "add32f"
 
 -- | Pixel by pixel substraction.
-(|-|) :: ImageFloat -> ImageFloat -> IO ImageFloat
-(|-|) = flip $ simplefun2 ippiSub_32f_C1R intersection "sub32f" -- more natural argument order
+sub32f :: ImageFloat -> ImageFloat -> IO ImageFloat
+sub32f = flip $ simplefun2 ippiSub_32f_C1R intersection "sub32f" -- more natural argument order
 
 -- | Absolute difference
 absDiff8u :: ImageGray -> ImageGray -> IO ImageGray
@@ -401,9 +401,9 @@ secondOrder image = do
 -- | Obtains the determinant of the hessian operator from the 'secondOrder' derivatives.
 hessian :: (ImageFloat,ImageFloat,ImageFloat,ImageFloat,ImageFloat) -> IO ImageFloat
 hessian (gx,gy,gxx,gyy,gxy) = do
-    ab <- gxx |*| gyy
-    cc <- gxy |*| gxy
-    h  <- ab  |-| cc
+    ab <- gxx `mul32f` gyy
+    cc <- gxy `mul32f` gxy
+    h  <- ab  `sub32f` cc
     return h
 
 -- | Repeats an action a given number of times. For example, @(3 `times` fun) x = fun x >>= fun >>= fun@
