@@ -9,7 +9,7 @@ Maintainer  :  Alberto Ruiz (aruiz at um dot es)
 Stability   :  very provisional
 Portability :  hmm...
 
-Interface to the segment extractor by Pedro E. López de Teruel
+Interface to the segment extractor by Pedro E. Lopez de Teruel.
 
 -}
 -----------------------------------------------------------------------------

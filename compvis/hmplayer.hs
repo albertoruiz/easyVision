@@ -167,7 +167,7 @@ worker cam param getRoi fft inWindow op = do
              orig' <- cam >>= yuvToGray
              roi <- getRoi
              let orig = modifyROI (const roi) orig'
-                 segs = segments 4 1.5 5 40 20 True orig
+                 segs = segments 4 1.5 5 40 20 False orig
              drawImage orig
              setColor 1 0 0
              pointCoordinates (size orig)
