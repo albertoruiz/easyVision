@@ -19,7 +19,8 @@ module ImagProc (
     module ImagProc.Camera,
     module ImagProc.ImageProcessing,
     module ImagProc.Pure,
-    module ImagProc.Saddle
+    module ImagProc.Saddle,
+    module ImagProc.Segments
 ) where
 
 import ImagProc.Images
@@ -27,3 +28,4 @@ import ImagProc.Camera
 import ImagProc.ImageProcessing
 import ImagProc.Pure
 import ImagProc.Saddle
+import ImagProc.Segments
