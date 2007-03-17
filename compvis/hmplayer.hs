@@ -129,7 +129,7 @@ worker cam param getRoi fft inWindow op = do
              gx <- sobelVert $ F s {vroi = roi `intersection` vroi s}
              gy <- sobelHoriz $ F s {vroi = roi `intersection` vroi s}
              c <- canny (gx,gy) (th/3,th) >>= scale8u32f 0 1
-             copyROI32f im (theROI im) c
+             copyROI32f c (theROI c) im
              drawImage im
         "Median" -> do
              orig <- cam
@@ -146,7 +146,7 @@ worker cam param getRoi fft inWindow op = do
              roi <- getRoi
              im <- yuvToGray orig >>= scale8u32f 0 1
              d <- dct (modifyROI (intersection roi) im) >>= abs32f >>= sqrt32f
-             copyROI32f im (theROI im) d
+             copyROI32f d (theROI d) im
              drawImage im
         "FFT" -> do
              orig <- cam
@@ -161,7 +161,7 @@ worker cam param getRoi fft inWindow op = do
              print $ (rm+r1-r0,cm+c1-c0)
              print $ norm (rm+r1-r0,cm+c1-c0)
              sc <- scale32f (1/m) d
-             copyROI32f im (theROI im) sc
+             copyROI32f sc (theROI sc) im
              drawImage im
         "Segments" -> do
              orig' <- cam >>= yuvToGray

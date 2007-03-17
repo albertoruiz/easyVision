@@ -42,8 +42,8 @@ foreign import ccall "Segments/segments.h mycvPostProcessSegments"
                                CUChar -> IO ()
 
 data Segment = Segment {
-    extreme1 :: Point,
-    extreme2 :: Point
+    extreme1 :: !Point,
+    extreme2 :: !Point
 }
 
 -- | Segment extractor
