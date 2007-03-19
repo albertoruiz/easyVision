@@ -163,7 +163,7 @@ isClosed r p = distPoints (head p) (last p) < r
 -- | Replaces the extremes of consecutive segments by the intersection of such segments
 improvePoints :: Polyline -> Polyline
 improvePoints (Open l)              = Open   (betterPoints $ auxLines' l)
-improvePoints (Closed l@(a:b:rest)) = Closed (betterPoints $ auxLines' (l++[a,b]))
+improvePoints (Closed l@(a:b:rest)) = clockwise $ Closed (betterPoints $ auxLines' (l++[a,b]))
 
 auxLines' [] = []
 auxLines' (Point x1 y1: Point x2 y2 :rest) = cross (vector [x1,y1,1]) (vector [x2,y2,1]) : auxLines' rest
@@ -176,3 +176,6 @@ cleanOdd [a,b] | a == -b = [a,b]
                | otherwise = [a]
 cleanOdd (a:b:c:rest) | b==(-a) || b==(-c) = a: cleanOdd (b:c:rest)
                       | otherwise = cleanOdd (a:c:rest)
+
+clockwise p@(Closed l) | orientation p < 0 = p  -- in the camera frame clockwise orientation is negative
+                       | otherwise         = Closed (reverse l)

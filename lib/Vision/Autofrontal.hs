@@ -19,7 +19,8 @@ module Vision.Autofrontal (
     KnownFs(..),
     extractInfo,
     consistency,
-    findSol
+    findSol,
+    autoOrthogonality
 ) where
 
 -- experiments on planar rectification
