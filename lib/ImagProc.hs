@@ -20,7 +20,8 @@ module ImagProc (
     module ImagProc.ImageProcessing,
     module ImagProc.Pure,
     module ImagProc.Saddle,
-    module ImagProc.Segments
+    module ImagProc.Segments,
+    module ImagProc.Polyline
 ) where
 
 import ImagProc.Images
@@ -29,3 +30,4 @@ import ImagProc.ImageProcessing
 import ImagProc.Pure
 import ImagProc.Saddle
 import ImagProc.Segments
+import ImagProc.Polyline

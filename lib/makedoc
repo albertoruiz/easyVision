@@ -9,12 +9,13 @@ haddock Vision.hs \
         Vision/Autofrontal.hs \
         ImagProc.hs \
         ImagProc/Ipp.hs \
-	ImagProc/Ipp/Core.hs \
+        ImagProc/Ipp/Core.hs \
         ImagProc/Images.hs \
         ImagProc/Ipp/Wrappers.hs \
         ImagProc/ImageProcessing.hs \
         ImagProc/Saddle.hs \
         ImagProc/Segments.hs \
+        ImagProc/Polyline.hs \
         EasyVision.hs \
         EasyVision/GUI.hs \
         EasyVision/Combinators.hs \
