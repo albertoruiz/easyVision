@@ -27,7 +27,7 @@ data Polyline = Closed [Point]
 
 distPoints (Point a b) (Point x y) = (a-x)^2+(b-y)^2
 
--- | (for a open polyline is the length)
+-- | (for an open polyline is the length)
 perimeter :: Polyline -> Double
 perimeter (Open l) = perimeter' l
 perimeter (Closed l) = perimeter' (last l:l)

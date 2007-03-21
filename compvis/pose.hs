@@ -32,8 +32,10 @@ main = do
                                ("high",intParam 40 0 255),
                                ("low",intParam 20 0 255),
                                ("postproc",intParam 0 0 1),
-                               ("minlength",realParam 0.1 0 1),
-                               ("maxdis",realParam 0.001 0 0.01)]
+                               ("minlength",realParam 0.02 0 1),
+                               ("maxdis",realParam 0.001 0 0.01),
+                               ("scale",realParam 0.1 0.01 1),
+                               ("orthotol",realParam 0.1 0.01 0.5)]
 
     addWindow "image" sz Nothing (const $ kbdcam ctrl) app
 
@@ -60,6 +62,8 @@ worker cam op trackball inWindow _ = do
     let pp = if postp == 0 then False else True
     minlen <- getParam op "minlength"
     maxdis <- getParam op "maxdis"
+    scale  <- getParam op "scale"
+    orthotol  <- getParam op "orthotol"
 
     orig <- cam >>= yuvToGray
     let segs = filter ((>minlen).segmentLength) $ segments radius width median high low pp orig
@@ -83,6 +87,8 @@ worker cam op trackball inWindow _ = do
         pointSize $= 5
         mapM_ (renderPrimitive Points . (mapM_ vertex)) closed4
 
+    let a4s = filter (isA4 orthotol) (concatMap alter closed4)
+
     inWindow "3D view" $ do
         clear [ColorBuffer, DepthBuffer]
         trackball
@@ -95,6 +101,13 @@ worker cam op trackball inWindow _ = do
             let pts = head closed4
             mapM_ (posib orig) (alter pts)
 
+        when (length a4s >0) $ do
+            let pts = head a4s
+                h = estimateHomography a4 (map pl pts)
+                Size _ sz = size orig
+            floor <- scale8u32f 0 1 orig >>= warp (Size 256 256) (scaling scale <> h)
+            drawTexture floor $ map (++[-0.01]) $ ht (scaling (1/scale)) [[1,1],[-1,1],[-1,-1],[1,-1]]
+
     return ()
 
 ---------------------------------------------------------
@@ -102,8 +115,11 @@ worker cam op trackball inWindow _ = do
 a4 = [[   0,    0]
      ,[   0, 2.97]
      ,[2.10, 2.97]
-     ,[2.10,    0]
-     ]
+     ,[2.10,    0]]
+
+vector l = fromList l :: Vector Double
+
+diagl = diag .vector
 
 pl (Point x y) = [x,y]
 
@@ -127,3 +143,8 @@ drawSeg s = do
     vertex $ (extreme1 s)
     vertex $ (extreme2 s)
 
+isA4 tol pts = ao < tol && cy < 0
+    where ao = autoOrthogonality (Nothing::Maybe (Matrix Double)) h
+          h = estimateHomography (map pl pts) a4
+          Just p = poseFromHomogZ0 Nothing h
+          (_,cy,_) = cameraCenter p
