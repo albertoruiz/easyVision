@@ -9,10 +9,13 @@ all: $(ALL)
 %: %.hs auxc
 	ghc -O --make $< -o $@ $(LIBS)
 
-auxc: ../lib/ImagProc/Ipp/auxIpp.o
+auxc: ../lib/ImagProc/Ipp/auxIpp.o ../lib/ImagProc/Segments/libsegments.a
 
 ../lib/ImagProc/Ipp/auxIpp.o: ../lib/ImagProc/Ipp/auxIpp.c ../lib/ImagProc/Ipp/auxIpp.h
 	gcc -O -c -I$(IPP)/include ../lib/ImagProc/Ipp/auxIpp.c -o ../lib/ImagProc/Ipp/auxIpp.o
+
+../lib/ImagProc/Segments/libsegments.a:
+	cd ../lib/ImagProc/Segments; make
 
 clean:
 	rm -f $(ALL) *.o *.hi ../lib/*.o ../lib/*.hi ../lib/EasyVision/*.o ../lib/EasyVision/*.hi ../lib/ImagProc/*.o ../lib/ImagProc/*.hi ../lib/ImagProc/Ipp/*.o ../lib/ImagProc/Ipp/*.hi ../lib/Vision/*.o ../lib/Vision/*.hi
