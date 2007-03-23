@@ -44,7 +44,7 @@ main = do
     motionCallback $= Just mc
     depthFunc $= Just Less
     textureFilter Texture2D $= ((Nearest, Nothing), Nearest)
-    textureFunction $= Decal
+    textureFunction $= Replace
 
     launch app (worker cam o tb)
 
