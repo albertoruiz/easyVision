@@ -120,7 +120,7 @@ typedef struct {
 segmentLength :: Segment -> Double
 segmentLength (Segment {extreme1 = e1, extreme2 = e2}) = distPoints e1 e2
 
-distPoints (Point a b) (Point x y) = (a-x)^2+(b-y)^2
+distPoints (Point a b) (Point x y) = sqrt $ (a-x)^2+(b-y)^2
 
 distances segs = do
     let n = length segs

@@ -31,11 +31,11 @@ main = do
                                ("median",intParam 5 3 5),
                                ("high",intParam 40 0 255),
                                ("low",intParam 20 0 255),
-                               ("postproc",intParam 0 0 1),
-                               ("minlength",realParam 0.02 0 1),
-                               ("maxdis",realParam 0.001 0 0.01),
+                               ("postproc",intParam 1 0 1),
+                               ("minlength",realParam 0.15 0 1),
+                               ("maxdis",realParam 0.06 0 0.1),
                                ("scale",realParam 0.1 0.01 1),
-                               ("orthotol",realParam 0.1 0.01 0.5)]
+                               ("orthotol",realParam 0.25 0.01 0.5)]
 
     addWindow "image" sz Nothing (const $ kbdcam ctrl) app
 
@@ -99,7 +99,7 @@ worker cam op trackball inWindow _ = do
 
         when (length closed4 >0) $ do
             let pts = head closed4
-            mapM_ (posib orig) (alter pts)
+            mapM_ (posib orthotol orig) (alter pts)
 
         when (length a4s >0) $ do
             let pts = head a4s
@@ -127,14 +127,14 @@ alter pts = map (rotateList pts) [0 .. 3]
 
 rotateList list n = take (length list) $ drop n $ cycle list
 
-posib orig pts = do
+posib tol orig pts = do
     let h = estimateHomography (map pl pts) a4
         mc = cameraFromHomogZ0 Nothing h
     case mc of
         Nothing -> return ()
         Just cam  -> do
             let ao = autoOrthogonality (Nothing::Maybe (Matrix Double)) h
-            when (ao < 0.1) $ do
+            when (ao < tol) $ do
                 imf <- scale8u32f 0 1 orig
                 imt <- extractSquare 128 imf
                 drawCamera 1 cam (Just imt)
