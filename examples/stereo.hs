@@ -24,7 +24,9 @@ gnuplot command = do
 plotpoints l = do
     gnuplot $ "set size square; plot [-500:500] [-500:500]  \"-\" with points\n"
               ++ prep l
-    
+
+center [a, b] = [(a-1500)/15,(b-1500)/15]
+
 flipx = \[x,y]->[-x,y]
     
 shcam cam pts = (c,p) where 
@@ -78,14 +80,14 @@ stereo datafile = do
     putStrLn "Essential matrix: "
     dispR 8 (normat e)
     putStrLn "candidate cameras:" 
-    print $ camerasFromEssential e
+    mapM_ (dispR 8) $ camerasFromEssential e
     let m = kgen df <> cameraAtOrigin
     putStrLn "first camera: "
-    print m
+    dispR 8 m
     let ms = map (kgen df <>) (camerasFromEssential e)
     let m' = selectCamera (head pts) (head pts') m ms
     putStrLn "second camera: "
-    print m'
+    dispR 8 m'
     let (_,_,c) = factorizeCamera m'
     let x = triangulate [(m, pts), (m', pts')] 
     let (mo,v)   = shcam m  pts
