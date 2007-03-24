@@ -5,6 +5,7 @@
 int ippiSet_32f_C1R(float,DST);
 int ippiImageJaehne_32f_C1R(DST);
 int ippiFilterGauss_32f_C1R(SRC,DST,int);
+int ippiFilterLaplace_32f_C1R(SRC,DST,int);
 int ippiFilterSobelVert_32f_C1R(SRC,DST);
 int ippiFilterSobelHoriz_32f_C1R(SRC,DST);
 int ippiCopy_32f_C1R(SRC,DST);

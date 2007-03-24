@@ -53,6 +53,7 @@ module ImagProc.ImageProcessing (
 , histogram
 -- * Basic image processing
 , gauss
+, laplace
 , median
 , sobelVert, sobelHoriz
 , secondOrder
@@ -270,6 +271,14 @@ gauss mask = simplefun1F f (shrink (s,s)) "gauss" where
                 Mask3x3 -> 1
                 Mask5x5 -> 2
     f ps ss pd sd r = ippiFilterGauss_32f_C1R ps ss pd sd r (code mask)
+
+-- | Convolution with a laplacian mask of the desired size.
+laplace :: Mask -> ImageFloat -> IO ImageFloat
+laplace mask = simplefun1F f (shrink (s,s)) "laplace" where
+    s = case mask of
+                Mask3x3 -> 1
+                Mask5x5 -> 2
+    f ps ss pd sd r = ippiFilterLaplace_32f_C1R ps ss pd sd r (code mask)
 
 -- | Median Filter
 median :: Mask -> ImageGray -> IO ImageGray

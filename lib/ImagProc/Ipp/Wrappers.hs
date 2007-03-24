@@ -33,6 +33,9 @@ foreign import ccall "auxIpp.h ippiSet_32f_C1R"
 foreign import ccall "auxIpp.h ippiFilterGauss_32f_C1R"
      ippiFilterGauss_32f_C1R :: Ptr() -> Int -> Ptr() -> Int -> ROISize -> Int -> IO Int
 
+foreign import ccall "auxIpp.h ippiFilterLaplace_32f_C1R"
+     ippiFilterLaplace_32f_C1R :: Ptr() -> Int -> Ptr() -> Int -> ROISize -> Int -> IO Int
+
 foreign import ccall "auxIpp.h ippiCopy_32f_C1R"
      ippiCopy_32f_C1R :: Ptr() -> Int -> Ptr() -> Int -> ROISize -> IO Int
 

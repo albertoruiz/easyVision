@@ -37,7 +37,7 @@ main = do
     let mode m = MenuEntry m $ modifyIORef state $ \s -> s {ust = m}
 
     attachMenu LeftButton $ Menu $ map mode
-        ["RGB","Gray","Float","Median","Histogram"
+        ["RGB","Gray","Float","Median","Gaussian","Laplacian","Histogram"
         ,"Integral","Umbraliza","Distance", "Hessian"
         ,"Corners", "Features", "Segments", "Canny", "DCT", "FFT"]
 {-
@@ -136,6 +136,13 @@ worker cam param getRoi fft inWindow op = do
              im <- yuvToGray orig
              s <- (smooth `times` median Mask5x5) im
              drawImage s
+        "Gaussian" -> 
+             cam >>= yuvToGray >>= scale8u32f 0 1 >>= (smooth `times` gauss Mask5x5) >>= drawImage
+        "Laplacian" -> 
+             cam >>= yuvToGray >>= scale8u32f (-1) 1 >>= (smooth `times` gauss Mask5x5)
+             >>= laplace Mask5x5
+             >>= scale32f8u (-1) 1
+             >>= drawImage
         "Histogram" -> do
              im <- cam >>= yuvToGray
              drawImage im
