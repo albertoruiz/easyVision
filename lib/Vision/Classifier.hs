@@ -13,6 +13,8 @@ Basic Statistical Pattern Recognition algorithms.
 -}
 -----------------------------------------------------------------------------
 
+-- FIXME: divide into several modules
+
 module Vision.Classifier (
 -- * Basic definitions
      Attributes, Label, Example, Sample,
@@ -647,14 +649,17 @@ branch n (g1,g2) = min (length g1) (length g2) <= n
 type Kernel = (Vector Double -> Vector Double -> Double)
 -- (it should be more general)
 
+
+-- FIXME: remove partit
 delta f l1 l2 = matrix $ partit (length l1) $ [f x y | x <- l1, y <- l2]
 
+-- FIXME: leave only one version
 -- | minimum squared error linear machine in the implicit feature space induced by the given 'Kernel'
 kernelMSE :: Kernel -> Dicotomizer
 kernelMSE kernel (g1,g2) = fun where
     fun z = expan z `dot` a
     expan z = vector $ map (kernel z) objs
-    a = pinv (delta kernel objs objs) <> labels
+    a = pinvTolg 1 (delta kernel objs objs) <> labels
     objs = g1 ++ g2
     labels = join [constant 1 (length g1), constant (-1) (length g2)]
 
@@ -681,38 +686,20 @@ randomMatrix seed (n,m) = reshape m $ vector $ take (n*m) $ randomRs (-w,w) $ mk
     where w = 2  / sqrt (fromIntegral m)
 
 
-data NeuralNet = NN { layers:: Int,
-                      sizes :: [Int],
-                      weights :: [Matrix Double]
+data NeuralNet = NN { weights :: [Matrix Double]
                     } deriving Show
 
 --createNet :: Int -> Int -> [Int] -> Int -> NeuralNet
-createNet seed i hs o = NN ly szs ws where
-    ly = 1 + length hs
-    szs = i:hs++[o]
+createNet seed i hs o = NN ws where
     ws = zipWith randomMatrix [seed, seed+1 .. ] dims
     dims = zip (hs++[o]) ((i+1):hs)
 
--- the prime versions work with explicit constants in all layers, which is
--- not really required
-
-{-
-createNet' seed i hs o = NN ly szs ws where
-    ly = 1 + length hs
-    szs = i:hs++[o]
-    ws = zipWith randomMatrix [seed, seed+1 .. ] dims
-    dims = zip (hs++[o]) (map (+1) (i:hs))
--}
+-- the bias constant is only required in the input
 
 -- given a network and an input we obtain the activations of all nodes
 forward :: NeuralNet -> Vector Double -> [Vector Double]
 forward n v = scanl f (join [v,1]) (weights n)
     where f v m = tanh (m <> v)
-
-{-
-forward' n v = scanl f v (weights n)
-    where f v m = tanh (m <> join [v,1])
--}
 
 -- given a network, activations and desired output it computes the gradient
 deltas :: NeuralNet -> [Vector Double] -> Vector Double ->  [Matrix Double]
@@ -721,16 +708,6 @@ deltas n xs o = zipWith outer (tail ds) (init xs) where
     ds = scanr f dl (zip xs (weights n))
     f (x,m) d = gp x * (trans m <> d)
     gp = gmap $ \x -> (1+x)*(1-x)
-
-{-
-deltas' n xs o = zipWith outer (tail ds) (map add1 $ init xs) where
-    dl = (last xs - o) * gp (last xs)
-    ds = scanr f dl (zip xs (weights n))
-    f (x,m) d = gp x * drp (trans m <> d)
-    gp = gmap $ \x -> (1+x)*(1-x)
-    drp v = subVector 0 (size v -1) v
-    add1 v = join [v,1]
--}
 
 updateNetwork alpha n (v,o) = n {weights = zipWith (+) (weights n) corr}
     where xs = forward n v
@@ -750,7 +727,6 @@ learnNetwork alpha eps maxepochs n prob = (r,e) where
     conv = takeWhile (\(r,e)-> {-debug-} e >eps) selected
     r = fst$ last$ conv
     e = map (snd) conv
-
 
 --adaptNet :: Sample -> [(Vector Double, Vector Double)]
 adaptNet s = x where
