@@ -34,7 +34,7 @@ main = do
                                ("postproc",intParam 1 0 1),
                                ("minlength",realParam 0.15 0 1),
                                ("maxdis",realParam 0.06 0 0.1),
-                               ("scale",realParam 0.1 0.01 1),
+                               ("scale",realParam 0.2 0.01 1),
                                ("orthotol",realParam 0.25 0.01 0.5)]
 
     addWindow "image" sz Nothing (const $ kbdcam ctrl) app
@@ -46,12 +46,14 @@ main = do
     textureFilter Texture2D $= ((Nearest, Nothing), Nearest)
     textureFunction $= Replace
 
-    launch app (worker cam o tb)
+    let mbf = read `fmap` Map.lookup "--focal" opts
+
+    launch app (worker cam o tb mbf)
 
 -----------------------------------------------------------------
 
 
-worker cam op trackball inWindow _ = do
+worker cam op trackball mbf inWindow _ = do
 
     radius <- getParam op "radius"
     width  <- getParam op "width"
@@ -87,7 +89,7 @@ worker cam op trackball inWindow _ = do
         pointSize $= 5
         mapM_ (renderPrimitive Points . (mapM_ vertex)) closed4
 
-    let a4s = filter (isA4 orthotol) (concatMap alter closed4)
+    let a4s = filter (isA4 mbf orthotol) (concatMap alter closed4)
 
     inWindow "3D view" $ do
         clear [ColorBuffer, DepthBuffer]
@@ -99,7 +101,7 @@ worker cam op trackball inWindow _ = do
 
         when (length closed4 >0) $ do
             let pts = head closed4
-            mapM_ (posib orthotol orig) (alter pts)
+            mapM_ (posib mbf orthotol orig) (alter pts)
 
         when (length a4s >0) $ do
             let pts = head a4s
@@ -107,6 +109,9 @@ worker cam op trackball inWindow _ = do
                 Size _ sz = size orig
             floor <- scale8u32f 0 1 orig >>= warp (Size 256 256) (scaling scale <> h)
             drawTexture floor $ map (++[-0.01]) $ ht (scaling (1/scale)) [[1,1],[-1,1],[-1,-1],[1,-1]]
+            pointCoordinates (Size 400 400)
+            setColor 1 1 1
+            text2D 0.95 (-0.95) (show $ focalFromHomogZ0 $ inv h)
 
     return ()
 
@@ -127,13 +132,14 @@ alter pts = map (rotateList pts) [0 .. 3]
 
 rotateList list n = take (length list) $ drop n $ cycle list
 
-posib tol orig pts = do
+posib mbf tol orig pts = do
     let h = estimateHomography (map pl pts) a4
-        mc = cameraFromHomogZ0 Nothing h
+        mc = cameraFromHomogZ0 mbf h
+        mbomega = fmap omegaGen mbf
     case mc of
         Nothing -> return ()
         Just cam  -> do
-            let ao = autoOrthogonality (Nothing::Maybe (Matrix Double)) h
+            let ao = autoOrthogonality mbomega h
             when (ao < tol) $ do
                 imf <- scale8u32f 0 1 orig
                 imt <- extractSquare 128 imf
@@ -143,8 +149,15 @@ drawSeg s = do
     vertex $ (extreme1 s)
     vertex $ (extreme2 s)
 
-isA4 tol pts = ao < tol && cy < 0
-    where ao = autoOrthogonality (Nothing::Maybe (Matrix Double)) h
+isA4 mbf tol pts = ao < tol && cy < 0
+    where mbomega = fmap omegaGen mbf
+          ao = autoOrthogonality mbomega h
           h = estimateHomography (map pl pts) a4
-          Just p = poseFromHomogZ0 Nothing h
+          Just p = poseFromHomogZ0 mbf h
           (_,cy,_) = cameraCenter p
+
+omegaGen f = kgen (recip (f*f))
+
+text2D x y s = do
+    rasterPos (Vertex2 x (y::GLfloat))
+    renderString Helvetica12 s
