@@ -1,4 +1,7 @@
 -- automatic pose from A4 using segments
+-- examples:
+-- ./pose frontal.dv --size 12
+-- ./pose tv:// --size 12 --focal 4.5
 
 module Main where
 
