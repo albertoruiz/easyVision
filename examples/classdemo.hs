@@ -2,12 +2,10 @@
 -}
 
 import GSL
-import Vision
+import Classifier
+import Classifier.ToyProblems
 import System.Random
 import Debug.Trace
-
-matrix m = fromLists m :: Matrix Double
-vector v = fromList v :: Vector Double
 
 shErr d c = (show $ (/100) $ fromIntegral $ round $ 10000 * errorRate d c) ++ " %"
 shConf d c = putStrLn $ format " " (show.round) (confusion d c)

@@ -5,7 +5,8 @@
 -}
 
 import GSL
-import Vision
+import Classifier
+import Classifier.ToyProblems(mnistraw)
 import Debug.Trace
 
 debug x = trace (show x) x
@@ -121,9 +122,6 @@ study method = do
 -- distance to pca subspace
 main'' = study $ distance (subspace (ReconstructionQuality 0.8))
 
-
-partit _ [] = []
-partit n l  = take n l : partit n (drop n l)
 
 -- show eigenvectors
 showeig k = do

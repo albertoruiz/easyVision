@@ -1,7 +1,7 @@
 -----------------------------------------------------------------------------
 {- |
-Module      :  Vision.Stat
-Copyright   :  (c) Alberto Ruiz 2006
+Module      :  Classifier.Stat
+Copyright   :  (c) Alberto Ruiz 2006-7
 License     :  GPL-style
 
 Maintainer  :  Alberto Ruiz (aruiz at um dot es)
@@ -13,7 +13,7 @@ Statistical characterization of multivariate samples and Principal Component Ana
 -}
 -----------------------------------------------------------------------------
 
-module Vision.Stat
+module Classifier.Stat
 ( Stat(..)
 , stat
 
@@ -28,22 +28,19 @@ module Vision.Stat
 import GSL
 import Data.List(transpose,sortBy,minimumBy)
 
-type RVector = Vector Double
-type RMatrix = Matrix Double
-
 -- | 1st and 2nd order statistics and other useful information extracted from a multivariate sample, where observations are given as rows of a matrix.
 
-data Stat = Stat { meanVector :: RVector
-                 , covarianceMatrix :: RMatrix
-                 , eigenvalues :: RVector
-                 , eigenvectors :: RMatrix
-                 , invCov :: RMatrix
-                 , normalizedData :: RMatrix
-                 , whiteningTransformation :: RMatrix
+data Stat = Stat { meanVector              :: Vector Double
+                 , covarianceMatrix        :: Matrix Double
+                 , eigenvalues             :: Vector Double
+                 , eigenvectors            :: Matrix Double
+                 , invCov                  :: Matrix Double
+                 , normalizedData          :: Matrix Double
+                 , whiteningTransformation :: Matrix Double
                  }
 
 -- | Creates a 'Stat' structure from a matrix. Of course, due to lazyness, only the fields required by the particular application will be actually computed.
-stat :: RMatrix -> Stat
+stat :: Matrix Double -> Stat
 stat x = s where
     m = sumColumns x / fromIntegral (rows x)
     xc = x |-| m
@@ -74,10 +71,10 @@ mat |+| vec = mat + constant 1 (rows mat) `outer` vec
 -- | This structure contains functions to encode and decode individual vectors (or collection of vectors packed into a matrix) obtained by some suitable criterion (e.g. 'pca').
 
 data Codec = 
-    Codec { encodeVector :: RVector -> RVector
-          , decodeVector :: RVector -> RVector
-          , encodeMatrix :: RMatrix -> RMatrix
-          , decodeMatrix :: RMatrix -> RMatrix
+    Codec { encodeVector :: Vector Double -> Vector Double
+          , decodeVector :: Vector Double -> Vector Double
+          , encodeMatrix :: Matrix Double -> Matrix Double
+          , decodeMatrix :: Matrix Double -> Matrix Double
           , encodeList   :: [Double] -> [Double]
           , decodeList   :: [Double] -> [Double]
 }

@@ -72,7 +72,7 @@ module Vision.Geometry
 
 import GSL hiding (Matrix, Vector)
 import qualified GSL as G
-import Vision.Stat
+import Classifier.Stat
 import Data.List(transpose,nub,maximumBy,genericLength,elemIndex, genericTake)
 import System.Random 
 import Debug.Trace(trace)

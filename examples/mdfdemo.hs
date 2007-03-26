@@ -3,12 +3,13 @@
 -}
 
 import GSL
-import Vision
+import Classifier
+import Classifier.ToyProblems(combined)
 import System.Random
 import Debug.Trace
 
-matrix m = fromLists m :: Matrix Double
-vector v = fromList v :: Vector Double
+--matrix m = fromLists m :: Matrix Double
+--vector v = fromList v :: Vector Double
 
 withPCA rq = withPreprocess (mef rq)
 withMDF = withPreprocess mdf

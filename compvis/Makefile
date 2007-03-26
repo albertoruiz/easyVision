@@ -18,4 +18,4 @@ auxc: ../lib/ImagProc/Ipp/auxIpp.o ../lib/ImagProc/Segments/libsegments.a
 	cd ../lib/ImagProc/Segments; make
 
 clean:
-	rm -f $(ALL) *.o *.hi ../lib/*.o ../lib/*.hi ../lib/EasyVision/*.o ../lib/EasyVision/*.hi ../lib/ImagProc/*.o ../lib/ImagProc/*.hi ../lib/ImagProc/Ipp/*.o ../lib/ImagProc/Ipp/*.hi ../lib/Vision/*.o ../lib/Vision/*.hi
+	rm -f $(ALL) *.o *.hi ../lib/*.o ../lib/*.hi ../lib/EasyVision/*.o ../lib/EasyVision/*.hi ../lib/ImagProc/*.o ../lib/ImagProc/*.hi ../lib/ImagProc/Ipp/*.o ../lib/ImagProc/Ipp/*.hi ../lib/Vision/*.o ../lib/Vision/*.hi ../lib/Classifier/*.o ../lib/Classifier/*.hi

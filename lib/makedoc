@@ -2,9 +2,15 @@
 
 echo "Preparing the documentation..."
 rm -f doc/*
-haddock Vision.hs \
-        Vision/Stat.hs \
-        Vision/Classifier.hs \
+haddock Classifier.hs \
+        Classifier/Stat.hs \
+        Classifier/Base.hs \
+        Classifier/Simple.hs \
+        Classifier/Kernel.hs \
+        Classifier/Neural.hs \
+        Classifier/Adaboost.hs \
+        Classifier/ToyProblems.hs \
+        Vision.hs \
         Vision/Geometry.hs \
         Vision/Autofrontal.hs \
         ImagProc.hs \
