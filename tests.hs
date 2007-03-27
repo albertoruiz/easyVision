@@ -1,6 +1,7 @@
 import Test.HUnit
 
 import GSL
+import Classifier
 import Vision
 import System.Random(randomRs,mkStdGen)
 import System.Directory(doesFileExist)

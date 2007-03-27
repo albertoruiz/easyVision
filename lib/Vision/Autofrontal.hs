@@ -25,34 +25,24 @@ module Vision.Autofrontal (
 
 -- experiments on planar rectification
 
-import GSL hiding (Matrix, Vector)
-import qualified GSL as G
+import GSL
 import Vision.Geometry
+import Vision.Camera
 import Data.List (elemIndex,sort)
-import Debug.Trace
-import System.Random
-import System.Environment (getArgs)
-import Control.Monad (when)
 
-type Matrix = G.Matrix Double
-type Vector = G.Vector Double
-
-matrix = fromLists :: [[Double]] -> Matrix
-vector = fromList ::  [Double] -> Vector
-
-(!:) = (@>)
+matrix = fromLists :: [[Double]] -> Matrix Double
+vector = fromList ::  [Double] -> Vector Double
 
 data KnownFs = AllKnown [Double] | F1Known Double | AllUnknown | ConstantUnknown
 
-
-extractInfo :: KnownFs -> [Matrix] -> (Double,Double) -> (Matrix, [Maybe Matrix])
+extractInfo :: KnownFs -> [Matrix Double] -> (Double,Double) -> (Matrix Double, [Maybe (Matrix Double)])
 
 extractInfo (AllKnown fs) hs horiz = (c,mbOmegas) where
     mbOmegas = map (Just . omegaGen) (tail fs)
     c = rectifier' (horiz, head fs)
 
 extractInfo (F1Known f1) hs horiz = (c,mbOmegas) where
-    mbOmegas = repeat Nothing :: [Maybe Matrix]
+    mbOmegas = repeat Nothing :: [Maybe (Matrix Double)]
     c = rectifier' (horiz,f1)
 
 extractInfo AllUnknown hs horiz = (c,mbOmegas) where
@@ -61,7 +51,7 @@ extractInfo AllUnknown hs horiz = (c,mbOmegas) where
     c = case mf1 of 
             Just f1 -> rectifier' (horiz,f1)
             Nothing -> ident 3
-    mbOmegas = repeat Nothing :: [Maybe Matrix]
+    mbOmegas = repeat Nothing :: [Maybe (Matrix Double)]
 
 extractInfo ConstantUnknown hs horiz = (c,mbOmegas) where
     mf1s = map (estimateFTransfer horiz) hs
@@ -73,7 +63,7 @@ extractInfo ConstantUnknown hs horiz = (c,mbOmegas) where
     mbOmegas = repeat mbOmega1
 
 
-consistency :: KnownFs -> [Matrix] -> (Double,Double) -> Double
+consistency :: KnownFs -> [Matrix Double] -> (Double,Double) -> Double
 
 consistency info hs horiz = r where
     ihs = map inv hs
@@ -89,7 +79,7 @@ quality ihs mbOmgs c = sum qs / fromIntegral (length ihs) where
 similarityDegree h = pnorm 1 (m'-v) where
     v = vector [1,0,0,0,1,0,0,0,0]
     m = flatten (h <> mS <> trans h)
-    m' = m <> recip (m!:0)
+    m' = m <> recip (m@>0)
 
 -- hmm! premature optimization...
 omegaGen f = kgen (recip (f*f))
@@ -98,7 +88,7 @@ omegaGen f = kgen (recip (f*f))
 orthogonality omega c = pnorm 1 (m'-v) where
     v = vector [1,0,0,1]
     m = flatten $ subMatrix (0,0) (2,2) q
-    m' = m <> recip (m!:0)
+    m' = m <> recip (m@>0)
     q = trans c <> omega <> c 
 
 -- si das un f (omega) la usa, si no intenta estimarla y si no puede ve si es similar
@@ -140,7 +130,7 @@ ryf c = focalFromHomogZ0 c >>= \f -> Just ((rho,yh),f) where
     
     
 
-polarHoriz :: (Double,Double) -> Vector
+polarHoriz :: (Double,Double) -> Vector Double
 polarHoriz (r',y) = h where
     r = -(r'+3*pi/2)
     n = vector [y* cos r, y* sin r , 1]

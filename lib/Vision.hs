@@ -16,8 +16,14 @@ Some algorithms for geometric computer vision.
 
 module Vision (
     module Vision.Geometry,
+    module Vision.Camera,
+    module Vision.Estimation,
+    module Vision.Stereo,
     module Vision.Autofrontal
 ) where
 
 import Vision.Geometry
+import Vision.Camera
+import Vision.Estimation
+import Vision.Stereo
 import Vision.Autofrontal

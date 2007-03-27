@@ -12,6 +12,9 @@ haddock Classifier.hs \
         Classifier/ToyProblems.hs \
         Vision.hs \
         Vision/Geometry.hs \
+        Vision/Estimation.hs \
+        Vision/Camera.hs \
+        Vision/Stereo.hs \
         Vision/Autofrontal.hs \
         ImagProc.hs \
         ImagProc/Ipp.hs \
