@@ -46,9 +46,9 @@ machines = [ (distance ordinary, "ordinary distance")
            , (multiclass (adaboost 50 stumps), "adaboost 50 stumps")
            , (neural 0.1 0.05 100 [10], "neural 10")
            , (neural 0.05 0.05 100 [20,10,5], "neural 20 10 5")
-           , (multiclass (kernelMSE (polyK 2)), "kernel mse poly 2")
-           , (multiclass (kernelMSE (polyK 5)), "kernel mse poly 5")
-           , (multiclass (kernelMSE (gaussK 0.2)), "kernel mse gaussK 0.2")
+           , (multiclass (kernelMSE 1 (polyK 2)), "kernel mse poly 2")
+           , (multiclass (kernelMSE 1 (polyK 5)), "kernel mse poly 5")
+           , (multiclass (kernelMSE 1 (gaussK 0.2)), "kernel mse gaussK 0.2")
            , (multiclass $ adaboost 10 $ weight 17 ( treeOf (branch 5) (perceptron 0.1 0.1 10 [2])),"combination")
            ]
 

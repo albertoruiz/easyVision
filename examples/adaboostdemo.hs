@@ -179,7 +179,7 @@ adamnistraw = do
         print (errorRate test c)
         dispR 2 (confusion test c)
         putStrLn "pca kernel mse poly 2"
-        let (c,f) = withPCA (ReconstructionQuality 0.8) (multiclass (kernelMSE (polyK 2))) train
+        let (c,f) = withPCA (ReconstructionQuality 0.8) (multiclass (kernelMSE 1 (polyK 2))) train
         print (errorRate train c)
         print (errorRate test c)
         dispR 2 (confusion test c)
