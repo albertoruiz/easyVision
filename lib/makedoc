@@ -18,10 +18,12 @@ haddock Classifier.hs \
         Vision/Autofrontal.hs \
         ImagProc.hs \
         ImagProc/Ipp.hs \
+        ImagProc/Ipp/Wrappers.hs \
         ImagProc/Ipp/Core.hs \
         ImagProc/Images.hs \
-        ImagProc/Ipp/Wrappers.hs \
+        ImagProc/Camera.hs \
         ImagProc/ImageProcessing.hs \
+        ImagProc/Pure.hs \
         ImagProc/Saddle.hs \
         ImagProc/Segments.hs \
         ImagProc/Polyline.hs \
@@ -29,7 +31,6 @@ haddock Classifier.hs \
         EasyVision/GUI.hs \
         EasyVision/Combinators.hs \
         EasyVision/Parameters.hs \
-        ImagProc/Camera.hs \
         EasyVision/Draw.hs \
         EasyVision/Trackball.hs --hide=Ipp.Trackball \
         --use-package=base --use-package=OpenGL \

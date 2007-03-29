@@ -14,7 +14,8 @@ Two-view geometry.
 -----------------------------------------------------------------------------
 
 module Vision.Stereo
-( estimateFundamental
+( estimateFundamentalRaw
+, estimateFundamental
 , estimateFundamentalRansac
 , epipolarQuality
 , qualityOfEssential

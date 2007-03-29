@@ -20,6 +20,7 @@ module Vision.Estimation
 , estimateHomography
 , estimateHomographyRaw
 , ransac
+, ransacProb
 ) where
 
 import GSL hiding (Matrix, Vector)
@@ -128,6 +129,21 @@ ransac estimator isInlier n dat = {-trace (show aux)-} (bestModel,inliers) where
     bestModel = models!!p
     inliers = inls!!p
     aux = map length $ genericTake k inls
+
+-- | adaptive ransac
+--ransacProb :: ([a]->t) -> (t -> a -> Bool) -> Int -> [a] -> (t,[a])
+ransacProb prob estimator isInlier n dat = {-trace (show aux)-} (bestModel,inliers) where 
+    models = map estimator (samples n dat)
+    inls = map inliers models where inliers model = filter (isInlier model) dat 
+    eps = map prop inls where prop l = 1 - genericLength l / genericLength dat
+    ns = scanl1 min $ map (ransacSize n prob) eps 
+    k = debug $ fst $ head $ dropWhile (\(k,n) -> k<n) (zip [1 ..] ns)
+    p = position maximum (map length (genericTake k inls))
+    bestModel = models!!p
+    inliers = inls!!p
+    aux = map length $ genericTake k inls
+
+debug x = trace (show x) x
 
 --------------------------    
 
