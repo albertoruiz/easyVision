@@ -178,7 +178,7 @@ scale32f8u :: Float             -- ^ desired value corresponding to 0
 scale32f8u vmin vmax (F im) = do
     r' <- img Gray (isize im)
     let r = r' {vroi = vroi im}
-    (cr1 ippiScale_32f8u_C1R im r) vmin vmax // checkIPP "scale8u32f" [im]
+    (cr1 ippiScale_32f8u_C1R im r) vmin vmax // checkIPP "scale32f8u" [im]
     return (G r)
 
 -- | Creates an integral (cumulative sum) 32f image from an 8u image. Obtains a roi of the same size, but each pixel has the sum of the pixels strictly less than its position, so the first row and column contains zeroes and the last ones are not taken into account (sorry for the sentence).
@@ -301,7 +301,7 @@ thresholdVal32f :: Float          -- ^ threshold
 thresholdVal32f t v cmp = simplefun1F f id "thresholdVal32f" where
     f ps ss pd sd r = ippiThreshold_Val_32f_C1R ps ss pd sd r t v (codeCmp cmp)
 
--- | Changes each pixel by the maximum value in its neighbourhood of given radius.
+-- | Changes each pixel by the maximum value in its neighbourhood of given diameter.
 filterMax32f :: Int -> ImageFloat -> IO ImageFloat
 filterMax32f sz = simplefun1F f (shrink (d,d)) "filterMax32f" where
     d = (sz-1) `quot` 2

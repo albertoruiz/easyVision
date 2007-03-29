@@ -36,7 +36,7 @@ module ImagProc.Ipp.Core
           , Pixel (..)
           , Point (..)
           , pixelsToPoints, pixelToPointTrans
-          , val32f
+          , val32f, val32f'
 ) where
 
 import Foreign hiding (shift)
@@ -288,10 +288,10 @@ newtype ImageFloat = F Img
 newtype ImageYUV = Y Img
 
 -- | Normalized image coordinates, with x from +1 to -1 (for a right handed 3D reference system with z pointing forward)
-data Point = Point { px    :: !Double, py :: !Double} deriving Show
+data Point = Point { px    :: !Double, py :: !Double} deriving (Eq, Show)
 
 -- | Raw image coordinates
-data Pixel = Pixel { row   :: !Int,    col :: !Int } deriving Show
+data Pixel = Pixel { row   :: !Int,    col :: !Int } deriving (Eq, Show)
 
 -- | Auxiliary homogeneous transformation from 'Pixel's to 'Point's
 pixelToPointTrans :: Size -> GSL.Matrix Double
@@ -317,6 +317,15 @@ pixelsToPoints sz = fix where
 -- | Returns the pixel value of an image at a given pixel. NO range checking.
 val32f :: ImageFloat -> Pixel -> IO Float
 val32f (F Img {fptr = fp, ptr = p, datasize = d, step = s}) (Pixel r c) = do
+    let jump = s `quot` d
+    v <- peek (advancePtr (castPtr p) (r*jump+c))
+    touchForeignPtr fp
+    return v
+
+-- | Returns the pixel value of an image at a given pixel with range checking
+val32f' :: ImageFloat -> Pixel -> IO Float
+val32f' (F Img {fptr = fp, ptr = p, datasize = d, step = s, vroi = ROI r1 r2 c1 c2}) (Pixel r c) = do
+    when (r<r1 || c<c1 || r > r2 || c > c2) $ error "val32f out of range"
     let jump = s `quot` d
     v <- peek (advancePtr (castPtr p) (r*jump+c))
     touchForeignPtr fp

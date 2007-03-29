@@ -33,7 +33,7 @@ data InterestPoint = IP {
                         , ipOrientation :: Double
                         , ipDescriptor  :: Vector Double
                         , ipTime        :: Int
-                        } deriving Show
+                        } deriving (Eq, Show)
 
 
 -- | Returns interest points in the image and a very simple local descriptor.
@@ -71,9 +71,10 @@ getSaddlePoints smooth rad prop maxn fn fr im = do
     gs <- secondOrder sm
     h <- hessian gs >>= scale32f (-1.0)
     (mn,mx) <- minmax h
-    hotPixels  <- localMax rad h
-               >>= thresholdVal32f (mx* double2Float prop) 0.0 IppCmpLess
-               >>= getPoints32f maxn
+    hotPixels'  <- localMax rad h
+                >>= thresholdVal32f (mx* double2Float prop) 0.0 IppCmpLess
+    let r = max 0 (ceiling fr - ((rad-1) `div`2))
+    hotPixels <- getPoints32f maxn (modifyROI (shrink (r,r)) hotPixels')
 
     let ptp = pixelsToPoints (size im)
 
@@ -106,7 +107,7 @@ getSaddlePoints smooth rad prop maxn fn fr im = do
     return r
 
 extractList im l = mapM f l where
-    f p = val32f im p
+    f p = val32f im p  -- try first with val32f' :)
 
 circle :: Int -> Float -> Pixel -> Float -> [Pixel]
 circle n rad (Pixel r c) ang = cir where
@@ -125,15 +126,12 @@ corresp umb h w simil = do
                      return (p:sig)
 
 basicMatches :: ([a],[a]) -> (a -> a -> Double) -> Double -> IO ([a],[a],ImageFloat)
-basicMatches (pl,ql) dist umb {-dbgfun-} = do
+basicMatches (pl,ql) dist umb = do
     let n1 = length pl
     let n2 = length ql
     c <- image (Size n1 n2)
     let t = [[double2Float $ - dist p q | q <- ql] | p <- pl]
     setData32f c t
-    --case dbgfun of
-    --    Nothing -> return ()
-    --    Just f  -> f c
     let fumb = double2Float umb
     corrs <- corresp fumb n1 n2 c
     let pizq = map ((pl!!).row) corrs

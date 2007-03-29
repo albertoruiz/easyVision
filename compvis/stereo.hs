@@ -12,6 +12,8 @@ import GSL hiding (size)
 import qualified GSL
 import Control.Monad(when)
 import Vision
+import GHC.Float(float2Double,double2Float)
+import Classifier.Stat
 
 --import Ipp.Core
 
@@ -38,12 +40,14 @@ main = do
     addWindow "left" sz Nothing  (const (kbdcam ctrl1)) state
     addWindow "right" sz Nothing (const (kbdcam ctrl2)) state
     addWindow "both" sz Nothing  (const (kbdcam ctrl1)) state
-    addWindow "stereo" sz Nothing   (const (kbdcam ctrl1)) state
+    addWindow "rectif" sz Nothing   (const (kbdcam ctrl1)) state
 
     opts <- createParameters state [("h",percent 20),
                                     ("smooth",intParam 3 0 10),
-                                    ("umb",realParam 0.05 0 0.1),
-                                    ("ranumb", realParam 0.005 0 0.01)]
+                                    ("umb",realParam 0.01 0 0.05),
+                                    ("ranumb", realParam 0.005 0 0.01),
+                                    ("rad", realParam 7 1 20),
+                                    ("dim", intParam 20 1 50)]
 
     sequence (replicate 25 cam1)
     --sequence (replicate 30 cam2)
@@ -60,15 +64,20 @@ worker cam1 cam2 opts inWindow _ = do
     let h = fromIntegral ph / 100
     smooth <- getParam opts "smooth"
     umb <- getParam opts "umb"
+    rad <- getParam opts "rad"
+    dim <- getParam opts "dim"
+
 
     im1 <- cam1 >>= yuvToGray >>= scale8u32f 0 1 
     im2 <- cam2 >>= yuvToGray >>= scale8u32f 0 1
 
 
-    ips1 <- getSaddlePoints smooth 7 h 500 20 10 im1
-    ips2 <- getSaddlePoints smooth 7 h 500 20 10 im2
+    ips1  <- getSaddlePoints smooth 7 h 500 dim rad im1
 
-    (good1, good2 , _) <- basicMatches (ips1, ips2) (distComb 0.9) umb
+    ips2 <- getSaddlePoints smooth 7 h 500 dim rad im2
+
+    (good1, good2 , _) <- basicMatches (ips1, ips2) (distFeat) umb
+
 
     inWindow "left" $ do
         drawImage im1
@@ -78,6 +87,7 @@ worker cam1 cam2 opts inWindow _ = do
         renderPrimitive Points (mapM_ vertex (map ipPosition ips1))
         setColor 1 0 0
         pointSize $= 3
+        text2D 0.9 0 (show $ length ips1)
         --text2D 0.9 0 (show $ length ips1)
         drawInterestPoints good1
 
@@ -86,27 +96,31 @@ worker cam1 cam2 opts inWindow _ = do
         pointCoordinates (size im2)
         setColor 0 0 1
         pointSize $= 2
-        renderPrimitive Points (mapM_ vertex (map ipPosition ips1))
+        renderPrimitive Points (mapM_ vertex (map ipPosition ips2))
         setColor 1 0 0
         pointSize $= 3
+        text2D 0.9 0 (show $ length ips2)
         --text2D 0.9 0 (show $ length ips2)
         drawInterestPoints good2
 
     inWindow "both" $ do
         combine (im1,good1) (im2,good2)
 
-    when (False && length good1 > 10 && length good1 <50) $ inWindow "stereo" $ do
-        putStr "... "
+    when (length good1 > 10 && length good1 <50) $ do
+        --putStr "... "
         ranumb <- getParam opts "ranumb"
         let (f,inliers) = estimateFundamentalRansac' ranumb (prep good2) (prep good1)
             (pts2,pts1) = unzip inliers
-        print $ mean $ epipolarQuality f pts2 pts1
-        print (sturm f)
+        print (length inliers)
+        --print $ mean $ epipolarQuality f pts2 pts1
+        --print (sturm f)
         let (rec1, rec2) = stereoRectifiers f pts1 pts2
             [dx,dy] = toList $ inHomog $ rec1 <> fromList [0,0,1::Double]
-        dispR 5 $ normat3 (rec1)
-        warp (size im1) (desp (-dx,-dy) <> rec1) im1 >>= drawImage
-
+        w1 <- warp (size im1) (scaling 0.5 <> rec1) im1
+        let [dx,dy] = toList $ inHomog $ rec2 <> fromList [0,0,1::Double]
+        w2 <- warp (size im2) (scaling 0.5 <> rec2) im2
+        inWindow "rectif" $ do
+            drawImage (0.5 .* w1 |+| 0.5 .* w2)
 
     return ()
 
@@ -152,7 +166,6 @@ drawSeg s = do
     vertex $ (extreme1 s)
     vertex $ (extreme2 s)
 
-
 drawInterestPoints ipts = do
     renderPrimitive Points (mapM_ drawPts ipts)
     renderPrimitive Lines  (mapM_ drawOris ipts)
@@ -163,3 +176,7 @@ drawInterestPoints ipts = do
 
     drawPts IP {ipPosition = p@(Point x y)} = do
         vertex $ p
+
+text2D x y s = do
+    rasterPos (Vertex2 x (y::GLfloat))
+    renderString Helvetica12 s
