@@ -2,7 +2,7 @@ IPP =/opt/intel/ipp/5.0/ia32
 
 LIBS = -i../lib ../lib/ImagProc/Ipp/auxIpp.o -L../lib/ImagProc/Segments -lsegments -L$(IPP)/sharedlib -lguide -lippcore -lippi -lipps -lippcc -lippvc -lippcv
 
-ALL = hessian warp frontal pose automatch hmplayer ransac stereo detect interpolate rectangles
+ALL = demo hessian warp frontal pose automatch brush stereo detect interpolate rectangles
 
 all: $(ALL) 
 

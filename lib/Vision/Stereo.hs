@@ -218,7 +218,7 @@ stereoRectifiers fund pts pts' = (h,h') where    -- HZ p.307
 
 isInlierFund t f (x',x) = head (epipolarQuality f [x'] [x]) < t   
 
-estimateFundamentalRansac dist pts' pts = (f,inliers) where 
+estimateFundamentalRansac prob dist pts' pts = (f,inliers) where 
     f = estimateFundamental a b where (a,b) = unzip inliers
-    (_,inliers) = ransac estimator (isInlierFund dist) 8 (zip pts' pts)
+    (_,inliers) = ransac estimator (isInlierFund dist) 8 prob (zip pts' pts)
     estimator l = estimateFundamentalRaw a b where (a,b) = unzip l

@@ -1,3 +1,8 @@
+-- demo of some functions
+-- left click for a menu, right click and drag to select the region of interest
+-- examples:
+-- ./demo penguin.dv
+-- ./demo tv://
 
 import EasyVision
 import Graphics.UI.GLUT hiding (RGB,Size,minmax,histogram)

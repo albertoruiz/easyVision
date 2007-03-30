@@ -41,12 +41,16 @@ main = do
     addWindow "right" sz Nothing (const (kbdcam ctrl2)) state
     addWindow "both" sz Nothing  (const (kbdcam ctrl1)) state
     addWindow "rectif" sz Nothing   (const (kbdcam ctrl1)) state
+    addWindow "fixed" sz Nothing   (const (kbdcam ctrl1)) state
 
     opts <- createParameters state [("h",percent 20),
                                     ("smooth",intParam 3 0 10),
                                     ("umb",realParam 0.01 0 0.05),
-                                    ("ranumb", realParam 0.005 0 0.01),
+                                    ("ranUmb", realParam 0.003 0 0.01),
+                                    ("scale", realParam 0.5 0 2),
                                     ("rad", realParam 7 1 20),
+                                    ("ranProb", realParam 0.9 0.5 1),
+                                    ("seeRansac", intParam 0 0 1),
                                     ("dim", intParam 20 1 50)]
 
     sequence (replicate 25 cam1)
@@ -66,6 +70,7 @@ worker cam1 cam2 opts inWindow _ = do
     umb <- getParam opts "umb"
     rad <- getParam opts "rad"
     dim <- getParam opts "dim"
+    
 
 
     im1 <- cam1 >>= yuvToGray >>= scale8u32f 0 1 
@@ -76,7 +81,7 @@ worker cam1 cam2 opts inWindow _ = do
 
     ips2 <- getSaddlePoints smooth 7 h 500 dim rad im2
 
-    (good1, good2 , _) <- basicMatches (ips1, ips2) (distFeat) umb
+    (good1, good2 , _) <- basicMatches (ips1, ips2) distFeat umb
 
 
     inWindow "left" $ do
@@ -88,7 +93,6 @@ worker cam1 cam2 opts inWindow _ = do
         setColor 1 0 0
         pointSize $= 3
         text2D 0.9 0 (show $ length ips1)
-        --text2D 0.9 0 (show $ length ips1)
         drawInterestPoints good1
 
     inWindow "right" $ do
@@ -100,27 +104,30 @@ worker cam1 cam2 opts inWindow _ = do
         setColor 1 0 0
         pointSize $= 3
         text2D 0.9 0 (show $ length ips2)
-        --text2D 0.9 0 (show $ length ips2)
         drawInterestPoints good2
 
-    inWindow "both" $ do
-        combine (im1,good1) (im2,good2)
+    when (length good1 <= 10 || length good1 >=50) $ inWindow "both" $ combine ipPosition (im1,good1) (im2,good2)
 
     when (length good1 > 10 && length good1 <50) $ do
-        --putStr "... "
-        ranumb <- getParam opts "ranumb"
-        let (f,inliers) = estimateFundamentalRansac' ranumb (prep good2) (prep good1)
+        ranumb <- getParam opts "ranUmb"
+        see <- getParam opts "seeRansac"
+        prob <- getParam opts "ranProb"
+        let (f,inliers) = estimateFundamentalRansac prob ranumb (prep good2) (prep good1)
             (pts2,pts1) = unzip inliers
-        print (length inliers)
-        --print $ mean $ epipolarQuality f pts2 pts1
-        --print (sturm f)
+        inWindow "both" $ do
+            if see == (1::Int)
+                then combine (\[x,y]->Point x y) (im1,pts1) (im2,pts2)
+                else combine ipPosition (im1,good1) (im2,good2)
+            text2D 0.9 (-0.7) (show (sturm f))
+        scale <- getParam opts "scale"
         let (rec1, rec2) = stereoRectifiers f pts1 pts2
-            [dx,dy] = toList $ inHomog $ rec1 <> fromList [0,0,1::Double]
-        w1 <- warp (size im1) (scaling 0.5 <> rec1) im1
-        let [dx,dy] = toList $ inHomog $ rec2 <> fromList [0,0,1::Double]
-        w2 <- warp (size im2) (scaling 0.5 <> rec2) im2
+        w1 <- warp (size im1) (scaling scale <> rec1) im1
+        w2 <- warp (size im2) (scaling scale <> rec2) im2
         inWindow "rectif" $ do
             drawImage (0.5 .* w1 |+| 0.5 .* w2)
+        w3 <- warp (size im2) (inv rec1 <> rec2) im2
+        inWindow "fixed" $ do
+            drawImage (0.5 .* im1 |+| 0.5 .* w3)
 
     return ()
 
@@ -145,22 +152,15 @@ prep = map (g.ipPosition) where g (Point x y) = [x,y]
 
 ----------------------------------------------------------------------------
 
-isInlierFund t f (x',x) = head (epipolarQuality f [x'] [x]) < t
-
-estimateFundamentalRansac' dist pts' pts = (f,inliers) where 
-    f = estimateFundamental a b where (a,b) = unzip inliers
-    (_,inliers) = ransacProb 0.9 estimator (isInlierFund dist) 8 (zip pts' pts)
-    estimator l = estimateFundamentalRaw a b where (a,b) = unzip l
-
 mean l = sum l / fromIntegral (length l)
 
-combine (img1,pts1) (img2,pts2) = do
+combine f (img1,pts1) (img2,pts2) = do
     let img = 0.5 .* img1 |+| 0.5 .* img2
     drawImage img
     setColor 1 0 0
     lineWidth $= 1
     pointCoordinates (size img1)
-    renderPrimitive Lines (mapM_ drawSeg (zipWith Segment (map ipPosition pts1) (map ipPosition pts2)))
+    renderPrimitive Lines (mapM_ drawSeg (zipWith Segment (map f pts1) (map f pts2)))
 
 drawSeg s = do
     vertex $ (extreme1 s)

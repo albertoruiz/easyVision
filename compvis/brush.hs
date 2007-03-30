@@ -1,4 +1,6 @@
--- This should work with any video source
+-- estimation of homographies between consecutive frames
+-- examples:
+-- ./brush penguin.dv
 
 import EasyVision
 import Graphics.UI.GLUT hiding (RGB,Size,Point,Matrix)
@@ -41,11 +43,12 @@ main = do
                                  ("alpha",realParam 0.9 0 1),
                                  ("see",realParam 1 0 10),
                                  ("umb",realParam 0.05 0 0.1),
-                                 ("ranumb", realParam 0.005 0 0.01)]
+                                 ("ranUmb", realParam 0.005 0 0.01),
+                                 ("ranProb", realParam 0.99 0.5 1)]
 
     addWindow "camera" sz Nothing (const (kbdcam ctrl)) state
-    addWindow "track" sz Nothing undefined state
-    addWindow "warp" (Size 400 400) Nothing undefined state
+    addWindow "track" sz Nothing (const (kbdcam ctrl)) state
+    addWindow "warp" (Size 400 400) Nothing (const (kbdcam ctrl)) state
 
     10 `times` (const cam) $ undefined
 
@@ -86,7 +89,8 @@ worker3 param inWindow (pl,im) st = do
     alpha  <- getParam param "alpha"
     --see    <- getParam param "see"
     umb    <- getParam param "umb"
-    ranumb <- getParam param "ranumb"
+    ranumb <- getParam param "ranUmb"
+    prob   <- getParam param "ranProb"
 
     (pnew, pold, _) <- basicMatches (pl, points st) (distComb alpha) umb
                                             --(Just $ \c ->
@@ -95,11 +99,8 @@ worker3 param inWindow (pl,im) st = do
 
 
     if(length pnew < 10)
-         then do print (length pnew)
-                 return st
-         else do let (h,inliers) = estimateHomographyRansac ranumb  (prep pnew) (prep pold)
-                 print (length pnew, length inliers)
-                 let guay = map fst inliers
+         then do return st
+         else do let (h,inliers) = estimateHomographyRansac prob ranumb  (prep pnew) (prep pold)
                  inWindow "track" $ do
                      drawImage im
                      pointCoordinates (size im)
@@ -113,8 +114,8 @@ worker3 param inWindow (pl,im) st = do
                      renderPrimitive Points (mapM_ vertex (map ipPosition pnew))
                      setColor 1 0 0
                      pointSize $= 4
-                     text2D 0.9 (-0.2) (show $ length pnew)
-                     renderPrimitive Points (mapM_ vertex guay)
+                     text2D 0.9 (-0.2) (show $ length inliers)
+                     renderPrimitive Points (mapM_ (vertex.fst) inliers)
 
                  warpOn (scaling 0.5 <> inv h) (world st) im
                  new <- warp (Size 400 400) (scaling 0.5 <> h <> scaling 2) (world st)
@@ -153,32 +154,3 @@ chk x | isDoubleNaN x == 0 = x
 prep = map (g.ipPosition) where g (Point x y) = [x,y]
 
 
-{-
-    inWindow "track" $ do
-        a <- scale32f 0.5 im1
-        b <- scale32f 0.5 im2
-        c <- a |+| b
-        drawImage c
-        pointCoordinates (size im2)
-        setColor 0 0 0
-        pointSize $= 3
-        --renderPrimitive Points (mapM_ vertex (map ipPosition ips))
-        setColor 1 0 0
-        pointSize $= 3
-        renderPrimitive Points (mapM_ vertex (map ipPosition pizq))
-        --renderPrimitive Points (mapM_ vertex (map ipPosition pder))
-        setColor 0.5 0 0
-        lineWidth $= 1
-        let g a b = [a,b]
-        renderPrimitive Lines $ mapM_ vertex $ concat (zipWith g (map ipPosition pizq) (map ipPosition pder))
-
-        lineWidth $= 3
-        setColor 0 0 1
-        let h (p1,p2) = [p1,p2]
-        renderPrimitive Lines $ mapM_ vertex $ concatMap h inliers
-
-    inWindow "warp" $ do
-        warp (Size 400 400) (scaling 0.5 <>h) im2 >>= drawImage
-
-    return st
--}

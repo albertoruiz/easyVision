@@ -20,7 +20,7 @@ module Vision.Estimation
 , estimateHomography
 , estimateHomographyRaw
 , ransac
-, ransacProb
+, ransac'
 ) where
 
 import GSL hiding (Matrix, Vector)
@@ -98,7 +98,12 @@ partit n l  = take n l : partit n (drop n l)
 
 compareBy f = (\a b-> compare (f a) (f b))
 
-ransac' :: ([a]->t) -> (t -> a -> Bool) -> Int -> Int -> [a] -> (t,[a])
+-- | basic ransac
+ransac' :: ([a]->t)         -- ^ estimator (from a sample obtains a model)
+       -> (t -> a -> Bool) -- ^ inlier test
+       -> Int              -- ^ minimum number of samples required by the estimator to compute a model
+       -> Int              -- ^ number of random models to check
+       -> [a] -> (t,[a])   -- ^ resulting ransac estimator, from a sample obtains a model and the inliers
 ransac' estimator isInlier n t dat = (result, goodData) where
     result = estimator goodData
     goodData = inliers bestModel
@@ -106,7 +111,7 @@ ransac' estimator isInlier n t dat = (result, goodData) where
     models = take t (map estimator (samples n dat))
     inliers model = filter (isInlier model) dat
 
--- | @samples n list@ creates an infinite list of psuedorandom (using mkStdGen 0) subsets of n different elements taken from list
+-- | @samples n list@ creates an infinite list of pseudorandom (using mkStdGen 0) subsets of n different elements taken from list
 samples :: Int -> [a] -> [[a]]
 samples n dat = map (map (dat!!)) goodsubsets where
     goodsubsets = filter ((==n).length) $ map nub $ partit n randomIndices
@@ -117,41 +122,30 @@ ransacSize s p eps = 1 + (floor $ log (1-p) / log (1-(1-eps)^s))    ::Integer
 position fun l = k where Just k = elemIndex (fun l) l
 
 
--- | adaptive ransac
-ransac :: ([a]->t) -> (t -> a -> Bool) -> Int -> [a] -> (t,[a])
-ransac estimator isInlier n dat = {-trace (show aux)-} (bestModel,inliers) where 
+-- | adaptive ransac (see Hartley and Zisserman 2nd ed. sec. 4.7.1, page 117)
+ransac :: ([a]->t)         -- ^ estimator (from a sample obtains a model)
+       -> (t -> a -> Bool) -- ^ inlier test
+       -> Int              -- ^ minimum number of samples required by the estimator to compute a model
+       -> Double           -- ^ probability to get a sample free from outliers
+       -> [a] -> (t,[a])   -- ^ resulting ransac estimator, from a sample obtains a model and the inliers
+ransac estimator isInlier n prob dat = {-trace (show aux)-} (bestModel,inliers) where 
     models = map estimator (samples n dat)
     inls = map inliers models where inliers model = filter (isInlier model) dat 
     eps = map prop inls where prop l = 1 - genericLength l / genericLength dat
-    ns = scanl1 min $ map (ransacSize n 0.99) eps 
+    ns = scanl1 min $ map (ransacSize n prob) eps 
     k = fst $ head $ dropWhile (\(k,n) -> k<n) (zip [1 ..] ns)
     p = position maximum (map length (genericTake k inls))
     bestModel = models!!p
     inliers = inls!!p
     aux = map length $ genericTake k inls
 
--- | adaptive ransac
---ransacProb :: ([a]->t) -> (t -> a -> Bool) -> Int -> [a] -> (t,[a])
-ransacProb prob estimator isInlier n dat = {-trace (show aux)-} (bestModel,inliers) where 
-    models = map estimator (samples n dat)
-    inls = map inliers models where inliers model = filter (isInlier model) dat 
-    eps = map prop inls where prop l = 1 - genericLength l / genericLength dat
-    ns = scanl1 min $ map (ransacSize n prob) eps 
-    k = debug $ fst $ head $ dropWhile (\(k,n) -> k<n) (zip [1 ..] ns)
-    p = position maximum (map length (genericTake k inls))
-    bestModel = models!!p
-    inliers = inls!!p
-    aux = map length $ genericTake k inls
-
-debug x = trace (show x) x
-
---------------------------    
+--------------------------
 
 isInlierTrans t h (dst,src) = norm (vd - vde) < t 
     where vd  = vector dst
           vde = inHomog $ h <> homog (vector src)
 
-estimateHomographyRansac dist dst orig = (h,inliers) where 
+estimateHomographyRansac prob dist dst orig = (h,inliers) where 
     h = estimateHomography a b where (a,b) = unzip inliers
-    (_,inliers) = ransac estimator (isInlierTrans dist) 4 (zip dst orig)
+    (_,inliers) = ransac estimator (isInlierTrans dist) 4 prob (zip dst orig)
     estimator l = estimateHomographyRaw a b where (a,b) = unzip l
