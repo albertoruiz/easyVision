@@ -73,7 +73,6 @@ worker cam param getRoi fft inWindow op = do
     th <- getParam param "umbral"
     ph <- getParam param "h" :: IO Int
     let h1 = fromIntegral ph / 100
-    let h2 = fromIntegral ph / 100 -- different types: Float and Double...
     smooth <- getParam param "smooth"
 
     inWindow "demo" $ case op of
@@ -119,7 +118,7 @@ worker cam param getRoi fft inWindow op = do
         "Features" -> do
              orig <- cam
              im <- yuvToGray orig >>= scale8u32f 0 1
-             ips <- getSaddlePoints smooth 7 h2 500 20 10 im
+             ips <- getSaddlePoints smooth 7 h1 500 20 10 im
              yuvToRGB orig >>= drawImage
              pointCoordinates (size im)
              setColor 1 0 0

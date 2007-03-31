@@ -509,6 +509,7 @@ getPoints32f mx (F im) = do
     ok <- c_getPoints32f (castPtr (ptr im)) (step im) 
                    (r1 (vroi im)) (r2 (vroi im)) (c1 (vroi im)) (c2 (vroi im))
                    mx ptot r
+    touchForeignPtr (fptr im)
     tot <- peek ptot
     hp <- peekArray tot r
     free ptot

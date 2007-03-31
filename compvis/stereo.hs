@@ -114,11 +114,12 @@ worker cam1 cam2 opts inWindow _ = do
         prob <- getParam opts "ranProb"
         let (f,inliers) = estimateFundamentalRansac prob ranumb (prep good2) (prep good1)
             (pts2,pts1) = unzip inliers
+            (e,foc,err) = estimateEssential 3 f
         inWindow "both" $ do
             if see == (1::Int)
                 then combine (\[x,y]->Point x y) (im1,pts1) (im2,pts2)
                 else combine ipPosition (im1,good1) (im2,good2)
-            text2D 0.9 (-0.7) (show (sturm f))
+            text2D 0.9 (-0.7) (show ((foc,sturm f)))
         scale <- getParam opts "scale"
         let (rec1, rec2) = stereoRectifiers f pts1 pts2
         w1 <- warp (size im1) (scaling scale <> rec1) im1

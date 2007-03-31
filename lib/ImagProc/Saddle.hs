@@ -22,7 +22,6 @@ where
 
 import ImagProc.Ipp.Core
 import ImagProc.ImageProcessing
-import Debug.Trace(trace)
 import Data.List(zipWith5)
 import GSL hiding (size)
 import GHC.Float(float2Double,double2Float)
@@ -40,31 +39,12 @@ data InterestPoint = IP {
 getSaddlePoints ::
               Int       -- ^ degree of smoothing (e.g. 1)
            -> Int       -- ^ radius of the localmin filter (e.g. 7)
-           -> Double    -- ^ fraction of the maximum response allowed (e.g. 0.1)
+           -> Float    -- ^ fraction of the maximum response allowed (e.g. 0.1)
            -> Int       -- ^ maximum number of interest points
            -> Int       -- ^ dimension of the feature vector
            -> Float     -- ^ radius of the feature circle
            -> ImageFloat  -- ^ source image
            -> IO [InterestPoint]  -- ^ result
-
-
-taylor gx gy gxx gyy gxy = (delta,vp) where
-    d = sqrt (gxx*gxx + gyy*gyy + 4*gxy*gxy - 2*gxx*gyy)
-    l1 = 0.5*(gxx+gyy+d)
-    l2 = 0.5*(gxx+gyy-d)
-    dt = l1*l2
-    ok = abs gxy / abs (gxx+gyy) > 1E-6
-    a = -0.5*(gyy-gxx-d)/gxy
-    na = 1/sqrt(a*a+1)
-    b = -0.5*(gyy-gxx+d)/gxy
-    nb = 1/sqrt(b*b+1)
-    (v1x,v1y,v2x,v2y) =
-        if ok then (a*na,-na,b*nb,-nb)
-              else (0,1,1,0)
-    vp = (v1x, v1y)
-    delta = [(gyy*gx-gxy*gy)/dt, (gxy*gx-gxx*gy)/dt]
-
-
 getSaddlePoints smooth rad prop maxn fn fr im = do
     let suaviza = smooth `times` gauss Mask5x5
     sm <- suaviza im
@@ -72,9 +52,10 @@ getSaddlePoints smooth rad prop maxn fn fr im = do
     h <- hessian gs >>= scale32f (-1.0)
     (mn,mx) <- minmax h
     hotPixels'  <- localMax rad h
-                >>= thresholdVal32f (mx* double2Float prop) 0.0 IppCmpLess
+                >>= thresholdVal32f (mx*prop) 0.0 IppCmpLess
     let r = max 0 (ceiling fr - ((rad-1) `div`2))
     hotPixels <- getPoints32f maxn (modifyROI (shrink (r,r)) hotPixels')
+
 
     let ptp = pixelsToPoints (size im)
 
@@ -105,6 +86,26 @@ getSaddlePoints smooth rad prop maxn fn fr im = do
     let r = zipWith5 IP sp (ptp sp) (map float2Double dirs) feats (repeat 0)
 
     return r
+
+
+taylor gx gy gxx gyy gxy = (delta,vp) where
+    d = sqrt (gxx*gxx + gyy*gyy + 4*gxy*gxy - 2*gxx*gyy)
+    l1 = 0.5*(gxx+gyy+d)
+    l2 = 0.5*(gxx+gyy-d)
+    dt = l1*l2
+    ok = abs gxy / abs (gxx+gyy) > 1E-6
+    a = -0.5*(gyy-gxx-d)/gxy
+    na = 1/sqrt(a*a+1)
+    b = -0.5*(gyy-gxx+d)/gxy
+    nb = 1/sqrt(b*b+1)
+    (v1x,v1y,v2x,v2y) =
+        if ok then (a*na,-na,b*nb,-nb)
+              else (0,1,1,0)
+    vp = (v1x, v1y)
+    delta = [(gyy*gx-gxy*gy)/dt, (gxy*gx-gxx*gy)/dt]
+
+
+
 
 extractList im l = mapM f l where
     f p = val32f im p  -- try first with val32f' :)
