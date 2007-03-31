@@ -8,50 +8,51 @@ Maintainer  :  Alberto Ruiz (aruiz at um dot es)
 Stability   :  very provisional
 Portability :  hmm...
 
-Estimation of homogeneous transformations.
+Tools for robust estimation of homogeneous transformations.
 
 -}
 -----------------------------------------------------------------------------
 
 module Vision.Estimation
-( homogSystem
-, withNormalization
-, estimateHomographyRansac
-, estimateHomography
-, estimateHomographyRaw
+( -- * General methods and utilities
+  homogSystem
 , ransac
 , ransac'
+, withNormalization
+  -- * 2D Homography estimation
+, estimateHomographyRaw
+, estimateHomography
+, estimateHomographyRansac
 ) where
 
-import GSL hiding (Matrix, Vector)
-import qualified GSL as G
+import GSL
 import Classifier.Stat
 import Vision.Geometry
 import Data.List(transpose,nub,maximumBy,genericLength,elemIndex, genericTake)
 import System.Random 
 import Debug.Trace(trace)
 
-type Matrix = G.Matrix Double
-type Vector = G.Vector Double
-
-matrix = fromLists :: [[Double]] -> Matrix
-vector = fromList ::  [Double] -> Vector
-
-svd = svdR'
+matrix = fromLists :: [[Double]] -> Matrix Double
+vector = fromList ::  [Double] -> Vector Double
 
 
--- overconstrained nullspace (mse solution of homogeneous linear system)
--- we assume that it is 1d 
-homogSystem :: [[Double]] -> Vector
+-- FIXME: use Matrix Double for the coefficients
+-- | Minimum squares solution of a (possibly overconstrained) homogeneous linear system.
+--   (We assume that the solution is 1D).
+homogSystem :: [[Double]]    -- ^ elements in the coefficient matrix
+            -> Vector Double -- ^ Solution
 homogSystem coeffs = sol where
     r = length coeffs
     c = length (head coeffs)
     mat | r >= c   = matrix coeffs
         | r == c-1 = matrix (head coeffs : coeffs)
         | otherwise = error "homogSystem with rows<cols-1"
-    (_,_,v) = svd mat
+    (_,_,v) = svdR' mat
     sol = flatten $ dropColumns (c-1) v
 
+-- FIXME: use a list of tuples insted of two arguments
+-- | estimates a homography using the basic linear method
+estimateHomographyRaw :: [[Double]] -> [[Double]] -> Matrix Double
 estimateHomographyRaw dest orig = h where
     eqs = concat (zipWith eq dest orig)
     h = reshape 3 $ homogSystem eqs
@@ -76,8 +77,12 @@ estimateHomographyRaw dest orig = h where
             t33=(-by)
             t34=bx*ax 
             t35=bx*ay
-            t36=bx     
+            t36=bx
 
+-- | combinator to estimate models with normalized (whitened) coordinates
+withNormalization :: (Matrix Double -> Matrix Double) -- ^ left modifier (inv for homographies, trans for fundamental matrices)
+                  -> ([[Double]] -> [[Double]] -> Matrix Double) -- ^ estimator
+                  -> ([[Double]] -> [[Double]] -> Matrix Double) -- ^ estimator with normalized coordinates
 withNormalization lt estimateRelation dest orig = lt wd <> h <> wo where
     std = stat (matrix dest)
     sto = stat (matrix orig)
@@ -85,9 +90,11 @@ withNormalization lt estimateRelation dest orig = lt wd <> h <> wo where
     no = toLists (normalizedData sto)
     h = estimateRelation nd no
     wd = whiteningTransformation std
-    wo = whiteningTransformation sto 
+    wo = whiteningTransformation sto
 
-estimateHomography = withNormalization inv estimateHomographyRaw   
+-- | withNormalization inv estimateHomographyRaw
+estimateHomography :: [[Double]] -> [[Double]] -> Matrix Double
+estimateHomography = withNormalization inv estimateHomographyRaw
 
 ------------------------------ RANSAC -------------------------------
 
@@ -98,12 +105,13 @@ partit n l  = take n l : partit n (drop n l)
 
 compareBy f = (\a b-> compare (f a) (f b))
 
--- | basic ransac
+-- | Basic RANSAC, trying a fixed number of models.
+--   The samples are pseudorandom using mkStdGen 0.
 ransac' :: ([a]->t)         -- ^ estimator (from a sample obtains a model)
-       -> (t -> a -> Bool) -- ^ inlier test
-       -> Int              -- ^ minimum number of samples required by the estimator to compute a model
-       -> Int              -- ^ number of random models to check
-       -> [a] -> (t,[a])   -- ^ resulting ransac estimator, from a sample obtains a model and the inliers
+       -> (t -> a -> Bool)  -- ^ inlier test
+       -> Int               -- ^ minimum number of samples required by the estimator to compute a model
+       -> Int               -- ^ number of random models to check
+       -> ([a] -> (t,[a]))  -- ^ resulting ransac estimator, from a sample obtains a model and the inliers
 ransac' estimator isInlier n t dat = (result, goodData) where
     result = estimator goodData
     goodData = inliers bestModel
@@ -122,12 +130,13 @@ ransacSize s p eps = 1 + (floor $ log (1-p) / log (1-(1-eps)^s))    ::Integer
 position fun l = k where Just k = elemIndex (fun l) l
 
 
--- | adaptive ransac (see Hartley and Zisserman 2nd ed. sec. 4.7.1, page 117)
+-- | Adaptive RANSAC (see Hartley and Zisserman 2nd ed. sec. 4.7.1, page 117).
+--   The samples are pseudorandom using mkStdGen 0.
 ransac :: ([a]->t)         -- ^ estimator (from a sample obtains a model)
        -> (t -> a -> Bool) -- ^ inlier test
        -> Int              -- ^ minimum number of samples required by the estimator to compute a model
        -> Double           -- ^ probability to get a sample free from outliers
-       -> [a] -> (t,[a])   -- ^ resulting ransac estimator, from a sample obtains a model and the inliers
+       -> ([a] -> (t,[a])) -- ^ resulting ransac estimator, from a sample obtains a model and the inliers
 ransac estimator isInlier n prob dat = {-trace (show aux)-} (bestModel,inliers) where 
     models = map estimator (samples n dat)
     inls = map inliers models where inliers model = filter (isInlier model) dat 
@@ -145,7 +154,17 @@ isInlierTrans t h (dst,src) = norm (vd - vde) < t
     where vd  = vector dst
           vde = inHomog $ h <> homog (vector src)
 
+estimateHomographyRansac
+    :: Double  -- ^ probability to get a sample free from outliers
+    -> Double  -- ^ distance threshold for inliers
+    -> ([[Double]]
+    -> [[Double]]
+    -> (Matrix Double, [([Double], [Double])]))  -- ^ adaptive ransac estimator, obtains the homography and the inliers
 estimateHomographyRansac prob dist dst orig = (h,inliers) where 
     h = estimateHomography a b where (a,b) = unzip inliers
     (_,inliers) = ransac estimator (isInlierTrans dist) 4 prob (zip dst orig)
     estimator l = estimateHomographyRaw a b where (a,b) = unzip l
+
+--------------------------
+
+-- TODO: estimateHomographyMinimal (from 4 points, using linearSolve instead of homogSystem)
