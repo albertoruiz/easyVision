@@ -44,7 +44,7 @@ main = do
     addWindow "fixed" sz Nothing   (const (kbdcam ctrl1)) state
 
     opts <- createParameters state [("h",percent 20),
-                                    ("locrad",intParam 3 1 10),
+                                    ("locrad",intParam 3 1 20),
                                     ("smooth",intParam 3 0 10),
                                     ("umb",realParam 0.01 0 0.05),
                                     ("ranUmb", realParam 0.003 0 0.01),
@@ -176,7 +176,6 @@ drawInterestPoints ipts = do
     drawOris IP {ipPosition = p@(Point x y), ipOrientation = a} = do
         vertex $ p
         vertex $ Point (x+0.05*cos a) (y+0.05*sin a)
-
     drawPts IP {ipPosition = p@(Point x y)} = do
         vertex $ p
 

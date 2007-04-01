@@ -5,7 +5,7 @@
 -- ./demo tv://
 
 import EasyVision
-import Graphics.UI.GLUT hiding (RGB,Size,minmax,histogram)
+import Graphics.UI.GLUT hiding (RGB,Size,minmax,histogram,Point)
 import qualified Graphics.UI.GLUT as GL
 import Data.IORef
 import System.Exit
@@ -124,7 +124,7 @@ worker cam param getRoi fft inWindow op = do
              setColor 1 0 0
              pointSize $= 3
              text2D 0.9 0 (show $ length ips)
-             renderPrimitive Points (mapM_ vertex (map ipPosition ips))
+             drawInterestPoints ips
         "Canny" -> do
              roi <- getRoi
              orig <- cam
@@ -198,3 +198,13 @@ norm (a,b) = sqrt $ fromIntegral a^2 + fromIntegral b^2
 drawSeg s = do
     vertex $ (extreme1 s)
     vertex $ (extreme2 s)
+
+drawInterestPoints ipts = do
+    renderPrimitive Points (mapM_ drawPts ipts)
+    renderPrimitive Lines  (mapM_ drawOris ipts)
+  where 
+    drawOris IP {ipPosition = p@(Point x y), ipOrientation = a} = do
+        vertex $ p
+        vertex $ Point (x+0.05*cos a) (y+0.05*sin a)
+    drawPts IP {ipPosition = p@(Point x y)} = do
+        vertex $ p

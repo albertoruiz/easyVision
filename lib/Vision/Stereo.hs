@@ -8,30 +8,32 @@ Maintainer  :  Alberto Ruiz (aruiz at um dot es)
 Stability   :  very provisional
 Portability :  hmm...
 
-Two-view geometry.
+Two-view geometry. (Provisional data types.)
 
 -}
 -----------------------------------------------------------------------------
 
 module Vision.Stereo
-( estimateFundamentalRaw
+( -- * Fundamental Matrix
+  estimateFundamentalRaw
 , estimateFundamental
 , estimateFundamentalRansac
 , epipolarQuality
-, qualityOfEssential
+, epipoles
+  -- * Essential Matrix
 , estimateEssential
 , estimateEssential'
-, camerasFromEssential
 , bougnoux
 , sturm
+, qualityOfEssential
+, camerasFromEssential
 , selectCamera
+  -- * 3D reconstruction
 , triangulate
 , stereoRectifiers
-, epipoles
 ) where
 
-import GSL hiding (Matrix, Vector)
-import qualified GSL as G
+import GSL
 import Vision.Geometry
 import Vision.Estimation
 import Vision.Camera(kgen,cameraAtOrigin)
@@ -40,39 +42,44 @@ import Data.List(transpose,nub,maximumBy,genericLength,elemIndex, genericTake)
 import System.Random 
 import Debug.Trace(trace)
 
-type Matrix = G.Matrix Double
-type Vector = G.Vector Double
-
-matrix = fromLists :: [[Double]] -> Matrix
-vector = fromList ::  [Double] -> Vector
+matrix = fromLists :: [[Double]] -> Matrix Double
+vector = fromList ::  [Double] -> Vector Double
 
 svd = svdR'
 
 --------------------- Basic Stereo -----------------------
 
+estimateFundamentalRaw :: [[Double]] -> [[Double]] -> Matrix Double
 estimateFundamentalRaw l r = f where
     f = reshape 3 $ homogSystem eqs
     eqs = zipWith eq l r
     eq [xl, yl] [xr, yr] = [xl*xr, xl*yr, xl, xr*yl, yl*yr, yl, xr, yr, 1.0]
 
+correctFundamental :: Matrix Double -> Matrix Double
 correctFundamental f = f' where
     (u,s,v) = svd f
     s1:s2:_ = toList s
     f' = u <> diag (fromList [s1,s2,0.0]) <> trans v
 
+estimateFundamental :: [[Double]] -> [[Double]] -> Matrix Double
 estimateFundamental = withNormalization trans f where
     f l r = correctFundamental (estimateFundamentalRaw l r)
 
 distPointLine [x,y,w] [a,b,c] = sqrt $ (a*x + b*y + c*w)^2 / (a^2+b^2) / w^2
 
+epipolarQuality :: Matrix Double -> [[Double]] -> [[Double]] -> [Double]
 epipolarQuality f l r = zipWith fun l r where
     fun [a1,a2] [b1,b2] = distPointLine [a1,a2,1.0] epb where
         epb = toList (f <> vector [b1,b2,1.0])
 
+qualityOfEssential :: Matrix Double -> Double
 qualityOfEssential e = (s1-s2)/(s1+s2) where
     s1:s2:_ = toList s
     (_,s,_) = svd e
 
+estimateEssential :: Double  -- ^ initial estimate of common focal dist
+                  -> Matrix Double -- ^ fundamental matrix
+                  -> (Matrix Double, Double, Double) -- ^ (essential matrix, focal dist, error)
 estimateEssential f0 fund = (esen,f,err) where
     minimize fun xi = minimizeNMSimplex fun xi (replicate (length xi) 1) 1e-2 100
     cost [x] = qualityOfEssential (kgen x <> fund <> kgen x)
@@ -82,6 +89,9 @@ estimateEssential f0 fund = (esen,f,err) where
     (u,s,v) = svd esen'
     esen = u <> diag (vector [1,1,0]) <> trans v
 
+estimateEssential' :: (Double, Double)  -- ^ initial estimates of focal and focal' dists
+                   -> Matrix Double     -- ^ fundamental matrix
+                   -> (Matrix Double, (Double, Double), Double) -- ^ (essential matrix, (focal, focal'), error)
 estimateEssential' (f0,f0') fund = (esen,(f,f'),err) where
     minimize fun xi = minimizeNMSimplex fun xi (replicate (length xi) 1) 1e-2 100
     cost [x,x'] = qualityOfEssential (kgen x' <> fund <> kgen x)
@@ -91,6 +101,7 @@ estimateEssential' (f0,f0') fund = (esen,(f,f'),err) where
     (u,s,v) = svd esen'
     esen = u <> diag (vector [1,1,0]) <> trans v
 
+bougnoux :: Matrix Double -> Double
 bougnoux fun = sqrt (- a / b) where
     a = (p' <> asMat e' <> i' <> fun <> p) * (p <> trans fun <> p')
     b = (p' <> asMat e' <> i' <> fun <> i' <> trans fun <> p')
@@ -99,6 +110,7 @@ bougnoux fun = sqrt (- a / b) where
     p = vector [0,0,1]
     p' = vector [0,0,1]
 
+sturm :: Matrix Double -> [Double]
 sturm fun = fs where    
     (u,s,v) = svd fun
     [a,b,_] = toList s
@@ -123,6 +135,7 @@ sturm fun = fs where
     f4 = sqrt $ (-r1 - d)/2/r2
     fs = filter (>0) [f1,f2,f3,f4]
 
+camerasFromEssential :: Matrix Double -> [Matrix Double]
 camerasFromEssential e = [m1,m2,m3,m4] where
     (u,_,v) = svd e
     [_,_,u3] = toColumns u
@@ -145,18 +158,19 @@ triangulate1 ms ps = x3d where
     (_,_,v) = svd a
     x3d = toList $ inHomog $ flatten $ dropColumns 3 v
 
+triangulate :: [(Matrix Double, [[Double]])] -> [[Double]]
 triangulate mps = xs where
     ms = map fst mps
     ps = transpose (map snd mps)
     xs = map (triangulate1 ms) ps
 
 
-
+cameraDirection :: Matrix Double -> Vector Double
 cameraDirection m = unitary (det a <> m3) where
     a = takeColumns 3 m
     [_,_,m3] = toRows a
 
---depthOfPoint :: [Double] -> Matrix -> Double
+depthOfPoint :: [Double] -> Matrix Double -> Double
 depthOfPoint p m = (signum (det a) / norm m3) <> w3 where
     a = takeColumns 3 m
     [_,_,m3] = toRows a
@@ -168,23 +182,28 @@ depthsOfInducedPoint p p' m m' = (d,d') where
     d' = depthOfPoint x m'
     x = triangulate1 [m,m'] [p,p']
 
+selectCamera :: [Double] -> [Double] -> Matrix Double -> [Matrix Double] -> Matrix Double
 selectCamera p p' m ms = m' where
     [m'] = filter f ms 
     f m' = a > 0 && b > 0 where
         (a,b) = depthsOfInducedPoint p p' m m'
 
+epipoles :: Matrix Double -> (Vector Double, Vector Double)
 epipoles f = (nullspace f, nullspace (trans f)) where
     nullspace f = flatten $ dropColumns 2 v where (_,_,v) = svd f
 
+canonicalCameras :: Matrix Double -> (Matrix Double, Matrix Double)
 canonicalCameras f = (cameraAtOrigin, m2) where
     (_,e') = epipoles f
     m2 = asMat e' <> f  <|> e'
 
+fundamentalFromCameras :: Matrix Double -> Matrix Double -> Matrix Double
 fundamentalFromCameras p p' = asMat e' <> p' <> pinv p where
     e' = p' <> c
     c = flatten $ dropColumns 3 v 
     (_,_,v) = svd (p <-> vector [0,0,0,0])
 
+stereoRectifiers :: Matrix Double -> [[Double]] -> [[Double]] -> (Matrix Double, Matrix Double)
 stereoRectifiers fund pts pts' = (h,h') where    -- HZ p.307
     (e,e') = epipoles fund
     [x,y,w] = toList (unitary e')
@@ -215,9 +234,15 @@ stereoRectifiers fund pts pts' = (h,h') where    -- HZ p.307
     term = flatten $ dropColumns 3 eqs
     [a,b,c] = toList $ pinv coef <> term
 
+isInlierFund :: Double -> Matrix Double -> ([Double], [Double]) -> Bool
+isInlierFund t f (x',x) = head (epipolarQuality f [x'] [x]) < t
 
-isInlierFund t f (x',x) = head (epipolarQuality f [x'] [x]) < t   
-
+estimateFundamentalRansac
+    :: Double     -- ^ probability of obtaining a sample free from outliers
+    -> Double     -- ^ distance threshold for inliers
+    -> [[Double]] -- ^ pts'
+    -> [[Double]] -- ^ pts
+    -> (Matrix Double, [([Double], [Double])]) -- ^ (fundamental matrix, inliers)
 estimateFundamentalRansac prob dist pts' pts = (f,inliers) where 
     f = estimateFundamental a b where (a,b) = unzip inliers
     (_,inliers) = ransac estimator (isInlierFund dist) 8 prob (zip pts' pts)
