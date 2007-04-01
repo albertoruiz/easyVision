@@ -28,7 +28,7 @@ module Vision.Estimation
 import GSL
 import Classifier.Stat
 import Vision.Geometry
-import Data.List(transpose,nub,maximumBy,genericLength,elemIndex, genericTake)
+import Data.List(transpose,nub,maximumBy,genericLength,elemIndex)
 import System.Random 
 import Debug.Trace(trace)
 
@@ -103,7 +103,7 @@ partit _ [] = []
 partit n l  = take n l : partit n (drop n l)
 -- take (length l `quot`n) $ unfoldr (\a -> Just (splitAt n a)) l   
 
-compareBy f = (\a b-> compare (f a) (f b))
+on f g = \x y -> f (g x) (g y)
 
 -- | Basic RANSAC, trying a fixed number of models.
 --   The samples are pseudorandom using mkStdGen 0.
@@ -115,7 +115,7 @@ ransac' :: ([a]->t)         -- ^ estimator (from a sample obtains a model)
 ransac' estimator isInlier n t dat = (result, goodData) where
     result = estimator goodData
     goodData = inliers bestModel
-    bestModel = maximumBy (compareBy (length.inliers)) models
+    bestModel = maximumBy (compare `on` (length.inliers)) models
     models = take t (map estimator (samples n dat))
     inliers model = filter (isInlier model) dat
 
@@ -125,7 +125,7 @@ samples n dat = map (map (dat!!)) goodsubsets where
     goodsubsets = filter ((==n).length) $ map nub $ partit n randomIndices
     randomIndices = randomRs (0, length dat -1) (mkStdGen 0)
 
-ransacSize s p eps = 1 + (floor $ log (1-p) / log (1-(1-eps)^s))    ::Integer
+ransacSize s p eps = 1 + (floor $ log (1-p) / log (1-(1-eps)^s)) ::Int
 
 position fun l = k where Just k = elemIndex (fun l) l
 
@@ -137,16 +137,15 @@ ransac :: ([a]->t)         -- ^ estimator (from a sample obtains a model)
        -> Int              -- ^ minimum number of samples required by the estimator to compute a model
        -> Double           -- ^ probability to get a sample free from outliers
        -> ([a] -> (t,[a])) -- ^ resulting ransac estimator, from a sample obtains a model and the inliers
-ransac estimator isInlier n prob dat = {-trace (show aux)-} (bestModel,inliers) where 
+ransac estimator isInlier n prob dat = (bestModel,inliers) where 
     models = map estimator (samples n dat)
     inls = map inliers models where inliers model = filter (isInlier model) dat 
     eps = map prop inls where prop l = 1 - genericLength l / genericLength dat
     ns = scanl1 min $ map (ransacSize n prob) eps 
     k = fst $ head $ dropWhile (\(k,n) -> k<n) (zip [1 ..] ns)
-    p = position maximum (map length (genericTake k inls))
+    p = position maximum (map length (take k inls))
     bestModel = models!!p
     inliers = inls!!p
-    aux = map length $ genericTake k inls
 
 --------------------------
 

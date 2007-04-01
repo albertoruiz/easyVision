@@ -103,19 +103,19 @@ worker grab inWindow st = do
 
 ------------------------------------------------------
 
-compareBy f = (\a b-> compare (f a) (f b))
+on f g = \x y -> f (g x) (g y)
 
 closestBy f [] p = p
-closestBy f hp p = minimumBy (compareBy $ f p) hp
+closestBy f hp p = minimumBy (compare `on` f p) hp
 
 
-distFeat = (dist.:.ipDescriptor)
+distFeat = (dist `on` ipDescriptor)
     where dist u v = norm (u-v)
 
-distSpatial = (dist.:.ipRawPosition)
+distSpatial = (dist `on` ipRawPosition)
     where dist (I.Pixel a b) (I.Pixel x y) = sqrt $ fromIntegral ((a-x)^2+(b-y)^2)
 
-f .:. g = h where h x y = f (g x) (g y)
+
 
 distComb p q = distFeat p q + 0.1*distSpatial p q
 

@@ -44,6 +44,7 @@ main = do
     addWindow "fixed" sz Nothing   (const (kbdcam ctrl1)) state
 
     opts <- createParameters state [("h",percent 20),
+                                    ("locrad",intParam 3 1 10),
                                     ("smooth",intParam 3 0 10),
                                     ("umb",realParam 0.01 0 0.05),
                                     ("ranUmb", realParam 0.003 0 0.01),
@@ -70,16 +71,17 @@ worker cam1 cam2 opts inWindow _ = do
     umb <- getParam opts "umb"
     rad <- getParam opts "rad"
     dim <- getParam opts "dim"
-    
+    locrad <- getParam opts "locrad"
+    let diam = 2*locrad+1
 
 
     im1 <- cam1 >>= yuvToGray >>= scale8u32f 0 1 
     im2 <- cam2 >>= yuvToGray >>= scale8u32f 0 1
 
 
-    ips1  <- getSaddlePoints smooth 7 h 500 dim rad im1
+    ips1  <- getSaddlePoints smooth locrad h 300 dim rad im1
 
-    ips2 <- getSaddlePoints smooth 7 h 500 dim rad im2
+    ips2 <- getSaddlePoints smooth locrad h 300 dim rad im2
 
     (good1, good2 , _) <- basicMatches (ips1, ips2) distFeat umb
 

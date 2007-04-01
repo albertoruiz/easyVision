@@ -231,10 +231,10 @@ compute st = do
 
 ------------------------------------------------------
 
-compareBy f = (\a b-> compare (f a) (f b))
+on f g = \x y -> f (g x) (g y)
 
 closest [] p = p
-closest hp p = minimumBy (compareBy $ dist p) hp
+closest hp p = minimumBy (compare `on` dist p) hp
     where dist (Pixel a b) (Pixel x y) = (a-x)^2+(b-y)^2
 
 -----------------------------------------------------------------
