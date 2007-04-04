@@ -22,7 +22,7 @@ where
 
 import ImagProc.Ipp.Core
 import ImagProc.ImageProcessing
-import Data.List(zipWith5)
+import Data.List(zipWith6)
 import GSL hiding (size)
 import GHC.Float(float2Double,double2Float)
 
@@ -32,6 +32,7 @@ data InterestPoint = IP {
                         , ipOrientation :: Double
                         , ipDescriptor  :: Vector Double
                         , ipTime        :: Int
+                        , ipSample      :: [Pixel]
                         } deriving (Eq, Show)
 
 
@@ -83,7 +84,7 @@ getSaddlePoints smooth rad prop maxn fn fr im = do
     feats' <-  mapM (extractList sm) cs
     let feats = map (fromList . map float2Double) feats'
 
-    let r = zipWith5 IP sp (ptp sp) (map float2Double dirs) feats (repeat 0)
+    let r = zipWith6 IP sp (ptp sp) (map float2Double dirs) feats (repeat 0) cs
 
     return r
 

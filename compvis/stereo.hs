@@ -31,84 +31,47 @@ main = do
                  else Size (read $ Map.findWithDefault "480" "--rows" opts)
                            (read $ Map.findWithDefault "640" "--cols" opts)
 
-
-    (cam1,ctrl1) <- mplayer (args!!0) sz >>= withPause
-    (cam2,ctrl2) <- mplayer (args!!1) sz >>= withPause
-
     state <- prepare ()
 
-    addWindow "left" sz Nothing  (const (kbdcam ctrl1)) state
-    addWindow "right" sz Nothing (const (kbdcam ctrl2)) state
-    addWindow "both" sz Nothing  (const (kbdcam ctrl1)) state
-    addWindow "rectif" sz Nothing   (const (kbdcam ctrl1)) state
-    addWindow "fixed" sz Nothing   (const (kbdcam ctrl1)) state
+    cam1 <- mplayer (args!!0) sz >>= pointMarker state "left" sz
+    cam2 <- mplayer (args!!1) sz >>= pointMarker state "right" sz
 
-    opts <- createParameters state [("h",percent 20),
-                                    ("locrad",intParam 3 1 20),
-                                    ("smooth",intParam 3 0 10),
-                                    ("umb",realParam 0.01 0 0.05),
-                                    ("ranUmb", realParam 0.003 0 0.01),
-                                    ("scale", realParam 0.5 0 2),
-                                    ("rad", realParam 7 1 20),
-                                    ("ranProb", realParam 0.9 0.5 1),
-                                    ("seeRansac", intParam 0 0 1),
-                                    ("dim", intParam 20 1 50)]
+    addWindow "both"   sz Nothing  undefined state
+    addWindow "rectif" sz Nothing  undefined state
+    addWindow "fixed"  sz Nothing  undefined state
 
     sequence (replicate 25 cam1)
-    --sequence (replicate 30 cam2)
 
-
-    launch state (worker cam1 cam2 opts)
+    launch state (worker cam1 cam2)
 
 -----------------------------------------------------------------
 
 
-worker cam1 cam2 opts inWindow _ = do
+worker cam1 cam2 inWindow _ = do
 
-    ph <- getParam opts "h" :: IO Int
-    let h = fromIntegral ph / 100
-    smooth <- getParam opts "smooth"
-    umb <- getParam opts "umb"
-    rad <- getParam opts "rad"
-    dim <- getParam opts "dim"
-    locrad <- getParam opts "locrad"
-    let diam = 2*locrad+1
+    (im1,_,pts1) <- cam1
+    (im2,_,pts2) <- cam2
 
+    when (length pts1 <= 7 || length pts2 <= 7) $ do
+        inWindow "both" $ combine id (im1,pts1) (im2,pts2)
 
-    im1 <- cam1 >>= yuvToGray >>= scale8u32f 0 1 
-    im2 <- cam2 >>= yuvToGray >>= scale8u32f 0 1
+    when (length pts1 > 7 && length pts2 > 7) $ do
+        let f = estimateFundamental (prep pts2) (prep pts1)
+            (e,foc,err) = estimateEssential 3 f
+        inWindow "both" $ do
+            combine id (im1,pts1) (im2,pts2)
+            text2D 0.9 (-0.7) (show ((foc,sturm f)))
+        let scale = 0.5
+        let (rec1, rec2) = stereoRectifiers f (prep pts1) (prep pts2)
+        w1 <- warp (size im1) (scaling scale <> rec1) im1
+        w2 <- warp (size im2) (scaling scale <> rec2) im2
+        inWindow "rectif" $ do
+            drawImage (0.5 .* w1 |+| 0.5 .* w2)
+        w3 <- warp (size im2) (inv rec1 <> rec2) im2
+        inWindow "fixed" $ do
+            drawImage (0.5 .* im1 |+| 0.5 .* w3)
 
-
-    ips1  <- getSaddlePoints smooth locrad h 300 dim rad im1
-
-    ips2 <- getSaddlePoints smooth locrad h 300 dim rad im2
-
-    (good1, good2 , _) <- basicMatches (ips1, ips2) distFeat umb
-
-
-    inWindow "left" $ do
-        drawImage im1
-        pointCoordinates (size im1)
-        setColor 0 0 1
-        pointSize $= 2
-        renderPrimitive Points (mapM_ vertex (map ipPosition ips1))
-        setColor 1 0 0
-        pointSize $= 3
-        text2D 0.9 0 (show $ length ips1)
-        drawInterestPoints good1
-
-    inWindow "right" $ do
-        drawImage im2
-        pointCoordinates (size im2)
-        setColor 0 0 1
-        pointSize $= 2
-        renderPrimitive Points (mapM_ vertex (map ipPosition ips2))
-        setColor 1 0 0
-        pointSize $= 3
-        text2D 0.9 0 (show $ length ips2)
-        drawInterestPoints good2
-
-    when (length good1 <= 10 || length good1 >=50) $ inWindow "both" $ combine ipPosition (im1,good1) (im2,good2)
+{-
 
     when (length good1 > 10 && length good1 <50) $ do
         ranumb <- getParam opts "ranUmb"
@@ -131,7 +94,7 @@ worker cam1 cam2 opts inWindow _ = do
         w3 <- warp (size im2) (inv rec1 <> rec2) im2
         inWindow "fixed" $ do
             drawImage (0.5 .* im1 |+| 0.5 .* w3)
-
+-}
     return ()
 
 on f g = \x y -> f (g x) (g y)
@@ -151,8 +114,9 @@ chk x | isDoubleNaN x == 0 = x
       | otherwise          = 500 -- error "NaN"
 -----------------------------------------------------------
 
-prep = map (g.ipPosition) where g (Point x y) = [x,y]
+--prep = map (g.ipPosition) where g (Point x y) = [x,y]
 
+prep = map g where g (Point x y) = [x,y]
 ----------------------------------------------------------------------------
 
 mean l = sum l / fromIntegral (length l)
@@ -169,16 +133,69 @@ drawSeg s = do
     vertex $ (extreme1 s)
     vertex $ (extreme2 s)
 
-drawInterestPoints ipts = do
-    renderPrimitive Points (mapM_ drawPts ipts)
-    renderPrimitive Lines  (mapM_ drawOris ipts)
-  where 
-    drawOris IP {ipPosition = p@(Point x y), ipOrientation = a} = do
-        vertex $ p
-        vertex $ Point (x+0.05*cos a) (y+0.05*sin a)
-    drawPts IP {ipPosition = p@(Point x y)} = do
-        vertex $ p
-
 text2D x y s = do
     rasterPos (Vertex2 x (y::GLfloat))
     renderString Helvetica12 s
+
+-------------------------------------------------------------------------------
+
+pointMarker app name sz cam = do
+    (cam',ctrl) <- withPause cam
+    ref <- newIORef Nothing
+    rmarked <- newIORef []
+    w <- addWindow name sz (Just (const $ drw ref rmarked)) (marker (rmarked,ref) (kbdcam ctrl)) app
+    opts <- createParameters app [ ("h",percent 20)
+                                 , ("locrad",intParam 7 1 30)
+                                 , ("smooth",intParam 3 0 10)
+                                 , ("median",intParam 0 0 10)
+                                  --("rad", realParam 7 1 20),
+                                  --("dim", intParam 20 1 50)
+                                 ]
+    return $ do
+        ph <- getParam opts "h" :: IO Int
+        let h = fromIntegral ph / 100
+        smooth <- getParam opts "smooth"
+        --rad <- getParam opts "rad"
+        --dim <- getParam opts "dim"
+        locrad <- getParam opts "locrad"
+        meds <- getParam opts "median" :: IO Int
+        let diam = 2*locrad+1
+        img <- cam' >>= yuvToGray >>= meds `times` (median Mask3x3) >>= scale8u32f 0 1 
+        --ips <- getSaddlePoints smooth locrad h 300 dim rad img
+        ips <- getCorners smooth locrad h 300 img
+        writeIORef ref (Just (img,ips))
+        currentWindow $= Just w
+        postRedisplay Nothing
+        marked <- readIORef rmarked
+        return $ (img,ips, if null marked then [] else pixelsToPoints (size img) marked)
+  where drw ref rmarked = do
+            mb <- readIORef ref
+            case mb of
+                Nothing -> return ()
+                Just (img,ips) -> do
+                    drawImage img
+                    pixelCoordinates (size img)
+                    pointSize $= 4
+                    setColor 0.5 0.5 1
+                    renderPrimitive Points $ mapM_ vertex ips
+                    --drawInterestPoints (size img) ips
+                    marked <- readIORef rmarked
+                    pointSize $= 2
+                    setColor 1 0 0
+                    renderPrimitive Points $ mapM_ vertex marked
+
+        marker (rmarked,ref) _ _ (MouseButton LeftButton) Down _ pos@(Position x y) = do
+            marked <- readIORef rmarked
+            let clicked = Pixel (fromIntegral y) (fromIntegral x)
+            Just (_, pts) <- readIORef ref
+            let new = closest pts clicked
+            writeIORef rmarked (new:marked)
+        marker (rmarked,_) _ _ (MouseButton RightButton) Down _ pos@(Position x y) = do
+            marked <- readIORef rmarked
+            when (not (null marked)) $ writeIORef rmarked (tail marked)
+        marker _ def _ a b c d = def a b c d
+
+        closest [] p = p
+        closest hp p = minimumBy (compare `on` dist p) hp
+            where dist (Pixel a b) (Pixel x y) = (a-x)^2+(b-y)^2
+

@@ -22,6 +22,7 @@ module EasyVision.Draw
 , drawTexture
 , setColor
 , drawCamera
+, drawInterestPoints
 , extractSquare
 , newTrackball
 ) where
@@ -29,6 +30,7 @@ module EasyVision.Draw
 import Graphics.UI.GLUT hiding (RGB, Matrix, Size, Point)
 import qualified Graphics.UI.GLUT as GL
 import ImagProc.Ipp.Core
+import ImagProc.Saddle
 import ImagProc.ImageProcessing(resize32f,yuvToRGB)
 import Data.IORef
 import Foreign (touchForeignPtr)
@@ -196,3 +198,18 @@ extractSquare sz (F im) = resize32f (Size sz sz) (F im {vroi = roi}) where
     d = w-h
     dm = d `quot` 2
     roi = (vroi im) {c1=dm-1,c2= dm+h}
+
+drawInterestPoints :: Size -> [InterestPoint] -> IO ()
+drawInterestPoints sz ipts = do
+    pointCoordinates sz
+    renderPrimitive Points (mapM_ drawPts ipts)
+    renderPrimitive Lines  (mapM_ drawOris ipts)
+    pixelCoordinates sz
+    mapM_ drawSample ipts
+  where 
+    drawOris IP {ipPosition = p@(Point x y), ipOrientation = a} = do
+        vertex $ p
+        vertex $ Point (x+0.05*cos a) (y+0.05*sin a)
+    drawPts IP {ipPosition = p@(Point x y)} = do
+        vertex $ p
+    drawSample IP {ipSample = pts} = renderPrimitive LineLoop (mapM_ vertex pts)
