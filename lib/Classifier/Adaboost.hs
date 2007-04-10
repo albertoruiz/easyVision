@@ -28,7 +28,9 @@ module Classifier.Adaboost (
 import GSL
 import Classifier.Base
 import Data.List(sortBy, transpose, elemIndex, partition)
+import Debug.Trace
 
+debug x = trace (show x) x
 
 posMin l = p where
     Just p = elemIndex (minimum l) l
@@ -75,7 +77,7 @@ stumpsOk ((g1,g2),lbs,xs,oxs,is) d = f where
     h l k = 0.5*(l'!!(k) + l'!!(k+1)) where
         l' = (l!!0 - (l!!1-l!!0)) : l -- ++ [l!!n + (l!!n - l!!(n-1))]
         -- n = length l - 1
-    k = posMin (map (abs.fst) r)
+    k = {- debug $ -} posMin (map (abs.fst) r)
     (_,(v,s)) = r!!k
 
     f x = s * signum' (x @> k - v)

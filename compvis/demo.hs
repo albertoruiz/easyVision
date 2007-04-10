@@ -42,7 +42,8 @@ main = do
     let mode m = MenuEntry m $ modifyIORef state $ \s -> s {ust = m}
 
     attachMenu LeftButton $ Menu $ map mode
-        ["RGB","Gray","Float","Median","Gaussian","Laplacian","Histogram"
+        ["RGB","Gray","Red","Green","Blue","U","V"
+        , "Median","Gaussian","Laplacian","HighPass","Histogram"
         ,"Integral","Umbraliza","Distance", "Hessian"
         ,"Corners", "Features", "Segments", "Canny", "DCT", "FFT"]
 {-
@@ -81,8 +82,21 @@ worker cam param getRoi fft inWindow op = do
              cam >>= yuvToRGB >>= drawImage
         "Gray" ->
              cam >>= yuvToGray >>= drawImage
-        "Float" ->
-             cam >>= yuvToGray >>= scale8u32f 0 1 >>= drawImage
+        "Red" -> do
+             (r,_,_) <- cam >>= yuvToRGB_P
+             drawImage r
+        "Green" -> do
+             (_,g,_) <- cam >>= yuvToRGB_P
+             drawImage g
+        "Blue" -> do
+             (_,_,b) <- cam >>= yuvToRGB_P
+             drawImage b
+        "U" -> do
+             (_,u,_) <- cam >>= yuvToYUV_P
+             drawImage u
+        "V" -> do
+             (_,_,v) <- cam >>= yuvToYUV_P
+             drawImage v
         "Integral" ->
              cam >>= yuvToGray >>= integral >>= scale32f k >>= drawImage
         "Umbraliza" ->
@@ -147,6 +161,11 @@ worker cam param getRoi fft inWindow op = do
              >>= laplace Mask5x5
              >>= scale32f8u (-1) 1
              >>= drawImage
+        "HighPass" -> do
+             orig <- cam
+             im <- yuvToGray orig
+             s <- (smooth `times` median Mask5x5) im >>= highPass8u Mask5x5
+             drawImage s
         "Histogram" -> do
              im <- cam >>= yuvToGray
              drawImage im

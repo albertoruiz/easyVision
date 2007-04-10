@@ -34,6 +34,7 @@ int ippiIntegral_8u32f_C1R(SRC,DST,float);
 int ippiCannyGetSize(VSIZE,int*);
 int ippiCanny_32f8u_C1R(SRC,SRC,DST,float,float,void*);
 int ippiFilterMedian_8u_C1R(SRC,DST,VSIZE,VSIZE);
+int ippiFilterHipass_8u_C1R(SRC,DST,int);
 int ippiHistogramRange_8u_C1R(DST,int*, int*, int);
 
 int auxWarpPerspective_32f_C1R(void * pSrc, int sstep, int sh, int sw,
