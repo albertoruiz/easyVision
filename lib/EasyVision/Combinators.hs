@@ -23,6 +23,7 @@ module EasyVision.Combinators (
   withPause,
   addSmall,
   detectMov,
+  monitorizeIn
 
 )where
 
@@ -35,6 +36,9 @@ import Data.IORef
 import System.IO
 import System
 import System.IO.Unsafe(unsafeInterleaveIO)
+import EasyVision.GUI(addWindow,kbdcam,State)
+import EasyVision.Draw(drawImage,Drawable)
+import Graphics.UI.GLUT(currentWindow,($=),swapBuffers,get)
 
 
 
@@ -112,3 +116,24 @@ addSmall sz grab = return $ do
     im <- grab
     f <- yuvToGray im >>= resize8u sz
     return (im,f)
+
+---------------------------------------------------------
+
+-- | The grabbed image (extracted from a general structure by the selector) is automatically shown in a window in each grab. The window provides a simple camera control with the keyboard. See the example interpolate.hs.
+monitorizeIn :: Drawable im => String    -- ^ window name
+                            -> Size      -- ^ window size
+                            -> (a->im)   -- ^ selector
+                            -> (IORef (State u)) -- ^ application state
+                            -> (IO a)    -- ^ original camera
+                            -> IO (IO a) -- ^ new camera
+monitorizeIn name sz selector app cam = do
+    (cam', ctrl) <- withPause cam
+    w <- addWindow name sz Nothing (const $ kbdcam ctrl) app
+    return $ do
+        thing <- cam'
+        saved <- get currentWindow  -- required, since it may happen inside an inWindow bracket
+        currentWindow $= Just w
+        drawImage (selector thing)
+        swapBuffers
+        currentWindow $= saved
+        return thing

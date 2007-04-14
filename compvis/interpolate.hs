@@ -31,12 +31,13 @@ main = do
 
     let alpha = read $ findWithDefault "0.9" "--alpha" opts
 
-    (cam,ctrl) <- mplayer (args!!0) sz
-                  >>= asFloat
-                  >>= drift alpha >>= interpolate 
-                  >>= withPause
-
     state <- prepare ()
+
+    (cam,ctrl) <- mplayer (args!!0) sz
+                  >>= monitorizeIn "original" (Size 150 200) id state
+                  >>= asFloat
+                  >>= drift alpha >>= interpolate
+                  >>= withPause
 
     addWindow "interpolate" sz Nothing  (const (kbdcam ctrl)) state
 
@@ -48,6 +49,7 @@ worker cam inWindow _ = do
 
     inWindow "interpolate" $ do
         cam >>= drawImage
+
 
 
 

@@ -22,7 +22,7 @@ module ImagProc.Ipp.Core
             -- * Creation of images
           , img, imgAs, getData32f, setData32f, value
             -- * Regions of interest
-          , fullroi, shrink, shift, intersection, invalidROIs
+          , fullroi, shrink, shift, intersection, roiArea, invalidROIs
             -- * Wrapper tools
           , src, dst, checkIPP, warningIPP, (//), purifyWith
           , ippRect, roiSize
@@ -172,6 +172,15 @@ intersection a b = ROI { r1 = max (r1 a) (r1 b)
                        }
 
 -- id, const
+
+-- | 'ROI'\'s area in pixels
+roiArea :: Image a => a -> Int
+roiArea im = w*h where
+    ROI r1 r2 c1 c2 = theROI im
+    w = c2-c1+1
+    h = r2-r1+1
+
+
 
 -- | Creates an image of the same type and size than a given image. Data is not copied.
 imgAs :: Img -> IO Img
