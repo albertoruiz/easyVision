@@ -9,6 +9,7 @@ haddock Classifier.hs \
         Classifier/Kernel.hs \
         Classifier/Neural.hs \
         Classifier/Adaboost.hs \
+        Classifier/SVM.hs \
         Classifier/ToyProblems.hs \
         Vision.hs \
         Vision/Geometry.hs \

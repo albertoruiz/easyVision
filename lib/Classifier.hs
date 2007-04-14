@@ -20,6 +20,7 @@ module Classifier (
     module Classifier.Kernel,
     module Classifier.Neural,
     module Classifier.Adaboost,
+    module Classifier.SVM
 ) where
 
 import Classifier.Base
@@ -27,3 +28,4 @@ import Classifier.Simple
 import Classifier.Kernel
 import Classifier.Neural
 import Classifier.Adaboost
+import Classifier.SVM
