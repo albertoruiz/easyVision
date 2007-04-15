@@ -15,17 +15,19 @@ Common definitions and functions for pattern classification and machine learning
 
 module Classifier.Base (
 -- * Basic definitions
-     Attributes, Label, Example, Sample,
-     Classifier, Estimator, Learner,
+     Attributes, Label, Example', Example, Sample', Sample,
+     Classifier', Classifier, Estimator', Estimator, Learner', Learner,
      Feature, TwoGroups, Dicotomizer, multiclass,
      Weights, WeightedDicotomizer, unweight, weight,
 -- * Utilities
-     errorRate, confusion, InfoLabels(..), group, ungroup, createClassifier, scramble, addNoise, selectClasses, splitProportion, posMax, preprocess, withPreprocess, partit, vector,
+     errorRate, confusion, InfoLabels(..), group, ungroup, createClassifier, scramble, addNoise, selectClasses, splitProportion, posMax, partit, vector,
+     module Classifier.Stat,
+-- * Feature extraction combinators
+     Property, withPreprocess, ofP, andP, outputOf, preprocess,
 -- * Linear feature extraction
      mef, mdf,
 -- * Attribute normalization
-     normalizeAttr,
-     module Classifier.Stat
+     normalizeAttr
 ) where
 
 import GSL
@@ -45,19 +47,23 @@ vector = fromList ::  [Double] -> Vector Double
 
 ------------------- General definitions ----------------------------
 
-type Attributes = Vector Double
 type Label = String
-type Example = (Attributes, String)
+type Example' a = (a, String)
+type Attributes = Vector Double
+type Example = Example' Attributes
+type Sample' a = [Example' a]
 type Sample = [Example]
 
--- | A generic learning machine
-type Learner = Sample -> (Classifier, Estimator)
-
-type Classifier = Attributes -> Label     -- crisp decision
+type Classifier' a = a -> Label
+type Classifier = Classifier' Attributes   -- crisp decision
 
 -- | More informative 'Classifier', which obtains the relative \"confidence\" of each class (related to an approximation to the posterior probabilities)
-type Estimator = Attributes -> [Double]
+type Estimator' a = a -> [Double] -- hmm
+type Estimator = Estimator' Attributes
 
+-- | A generic learning machine
+type Learner' a = Sample' a -> (Classifier' a, Estimator' a)
+type Learner = Learner' Attributes
 
 -- | A function that tries to discriminate between two classes of objects (positive means the first class)
 type Feature = Attributes -> Double       -- +/-
@@ -80,7 +86,7 @@ data InfoLabels = InfoLabels {
 }
 
 -- | extracts the labels of a sample
-extractLabels :: Sample -> InfoLabels
+extractLabels :: Sample' a -> InfoLabels
 extractLabels l = InfoLabels ls lti itl where
     ls = sort $ nub $ map snd l
     itl = (ls!!)
@@ -89,6 +95,14 @@ extractLabels l = InfoLabels ls lti itl where
     -- | given a list of labels creates a map from them to their class index
     createMap :: [String] -> Map.Map String Int
     createMap ls = Map.fromList (zip ls [0..])
+
+
+
+
+
+
+-------------------------------------------------------------------
+
 
 compareBy f = (\a b-> compare (f a) (f b))
 
@@ -126,13 +140,13 @@ posMin l = p where
 
 
 -- | groups the attribute vectors of each class
-group :: Sample -> ([[Attributes]], InfoLabels)
+group :: Sample' a -> ([[a]], InfoLabels)
 group l = (gs, lbs) where
     lbs = extractLabels l
     gs = map proto (labels lbs) where proto lb = [v | (v,s)<-l , s==lb]
 
--- | converts a list of groups of vectors into a 'Sample' with different labels
-ungroup :: [[Attributes]] -> Sample
+-- | converts a list of groups of objects into a 'Sample' with labels \"1\",\"2\",...
+ungroup :: [[a]] -> Sample' a
 ungroup gs = s where
     n = length gs
     lbs = map (show) [1 .. n]
@@ -140,12 +154,12 @@ ungroup gs = s where
     f g lb = zip g (repeat lb)
 
 -- | Estimates the success rate of a classifier on a sample
-errorRate :: Sample -> Classifier -> Double
+errorRate :: Sample' a -> Classifier' a -> Double
 errorRate exs c  = fromIntegral ok / fromIntegral (length exs) where
     ok = length [1 | (v,l)<-exs, l /= c v]
 
 -- | Computes the confusion matrix of a classifier on a sample
-confusion ::Sample -> Classifier -> Matrix Double
+confusion ::Sample' a -> Classifier' a -> Matrix Double
 confusion exs c = confusionMatrix where
     lbs = extractLabels exs
     l = getIndex lbs
@@ -154,11 +168,6 @@ confusion exs c = confusionMatrix where
     nc = length (labels lbs)
     confusionMatrix = fromArray2D $ 
         accumArray (+) (0::Double) ((0::Int,0::Int),(nc-1,nc-1)) (zip te [1,1 ..])
-
-
--- | Applies some preprocessing function to the Attributes of a Sample
-preprocess :: (Vector Double -> Vector Double) -> Sample -> Sample
-preprocess f exs = [(f v, l) | (v,l) <- exs]
 
 
 
@@ -188,16 +197,44 @@ multiclass' bin l = f where
 selectClasses :: [Label] -> Sample -> Sample
 selectClasses validset exs = filter ( (`elem` validset) .snd) exs
 
+------------- feature combinators ------------
+
+-- a property is a function which depends on a sample
+type Property a b = Sample' a -> (a -> b)
+
+-- | Applies some transformation to the objects in a Sample (it is just a map on the first element of the tuple).
+preprocess :: (a -> b) -> Sample' a -> Sample' b
+preprocess f exs = [(f v, l) | (v,l) <- exs]
+
 
 -- | combines a learner with a given preprocessing stage
-withPreprocess :: ([Example] -> (Vector Double -> Vector Double))
-                -> Learner -> Learner
+withPreprocess :: Property a b
+               -> Learner' b -> Learner' a
 withPreprocess method learner prob = (c,f) where
     t = method prob
     prob' = preprocess t prob
     (c',f') = learner prob'
     c = c' . t
-    f = f' . t 
+    f = f' . t
+
+-- | combines several properties into a single vector (currently too restrictive)
+andP :: [Property a Attributes] -> Property a Attributes
+andP fs prob = f where
+    ps = map ($prob) fs
+    f v = join $ map ($v) ps
+
+-- | composition of properties
+ofP :: Property b c -> Property a b -> Property a c
+ofP prop other prob = prop prob' . other prob where
+    prob' = preprocess (other prob) prob
+
+-- creates a property from the outputs of the estimator created by learning machine
+outputOf :: Learner' a -> Property a Attributes
+outputOf machine prob = g where
+    g v = vector $ f v
+    (_,f) = machine prob
+
+-------------------------------------
 
 mean = meanVector . stat
 cov  = covarianceMatrix . stat
@@ -208,7 +245,7 @@ meancov x = (m,c) where
 
 -- warning: we assume descending order in eigR (!?)
 -- | Most discriminant linear features (lda)
-mdf :: [Example] -> (Vector Double -> Vector Double)
+mdf :: Property Attributes Attributes
 mdf exs = f where
     f x = (x - m) <> v'
     n = length gs - 1
@@ -219,12 +256,12 @@ mdf exs = f where
     cm = cov$ fromRows$ map (mean.fromRows) $ gs
 
 -- | Most expressive linear features (pca)
-mef :: PCARequest -> [Example] -> (Vector Double -> Vector Double)
+mef :: PCARequest -> Property Attributes Attributes
 mef rq exs = encodeVector . pca rq . stat . fromRows . map fst $ exs
 
 
 -- | Attribute normalization
-normalizeAttr :: Sample -> (Vector Double -> Vector Double)
+normalizeAttr :: Property Attributes Attributes
 normalizeAttr exs = f where
     f x = (x-m)/(1+d)
     xs = fromRows $ map fst exs
