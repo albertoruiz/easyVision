@@ -23,7 +23,8 @@ module Classifier.Base (
      errorRate, confusion, InfoLabels(..), group, ungroup, createClassifier, scramble, addNoise, selectClasses, splitProportion, posMax, partit, vector,
      module Classifier.Stat,
 -- * Feature extraction combinators
-     Property, withPreprocess, ofP, andP, outputOf, preprocess,
+-- $FEATCOMB
+     Property, withPreprocess, onP, ofP, andP, outputOf, preprocess,
 -- * Linear feature extraction
      mef, mdf,
 -- * Attribute normalization
@@ -48,7 +49,7 @@ vector = fromList ::  [Double] -> Vector Double
 ------------------- General definitions ----------------------------
 
 type Label = String
-type Example' a = (a, String)
+type Example' a = (a, Label)
 type Attributes = Vector Double
 type Example = Example' Attributes
 type Sample' a = [Example' a]
@@ -103,15 +104,14 @@ extractLabels l = InfoLabels ls lti itl where
 
 -------------------------------------------------------------------
 
-
-compareBy f = (\a b-> compare (f a) (f b))
+on f g = \x y -> f (g x) (g y)
 
 partit _ [] = []
 partit n l  = take n l : partit n (drop n l)
 
 -- | pseudorandom permutation of a list
 scramble :: Int -> [a] -> [a]
-scramble seed l = map fst $ sortBy (compareBy snd) randomTuples where
+scramble seed l = map fst $ sortBy (compare `on` snd) randomTuples where
     randomTuples = zip l (randomRs (0, 1::Double) (mkStdGen seed))
 
 -- | add noise to the attributes
@@ -199,7 +199,22 @@ selectClasses validset exs = filter ( (`elem` validset) .snd) exs
 
 ------------- feature combinators ------------
 
--- a property is a function which depends on a sample
+{- $FEATCOMB
+Using them you can easily define more complex learners by composition of feature extractors (Properties). For instance:
+
+@niceMachine = simpleMachine \`onP\` property1  \`ofP\` andP [property3, property4 `ofP` property5 ]@
+
+Then we train the machine in a problem
+
+@classify = niceMachine problem@
+
+and ask for the answer: the evaluation of @classify object@ returns for example @\"apple\"@.
+
+Composition of feature extractors is similar to ordinary function composition, but each feature is specifically created from a sample of labeled objects.
+
+-}
+
+-- | A function which depends on a sample
 type Property a b = Sample' a -> (a -> b)
 
 -- | Applies some transformation to the objects in a Sample (it is just a map on the first element of the tuple).
@@ -216,6 +231,10 @@ withPreprocess method learner prob = (c,f) where
     (c',f') = learner prob'
     c = c' . t
     f = f' . t
+
+-- | flip withPreprocess
+onP :: Learner' a -> Property b a -> Learner' b
+onP = flip withPreprocess
 
 -- | combines several properties into a single vector (currently too restrictive)
 andP :: [Property a Attributes] -> Property a Attributes
