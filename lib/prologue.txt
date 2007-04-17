@@ -1,0 +1,3 @@
+A system for fast prototyping of pattern recognition and computer vision applications.
+
+It requires GSLHaskell, HOpenGL, MPlayer, and IPP.

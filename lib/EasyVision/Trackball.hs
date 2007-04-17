@@ -1,3 +1,5 @@
+-- #hide
+
 module EasyVision.Trackball (newTrackball) where
 
 import GSL

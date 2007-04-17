@@ -7,7 +7,7 @@ License     :  GPL-style
 
 Maintainer  :  Alberto Ruiz (aruiz at um dot es)
 Stability   :  very provisional
-Portability :  hmm...
+Portability :  requires IPP 5.0
 
 Experimental interface to Intel's IPP image processing libraries
 

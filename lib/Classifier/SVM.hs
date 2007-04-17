@@ -6,7 +6,7 @@ License     :  GPL-style
 
 Maintainer  :  Alberto Ruiz (aruiz at um dot es)
 Stability   :  very provisional
-Portability :  hmm...
+Portability :  uses SVM-Light
 
 Interface to the Support Vector Machine program SVM-Light by Thorsten Joachims, available in <http://svmlight.joachims.org/>. The binary @svm_learn@ must be in the PATH.
 

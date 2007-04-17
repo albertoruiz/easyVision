@@ -35,4 +35,4 @@ haddock Classifier.hs \
         EasyVision/Draw.hs \
         EasyVision/Trackball.hs --hide=Ipp.Trackball \
         --use-package=base --use-package=OpenGL \
-        -o doc -h -t Vision # 2> /dev/null
+        -o doc -h -t easyVision -p prologue.txt # 2> /dev/null

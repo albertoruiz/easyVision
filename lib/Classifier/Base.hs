@@ -5,8 +5,8 @@ Copyright   :  (c) Alberto Ruiz 2006-7
 License     :  GPL-style
 
 Maintainer  :  Alberto Ruiz (aruiz at um dot es)
-Stability   :  very provisional
-Portability :  hmm...
+Stability   :  provisional
+Portability :  portable
 
 Common definitions and functions for pattern classification and machine learning.
 
