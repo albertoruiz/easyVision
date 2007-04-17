@@ -28,7 +28,7 @@ module Classifier.Base (
 -- * Linear feature extraction
      mef, mdf,
 -- * Attribute normalization
-     normalizeAttr
+     whitenAttr, normalizeAttr, normalizeMinMax
 ) where
 
 import GSL
@@ -279,15 +279,34 @@ mef :: PCARequest -> Property Attributes Attributes
 mef rq exs = encodeVector . pca rq . stat . fromRows . map fst $ exs
 
 
--- | Attribute normalization
+-- | Independent attribute normalization to zero mean and variance 1
 normalizeAttr :: Property Attributes Attributes
 normalizeAttr exs = f where
-    f x = (x-m)/(1+d)
+    f x = (x-m)/d   -- FIXME: protect the division...
     xs = fromRows $ map fst exs
     m = mean xs
     d = sqrt (mean (xs*xs) - m*m)
 
 
+-- | Attribute normalization, mapping the minimum and maximum to given values.
+normalizeMinMax :: (Double,Double) -> Property Attributes Attributes
+normalizeMinMax (mn,mx) exs = f where
+    f x = b + r*x
+    xs = toColumns $ fromRows $ map fst exs
+    maxs = vector $ map vectorMax xs
+    mins = vector $ map vectorMin xs
+    dxs = maxs - mins
+    dy = mx - mn
+    r = dy <> recip dxs   -- FIXME: protect the division...
+    b = vector [mn] - r*mins
+
+-- | Whitening transformation
+whitenAttr :: Property Attributes Attributes
+whitenAttr exs = f where
+    f x = w<>(x-m)
+    w = whitener st
+    m = meanVector st
+    st = stat $ fromRows $ map fst exs
 
 -- | Converts a 'WeightedDicotomizer' into an ordinary 'Dicotomizer' (using an uniform distribution).
 unweight :: WeightedDicotomizer -> Dicotomizer

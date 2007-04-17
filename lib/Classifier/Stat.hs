@@ -36,7 +36,8 @@ data Stat = Stat { meanVector              :: Vector Double
                  , eigenvectors            :: Matrix Double
                  , invCov                  :: Matrix Double
                  , normalizedData          :: Matrix Double
-                 , whiteningTransformation :: Matrix Double
+                 , whiteningTransformation :: Matrix Double -- ^ homogeneous transformation which includes centering
+                 , whitener                :: Matrix Double
                  }
 
 -- | Creates a 'Stat' structure from a matrix. Of course, due to lazyness, only the fields required by the particular application will be actually computed.
@@ -45,14 +46,16 @@ stat x = s where
     m = sumColumns x / fromIntegral (rows x)
     xc = x |-| m
     c = (trans xc <> xc) / fromIntegral (rows x -1)
-    (l,v) = eigS c
+    (l,v') = eigS c
+    v = trans v'
     lastrow = fromList $ replicate (cols x) 0 ++[1.0::Double]
     w = diag (1/sqrt l) <> v
     s = Stat { meanVector = m
              , covarianceMatrix = c
              , eigenvalues = l
-             , eigenvectors = trans v
+             , eigenvectors = v
              , invCov = inv c
+             , whitener = w
              , whiteningTransformation = w <|> -w <> m
                                            <->
                                          lastrow

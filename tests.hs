@@ -11,6 +11,8 @@ import Control.Monad(when)
 realMatrix = fromLists :: [[Double]] -> Matrix Double
 realVector = fromList ::  [Double] -> Vector Double
 
+randomMatrix seed (a,b) (n,m) = reshape m $ realVector $ take (n*m) $ randomRs (a,b) $ mkStdGen seed
+
 infixl 2 =~=
 a =~= b = pnorm 1 (flatten (a - b)) < 1E-9
 
@@ -80,6 +82,20 @@ ransacTest = assertBool "ransac homography" (normat3 h1 =~= normat3 h) where
                     [0.02,0,1]]
     h = fst $ estimateHomographyRansac 0.99 0.001 dest orig
 
+--------------------------------------------------------------------
+
+statTest = assertBool "stat Test" ( (whc =~= ident (rows whc)) &&
+                                    (tc  =~= ident (rows  tc))) where
+    xs = randomMatrix 100 (10,20) (100,2) <|> randomMatrix 17 (-1,2) (100,2)
+    st = stat xs
+    whc = covarianceMatrix $ stat $ normalizedData st
+    m = meanVector st
+    w = whitener st
+    f x = w<>(x-m)
+    trans = fromRows $ map f $ toRows xs
+    st' = stat trans
+    tc = covarianceMatrix st'
+
 -------------------------------------------------------------------
 
 tests = TestList 
@@ -95,6 +111,7 @@ tests = TestList
     , TestCase (assertBool "recover3"    (recoverFromHomogZ0Test  m4))
     , TestCase (assertBool "recover4"    (recoverFromHomogZ0Test  m5))
     , TestCase (assertBool "recover5"    (recoverFromHomogZ0Test  m6))
+    , TestCase $ statTest
     , TestCase $ ransacTest
     , TestCase $ classifyTest 500 500 129 
     --, TestCase $ classifyTest 4000 1000 63
