@@ -31,6 +31,7 @@ main = do
     state <- prepare "RGB"
 
     o <- createParameters state [("umbral",realParam 0.5 0 1),
+                                 ("umbral2",intParam 30 1 255),
                                  ("h",percent 20),
                                  ("smooth",intParam 3 0 10)]
 
@@ -45,7 +46,7 @@ main = do
         ["RGB","Gray","Red","Green","Blue","U","V"
         , "Median","Gaussian","Laplacian","HighPass","Histogram"
         ,"Integral","Umbraliza","Distance", "Hessian"
-        ,"Corners", "Features", "Segments", "Canny", "DCT", "FFT"]
+        ,"Corners", "Features", "Segments", "Canny", "DCT", "FFT", "Test"]
 {-
     attachMenu LeftButton $ Menu 
         [MenuEntry "Quit" (exitWith ExitSuccess)
@@ -72,6 +73,8 @@ k = 1/(640*480*128)
 worker cam param getRoi fft inWindow op = do
 
     th <- getParam param "umbral"
+    th2' <- getParam param "umbral2" ::IO Int
+    let th2 = fromIntegral th2'
     ph <- getParam param "h" :: IO Int
     let h1 = fromIntegral ph / 100
     smooth <- getParam param "smooth"
@@ -114,8 +117,27 @@ worker cam param getRoi fft inWindow op = do
              thresholdVal32f th 1 IppCmpGreater >>=
              scale32f8u 0 1 >>=
              distanceTransform [1,1.4,2.2] >>=
-             scale32f (1/30) >>=
+             scale32f (1/60) >>=
              drawImage
+        "Test" -> do
+             d <- cam >>= yuvToGray
+                  >>= median Mask5x5 >>= highPass8u Mask5x5
+                  >>= binarize8u th2 False >>= smooth `times` median Mask5x5
+                  >>= distanceTransform [1,1.4,2.2]
+                  >>= gauss Mask5x5
+
+             autoscale d >>= drawImage
+
+             (mn,mx) <- minmax d
+             hp <- localMax 21 (modifyROI (shrink (60,60)) d)
+                   >>= thresholdVal32f (mx*h1) 0.0 IppCmpLess
+                   >>= getPoints32f 500
+             pixelCoordinates (size d)
+             setColor 1 0 0
+             pointSize $= 3
+             renderPrimitive Points (mapM_ vertex hp)
+             text2D 10 20 (show $ length hp)
+
         "Hessian" ->
              cam >>= yuvToGray >>= scale8u32f 0 1 >>=
              smooth `times` gauss Mask5x5 >>= secondOrder >>= hessian >>=
@@ -218,3 +240,14 @@ drawSeg s = do
     vertex $ (extreme1 s)
     vertex $ (extreme2 s)
 
+binarize8u th True im =
+    thresholdVal8u th 0 IppCmpLess im >>=
+    thresholdVal8u (th-1) 255 IppCmpGreater
+
+binarize8u th False im =
+    binarize8u th True im >>= not8u
+
+autoscale im = do
+    (mn,mx) <- minmax im
+    r <- scale32f8u mn mx im
+    return r

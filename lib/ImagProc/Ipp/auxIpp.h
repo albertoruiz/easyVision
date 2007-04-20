@@ -17,12 +17,14 @@ int ippiScale_32f8u_C1R(SRC,DST,float,float);
 int ippiAbs_32f_C1R(SRC,DST);
 int ippiAdd_32f_C1R(SRC,SRC,DST);
 int ippiSub_32f_C1R(SRC,SRC,DST);
+int ippiSub_8u_C1RSfs(SRC,SRC,DST,int);
 int ippiMul_32f_C1R(SRC,SRC,DST);
 int ippiAbsDiff_8u_C1R(SRC,SRC,DST);
 int ippiSum_8u_C1R(DST,double*);
 int ippiFilterMax_32f_C1R(SRC,DST,double,double);
 int ippiCompare_32f_C1R(SRC,SRC,DST,int);
 int ippiThreshold_Val_32f_C1R(SRC,DST,float,float,int);
+int ippiThreshold_Val_8u_C1R(SRC,DST,unsigned char,unsigned char,int);
 int ippiSqrt_32f_C1R(SRC,DST);
 int ippiMinMax_32f_C1R(DST,float*,float*);
 int ippiMaxIndx_32f_C1R(DST,float*,int*,int*);
@@ -36,6 +38,12 @@ int ippiCanny_32f8u_C1R(SRC,SRC,DST,float,float,void*);
 int ippiFilterMedian_8u_C1R(SRC,DST,VSIZE,VSIZE);
 int ippiFilterHipass_8u_C1R(SRC,DST,int);
 int ippiHistogramRange_8u_C1R(DST,int*, int*, int);
+
+int ippiDilate3x3_8u_C1R(SRC,DST);
+int ippiErode3x3_8u_C1R(SRC,DST);
+int ippiDilate_8u_C1R(SRC,DST,char*,VSIZE,VSIZE);
+int ippiErode_8u_C1R(SRC,DST,char*,VSIZE,VSIZE);
+int ippiNot_8u_C1R(SRC,DST);
 
 int auxWarpPerspective_32f_C1R(void * pSrc, int sstep, int sh, int sw,
                                int sr1, int sr2, int sc1, int sc2,

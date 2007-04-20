@@ -68,7 +68,7 @@ createParameters st ops = do
                 k = posi e
 
 kbdopts opts def = kbd where
-    kbd (MouseButton WheelUp) _ _ pos@(Position x y) = do
+    kbd (MouseButton WheelUp) Down _ pos@(Position x y) = do
         m <- readIORef opts
         let s' = keys m
         let s = (s' !! (fromIntegral y `div` sizePar))
@@ -76,7 +76,7 @@ kbdopts opts def = kbd where
         let m' = insert s (incre v) m
         writeIORef opts m'
         postRedisplay Nothing
-    kbd (MouseButton WheelDown) _ _ pos@(Position x y) = do
+    kbd (MouseButton WheelDown) Down _ pos@(Position x y) = do
         m <- readIORef opts
         let s' = keys m
         let s = (s' !! (fromIntegral y `div` sizePar))

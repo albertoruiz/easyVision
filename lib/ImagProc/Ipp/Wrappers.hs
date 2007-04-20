@@ -72,6 +72,9 @@ foreign import ccall "auxIpp.h ippiAdd_32f_C1R"
 foreign import ccall "auxIpp.h ippiSub_32f_C1R"
      ippiSub_32f_C1R :: Ptr() -> Int -> Ptr() -> Int -> Ptr() -> Int -> ROISize -> IO Int
 
+foreign import ccall "auxIpp.h ippiSub_8u_C1RSfs"
+     ippiSub_8u_C1RSfs :: Ptr() -> Int -> Ptr() -> Int -> Ptr() -> Int -> ROISize -> Int -> IO Int
+
 foreign import ccall "auxIpp.h ippiMul_32f_C1R"
      ippiMul_32f_C1R :: Ptr() -> Int -> Ptr() -> Int -> Ptr() -> Int -> ROISize -> IO Int
 
@@ -90,6 +93,9 @@ foreign import ccall "auxIpp.h ippiCompare_32f_C1R"
 
 foreign import ccall "auxIpp.h ippiThreshold_Val_32f_C1R"
      ippiThreshold_Val_32f_C1R ::  Ptr() -> Int -> Ptr() -> Int -> ROISize -> Float -> Float -> Int -> IO Int
+
+foreign import ccall "auxIpp.h ippiThreshold_Val_8u_C1R"
+     ippiThreshold_Val_8u_C1R ::  Ptr() -> Int -> Ptr() -> Int -> ROISize -> CUChar -> CUChar -> Int -> IO Int
 
 foreign import ccall "auxIpp.h ippiSqrt_32f_C1R"
      ippiSqrt_32f_C1R :: Ptr() -> Int -> Ptr() -> Int -> ROISize -> IO Int
@@ -128,6 +134,23 @@ foreign import ccall "auxIpp.h ippiFilterMedian_8u_C1R"
 
 foreign import ccall "auxIpp.h ippiHistogramRange_8u_C1R"
      ippiHistogramRange_8u_C1R :: Ptr () -> Int -> ROISize -> Ptr Int -> Ptr Int -> Int -> IO Int
+
+foreign import ccall "auxIpp.h ippiDilate3x3_8u_C1R"
+     ippiDilate3x3_8u_C1R :: Ptr() -> Int -> Ptr() -> Int -> ROISize -> IO Int
+
+foreign import ccall "auxIpp.h ippiErode3x3_8u_C1R"
+     ippiErode3x3_8u_C1R :: Ptr() -> Int -> Ptr() -> Int -> ROISize -> IO Int
+
+foreign import ccall "auxIpp.h ippiDilate_8u_C1R"
+     ippiDilate_8u_C1R :: Ptr() -> Int -> Ptr() -> Int -> ROISize -> Ptr CChar -> ROISize -> IPPPoint -> IO Int
+
+foreign import ccall "auxIpp.h ippiErode_8u_C1R"
+     ippiErode_8u_C1R :: Ptr() -> Int -> Ptr() -> Int -> ROISize -> Ptr CChar -> ROISize -> IPPPoint -> IO Int
+
+foreign import ccall "auxIpp.h ippiNot_8u_C1R"
+     ippiNot_8u_C1R :: Ptr() -> Int -> Ptr() -> Int -> ROISize -> IO Int
+
+
 
 foreign import ccall "auxIpp.h auxWarpPerspective_32f_C1R"
      warpPerspective32f :: Ptr() -> Int -> Int -> Int ->

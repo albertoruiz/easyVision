@@ -37,8 +37,8 @@ svmLight w gs = unsafePerformIO $ do
 
 svmLearn w (pos,negs) fileprob filemodel = do
     writeFile fileprob cad
-    -- system $ "./svm_learn -t 2 -g "++ show w ++" -x 1 prob-svm.txt model.txt"
     system $ "svm_learn -t 2 -g "++ show w ++" "++fileprob++" "++ filemodel++" > /dev/null"
+    -- system $ "svm_learn -t 2 -x 1 -g "++ show w ++" "++fileprob++" "++ filemodel++" >> svm.log"
   where cad = unlines $ header ++ map (feat "+1") pos ++ map (feat "-1") negs
         header = ["# automatically generated file","#"]
         feat c ex = c ++ ve ex

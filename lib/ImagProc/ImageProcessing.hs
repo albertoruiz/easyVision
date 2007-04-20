@@ -43,11 +43,13 @@ module ImagProc.ImageProcessing (
 -- * Image arithmetic
 , scale32f
 , mul32f, add32f, sub32f
+, sub8u
 , absDiff8u
 , sum8u
 , abs32f, sqrt32f
 , compare32f
 , thresholdVal32f
+, thresholdVal8u
 , minmax
 , maxIndx
 , integral
@@ -57,6 +59,9 @@ module ImagProc.ImageProcessing (
 , laplace
 , highPass8u
 , median
+, dilate3x3 --, dilate
+, erode3x3  --, erode
+, not8u
 , sobelVert, sobelHoriz
 , secondOrder
 , hessian
@@ -328,11 +333,34 @@ thresholdVal32f :: Float          -- ^ threshold
 thresholdVal32f t v cmp = simplefun1F f id "thresholdVal32f" where
     f ps ss pd sd r = ippiThreshold_Val_32f_C1R ps ss pd sd r t v (codeCmp cmp)
 
+-- | The result is the source image in which the pixels verifing the comparation with a threshold are set to a desired value.
+thresholdVal8u :: CUChar          -- ^ threshold
+                -> CUChar          -- ^ value
+                -> IppCmp         -- ^ comparison function
+                -> ImageGray     -- ^ source image
+                -> IO ImageGray  -- ^ result
+thresholdVal8u t v cmp = simplefun1G f id "thresholdVal8u" where
+    f ps ss pd sd r = ippiThreshold_Val_8u_C1R ps ss pd sd r t v (codeCmp cmp)
+
+
 -- | Changes each pixel by the maximum value in its neighbourhood of given diameter.
 filterMax32f :: Int -> ImageFloat -> IO ImageFloat
 filterMax32f sz = simplefun1F f (shrink (d,d)) "filterMax32f" where
     d = (sz-1) `quot` 2
     f ps ss pd sd r = ippiFilterMax_32f_C1R ps ss pd sd r (ippRect sz sz) (ippRect d d)
+
+-- | dilatation 3x3
+dilate3x3 :: ImageGray -> IO ImageGray
+dilate3x3 = simplefun1G ippiDilate3x3_8u_C1R (shrink (1,1)) "dilate3x3"
+
+-- | erosion 3x3
+erode3x3 :: ImageGray -> IO ImageGray
+erode3x3 = simplefun1G ippiErode3x3_8u_C1R (shrink (1,1)) "dilate3x3"
+
+-- | logical NOT
+not8u :: ImageGray -> IO ImageGray
+not8u = simplefun1G ippiNot_8u_C1R id "not"
+
 
 ---------------------------------------------
 
@@ -363,6 +391,11 @@ add32f = simplefun2 ippiAdd_32f_C1R intersection "add32f"
 sub32f :: ImageFloat -> ImageFloat -> IO ImageFloat
 sub32f = flip $ simplefun2 ippiSub_32f_C1R intersection "sub32f" -- more natural argument order
 
+-- | Pixel by pixel substraction.
+sub8u :: Int -> ImageGray -> ImageGray -> IO ImageGray
+sub8u k = flip $ simplefun2G f intersection "sub8u"
+    where f ps1 ss1 ps2 ss2 pd sd r = ippiSub_8u_C1RSfs ps1 ss1 ps2 ss2 pd sd r k
+
 -- | Absolute difference
 absDiff8u :: ImageGray -> ImageGray -> IO ImageGray
 absDiff8u = simplefun2G ippiAbsDiff_8u_C1R intersection "absDiff8u"
@@ -386,6 +419,7 @@ codeCmp IppCmpEq        = 2
 codeCmp IppCmpGreaterEq = 3
 codeCmp IppCmpGreater   = 4
 
+-- | Comparison options
 data IppCmp = IppCmpLess | IppCmpLessEq | IppCmpEq | IppCmpGreaterEq | IppCmpGreater
 
 -- | The result is the pixelswise comparation of the two source images.
@@ -408,11 +442,11 @@ copyMask32f (F im) (G mask) = do
     return $ F r {vroi = roi}
 
 -- | Nonmaximum supression. Given an I32f image returns a copy of the input image with all the pixels which are not local maxima set to 0.0.
-localMax :: Int         -- ^ radius of the filterMax32f
+localMax :: Int         -- ^ diameter of the filterMax32f
          -> ImageFloat  -- ^ input image
          -> IO ImageFloat   -- ^ result
-localMax r g = do
-    mg   <- filterMax32f r g
+localMax d g = do
+    mg   <- filterMax32f d g
     mask <- compare32f IppCmpEq mg g
     r    <- copyMask32f g mask
     return r
