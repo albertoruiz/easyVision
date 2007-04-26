@@ -22,6 +22,7 @@ module EasyVision.Draw
 , drawTexture
 , setColor
 , drawCamera
+, cameraView
 , drawInterestPoints
 , extractSquare
 , newTrackball
@@ -213,3 +214,23 @@ drawInterestPoints sz ipts = do
     drawPts IP {ipPosition = p@(Point x y)} = do
         vertex $ p
     drawSample IP {ipSample = pts} = renderPrimitive LineLoop (mapM_ vertex pts)
+
+-- | sets the opengl view of a given camera matrix
+cameraView :: Matrix Double -- ^ 3x4 camera matrix (with K=diag f f 1)
+           -> Double        -- ^ aspect ratio of the window (e.g., 4\/3)
+           -> Double        -- ^ distance to nearest object to show (e.g., 0.1)
+           -> Double        -- ^ distance to farthest object to show (e.g., 100)
+           -> IO ()
+cameraView m ar near far = do
+    let (p,f) = toCameraSystem m
+    matrixMode $= Projection
+    loadIdentity
+    let fov = 2* atan (1/(f*ar)) / degree
+    perspective fov ar near far
+    lookAt (Vertex3 0 0 0)
+           (Vertex3 0 0 1)
+           (Vector3 0 1 0)
+    matrixMode $= Modelview 0
+    loadIdentity
+    mat <- newMatrix RowMajor (toList $ flatten $ inv p) :: IO (GLmatrix GLdouble)
+    multMatrix mat

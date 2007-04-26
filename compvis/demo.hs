@@ -33,7 +33,8 @@ main = do
     o <- createParameters state [("umbral",realParam 0.5 0 1),
                                  ("umbral2",intParam 30 1 255),
                                  ("h",percent 20),
-                                 ("smooth",intParam 3 0 10)]
+                                 ("smooth",intParam 3 0 10),
+                                 ("smooth2",intParam 0 0 10)]
 
     addWindow "demo" sz Nothing (const (kbdcam ctrl)) state
                                    ---- or undefined ---
@@ -46,7 +47,7 @@ main = do
         ["RGB","Gray","Red","Green","Blue","U","V"
         , "Median","Gaussian","Laplacian","HighPass","Histogram"
         ,"Integral","Umbraliza","Distance", "Hessian"
-        ,"Corners", "Features", "Segments", "Canny", "DCT", "FFT", "Test"]
+        ,"Corners", "Features", "Segments", "Canny", "DCT", "FFT", "Test 1", "Test 2"]
 {-
     attachMenu LeftButton $ Menu 
         [MenuEntry "Quit" (exitWith ExitSuccess)
@@ -78,6 +79,7 @@ worker cam param getRoi fft inWindow op = do
     ph <- getParam param "h" :: IO Int
     let h1 = fromIntegral ph / 100
     smooth <- getParam param "smooth"
+    smooth2 <- getParam param "smooth2" :: IO Int
 
     inWindow "demo" $ case op of
 
@@ -119,7 +121,13 @@ worker cam param getRoi fft inWindow op = do
              distanceTransform [1,1.4,2.2] >>=
              scale32f (1/60) >>=
              drawImage
-        "Test" -> do
+        "Test 1" -> do
+             d <- cam >>= yuvToGray
+                  >>= smooth2 `times` median Mask5x5 >>= highPass8u Mask5x5
+                  >>= binarize8u th2 True >>= smooth `times` median Mask5x5
+             drawImage d
+
+        "Test 2" -> do
              d <- cam >>= yuvToGray
                   >>= median Mask5x5 >>= highPass8u Mask5x5
                   >>= binarize8u th2 False >>= smooth `times` median Mask5x5
@@ -137,6 +145,7 @@ worker cam param getRoi fft inWindow op = do
              pointSize $= 3
              renderPrimitive Points (mapM_ vertex hp)
              text2D 10 20 (show $ length hp)
+
 
         "Hessian" ->
              cam >>= yuvToGray >>= scale8u32f 0 1 >>=

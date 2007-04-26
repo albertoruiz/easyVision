@@ -27,6 +27,7 @@ module Vision.Geometry
 , inHomog
 , ht
 , htc
+, htm
 -- * Typical transformations
 , rot1
 , rot2
@@ -179,3 +180,9 @@ htc h = toLists. inHomogMat . (<> trans h) . homogMat . fromLists
 -- | transforms a list of inhomogeneous vectors, given as lists, using a homogeneous transformation.
 ht :: Matrix Double -> [[Double]] -> [[Double]]
 ht = htc
+
+-- | transforms a list of inhomogeneous vectors, given as rows of a matrix, using a homogeneous transformation.
+htm :: Matrix Double -- ^ transformation
+    -> Matrix Double -- ^ inhomogeneous input vectors (as rows)
+    -> Matrix Double -- ^ transformed vectors (as rows)
+htm h = inHomogMat . (<> trans h) . homogMat
