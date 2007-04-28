@@ -13,6 +13,8 @@ import Control.Monad(when)
 import GSL hiding (size)
 import Debug.Trace
 
+debug x = trace (show x) x
+
 main = do
     args <- getArgs
 
@@ -92,19 +94,18 @@ worker cam op trackball mbf inWindow _ = do
 
         when (length a4s >0) $ do
             let pts = head a4s
-                h = estimateHomography (map pl pts) a4
-                camera = cameraFromHomogZ0 mbf h
+                camera = estimateCameraFromPlane mbf (map pl pts) a4
 
             case camera of
                 Nothing -> return ()
                 Just p -> do
                     clear [DepthBuffer]
-                    let (p',path) = refineCamera p (map pl pts) (map pl0 a4)
-                    --dispR 4 path
-                    cameraView p' (4/3) 0.1 100
+                    --dispR 5 (dropRows (rows path - 5) path)
+
+                    cameraView p (4/3) 0.1 100
 
                     setColor 0 0 1
-                    lineWidth $= 2
+                    lineWidth $= 1
                     renderPrimitive LineLoop (mapM_ vertex a4)
 
                     hut
@@ -120,7 +121,7 @@ a4 = [[   0,    0]
 
 pl (Point x y) = [x,y]
 
-pl0 [x,y] = [x,y,0]
+
 
 alter pts = map (rotateList pts) [0 .. 3]
 
@@ -176,17 +177,5 @@ hut = do
         v 1 1 0
         v 1 0 0
 
-list2par [f,p,t,r,cx,cy,cz] = CamPar f p t r (cx,cy,cz)
-par2list (CamPar f p t r (cx,cy,cz)) = [f,p,t,r,cx,cy,cz]
 
-cost view world lpar = pnorm 1 $ flatten (view - htm c world) where
-    c = syntheticCamera $ list2par lpar
 
-refineCamera cam view world = (betterCam,path) where
-    initsol = par2list $ poseFromCamera cam
-    mview  = fromLists view
-    mworld = fromLists world
-    (betterpar, path) = minimize (cost mview mworld) initsol
-    betterCam = syntheticCamera $ list2par betterpar
-
-minimize f xi = minimizeNMSimplex f xi [0.01,5*degree,5*degree,5*degree,0.1,0.1,0.1] 1e-4 100
