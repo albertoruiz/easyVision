@@ -102,19 +102,26 @@ worker cam op trackball mbf inWindow _ = do
         lineWidth $= 2
         renderPrimitive LineLoop (mapM_ vertex a4)
 
-        when (length closed4 >0) $ do
-            let pts = head closed4
-            mapM_ (posib mbf orthotol orig) (alter pts)
+        --when (length closed4 >0) $ do
+        --    let pts = head closed4
+        --    mapM_ (posib' mbf orthotol orig) (alter pts)
 
         when (length a4s >0) $ do
             let pts = head a4s
                 h = estimateHomography a4 (map pl pts)
                 Size _ sz = size orig
-            floor <- scale8u32f 0 1 orig >>= warp (Size 256 256) (scaling scale <> h)
+            imf <- scale8u32f 0 1 orig
+            floor <- warp (Size 256 256) (scaling scale <> h) imf
             drawTexture floor $ map (++[-0.01]) $ ht (scaling (1/scale)) [[1,1],[-1,1],[-1,-1],[1,-1]]
-            pointCoordinates (Size 400 400)
-            setColor 1 1 1
-            text2D 0.95 (-0.95) (show $ focalFromHomogZ0 $ inv h)
+
+            imt <- extractSquare 128 imf
+            let Just (cam,path) = cameraFromPlane 1E-3 500 mbf (map pl pts) a4
+            --let Just cam = cameraFromHomogZ0 mbf (inv h)
+            drawCamera 1 cam (Just imt)
+
+            --pointCoordinates (Size 400 400)
+            --setColor 1 1 1
+            --text2D 0.95 (-0.95) (show $ focalFromHomogZ0 $ inv h)
 
     return ()
 
@@ -134,19 +141,6 @@ pl (Point x y) = [x,y]
 alter pts = map (rotateList pts) [0 .. 3]
 
 rotateList list n = take (length list) $ drop n $ cycle list
-
-posib mbf tol orig pts = do
-    let h = estimateHomography (map pl pts) a4
-        mc = cameraFromHomogZ0 mbf h
-        mbomega = fmap omegaGen mbf
-    case mc of
-        Nothing -> return ()
-        Just cam  -> do
-            let ao = autoOrthogonality mbomega h
-            when (ao < tol) $ do
-                imf <- scale8u32f 0 1 orig
-                imt <- extractSquare 128 imf
-                drawCamera 1 cam (Just imt)
 
 drawSeg s = do
     vertex $ (extreme1 s)

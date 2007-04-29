@@ -25,7 +25,7 @@ module Vision.Camera
 , focalFromHomogZ0
 , cameraFromHomogZ0
 , poseFromHomogZ0
-, estimateCameraFromPlane
+, cameraFromPlane
 , kgen
 , cameraOutline
 , toCameraSystem
@@ -47,11 +47,6 @@ type Vector = G.Vector Double
 
 matrix = fromLists :: [[Double]] -> Matrix
 vector = fromList ::  [Double] -> Vector
-
-svd = svdR'
-
-(!:) = (@>)
-(!!:) = (@@>)
 
 cameraAtOrigin = ident 3 <|> vector [0,0,0]
 
@@ -92,8 +87,8 @@ syntheticCamera campar = flipx <> k <> r <> m where
             panAngle = p, tiltAngle = t, rollAngle = q,
             cameraCenter = (cx,cy,cz)} = campar
     m = matrix [[1,0,0, -cx],
-                    [0,1,0, -cy],
-                    [0,0,1, -cz]]
+                [0,1,0, -cy],
+                [0,0,1, -cz]]
     r = rotPTR (p,t,q)
     k = kgen f
 
@@ -102,8 +97,8 @@ flipx = diag (vector [-1,1,1])
 -- | Matrix of intrinsic parameters of a diag(f,f,1) camera
 kgen :: Double -> Matrix
 kgen f = matrix [[f,0,0],
-                     [0,f,0],
-                     [0,0,1]]
+                 [0,f,0],
+                 [0,0,1]]
 
 
 rotPTR (pan,tilt,roll) = matrix
@@ -150,15 +145,15 @@ poseFromFactorization (k,r,c) = cp where
                  tiltAngle = alpha,
                  rollAngle = -rho,
                  cameraCenter = (cx, cy, cz) }
-    f = (k!!:(0,0)+k!!:(1,1))/2 -- hmm
+    f = (k@@>(0,0)+k@@>(1,1))/2 -- hmm
     [cx,cy,cz] = toList c
     [r1,r2,r3] = toColumns r
     h = fromColumns [r1,r2,-r<>c]
     b = trans h <> linf
-    beta = atan2 (b!:0) (b!:1)
+    beta = atan2 (b@>0) (b@>1)
     n = k <> h <> mS <> b
     ni = inHomog n
-    rho = atan2 (ni!:0) (ni!:1)
+    rho = atan2 (ni@>0) (ni@>1)
     alpha = atan2 f (norm ni)
 
 -- | Extracts the camera parameters of a diag(f,f,1) camera
@@ -203,7 +198,7 @@ cameraFromHomogZ0 mbf c = res where
     cen1 = - (trans rot1 <> t)
     m1 = kgen f <> (fromColumns [r1,r2,r3] <|> t)
     m2 = kgen f <> (fromColumns [-r1,-r2,r3] <|> -t)
-    m = if cen1!:2 > 0 then m1 else m2
+    m = if cen1@>2 > 0 then m1 else m2
 
 
 
@@ -267,7 +262,7 @@ factorizeCamera m = (normat3 k, r <> signum (det r),c) where
     m' = takeColumns 3 m
     (k',r') = rq m'
     s = diag(signum (takeDiag k'))
-    (_,_,v) = svd m
+    (_,_,v) = svdR m
     (v',_) = qr v
     k = k'<>s
     r = s<>r'
@@ -310,16 +305,17 @@ estimateCamera = withNormalization inv estimateCameraRaw
 ----------------------------------------------------------
 
 -- | Estimation of a camera matrix from image - world correspondences, for world points in the plane z=0. We start from the closed-form solution given by 'estimateHomography' and 'cameraFromHomogZ0', and then optimize the camera parameters by minimization (using the Nelder-Mead simplex algorithm) of reprojection error.
-estimateCameraFromPlane
-                :: Maybe Double  -- ^ focal dist, if known
+cameraFromPlane :: Double        -- ^ desired precision in the solution (e.g., 1e-3)
+                -> Int           -- ^ maximum number of iterations (e.g., 300)
+                -> Maybe Double  -- ^ focal dist, if known
                 -> [[Double]]    -- ^ image points as [x,y]
                 -> [[Double]]    -- ^ world points in plane z=0, as [x,y]
-                -> Maybe Matrix  -- ^ 3x4 camera matrix
-estimateCameraFromPlane mbf image world = c where
+                -> Maybe (Matrix, Matrix)  -- ^ 3x4 camera matrix and optimization path
+cameraFromPlane prec nmax mbf image world = c where
     h = estimateHomography image world
     c = case cameraFromHomogZ0 mbf h of
         Nothing -> Nothing
-        Just p  -> Just $ fst $ refine p mimage mworld
+        Just p  -> Just $ refine prec nmax p mimage mworld
                      where refine = case mbf of Nothing -> refineCamera1
                                                 _       -> refineCamera2
     mimage = fromLists image
@@ -327,21 +323,21 @@ estimateCameraFromPlane mbf image world = c where
     pl0 [x,y] = [x,y,0]
 
 
-refineCamera1 cam mview mworld = (betterCam,path) where
+refineCamera1 prec nmax cam mview mworld = (betterCam,path) where
     initsol = par2list $ poseFromCamera cam
     (betterpar, path) = minimize (cost mview mworld) initsol
     betterCam = syntheticCamera $ list2par betterpar
     cost view world lpar = pnorm 2 $ flatten (view - htm c world)
         where c = syntheticCamera $ list2par lpar
-    minimize f xi = minimizeNMSimplex f xi [0.01,5*degree,5*degree,5*degree,0.1,0.1,0.1] 1e-3 500
+    minimize f xi = minimizeNMSimplex f xi [0.01,5*degree,5*degree,5*degree,0.1,0.1,0.1] prec nmax
 
-refineCamera2 cam mview mworld = (betterCam,path) where
+refineCamera2 prec nmax cam mview mworld = (betterCam,path) where
     f:initsol = par2list $ poseFromCamera cam
     (betterpar, path) = minimize (cost mview mworld) initsol
     betterCam = syntheticCamera $ list2par (f:betterpar)
-    cost view world lpar = pnorm 2 $ flatten (view - htm c world)
+    cost view world lpar = {-# SCC "cost2" #-} pnorm 2 $ flatten (view - htm c world)
         where c = syntheticCamera $ list2par (f:lpar)
-    minimize f xi = minimizeNMSimplex f xi [5*degree,5*degree,5*degree,0.1,0.1,0.1] 1e-3 500
+    minimize f xi = minimizeNMSimplex f xi [5*degree,5*degree,5*degree,0.1,0.1,0.1] prec nmax
 
 list2par [f,p,t,r,cx,cy,cz] = CamPar f p t r (cx,cy,cz)
 par2list (CamPar f p t r (cx,cy,cz)) = [f,p,t,r,cx,cy,cz]

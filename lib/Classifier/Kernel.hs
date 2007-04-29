@@ -41,7 +41,7 @@ kernelMSE :: Double  -- ^ Numeric tolerance for the pseudoinverse (1 = machine p
 kernelMSE tol kernel (g1,g2) = fun where
     fun z = expan z `dot` a
     expan z = vector $ map (kernel z) objs
-    a = pinvTolg tol (delta kernel objs objs) <> labels
+    a = pinvTol tol (delta kernel objs objs) <> labels
     objs = g1 ++ g2
     labels = join [constant 1 (length g1), constant (-1) (length g2)]
 

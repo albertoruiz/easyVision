@@ -94,11 +94,11 @@ worker cam op trackball mbf inWindow _ = do
 
         when (length a4s >0) $ do
             let pts = head a4s
-                camera = estimateCameraFromPlane mbf (map pl pts) a4
+                camera = cameraFromPlane 1E-3 500 mbf (map pl pts) a4
 
             case camera of
                 Nothing -> return ()
-                Just p -> do
+                Just (p,path) -> do
                     clear [DepthBuffer]
                     --dispR 5 (dropRows (rows path - 5) path)
 
@@ -176,6 +176,3 @@ hut = do
         v 1 1 1
         v 1 1 0
         v 1 0 0
-
-
-
