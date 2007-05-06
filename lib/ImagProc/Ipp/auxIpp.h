@@ -1,8 +1,10 @@
 #define SRC void*,int
 #define VSIZE double
 #define DST void*,int,VSIZE
+#define VPOINT double
 
 int ippiSet_32f_C1R(float,DST);
+int ippiSet_8u_C1R(unsigned char,DST);
 int ippiImageJaehne_32f_C1R(DST);
 int ippiFilterGauss_32f_C1R(SRC,DST,int);
 int ippiFilterLaplace_32f_C1R(SRC,DST,int);
@@ -28,6 +30,7 @@ int ippiThreshold_Val_8u_C1R(SRC,DST,unsigned char,unsigned char,int);
 int ippiSqrt_32f_C1R(SRC,DST);
 int ippiMinMax_32f_C1R(DST,float*,float*);
 int ippiMaxIndx_32f_C1R(DST,float*,int*,int*);
+int ippiMaxIndx_8u_C1R(DST,unsigned char*,int*,int*);
 int ippiMulC_32f_C1R(SRC,float,DST);
 int ippiRGBToGray_8u_C3C1R(SRC,DST);
 int ippiYUV420ToRGB_8u_P3C3R(void*,int*,DST);
@@ -86,3 +89,8 @@ int ippiMagnitudePack_32f_C1R(SRC,DST);
 
 int ippiDistanceTransform_3x3_8u32f_C1R(SRC, DST, float* pMetrics);
 int ippiDistanceTransform_5x5_8u32f_C1R(SRC, DST, float* pMetrics);
+
+int ippiFloodFillGetSize(VSIZE, int*);
+int ippiFloodFill_8Con_8u_C1IR(DST, VPOINT, unsigned char, void*, void*);
+int ippiFloodFillGetSize_Grad(VSIZE, int*);
+int ippiFloodFill_Grad8Con_8u_C1IR(DST, VPOINT, unsigned char, unsigned char, unsigned char, void*, void*);

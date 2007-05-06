@@ -2,7 +2,7 @@ A system for fast prototyping of pattern recognition and computer vision applica
 
 It requires GSLHaskell, HOpenGL, MPlayer, and IPP.
 
-Download: @darcs get --partial http:\/\/perception.inf.um.es\/~aruiz\/darcs\/easyVision@
+Download: @darcs get http:\/\/perception.inf.um.es\/~aruiz\/darcs\/easyVision@
 
-More info: <http://perception.inf.um.es/~aruiz/darcs/easyVision/easyVision.pdf>
+More info: <http://Alberrto.googlepages.com/easyvision>
 

@@ -11,8 +11,13 @@ import Data.IORef
 import System.Exit
 import System.Environment(getArgs)
 import qualified Data.Map as Map
+import Foreign.C.Types
+import Foreign
 
 import ImagProc.Ipp.Core
+import Debug.Trace
+
+debug x = trace (show x) x
 
 ------------------------------------------------------------
 
@@ -32,6 +37,7 @@ main = do
 
     o <- createParameters state [("umbral",realParam 0.5 0 1),
                                  ("umbral2",intParam 30 1 255),
+                                 ("count",intParam 10 0 100),
                                  ("h",percent 20),
                                  ("smooth",intParam 3 0 10),
                                  ("smooth2",intParam 0 0 10)]
@@ -46,22 +52,8 @@ main = do
     attachMenu LeftButton $ Menu $ map mode
         ["RGB","Gray","Red","Green","Blue","U","V"
         , "Median","Gaussian","Laplacian","HighPass","Histogram"
-        ,"Integral","Umbraliza","Distance", "Hessian"
+        ,"Integral","Threshold","FloodFill","Contours","Distance", "Hessian"
         ,"Corners", "Features", "Segments", "Canny", "DCT", "FFT", "Test 1", "Test 2"]
-{-
-    attachMenu LeftButton $ Menu 
-        [MenuEntry "Quit" (exitWith ExitSuccess)
-        ,MenuEntry "fullScreen" fullScreen
-        ,MenuEntry "normal" (do windowSize $= GL.Size (fromIntegral $ width sz) (fromIntegral $ height sz)
-                                windowPosition $= Position 100 100)
-
-        --,MenuEntry "pause'" (ctrl "pause")
-        , SubMenu "mode" $ Menu $ map mode
-            ["RGB","Gray","Float", "Median"
-            ,"Integral","Umbraliza","Hessian"
-            ,"Corners", "Features", "Canny"]
-        ]
--}
 
     fft <- genFFT 8 8 DivFwdByN AlgHintFast
 
@@ -80,6 +72,7 @@ worker cam param getRoi fft inWindow op = do
     let h1 = fromIntegral ph / 100
     smooth <- getParam param "smooth"
     smooth2 <- getParam param "smooth2" :: IO Int
+    count <- getParam param "count" :: IO Int
 
     inWindow "demo" $ case op of
 
@@ -104,13 +97,35 @@ worker cam param getRoi fft inWindow op = do
              drawImage v
         "Integral" ->
              cam >>= yuvToGray >>= integral >>= scale32f k >>= drawImage
-        "Umbraliza" ->
+        "Threshold" ->
              cam >>=
              yuvToGray >>=
              scale8u32f 0 1 >>=
              thresholdVal32f th 0 IppCmpLess >>=
              thresholdVal32f th 1 IppCmpGreater >>=
              drawImage
+        "FloodFill" -> do
+             im' <- cam >>= yuvToGray >>= smooth2 `times` median Mask3x3 >>= binarize8u th2 True >>= copy8u
+             let im = purifyWith (set8u 0) $ return $ modifyROI (shrink (5,5)) im'
+                 (Size h w) = size im
+                 start = (Pixel (h `div`2 ) (w `div`2))
+             (r,a) <- floodFill8uGrad im start 5 5 128
+             --(r,a) <- floodFill8uGrad im (snd $ maxIndx8u im) th2 th2 128
+             drawImage (modifyROI (const r) im)
+             setColor 1 0 0
+             pointSize $= 5
+             let Closed c = contour im start 128
+             pointCoordinates (size im)
+             renderPrimitive LineLoop $ mapM_ vertex c
+        "Contours" -> do
+             orig <- cam
+             im <-yuvToGray orig >>= smooth2 `times` median Mask3x3 
+             drawImage orig
+             pointCoordinates (size im)
+             setColor 1 0 0
+             lineWidth $= 2
+             mapM_ (\c -> renderPrimitive LineLoop $ mapM_ vertex c) (contours 20 count th2 True im)
+             mapM_ (\c -> renderPrimitive LineLoop $ mapM_ vertex c) (contours 20 count (255-th2) False im)
         "Distance" ->
              cam >>=
              yuvToGray >>=
@@ -145,7 +160,6 @@ worker cam param getRoi fft inWindow op = do
              pointSize $= 3
              renderPrimitive Points (mapM_ vertex hp)
              text2D 10 20 (show $ length hp)
-
 
         "Hessian" ->
              cam >>= yuvToGray >>= scale8u32f 0 1 >>=
@@ -260,3 +274,21 @@ autoscale im = do
     (mn,mx) <- minmax im
     r <- scale32f8u mn mx im
     return r
+
+contours n d th mode im = unsafePerformIO $ do
+    aux <- binarize8u th mode im >>= copy8u
+    auxCont 20 d aux
+
+auxCont n d aux = do
+    let (v,p) = maxIndx8u aux
+    if n==0 || (v<255)
+        then return []
+        else do
+            (r@(ROI r1 r2 c1 c2),_) <- floodFill8u aux p 128
+            let ROI lr1 lr2 lc1 lc2 = theROI aux
+            if min (r2-r1) (c2-c1) < d || r1 == lr1 || c1 == lc1 || r2 == lr2 || c2 == lc2
+                    then auxCont n d aux
+                    else do
+                    let Closed c = contour aux p 128
+                    rest <- auxCont (n-1) d aux
+                    return (c:rest)

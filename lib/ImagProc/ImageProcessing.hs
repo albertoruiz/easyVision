@@ -20,7 +20,7 @@ module ImagProc.ImageProcessing (
 , AlgHint(..)
 -- * Utilities
 , jaehne32f
-, set32f
+, set32f, set8u
 , copyROI32f
 , copyROI8u
 , times
@@ -52,6 +52,7 @@ module ImagProc.ImageProcessing (
 , thresholdVal8u
 , minmax
 , maxIndx
+, maxIndx8u
 , integral
 , histogram
 -- * Basic image processing
@@ -77,6 +78,8 @@ module ImagProc.ImageProcessing (
 , canny
 -- * Distance Transform
 , distanceTransform
+-- * Connected Components
+, floodFill8u, floodFill8uGrad
 )
 where
 
@@ -108,6 +111,14 @@ set32f :: Float      -- ^ desired value
        -> ImageFloat -- ^ destination image
        -> IO ()
 set32f v roi (F im) = ippiSet_32f_C1R v // dst im roi // checkIPP "set32f" [im]
+
+-- | Writes into a existing image a desired value in a specified roi.
+set8u :: CUChar      -- ^ desired value
+       -> ROI        -- ^ roi
+       -> ImageGray  -- ^ destination image
+       -> IO ()
+set8u v roi (G im) = ippiSet_8u_C1R v // dst im roi // checkIPP "set8u" [im]
+
 
 -- | Creates a 8u Gray image from a 8uC3 RGB image
 rgbToGray :: ImageRGB      -- ^ input image
@@ -217,7 +228,7 @@ integral (G im) = do
     return (F r {vroi = vroi im})
 
 
--- | Copies a given region of the input image into a destination image. I
+-- | Copies a given region of the input image into a destination image.
 copyROI32f :: ImageFloat -- ^ input image
            -> ROI        -- ^ region to copy
            -> ImageFloat -- ^ destination image
@@ -512,6 +523,21 @@ maxIndx (F im) = do
     free py
     return (v,Pixel y x)
 
+-- | Returns the maximum value and its position in the roi of an image8u. The position is relative to the image.
+maxIndx8u :: ImageGray -> (CUChar,Pixel)
+maxIndx8u (G im) = unsafePerformIO $ do
+    let roi@(ROI r1 r2 c1 c2) = vroi im
+    mx <- malloc
+    px <- malloc
+    py <- malloc
+    (ippiMaxIndx_8u_C1R // dst im roi) mx px py // checkIPP "maxIndx8u" [im]
+    v <- peek mx
+    x <- peek px
+    y <- peek py
+    free mx
+    free px
+    free py
+    return (v,Pixel (r1+y) (c1+x))
 
 
 
@@ -762,3 +788,43 @@ genDistanceTransform f metrics (G im) = do
     (f // src im (vroi im) // dst r (vroi r)) pmetrics // checkIPP "ippiDistanceTransform_?_8u32f_C1R" [im]
     free pmetrics
     return (F r)
+
+
+-- |
+floodFill8u :: ImageGray -> Pixel -> CUChar -> IO (ROI, Int)
+floodFill8u (G im) (Pixel r c) val = do
+    let roi@(ROI r1 r2 c1 c2) = vroi im
+    pregion <- mallocBytes 1000 -- (4+4+(4+4+4+4))
+    pbufsize <- malloc
+    ippiFloodFillGetSize (roiSize roi) pbufsize // checkIPP "ippiFloodFillGetSize" []
+    bufsize <- peek pbufsize
+    --print bufsize
+    buf <- mallocBytes bufsize
+    free pbufsize
+    (ippiFloodFill_8Con_8u_C1IR // dst im (vroi im)) (ippRect (c-c1) (r-r1)) val pregion buf // checkIPP "ippiFloodFill_8Con_8u_C1IR" [im]
+    free buf
+    --[area] <- peekArray 1 (castPtr pregion :: Ptr Int)
+    --[_,value::Float] <- peekArray 2 (castPtr pregion)
+    [_,_,area,_,x,y,w,h] <- peekArray 8 (castPtr pregion :: Ptr Int)
+    --peekArray 10 (castPtr pregion :: Ptr Int) >>= print
+    free pregion
+    return (ROI (r1+y) (r1+y+h-1) (c1+x) (c1+x+w-1), area)
+
+floodFill8uGrad :: ImageGray -> Pixel -> CUChar -> CUChar -> CUChar-> IO (ROI, Int)
+floodFill8uGrad (G im) (Pixel r c) dmin dmax val = do
+    let roi@(ROI r1 r2 c1 c2) = vroi im
+    pregion <- mallocBytes 1000 -- (4+4+(4+4+4+4))
+    pbufsize <- malloc
+    ippiFloodFillGetSize (roiSize roi) pbufsize // checkIPP "ippiFloodFillGetSize" []
+    bufsize <- peek pbufsize
+    --print bufsize
+    buf <- mallocBytes bufsize
+    free pbufsize
+    (ippiFloodFill_Grad8Con_8u_C1IR // dst im (vroi im)) (ippRect (c-c1) (r-r1)) val dmin dmax pregion buf // checkIPP "ippiFloodFill_Grad8Con_8u_C1IR" [im]
+    free buf
+    --[area] <- peekArray 1 (castPtr pregion :: Ptr Int)
+    --[_,value::Float] <- peekArray 2 (castPtr pregion)
+    [_,_,area,_,x,y,w,h] <- peekArray 8 (castPtr pregion :: Ptr Int)
+    --peekArray 10 (castPtr pregion :: Ptr Int) >>= print
+    free pregion
+    return (ROI (r1+y) (r1+y+h-1) (c1+x) (c1+x+w-1), area)

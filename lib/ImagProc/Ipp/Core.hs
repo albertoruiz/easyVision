@@ -36,13 +36,14 @@ module ImagProc.Ipp.Core
           , Pixel (..)
           , Point (..)
           , pixelsToPoints, pixelToPointTrans
-          , val32f, val32f'
+          , val32f, val32f', val8u
 ) where
 
 import Foreign hiding (shift)
 import Control.Monad(when)
 import ImagProc.Ipp.Wrappers
 import Foreign.C.String(peekCString)
+import Foreign.C.Types
 import qualified GSL
 import Vision
 
@@ -234,7 +235,7 @@ invalidROIs img = [r | Just r <- thefour] where
     Size h w = size img
 
 -- | Given an IO function which is essentially pure except for possibly undefined data outside the ROI, it creates a pure function with the same effect, which applies a given initialization to the region outside the roi. For example, @purifyWith ("set32f" 0) (iofun args)@ creates a pure fun equal to iofun with zero pixels outside the ROI; to copy the data from an image you can use @("copyROI32f" im)@, etc.
-purifyWith :: (ROI -> ImageFloat -> IO ()) -> (IO ImageFloat) -> ImageFloat
+purifyWith :: Image a => (ROI -> a -> IO ()) -> (IO a) -> a
 purifyWith roifun imgfun = unsafePerformIO $ do
     r <- imgfun
     mapM_ ((flip roifun) r) (invalidROIs r)
@@ -305,9 +306,9 @@ data Pixel = Pixel { row   :: !Int,    col :: !Int } deriving (Eq, Show)
 -- | Auxiliary homogeneous transformation from 'Pixel's to 'Point's
 pixelToPointTrans :: Size -> GSL.Matrix Double
 pixelToPointTrans Size {width = w', height = h'} = nor where
-    w = fromIntegral w' -1
-    h = fromIntegral h' -1
-    r = (h+1)/(w+1)
+    w = fromIntegral w'
+    h = fromIntegral h'
+    r = h/w
     nor = GSL.fromLists
         [[-2/w,      0, 1]
         ,[   0, -2*r/h, r]
@@ -337,5 +338,12 @@ val32f' (F Img {fptr = fp, ptr = p, datasize = d, step = s, vroi = ROI r1 r2 c1 
     when (r<r1 || c<c1 || r > r2 || c > c2) $ error "val32f out of range"
     let jump = s `quot` d
     v <- peek (advancePtr (castPtr p) (r*jump+c))
+    touchForeignPtr fp
+    return v
+
+-- | Returns the pixel value of an image at a given pixel. NO range checking.
+val8u :: ImageGray -> Pixel -> CUChar
+val8u (G Img {fptr = fp, ptr = p, datasize = d, step = s}) (Pixel r c) = unsafePerformIO $ do
+    v <- peek (advancePtr (castPtr p) (r*s+c))
     touchForeignPtr fp
     return v

@@ -90,15 +90,16 @@ drawImage' m = do
     --pixelZoom $= (1,-1)
     myDrawPixels m
     touchForeignPtr (fptr m)
-    let r = shrink (-1,-1) $ vroi m
+    let r = vroi m
     pixelCoordinates (isize m)
+    draw2Dwith (ortho2D 0.001 (fromIntegral w -0.001) (fromIntegral h-0.001) 0.001)
     setColor 1 1 1
     lineWidth $= 1
     renderPrimitive LineLoop $ mapM_ vertex $
         Pixel (r1 r) (c1 r) :
-        Pixel (r2 r) (c1 r) :
-        Pixel (r2 r) (c2 r) :
-        Pixel (r1 r) (c2 r) :[]
+        Pixel (1+r2 r) (c1 r) :
+        Pixel (1+r2 r) (1+c2 r) :
+        Pixel (r1 r) (1+c2 r) :[]
 
 drawImageFloat (F im) = drawImage' im
 drawImageGray (G im) = drawImage' im
@@ -146,7 +147,8 @@ pointCoordinates (Size h w) = draw2Dwith (ortho2D 1 (-1) (-r) r)
 
 -- | Sets ortho2D to draw 2D unnormalized pixels as x (column, 0 left) and y (row, 0 top).
 pixelCoordinates :: Size -> IO()
-pixelCoordinates (Size h w) = draw2Dwith (ortho2D 0 (fromIntegral w-1) (fromIntegral h-1) 0)
+--pixelCoordinates (Size h w) = draw2Dwith (ortho2D 0 (fromIntegral w-1) (fromIntegral h-1) 0)
+pixelCoordinates (Size h w) = draw2Dwith (ortho2D 0 (fromIntegral w) (fromIntegral h) 0)
 
 draw2Dwith ortho = do
     matrixMode $= Projection
