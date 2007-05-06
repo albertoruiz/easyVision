@@ -36,8 +36,8 @@ main = do
     state <- prepare "RGB"
 
     o <- createParameters state [("umbral",realParam 0.5 0 1),
-                                 ("umbral2",intParam 30 1 255),
-                                 ("count",intParam 10 0 100),
+                                 ("umbral2",intParam 128 1 255),
+                                 ("size",intParam 20 0 100),
                                  ("h",percent 20),
                                  ("smooth",intParam 3 0 10),
                                  ("smooth2",intParam 0 0 10)]
@@ -52,7 +52,7 @@ main = do
     attachMenu LeftButton $ Menu $ map mode
         ["RGB","Gray","Red","Green","Blue","U","V"
         , "Median","Gaussian","Laplacian","HighPass","Histogram"
-        ,"Integral","Threshold","FloodFill","Contours","Distance", "Hessian"
+        ,"Integral","Threshold","FloodFill","Contours","Contours B","Distance", "Hessian"
         ,"Corners", "Features", "Segments", "Canny", "DCT", "FFT", "Test 1", "Test 2"]
 
     fft <- genFFT 8 8 DivFwdByN AlgHintFast
@@ -72,7 +72,7 @@ worker cam param getRoi fft inWindow op = do
     let h1 = fromIntegral ph / 100
     smooth <- getParam param "smooth"
     smooth2 <- getParam param "smooth2" :: IO Int
-    count <- getParam param "count" :: IO Int
+    wsize <- getParam param "size" :: IO Int
 
     inWindow "demo" $ case op of
 
@@ -114,18 +114,26 @@ worker cam param getRoi fft inWindow op = do
              drawImage (modifyROI (const r) im)
              setColor 1 0 0
              pointSize $= 5
-             let Closed c = contour im start 128
-             pointCoordinates (size im)
+             let c = rawContour im start 128
+             pixelCoordinates (size im)
              renderPrimitive LineLoop $ mapM_ vertex c
         "Contours" -> do
              orig <- cam
              im <-yuvToGray orig >>= smooth2 `times` median Mask3x3 
              drawImage orig
-             pointCoordinates (size im)
+             pixelCoordinates (size im)
              setColor 1 0 0
              lineWidth $= 2
-             mapM_ (\c -> renderPrimitive LineLoop $ mapM_ vertex c) (contours 20 count th2 True im)
-             mapM_ (\c -> renderPrimitive LineLoop $ mapM_ vertex c) (contours 20 count (255-th2) False im)
+             mapM_ (\c -> renderPrimitive LineLoop $ mapM_ vertex c) (contours 100 wsize th2 True im)
+             mapM_ (\c -> renderPrimitive LineLoop $ mapM_ vertex c) (contours 100 wsize th2 False im)
+        "Contours B" -> do
+             orig <- cam >>= yuvToGray
+             im <-(smooth2 `times` median Mask3x3) orig
+             drawImage orig
+             pixelCoordinates (size im)
+             setColor 1 0 0
+             lineWidth $= 2
+             mapM_ (\c -> renderPrimitive LineLoop $ mapM_ vertex c) (contours 100 wsize th2 False im)
         "Distance" ->
              cam >>=
              yuvToGray >>=
@@ -289,6 +297,6 @@ auxCont n d aux = do
             if min (r2-r1) (c2-c1) < d || r1 == lr1 || c1 == lc1 || r2 == lr2 || c2 == lc2
                     then auxCont n d aux
                     else do
-                    let Closed c = contour aux p 128
+                    let c = rawContour aux p 128
                     rest <- auxCont (n-1) d aux
                     return (c:rest)
