@@ -50,6 +50,7 @@ module ImagProc.ImageProcessing (
 , compare32f
 , thresholdVal32f
 , thresholdVal8u
+, binarize8u
 , minmax
 , maxIndx
 , maxIndx8u
@@ -88,6 +89,7 @@ import Foreign hiding (shift)
 import Foreign.C.Types(CUChar)
 import Vision --hiding ((|-|),(|+|))
 import GSL hiding (size)
+import Numeric
 
 ---------------------------------------
 
@@ -352,6 +354,18 @@ thresholdVal8u :: CUChar          -- ^ threshold
                 -> IO ImageGray  -- ^ result
 thresholdVal8u t v cmp = simplefun1G f id "thresholdVal8u" where
     f ps ss pd sd r = ippiThreshold_Val_8u_C1R ps ss pd sd r t v (codeCmp cmp)
+
+-- | Binarizes an image.
+binarize8u :: CUChar -- ^ threshold
+           -> Bool   -- ^ True = higher values -> 255, False = higher values -> 0
+           -> ImageGray -- ^ image source
+           -> IO ImageGray
+binarize8u th True im =
+    thresholdVal8u th 0 IppCmpLess im >>=
+    thresholdVal8u (th-1) 255 IppCmpGreater
+
+binarize8u th False im =
+    binarize8u th True im >>= not8u
 
 
 -- | Changes each pixel by the maximum value in its neighbourhood of given diameter.
@@ -790,30 +804,31 @@ genDistanceTransform f metrics (G im) = do
     return (F r)
 
 
--- |
-floodFill8u :: ImageGray -> Pixel -> CUChar -> IO (ROI, Int)
+-- | Fills (as a side effect) a connected component in the image, starting at the seed pixel. It returns
+-- the enclosing ROI, area and value. This is the 8con version.
+floodFill8u :: ImageGray -> Pixel -> CUChar -> IO (ROI, Int, CUChar)
 floodFill8u (G im) (Pixel r c) val = do
     let roi@(ROI r1 r2 c1 c2) = vroi im
-    pregion <- mallocBytes 1000 -- (4+4+(4+4+4+4))
+    pregion <- mallocBytes 32 -- (8+8+(4+4+4+4)) fixing a wrong struct in the IPP headers
     pbufsize <- malloc
     ippiFloodFillGetSize (roiSize roi) pbufsize // checkIPP "ippiFloodFillGetSize" []
     bufsize <- peek pbufsize
-    --print bufsize
     buf <- mallocBytes bufsize
     free pbufsize
     (ippiFloodFill_8Con_8u_C1IR // dst im (vroi im)) (ippRect (c-c1) (r-r1)) val pregion buf // checkIPP "ippiFloodFill_8Con_8u_C1IR" [im]
     free buf
-    --[area] <- peekArray 1 (castPtr pregion :: Ptr Int)
-    --[_,value::Float] <- peekArray 2 (castPtr pregion)
-    [_,_,area,_,x,y,w,h] <- peekArray 8 (castPtr pregion :: Ptr Int)
-    --peekArray 10 (castPtr pregion :: Ptr Int) >>= print
+    [area,value] <- peekArray 2 (castPtr pregion :: Ptr Double)
+    [_,_,_,_,x,y,w,h] <- peekArray 8 (castPtr pregion :: Ptr Int)
     free pregion
-    return (ROI (r1+y) (r1+y+h-1) (c1+x) (c1+x+w-1), area)
+    return (ROI (r1+y) (r1+y+h-1) (c1+x) (c1+x+w-1), round area, round value)
 
-floodFill8uGrad :: ImageGray -> Pixel -> CUChar -> CUChar -> CUChar-> IO (ROI, Int)
+-- | Fills (as a side effect) a connected component in the image, starting at the seed pixel.
+-- This version admits a lower and higher difference in the pixel values.
+-- It returns the enclosing ROI, area and value. This is the 8con version.
+floodFill8uGrad :: ImageGray -> Pixel -> CUChar -> CUChar -> CUChar-> IO (ROI, Int, CUChar)
 floodFill8uGrad (G im) (Pixel r c) dmin dmax val = do
     let roi@(ROI r1 r2 c1 c2) = vroi im
-    pregion <- mallocBytes 1000 -- (4+4+(4+4+4+4))
+    pregion <- mallocBytes 32 -- (8+8+(4+4+4+4)) fixing a wrong struct in the IPP headers
     pbufsize <- malloc
     ippiFloodFillGetSize (roiSize roi) pbufsize // checkIPP "ippiFloodFillGetSize" []
     bufsize <- peek pbufsize
@@ -822,9 +837,7 @@ floodFill8uGrad (G im) (Pixel r c) dmin dmax val = do
     free pbufsize
     (ippiFloodFill_Grad8Con_8u_C1IR // dst im (vroi im)) (ippRect (c-c1) (r-r1)) val dmin dmax pregion buf // checkIPP "ippiFloodFill_Grad8Con_8u_C1IR" [im]
     free buf
-    --[area] <- peekArray 1 (castPtr pregion :: Ptr Int)
-    --[_,value::Float] <- peekArray 2 (castPtr pregion)
-    [_,_,area,_,x,y,w,h] <- peekArray 8 (castPtr pregion :: Ptr Int)
-    --peekArray 10 (castPtr pregion :: Ptr Int) >>= print
+    [area,value] <- peekArray 2 (castPtr pregion :: Ptr Double)
+    [_,_,_,_,x,y,w,h] <- peekArray 8 (castPtr pregion :: Ptr Int)
     free pregion
-    return (ROI (r1+y) (r1+y+h-1) (c1+x) (c1+x+w-1), area)
+    return (ROI (r1+y) (r1+y+h-1) (c1+x) (c1+x+w-1), round area, round value)

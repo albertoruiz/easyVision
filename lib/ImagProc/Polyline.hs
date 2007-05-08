@@ -19,13 +19,16 @@ module ImagProc.Polyline (
     perimeter,
     orientation,
 -- * Extraction
-    rawContour
+    rawContour,
+    contours
 )
 where
 
 import ImagProc.Images
+import ImagProc.ImageProcessing(copy8u,maxIndx8u,floodFill8u, binarize8u)
 import ImagProc.Ipp.Core
 import Foreign.C.Types(CUChar)
+import Foreign
 import Debug.Trace
 
 debug x = trace (show x) x
@@ -101,3 +104,28 @@ rawContour im start v = clean $ iterate (nextPos im v) (start, ToRight)
     where clean ((a,_):rest) = a : clean' a rest
           clean' p ((v,_):rest) | p == v    = []
                                 | otherwise = v: clean' p rest
+
+-- | extracts a list of contours in the image
+contours :: Int       -- ^ maximum number of contours
+         -> Int       -- ^ minimum area (in pixels) of the admissible contours
+         -> CUChar    -- ^ binarization threshold
+         -> Bool      -- ^ binarization mode (True/False ->detect white/black regions)
+         -> ImageGray -- ^ image source
+         -> [([Pixel],Int,ROI)]  -- ^ list of contours, with area and ROI
+contours n d th mode im = unsafePerformIO $ do
+    aux <- binarize8u th mode im >>= copy8u
+    auxCont n d aux
+
+auxCont n d aux = do
+    let (v,p) = maxIndx8u aux
+    if n==0 || (v<255)
+        then return []
+        else do
+            (r@(ROI r1 r2 c1 c2),a,_) <- floodFill8u aux p 128
+            let ROI lr1 lr2 lc1 lc2 = theROI aux
+            if a < d || r1 == lr1 || c1 == lc1 || r2 == lr2 || c2 == lc2
+                    then auxCont n d aux
+                    else do
+                    let c = rawContour aux p 128
+                    rest <- auxCont (n-1) d aux
+                    return ((c,a,r):rest)

@@ -38,6 +38,7 @@ main = do
     o <- createParameters state [("umbral",realParam 0.5 0 1),
                                  ("umbral2",intParam 128 1 255),
                                  ("size",intParam 20 0 100),
+                                 ("area",percent 5),
                                  ("h",percent 20),
                                  ("smooth",intParam 3 0 10),
                                  ("smooth2",intParam 0 0 10)]
@@ -72,7 +73,7 @@ worker cam param getRoi fft inWindow op = do
     let h1 = fromIntegral ph / 100
     smooth <- getParam param "smooth"
     smooth2 <- getParam param "smooth2" :: IO Int
-    wsize <- getParam param "size" :: IO Int
+    area <- getParam param "area" :: IO Int
 
     inWindow "demo" $ case op of
 
@@ -109,14 +110,13 @@ worker cam param getRoi fft inWindow op = do
              let im = purifyWith (set8u 0) $ return $ modifyROI (shrink (5,5)) im'
                  (Size h w) = size im
                  start = (Pixel (h `div`2 ) (w `div`2))
-             (r,a) <- floodFill8uGrad im start 5 5 128
+             --(r,a,v) <- floodFill8uGrad im start 5 5 128
+             (r,a,v) <- floodFill8u im start 128
              --(r,a) <- floodFill8uGrad im (snd $ maxIndx8u im) th2 th2 128
              drawImage (modifyROI (const r) im)
+             pointCoordinates (size im)
              setColor 1 0 0
-             pointSize $= 5
-             let c = rawContour im start 128
-             pixelCoordinates (size im)
-             renderPrimitive LineLoop $ mapM_ vertex c
+             text2D 0.9 0 (show a)
         "Contours" -> do
              orig <- cam
              im <-yuvToGray orig >>= smooth2 `times` median Mask3x3 
@@ -124,8 +124,10 @@ worker cam param getRoi fft inWindow op = do
              pixelCoordinates (size im)
              setColor 1 0 0
              lineWidth $= 2
-             mapM_ (\c -> renderPrimitive LineLoop $ mapM_ vertex c) (contours 100 wsize th2 True im)
-             mapM_ (\c -> renderPrimitive LineLoop $ mapM_ vertex c) (contours 100 wsize th2 False im)
+             let (Size h w) = size im
+                 pixarea = h*w*area`div`1000
+             mapM_ (\c -> renderPrimitive LineLoop $ mapM_ vertex c) (map fst3 $ contours 100 pixarea th2 True im)
+             mapM_ (\c -> renderPrimitive LineLoop $ mapM_ vertex c) (map fst3 $ contours 100 pixarea th2 False im)
         "Contours B" -> do
              orig <- cam >>= yuvToGray
              im <-(smooth2 `times` median Mask3x3) orig
@@ -133,7 +135,9 @@ worker cam param getRoi fft inWindow op = do
              pixelCoordinates (size im)
              setColor 1 0 0
              lineWidth $= 2
-             mapM_ (\c -> renderPrimitive LineLoop $ mapM_ vertex c) (contours 100 wsize th2 False im)
+             let (Size h w) = size im
+                 pixarea = h*w*area`div`1000
+             mapM_ (\c -> renderPrimitive LineLoop $ mapM_ vertex c) (map fst3 $ contours 100 pixarea th2 False im)
         "Distance" ->
              cam >>=
              yuvToGray >>=
@@ -271,32 +275,10 @@ drawSeg s = do
     vertex $ (extreme1 s)
     vertex $ (extreme2 s)
 
-binarize8u th True im =
-    thresholdVal8u th 0 IppCmpLess im >>=
-    thresholdVal8u (th-1) 255 IppCmpGreater
-
-binarize8u th False im =
-    binarize8u th True im >>= not8u
 
 autoscale im = do
     (mn,mx) <- minmax im
     r <- scale32f8u mn mx im
     return r
 
-contours n d th mode im = unsafePerformIO $ do
-    aux <- binarize8u th mode im >>= copy8u
-    auxCont 20 d aux
-
-auxCont n d aux = do
-    let (v,p) = maxIndx8u aux
-    if n==0 || (v<255)
-        then return []
-        else do
-            (r@(ROI r1 r2 c1 c2),_) <- floodFill8u aux p 128
-            let ROI lr1 lr2 lc1 lc2 = theROI aux
-            if min (r2-r1) (c2-c1) < d || r1 == lr1 || c1 == lc1 || r2 == lr2 || c2 == lc2
-                    then auxCont n d aux
-                    else do
-                    let c = rawContour aux p 128
-                    rest <- auxCont (n-1) d aux
-                    return (c:rest)
+fst3 (a,_,_) = a
