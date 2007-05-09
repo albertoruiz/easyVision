@@ -116,7 +116,7 @@ worker cam param getRoi fft inWindow op = do
              drawImage (modifyROI (const r) im)
              pointCoordinates (size im)
              setColor 1 0 0
-             text2D 0.9 0 (show a)
+             text2D 0.9 0 (show (a,v))
         "Contours" -> do
              orig <- cam
              im <-yuvToGray orig >>= smooth2 `times` median Mask3x3 
