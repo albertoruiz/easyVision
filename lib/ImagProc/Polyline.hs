@@ -18,6 +18,8 @@ module ImagProc.Polyline (
     Polyline(..),
     perimeter,
     orientation,
+-- * Reduction
+    douglasPeucker,douglasPeuckerClosed,
 -- * Extraction
     rawContour,
     contours
@@ -30,6 +32,7 @@ import ImagProc.Ipp.Core
 import Foreign.C.Types(CUChar)
 import Foreign
 import Debug.Trace
+import Data.List(maximumBy)
 
 debug x = trace (show x) x
 
@@ -58,7 +61,7 @@ orientation' (Point x1 y1:r@(Point x2 y2:_)) = x1*y2-x2*y1 + orientation' r
 
 --------------------------------------------------------------
 
-data Dir = ToRight | ToLeft | ToDown | ToUp
+data Dir = ToRight | ToLeft | ToDown | ToUp deriving Eq
 nextPos :: ImageGray -> CUChar -> (Pixel,Dir) -> (Pixel,Dir)
 
 nextPos im v (Pixel r c, ToRight) = case (a,b) of
@@ -102,8 +105,12 @@ rawContour :: ImageGray -- ^ source image
            -> [Pixel]   -- ^ contour of the region
 rawContour im start v = clean $ iterate (nextPos im v) (start, ToRight)
     where clean ((a,_):rest) = a : clean' a rest
-          clean' p ((v,_):rest) | p == v    = []
-                                | otherwise = v: clean' p rest
+          clean' p ((v1,s1):rest@((v2,s2):_))
+            | p  == v1  = []
+            | s1 == s2  = clean' p rest
+            | otherwise = v1: clean' p rest
+
+
 
 -- | extracts a list of contours in the image
 contours :: Int       -- ^ maximum number of contours
@@ -129,3 +136,55 @@ auxCont n d aux = do
                     let c = rawContour aux p 128
                     rest <- auxCont (n-1) d aux
                     return ((c,a,r):rest)
+
+
+----------------------------------------------------------------------
+
+-- | Removes nodes in closed polyline such that the orthogonal distance 
+--   from the remaining line is less than a given epsilon
+douglasPeuckerClosed :: Double -> [Pixel] -> [Pixel]
+douglasPeuckerClosed eps (a:b:ls) = b : case criticalPoint (eps^2) b a ls of
+    Nothing -> [b]
+    Just c  -> left ++ right where
+        (l,_:r) = break (==c) ls
+        left = douglasPeucker' (eps^2) b c l
+        right = douglasPeucker' (eps^2) c a r
+
+-- | Removes nodes in an open polyline such that the orthogonal distance 
+--   from the remaining line is less than a given epsilon
+douglasPeucker :: Double -> [Pixel] -> [Pixel]
+douglasPeucker eps list = a: douglasPeucker' (eps^2) a b list
+    where a = head list
+          b = last list
+
+douglasPeucker' eps2 a b ls = case criticalPoint eps2 a b ls of
+    Nothing -> [b]
+    Just c  -> left ++ right where
+        (l,_:r) = break (==c) ls
+        left = douglasPeucker' eps2 a c l
+        right = douglasPeucker' eps2 c b r
+
+perpDistAux :: Int -> Int -> Double -> Int -> Int -> Int -> Int -> Double
+perpDistAux lx ly l2 x1 y1 x3 y3 = d2 where
+    d2 = p2 - a'*a'/l2
+    p2   = fromIntegral $ px*px + py*py
+    px   = x3-x1
+    py   = y3-y1
+    a'   = fromIntegral $ lx*px+ly*py
+
+perpDist (Pixel x1 y1) (Pixel x2 y2) = (f,l2) where
+    lx = x2-x1
+    ly = y2-y1
+    l2 = fromIntegral $ lx*lx+ly*ly
+    f (Pixel x3 y3) = perpDistAux lx ly l2 x1 y1 x3 y3
+
+on f g = \x y -> f (g x) (g y)
+
+criticalPoint eps p1 p2 [] = Nothing
+
+criticalPoint eps2 p1 p2 p3s = r where
+    (f,l2) = perpDist p1 p2
+    p3 = maximumBy (compare `on` f) p3s
+    r = if f p3 > eps2
+        then Just p3
+        else Nothing

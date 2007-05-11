@@ -14,6 +14,7 @@ import qualified Data.Map as Map
 import Foreign.C.Types
 import Foreign
 
+
 import ImagProc.Ipp.Core
 import Debug.Trace
 
@@ -40,6 +41,7 @@ main = do
                                  ("size",intParam 20 0 100),
                                  ("area",percent 5),
                                  ("h",percent 20),
+                                 ("fracpix",realParam (1.5) 0 10),
                                  ("smooth",intParam 3 0 10),
                                  ("smooth2",intParam 0 0 10)]
 
@@ -53,7 +55,7 @@ main = do
     attachMenu LeftButton $ Menu $ map mode
         ["RGB","Gray","Red","Green","Blue","U","V"
         , "Median","Gaussian","Laplacian","HighPass","Histogram"
-        ,"Integral","Threshold","FloodFill","Contours","Contours B","Distance", "Hessian"
+        ,"Integral","Threshold","FloodFill","Contours","Contours W","Distance", "Hessian"
         ,"Corners", "Features", "Segments", "Canny", "DCT", "FFT", "Test 1", "Test 2"]
 
     fft <- genFFT 8 8 DivFwdByN AlgHintFast
@@ -74,6 +76,7 @@ worker cam param getRoi fft inWindow op = do
     smooth <- getParam param "smooth"
     smooth2 <- getParam param "smooth2" :: IO Int
     area <- getParam param "area" :: IO Int
+    fracpix <- getParam param "fracpix"
 
     inWindow "demo" $ case op of
 
@@ -120,24 +123,27 @@ worker cam param getRoi fft inWindow op = do
         "Contours" -> do
              orig <- cam
              im <-yuvToGray orig >>= smooth2 `times` median Mask3x3 
-             drawImage orig
+             --drawImage orig
+             yuvToGray orig >>= drawImage
              pixelCoordinates (size im)
              setColor 1 0 0
-             lineWidth $= 2
+             lineWidth $= 1
              let (Size h w) = size im
                  pixarea = h*w*area`div`1000
-             mapM_ (\c -> renderPrimitive LineLoop $ mapM_ vertex c) (map fst3 $ contours 100 pixarea th2 True im)
-             mapM_ (\c -> renderPrimitive LineLoop $ mapM_ vertex c) (map fst3 $ contours 100 pixarea th2 False im)
-        "Contours B" -> do
+                 redu = douglasPeuckerClosed fracpix
+                 cs1 = map (redu.fst3) $ contours 100 pixarea th2 True im
+                 cs2 = map (redu.fst3) $ contours 100 pixarea th2 False im
+             mapM_ (\c -> renderPrimitive LineLoop $ mapM_ vertex c) (cs1++cs2)
+        "Contours W" -> do
              orig <- cam >>= yuvToGray
              im <-(smooth2 `times` median Mask3x3) orig
              drawImage orig
              pixelCoordinates (size im)
-             setColor 1 0 0
-             lineWidth $= 2
+             setColor 0 0.5 0
              let (Size h w) = size im
                  pixarea = h*w*area`div`1000
-             mapM_ (\c -> renderPrimitive LineLoop $ mapM_ vertex c) (map fst3 $ contours 100 pixarea th2 False im)
+                 cs = map(douglasPeuckerClosed fracpix.fst3) $ contours 100 pixarea th2 True im
+             mapM_ (\c -> renderPrimitive Polygon $ mapM_ vertex c) cs
         "Distance" ->
              cam >>=
              yuvToGray >>=
@@ -282,3 +288,5 @@ autoscale im = do
     return r
 
 fst3 (a,_,_) = a
+
+
