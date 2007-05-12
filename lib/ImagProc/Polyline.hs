@@ -18,11 +18,15 @@ module ImagProc.Polyline (
     Polyline(..),
     perimeter,
     orientation,
+    whitenContour,
 -- * Reduction
-    douglasPeucker,douglasPeuckerClosed,
+    douglasPeucker, douglasPeuckerClosed,
 -- * Extraction
     rawContour,
-    contours
+    contours,
+-- * Auxiliary tools
+    momentsContour,
+    eig2x2Dir
 )
 where
 
@@ -33,13 +37,13 @@ import Foreign.C.Types(CUChar)
 import Foreign
 import Debug.Trace
 import Data.List(maximumBy)
+import GSL hiding (size)
+import Vision.Geometry
 
 debug x = trace (show x) x
 
 data Polyline = Closed [Point]
               | Open   [Point]
-
-distPoints (Point a b) (Point x y) = (a-x)^2+(b-y)^2
 
 -- | (for an open polyline is the length)
 perimeter :: Polyline -> Double
@@ -188,3 +192,48 @@ criticalPoint eps2 p1 p2 p3s = r where
     r = if f p3 > eps2
         then Just p3
         else Nothing
+
+---------------------------------------------------------------------------
+
+asSegmentsClosed ps = zipWith Segment ps' (tail ps') where ps' = ps++[head ps]
+
+auxContour (s,sx,sy,sx2,sy2,sxy) seg@(Segment (Point x1 y1) (Point x2 y2))
+    = (s+l,
+       sx+l*(x1+x2)/2,
+       sy+l*(y1+y2)/2,
+       sx2+l*(x1*x1 + x2*x2 + x1*x2)/3,
+       sy2+l*(y1*y1 + y2*y2 + y1*y2)/3,
+       sxy+l*(2*x1*y1 + x2*y1 + x1*y2 + 2*x2*y2)/6)
+  where l = segmentLength seg
+
+moments2Gen method l = (mx,my,cxx,cyy,cxy)
+    where (s,sx,sy,sx2,sy2,sxy) = (foldl method (0,0,0,0,0,0). asSegmentsClosed) l
+          mx = sx/s
+          my = sy/s
+          cxx = sx2/s - mx*mx
+          cyy = sy2/s - my*my
+          cxy = sxy/s - mx*my
+
+-- | Mean and covariance matrix of a continuous piecewise-linear contour.
+momentsContour :: [Point] -- ^ closed polyline
+                 -> (Double,Double,Double,Double,Double) -- ^ (mx,my,cxx,cyy,cxy)
+momentsContour = moments2Gen auxContour
+
+-- | Structure of a 2x2 covariance matrix
+eig2x2Dir :: (Double,Double,Double) -- ^ (cxx,cyy,cxy)
+          -> (Double,Double,Double) -- ^ (v1,v2,angle), the eigenvalues of cov (v1>v2), and angle of dominant eigenvector
+eig2x2Dir (cxx,cyy,cxy) = (l1,l2,a)
+    where ra = sqrt(cxx*cxx + 4*cxy*cxy -2*cxx*cyy + cyy*cyy)
+          l1 = sqrt(0.5*(cxx+cyy+ra))
+          l2 = sqrt(0.5*(cxx+cyy-ra))
+          a = atan2 (2*cxy) ((cxx-cyy+ra))
+
+-- | Equalizes the eigenvalues of the covariance matrix of a continuous piecewise-linear contour. It preserves the general scale, position and orientation.
+whitenContour :: Polyline -> Polyline
+whitenContour (Closed ps) = Closed wps where
+    (mx,my,cxx,cyy,cxy) = momentsContour ps
+    (l1,l2,a) = eig2x2Dir (cxx,cyy,cxy)
+    t = desp (mx,my) <> rot3 (-a) <> diag (fromList [sqrt (l2/l1),1,1]) <> rot3 (a) <> desp (-mx,-my)
+    p2l (Point x y) = [x,y]
+    l2p [x,y] = Point x y
+    wps = map l2p $ ht t (map p2l ps)

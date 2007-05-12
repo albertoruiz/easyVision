@@ -35,6 +35,8 @@ module ImagProc.Ipp.Core
           -- * Image coordinates
           , Pixel (..)
           , Point (..)
+          , Segment(..)
+          , segmentLength, distPoints
           , pixelsToPoints, pixelToPointTrans
           , val32f, val32f', val8u
 ) where
@@ -322,6 +324,24 @@ pixelsToPoints :: Size -> [Pixel]->[Point]
 pixelsToPoints sz = fix where
     nor = pixelToPointTrans sz
     fix = map listToPoint. ht nor . map pixelToList
+
+
+data Segment = Segment {
+    extreme1 :: !Point,
+    extreme2 :: !Point
+}
+
+-- | The length of a segment.
+segmentLength :: Segment -> Double
+segmentLength (Segment {extreme1 = e1, extreme2 = e2}) = distPoints e1 e2
+
+-- | Euclidean distance between two points
+distPoints :: Point -> Point -> Double
+distPoints (Point a b) (Point x y) = sqrt $ (a-x)^2+(b-y)^2
+
+
+
+
 
 
 -- | Returns the pixel value of an image at a given pixel. NO range checking.

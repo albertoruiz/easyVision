@@ -139,14 +139,18 @@ worker cam param getRoi fft inWindow op = do
              orig <- cam >>= yuvToGray
              im <-(smooth2 `times` median Mask3x3) orig
              drawImage orig
-             pixelCoordinates (size im)
-             setColor 1 0 0
-             lineWidth $= 3
+             pointCoordinates (size im)
              let (Size h w) = size im
                  pixarea = h*w*area`div`1000
-                 redu = douglasPeuckerClosed fracpix
-                 cs = map (pixelsToPoints (size orig).redu.fst3) $ contours 100 pixarea th2 False im
-             mapM_ (shcont im) cs
+                 proc = Closed .pixelsToPoints (size orig).douglasPeuckerClosed fracpix.fst3
+                 cs = map proc $ contours 100 pixarea th2 False im
+                 wcs = map whitenContour cs
+             lineWidth $= 1
+             setColor 1 0 0
+             mapM_ shcont cs
+             lineWidth $= 2
+             setColor 0 0.5 0
+             mapM_ shcont wcs
         "Distance" ->
              cam >>=
              yuvToGray >>=
@@ -294,41 +298,5 @@ fst3 (a,_,_) = a
 
 -------------------------------------------
 
-asSegmentsClosed ps = zipWith Segment ps' (tail ps') where ps' = ps++[head ps]
-
-moments3aux (s,sx,sy,sx2,sy2,sxy) seg@(Segment (Point x1 y1) (Point x2 y2))
-    = (s+l,
-       sx+l*(x1+x2)/2,
-       sy+l*(y1+y2)/2,
-       sx2+l*(x1*x1 + x2*x2 + x1*x2)/3,
-       sy2+l*(y1*y1 + y2*y2 + y1*y2)/3,
-       sxy+l*(2*x1*y1 + x2*y1 + x1*y2 + 2*x2*y2)/6)
-  where l = segmentLength seg
-
-moments3 l = (mx,my,cxx,cyy,cxy,l1,l2,a)
-    where (s,sx,sy,sx2,sy2,sxy) = (foldl moments3aux (0,0,0,0,0,0). asSegmentsClosed) l
-          mx = sx/s
-          my = sy/s
-          cxx = sx2/s - mx*mx
-          cyy = sy2/s - my*my
-          cxy = sxy/s - mx*my
-          ra = sqrt(cxx*cxx + 4*cxy*cxy -2*cxx*cyy + cyy*cyy)
-          l1 = sqrt(0.5*(cxx+cyy+ra))
-          l2 = sqrt(0.5*(cxx+cyy-ra))
-          a = atan2 (2*cxy) ((cxx-cyy+ra))
-
-shcont im c = do
-    pointCoordinates (size im)
-    lineWidth $= 1
-    setColor 1 0 0
+shcont (Closed c) = do
     renderPrimitive LineLoop $ mapM_ vertex c
-    let (mx,my,_,_,_,l1,l2,a) = moments3 c
-    pointSize $= 5
-    lineWidth $= 2
-    setColor 0 0.5 0
-    renderPrimitive Points $ vertex (Point mx my)
-    let t = desp (mx,my) <> rot3 (-a) <> diag (fromList [sqrt (l2/l1),1,1]) <> rot3 (a) <> desp (-mx,-my)
-        p2l (Point x y) = [x,y]
-        caff = ht t (map p2l c)
-    renderPrimitive LineLoop $ mapM_ vertex caff
-

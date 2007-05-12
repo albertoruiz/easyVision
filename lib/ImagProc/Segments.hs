@@ -15,9 +15,7 @@ Interface to the segment extractor by Pedro E. Lopez de Teruel.
 -----------------------------------------------------------------------------
 
 module ImagProc.Segments (
-    -- * Straight line segments
-    Segment(..),
-    segmentLength,
+   
     -- * Segment extraction
     segments,
     -- * Extraction of polylines from segments
@@ -58,11 +56,6 @@ foreign import ccall "Segments/segments.h mycvPostProcessSegments"
                                Ptr Int ->
                                Float -> Float ->
                                CUChar -> IO ()
-
-data Segment = Segment {
-    extreme1 :: !Point,
-    extreme2 :: !Point
-}
 
 -- | Extracts a list of segments from an image.
 segments :: Int   -- ^ user radius (eg., 4)
@@ -116,11 +109,6 @@ typedef struct {
 
 ------------------------------------------------------------------------------
 
--- | The length of a segment.
-segmentLength :: Segment -> Double
-segmentLength (Segment {extreme1 = e1, extreme2 = e2}) = distPoints e1 e2
-
-distPoints (Point a b) (Point x y) = sqrt $ (a-x)^2+(b-y)^2
 
 distances segs = do
     let n = length segs
