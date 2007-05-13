@@ -206,6 +206,14 @@ auxContour (s,sx,sy,sx2,sy2,sxy) seg@(Segment (Point x1 y1) (Point x2 y2))
        sxy+l*(2*x1*y1 + x2*y1 + x1*y2 + 2*x2*y2)/6)
   where l = segmentLength seg
 
+auxSolid (s,sx,sy,sx2,sy2,sxy) seg@(Segment (Point x1 y1) (Point x2 y2))
+    = (s   + (x1*y2-x2*y1)/2,
+       sx  + ( 2*x1*x2*(y2-y1)-x2^2*(2*y1+y2)+x1^2*(2*y2+y1))/12,
+       sy  + (-2*y1*y2*(x2-x1)+y2^2*(2*x1+x2)-y1^2*(2*x2+x1))/12,
+       sx2 + ( (x1^2*x2+x1*x2^2)*(y2-y1) + (x1^3-x2^3)*(y1+y2))/12,
+       sy2 + (-(y1^2*y2+y1*y2^2)*(x2-x1) - (y1^3-y2^3)*(x1+x2))/12,
+       sxy + ((x1*y2-x2*y1)*(x1*(2*y1+y2)+x2*(y1+2*y2)))/24)
+
 moments2Gen method l = (mx,my,cxx,cyy,cxy)
     where (s,sx,sy,sx2,sy2,sxy) = (foldl method (0,0,0,0,0,0). asSegmentsClosed) l
           mx = sx/s
@@ -217,15 +225,15 @@ moments2Gen method l = (mx,my,cxx,cyy,cxy)
 -- | Mean and covariance matrix of a continuous piecewise-linear contour.
 momentsContour :: [Point] -- ^ closed polyline
                  -> (Double,Double,Double,Double,Double) -- ^ (mx,my,cxx,cyy,cxy)
-momentsContour = moments2Gen auxContour
+momentsContour = moments2Gen auxSolid
 
 -- | Structure of a 2x2 covariance matrix
 eig2x2Dir :: (Double,Double,Double) -- ^ (cxx,cyy,cxy)
           -> (Double,Double,Double) -- ^ (v1,v2,angle), the eigenvalues of cov (v1>v2), and angle of dominant eigenvector
 eig2x2Dir (cxx,cyy,cxy) = (l1,l2,a)
     where ra = sqrt(cxx*cxx + 4*cxy*cxy -2*cxx*cyy + cyy*cyy)
-          l1 = sqrt(0.5*(cxx+cyy+ra))
-          l2 = sqrt(0.5*(cxx+cyy-ra))
+          l1 = 0.5*(cxx+cyy+ra)
+          l2 = 0.5*(cxx+cyy-ra)
           a = atan2 (2*cxy) ((cxx-cyy+ra))
 
 -- | Equalizes the eigenvalues of the covariance matrix of a continuous piecewise-linear contour. It preserves the general scale, position and orientation.

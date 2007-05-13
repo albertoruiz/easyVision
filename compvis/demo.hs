@@ -300,3 +300,4 @@ fst3 (a,_,_) = a
 
 shcont (Closed c) = do
     renderPrimitive LineLoop $ mapM_ vertex c
+
