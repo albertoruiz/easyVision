@@ -145,12 +145,16 @@ worker cam param getRoi fft inWindow op = do
                  proc = Closed .pixelsToPoints (size orig).douglasPeuckerClosed fracpix.fst3
                  cs = map proc $ contours 100 pixarea th2 False im
                  wcs = map whitenContour cs
+                 fcs = map (filterSpectral 10 50) cs
              lineWidth $= 1
              setColor 1 0 0
              mapM_ shcont cs
              lineWidth $= 2
              setColor 0 0.5 0
              mapM_ shcont wcs
+             lineWidth $= 1
+             setColor 0 0 1
+             mapM_ shcont fcs
         "Distance" ->
              cam >>=
              yuvToGray >>=
@@ -300,4 +304,10 @@ fst3 (a,_,_) = a
 
 shcont (Closed c) = do
     renderPrimitive LineLoop $ mapM_ vertex c
+    --mapM_ print (prepareCont c)
 
+filterSpectral w n cont = Closed r where
+    fou = fourierPL cont
+    f = fromList $ map fou [0..w] ++ replicate (n- 2*w - 1) 0 ++ map fou [-w,-w+1.. (-1)]
+    r = map c2p $ toList $ ifft (fromIntegral n *f)
+    c2p (x:+y) = Point x y

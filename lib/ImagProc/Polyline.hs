@@ -19,13 +19,14 @@ module ImagProc.Polyline (
     perimeter,
     orientation,
     whitenContour,
+    fourierPL,
 -- * Reduction
     douglasPeucker, douglasPeuckerClosed,
 -- * Extraction
     rawContour,
     contours,
 -- * Auxiliary tools
-    momentsContour,
+    momentsContour, momentsBoundary,
     eig2x2Dir
 )
 where
@@ -36,7 +37,7 @@ import ImagProc.Ipp.Core
 import Foreign.C.Types(CUChar)
 import Foreign
 import Debug.Trace
-import Data.List(maximumBy)
+import Data.List(maximumBy, zipWith4)
 import GSL hiding (size)
 import Vision.Geometry
 
@@ -227,6 +228,11 @@ momentsContour :: [Point] -- ^ closed polyline
                  -> (Double,Double,Double,Double,Double) -- ^ (mx,my,cxx,cyy,cxy)
 momentsContour = moments2Gen auxSolid
 
+-- | Mean and covariance matrix of the boundary of a continuous piecewise-linear contour.
+momentsBoundary :: [Point] -- ^ closed polyline
+                 -> (Double,Double,Double,Double,Double) -- ^ (mx,my,cxx,cyy,cxy)
+momentsBoundary = moments2Gen auxContour
+
 -- | Structure of a 2x2 covariance matrix
 eig2x2Dir :: (Double,Double,Double) -- ^ (cxx,cyy,cxy)
           -> (Double,Double,Double) -- ^ (v1,v2,angle), the eigenvalues of cov (v1>v2), and angle of dominant eigenvector
@@ -245,3 +251,35 @@ whitenContour (Closed ps) = Closed wps where
     p2l (Point x y) = [x,y]
     l2p [x,y] = Point x y
     wps = map l2p $ ht t (map p2l ps)
+
+
+----------------------------------------------------------
+
+
+-- | Exact Fourier series of a piecewise-linear closed curve
+fourierPL :: Polyline -> (Int -> Complex Double)
+fourierPL (Closed ps) = f where
+    (zs,ts,as,bs,h0) = prepareCont ps
+    f 0 = 0.5 * sum (zipWith4 gamma zs ts (tail zs) (tail ts)) where
+        gamma z1 t1 z2 t2 = (z2+z1)*(t2-t1)
+    f w = -r*w' where
+        w' = -1/(2*pi*i* fromIntegral w)
+        hw = map (** fromIntegral w) h0
+        dhw = zipWith (-) (tail hw) hw
+        ht = zipWith (\h t -> h*(t+w')) hw ts
+        dht = zipWith (-) (tail ht) ht
+        r = sum (zipWith (*) bs dhw) + sum (zipWith (*) as dht)
+
+
+prepareCont c = (zs,ts,as,bs,h0) where
+    p2c (Point x y) = x:+y
+    zs = map p2c (c++[head c])
+    acclen = scanl (+) 0 (zipWith sl zs (tail zs))
+    sl z1 z2 = abs (z2-z1)
+    ts = map (/last acclen) acclen
+    as = zipWith4 alpha zs ts (tail zs) (tail ts)
+    alpha z1 t1 z2 t2 = (z2-z1)/(t2-t1)
+    bs = zipWith3 beta zs as ts
+    beta z alpha t = z-alpha*t
+    h0 = map exp' ts
+    exp' t = exp (-2*pi*i*t)
