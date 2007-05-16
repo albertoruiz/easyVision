@@ -44,6 +44,8 @@ main = do
                                  ("h",percent 20),
                                  ("fracpix",realParam (1.5) 0 10),
                                  ("smooth",intParam 3 0 10),
+                                 ("comps",intParam 1 1 20),
+                                 ("white",intParam 0 0 1),
                                  ("smooth2",intParam 0 0 10)]
 
     addWindow "demo" sz Nothing (const (kbdcam ctrl)) state
@@ -78,6 +80,8 @@ worker cam param getRoi fft inWindow op = do
     smooth2 <- getParam param "smooth2" :: IO Int
     area <- getParam param "area" :: IO Int
     fracpix <- getParam param "fracpix"
+    comps <- getParam param "comps"
+    white <- getParam param "white"
 
     inWindow "demo" $ case op of
 
@@ -143,18 +147,22 @@ worker cam param getRoi fft inWindow op = do
              let (Size h w) = size im
                  pixarea = h*w*area`div`1000
                  proc = Closed .pixelsToPoints (size orig).douglasPeuckerClosed fracpix.fst3
-                 cs = map proc $ contours 100 pixarea th2 False im
+                 cs = map proc $ contours 100 pixarea th2 (toEnum white) im
                  wcs = map whitenContour cs
-                 fcs = map (filterSpectral 10 50) cs
-             lineWidth $= 1
-             setColor 1 0 0
+                 fcs = map (filterSpectral comps 100) cs
+                 selc = map (spectralComponent comps 100) wcs
+             lineWidth $= 2
+             setColor 0 0 1
              mapM_ shcont cs
              lineWidth $= 2
-             setColor 0 0.5 0
+             setColor 1 1 0
              mapM_ shcont wcs
              lineWidth $= 1
-             setColor 0 0 1
+             setColor 1 0 0
              mapM_ shcont fcs
+             lineWidth $= 1
+             setColor 0 0.6 0
+             mapM_ (\c -> renderPrimitive LineLoop $ mapM_ vertex c) selc
         "Distance" ->
              cam >>=
              yuvToGray >>=
@@ -311,3 +319,27 @@ filterSpectral w n cont = Closed r where
     f = fromList $ map fou [0..w] ++ replicate (n- 2*w - 1) 0 ++ map fou [-w,-w+1.. (-1)]
     r = map c2p $ toList $ ifft (fromIntegral n *f)
     c2p (x:+y) = Point x y
+
+
+
+spectralComponent w n cont = r where
+    fou = fourierPL cont
+    z n = replicate n 0
+    sc = abs $ fromIntegral w^2
+    f = fromList $ fou 0 : z (w-1) ++ (sc*fou w) : z (n- 2*w - 1) ++ (sc*fou (-w)) : z (w-1)
+    r = toList $ ifft (fromIntegral n *f)
+
+
+{-
+affine :: Polyline -> Polyline
+affine (Closed c) = Closed aps where
+    (mx0,my0,_,_,_) = momentsContour c    
+    Closed wps = whitenContour (Closed c)
+    (mx,my,cxx,cyy,cxy) = momentsBoundary wps
+    --(l1,l2,a) = eig2x2Dir (cxx,cyy,cxy)
+    a = atan2 (my-my0) (mx-mx0)
+    t = desp (mx0,my0) <> rot3 (a) <> desp (-mx0,-my0)
+    p2l (Point x y) = [x,y]
+    l2p [x,y] = Point x y
+    aps = map l2p $ ht t (map p2l wps)
+-}

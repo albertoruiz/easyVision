@@ -255,31 +255,34 @@ whitenContour (Closed ps) = Closed wps where
 
 ----------------------------------------------------------
 
-
 -- | Exact Fourier series of a piecewise-linear closed curve
 fourierPL :: Polyline -> (Int -> Complex Double)
 fourierPL (Closed ps) = f where
-    (zs,ts,as,bs,h0) = prepareCont ps
-    f 0 = 0.5 * sum (zipWith4 gamma zs ts (tail zs) (tail ts)) where
-        gamma z1 t1 z2 t2 = (z2+z1)*(t2-t1)
-    f w = -r*w' where
-        w' = -1/(2*pi*i* fromIntegral w)
-        hw = map (** fromIntegral w) h0
-        dhw = zipWith (-) (tail hw) hw
-        ht = zipWith (\h t -> h*(t+w')) hw ts
-        dht = zipWith (-) (tail ht) ht
-        r = sum (zipWith (*) bs dhw) + sum (zipWith (*) as dht)
+    (zs,ts,cs,ds,hs) = prepareFourierPL ps
+    f 0 = 0.5 * sum (zipWith4 gamma zs ts (tail zs) (tail ts))
+        where gamma z1 t1 z2 t2 = (z2+z1)*(t2-t1)
+    f w = k*r
+        where k = recip (-2*pi*i*w'^2)
+              r = sum (zipWith3 f hs cs ds)
+              w' = fromIntegral w
+              f h c d = (h ** w')*(w'*c+d)
 
-
-prepareCont c = (zs,ts,as,bs,h0) where
-    p2c (Point x y) = x:+y
+prepareFourierPL c = (zs,ts,cs,ds,hs) where
     zs = map p2c (c++[head c])
-    acclen = scanl (+) 0 (zipWith sl zs (tail zs))
-    sl z1 z2 = abs (z2-z1)
+        where p2c (Point x y) = x:+y
     ts = map (/last acclen) acclen
-    as = zipWith4 alpha zs ts (tail zs) (tail ts)
-    alpha z1 t1 z2 t2 = (z2-z1)/(t2-t1)
-    bs = zipWith3 beta zs as ts
-    beta z alpha t = z-alpha*t
-    h0 = map exp' ts
-    exp' t = exp (-2*pi*i*t)
+        where acclen = scanl (+) 0 (zipWith sl zs (tail zs))
+              sl z1 z2 = abs (z2-z1)
+    hs' = map exp' ts
+        where exp' t = exp (-2*pi*i*t)
+    hs = tail hs'
+    as = cycle $ zipWith4 alpha zs ts (tail zs) (tail ts)
+        where alpha z1 t1 z2 t2 = (z2-z1)/(t2-t1)
+    bs = cycle $ zipWith3 beta zs as ts
+        where beta z alpha t = z-alpha*t
+    aAs = zipWith (-) as (tail as)
+    bBs = zipWith (-) bs (tail bs)
+    ds = map (* recip (2*pi*i)) aAs
+    cs = zipWith3 f bBs (rl ts) aAs
+        where f b t a = b + t*a
+    rl l = tail l ++ [head l]

@@ -172,6 +172,9 @@ instance Vertex [Double] where
     vertex _  = error "vertex on list without two or three elements"
     vertexv = undefined
 
+instance Vertex (Complex Double) where
+    vertex (x:+y) = vertex (Vertex2 x y)
+    vertexv = undefined
 
 -- | It shows the outline of a camera and an optional image (texture) in its image plane.
 drawCamera :: Double -> Matrix Double -> Maybe ImageFloat -> IO ()
