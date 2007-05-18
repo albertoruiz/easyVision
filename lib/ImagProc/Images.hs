@@ -28,6 +28,7 @@ module ImagProc.Images
 , Size (..)
 , Pixel (..)
 , Point (..)
+, Segment (..), segmentLength
 , pixelsToPoints
 --, val32f
 ) where
@@ -40,6 +41,7 @@ import ImagProc.Ipp.Core (
    , ImageYUV
    , Pixel(..)
    , Point(..)
+   , Segment(..), segmentLength
    , Size(..)
    , pixelsToPoints
  )

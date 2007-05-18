@@ -2,7 +2,7 @@ IPP=/opt/intel/ipp/5.2_beta/ia32
 
 LIBS = -i../lib ../lib/ImagProc/Ipp/auxIpp.o -L../lib/ImagProc/Segments -lsegments -L$(IPP)/sharedlib -lguide -lippcore -lippi -lipps -lippcc -lippvc -lippcv
 
-ALL = demo hessian warp frontal pose automatch brush stereo detect interpolate rectangles autostereo augmented
+ALL = demo hessian warp frontal pose automatch brush stereo detect interpolate rectangles autostereo augmented contours
 
 all: $(ALL) 
 
