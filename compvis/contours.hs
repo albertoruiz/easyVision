@@ -11,6 +11,7 @@ import qualified Data.Map as Map
 import Foreign.C.Types
 import Foreign
 import GSL hiding (size,norm)
+import qualified GSL
 import Vision
 import Data.List(minimumBy, maximumBy)
 
@@ -18,6 +19,21 @@ import ImagProc.Ipp.Core
 import Debug.Trace
 
 debug x = trace (show x) x
+
+------------------------------------------------------------
+
+easyInvar w f = fromList desc where
+    sc = g 1
+    g k = magnitude (f k) + magnitude (f (-k))
+    h k = g k/sc
+    desc = map h [2..w]
+
+feat = easyInvar 10 . fourierPL . whitenContour
+
+closestTo pixel = minimumBy (compare `on` (distP2ROI pixel))
+    where distP2ROI (Pixel r c) (_,_,ROI r1 r2 c1 c2) = ((r1+r2)`div`2 - r)^2 + ((c1+c2)`div`2 - c)^2
+
+similarTo eps f0 cont = GSL.norm (f0 - feat cont) < eps
 
 ------------------------------------------------------------
 
@@ -33,64 +49,88 @@ main = do
 
     (cam, ctrl)  <- mplayer (args!!0) sz >>= withPause
 
-    state <- prepare ()
+    state <- prepare ([],Nothing)
 
     o <- createParameters state [("umbral2",intParam 128 1 255),
                                  ("area",percent 1),
                                  ("fracpix",realParam (1.5) 0 10),
-                                 ("smooth",intParam 3 0 10),
                                  ("comps",intParam 8 1 20),
                                  ("white",intParam 0 0 1),
+                                 ("eps",realParam 0.03 0 0.2),
                                  ("smooth2",intParam 1 0 10)]
 
-    addWindow "contours" sz Nothing (const (kbdcam ctrl)) state
+    addWindow "contours" sz Nothing (marker (kbdcam ctrl)) state
 
     launch state (worker cam o)
 
 -----------------------------------------------------------------
 
-worker cam param inWindow _ = do
+worker cam param inWindow (prots',mbp) = do
+
 
     th2' <- getParam param "umbral2" ::IO Int
     let th2 = fromIntegral th2'
     smooth2 <- getParam param "smooth2" :: IO Int
-    area <- getParam param "area" :: IO Int
+    area <- getParam param "area"
     fracpix <- getParam param "fracpix"
-    comps <- getParam param "comps"
+    --comps <- getParam param "comps"
     white <- getParam param "white"
+    eps <- getParam param "eps"
+
+    orig <- cam >>= yuvToGray
+    im <-(smooth2 `times` median Mask3x3) orig
+
+    let (Size h w) = size im
+        pixarea = h*w*area`div`1000
+        rawconts = contours 100 pixarea th2 (toEnum white) im
+        proc = Closed .pixelsToPoints (size orig).douglasPeuckerClosed fracpix.fst3
+        cs = map proc $ rawconts
+        wcs = map whitenContour cs
+
+        --fcs = map (filterSpectral comps 100) cs
+        --selc = map (Closed . map c2p . spectralComponent comps 100) wcs
+        --fwcs = map (filterSpectral comps 100) wcs
+
+        prots = case mbp of
+                Just p -> (feat.proc) (closestTo p rawconts) : prots'
+                _      -> prots'
+
+        detected = [c | p <- prots, c <- cs, similarTo eps p c]
+
+        -- detected = [c | c <- seq prots cs, p <- prots, similarTo eps p c]
+        --                      ^ space leak if prots not used
 
     inWindow "contours" $ do
-             orig <- cam >>= yuvToGray
-             im <-(smooth2 `times` median Mask3x3) orig
              drawImage orig
              pointCoordinates (size im)
-             let (Size h w) = size im
-                 pixarea = h*w*area`div`1000
-                 proc = Closed .pixelsToPoints (size orig).douglasPeuckerClosed fracpix.fst3
-                 cs = map proc $ contours 100 pixarea th2 (toEnum white) im
-                 wcs = map whitenContour cs
-                 fcs = map (filterSpectral comps 100) cs
-                 selc = map (Closed . map c2p . spectralComponent comps 100) wcs
-                 fwcs = map (filterSpectral comps 100) wcs
              lineWidth $= 2
              setColor 0 0 1
              mapM_ shcont cs
              lineWidth $= 2
              setColor 1 1 0
-             mapM_ shcont fwcs
-             --lineWidth $= 1
-             --setColor 1 0 0
-             --mapM_ shcont fcs
+             mapM_ shcont wcs
+             lineWidth $= 3
+             setColor 1 0 0
+             mapM_ shcont detected
              --lineWidth $= 1
              --setColor 0 0.6 0
              --mapM_ shcont selc
              --lineWidth $= 2
              --setColor 1 0 0
              --mapM_ (\c -> renderPrimitive LineLoop $ mapM_ vertex c) (map (affine comps) cs)
-    return ()
+
+    return (prots,Nothing)
 
 
 -------------------------------------------
+
+marker _ st (MouseButton LeftButton) Down _ pos@(Position x y) = do
+    s @ State { ust= (prot,_) } <- readIORef st
+    let clicked = Pixel (fromIntegral y) (fromIntegral x)
+    writeIORef st (s {ust = (prot, Just clicked)})
+
+marker def _ a b c d = def a b c d
+
 
 text2D x y s = do
     rasterPos (Vertex2 x (y::GLfloat))
