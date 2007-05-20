@@ -51,13 +51,16 @@ main = do
 
     state <- prepare ([],Nothing)
 
-    o <- createParameters state [("umbral2",intParam 128 1 255),
-                                 ("area",percent 1),
-                                 ("fracpix",realParam (1.5) 0 10),
-                                 ("comps",intParam 8 1 20),
-                                 ("white",intParam 0 0 1),
-                                 ("eps",realParam 0.03 0 0.2),
-                                 ("smooth2",intParam 1 0 10)]
+    o <- createParameters state [
+        ("umbral2",intParam 128 1 255),
+        ("area",percent 1),
+        ("fracpix",realParam (1.5) 0 10),
+        ("comps",intParam 8 1 20),
+        ("white",intParam 0 0 1),
+        ("eps",realParam 0.03 0 0.2),
+        ("smooth2",intParam 1 0 10),
+        ("rotation",realParam 0 (-pi) pi)
+     ]
 
     addWindow "contours" sz Nothing (marker (kbdcam ctrl)) state
 
@@ -73,9 +76,10 @@ worker cam param inWindow (prots',mbp) = do
     smooth2 <- getParam param "smooth2" :: IO Int
     area <- getParam param "area"
     fracpix <- getParam param "fracpix"
-    --comps <- getParam param "comps"
+    comps <- getParam param "comps"
     white <- getParam param "white"
     eps <- getParam param "eps"
+    rotation <- getParam param "rotation"
 
     orig <- cam >>= yuvToGray
     im <-(smooth2 `times` median Mask3x3) orig
@@ -104,14 +108,14 @@ worker cam param inWindow (prots',mbp) = do
              drawImage orig
              pointCoordinates (size im)
              lineWidth $= 2
-             setColor 0 0 1
-             mapM_ shcont cs
-             lineWidth $= 2
              setColor 1 1 0
              mapM_ shcont wcs
              lineWidth $= 3
              setColor 1 0 0
              mapM_ shcont detected
+             lineWidth $= 1
+             setColor 0 0 1
+             mapM_ (shcont.invFou 50 comps . rotStatic rotation . normalizeStart . fourierPL) cs
              --lineWidth $= 1
              --setColor 0 0.6 0
              --mapM_ shcont selc
@@ -143,7 +147,7 @@ c2p (x:+y) = Point x y
 
 shcont (Closed c) = do
     renderPrimitive LineLoop $ mapM_ vertex c
-    pointSize $= 3
+    pointSize $= 5
     renderPrimitive Points (vertex (head c))
 
 filterSpectral w n cont = Closed r where
@@ -185,15 +189,19 @@ excentricity f w = (s/l,l,a) where
     --a' = if abs a < pi/2 then a else pi + a
 
 
+
+shiftStart r f = \w -> cis (fromIntegral w*r) * f w
+
+normalizeStart f = shiftStart (-t) f
+    where t = phase ((f (1)- (conjugate $ f(-1))))
+
+
 on f g = \x y -> f (g x) (g y)
 
 goodDir f = a where
     (_,_,a) = minimumBy (compare `on` quality) (map (excentricity f) [1..5])
     quality (ex,tam,_) = 2*ex/tam
 
-normalizeStart f = g  where
-    g w = cis (-fromIntegral w*t) * f w
-    t = phase (f (1))
 
 normalizeRotation f = g where
     a = goodDir f
@@ -206,3 +214,17 @@ normalizeRotation f = g where
         else cis (pi-a)
     g 0 = f 0
     g w = z * f w
+
+invFou n w fou = Closed r where
+    f = fromList $ map fou [0..w] ++ replicate (n- 2*w - 1) 0 ++ map (fou) [-w,-w+1.. (-1)]
+    r = map c2p $ toList $ ifft (fromIntegral n *f)
+    c2p (x:+y) = Point x y
+
+
+rot r f = g where g 0 = f 0
+                  g w = cis (r) * f w
+
+rotStatic r f = g where g 0 = f 0
+                        g w = cis (r - (t1-t0)*fromIntegral w) * f w
+                        t0 = phase ((f (1)- (conjugate $ f(-1))))
+                        t1 = phase ((cis r*f 1- (conjugate $ cis r * f(-1))))
