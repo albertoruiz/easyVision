@@ -14,6 +14,7 @@ import GSL hiding (size,norm)
 import qualified GSL
 import Vision
 import Data.List(minimumBy, maximumBy)
+import Control.Monad(guard)
 
 import ImagProc.Ipp.Core
 import Debug.Trace
@@ -28,12 +29,10 @@ easyInvar w f = fromList desc where
     h k = g k/sc
     desc = map h [2..w]
 
-feat = easyInvar 10 . fourierPL . whitenContour
+similarTo k eps f g = GSL.norm (easyInvar k f - easyInvar k g) < eps
 
-closestTo pixel = minimumBy (compare `on` (distP2ROI pixel))
-    where distP2ROI (Pixel r c) (_,_,ROI r1 r2 c1 c2) = ((r1+r2)`div`2 - r)^2 + ((c1+c2)`div`2 - c)^2
-
-similarTo eps f0 cont = GSL.norm (f0 - feat cont) < eps
+p `alignedTo` c = g where g 0 = c 0
+                          g w = p w
 
 ------------------------------------------------------------
 
@@ -79,7 +78,7 @@ worker cam param inWindow (prots',mbp) = do
     comps <- getParam param "comps"
     white <- getParam param "white"
     eps <- getParam param "eps"
-    rotation <- getParam param "rotation"
+    --rotation <- getParam param "rotation"
 
     orig <- cam >>= yuvToGray
     im <-(smooth2 `times` median Mask3x3) orig
@@ -87,35 +86,38 @@ worker cam param inWindow (prots',mbp) = do
     let (Size h w) = size im
         pixarea = h*w*area`div`1000
         rawconts = contours 100 pixarea th2 (toEnum white) im
-        proc = Closed .pixelsToPoints (size orig).douglasPeuckerClosed fracpix.fst3
+        proc = memo . fourierPL . whitenContour.  Closed . pixelsToPoints (size orig).douglasPeuckerClosed fracpix.fst3
         cs = map proc $ rawconts
-        wcs = map whitenContour cs
+        --wcs = map whitenContour cs
 
         --fcs = map (filterSpectral comps 100) cs
         --selc = map (Closed . map c2p . spectralComponent comps 100) wcs
         --fwcs = map (filterSpectral comps 100) wcs
 
         prots = case mbp of
-                Just p -> (feat.proc) (closestTo p rawconts) : prots'
+                Just p -> (proc) (closestTo p rawconts) : prots'
                 _      -> prots'
 
-        detected = [c | p <- prots, c <- cs, similarTo eps p c]
 
         -- detected = [c | c <- seq prots cs, p <- prots, similarTo eps p c]
         --                      ^ space leak if prots not used
+
+        detected = [ p `alignedTo` c | p <- prots, c <- cs, similarTo comps eps p c]
+
 
     inWindow "contours" $ do
              drawImage orig
              pointCoordinates (size im)
              lineWidth $= 2
              setColor 1 1 0
-             mapM_ shcont wcs
+             --mapM_ shcont wcs
              lineWidth $= 3
              setColor 1 0 0
-             mapM_ shcont detected
+             mapM_ (shcont. invFou 50 comps) detected
              lineWidth $= 1
              setColor 0 0 1
-             mapM_ (shcont.invFou 50 comps . rotStatic rotation . normalizeStart . fourierPL) cs
+             mapM_ (shcont. invFou 50 comps) cs
+             --mapM_ (shcont. invFou 50 comps . rotStatic rotation . normalizeStart . fourierPL) cs
              --lineWidth $= 1
              --setColor 0 0.6 0
              --mapM_ shcont selc
@@ -135,6 +137,8 @@ marker _ st (MouseButton LeftButton) Down _ pos@(Position x y) = do
 
 marker def _ a b c d = def a b c d
 
+closestTo pixel = minimumBy (compare `on` (distP2ROI pixel))
+    where distP2ROI (Pixel r c) (_,_,ROI r1 r2 c1 c2) = ((r1+r2)`div`2 - r)^2 + ((c1+c2)`div`2 - c)^2
 
 text2D x y s = do
     rasterPos (Vertex2 x (y::GLfloat))
@@ -228,3 +232,9 @@ rotStatic r f = g where g 0 = f 0
                         g w = cis (r - (t1-t0)*fromIntegral w) * f w
                         t0 = phase ((f (1)- (conjugate $ f(-1))))
                         t1 = phase ((cis r*f 1- (conjugate $ cis r * f(-1))))
+
+--memo = id
+
+memo f = g where
+    m = Map.fromList [(k,f k) | k <- [-20..20]]
+    g w = m Map.! w

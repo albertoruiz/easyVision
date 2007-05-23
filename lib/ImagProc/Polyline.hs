@@ -257,7 +257,7 @@ whitenContour (Closed ps) = Closed wps where
 
 -- | Exact Fourier series of a piecewise-linear closed curve
 fourierPL :: Polyline -> (Int -> Complex Double)
-fourierPL (Closed ps) = f where
+fourierPL (Closed ps) = g where
     (zs,ts,cs,ds,hs) = prepareFourierPL ps
     f 0 = 0.5 * sum (zipWith4 gamma zs ts (tail zs) (tail ts))
         where gamma z1 t1 z2 t2 = (z2+z1)*(t2-t1)
@@ -265,7 +265,14 @@ fourierPL (Closed ps) = f where
         where k = recip (-2*pi*i*w'^2)
               r = sum (zipWith3 f hs cs ds)
               w' = fromIntegral w
-              f h c d = (h ** w')*(w'*c+d)
+              f h c d = (h ^^ w)*(w'*c+d)
+    g 0 = f 0
+    g w = k* ((vhs**w') <> (w'*vcs+vds))
+        where k = recip (-2*pi*i* (fromIntegral w)^2)
+              w' = fromIntegral w
+    vhs = fromList hs
+    vcs = fromList $ take (length hs) cs
+    vds = fromList $ take (length hs)ds
 
 prepareFourierPL c = (zs,ts,cs,ds,hs) where
     zs = map p2c (c++[head c])
