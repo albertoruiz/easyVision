@@ -18,7 +18,7 @@ module ImagProc.Polyline (
     Polyline(..),
     perimeter,
     orientation,
-    whitenContour,
+    whitenContour, whitener,
     fourierPL,
 -- * Reduction
     douglasPeucker, douglasPeuckerClosed,
@@ -252,6 +252,13 @@ whitenContour (Closed ps) = Closed wps where
     l2p [x,y] = Point x y
     wps = map l2p $ ht t (map p2l ps)
 
+
+-- | Finds a transformation that equalizes the eigenvalues of the covariance matrix of a continuous piecewise-linear contour. It is affine invariant modulo rotation.
+whitener :: Polyline -> Matrix Double
+whitener (Closed ps) = t where
+    (mx,my,cxx,cyy,cxy) = momentsContour ps
+    (l1,l2,a) = eig2x2Dir (cxx,cyy,cxy)
+    t = rot3 (-a) <> diag (fromList [1/sqrt l1,1/sqrt l2,1]) <> rot3 (a) <> desp (-mx,-my)
 
 ----------------------------------------------------------
 

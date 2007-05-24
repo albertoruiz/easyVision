@@ -15,6 +15,7 @@ import qualified GSL
 import Vision
 import Data.List(minimumBy, maximumBy)
 import Control.Monad(guard)
+import Data.Array
 
 import ImagProc.Ipp.Core
 import Debug.Trace
@@ -27,12 +28,35 @@ easyInvar w f = fromList desc where
     sc = g 1
     g k = magnitude (f k) + magnitude (f (-k))
     h k = g k/sc
-    desc = map h [2..w]
+    desc = map h [2..(max 2 w)]
 
-similarTo k eps f g = GSL.norm (easyInvar k f - easyInvar k g) < eps
+similarTo k eps (f,_,_) (g,_,_) = GSL.norm (easyInvar k f - easyInvar k g) < eps
 
-p `alignedTo` c = g where g 0 = c 0
-                          g w = p w
+prec = 1E-3
+nmax = 50
+
+bestRotation w f g = (a, disc [a])
+    where f' r = rotStatic r f
+          c r w = m2 (f' r w - g w)
+          m2 z = magnitude z ^ 2
+          disc [r] = sum (map (c r) [-w..w])
+          ([a], _) = minimizeNMSimplex disc [0] [10*degree] prec nmax
+
+alignedTo w (f,hp,p) (g,hc,c) = htp h p
+    where (a,_) = bestRotation w f g
+          h = inv hc <> rot3 (-a) <> hp
+
+feat' = memo . normalizeStart . fourierPL . whitenContour
+
+feat c = (f,h,c) where
+    f = memo . normalizeStart . fourierPL $ wc
+    wc = htp h c
+    h = whitener c
+
+htp h (Closed c) = Closed . map l2p . ht h . map p2l $ c
+p2l (Point x y) = [x,y]
+l2p [x,y] = Point x y
+
 
 ------------------------------------------------------------
 
@@ -58,7 +82,8 @@ main = do
         ("white",intParam 0 0 1),
         ("eps",realParam 0.03 0 0.2),
         ("smooth2",intParam 1 0 10),
-        ("rotation",realParam 0 (-pi) pi)
+        ("rotation",realParam 0 (-pi) pi),
+        ("showFou",intParam 0 0 1)
      ]
 
     addWindow "contours" sz Nothing (marker (kbdcam ctrl)) state
@@ -77,8 +102,9 @@ worker cam param inWindow (prots',mbp) = do
     fracpix <- getParam param "fracpix"
     comps <- getParam param "comps"
     white <- getParam param "white"
+    showFou <- getParam param "showFou" :: IO Int
     eps <- getParam param "eps"
-    --rotation <- getParam param "rotation"
+    rotation <- getParam param "rotation"
 
     orig <- cam >>= yuvToGray
     im <-(smooth2 `times` median Mask3x3) orig
@@ -86,7 +112,7 @@ worker cam param inWindow (prots',mbp) = do
     let (Size h w) = size im
         pixarea = h*w*area`div`1000
         rawconts = contours 100 pixarea th2 (toEnum white) im
-        proc = memo . fourierPL . whitenContour.  Closed . pixelsToPoints (size orig).douglasPeuckerClosed fracpix.fst3
+        proc = Closed . pixelsToPoints (size orig).douglasPeuckerClosed fracpix.fst3
         cs = map proc $ rawconts
         --wcs = map whitenContour cs
 
@@ -95,14 +121,14 @@ worker cam param inWindow (prots',mbp) = do
         --fwcs = map (filterSpectral comps 100) wcs
 
         prots = case mbp of
-                Just p -> (proc) (closestTo p rawconts) : prots'
+                Just p -> (feat . proc) (closestTo p rawconts) : prots'
                 _      -> prots'
 
 
         -- detected = [c | c <- seq prots cs, p <- prots, similarTo eps p c]
         --                      ^ space leak if prots not used
 
-        detected = [ p `alignedTo` c | p <- prots, c <- cs, similarTo comps eps p c]
+        detected = [alignedTo comps p (feat c) | p <- prots, c <- cs, similarTo comps eps p (feat c)]
 
 
     inWindow "contours" $ do
@@ -113,11 +139,13 @@ worker cam param inWindow (prots',mbp) = do
              --mapM_ shcont wcs
              lineWidth $= 3
              setColor 1 0 0
-             mapM_ (shcont. invFou 50 comps) detected
+             --mapM_ (shcont. invFou 50 comps) detected
+             mapM_ shcont detected
              lineWidth $= 1
              setColor 0 0 1
-             mapM_ (shcont. invFou 50 comps) cs
-             --mapM_ (shcont. invFou 50 comps . rotStatic rotation . normalizeStart . fourierPL) cs
+             if (showFou==0) 
+                then mapM_ (shcont) cs
+                else mapM_ (shcont. invFou 50 comps . rotStatic rotation . normalizeStart . fourierPL) cs
              --lineWidth $= 1
              --setColor 0 0.6 0
              --mapM_ shcont selc
@@ -236,5 +264,5 @@ rotStatic r f = g where g 0 = f 0
 --memo = id
 
 memo f = g where
-    m = Map.fromList [(k,f k) | k <- [-20..20]]
-    g w = m Map.! w
+    m = listArray (-20,20::Int) [f k | k <- [-20..20]]
+    g w = m ! w
