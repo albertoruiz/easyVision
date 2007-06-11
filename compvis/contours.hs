@@ -32,7 +32,7 @@ easyInvar w f = fromList desc where
 
 similarTo k eps (f,_,_) (g,_,_) = GSL.norm (easyInvar k f - easyInvar k g) < eps
 
-prec = 1E-3
+prec = degree/10
 nmax = 50
 
 bestRotation w f g = (a, disc [a])
@@ -40,7 +40,7 @@ bestRotation w f g = (a, disc [a])
           c r w = m2 (f' r w - g w)
           m2 z = magnitude z ^ 2
           disc [r] = sum (map (c r) [-w..w])
-          ([a], _) = minimizeNMSimplex disc [0] [10*degree] prec nmax
+          ([a], p) = minimizeNMSimplex disc [0] [10*degree] prec nmax
 
 alignedTo w (f,hp,p) (g,hc,c) = htp h p
     where (a,_) = bestRotation w f g
