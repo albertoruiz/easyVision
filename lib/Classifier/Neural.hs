@@ -53,7 +53,7 @@ deltas n xs o = zipWith outer (tail ds) (init xs) where
 updateNetwork alpha n (v,o) = n {weights = zipWith (+) (weights n) corr}
     where xs = forward n v
           ds = deltas n xs o
-          corr = map (scale (-alpha)) ds
+          corr = map (<> (-alpha)) ds
 
 epoch alpha n prob = foldl (updateNetwork alpha) n prob
 

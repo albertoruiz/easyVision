@@ -48,7 +48,7 @@ type Vector = G.Vector Double
 matrix = fromLists :: [[Double]] -> Matrix
 vector = fromList ::  [Double] -> Vector
 
-cameraAtOrigin = ident 3 <|> vector [0,0,0]
+cameraAtOrigin = (ident 3 :: Matrix) <|> vector [0,0,0]
 
 -- | A nice camera parameterization.
 data CameraParameters 

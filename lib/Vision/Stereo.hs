@@ -20,6 +20,7 @@ module Vision.Stereo
 , estimateFundamentalRansac
 , epipolarQuality
 , epipoles
+, fundamentalFromCameras
   -- * Essential Matrix
 , estimateEssential
 , estimateEssential'

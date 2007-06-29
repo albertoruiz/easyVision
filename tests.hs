@@ -18,7 +18,7 @@ a =~= b = pnorm 1 (flatten (a - b)) < 1E-9
 
 factorizeCameraTest m = normatdet m =~= normatdet m' where
     (k,r,c) = factorizeCamera m
-    m' = k <> r <> (ident 3 <|> -c)
+    m' = k <> r <> ((ident 3 :: Matrix Double) <|> -c)
 
 recoverFromHomogZ0Test m = normat3 m =~= normat3 m' where
     c  = -5 * homogZ0 m
