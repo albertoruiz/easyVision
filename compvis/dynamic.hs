@@ -130,7 +130,7 @@ worker cam op trackball mbf inWindow st = do
             cameraView r (4/3) 0.1 100
             reffloor
 
-            let rel = linearSolveR (pdar <-> fromList [0,0,0,1::Double]) (r <-> fromList [0,0,0,1::Double])
+            let rel = linearSolveR (p <-> fromList [0,0,0,1::Double]) (r <-> fromList [0,0,0,1::Double])
                 rot = subMatrix (0,0) (3,3) rel
                 mrc = flatten $ subMatrix (0,3) (3,1) rel
                 c   = -(trans rot) <> mrc
