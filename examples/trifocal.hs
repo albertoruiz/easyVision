@@ -1,9 +1,12 @@
+{-# OPTIONS_GHC -fglasgow-exts -fallow-undecidable-instances #-}
+
 import Vision
-import Data.Packed.Tensor
+import Tensor
 import Data.Packed.Matrix
 import GSL.Vector
 import GSL
 import Data.List(sort)
+import LinearAlgebra.Linear
 
 -- some defs
 
@@ -24,7 +27,7 @@ meet a b = innerLevi [dual a, dual b]
 instance (Field t, Eq t) => Eq (Tensor t) where
     t1 == t2 = error "equality of tensors not yet defined"
 
-instance (Num t, Field t) => Num (Tensor t) where
+instance (Linear Vector t) => Num (Tensor t) where
     a + b = addT a b
     a * b = mulT a b
     fromInteger n = scalar (fromInteger n)
