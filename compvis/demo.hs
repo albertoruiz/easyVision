@@ -13,7 +13,7 @@ import System.Environment(getArgs)
 import qualified Data.Map as Map
 import Foreign.C.Types
 import Foreign
-import GSL hiding (size,norm)
+import LinearAlgebra hiding (norm)
 import Vision
 import Data.List(minimumBy, maximumBy)
 

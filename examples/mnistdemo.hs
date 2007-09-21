@@ -4,10 +4,11 @@
         $ gunzip mnist.txt.gz
 -}
 
-import GSL
+import LinearAlgebra
 import Classifier
 import Classifier.ToyProblems(mnistraw)
 import Debug.Trace
+import Graphics.Plot
 
 debug x = trace (show x) x
 debug' msg x = trace (msg ++ show x) x
@@ -26,7 +27,7 @@ comparedist (train,test) codec = do
     let t = encodeVector codec
     let problem = (preprocess t train, preprocess t test)
     putStr "Reduced dimension: "
-    print $ size $ fst $ head $ fst problem
+    print $ dim $ fst $ head $ fst problem
     putStrLn "-- with Mahalanobis distance --"
     work problem (distance mahalanobis)
     putStrLn "-- with Mahalanobis distance + log det sigma --"
@@ -42,7 +43,7 @@ main = do
     let rawproblem = splitAt 4000 mnist
 
     putStr "Original dimension: "
-    print $ size $ fst $ head $ fst rawproblem
+    print $ dim $ fst $ head $ fst rawproblem
 
     let st = stat (fromRows $ map fst (fst rawproblem))
 

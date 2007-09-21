@@ -1,14 +1,15 @@
 import Classifier
 import Classifier.ToyProblems
-import GSL
+import LinearAlgebra
 import System.Random
 import Debug.Trace
 import Data.List(inits, sort, partition)
 import Control.Monad(when)
+import Graphics.Plot
 
 matrix m = fromLists m :: Matrix Double
 --vector v = fromList v :: Vector Double
-vmap = gmap
+vmap = liftVector
 
 debug x = trace (show x) x
 debug' msg x = trace (msg ++ show x) x

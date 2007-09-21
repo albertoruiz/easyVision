@@ -8,8 +8,7 @@ import System.Environment(getArgs)
 import GHC.Float(isDoubleNaN)
 import ImagProc.Ipp.Core
 import Data.List(minimumBy)
-import GSL hiding (size)
-import qualified GSL
+import LinearAlgebra hiding ((.*))
 import Control.Monad(when)
 import Vision
 import GHC.Float(float2Double,double2Float)
@@ -103,7 +102,7 @@ closestBy f [] p = p
 closestBy f hp p = minimumBy (compare `on` f p) hp
 
 distFeat = (dist `on` ipDescriptor)
-    where dist u v = norm (u-v)/ fromIntegral (GSL.size u)
+    where dist u v = norm (u-v)/ fromIntegral (dim u)
 
 distSpatial = (dist `on` ipPosition)
     where dist (Point a b) (Point x y) = sqrt $ abs ((a-x)^2+(b-y)^2)

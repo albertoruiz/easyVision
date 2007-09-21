@@ -17,7 +17,7 @@ module Classifier.Neural (
      learnNetwork, neural, createNet, adaptNet, perceptron, neural',
 ) where
 
-import GSL
+import LinearAlgebra
 import Classifier.Base
 import System.Random
 
@@ -48,12 +48,12 @@ deltas n xs o = zipWith outer (tail ds) (init xs) where
     dl = (last xs - o) * gp (last xs)
     ds = scanr f dl (zip xs (weights n))
     f (x,m) d = gp x * (trans m <> d)
-    gp = gmap $ \x -> (1+x)*(1-x)
+    gp = liftVector $ \x -> (1+x)*(1-x)
 
 updateNetwork alpha n (v,o) = n {weights = zipWith (+) (weights n) corr}
     where xs = forward n v
           ds = deltas n xs o
-          corr = map (<> (-alpha)) ds
+          corr = map (scale (-alpha)) ds
 
 epoch alpha n prob = foldl (updateNetwork alpha) n prob
 
@@ -90,13 +90,13 @@ neural alpha eps maxep hidden prob = (c,f) where
 -- | useful for monitorization of convergence
 neural' alpha eps mxep hidden prob = (network, err) where
     prob' = adaptNet prob
-    n = size$ fst$ head prob'
-    m = size$ snd$ head prob'
+    n = dim$ fst$ head prob'
+    m = dim$ snd$ head prob'
     initial = createNet 100 n hidden m
     (network, err) = learnNetwork alpha eps mxep initial prob'
 
 
-mseerror r p = sum (map f p) / fromIntegral ( (size$ snd$ head$ p) * length p)
+mseerror r p = sum (map f p) / fromIntegral ( (dim$ snd$ head$ p) * length p)
     where f (x,y) = norm (last (forward r x) - y)
 
 -- | useful for metaalgorithms (treeOf, adaboost)
@@ -108,6 +108,6 @@ perceptron :: Double -- ^ alpha (e.g. 0.1)
 perceptron alpha eps maxep hidden (g1,g2) = f where
     b = (replicate (length g1) 1 ++ replicate (length g2) (-1))
     exs = scramble 1001 (zip (g1++g2) (replicate (length g1) 1 ++ replicate (length g2) (-1)))
-    initial = createNet 100 (size$ head$ g1) hidden 1
+    initial = createNet 100 (dim$ head$ g1) hidden 1
     (result, err) = learnNetwork alpha eps maxep initial exs
     f = (@>0) . last . forward result

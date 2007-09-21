@@ -3,14 +3,15 @@
 module Main where
 
 import Vision
-import GSL 
+import LinearAlgebra 
 import Data.List(genericLength)
 import System(system)
 import System
+import Graphics.Plot
 
 matrix m = fromLists m :: Matrix Double
 vector v = fromList v :: Vector Double
-vmap = gmap
+vmap = liftVector
 
 mean l = sum l / genericLength l
          

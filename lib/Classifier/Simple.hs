@@ -19,7 +19,7 @@ module Classifier.Simple (
      mse, mseWeighted, distWeighted,
 ) where
 
-import GSL
+import LinearAlgebra
 import Classifier.Base
 
 import Data.List(sortBy, sort, nub, elemIndex, intersperse, transpose, partition, delete)
@@ -29,15 +29,13 @@ import Data.Array
 import Classifier.Stat
 import Debug.Trace
 
-
-
 -- | mse linear discriminant using the pseudoinverse
 mse :: Dicotomizer
 mse (g1,g2) = f where
-    m = (fromRows g1 <-> fromRows g2) <|> constant 1 (size b)
+    m = (fromRows g1 <-> fromRows g2) <|> constant 1 (dim b)
     b = join [constant 1 (length g1), constant (-1) (length g2)]
     w = pinv m <> b
-    f v = tanh (join [v,1] <> w)
+    f v = tanh (join [v,1] <.> w)
 
 --------------------------------------------------------------------------------
 
@@ -48,14 +46,14 @@ type Distance =  [Attributes] -> Attributes -> Double
 mahalanobis :: Distance
 mahalanobis vs = f where
     Stat {meanVector = m, invCov = ic} = stat (fromRows vs)
-    f x = (x-m) <> ic <> (x-m)
+    f x = (x-m) <> ic <.> (x-m)
 
 -- | gaussian -log likelihood (mahalanobis + 1\/2 log sqrt det cov)
 gaussian :: Distance
 gaussian vs = f where
     Stat {meanVector = m, invCov = ic} = stat (fromRows vs)
     k = -log (sqrt (abs( det ic)))
-    f x = k + 0.5*((x-m) <> ic <> (x-m))
+    f x = k + 0.5*((x-m) <> ic <.> (x-m))
 
 -- | Distance to the mean value of the population.
 ordinary :: Distance
@@ -98,12 +96,12 @@ distance d exs = (c,f) where
 -- | mse with weighted examples
 mseWeighted :: WeightedDicotomizer
 mseWeighted (g1,g2) d = f where
-    m = (fromRows g1 <-> fromRows g2) <|> constant 1 (size b)
+    m = (fromRows g1 <-> fromRows g2) <|> constant 1 (dim b)
     b = join [constant 1 (length g1), constant (-1) (length g2)]
     rd  = sqrt d
     rd' = outer rd (constant 1 (cols m))
     w = pinv (m*rd') <> (b*rd)
-    f v = tanh (join [v,1] <> w)
+    f v = tanh (join [v,1] <.> w)
 
 
 
@@ -115,11 +113,11 @@ distWeighted (g1,g2) d = f where
     n2 = length g2
     d1 = subVector  0 n1 d
     d2 = subVector n1 n2 d
-    ones = constant 1 (size (head g1))
+    ones = constant 1 (dim (head g1))
     a1 = outer d1 ones * fromRows g1
     a2 = outer d2 ones * fromRows g2
-    m1 = sumColumns a1 <> recip (pnorm 1 d1)
-    m2 = sumColumns a2 <> recip (pnorm 1 d2)
+    m1 = sumColumns a1 */ (pnorm PNorm1 d1)
+    m2 = sumColumns a2 */ (pnorm PNorm1 d2)
     f x = norm (x-m2) - norm (x-m1)
     sumColumns m = constant 1 (rows m) <> m
 

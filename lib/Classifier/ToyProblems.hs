@@ -23,7 +23,7 @@ module Classifier.ToyProblems (
      combined
 ) where
 
-import GSL
+import LinearAlgebra
 import Data.List(intersperse)
 --import qualified Data.Map as Map
 

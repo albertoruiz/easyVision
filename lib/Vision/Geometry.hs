@@ -49,7 +49,7 @@ module Vision.Geometry
 , normat3
 ) where
 
-import GSL
+import LinearAlgebra
 
 matrix = fromLists :: [[Double]] -> Matrix Double
 vector = fromList ::  [Double] -> Vector Double
@@ -126,7 +126,7 @@ linf = vector [0,0,1]
 
 -- | obtains the ordinary vector corresponding to a homogeneous vector (divides by the last component). Note that no ideal point checking is done.
 inHomog :: Vector Double -> Vector Double
-inHomog v = subVector 0 l v <> recip (v@>l) where l = size v - 1
+inHomog v = subVector 0 l v  */  v@>l where l = dim v - 1
 
 -- | creates a homogeneus version of an ordinary vector (appends a constant component equal to 1)
 homog :: Vector Double -> Vector Double
@@ -134,7 +134,7 @@ homog v = join [v,1]
 
 -- | Obtains a vector in the same direction with 2-norm=1
 unitary:: Vector Double -> Vector Double
-unitary v = v <> recip (norm v)
+unitary v = v */ norm v
 
 -- | pi \/ 180
 degree :: Double
@@ -155,11 +155,11 @@ cross a b = asMat a <> b
 
 -- | obtains a normalized version of a homogeneous matrix dividing by the bottom-right element.
 normat3 :: Matrix Double -> Matrix Double
-normat3 m = m <> (recip m@@>(rows m -1, cols m -1)::Double)
+normat3 m = m */ m@@>(rows m -1, cols m -1)
 
 -- | obtains a normalized version of a homogeneous matrix such that the biggest square submatrix on the left has determinant == 1
 normatdet :: Matrix Double -> Matrix Double
-normatdet m = m <> recip k where
+normatdet m = m */ k where
     s = subMatrix (0,0) (n,n) m
     n = min (rows m) (cols m)
     d = det s
@@ -167,7 +167,7 @@ normatdet m = m <> recip k where
 
 -- | obtains a normalized version of a homogeneous matrix such that the vector of all entries has 2-norm ==1
 normat :: Matrix Double -> Matrix Double
-normat m = m <> recip (norm (flatten m))
+normat m = m */ norm (flatten m)
 
 homogMat m = m <|> constant 1 (rows m)
 

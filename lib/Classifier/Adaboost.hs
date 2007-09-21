@@ -25,7 +25,7 @@ module Classifier.Adaboost (
 
 ) where
 
-import GSL
+import LinearAlgebra
 import Classifier.Base
 import Data.List(sortBy, transpose, elemIndex, partition)
 import Debug.Trace
@@ -61,8 +61,8 @@ stumpsOk ((g1,g2),lbs,xs,oxs,is) d = f where
     wl = lbs*d
     n1 = length g1
     n2 = length g2
-    d1 = pnorm 1 $ subVector  0 n1 d
-    d2 = pnorm 1 $ subVector n1 n2 d
+    d1 = pnorm PNorm1 $ subVector  0 n1 d
+    d2 = pnorm PNorm1 $ subVector n1 n2 d
 
     owls = map (map (wl@>)) is
     cs = map (sel .dt . scanl (+) 0 . init) owls
@@ -95,7 +95,7 @@ adaboostStep method (g1,g2) d = (f,d',e,a) where
     f = method d
     e1 = map (signum . max 0 . negate . f) g1
     e2 = map (signum . max 0 . f) g2
-    e = join [vector e1, vector e2] <> d
+    e = join [vector e1, vector e2] <.> d
     a = 0.5 * log ((1-e)/e) -- it may be Infinity
     kp = exp (-a)
     kn = exp a
@@ -104,7 +104,7 @@ adaboostStep method (g1,g2) d = (f,d',e,a) where
     d1 = map f1 g1
     d2 = map f2 g2
     dr = d * join [vector d1, vector d2]
-    d' = dr <> recip (dr <> constant 1 (size dr))
+    d' = dr */ (dr <.> constant 1 (dim dr))
 
 -- | creates a list of weak learners and associated information to build a strong learner using adaboost
 adaboostST :: Int -> WeightedDicotomizer -> TwoGroups -> [ADBST]

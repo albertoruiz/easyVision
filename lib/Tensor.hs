@@ -32,10 +32,8 @@ module Tensor (
 import Data.Packed.Internal
 import Foreign.Storable
 import Data.List(sort,elemIndex,nub,foldl1',foldl')
-import GSL.Vector
-import Data.Packed.Matrix
-import Data.Packed.Vector
-import LinearAlgebra.Linear
+--import GSL.Vector
+import LinearAlgebra
 
 data IdxType = Covariant | Contravariant deriving (Show,Eq)
 
@@ -202,7 +200,7 @@ contraction2 t1 n1 t2 n2 =
         else error "wrong contraction2"
   where (d1,m1) = putFirstIdx n1 t1
         (d2,m2) = putFirstIdx n2 t2
-        m = multiply RowMajor (trans m1) m2
+        m = multiply (trans m1) m2
 
 -- | contraction of a tensor along two given indices
 contraction1 :: (Linear Vector t) => Tensor t -> IdxName -> IdxName -> Tensor t
@@ -335,6 +333,7 @@ leviCivita :: (Linear Vector t) => Int -> Tensor t
 leviCivita n = antisym $ foldl1 rawProduct $ zipWith withIdx auxbase seqind'
     where auxbase = map tc (toRows (ident n))
           tc = tensorFromVector Covariant
+          ident n = diag $ fromList $ replicate n 1
 
 -- | contraction of leviCivita with a list of vectors (and raise with euclidean metric)
 innerLevi :: (Linear Vector t) => [Tensor t] -> Tensor t

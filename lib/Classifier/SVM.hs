@@ -17,7 +17,7 @@ module Classifier.SVM (
     svmLight
 ) where
 
-import GSL
+import LinearAlgebra
 import Classifier.Base
 import Classifier.Kernel(gaussK)
 import System

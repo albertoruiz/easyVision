@@ -38,7 +38,7 @@ import Foreign.C.Types(CUChar)
 import Foreign
 import Debug.Trace
 import Data.List(maximumBy, zipWith4)
-import GSL hiding (size)
+import LinearAlgebra
 import Vision.Geometry
 
 debug x = trace (show x) x
@@ -274,7 +274,7 @@ fourierPL (Closed ps) = g where
               w' = fromIntegral w
               f h c d = (h ^^ w)*(w'*c+d)
     g 0 = f 0
-    g w = k* ((vhs**w') <> (w'*vcs+vds))
+    g w = k* ((vhs**w') <.> (w'*vcs+vds))
         where k = recip (-2*pi*i* (fromIntegral w)^2)
               w' = fromIntegral w
     vhs = fromList hs

@@ -10,8 +10,8 @@ import System.Environment(getArgs)
 import qualified Data.Map as Map
 import Foreign.C.Types
 import Foreign
-import GSL hiding (size,norm)
-import qualified GSL
+import LinearAlgebra
+import GSL
 import Vision
 import Data.List(minimumBy, maximumBy)
 import Control.Monad(guard)
@@ -30,7 +30,7 @@ easyInvar w f = fromList desc where
     h k = g k/sc
     desc = map h [2..(max 2 w)]
 
-similarTo k eps (f,_,_) (g,_,_) = GSL.norm (easyInvar k f - easyInvar k g) < eps
+similarTo k eps (f,_,_) (g,_,_) = LinearAlgebra.norm (easyInvar k f - easyInvar k g) < eps
 
 prec = degree/10
 nmax = 50

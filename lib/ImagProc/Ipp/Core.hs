@@ -46,7 +46,7 @@ import Control.Monad(when)
 import ImagProc.Ipp.Wrappers
 import Foreign.C.String(peekCString)
 import Foreign.C.Types
-import qualified GSL
+import qualified LinearAlgebra as LA
 import Vision
 
 ------------------------------------------------------------
@@ -306,12 +306,12 @@ data Point = Point { px    :: !Double, py :: !Double} deriving (Eq, Show)
 data Pixel = Pixel { row   :: !Int,    col :: !Int } deriving (Eq, Show)
 
 -- | Auxiliary homogeneous transformation from 'Pixel's to 'Point's
-pixelToPointTrans :: Size -> GSL.Matrix Double
+pixelToPointTrans :: Size -> LA.Matrix Double
 pixelToPointTrans Size {width = w', height = h'} = nor where
     w = fromIntegral w'
     h = fromIntegral h'
     r = h/w
-    nor = GSL.fromLists
+    nor = LA.fromLists
         [[-2/w,      0, 1]
         ,[   0, -2*r/h, r]
         ,[   0,      0, 1]]

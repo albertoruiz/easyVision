@@ -33,7 +33,8 @@ module Vision.Camera
 , estimateCameraRaw
 ) where
 
-import GSL hiding (Matrix, Vector)
+import LinearAlgebra hiding (Matrix, Vector)
+import qualified LinearAlgebra as LA
 import qualified GSL as G
 import Vision.Geometry
 import Vision.Estimation(homogSystem, withNormalization, estimateHomography)
@@ -42,8 +43,8 @@ import Data.List(transpose,nub,maximumBy,genericLength,elemIndex, genericTake)
 import System.Random 
 import Debug.Trace(trace)
 
-type Matrix = G.Matrix Double
-type Vector = G.Vector Double
+type Matrix = LA.Matrix Double
+type Vector = LA.Vector Double
 
 matrix = fromLists :: [[Double]] -> Matrix
 vector = fromList ::  [Double] -> Vector
@@ -190,7 +191,7 @@ cameraFromHomogZ0 mbf c = res where
     s = kgen (1/f) <> c
     [s1,s2,s3] = toColumns s
     sc = norm s1
-    t = s3 <> recip sc
+    t = s3 */ sc
     r1 = unitary s1
     r3 = unitary (cross s1 s2)
     r2 = cross r3 r1
@@ -240,8 +241,8 @@ doublePerp (a,b) (c,d) = (e,f) where
     coef = fromColumns [b'-a', v, c'-d']
     term = c'-a'
     [lam,mu,ep] = toList (inv coef <> term)
-    e = toList $ a' + lam <> (b'-a')
-    f = toList $ a' + lam <> (b'-a') + mu <> v
+    e = toList $ a' + lam .* (b'-a')
+    f = toList $ a' + lam .* (b'-a') + mu .* v
 
 ------------------------------------------------------            
 
@@ -258,7 +259,7 @@ rq m = (r,q) where
 -- | Given a camera matrix m it returns (K, R, C)
 --   such as m \=\~\= k \<\> r \<\> (ident 3 \<\|\> -c)
 factorizeCamera :: Matrix -> (Matrix,Matrix,Vector)
-factorizeCamera m = (normat3 k, r <> signum (det r),c) where
+factorizeCamera m = (normat3 k, signum (det r) `scale` r ,c) where
     m' = takeColumns 3 m
     (k',r') = rq m'
     s = diag(signum (takeDiag k'))
@@ -327,17 +328,17 @@ refineCamera1 prec nmax cam mview mworld = (betterCam,path) where
     initsol = par2list $ poseFromCamera cam
     (betterpar, path) = minimize (cost mview mworld) initsol
     betterCam = syntheticCamera $ list2par betterpar
-    cost view world lpar = pnorm 2 $ flatten (view - htm c world)
+    cost view world lpar = pnorm PNorm2 $ flatten (view - htm c world)
         where c = syntheticCamera $ list2par lpar
-    minimize f xi = minimizeNMSimplex f xi [0.01,5*degree,5*degree,5*degree,0.1,0.1,0.1] prec nmax
+    minimize f xi = G.minimizeNMSimplex f xi [0.01,5*degree,5*degree,5*degree,0.1,0.1,0.1] prec nmax
 
 refineCamera2 prec nmax cam mview mworld = (betterCam,path) where
     f:initsol = par2list $ poseFromCamera cam
     (betterpar, path) = minimize (cost mview mworld) initsol
     betterCam = syntheticCamera $ list2par (f:betterpar)
-    cost view world lpar = {-# SCC "cost2" #-} pnorm 2 $ flatten (view - htm c world)
+    cost view world lpar = {-# SCC "cost2" #-} pnorm PNorm2 $ flatten (view - htm c world)
         where c = syntheticCamera $ list2par (f:lpar)
-    minimize f xi = minimizeNMSimplex f xi [5*degree,5*degree,5*degree,0.1,0.1,0.1] prec nmax
+    minimize f xi = G.minimizeNMSimplex f xi [5*degree,5*degree,5*degree,0.1,0.1,0.1] prec nmax
 
 list2par [f,p,t,r,cx,cy,cz] = CamPar f p t r (cx,cy,cz)
 par2list (CamPar f p t r (cx,cy,cz)) = [f,p,t,r,cx,cy,cz]

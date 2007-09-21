@@ -1,5 +1,6 @@
 import Test.HUnit
 
+import LinearAlgebra
 import GSL
 import Classifier
 import Vision
@@ -14,7 +15,7 @@ realVector = fromList ::  [Double] -> Vector Double
 randomMatrix seed (a,b) (n,m) = reshape m $ realVector $ take (n*m) $ randomRs (a,b) $ mkStdGen seed
 
 infixl 2 =~=
-a =~= b = pnorm 1 (flatten (a - b)) < 1E-9
+a =~= b = pnorm PNorm1 (flatten (a - b)) < 1E-9
 
 factorizeCameraTest m = normatdet m =~= normatdet m' where
     (k,r,c) = factorizeCamera m

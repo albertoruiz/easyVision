@@ -3,7 +3,7 @@
 module Main where
 
 import Vision
-import GSL 
+import LinearAlgebra 
 
 matrix m = fromLists m :: Matrix Double
 vector v = fromList v  :: Vector Double
@@ -70,14 +70,14 @@ main = do
     printm (normat3 h2)
     printm e1
     printm e2
-    print (pnorm 1 $ flatten e1)
-    print (pnorm 1 $ flatten e2)
+    print (pnorm PNorm1 $ flatten e1)
+    print (pnorm PNorm1 $ flatten e2)
     putStrLn ""
     putStrLn "camera estimation"
     printm (normat3 m1)
     printm (normat3 m2)
     printm e3
     printm e4
-    print (pnorm 1 $ flatten e3)
-    print (pnorm 1 $ flatten e4)
+    print (pnorm PNorm1 $ flatten e3)
+    print (pnorm PNorm1 $ flatten e4)
     putStrLn ""

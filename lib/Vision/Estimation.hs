@@ -25,7 +25,7 @@ module Vision.Estimation
 , estimateHomographyRansac
 ) where
 
-import GSL
+import LinearAlgebra
 import Classifier.Stat
 import Vision.Geometry
 import Data.List(transpose,nub,maximumBy,genericLength,elemIndex)
@@ -47,7 +47,7 @@ homogSystem coeffs = sol where
     mat | r >= c   = matrix coeffs
         | r == c-1 = matrix (head coeffs : coeffs)
         | otherwise = error "homogSystem with rows<cols-1"
-    (_,_,v) = svdR' mat
+    (_,_,v) = svdR mat
     sol = flatten $ dropColumns (c-1) v
 
 -- FIXME: use a list of tuples insted of two arguments

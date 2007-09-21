@@ -34,6 +34,7 @@ module Vision.Stereo
 , stereoRectifiers
 ) where
 
+import LinearAlgebra
 import GSL
 import Vision.Geometry
 import Vision.Estimation
@@ -46,7 +47,7 @@ import Debug.Trace(trace)
 matrix = fromLists :: [[Double]] -> Matrix Double
 vector = fromList ::  [Double] -> Vector Double
 
-svd = svdR'
+--svd = svdR'
 
 --------------------- Basic Stereo -----------------------
 
@@ -104,8 +105,8 @@ estimateEssential' (f0,f0') fund = (esen,(f,f'),err) where
 
 bougnoux :: Matrix Double -> Double
 bougnoux fun = sqrt (- a / b) where
-    a = (p' <> asMat e' <> i' <> fun <> p) * (p <> trans fun <> p')
-    b = (p' <> asMat e' <> i' <> fun <> i' <> trans fun <> p')
+    a = (p' <> asMat e' <> i' <> fun <.> p) * (p <> trans fun <.> p')
+    b = (p' <> asMat e' <> i' <> fun <> i' <> trans fun <.> p')
     (_,e') = epipoles fun
     i' = diag $ vector [1,1,0]
     p = vector [0,0,1]
@@ -167,12 +168,12 @@ triangulate mps = xs where
 
 
 cameraDirection :: Matrix Double -> Vector Double
-cameraDirection m = unitary (det a <> m3) where
+cameraDirection m = unitary (det a .* m3) where
     a = takeColumns 3 m
     [_,_,m3] = toRows a
 
 depthOfPoint :: [Double] -> Matrix Double -> Double
-depthOfPoint p m = (signum (det a) / norm m3) <> w3 where
+depthOfPoint p m = (signum (det a) / norm m3) * w3 where
     a = takeColumns 3 m
     [_,_,m3] = toRows a
     w = m <> homog (vector p)

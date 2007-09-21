@@ -31,7 +31,7 @@ module Classifier.Base (
      whitenAttr, normalizeAttr, normalizeMinMax
 ) where
 
-import GSL
+import LinearAlgebra
 import Data.List(sortBy, sort, nub, elemIndex, intersperse, transpose, partition, delete)
 import qualified Data.Map as Map
 import System.Random
@@ -118,7 +118,7 @@ scramble seed l = map fst $ sortBy (compare `on` snd) randomTuples where
 addNoise :: Int -> Double -> Sample -> Sample
 addNoise seed sz l = zip rvs lbs where
     (vs,lbs) = unzip l
-    n = size (head vs)
+    n = dim (head vs)
     randomVectors = map vector $ partit n $ randomRs (-sz, sz::Double) (mkStdGen seed)
     rvs = zipWith (+) vs randomVectors
 
@@ -297,7 +297,7 @@ normalizeMinMax (mn,mx) exs = f where
     mins = vector $ map vectorMin xs
     dxs = maxs - mins
     dy = mx - mn
-    r = dy <> recip dxs   -- FIXME: protect the division...
+    r = dy .* recip dxs   -- FIXME: protect the division...
     b = vector [mn] - r*mins
 
 -- | Whitening transformation

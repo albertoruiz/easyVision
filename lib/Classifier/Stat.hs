@@ -25,7 +25,7 @@ module Classifier.Stat
 , robustLocation
 ) where
 
-import GSL
+import LinearAlgebra
 import Data.List(transpose,sortBy,minimumBy)
 
 -- | 1st and 2nd order statistics and other useful information extracted from a multivariate sample, where observations are given as rows of a matrix.

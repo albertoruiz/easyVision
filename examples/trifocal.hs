@@ -3,8 +3,7 @@
 import Vision
 import Tensor
 import Data.Packed.Matrix
-import GSL.Vector
-import GSL
+import LinearAlgebra
 import Data.List(sort)
 import LinearAlgebra.Linear
 

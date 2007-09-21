@@ -25,7 +25,8 @@ module Vision.Autofrontal (
 
 -- experiments on planar rectification
 
-import GSL
+import LinearAlgebra
+import GSL hiding (sin,cos)
 import Vision.Geometry
 import Vision.Camera
 import Data.List (elemIndex,sort)
@@ -76,20 +77,20 @@ quality ihs mbOmgs c = sum qs / fromIntegral (length ihs) where
 
 
 -- this gives a low value if h is a similar transformation
-similarityDegree h = pnorm 1 (m'-v) where
+similarityDegree h = pnorm PNorm1 (m'-v) where
     v = vector [1,0,0,0,1,0,0,0,0]
     m = flatten (h <> mS <> trans h)
-    m' = m <> recip (m@>0)
+    m' = m */ m@>0
 
 -- hmm! premature optimization...
 omegaGen f = kgen (recip (f*f))
 
 -- this gives a measure of the difference with a camera homography, for known f
-orthogonality omega c = pnorm 1 (m'-v) where
+orthogonality omega c = pnorm PNorm1 (m'-v) where
     v = vector [1,0,0,1]
     m = flatten $ subMatrix (0,0) (2,2) q
-    m' = m <> recip (m@>0)
-    q = trans c <> omega <> c 
+    m' = m */ m@>0
+    q = trans c <> omega <> c
 
 -- si das un f (omega) la usa, si no intenta estimarla y si no puede ve si es similar
 autoOrthogonality mbOmega c = res where

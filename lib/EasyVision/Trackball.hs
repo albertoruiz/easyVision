@@ -2,7 +2,7 @@
 
 module EasyVision.Trackball (newTrackball) where
 
-import GSL
+import LinearAlgebra hiding ((><))
 import Graphics.UI.GLUT hiding (normalize, Matrix, matrix)
 import Data.IORef
 
@@ -11,7 +11,7 @@ matrix m = fromLists m :: Matrix Double
 
 data Quaternion = Quat {qs::Double, qv::Vector Double}
 
-normalize Quat{ qs = s, qv = v } = Quat { qs = s/m, qv = recip m <> v }
+normalize Quat{ qs = s, qv = v } = Quat { qs = s/m, qv = v */ m }
     where m = sqrt $ s^2 + norm v ^ 2
 
 infixl 5 .+.
@@ -21,12 +21,12 @@ Quat{ qs = a, qv = u } .+. Quat{ qs = t, qv = v } =
 -- composition of rotations (Grassmann product)
 infixl 7 .*.
 Quat{ qs = a, qv = u } .*. Quat{ qs = t, qv = v } = normalize $
-    Quat { qs = a*t - u<>v, qv = a<>v + t<>u + u >< v }
+    Quat { qs = a*t - u<.>v, qv = a.*v + t .* u + u >< v }
 
 --------------------------------------
 
-axisToQuat phi axis = Quat { qs = cos (phi/2), qv = sin (phi/2) <> v }
-    where v = recip (norm axis) <> axis
+axisToQuat phi axis = Quat { qs = cos (phi/2), qv = sin (phi/2) .* v }
+    where v = axis */ norm axis
 
 --------------------------------------
 getRotation Quat {qs = w, qv = v} =
