@@ -1,5 +1,4 @@
-import Test.HUnit
-
+import Test.HUnit hiding (test,(~:))
 import LinearAlgebra
 import GSL
 import Classifier
@@ -8,6 +7,7 @@ import System.Random(randomRs,mkStdGen)
 import System.Directory(doesFileExist)
 import System(system)
 import Control.Monad(when)
+import Tensor
 
 realMatrix = fromLists :: [[Double]] -> Matrix Double
 realVector = fromList ::  [Double] -> Vector Double
@@ -72,7 +72,7 @@ classifyTest n1 n2 numErr = do
 
 -------------------------------------------------------------------
 
-ransacTest = assertBool "ransac homography" (normat3 h1 =~= normat3 h) where
+ransacTest = (normat3 h1 =~= normat3 h) where
     orig = [[x,y] | x <- [-1, -0.9 .. 1], y <- [-1, -0.9 .. 1]]
     dest = ht h1 a ++ ht h2 b where (a,b) = splitAt 230 orig
     h1 = realMatrix [[1,0,0],
@@ -85,8 +85,8 @@ ransacTest = assertBool "ransac homography" (normat3 h1 =~= normat3 h) where
 
 --------------------------------------------------------------------
 
-statTest = assertBool "stat Test" ( (whc =~= ident (rows whc)) &&
-                                    (tc  =~= ident (rows  tc))) where
+statTest = (whc =~= ident (rows whc)) &&
+           (tc =~= ident (rows  tc)) where
     xs = randomMatrix 100 (10,20) (100,2) <|> randomMatrix 17 (-1,2) (100,2)
     st = stat xs
     whc = covarianceMatrix $ stat $ normalizedData st
@@ -99,24 +99,64 @@ statTest = assertBool "stat Test" ( (whc =~= ident (rows whc)) &&
 
 -------------------------------------------------------------------
 
+dist :: (Normed t, Num t) => t -> t -> Double
+dist a b = pnorm Infinity (a-b)
+
+infixl 4 |~|
+a |~| b = a :~8~: b
+
+data Aprox a = (:~) a Int
+
+(~:) :: (Normed a, Num a) => Aprox a -> a -> Bool
+a :~n~: b = dist a b < 10^^(-n)
+
+---------------
+
+infixl 8 !
+t ! l = withIdx t (map return l)
+
+infixl 7 <*>
+(<*>) = mulT
+
+tTrans m = tensor [rows m, -cols m] (flatten m)
+
+eps3 = leviCivita 3
+eps4 = raise $ leviCivita 4
+
+tFundamental c1 c2 = eps3!"pqr" <*> eps4!"bcij" <*> c1!"pb" <*> c1!"qc" <*> c2!"si" <*> c2!"tj" <*> eps3!"stk"
+
+c1 = syntheticCamera $ easyCamera 40 (0,0,0) (0.5,0,1) 0
+ct1 = tTrans c1
+
+c2 = syntheticCamera $ easyCamera 20 (1,0,0) (0.5,0.5,1) 0
+ct2 = tTrans c2
+
+f = fundamentalFromCameras c1 c2
+tf = tFundamental ct1 ct2
+
+tensorTest = normat f |~| normat (reshape 3 (coords tf))
+
+-------------------------------------------------------------------
+
 tests = TestList 
-    [ TestCase (assertBool "factorize1" (factorizeCameraTest m1))
-    , TestCase (assertBool "factorize2" (factorizeCameraTest m2))
-    , TestCase (assertBool "pose1"       (poseEstimationTest  m1))
-    , TestCase (assertBool "pose2"       (poseEstimationTest  m3))
-    , TestCase (assertBool "pose3"       (poseEstimationTest  m4))
-    , TestCase (assertBool "pose4"       (poseEstimationTest  m5))
-    , TestCase (assertBool "pose5"       (poseEstimationTest  m6))
-    , TestCase (assertBool "recover1"    (recoverFromHomogZ0Test  m1))
-    , TestCase (assertBool "recover2"    (recoverFromHomogZ0Test  m3))
-    , TestCase (assertBool "recover3"    (recoverFromHomogZ0Test  m4))
-    , TestCase (assertBool "recover4"    (recoverFromHomogZ0Test  m5))
-    , TestCase (assertBool "recover5"    (recoverFromHomogZ0Test  m6))
-    , TestCase $ statTest
-    , TestCase $ ransacTest
-    , TestCase $ classifyTest 500 500 129 
-    --, TestCase $ classifyTest 4000 1000 63
+    [ test "factorize1"  (factorizeCameraTest m1)
+    , test "factorize2"  (factorizeCameraTest m2)
+    , test "pose1"       (poseEstimationTest  m1)
+    , test "pose2"       (poseEstimationTest  m3)
+    , test "pose3"       (poseEstimationTest  m4)
+    , test "pose4"       (poseEstimationTest  m5)
+    , test "pose5"       (poseEstimationTest  m6)
+    , test "recover1"    (recoverFromHomogZ0Test  m1)
+    , test "recover2"    (recoverFromHomogZ0Test  m3)
+    , test "recover3"    (recoverFromHomogZ0Test  m4)
+    , test "recover4"    (recoverFromHomogZ0Test  m5)
+    , test "recover5"    (recoverFromHomogZ0Test  m6)
+    , test "stat"        statTest
+    , test "ransac"      ransacTest
+    , TestCase        $  classifyTest 500 500 129 -- 4000 1000 63
+    , test "tensor"      tensorTest
     ]
 
 main = runTestTT tests
 
+test str b = TestCase $ assertBool str b
