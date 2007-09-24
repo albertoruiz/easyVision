@@ -23,7 +23,8 @@ module EasyVision.Combinators (
   withPause,
   addSmall,
   detectMov,
-  monitorizeIn
+  monitorizeIn,
+  inThread
 
 )where
 
@@ -39,6 +40,7 @@ import System.IO.Unsafe(unsafeInterleaveIO)
 import EasyVision.GUI(addWindow,kbdcam,State)
 import EasyVision.Draw(drawImage,Drawable)
 import Graphics.UI.GLUT(currentWindow,($=),swapBuffers,get)
+import Control.Concurrent
 
 
 
@@ -137,3 +139,16 @@ monitorizeIn name sz selector app cam = do
         swapBuffers
         currentWindow $= saved
         return thing
+
+---------------------------------------------------------
+
+-- | Creates a virtual camera which always supplies the most recent frame.
+inThread :: IO a -> IO (IO a)
+inThread cam = do
+    c <- newEmptyMVar
+    cam >>= putMVar c
+    let loop = do img <- cam
+                  swapMVar c img
+                  loop
+    forkIO loop
+    return (readMVar c)

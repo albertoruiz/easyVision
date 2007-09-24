@@ -7,7 +7,7 @@ ALL = demo hessian warp frontal pose automatch brush stereo detect interpolate r
 all: $(ALL) 
 
 %: %.hs auxc
-	ghc -O --make $< -o $@ $(LIBS)
+	ghc -O -threaded --make $< -o $@ $(LIBS)
 
 auxc: ../lib/ImagProc/Ipp/auxIpp.o ../lib/ImagProc/Segments/libsegments.a
 
