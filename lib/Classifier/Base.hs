@@ -262,7 +262,7 @@ meancov x = (m,c) where
     c = covarianceMatrix st
     st = stat x
 
--- warning: we assume descending order in eigR (!?)
+-- warning: we assume descending order in eig(R) (!?)
 -- | Most discriminant linear features (lda)
 mdf :: Property Attributes Attributes
 mdf exs = f where
@@ -270,7 +270,7 @@ mdf exs = f where
     n = length gs - 1
     gs = fst$ group exs
     (v',_) = fromComplex$ takeColumns n v
-    (l,v) = eigR (inv c <> cm)
+    (l,v) = eig (inv c <> cm)
     (m,c) = meancov$ fromRows$ map fst exs
     cm = cov$ fromRows$ map (mean.fromRows) $ gs
 

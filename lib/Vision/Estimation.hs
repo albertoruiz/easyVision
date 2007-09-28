@@ -47,7 +47,7 @@ homogSystem coeffs = sol where
     mat | r >= c   = matrix coeffs
         | r == c-1 = matrix (head coeffs : coeffs)
         | otherwise = error "homogSystem with rows<cols-1"
-    (_,_,v) = svdR mat
+    (_,_,v) = svd mat
     sol = flatten $ dropColumns (c-1) v
 
 -- FIXME: use a list of tuples insted of two arguments
