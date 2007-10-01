@@ -8,7 +8,7 @@ import System.Environment(getArgs)
 import GHC.Float(isDoubleNaN)
 import ImagProc.Ipp.Core
 import Data.List(minimumBy)
-import GSL hiding (size)
+import Numeric.GSL hiding (size)
 import qualified GSL
 import Control.Monad(when)
 import Vision

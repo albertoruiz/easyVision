@@ -19,7 +19,7 @@ module Classifier.Simple (
      mse, mseWeighted, distWeighted,
 ) where
 
-import LinearAlgebra
+import Numeric.LinearAlgebra
 import Classifier.Base
 
 import Data.List(sortBy, sort, nub, elemIndex, intersperse, transpose, partition, delete)

@@ -25,7 +25,7 @@ module Classifier.Adaboost (
 
 ) where
 
-import LinearAlgebra
+import Numeric.LinearAlgebra
 import Classifier.Base
 import Data.List(sortBy, transpose, elemIndex, partition)
 import Debug.Trace

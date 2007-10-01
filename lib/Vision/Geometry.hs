@@ -49,7 +49,7 @@ module Vision.Geometry
 , normat3
 ) where
 
-import LinearAlgebra
+import Numeric.LinearAlgebra
 
 matrix = fromLists :: [[Double]] -> Matrix Double
 vector = fromList ::  [Double] -> Vector Double

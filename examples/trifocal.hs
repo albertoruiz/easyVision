@@ -3,9 +3,9 @@
 import Vision
 import Tensor
 import Data.Packed.Matrix
-import LinearAlgebra
+import Numeric.LinearAlgebra
 import Data.List(sort)
-import LinearAlgebra.Linear
+--import LinearAlgebra.Linear
 
 -- some defs
 
@@ -181,7 +181,7 @@ main = do
     let c2' = tf!"kr"*c1!"ra" * raise eps3!"kst" * something!"s" + tepip!"i"*tc [0,0,0,1]!"j"
     let m2' = chopM $ normat $ reshape 4 $ coords $ c2'
     print $ m2'
-    print $ (\(_,s,_)-> s) $ svdR' m2'
+    print $ (\(_,s,_)-> s) $ svd m2'
     print $ chopM $ normat $ reshape 3 $ coords $ tFundamental c1 c2'
     --error "OK"
     putStrLn "-----------------"

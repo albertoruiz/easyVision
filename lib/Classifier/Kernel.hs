@@ -20,7 +20,7 @@ module Classifier.Kernel (
      kernelMSE
 ) where
 
-import LinearAlgebra
+import Numeric.LinearAlgebra
 import Classifier.Base
 
 --matrix = fromLists :: [[Double]] -> Matrix Double

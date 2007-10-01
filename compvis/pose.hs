@@ -11,7 +11,7 @@ import qualified Data.Map as Map
 import Graphics.UI.GLUT hiding (Matrix, Size, Point)
 import Vision
 import Control.Monad(when)
-import LinearAlgebra
+import Numeric.LinearAlgebra
 
 main = do
     args <- getArgs

@@ -1,7 +1,7 @@
 
 import EasyVision
 import System.Environment(getArgs)
-import LinearAlgebra
+import Numeric.LinearAlgebra
 import Vision
 
 szc = Size 288 384

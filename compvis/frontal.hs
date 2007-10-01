@@ -22,7 +22,7 @@ import System.Exit
 import Control.Monad(when)
 import System.Environment(getArgs)
 import Data.List(minimumBy, elemIndex)
-import LinearAlgebra
+import Numeric.LinearAlgebra
 import Vision
 
 -------------------------------------------------------

@@ -33,9 +33,9 @@ module Vision.Camera
 , estimateCameraRaw
 ) where
 
-import LinearAlgebra hiding (Matrix, Vector)
-import qualified LinearAlgebra as LA
-import qualified GSL as G
+import Numeric.LinearAlgebra hiding (Matrix, Vector)
+import qualified Numeric.LinearAlgebra as LA
+import qualified Numeric.GSL as G
 import Vision.Geometry
 import Vision.Estimation(homogSystem, withNormalization, estimateHomography)
 import Classifier.Stat

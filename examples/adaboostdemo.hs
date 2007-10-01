@@ -1,6 +1,6 @@
 import Classifier
 import Classifier.ToyProblems
-import LinearAlgebra
+import Numeric.LinearAlgebra
 import System.Random
 import Debug.Trace
 import Data.List(inits, sort, partition)

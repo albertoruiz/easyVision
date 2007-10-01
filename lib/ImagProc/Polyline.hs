@@ -38,7 +38,7 @@ import Foreign.C.Types(CUChar)
 import Foreign
 import Debug.Trace
 import Data.List(maximumBy, zipWith4)
-import LinearAlgebra
+import Numeric.LinearAlgebra
 import Vision.Geometry
 
 debug x = trace (show x) x

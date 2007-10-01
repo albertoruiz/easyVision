@@ -88,7 +88,7 @@ import ImagProc.Ipp
 import Foreign hiding (shift)
 import Foreign.C.Types(CUChar)
 import Vision --hiding ((|-|),(|+|))
-import LinearAlgebra
+import Numeric.LinearAlgebra
 import Numeric
 
 ---------------------------------------

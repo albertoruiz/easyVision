@@ -2,7 +2,7 @@
 
 module EasyVision.Trackball (newTrackball) where
 
-import LinearAlgebra hiding ((><))
+import Numeric.LinearAlgebra hiding ((><))
 import Graphics.UI.GLUT hiding (normalize, Matrix, matrix)
 import Data.IORef
 

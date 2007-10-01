@@ -1,6 +1,6 @@
 import Test.HUnit hiding (test,(~:))
-import LinearAlgebra
-import GSL
+import Numeric.LinearAlgebra
+import Numeric.GSL
 import Classifier
 import Vision
 import System.Random(randomRs,mkStdGen)

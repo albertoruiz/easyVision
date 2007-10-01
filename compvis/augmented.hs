@@ -10,7 +10,7 @@ import qualified Data.Map as Map
 import Graphics.UI.GLUT hiding (Matrix, Size, Point)
 import Vision
 import Control.Monad(when)
-import LinearAlgebra
+import Numeric.LinearAlgebra
 import Debug.Trace
 
 debug x = trace (show x) x

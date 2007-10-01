@@ -9,7 +9,7 @@ import Data.IORef
 import System.Exit
 import System.Environment(getArgs)
 import Data.List(minimumBy)
-import LinearAlgebra
+import Numeric.LinearAlgebra
 import Control.Monad(when)
 import GHC.Float(double2Float,isDoubleNaN)
 import ImagProc.Ipp.Core

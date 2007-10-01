@@ -1,7 +1,7 @@
 {- comparison of different learning machines on a 2D toy problem
 -}
 
-import LinearAlgebra
+import Numeric.LinearAlgebra
 import Classifier
 import Classifier.ToyProblems
 import System.Random

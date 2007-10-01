@@ -35,7 +35,7 @@ import ImagProc.Saddle
 import ImagProc.ImageProcessing(resize32f,yuvToRGB)
 import Data.IORef
 import Foreign (touchForeignPtr)
-import LinearAlgebra
+import Numeric.LinearAlgebra
 import Vision
 import EasyVision.Trackball
 

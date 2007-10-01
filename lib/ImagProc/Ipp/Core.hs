@@ -46,7 +46,7 @@ import Control.Monad(when)
 import ImagProc.Ipp.Wrappers
 import Foreign.C.String(peekCString)
 import Foreign.C.Types
-import qualified LinearAlgebra as LA
+import qualified Numeric.LinearAlgebra as LA
 import Vision
 
 ------------------------------------------------------------

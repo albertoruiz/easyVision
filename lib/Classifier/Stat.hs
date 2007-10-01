@@ -25,7 +25,7 @@ module Classifier.Stat
 , robustLocation
 ) where
 
-import LinearAlgebra
+import Numeric.LinearAlgebra
 import Data.List(transpose,sortBy,minimumBy)
 
 -- | 1st and 2nd order statistics and other useful information extracted from a multivariate sample, where observations are given as rows of a matrix.
@@ -46,7 +46,7 @@ stat x = s where
     m = sumColumns x / fromIntegral (rows x)
     xc = x |-| m
     c = (trans xc <> xc) / fromIntegral (rows x -1)
-    (l,v') = eigS c
+    (l,v') = eigSH' c
     v = trans v'
     lastrow = fromList $ replicate (cols x) 0 ++[1.0::Double]
     w = diag (1/sqrt l) <> v

@@ -4,7 +4,7 @@
         $ gunzip mnist.txt.gz
 -}
 
-import LinearAlgebra
+import Numeric.LinearAlgebra
 import Classifier
 import Classifier.ToyProblems(mnistraw)
 import Debug.Trace

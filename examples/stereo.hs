@@ -3,7 +3,7 @@
 module Main where
 
 import Vision
-import LinearAlgebra 
+import Numeric.LinearAlgebra 
 import Data.List(genericLength)
 import System(system)
 import System

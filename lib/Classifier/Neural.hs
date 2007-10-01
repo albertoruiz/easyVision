@@ -17,7 +17,7 @@ module Classifier.Neural (
      learnNetwork, neural, createNet, adaptNet, perceptron, neural',
 ) where
 
-import LinearAlgebra
+import Numeric.LinearAlgebra
 import Classifier.Base
 import System.Random
 

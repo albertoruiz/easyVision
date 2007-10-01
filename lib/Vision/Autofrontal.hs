@@ -25,8 +25,8 @@ module Vision.Autofrontal (
 
 -- experiments on planar rectification
 
-import LinearAlgebra
-import GSL hiding (sin,cos)
+import Numeric.LinearAlgebra
+import Numeric.GSL hiding (sin,cos)
 import Vision.Geometry
 import Vision.Camera
 import Data.List (elemIndex,sort)

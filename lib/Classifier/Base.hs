@@ -31,7 +31,7 @@ module Classifier.Base (
      whitenAttr, normalizeAttr, normalizeMinMax
 ) where
 
-import LinearAlgebra
+import Numeric.LinearAlgebra
 import Data.List(sortBy, sort, nub, elemIndex, intersperse, transpose, partition, delete)
 import qualified Data.Map as Map
 import System.Random

@@ -3,7 +3,7 @@
 module Main where
 
 import Vision
-import LinearAlgebra 
+import Numeric.LinearAlgebra 
 
 matrix m = fromLists m :: Matrix Double
 vector v = fromList v  :: Vector Double

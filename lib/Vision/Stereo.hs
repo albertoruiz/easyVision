@@ -34,8 +34,8 @@ module Vision.Stereo
 , stereoRectifiers
 ) where
 
-import LinearAlgebra
-import GSL
+import Numeric.LinearAlgebra
+import Numeric.GSL
 import Vision.Geometry
 import Vision.Estimation
 import Vision.Camera(kgen,cameraAtOrigin)

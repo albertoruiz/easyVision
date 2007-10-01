@@ -25,7 +25,7 @@ module Vision.Estimation
 , estimateHomographyRansac
 ) where
 
-import LinearAlgebra
+import Numeric.LinearAlgebra
 import Classifier.Stat
 import Vision.Geometry
 import Data.List(transpose,nub,maximumBy,genericLength,elemIndex)

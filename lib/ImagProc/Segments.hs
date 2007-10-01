@@ -34,7 +34,7 @@ import Data.Graph
 import Data.Tree
 import Debug.Trace
 import Vision
-import LinearAlgebra
+import Numeric.LinearAlgebra
 import ImagProc.Polyline
 
 vector = fromList :: [Double] -> Vector Double

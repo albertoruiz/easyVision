@@ -32,8 +32,7 @@ module Tensor (
 import Data.Packed.Internal
 import Foreign.Storable
 import Data.List(sort,elemIndex,nub,foldl1',foldl')
---import GSL.Vector
-import LinearAlgebra
+import Numeric.LinearAlgebra
 
 data IdxType = Covariant | Contravariant deriving (Show,Eq)
 

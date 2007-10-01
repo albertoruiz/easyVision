@@ -23,7 +23,7 @@ where
 import ImagProc.Ipp.Core
 import ImagProc.ImageProcessing
 import Data.List(zipWith6)
-import LinearAlgebra
+import Numeric.LinearAlgebra
 import GHC.Float(float2Double,double2Float)
 
 data InterestPoint = IP {

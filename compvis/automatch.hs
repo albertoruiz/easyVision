@@ -8,7 +8,7 @@ import System.Exit
 import Control.Monad(when)
 import System.Environment(getArgs)
 import Data.List(minimumBy,partition)
-import LinearAlgebra
+import Numeric.LinearAlgebra
 import Vision
 import qualified ImagProc.Images as I
 

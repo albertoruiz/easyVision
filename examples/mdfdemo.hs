@@ -2,7 +2,7 @@
    using the mnist dataset
 -}
 
-import LinearAlgebra
+import Numeric.LinearAlgebra
 import Classifier
 import Classifier.ToyProblems(combined)
 import System.Random
