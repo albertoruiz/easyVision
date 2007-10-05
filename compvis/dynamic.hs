@@ -13,19 +13,46 @@ import Control.Monad(when)
 import Numeric.LinearAlgebra
 import Debug.Trace
 import Data.IORef
+import Control.Concurrent
+import Text.Printf
 
 debug x = trace (show x) x
 
+data Particle = PT {
+    x,y,z :: GLdouble,
+    vx,vy,vz :: GLdouble }
+
+createParticle = do
+    p <- newMVar PT {x=0,y=0,z=0,vx=0.000,vy=0.000,vz=0}
+    a <- newMVar (0,0,0)
+    let loop = do
+        s <- readMVar p
+        (ax,ay,az) <- readMVar a
+        let vx1 = 0.99*vx s + ax
+            vy1 = 0.99*vy s + ay
+            vz1 = vz s + az
+            x1  = x s + vx1
+            y1  = y s + vy1
+            z1  = z s + vz1
+        swapMVar p s{x=x1,y=y1,z=z1,vx=vx1,vy=vy1,vz=vz1}
+        threadDelay 10000
+        loop
+    let readPos = do
+        s <- readMVar p
+        return s
+    let writeAccel ax ay az = do
+        swapMVar a (ax,ay,az)
+        return ()
+    forkIO loop
+    return (readPos, writeAccel)
+
 data MyState = ST {
-    x,y,z :: Double,
-    vx,vy,vz :: Double,
     rfloor :: Matrix Double,
     reset :: Bool }
 
-initstate = ST { x = 0, y = 0, z = 0,
-                 vx = 0, vy = 0, vz = 0,
-                 rfloor = cameraAtOrigin,
+initstate = ST { rfloor = cameraAtOrigin,
                  reset = True }
+
 
 main = do
     args <- getArgs
@@ -62,12 +89,14 @@ main = do
 
     let mbf = read `fmap` Map.lookup "--focal" opts
 
-    launch app (worker cam o tb mbf)
+    partic <- createParticle
+
+    launch app (worker cam o tb mbf partic)
 
 -----------------------------------------------------------------
 
 
-worker cam op trackball mbf inWindow st = do
+worker cam op trackball mbf (getPos,setAccel) inWindow st = do
 
     radius <- getParam op "radius"
     width  <- getParam op "width"
@@ -125,19 +154,24 @@ worker cam op trackball mbf inWindow st = do
             lineWidth $= 1
             renderPrimitive LineLoop (mapM_ vertex a4)
 
-            hut
+            pos <- getPos
+            hut (x pos) (y pos)
 
             cameraView r (4/3) 0.1 100
             reffloor
 
-            let rel = linearSolve (p <-> fromList [0,0,0,1::Double]) (r <-> fromList [0,0,0,1::Double])
-                rot = subMatrix (0,0) (3,3) rel
-                mrc = flatten $ subMatrix (0,3) (3,1) rel
-                c   = -(trans rot) <> mrc
+            let (invr,_) = toCameraSystem r
+                (invp,_) = toCameraSystem p
+
+                rel = invr <> inv (invp)
+                ax = rel @@> (0,2)
+                ay = rel @@> (1,2)
+
+            --ds rel
 
             pointCoordinates (size orig)
-            text2D 0.9 (-0.7) (show$ map (round.(*100)) $toList c)
-
+            text2D 0.9 (-0.7) (show$ map (round.(*100)) $ [ax,ay])
+            setAccel (ax/1000) (ay/1000) 0
 
     return st'
 
@@ -176,7 +210,7 @@ text2D x y s = do
 
 v a b c = vertex $ Vertex3 a b (c::GLdouble)
 
-hut = do
+hut x y = do
     setColor 1 0.5 0.5
     renderPrimitive Polygon $ do
         v 0.5 0 1.5
@@ -205,6 +239,9 @@ hut = do
         v 1 1 1
         v 1 1 0
         v 1 0 0
+  where v a b c = vertex $ Vertex3 (a+x) (b+y) (c::GLdouble)
+
+
 
 reffloor = do
     setColor 1 1 1
@@ -218,3 +255,5 @@ mouse rst (Char ' ') Down _ _ = do
     modifyIORef rst $ \s -> s {ust = (ust s) {reset = True}}
 
 mouse _ _ _ _ _ = return ()
+
+--ds = putStrLn . format "  " (printf "%.2f")
