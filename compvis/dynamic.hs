@@ -23,18 +23,21 @@ data Particle = PT {
     vx,vy,vz :: GLdouble }
 
 createParticle = do
-    p <- newMVar PT {x=0,y=0,z=0,vx=0.000,vy=0.000,vz=0}
+    p <- newMVar PT {x=1,y=1.5,z=0,vx=0.000,vy=0.000,vz=0}
     a <- newMVar (0,0,0)
     let loop = do
         s <- readMVar p
         (ax,ay,az) <- readMVar a
-        let vx1 = 0.99*vx s + ax
-            vy1 = 0.99*vy s + ay
+        let vx1 = 0.995*vx s + ax
+            vy1 = 0.995*vy s + ay
+            svx = if x s <r || x s > 2.1-r then -vx1 else vx1
+            svy = if y s <r || y s > 2.97-r then -vy1 else vy1
             vz1 = vz s + az
-            x1  = x s + vx1
-            y1  = y s + vy1
+            x1  = x s + svx
+            y1  = y s + svy
             z1  = z s + vz1
-        swapMVar p s{x=x1,y=y1,z=z1,vx=vx1,vy=vy1,vz=vz1}
+            r = 0.3
+        swapMVar p s{x=x1,y=y1,z=z1,vx=svx,vy=svy,vz=vz1}
         threadDelay 10000
         loop
     let readPos = do
@@ -129,6 +132,7 @@ worker cam op trackball mbf (getPos,setAccel) inWindow st = do
         clear [DepthBuffer]
         pointCoordinates (size orig)
 
+        {-
         setColor 0 0 1
         lineWidth $= 1
         renderPrimitive Lines $ mapM_ drawSeg segs
@@ -136,6 +140,7 @@ worker cam op trackball mbf (getPos,setAccel) inWindow st = do
         setColor 1 0 0
         lineWidth $= 3
         mapM_ (renderPrimitive LineLoop . (mapM_ vertex)) closed4
+        -}
 
         setColor 0 1 0
         pointSize $= 5
@@ -154,11 +159,13 @@ worker cam op trackball mbf (getPos,setAccel) inWindow st = do
             lineWidth $= 1
             renderPrimitive LineLoop (mapM_ vertex a4)
 
-            pos <- getPos
-            hut (x pos) (y pos)
-
-            cameraView r (4/3) 0.1 100
             reffloor
+
+            pos <- getPos
+            sphere (x pos) (y pos)
+
+            --cameraView r (4/3) 0.1 100
+            
 
             let (invr,_) = toCameraSystem r
                 (invp,_) = toCameraSystem p
@@ -210,46 +217,29 @@ text2D x y s = do
 
 v a b c = vertex $ Vertex3 a b (c::GLdouble)
 
-hut x y = do
+sphere x y = do
+    lineWidth $=1
     setColor 1 0.5 0.5
-    renderPrimitive Polygon $ do
-        v 0.5 0 1.5
-        v 1   0 1
-        v 1   1 1
-        v 0.5 1 1.5
-        v 0.5 0 1.5
-    setColor 1 0.3 0.3
-    renderPrimitive Polygon $ do
-        v 0   0   1
-        v 0.5 0 1.5
-        v 0.5 1 1.5
-        v 0   1   1
-        v 0   0   1
-    setColor 1 0.6 1
-    renderPrimitive Polygon $ do
-        v 0 0 0
-        v 0 0 1
-        v 0 1 1
-        v 0 1 0
-        v 0 0 0
-    setColor 0.6 1 1
-    renderPrimitive Polygon $ do
-        v 1 0 0
-        v 1 0 1
-        v 1 1 1
-        v 1 1 0
-        v 1 0 0
-  where v a b c = vertex $ Vertex3 (a+x) (b+y) (c::GLdouble)
+    translate $ Vector3 x y 0.3
+    renderQuadric 
+        (QuadricStyle Nothing NoTextureCoordinates Outside FillStyle)
+        (Sphere 0.29 10 10)
+    setColor 0 0 0
+    renderQuadric 
+        (QuadricStyle Nothing NoTextureCoordinates Outside LineStyle)
+        (Sphere 0.3 10 10)
+
 
 
 
 reffloor = do
-    setColor 1 1 1
+    setColor 0 0 1
+    lineWidth $=2
     renderPrimitive LineLoop $ do
-        v 0 0 0
-        v 1 0 0
-        v 1 1 0
-        v 0 1 0
+        v 0 0 0.3
+        v 0 2.97 0.3
+        v 2.1 2.97 0.3
+        v 2.1 0 0.3
 
 mouse rst (Char ' ') Down _ _ = do
     modifyIORef rst $ \s -> s {ust = (ust s) {reset = True}}
