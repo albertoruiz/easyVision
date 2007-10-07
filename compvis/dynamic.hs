@@ -69,8 +69,6 @@ main = do
 
     (cam,ctrl) <- mplayer (args!!0) sz >>= withPause
 
-    (tb,kc,mc) <- newTrackball
-
     app <- prepare initstate
 
     o <- createParameters app [("radius",intParam 4 0 10),
@@ -83,23 +81,20 @@ main = do
                                ("maxdis",realParam 0.06 0 0.1),
                                ("orthotol",realParam 0.25 0.01 0.5)]
 
-    addWindow "image" sz Nothing mouse app
-    --keyboardMouseCallback $= Just (kc (kbdcam ctrl))
-    --motionCallback $= Just mc
+    addWindow "virtual ball" sz Nothing mouse app
+
     depthFunc $= Just Less
-    textureFilter Texture2D $= ((Nearest, Nothing), Nearest)
-    textureFunction $= Replace
 
     let mbf = read `fmap` Map.lookup "--focal" opts
 
     partic <- createParticle
 
-    launch app (worker cam o tb mbf partic)
+    launch app (worker cam o mbf partic)
 
 -----------------------------------------------------------------
 
 
-worker cam op trackball mbf (getPos,setAccel) inWindow st = do
+worker cam op mbf (getPos,setAccel) inWindow st = do
 
     radius <- getParam op "radius"
     width  <- getParam op "width"
@@ -126,7 +121,7 @@ worker cam op trackball mbf (getPos,setAccel) inWindow st = do
             (True,Just _) -> True
             _ -> False
 
-    inWindow "image" $ do
+    inWindow "virtual ball" $ do
         clear [DepthBuffer]
         drawImage orig
         clear [DepthBuffer]
@@ -142,10 +137,6 @@ worker cam op trackball mbf (getPos,setAccel) inWindow st = do
         mapM_ (renderPrimitive LineLoop . (mapM_ vertex)) closed4
         -}
 
-        setColor 0 1 0
-        pointSize $= 5
-        mapM_ (renderPrimitive Points . (mapM_ vertex)) closed4
-
         when ok $ do
             let Just (p,_) = camera
                 r = rfloor st'
@@ -155,17 +146,10 @@ worker cam op trackball mbf (getPos,setAccel) inWindow st = do
 
             cameraView p (4/3) 0.1 100
 
-            setColor 0 0 1
-            lineWidth $= 1
-            renderPrimitive LineLoop (mapM_ vertex a4)
-
-            reffloor
+            field
 
             pos <- getPos
             sphere (x pos) (y pos)
-
-            --cameraView r (4/3) 0.1 100
-            
 
             let (invr,_) = toCameraSystem r
                 (invp,_) = toCameraSystem p
@@ -176,8 +160,8 @@ worker cam op trackball mbf (getPos,setAccel) inWindow st = do
 
             --ds rel
 
-            pointCoordinates (size orig)
-            text2D 0.9 (-0.7) (show$ map (round.(*100)) $ [ax,ay])
+            --pointCoordinates (size orig)
+            --text2D 0.9 (-0.7) (show$ map (round.(*100)) $ [ax,ay])
             setAccel (ax/1000) (ay/1000) 0
 
     return st'
@@ -230,16 +214,36 @@ sphere x y = do
         (Sphere 0.3 10 10)
 
 
-
-
-reffloor = do
-    setColor 0 0 1
-    lineWidth $=2
-    renderPrimitive LineLoop $ do
-        v 0 0 0.3
-        v 0 2.97 0.3
-        v 2.1 2.97 0.3
-        v 2.1 0 0.3
+field = do
+    let h = 2.97
+    let w = 2.10
+    let t = 0.3
+    setColor 0.2 0.2 1
+    renderPrimitive Polygon $ do
+        v 0 0 0
+        v 0 h 0
+        v 0 h t
+        v 0 0 t
+        v 0 0 0
+    renderPrimitive Polygon $ do
+        v w 0 0
+        v w h 0
+        v w h t
+        v w 0 t
+        v w 0 0
+    setColor 0.4 0.4 1
+    renderPrimitive Polygon $ do
+        v 0 0 0
+        v w 0 0
+        v w 0 t
+        v 0 0 t
+        v 0 0 0
+    renderPrimitive Polygon $ do
+        v 0 h 0
+        v w h 0
+        v w h t
+        v 0 h t
+        v 0 h 0 
 
 mouse rst (Char ' ') Down _ _ = do
     modifyIORef rst $ \s -> s {ust = (ust s) {reset = True}}

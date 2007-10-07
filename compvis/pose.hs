@@ -119,9 +119,9 @@ worker cam op trackball mbf inWindow _ = do
             --let Just cam = cameraFromHomogZ0 mbf (inv h)
             drawCamera 1 cam (Just imt)
 
-            --pointCoordinates (Size 400 400)
-            --setColor 1 1 1
-            --text2D 0.95 (-0.95) (show $ focalFromHomogZ0 $ inv h)
+            pointCoordinates (Size 400 400)
+            setColor 1 1 1
+            text2D 0.95 (-0.95) (show $ focalFromHomogZ0 $ inv h)
 
     return ()
 
