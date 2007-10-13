@@ -1,6 +1,5 @@
--- very basic "augmented reality" on an A4 sheet
--- examples:
--- ./augmented tv://
+-- virtual ball on an A4 sheet
+-- ./dynamic tv://
 
 module Main where
 
@@ -67,7 +66,7 @@ main = do
                  else Size (read $ Map.findWithDefault "480" "--rows" opts)
                            (read $ Map.findWithDefault "640" "--cols" opts)
 
-    (cam,ctrl) <- mplayer (args!!0) sz >>= withPause
+    (cam,ctrl) <- mplayer (args!!0) sz >>= inThread >>= withPause
 
     app <- prepare initstate
 
@@ -79,7 +78,7 @@ main = do
                                ("postproc",intParam 1 0 1),
                                ("minlength",realParam 0.15 0 1),
                                ("maxdis",realParam 0.06 0 0.1),
-                               ("orthotol",realParam 0.25 0.01 0.5)]
+                               ("orthotol",realParam 0.25 0.01 1)]
 
     addWindow "virtual ball" sz Nothing mouse app
 
@@ -132,10 +131,11 @@ worker cam op mbf (getPos,setAccel) inWindow st = do
         lineWidth $= 1
         renderPrimitive Lines $ mapM_ drawSeg segs
 
+        -}
         setColor 1 0 0
         lineWidth $= 3
         mapM_ (renderPrimitive LineLoop . (mapM_ vertex)) closed4
-        -}
+
 
         when ok $ do
             let Just (p,_) = camera
@@ -175,8 +175,6 @@ a4 = [[   0,    0]
 
 pl (Point x y) = [x,y]
 
-
-
 alter pts = map (rotateList pts) [0 .. 3]
 
 rotateList list n = take (length list) $ drop n $ cycle list
@@ -191,15 +189,12 @@ isA4 mbf tol pts = ao < tol && cy < 0
           h = estimateHomography (map pl pts) a4
           Just p = poseFromHomogZ0 mbf h
           (_,cy,_) = cameraCenter p
-
-omegaGen f = kgen (recip (f*f))
+          omegaGen f = kgen (recip (f*f))
 
 text2D x y s = do
     rasterPos (Vertex2 x (y::GLfloat))
     renderString Helvetica12 s
 
-
-v a b c = vertex $ Vertex3 a b (c::GLdouble)
 
 sphere x y = do
     lineWidth $=1
@@ -213,6 +208,8 @@ sphere x y = do
         (QuadricStyle Nothing NoTextureCoordinates Outside LineStyle)
         (Sphere 0.3 10 10)
 
+
+v a b c = vertex $ Vertex3 a b (c::GLdouble)
 
 field = do
     let h = 2.97
