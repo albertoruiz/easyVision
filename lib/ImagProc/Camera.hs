@@ -29,6 +29,7 @@ import Foreign.C.String(newCString)
 import Data.IORef
 import System.IO
 import System
+import Data.List(isPrefixOf)
 
 
 -- | Computes a 4\/3 \'good\' size for both mplayer and IPP. mpSize 20 = 640x480
@@ -50,7 +51,7 @@ mplayer url (Size h w) = do
     poke k '\0'         -- essential!!
 
     let mpcommand =
-             url++" -vo yuv4mpeg:file="++fifo++
+             proc url++" -vo yuv4mpeg:file="++fifo++
              " -vf scale="++show w++":"++show h++" -nosound -slave -loop 0 "++
              "-tv driver=v4l:width="++show w++":height="++show h
 
@@ -81,6 +82,15 @@ mplayer url (Size h w) = do
         return (Y im)
 
     return grab
+
+proc url = rep ("webcam1","tv:// -tv device=/dev/video0") $
+           rep ("webcam2","tv:// -tv device=/dev/video1") $ url
+
+rep (c,r) [] = []
+rep (c,r) f@(x:xs) 
+  | c `isPrefixOf` f = r ++ rep (c,r) (drop (length c) f)
+  | otherwise        = x:(rep (c,r) xs)
+
 
 ------------------------------------------------
 

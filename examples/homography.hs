@@ -3,7 +3,8 @@
 module Main where
 
 import Vision
-import Numeric.LinearAlgebra 
+import Numeric.LinearAlgebra
+import Text.Printf(printf)
 
 matrix m = fromLists m :: Matrix Double
 vector v = fromList v  :: Vector Double
@@ -11,6 +12,8 @@ vector v = fromList v  :: Vector Double
 infixl 5 |-|, |+|
 mat |-| vec = mat - constant 1 (rows mat) `outer` vec
 mat |+| vec = mat + constant 1 (rows mat) `outer` vec
+
+disp = putStrLn . format "  " (printf "%.3f")
 
 dest a b = [[0,0]
            ,[a,0]
@@ -62,7 +65,7 @@ m2 = estimateCamera image world
 e3 = (matrix $ ht m1 world) - (matrix image)
 e4 = (matrix $ ht m2 world) - (matrix image)
 
-printm = dispR 3
+printm = disp
 
 main = do
     putStrLn "homography estimation"

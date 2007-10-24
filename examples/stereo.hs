@@ -8,10 +8,13 @@ import Data.List(genericLength)
 import System(system)
 import System
 import Graphics.Plot
+import Text.Printf(printf)
 
 matrix m = fromLists m :: Matrix Double
 vector v = fromList v :: Vector Double
 vmap = liftVector
+
+disp n = putStrLn . format "  " (printf $ "%."++ show n++"f")
 
 mean l = sum l / genericLength l
          
@@ -48,7 +51,7 @@ stereo datafile = do
     let pts' = map flipx raw' 
     let f = estimateFundamental pts' pts
     putStrLn "Fundamental matrix:"
-    dispR 8 (normat f)
+    disp 8 (normat f)
     putStr "mean epipolar distance: "
     print $ mean $ epipolarQuality f pts' pts
         
@@ -79,16 +82,16 @@ stereo datafile = do
     print $ map (\x -> qualityOfEssential (kgen x <> f <> kgen x)) fs
     
     putStrLn "Essential matrix: "
-    dispR 8 (normat e)
+    disp 8 (normat e)
     putStrLn "candidate cameras:" 
-    mapM_ (dispR 8) $ camerasFromEssential e
+    mapM_ (disp 8) $ camerasFromEssential e
     let m = kgen df <> cameraAtOrigin
     putStrLn "first camera: "
-    dispR 8 m
+    disp 8 m
     let ms = map (kgen df <>) (camerasFromEssential e)
     let m' = selectCamera (head pts) (head pts') m ms
     putStrLn "second camera: "
-    dispR 8 m'
+    disp 8 m'
     let (_,_,c) = factorizeCamera m'
     let x = triangulate [(m, pts), (m', pts')] 
     let (mo,v)   = shcam m  pts
@@ -118,7 +121,7 @@ rectif datafile = do
     let pts' = map flipx raw' 
     let f = estimateFundamental pts' pts
     putStrLn "Fundamental matrix:"
-    dispR 8 (normat f)
+    disp 8 (normat f)
     putStr "mean epipolar distance: "
     print $ mean $ epipolarQuality f pts' pts
       

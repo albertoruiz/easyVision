@@ -22,12 +22,13 @@ module ImagProc.Polyline (
     fourierPL,
 -- * Reduction
     douglasPeucker, douglasPeuckerClosed,
+    selectPolygons,
 -- * Extraction
     rawContour,
     contours,
 -- * Auxiliary tools
     momentsContour, momentsBoundary,
-    eig2x2Dir
+    eig2x2Dir, asSegments, longestSegments
 )
 where
 
@@ -37,7 +38,7 @@ import ImagProc.Ipp.Core
 import Foreign.C.Types(CUChar)
 import Foreign
 import Debug.Trace
-import Data.List(maximumBy, zipWith4)
+import Data.List(maximumBy, zipWith4, sort)
 import Numeric.LinearAlgebra
 import Vision.Geometry
 
@@ -196,7 +197,11 @@ criticalPoint eps2 p1 p2 p3s = r where
 
 ---------------------------------------------------------------------------
 
-asSegmentsClosed ps = zipWith Segment ps' (tail ps') where ps' = ps++[head ps]
+asSegments :: Polyline -> [Segment]
+asSegments (Open ps') = zipWith Segment ps' (tail ps')
+asSegments (Closed ps) = asSegments $ Open $ ps++[head ps]
+
+--asSegmentsClosed ps = zipWith Segment ps' (tail ps') where ps' = ps++[head ps]
 
 auxContour (s,sx,sy,sx2,sy2,sxy) seg@(Segment (Point x1 y1) (Point x2 y2))
     = (s+l,
@@ -216,7 +221,7 @@ auxSolid (s,sx,sy,sx2,sy2,sxy) seg@(Segment (Point x1 y1) (Point x2 y2))
        sxy + ((x1*y2-x2*y1)*(x1*(2*y1+y2)+x2*(y1+2*y2)))/24)
 
 moments2Gen method l = (mx,my,cxx,cyy,cxy)
-    where (s,sx,sy,sx2,sy2,sxy) = (foldl method (0,0,0,0,0,0). asSegmentsClosed) l
+    where (s,sx,sy,sx2,sy2,sxy) = (foldl method (0,0,0,0,0,0). asSegments . Closed) l
           mx = sx/s
           my = sy/s
           cxx = sx2/s - mx*mx
@@ -298,3 +303,30 @@ prepareFourierPL c = (zs,ts,cs,ds,hs) where
     ds = map (* recip (2*pi*i)) aAs
     cs = zipWith3 f bBs (tail (cycle ts)) aAs
         where f b t a = b + t*a
+
+--------------------------------------------------------------------------------
+
+longestSegments k poly = filter ok ss
+    where ss = asSegments poly
+          th = last $ take k $ sort $ map (negate.segmentLength) ss
+          ok s = segmentLength s >= -th
+
+reducePolygonTo n poly = Closed $ segsToPoints $ longestSegments n poly
+
+segToHomogLine s = cross (fromList [px $ extreme1 $ s, py $ extreme1 $ s, 1])
+                         (fromList [px $ extreme2 $ s, py $ extreme2 $ s, 1])
+
+segsToPoints p = stp $ map segToHomogLine $ p ++ [head p]
+
+stp [] = []
+stp [_] = []
+stp (a:b:rest) = inter a b : stp (b:rest)
+
+inter l1 l2 = Point x y where [x,y] = toList $ inHomog (cross l1 l2)
+
+tryPolygon eps n poly = if abs((a1-a2)/a1) < eps then [r] else []
+    where r = reducePolygonTo n poly
+          a1 = orientation poly
+          a2 = orientation r
+
+selectPolygons eps n = concat . map (tryPolygon eps n)

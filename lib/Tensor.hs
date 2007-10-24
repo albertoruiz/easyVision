@@ -63,7 +63,7 @@ instance (Show a, Field a) => Show (Tensor a) where
 asMatrix t = reshape (idxDim $ dims t!!1) (ten t)
 
 showdt t | rank t == 1 = show (toList (ten t))
-         | rank t == 2 = ('\n':) . dsp . map (map show) . toLists $ asMatrix $ t
+         | rank t == 2 = ('\n':) . format "  " show $ asMatrix $ t
          | otherwise = concatMap showdt $ parts t (head (names t))
 
 -- | a nice description of the tensor structure

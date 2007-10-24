@@ -6,6 +6,7 @@ import Debug.Trace
 import Data.List(inits, sort, partition)
 import Control.Monad(when)
 import Graphics.Plot
+import Text.Printf(printf)
 
 matrix m = fromLists m :: Matrix Double
 --vector v = fromList v :: Vector Double
@@ -13,6 +14,8 @@ vmap = liftVector
 
 debug x = trace (show x) x
 debug' msg x = trace (msg ++ show x) x
+
+disp = putStrLn . format "  " (printf "%.2f")
 
 withPCA rq = withPreprocess (mef rq)
 
@@ -68,7 +71,7 @@ pru = do
     let prob = (addNoise seed 0.001 pruprob)
     let (c,f) = classstumps 1 prob
     print (errorRate prob c)
-    dispR 2 (confusion prob c)
+    disp (confusion prob c)
     print (map (posMax.f.fst) prob)
     print (map (c.fst) prob)
     combined "debug" 100 1 (fromIntegral.posMax.f) prob
@@ -95,22 +98,22 @@ testMNIST = do
     (train, test) <- mnist 20 4000
     let (c,f) = multiclass mse train
     print (errorRate test c)
-    dispR 2 (confusion test c)
+    disp (confusion test c)
     let (c,f) = distance ordinary train
     print (errorRate test c)
-    dispR 2 (confusion test c)
+    disp (confusion test c)
     let (c,f) = distance mahalanobis train
     print (errorRate test c)
-    dispR 2 (confusion test c)
+    disp (confusion test c)
     let (c,f) = distance gaussian train
     print (errorRate test c)
-    dispR 2 (confusion test c)
+    disp (confusion test c)
     let (c,f) = classstumps 10 train
     print (errorRate test c)
-    dispR 2 (confusion test c)
+    disp (confusion test c)
     let (c,f) = classstumps 60 train
     print (errorRate test c)
-    dispR 2 (confusion test c)
+    disp (confusion test c)
 
 -- comparison of adaboost with other methods
 adamnist = do
@@ -122,22 +125,22 @@ adamnist = do
     let (c,f) = distance ordinary train
     print (errorRate train c)
     print (errorRate test c)
-    dispR 2 (confusion test c)
+    disp (confusion test c)
     putStrLn "mahalanobis distance"
     let (c,f) = distance gaussian train
     print (errorRate train c)
     print (errorRate test c)
-    dispR 2 (confusion test c)
+    disp (confusion test c)
     putStrLn "adaboost 20"
     let (c,f) = classstumps 20 train
     print (errorRate train c)
     print (errorRate test c)
-    dispR 2 (confusion test c)
+    disp (confusion test c)
     putStrLn "adaboost 100"
     let (c,f) = classstumps 100 train
     print (errorRate train c)
     print (errorRate test c)
-    dispR 2 (confusion test c)
+    disp (confusion test c)
 
 adamnistraw = do
     (train', test') <- mnistraw 4000
@@ -147,43 +150,43 @@ adamnistraw = do
     let (c,f) = distance ordinary train
     print (errorRate train c)
     print (errorRate test c)
-    dispR 2 (confusion test c)
+    disp (confusion test c)
     when False $ do
         putStrLn "adaboost 20"
         let (c,f) = classstumps 20 train
         print (errorRate train c)
         print (errorRate test c)
-        dispR 2 (confusion test c)
+        disp (confusion test c)
         putStrLn "adaboost 100"
         let (c,f) = classstumps 100 train
         print (errorRate train c)
         print (errorRate test c)
-        dispR 2 (confusion test c)
+        disp (confusion test c)
         putStrLn "nearest neighbour"
         let (c,f) = (distance nearestNeighbour) train
         --print (errorRate train c)
         print (errorRate test c)
-        dispR 2 (confusion test c)
+        disp (confusion test c)
         putStrLn "tree of stumps"
         let (c,f) = multiclass (treeOf (branch 20) (unweight stumps)) train
         print (errorRate train c)
         print (errorRate test c)
-        dispR 2 (confusion test c)
+        disp (confusion test c)
         putStrLn "mse"
         let (c,f) = multiclass mse train
         print (errorRate train c)
         print (errorRate test c)
-        dispR 2 (confusion test c)
+        disp (confusion test c)
         putStrLn "pca mse"
         let (c,f) = withPCA (ReconstructionQuality 0.8) (multiclass mse) train
         print (errorRate train c)
         print (errorRate test c)
-        dispR 2 (confusion test c)
+        disp (confusion test c)
         putStrLn "pca kernel mse poly 2"
         let (c,f) = withPCA (ReconstructionQuality 0.8) (multiclass (kernelMSE 1 (polyK 2))) train
         print (errorRate train c)
         print (errorRate test c)
-        dispR 2 (confusion test c)
+        disp (confusion test c)
 
 
 -- to show the learning curve of adaboost
@@ -210,7 +213,7 @@ pruada n = do
     let c = last combis
     print (errorRate train c)
     print (errorRate test c)
-    dispR 2 (confusion test c)
+    disp (confusion test c)
 
 -- adaboost learning curves
 
@@ -234,13 +237,13 @@ prunaive 1 = do
     let (train,test) = (selectClasses sel train', selectClasses sel test')
     let c = fst $ distance (nbayesg 1E-6) train
     print (errorRate test c)
-    dispR 2 (confusion test c)
+    disp (confusion test c)
     let c = fst $ withPCA (ReconstructionQuality 0.5) (distance (nbayesg 1E-6)) train
     print (errorRate test c)
-    dispR 2 (confusion test c)
+    disp (confusion test c)
     let c = fst $ distance (ordinary) train
     print (errorRate test c)
-    dispR 2 (confusion test c)
+    disp (confusion test c)
 
 -- mnist requires mahalanobis, features are not independent
 
@@ -249,20 +252,20 @@ prunaive 2 = do
     (train, test) <- mnistraw 4000
     let c = fst $ distance (nbayesg 1E-6) train
     print (errorRate test c)
-    dispR 2 (confusion test c)
+    disp (confusion test c)
     let c = fst $ withPCA (ReconstructionQuality 0.5) (distance (nbayesg 1E-6)) train
     print (errorRate test c)
-    dispR 2 (confusion test c)
+    disp (confusion test c)
     let c = fst $ withPCA (ReconstructionQuality 0.95) (distance (nbayesg 1E-6)) train
     print (errorRate test c)
-    dispR 2 (confusion test c)
+    disp (confusion test c)
     let c = fst $ distance (ordinary) train
     print (errorRate test c)
-    dispR 2 (confusion test c)
+    disp (confusion test c)
     let c = fst $ classstumps 50 train
     print (errorRate train c)
     print (errorRate test c)
-    dispR 2 (confusion test c)
+    disp (confusion test c)
 
 
 
@@ -278,7 +281,7 @@ adaboostCurves n method (train, test)= do
     let c = last combis
     print (errorRate train c)
     print (errorRate test c)
-    dispR 2 (confusion test c)
+    disp (confusion test c)
 
     let e1 = map ( (*100). errorRate train) combis
     let e2 = map ( (*100). errorRate test) combis

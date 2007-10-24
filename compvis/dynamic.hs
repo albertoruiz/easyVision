@@ -3,7 +3,7 @@
 
 module Main where
 
-import EasyVision
+import EasyVision as EV
 import System.Environment(getArgs)
 import qualified Data.Map as Map
 import Graphics.UI.GLUT hiding (Matrix, Size, Point)
@@ -14,6 +14,15 @@ import Debug.Trace
 import Data.IORef
 import Control.Concurrent
 import Text.Printf
+import ImagProc.Ipp.Core
+import qualified Graphics.UI.GLUT as GL
+import System.CPUTime
+
+timing act = do
+    t0 <- getCPUTime
+    act
+    t1 <- getCPUTime
+    printf "%.2f CPU seconds\n" $ (fromIntegral ((t1 - t0) `div` (10^10)) / 100 :: Double)
 
 debug x = trace (show x) x
 
@@ -50,11 +59,12 @@ createParticle = do
 
 data MyState = ST {
     rfloor :: Matrix Double,
+    rprev  :: Matrix Double,
     reset :: Bool }
 
 initstate = ST { rfloor = cameraAtOrigin,
+                 rprev  = cameraAtOrigin,
                  reset = True }
-
 
 main = do
     args <- getArgs
@@ -66,7 +76,7 @@ main = do
                  else Size (read $ Map.findWithDefault "480" "--rows" opts)
                            (read $ Map.findWithDefault "640" "--cols" opts)
 
-    (cam,ctrl) <- mplayer (args!!0) sz >>= inThread >>= withPause
+    (cam,ctrl) <- mplayer (args!!0) sz  {- >>= inThread -} >>= withPause
 
     app <- prepare initstate
 
@@ -78,7 +88,14 @@ main = do
                                ("postproc",intParam 1 0 1),
                                ("minlength",realParam 0.15 0 1),
                                ("maxdis",realParam 0.06 0 0.1),
-                               ("orthotol",realParam 0.25 0.01 1)]
+                               ("orthotol",realParam 0.25 0.01 1),
+                               ("method",intParam 1 0 2){-,
+        ("umbral2",intParam 128 1 255),
+        ("area",percent 1),
+        ("fracpix",realParam (1.5) 0 10),
+        ("white",intParam 1 0 1),
+        ("eps",realParam 0.1 0 0.3),
+        ("smooth2",intParam 1 0 10)-}]
 
     addWindow "virtual ball" sz Nothing mouse app
 
@@ -88,16 +105,22 @@ main = do
 
     partic <- createParticle
 
-    launch app (worker cam o mbf partic)
+    sv <- openYUV4Mpeg sz (Map.lookup "--save" opts)
+                          (read `fmap` Map.lookup "--limit" opts)
+
+    let capt = if "--save" `elem` args then capture sv else \a b c -> a b c
+
+    launch app (worker cam o mbf partic capt)
 
 -----------------------------------------------------------------
 
 
-worker cam op mbf (getPos,setAccel) inWindow st = do
+worker cam op mbf (getPos,setAccel) capt inWindow st = do
 
+    method <- getParam op "method" :: IO Int
     radius <- getParam op "radius"
     width  <- getParam op "width"
-    median <- getParam op "median"
+    median' <- getParam op "median"
     high   <- fromIntegral `fmap` (getParam op "high" :: IO Int)
     low    <- fromIntegral `fmap` (getParam op "low" :: IO Int)
     postp  <- getParam op "postproc" :: IO Int
@@ -105,11 +128,37 @@ worker cam op mbf (getPos,setAccel) inWindow st = do
     minlen <- getParam op "minlength"
     maxdis <- getParam op "maxdis"
     orthotol  <- getParam op "orthotol"
-
+{-
+    th2' <- getParam op "umbral2" ::IO Int
+    let th2 = fromIntegral th2'
+    smooth2 <- getParam op "smooth2" :: IO Int
+    area <- getParam op "area"
+    fracpix <- getParam op "fracpix"    
+    white <- getParam op "white"
+    eps <- getParam op "eps" ::IO Double
+-}
     orig <- cam >>= yuvToGray
-    let segs = filter ((>minlen).segmentLength) $ segments radius width median high low pp orig
+
+    let segs = filter ((>minlen).segmentLength) $ segments radius width median' high low pp orig
         polis = segmentsToPolylines maxdis segs
-        closed4 = [p | Closed p <- polis, length p == 4]
+        closed4s = [p | Closed p <- polis, length p == 4]
+
+{-
+    im <-(smooth2 `times` median Mask3x3) orig
+
+    let (Size h w) = size im
+        pixarea = h*w*area`div`1000
+        rawconts = contours 100 pixarea th2 (toEnum white) im
+        proc = Closed . pixelsToPoints (size orig).douglasPeuckerClosed fracpix.fst3
+        nice p@(Closed l) = perimeter p / fromIntegral (length l) > eps
+        cs = map proc $ rawconts
+        closed4c = map (\(Closed l) -> l) $ selectPolygons 0.05 4 $ filter nice cs
+-}
+        closed4 = case 1 {-method-} of
+            0 -> []
+            1 -> closed4s 
+            --2 -> closed4c
+
         a4s = filter (isA4 mbf orthotol) (concatMap alter closed4)
         pts = head a4s
         camera = cameraFromPlane 1E-3 500 mbf (map pl pts) a4
@@ -120,7 +169,7 @@ worker cam op mbf (getPos,setAccel) inWindow st = do
             (True,Just _) -> True
             _ -> False
 
-    inWindow "virtual ball" $ do
+    capt inWindow "virtual ball" $ do
         clear [DepthBuffer]
         drawImage orig
         clear [DepthBuffer]
@@ -130,12 +179,10 @@ worker cam op mbf (getPos,setAccel) inWindow st = do
         setColor 0 0 1
         lineWidth $= 1
         renderPrimitive Lines $ mapM_ drawSeg segs
-
         -}
         setColor 1 0 0
         lineWidth $= 3
         mapM_ (renderPrimitive LineLoop . (mapM_ vertex)) closed4
-
 
         when ok $ do
             let Just (p,_) = camera
@@ -183,6 +230,8 @@ drawSeg s = do
     vertex $ (extreme1 s)
     vertex $ (extreme2 s)
 
+fst3 (a,_,_) = a
+
 isA4 mbf tol pts = ao < tol && cy < 0
     where mbomega = fmap omegaGen mbf
           ao = autoOrthogonality mbomega h
@@ -211,7 +260,7 @@ sphere x y = do
 
 v a b c = vertex $ Vertex3 a b (c::GLdouble)
 
-field = do
+field = preservingMatrix $ do
     let h = 2.97
     let w = 2.10
     let t = 0.3
@@ -240,7 +289,20 @@ field = do
         v w h 0
         v w h t
         v 0 h t
-        v 0 h 0 
+        v 0 h 0
+    setColor 0 0.6 0
+    Graphics.UI.GLUT.scale 0.8 0.8 (0.8::GLdouble)
+    translate $ Vector3 t t 0
+    renderPrimitive Polygon $ do
+        v 0 h 0
+        v (w-2*t) 0 0
+        v w 0 0
+        v (2*t) h 0
+    renderPrimitive Polygon $ do
+        v 0 0 0
+        v ((w-2*t)/2) (h/2) 0
+        v ((w-2*t)/2+2*t) (h/2) 0
+        v (2*t) 0 0
 
 mouse rst (Char ' ') Down _ _ = do
     modifyIORef rst $ \s -> s {ust = (ust s) {reset = True}}
@@ -248,3 +310,19 @@ mouse rst (Char ' ') Down _ _ = do
 mouse _ _ _ _ _ = return ()
 
 --ds = putStrLn . format "  " (printf "%.2f")
+
+-----------------------------------------------------------------
+
+-- readPixels extremely slow, useless
+capture sv inWindow name fun = do
+    inWindow name fun
+    let sz = Size 480 640
+    img <- image sz
+    let C (Img {ptr = p}) = img
+        EV.Size h' w' = sz
+        w = (fromIntegral.toInteger) w'
+        h = (fromIntegral.toInteger) h'
+    pixelZoom $= (1,-1)
+    timing $ readPixels (Position 0 0) (GL.Size w h) (PixelData GL.RGB UnsignedByte p)
+    img' <- rgbToYUV img
+    sv img'
