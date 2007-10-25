@@ -48,8 +48,8 @@ timing act = do
 
 debug x = trace (show x) x
 
-{- | It tries to read an optional image size from an argument list.
-It admits --rows <num>, --cols <num>, and --size <k>, for 32k (4/3).
+{- | It tries to read an optional image size from command line argument list.
+     It admits --rows, --cols, and --size (for 32k 4\/3).
 -}
 findSize :: [String] -> Size
 findSize args = if Map.member "--size" opts
@@ -74,7 +74,8 @@ captureGL = do
 evSize (GL.Size w h) = Size    (t h) (t w) where t = fromIntegral.toInteger
 glSize (Size    h w) = GL.Size (t w) (t h) where t = fromIntegral.toInteger
 
--- | provisional
+-- | Writes to file (with automatic name if Nothing) a RGB image in png format.
+-- (uses imagemagick' convert.)
 saveRGB :: Maybe FilePath -> ImageRGB -> IO ()
 saveRGB (Just filename) (C im) = do
     handle <- openFile (filename++".rgb") WriteMode
