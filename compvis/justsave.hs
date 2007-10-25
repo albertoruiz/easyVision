@@ -5,15 +5,16 @@
 
 import EasyVision
 import System.Environment(getArgs)
---import System.IO.Unsafe
 import Data.Map as Map hiding (map,size)
-import Graphics.UI.GLUT hiding (Size)
---import System
 
 main = do
     args <- getArgs
 
-    (cam,ctrl) <- mplayer (args!!0) (findSize args) >>= withPause
+    let opts = Map.fromList $ zip args (tail args)
+
+    let sz = findSize args
+
+    (cam,ctrl) <- mplayer (args!!0) sz >>= withPause
 
     state <- prepare ()
 
