@@ -1,5 +1,5 @@
 -- virtual ball on an A4 sheet
--- ./dynamic tv://
+-- ./dynamic webcam1
 
 module Main where
 
@@ -10,21 +10,9 @@ import Graphics.UI.GLUT hiding (Matrix, Size, Point)
 import Vision
 import Control.Monad(when)
 import Numeric.LinearAlgebra
-import Debug.Trace
 import Data.IORef
 import Control.Concurrent
-import Text.Printf
-import ImagProc.Ipp.Core
-import qualified Graphics.UI.GLUT as GL
-import System.CPUTime
-
-timing act = do
-    t0 <- getCPUTime
-    act
-    t1 <- getCPUTime
-    printf "%.2f CPU seconds\n" $ (fromIntegral ((t1 - t0) `div` (10^10)) / 100 :: Double)
-
-debug x = trace (show x) x
+import Data.Maybe
 
 data Particle = PT {
     x,y,z :: GLdouble,
@@ -71,10 +59,7 @@ main = do
 
     let opts = Map.fromList $ zip args (tail args)
 
-    let sz = if Map.member "--size" opts
-                 then mpSize $ read $ Map.findWithDefault "20" "--size" opts
-                 else Size (read $ Map.findWithDefault "480" "--rows" opts)
-                           (read $ Map.findWithDefault "640" "--cols" opts)
+    let sz = findSize args
 
     (cam,ctrl) <- mplayer (args!!0) sz  {- >>= inThread -} >>= withPause
 
@@ -97,7 +82,7 @@ main = do
         ("eps",realParam 0.1 0 0.3),
         ("smooth2",intParam 1 0 10)-}]
 
-    addWindow "virtual ball" sz Nothing mouse app
+    addWindow "virtual ball" sz Nothing (mouse $ kbdcam ctrl) app
 
     depthFunc $= Just Less
 
@@ -159,15 +144,17 @@ worker cam op mbf (getPos,setAccel) capt inWindow st = do
             1 -> closed4s 
             --2 -> closed4c
 
-        a4s = filter (isA4 mbf orthotol) (concatMap alter closed4)
-        pts = head a4s
-        camera = cameraFromPlane 1E-3 500 mbf (map pl pts) a4
-        st' = case (reset st, length a4s >0, camera) of
-            (True,True,Just(p,path)) -> st { reset = False, rfloor = p }
-            _ -> st
-        ok = case (length a4s >0, camera) of
-            (True,Just _) -> True
-            _ -> False
+        pts = mbh $ filter (isA4 mbf orthotol) (concatMap alter closed4)
+
+        tryCam pts = fmap fst $ cameraFromPlane 1E-3 500 mbf (map pl pts) a4
+
+        camObs = tryCam =<< pts
+
+        camera = fromMaybe (rprev st) $ camObs
+
+        st' = case reset st of
+            True -> st { reset = False, rfloor = camera, rprev = camera }
+            _    -> st { rprev = camera }
 
     capt inWindow "virtual ball" $ do
         clear [DepthBuffer]
@@ -184,8 +171,8 @@ worker cam op mbf (getPos,setAccel) capt inWindow st = do
         lineWidth $= 3
         mapM_ (renderPrimitive LineLoop . (mapM_ vertex)) closed4
 
-        when ok $ do
-            let Just (p,_) = camera
+        when (isJust camObs) $ do
+            let p = camera
                 r = rfloor st'
 
             clear [DepthBuffer]
@@ -304,10 +291,10 @@ field = preservingMatrix $ do
         v ((w-2*t)/2+2*t) (h/2) 0
         v (2*t) 0 0
 
-mouse rst (Char ' ') Down _ _ = do
+mouse _ rst (Char 'b') Down _ _ = do
     modifyIORef rst $ \s -> s {ust = (ust s) {reset = True}}
 
-mouse _ _ _ _ _ = return ()
+mouse def _ a b c d = def a b c d
 
 --ds = putStrLn . format "  " (printf "%.2f")
 
@@ -316,13 +303,7 @@ mouse _ _ _ _ _ = return ()
 -- readPixels extremely slow, useless
 capture sv inWindow name fun = do
     inWindow name fun
-    let sz = Size 480 640
-    img <- image sz
-    let C (Img {ptr = p}) = img
-        EV.Size h' w' = sz
-        w = (fromIntegral.toInteger) w'
-        h = (fromIntegral.toInteger) h'
-    pixelZoom $= (1,-1)
-    timing $ readPixels (Position 0 0) (GL.Size w h) (PixelData GL.RGB UnsignedByte p)
-    img' <- rgbToYUV img
-    sv img'
+    captureGL >>= rgbToYUV >>= sv
+
+mbh [] = Nothing
+mbh (a:_) = Just a

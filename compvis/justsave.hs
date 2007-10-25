@@ -1,25 +1,19 @@
 -- save captured video
+-- then you can convert the generated yuv to a nicer format:
+-- $ ./justsave webcam1 --save file.yuv
+-- $ mencoder file.yuv -o file.avi -flip -ovc lavc -fps 15
 
 import EasyVision
 import System.Environment(getArgs)
-import System.IO.Unsafe
+--import System.IO.Unsafe
 import Data.Map as Map hiding (map,size)
 import Graphics.UI.GLUT hiding (Size)
-import System
-
+--import System
 
 main = do
     args <- getArgs
 
-    let opts = fromList $ zip args (tail args)
-
-    let sz = if member "--size" opts
-                 then mpSize $ read $ findWithDefault "20" "--size" opts
-                 else Size (read $ findWithDefault "480" "--rows" opts)
-                           (read $ findWithDefault "640" "--cols" opts)
-
-
-    (cam,ctrl) <- mplayer (args!!0) sz >>= withPause
+    (cam,ctrl) <- mplayer (args!!0) (findSize args) >>= withPause
 
     state <- prepare ()
 
@@ -39,16 +33,3 @@ worker cam save inWindow _ = do
         drawImage orig
         save orig
         return ()
-
-
-
-
-
-
-
-
-
-
-
-
-

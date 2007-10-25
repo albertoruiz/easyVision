@@ -21,12 +21,13 @@ module EasyVision.GUI (
 , addWindow
 , launch
 , InWindow
-, kbdcam, roiControl
+, kbdcam, kbdQuit, roiControl
 -- * Drawing utilities
 , module EasyVision.Draw
 ) where
 
 import EasyVision.Draw
+import EasyVision.Util
 import ImagProc.Ipp.Core -- (Size(..))
 import Graphics.UI.GLUT hiding (RGB, Matrix, Size)
 import qualified Graphics.UI.GLUT as GL
@@ -112,15 +113,21 @@ installWindow name (Size hei wid) Nothing kbdcallback state = do
     keyboardMouseCallback $= Just (kbdcallback state)
     return w
 
--- | keyboard callback for camera control and exiting the application with ESC.
+-- | keyboard callback for camera control and exiting the application with ESC. p or SPACE pauses, s sets frame by frame mode.
 kbdcam :: (String->IO ()) -> KeyboardMouseCallback
 kbdcam ctrl = kbd where
     kbd (Char 'p') Down _ _ = ctrl "pause"
     kbd (Char ' ') Down _ _ = ctrl "pause"
     kbd (Char 's') Down _ _ = ctrl "step"
-    kbd (Char 'q') Down _ _ = exitWith ExitSuccess
-    kbd (Char '\27') Down _ _ = exitWith ExitSuccess
-    kbd _ _ _ _ = return ()
+    kbd a b c d = kbdQuit a b c d
+
+-- | keyboard callback for exiting the application with ESC or q, useful as default callback.
+-- Also, pressing i saves a screenshot of the full opengl window contents.
+kbdQuit :: KeyboardMouseCallback
+kbdQuit (Char   'q') Down _ _ = exitWith ExitSuccess
+kbdQuit (Char '\27') Down _ _ = exitWith ExitSuccess
+kbdQuit (Char   'i') Down _ _ = captureGL >>= saveRGB Nothing
+kbdQuit _ _ _ _               = return ()
 
 -- | Installs mouse support for interactive selection of a 'ROI' (region of interest) in a window. The ROI is selected with the right button. The initial ROI can be recovered with the key R.
 roiControl :: ROI                    -- ^ initial roi

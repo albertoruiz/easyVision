@@ -34,11 +34,10 @@ import ImagProc.Ipp.Core
 import ImagProc.Saddle
 import ImagProc.ImageProcessing(resize32f,yuvToRGB)
 import Data.IORef
-import Foreign (touchForeignPtr)
+import Foreign (touchForeignPtr,castPtr)
 import Numeric.LinearAlgebra
 import Vision
 import EasyVision.Trackball
-
 
 -- | Types of images that can be shown in a window
 class Drawable a where
