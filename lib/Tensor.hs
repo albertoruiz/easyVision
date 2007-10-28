@@ -32,7 +32,7 @@ module Tensor (
 import Data.Packed.Internal
 import Foreign.Storable
 import Data.List(sort,elemIndex,nub,foldl1',foldl')
-import Numeric.LinearAlgebra
+import Numeric.LinearAlgebra hiding (rank)
 
 data IdxType = Covariant | Contravariant deriving (Show,Eq)
 

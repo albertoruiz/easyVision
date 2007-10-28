@@ -17,6 +17,7 @@ haddock Classifier.hs \
         Vision/Camera.hs \
         Vision/Stereo.hs \
         Vision/Autofrontal.hs \
+        Tensor.hs \
         ImagProc.hs \
         ImagProc/Ipp.hs \
         ImagProc/Ipp/Wrappers.hs \
