@@ -23,11 +23,7 @@ main = do
     args <- getArgs
 
     let opts = fromList $ zip args (tail args)
-
-    let sz = if member "--size" opts
-                 then mpSize $ read $ findWithDefault "20" "--size" opts
-                 else Size (read $ findWithDefault "480" "--rows" opts)
-                           (read $ findWithDefault "640" "--cols" opts)
+        sz   = findSize args
 
     let alpha = read $ findWithDefault "0.9" "--alpha" opts
 

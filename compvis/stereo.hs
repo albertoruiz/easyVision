@@ -24,11 +24,7 @@ main = do
     args <- getArgs
 
     let opts = Map.fromList $ zip args (tail args)
-
-    let sz = if Map.member "--size" opts
-                 then mpSize $ read $ Map.findWithDefault "20" "--size" opts
-                 else Size (read $ Map.findWithDefault "480" "--rows" opts)
-                           (read $ Map.findWithDefault "640" "--cols" opts)
+        sz   = findSize args
 
     state <- prepare ()
 

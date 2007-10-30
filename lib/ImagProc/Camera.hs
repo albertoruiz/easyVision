@@ -38,10 +38,12 @@ mpSize k | k > 0     = Size (k*24) (k*32)
          | otherwise = error "mpSize"
 
 
--- | Interface to mplayer (implemented using a pipe and the format yuv4mpeg)
+-- | Interface to mplayer (implemented using a pipe and the format yuv4mpeg).
+-- It admits the url shortcuts webcam1, webcam2, and firewire,
+-- and automatically supplies the required additional parameters.
 mplayer :: String               -- ^ any url admitted by mplayer
         -> Size                 -- ^ desired image size (see 'mpsize')
-        -> IO (IO ImageYUV)          -- ^ function returning a new frame and camera controller
+        -> IO (IO ImageYUV)     -- ^ function returning a new frame and camera controller
 mplayer url (Size h w) = do
 
     let fifo = "/tmp/mplayer-fifo"
@@ -84,7 +86,10 @@ mplayer url (Size h w) = do
     return grab
 
 proc url = rep ("webcam1","tv:// -tv device=/dev/video0") $
-           rep ("webcam2","tv:// -tv device=/dev/video1") $ url
+           rep ("webcam2","tv:// -tv device=/dev/video1") $
+           rep ("firewire","/dev/dv1394 -demuxer rawdv -cache 400") url
+
+-- deinterlace -vf pp=md
 
 rep (c,r) [] = []
 rep (c,r) f@(x:xs) 
