@@ -47,6 +47,7 @@ mplayer :: String               -- ^ any url admitted by mplayer
 mplayer url (Size h w) = do
 
     let fifo = "/tmp/mplayer-fifo"
+    system $ "rm -f "++fifo
     system $ "mkfifo "++fifo
 
     k <- mallocBytes 1
