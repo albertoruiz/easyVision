@@ -152,4 +152,4 @@ chk x | isDoubleNaN x == 0 = x
 
 prep = map (g.ipPosition) where g (Point x y) = [x,y]
 
-
+norm x = pnorm PNorm2 x

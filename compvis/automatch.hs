@@ -24,6 +24,8 @@ data MyState = ST { imgs :: [ImageFloat]
 
 diagl = diag . vector
 
+norm x = pnorm PNorm2 x
+
 --------------------------------------------------------------
 main = do
     args <- getArgs

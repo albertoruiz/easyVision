@@ -34,6 +34,8 @@ import Data.List (elemIndex,sort)
 matrix = fromLists :: [[Double]] -> Matrix Double
 vector = fromList ::  [Double] -> Vector Double
 
+norm x = pnorm PNorm2 x
+
 data KnownFs = AllKnown [Double] | F1Known Double | AllUnknown | ConstantUnknown
 
 extractInfo :: KnownFs -> [Matrix Double] -> (Double,Double) -> (Matrix Double, [Maybe (Matrix Double)])

@@ -111,6 +111,8 @@ vector l = fromList l :: Vector Double
 
 diagl = diag .vector
 
+norm x = pnorm PNorm2 x
+
 drawSeg s = do
     vertex $ (extreme1 s)
     vertex $ (extreme2 s)

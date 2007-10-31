@@ -133,6 +133,8 @@ on f g = \x y -> f (g x) (g y)
 closestBy f [] p = p
 closestBy f hp p = minimumBy (compare `on` f p) hp
 
+norm x = pnorm PNorm2 x
+
 distFeat = (dist `on` ipDescriptor)
     where dist u v = norm (u-v)/ fromIntegral (dim u)
 

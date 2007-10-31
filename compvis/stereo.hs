@@ -114,6 +114,8 @@ chk x | isDoubleNaN x == 0 = x
 prep = map g where g (Point x y) = [x,y]
 ----------------------------------------------------------------------------
 
+norm x = pnorm PNorm2 x
+
 mean l = sum l / fromIntegral (length l)
 
 combine f (img1,pts1) (img2,pts2) = do

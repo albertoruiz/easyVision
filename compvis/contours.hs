@@ -30,6 +30,8 @@ easyInvar w f = fromList desc where
     h k = g k/sc
     desc = map h [2..(max 2 w)]
 
+norm x = pnorm PNorm2 x
+
 similarTo k eps (f,_,_) (g,_,_) = norm (easyInvar k f - easyInvar k g) < eps
 
 prec = degree/10

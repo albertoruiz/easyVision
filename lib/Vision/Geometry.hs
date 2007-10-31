@@ -54,6 +54,7 @@ import Numeric.LinearAlgebra
 matrix = fromLists :: [[Double]] -> Matrix Double
 vector = fromList ::  [Double] -> Vector Double
 
+norm x = pnorm PNorm2 x
 
 -- | 3x3 rotation around the X-axis
 rot1 :: Double -> Matrix Double

@@ -8,7 +8,7 @@ import System.Environment(getArgs)
 import GHC.Float(isDoubleNaN)
 import ImagProc.Ipp.Core
 import Data.List(minimumBy)
-import Numeric.LinearAlgebra(norm,dim)
+import Numeric.LinearAlgebra hiding ((.*))
 import Control.Monad(when)
 import Vision
 import GHC.Float(float2Double,double2Float)
@@ -109,6 +109,8 @@ on f g = \x y -> f (g x) (g y)
 
 closestBy f [] p = p
 closestBy f hp p = minimumBy (compare `on` f p) hp
+
+norm x = pnorm PNorm2 x
 
 distFeat = (dist `on` ipDescriptor)
     where dist u v = norm (u-v)/ fromIntegral (dim u)

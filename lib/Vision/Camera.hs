@@ -49,6 +49,8 @@ type Vector = LA.Vector Double
 matrix = fromLists :: [[Double]] -> Matrix
 vector = fromList ::  [Double] -> Vector
 
+norm x = pnorm PNorm2 x
+
 cameraAtOrigin = (ident 3 :: Matrix) <|> vector [0,0,0]
 
 -- | A nice camera parameterization.

@@ -35,6 +35,7 @@ import Debug.Trace(trace)
 matrix = fromLists :: [[Double]] -> Matrix Double
 vector = fromList ::  [Double] -> Vector Double
 
+norm x = pnorm PNorm2 x
 
 -- FIXME: use Matrix Double for the coefficients
 -- | Minimum squares solution of a (possibly overconstrained) homogeneous linear system.

@@ -47,7 +47,8 @@ import Debug.Trace(trace)
 matrix = fromLists :: [[Double]] -> Matrix Double
 vector = fromList ::  [Double] -> Vector Double
 
---svd = svdR'
+norm x = pnorm PNorm2 x
+
 
 --------------------- Basic Stereo -----------------------
 

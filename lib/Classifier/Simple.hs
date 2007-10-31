@@ -29,6 +29,8 @@ import Data.Array
 import Classifier.Stat
 import Debug.Trace
 
+norm x = pnorm PNorm2 x
+
 -- | mse linear discriminant using the pseudoinverse
 mse :: Dicotomizer
 mse (g1,g2) = f where

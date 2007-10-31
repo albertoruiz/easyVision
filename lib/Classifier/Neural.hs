@@ -97,7 +97,7 @@ neural' alpha eps mxep hidden prob = (network, err) where
 
 
 mseerror r p = sum (map f p) / fromIntegral ( (dim$ snd$ head$ p) * length p)
-    where f (x,y) = norm (last (forward r x) - y)
+    where f (x,y) = pnorm PNorm2 (last (forward r x) - y)
 
 -- | useful for metaalgorithms (treeOf, adaboost)
 perceptron :: Double -- ^ alpha (e.g. 0.1)

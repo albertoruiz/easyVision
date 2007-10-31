@@ -9,6 +9,8 @@ import Data.IORef
 vector v = fromList  v :: Vector Double
 matrix m = fromLists m :: Matrix Double
 
+norm x = pnorm PNorm2 x
+
 data Quaternion = Quat {qs::Double, qv::Vector Double}
 
 normalize Quat{ qs = s, qv = v } = Quat { qs = s/m, qv = v */ m }
