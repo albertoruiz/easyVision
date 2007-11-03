@@ -60,7 +60,7 @@ main = do
     let opts = Map.fromList $ zip args (tail args)
         sz   = findSize args
 
-    (cam,ctrl) <- mplayer (args!!0) sz  >>= inThread  >>= withPause
+    (cam,ctrl) <- mplayer (args!!0) sz {- >>= inThread -} >>= withPause
 
     app <- prepare initstate
 

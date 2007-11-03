@@ -53,10 +53,7 @@ mplayer url (Size h w) = do
     k <- mallocBytes 1
     poke k '\0'         -- essential!!
 
-    let mpcommand =
-             proc url++" -vo yuv4mpeg:file="++fifo++
-             " -vf scale="++show w++":"++show h++" -nosound -slave -loop 0 "++
-             "-tv driver=v4l:width="++show w++":height="++show h
+    let mpcommand = proc w h url++" -vo yuv4mpeg:file="++fifo++" -nosound -slave -loop 0"
 
     --(i,o,e,p) <- runInteractiveProcess "mplayer" (words mpcommand) Nothing Nothing
     --(i,o,e,p) <- runInteractiveCommand ("mplayer " ++mpcommand)
@@ -86,9 +83,16 @@ mplayer url (Size h w) = do
 
     return grab
 
-proc url = rep ("webcam1","tv:// -tv device=/dev/video0") $
-           rep ("webcam2","tv:// -tv device=/dev/video1") $
-           rep ("firewire","/dev/dv1394 -demuxer rawdv -cache 400") url
+shsz w h = ":width="++show w++":height="++show h
+shsc w h = " -vf scale="++show w++":"++show h
+
+proc w h url
+    | "webcam1" `isPrefixOf` url = rep ("webcam1","tv:// -tv driver=v4l:device=/dev/video0"++shsz w h) url
+    | "webcam2" `isPrefixOf` url = rep ("webcam2","tv:// -tv driver=v4l:device=/dev/video1"++shsz w h) url
+    | "firewire" `isPrefixOf` url = rep ("firewire","/dev/dv1394 -demuxer rawdv -cache 400"++shsc w h) url
+    | "s-video" `isPrefixOf` url = rep ("s-video", "tv:// -tv driver=v4l2:device=/dev/video0"++shsz w h) url
+    | otherwise = url ++ shsc w h
+
 
 -- deinterlace -vf pp=md
 
