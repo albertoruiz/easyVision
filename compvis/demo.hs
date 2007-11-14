@@ -40,7 +40,8 @@ main = do
                                  ("h",percent 20),
                                  ("fracpix",realParam (1.5) 0 10),
                                  ("smooth",intParam 3 0 10),
-                                 ("smooth2",intParam 1 0 10)]
+                                 ("smooth2",intParam 1 0 10),
+                                 ("lbpThres",intParam 0 0 100)]
 
     addWindow "demo" sz Nothing (const (kbdcam ctrl)) state
                                    ---- or undefined ---
@@ -75,6 +76,7 @@ worker cam param getRoi fft inWindow op = do
     smooth2 <- getParam param "smooth2" :: IO Int
     area <- getParam param "area" :: IO Int
     fracpix <- getParam param "fracpix"
+    lbpThres <- getParam param "lbpThres"
 
     inWindow "demo" $ case op of
 
@@ -257,7 +259,7 @@ worker cam param getRoi fft inWindow op = do
              orig' <- cam >>= yuvToGray
              roi <- getRoi
              let orig = modifyROI (const roi) orig'
-             h <- lbp th2' orig
+             h <- lbp lbpThres orig
              drawImage orig
              pointCoordinates (size orig)
              setColor 0 0 0
@@ -266,7 +268,7 @@ worker cam param getRoi fft inWindow op = do
              
              let ROI r1 r2 c1 c2 = roi
                  sc = (0.1*256.0::Double) / fromIntegral ((r2-r1-1)*(c2-c1-1))
-             renderSignal $ map ((*sc).fromIntegral) h
+             renderSignal $ map ((*sc).fromIntegral) (tail h)
     return op
 
 text2D x y s = do
