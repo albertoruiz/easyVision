@@ -103,3 +103,34 @@ int auxDCTInv_32f_C1R(float * pSrc, int sstep,
     ippiDCTInvFree_32f(context);
     return res;
 }
+
+
+//---------------------------- Local binary patterns ---------------------
+
+// fills a buffer int[255]
+
+int lbp8u(int delta, unsigned char * pSrc, int sstep, int sr1, int sr2, int sc1, int sc2, int* histogram) {
+    #define X(r,c) (*(pSrc+(r)*sstep+(c)))
+    int r,c;
+    int k;
+    for(k=0; k<256; k++) {
+        histogram[k]=0;
+    }
+    for (r=sr1+1; r<sr2; r++) {
+        for(c=sc1+1; c<sc2; c++) {
+            int x = X(r,c)+delta;
+            int x0 = X(r-1,c-1) > x ? 1 : 0;
+            int x1 = X(r-1,c)   > x ? 2 : 0;
+            int x2 = X(r-1,c+1) > x ? 4 : 0;
+            int x3 = X(r,c-1)   > x ? 8 : 0;
+            int x4 = X(r,c+1)   > x ? 16: 0;
+            int x5 = X(r+1,c-1) > x ? 32: 0;
+            int x6 = X(r+1,c)   > x ? 64: 0;
+            int x7 = X(r+1,c+1) > x ? 128:0;
+            int val = x0+x1+x2+x3+x4+x5+x6+x7;
+            histogram[val]++;
+        }
+    }
+    return 0;
+    #undef X
+}

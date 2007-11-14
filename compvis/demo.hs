@@ -45,7 +45,7 @@ main = do
     addWindow "demo" sz Nothing (const (kbdcam ctrl)) state
                                    ---- or undefined ---
 
-    getRoi <- roiControl (ROI 0 (height sz) (width sz`div`2) (width sz)) (kbdcam ctrl)
+    getRoi <- roiControl (ROI 0 (height sz-1) (width sz`div`2) (width sz-1)) (kbdcam ctrl)
 
     let mode m = MenuEntry m $ modifyIORef state $ \s -> s {ust = m}
 
@@ -53,7 +53,8 @@ main = do
         ["RGB","Gray","Red","Green","Blue","U","V"
         , "Median","Gaussian","Laplacian","HighPass","Histogram"
         ,"Integral","Threshold","FloodFill","Contours","Distance", "Hessian"
-        ,"Corners", "Features", "Segments", "Canny", "DCT", "FFT", "Test 1", "Test 2"]
+        ,"Corners", "Features", "Segments", "Canny", "DCT", "FFT", "Test 1", "Test 2"
+        , "LBP"]
 
     fft <- genFFT 8 8 DivFwdByN AlgHintFast
 
@@ -252,7 +253,20 @@ worker cam param getRoi fft inWindow op = do
              setColor 1 0 0
              pointCoordinates (size orig)
              renderPrimitive Lines $ mapM_ drawSeg segs
-
+        "LBP" -> do
+             orig' <- cam >>= yuvToGray
+             roi <- getRoi
+             let orig = modifyROI (const roi) orig'
+             h <- lbp th2' orig
+             drawImage orig
+             pointCoordinates (size orig)
+             setColor 0 0 0
+             renderAxes
+             setColor 1 0 0
+             
+             let ROI r1 r2 c1 c2 = roi
+                 sc = (0.1*256.0::Double) / fromIntegral ((r2-r1-1)*(c2-c1-1))
+             renderSignal $ map ((*sc).fromIntegral) h
     return op
 
 text2D x y s = do
@@ -278,3 +292,11 @@ fst3 (a,_,_) = a
 
 shcont (Closed c) = do
     renderPrimitive LineLoop $ mapM_ vertex c
+
+renderSignal ls = do
+    let delta = 1.8/fromIntegral (length ls-1)
+    let points = zipWith Point [0.9, 0.9-delta ..] ls
+    GL.renderPrimitive GL.LineStrip $ mapM_ GL.vertex points
+
+renderAxes = 
+    GL.renderPrimitive GL.Lines $ mapM_ GL.vertex [Point (-1) 0, Point 1 0, Point 0 (-1), Point 0 1]

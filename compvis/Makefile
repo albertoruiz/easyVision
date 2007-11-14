@@ -9,7 +9,7 @@ ALL = demo hessian warp frontal pose automatch brush \
 all: $(ALL) 
 
 %: %.hs auxc
-	ghc -O -threaded --make $< -o $@ $(LIBS)
+	ghc -O -fvia-C -threaded --make $< -o $@ $(LIBS)
 
 auxc: ../lib/ImagProc/Ipp/auxIpp.o ../lib/ImagProc/Segments/libsegments.a
 

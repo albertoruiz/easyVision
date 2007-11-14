@@ -95,3 +95,5 @@ int ippiFloodFillGetSize(VSIZE, int*);
 int ippiFloodFill_8Con_8u_C1IR(DST, VPOINT, unsigned char, void*, void*);
 int ippiFloodFillGetSize_Grad(VSIZE, int*);
 int ippiFloodFill_Grad8Con_8u_C1IR(DST, VPOINT, unsigned char, unsigned char, unsigned char, void*, void*);
+
+int lbp8u(int delta, unsigned char * pSrc, int sstep, int sr1, int sr2, int sc1, int sc2, int* histogram);

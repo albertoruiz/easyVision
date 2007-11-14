@@ -56,7 +56,7 @@ data Tensor t = T { dims   :: [IdxDesc]
 coords :: Tensor t -> Vector t
 coords = ten
 
-instance (Show a, Field a) => Show (Tensor a) where
+instance (Show a, Element a) => Show (Tensor a) where
     show T {dims = [], ten = t} = "scalar "++show (t `at` 0)
     show t = "("++shdims (dims t) ++") "++ showdt t
 
@@ -102,9 +102,9 @@ tensor dssig vec = T d v `withIdx` seqind where
 tensorFromVector :: IdxType -> Vector t -> Tensor t
 tensorFromVector tp v = T {dims = [IdxDesc (dim v) tp "1"], ten = v}
 
-tensorFromMatrix :: Field t => IdxType -> IdxType -> Matrix t -> Tensor t
+tensorFromMatrix :: Element t => IdxType -> IdxType -> Matrix t -> Tensor t
 tensorFromMatrix tpr tpc m = T {dims = [IdxDesc (rows m) tpr "1",IdxDesc (cols m) tpc "2"]
-                               , ten = cdat m}
+                               , ten = flatten m}
 
 
 liftTensor :: (Vector a -> Vector b) -> Tensor a -> Tensor b
@@ -119,7 +119,7 @@ liftTensor2 f (T d1 v1) (T d2 v2) | compat d1 d2 = T d1 (f v1 v2)
 
 
 -- | express the tensor as a matrix with the given index in columns
-findIdx :: (Field t) => IdxName -> Tensor t
+findIdx :: (Element t) => IdxName -> Tensor t
         -> (([IdxDesc], [IdxDesc]), Matrix t)
 findIdx name t = ((d1,d2),m) where
     (d1,d2) = span (\d -> idxName d /= name) (dims t)
@@ -127,10 +127,10 @@ findIdx name t = ((d1,d2),m) where
     m = matrixFromVector RowMajor c (ten t)
 
 -- | express the tensor as a matrix with the given index in rows
-putFirstIdx :: (Field t) => String -> Tensor t -> ([IdxDesc], Matrix t)
+putFirstIdx :: (Element t) => String -> Tensor t -> ([IdxDesc], Matrix t)
 putFirstIdx name t = (nd,m')
     where ((d1,d2),m) = findIdx name t
-          m' = matrixFromVector RowMajor c $ cdat $ trans m
+          m' = matrixFromVector RowMajor c $ flatten $ trans m
           nd = d2++d1
           c = dim (ten t) `div` (idxDim $ head d2)
 
@@ -150,7 +150,7 @@ raise (T d v) = T (map raise' d) v
 
 
 -- | index transposition to a desired order. You can specify only a subset of the indices, which will be moved to the front of indices list
-tridx :: (Field t) => [IdxName] -> Tensor t -> Tensor t
+tridx :: (Element t) => [IdxName] -> Tensor t -> Tensor t
 tridx [] t = t
 tridx (name:rest) t = T (d:ds) (join ts) where
     ((_,d:_),_) = findIdx name t
@@ -161,7 +161,7 @@ tridx (name:rest) t = T (d:ds) (join ts) where
 
 
 -- | extracts a given part of a tensor
-part :: (Field t) => Tensor t -> (IdxName, Int) -> Tensor t
+part :: (Element t) => Tensor t -> (IdxName, Int) -> Tensor t
 part t (name,k) = if k<0 || k>=l
                     then error $ "part "++show (name,k)++" out of range" -- in "++show t
                     else T {dims = ds, ten = toRows m !! k}
@@ -169,14 +169,14 @@ part t (name,k) = if k<0 || k>=l
           l = idxDim d
 
 -- | creates a list with all parts of a tensor along a given index
-parts :: (Field t) => Tensor t -> IdxName -> [Tensor t]
+parts :: (Element t) => Tensor t -> IdxName -> [Tensor t]
 parts t name = map f (toRows m)
     where (d:ds,m) = putFirstIdx name t
           l = idxDim d
           f t = T {dims=ds, ten=t}
 
 
-compatIdx :: (Field t1, Field t) => Tensor t1 -> IdxName -> Tensor t -> IdxName -> Bool
+compatIdx :: (Element t1, Element t) => Tensor t1 -> IdxName -> Tensor t -> IdxName -> Bool
 compatIdx t1 n1 t2 n2 = compatIdxAux d1 d2 where
     d1 = head $ snd $ fst $ findIdx n1 t1
     d2 = head $ snd $ fst $ findIdx n2 t2
@@ -185,17 +185,17 @@ compatIdx t1 n1 t2 n2 = compatIdxAux d1 d2 where
         = t1 /= t2 && n1 == n2
 
 
-outer' u v = dat (outer u v)
+outer' u v = flatten (outer u v)
 
 -- | tensor product without without any contractions
-rawProduct :: (Field t, Num t) => Tensor t -> Tensor t -> Tensor t
+rawProduct :: (Element t, Num t) => Tensor t -> Tensor t -> Tensor t
 rawProduct (T d1 v1) (T d2 v2) = T (d1++d2) (outer' v1 v2)
 
 -- | contraction of the product of two tensors 
-contraction2 :: (Field t, Num t) => Tensor t -> IdxName -> Tensor t -> IdxName -> Tensor t
+contraction2 :: (Element t, Num t) => Tensor t -> IdxName -> Tensor t -> IdxName -> Tensor t
 contraction2 t1 n1 t2 n2 =
     if compatIdx t1 n1 t2 n2
-        then T (tail d1 ++ tail d2) (cdat m)
+        then T (tail d1 ++ tail d2) (flatten m)
         else error "wrong contraction2"
   where (d1,m1) = putFirstIdx n1 t1
         (d2,m2) = putFirstIdx n2 t2
@@ -315,7 +315,7 @@ wedge a b = antisym (rawProduct (norper a) (norper b))
 -- antinorper t = rawProduct t (scalar (fromIntegral $ fact (rank t)))
 
 -- | The euclidean inner product of two completely antisymmetric tensors
-innerAT :: (Fractional t, Field t) => Tensor t -> Tensor t -> t
+innerAT :: (Fractional t, Element t) => Tensor t -> Tensor t -> t
 innerAT t1 t2 = dot (ten t1) (ten t2) / fromIntegral (fact $ rank t1)
 
 fact :: (Num t, Enum t) => t -> t
@@ -348,7 +348,7 @@ dual t = raise $ leviCivita n `mulT` withIdx t seqind `rawProduct` x
 
 
 -- | shows only the relevant components of an antisymmetric tensor
-niceAS :: (Field t, Fractional t) => Tensor t -> [(t, [Int])]
+niceAS :: (Element t, Fractional t) => Tensor t -> [(t, [Int])]
 niceAS t = filter ((/=0.0).fst) $ zip vals base
     where vals = map ((`at` 0).ten.foldl' partF t) (map (map pred) base)
           base = asBase r n

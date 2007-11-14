@@ -82,6 +82,8 @@ module ImagProc.ImageProcessing (
 , distanceTransform
 -- * Connected Components
 , floodFill8u, floodFill8uGrad
+-- * Local Binary Patterns
+, lbp
 )
 where
 
@@ -861,3 +863,15 @@ floodFill8uGrad (G im) (Pixel r c) dmin dmax val = do
     [_,_,_,_,_,_,_,_,x,y,w,h] <- peekArray 12 (castPtr pregion :: Ptr Int)
     free pregion
     return (ROI (r1+y) (r1+y+h-1) (c1+x) (c1+x+w-1), round area, round value1)
+
+-- | Histogram of the 256 possible configurations of 3x3 image patches thresholded by the central pixel. Works inside the image ROI.
+lbp :: Int       -- ^ threshold tolerance
+    -> ImageGray -- ^ source image
+    -> IO [Int]  -- result
+lbp th (G im) = do
+    hist <- mallocArray 256
+    lbp8u th (ptr im) (step im) (r1 (vroi im)) (r2 (vroi im)) (c1 (vroi im)) (c2 (vroi im)) hist
+        // checkIPP "lbp" [im]
+    r <- peekArray 256 hist
+    free hist
+    return r

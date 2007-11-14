@@ -238,3 +238,6 @@ foreign import ccall "auxIpp.h ippiFloodFill_8Con_8u_C1IR"
 
 foreign import ccall "auxIpp.h ippiFloodFill_Grad8Con_8u_C1IR"
     ippiFloodFill_Grad8Con_8u_C1IR :: Ptr() -> Int -> ROISize -> IPPPoint -> CUChar -> CUChar -> CUChar -> Ptr () -> Ptr () -> IO Int
+
+foreign import ccall "auxIpp.h lbp8u"
+     lbp8u :: Int -> Ptr () -> Int -> Int -> Int -> Int -> Int -> Ptr Int -> IO Int
