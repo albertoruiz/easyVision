@@ -1,6 +1,6 @@
 -----------------------------------------------------------------------------
 {- |
-Module      :  EasyVision.Parameters
+Module      :  NewParam
 Copyright   :  (c) Alberto Ruiz 2006
 License     :  GPL-style
 
@@ -8,20 +8,20 @@ Maintainer  :  Alberto Ruiz (aruiz at um dot es)
 Stability   :  very provisional
 Portability :  hmm...
 
-A \'global\' parameter list with its own control window. See the example warp.hs.
 
 -}
 -----------------------------------------------------------------------------
 
-module EasyVision.Parameters (
-   Parameters,
-   createParameters,
-   listParam, realParam, percent, intParam,
-   getParam, info, posi, incre, decre, setpo
+module NewParam (
+   --Parameters,
+   createParameters'
+   --listParam, realParam, percent, intParam,
+   --getParam
 ) where
 
 import ImagProc.Ipp.Core
 import EasyVision.GUI
+import EasyVision.Parameters
 import Graphics.UI.GLUT hiding (RGB, Matrix, Size)
 import qualified Graphics.UI.GLUT as GL
 import Data.IORef
@@ -33,18 +33,14 @@ import Numeric
 sizePar = 35
 
 -- | Given an assoc list of names and initial values of some \'global\' application parameters, it creates a window for controlling them and returns a function to get the current value of the desired parameter. There are several types of parameters.
-createParameters :: IORef (State userState)
-                 -> [(String, Parameter)]
-                 -> IO Parameters
-createParameters st ops = do
-    o <- newIORef (Map.fromList ops)
-    w <- addWindow "Parameters" (Size (2+length ops * sizePar) 200)
-                                (Just (f o))
-                                (const $ kbdopts o k)
-                                st
-    return o
- where k _ _ _ _ = return ()
-       f o s = do
+--createParameters' :: [(String, Parameter)]
+--                  -> IO Parameters
+createParameters' ops = do
+    evWindow (Map.fromList ops) "Parameters" (Size (2+length ops * sizePar) 200)
+                                (Just f)
+                                (kbdopts kbdQuit)
+
+ where f o = do
            m <- readIORef o
            let els = Map.elems m
            pixelCoordinates (Size (2+length els * sizePar) 200)
@@ -67,7 +63,7 @@ createParameters st ops = do
                 c2 = 2*k
                 k = posi e
 
-kbdopts opts def = kbd where
+kbdopts def opts = kbd where
     kbd (MouseButton WheelUp) Down _ pos@(Position x y) = do
         m <- readIORef opts
         let s' = keys m
@@ -94,7 +90,7 @@ kbdopts opts def = kbd where
         postRedisplay Nothing
     kbd a b c d = def a b c d
 
-
+{-
 type Parameters = IORef (Map String Parameter)
 
 data Parameter = Percent Int
@@ -181,3 +177,4 @@ instance Param Float where
     param (RealParam v _ _) = double2Float v
     param (RLParam {rVal = v}) = double2Float v
     param v = error $ "wrong param conversion from "++ show v ++ " to Float"
+-}
