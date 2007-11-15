@@ -4,7 +4,8 @@ LIBS = -i../lib ../lib/ImagProc/Ipp/auxIpp.o -L../lib/ImagProc/Segments -lsegmen
 
 ALL = demo hessian warp frontal pose automatch brush \
       stereo detect interpolate rectangles hotpoints \
-      autostereo augmented contours dynamic justsave
+      autostereo augmented contours dynamic justsave \
+      whiteboard
 
 all: $(ALL) 
 

@@ -17,10 +17,10 @@ The GUI of EasyVision, based on HOpenGL.
 module EasyVision.GUI (
 -- * Application interface
   State(..)
-, prepare
-, addWindow
-, launch
-, InWindow
+, prepare, prepare'
+, addWindow, evWindow
+, launch, launch'
+, InWindow, inWin, getW, putW
 , kbdcam, kbdQuit, roiControl
 -- * Drawing utilities
 , module EasyVision.Draw
@@ -150,3 +150,42 @@ roiControl initROI defaultFunc = do
                 modifyIORef r (\ (ROI r1 _ c1 _) ->
                                   ROI r1 (max (r1+d) (fromIntegral y))
                                       c1 (max (c1+d) (fromIntegral x)))
+
+
+-----------------------------------------------------------------
+-- simpler interface, with state in each window
+
+prepare' = do
+    getArgsAndInitialize
+    initialDisplayMode $= [DoubleBuffered, WithDepthBuffer]
+
+launch' worker = do
+    idleCallback $= Just worker
+    mainLoop
+
+----------------------------------------------------------------
+
+evWindow st0 name size mdisp kbd = do
+    st <- newIORef st0
+    w <- createWindow name
+    windowSize $= glSize size
+    let draw = case mdisp of
+            Nothing -> return ()
+            Just fun -> do
+                clear [ColorBuffer]
+                fun st
+                swapBuffers
+    displayCallback $= draw
+    keyboardMouseCallback $= Just (kbd st)
+    return (w,st)
+
+---------------------------------------------------------------
+
+inWin (w,st) f = do
+    currentWindow $= Just w
+    f
+    swapBuffers
+
+getW (w,st) = get st
+putW (w,st) x = st $= x
+
