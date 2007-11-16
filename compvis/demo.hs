@@ -31,14 +31,14 @@ main = do
 
     state <- prepare "RGB"
 
-    o <- createParameters state [("umbral",realParam 0.5 0 1),
-                                 ("umbral2",intParam 128 1 255),
-                                 ("area",percent 5),
-                                 ("h",percent 20),
-                                 ("fracpix",realParam (1.5) 0 10),
-                                 ("smooth",intParam 3 0 10),
-                                 ("smooth2",intParam 1 0 10),
-                                 ("lbpThres",intParam 0 0 100)]
+    o <- createParameters [("umbral",realParam 0.5 0 1),
+                           ("umbral2",intParam 128 1 255),
+                           ("area",percent 5),
+                           ("h",percent 20),
+                           ("fracpix",realParam (1.5) 0 10),
+                           ("smooth",intParam 3 0 10),
+                           ("smooth2",intParam 1 0 10),
+                           ("lbpThres",intParam 0 0 100)]
 
     addWindow "demo" sz Nothing (const (kbdcam ctrl)) state
                                    ---- or undefined ---

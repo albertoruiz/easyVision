@@ -64,7 +64,7 @@ main = do
 
     app <- prepare initstate
 
-    o <- createParameters app [("radius",intParam 4 0 10),
+    o <- createParameters     [("radius",intParam 4 0 10),
                                ("width",realParam 1.5 0 5),
                                ("median",intParam 5 3 5),
                                ("high",intParam 40 0 255),

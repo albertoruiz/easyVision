@@ -37,7 +37,7 @@ main = do
     addWindow "rectif" sz Nothing   (const (kbdcam ctrl1)) state
     addWindow "fixed" sz Nothing   (const (kbdcam ctrl1)) state
 
-    opts <- createParameters state [("h",percent 20),
+    opts <- createParameters       [("h",percent 20),
                                     ("locrad",intParam 3 1 20),
                                     ("smooth",intParam 3 0 10),
                                     ("umb",realParam 0.01 0 0.05),

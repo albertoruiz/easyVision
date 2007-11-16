@@ -33,66 +33,63 @@ import Numeric
 sizePar = 35
 
 -- | Given an assoc list of names and initial values of some \'global\' application parameters, it creates a window for controlling them and returns a function to get the current value of the desired parameter. There are several types of parameters.
-createParameters :: IORef (State userState)
-                 -> [(String, Parameter)]
-                 -> IO Parameters
-createParameters st ops = do
-    o <- newIORef (Map.fromList ops)
-    w <- addWindow "Parameters" (Size (2+length ops * sizePar) 200)
-                                (Just (f o))
-                                (const $ kbdopts o k)
-                                st
-    return o
- where k _ _ _ _ = return ()
-       f o s = do
-           m <- readIORef o
-           let els = Map.elems m
-           pixelCoordinates (Size (2+length els * sizePar) 200)
+createParameters :: [(String, Parameter)]
+                 -> IO (Window, Parameters)
+createParameters ops = do
+    evWindow (Map.fromList ops) "Parameters" (Size (2+length ops * sizePar) 200)
+                                (Just f)
+                                (kbdopts kbdQuit)
 
-           sequence_ $ zipWith bar [0..] (assocs m)
-           return () 
-       bar p (s,e) = do
-           setColor 0 0 0.5
-           renderPrimitive Polygon (mapM_ vertex [Pixel r1 c1,
-                                                         Pixel r1 c2,
-                                                         Pixel r2 c2,
-                                                         Pixel r2 c1])
-           setColor 1 1 1
-           rasterPos (Vertex2 (5::GLfloat) (4+fromIntegral r1/2+fromIntegral r2/2))
-           renderString Helvetica12 (s++" = "++info e)
+  where
+    f o = do
+        m <- readIORef o
+        let els = Map.elems m
+        pixelCoordinates (Size (2+length els * sizePar) 200)
 
-        where   r1 = 2+p*sizePar
-                r2 = 2+p*sizePar+(sizePar -2)
-                c1 = 1
-                c2 = 2*k
-                k = posi e
+        sequence_ $ zipWith bar [0..] (assocs m)
+        return ()
 
-kbdopts opts def = kbd where
-    kbd (MouseButton WheelUp) Down _ pos@(Position x y) = do
-        m <- readIORef opts
-        let s' = keys m
-        let s = (s' !! (fromIntegral y `div` sizePar))
-        let v = m!s 
-        let m' = insert s (incre v) m
-        writeIORef opts m'
-        postRedisplay Nothing
-    kbd (MouseButton WheelDown) Down _ pos@(Position x y) = do
-        m <- readIORef opts
-        let s' = keys m
-        let s = (s' !! (fromIntegral y `div` sizePar))
-        let v = m!s 
-        let m' = insert s (decre v) m
-        writeIORef opts m'
-        postRedisplay Nothing
-    kbd (MouseButton LeftButton) Down _ pos@(Position x y) = do
-        m <- readIORef opts
-        let s' = keys m
-        let s = (s' !! (fromIntegral y `div` sizePar))
-        let v = m!s 
-        let m' = insert s (setpo x v) m
-        writeIORef opts m'
-        postRedisplay Nothing
-    kbd a b c d = def a b c d
+    bar p (s,e) = do
+        setColor 0 0 0.5
+        renderPrimitive Polygon (mapM_ vertex [Pixel r1 c1,
+                                                        Pixel r1 c2,
+                                                        Pixel r2 c2,
+                                                        Pixel r2 c1])
+        setColor 1 1 1
+        rasterPos (Vertex2 (5::GLfloat) (4+fromIntegral r1/2+fromIntegral r2/2))
+        renderString Helvetica12 (s++" = "++info e)
+      where r1 = 2+p*sizePar
+            r2 = 2+p*sizePar+(sizePar -2)
+            c1 = 1
+            c2 = 2*k
+            k = posi e
+
+    kbdopts def opts = kbd where
+        kbd (MouseButton WheelUp) Down _ pos@(Position x y) = do
+            m <- readIORef opts
+            let s' = keys m
+            let s = (s' !! (fromIntegral y `div` sizePar))
+            let v = m!s 
+            let m' = insert s (incre v) m
+            writeIORef opts m'
+            postRedisplay Nothing
+        kbd (MouseButton WheelDown) Down _ pos@(Position x y) = do
+            m <- readIORef opts
+            let s' = keys m
+            let s = (s' !! (fromIntegral y `div` sizePar))
+            let v = m!s 
+            let m' = insert s (decre v) m
+            writeIORef opts m'
+            postRedisplay Nothing
+        kbd (MouseButton LeftButton) Down _ pos@(Position x y) = do
+            m <- readIORef opts
+            let s' = keys m
+            let s = (s' !! (fromIntegral y `div` sizePar))
+            let v = m!s 
+            let m' = insert s (setpo x v) m
+            writeIORef opts m'
+            postRedisplay Nothing
+        kbd a b c d = def a b c d
 
 
 type Parameters = IORef (Map String Parameter)
@@ -162,9 +159,9 @@ info (IntParam v _ _) = show v
 class Param a where
     param :: Parameter -> a
     -- | Extracts a parameter given its name.
-    getParam :: Parameters -> String -> IO a
+    getParam :: (b,Parameters) -> String -> IO a
     getParam rm s = do
-        m <- readIORef rm
+        m <- readIORef (snd rm)
         return $ param $ m!s
 
 instance Param Int where

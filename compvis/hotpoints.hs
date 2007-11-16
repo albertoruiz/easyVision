@@ -22,7 +22,7 @@ pointTracker app sz cam = do
     ref <- newIORef Nothing
     rmarked <- newIORef []
     w <- addWindow "tracker" sz (Just (const $ drw ref rmarked)) (marker (rmarked,ref) (kbdcam ctrl)) app
-    opts <- createParameters app [ ("h",percent 20)
+    opts <- createParameters     [ ("h",percent 20)
                                  , ("locrad",intParam 3 1 30)
                                  , ("smooth",intParam 3 0 10)
                                  , ("median",intParam 0 0 10)
@@ -86,7 +86,7 @@ main = do
 
     state <- prepare ()
 
-    opts <- createParameters state [("umb",realParam 0.01 0 0.05),
+    opts <- createParameters        [("umb",realParam 0.01 0 0.05),
                                     ("ranUmb", realParam 0.003 0 0.01),
                                     ("scale", realParam 0.5 0 2),
                                     ("ranProb", realParam 0.9 0.5 1),

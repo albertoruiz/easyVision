@@ -37,13 +37,13 @@ main = do
 
     state <- prepare st
 
-    o <- createParameters state [("h",percent 30),
-                                 ("smooth",intParam 3 0 10),
-                                 ("alpha",realParam 0.9 0 1),
-                                 ("see",realParam 1 0 10),
-                                 ("umb",realParam 0.05 0 0.1),
-                                 ("ranUmb", realParam 0.005 0 0.01),
-                                 ("ranProb", realParam 0.99 0.5 1)]
+    o <- createParameters [ ("h",percent 30),
+                            ("smooth",intParam 3 0 10),
+                            ("alpha",realParam 0.9 0 1),
+                            ("see",realParam 1 0 10),
+                            ("umb",realParam 0.05 0 0.1),
+                            ("ranUmb", realParam 0.005 0 0.01),
+                            ("ranProb", realParam 0.99 0.5 1)]
 
     addWindow "camera" sz Nothing (const (kbdcam ctrl)) state
     addWindow "track" sz Nothing (const (kbdcam ctrl)) state

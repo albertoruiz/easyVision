@@ -131,7 +131,7 @@ pointMarker app name sz cam = do
     ref <- newIORef Nothing
     rmarked <- newIORef []
     w <- addWindow name sz (Just (const $ drw ref rmarked)) (marker (rmarked,ref) (kbdcam ctrl)) app
-    opts <- createParameters app [ ("h",percent 20)
+    opts <- createParameters     [ ("h",percent 20)
                                  , ("locrad",intParam 7 1 30)
                                  , ("smooth",intParam 3 0 10)
                                  , ("median",intParam 0 0 10)

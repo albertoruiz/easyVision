@@ -72,7 +72,7 @@ main = do
 
     state <- prepare ([],Nothing)
 
-    o <- createParameters state [
+    o <- createParameters [
         ("umbral2",intParam 128 1 255),
         ("area",percent 1),
         ("fracpix",realParam (1.5) 0 10),

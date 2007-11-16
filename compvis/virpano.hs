@@ -10,18 +10,14 @@ import Vision
 import Control.Monad(when)
 import Numeric.LinearAlgebra
 import Data.IORef
----------------------------------------------------------------
-import NewParam
-----------------------------------------------------------------
 
-szDst = Size 320 640
 
-horizPano cam1 cam2 = do
+panoramic sz cam1 cam2 = do
     wr1 <- warper "warper1"
     wr2 <- warper "warper2"
     return $ do
         orig1 <- cam1
-        floor <- image szDst
+        floor <- image sz
         set32f 0 (theROI floor) floor
         (rh1,_) <- getW wr1
         h1 <- rh1
@@ -32,7 +28,7 @@ horizPano cam1 cam2 = do
         warpOn h2 floor orig2
         return floor
 
-warperHomog pan tilt rho foc sca =
+conjugateRotation pan tilt rho foc sca =
         scaling sca
         <> kgen foc
         <> rot1 tilt
@@ -41,11 +37,11 @@ warperHomog pan tilt rho foc sca =
         <> kgen (1/foc)
 
 warper name = do
-    (_,param) <- createParameters'  [ ("pan",  realParam (0) (-40) (40))
-                                     ,("tilt", realParam (0) (-30) (30))
-                                     ,("rho",  realParam  0 (-60) (60))
-                                     ,("foc",  listParam 2.8 [0.5, 0.7, 1, 2, 2.8, 5, 5.5, 9,10])
-                                     ,("sca",  listParam 0.5 [1.1**k|k<-[-20..20]])]
+    param <- createParameters   [ ("pan",  realParam (0) (-40) (40))
+                                 ,("tilt", realParam (0) (-30) (30))
+                                 ,("rho",  realParam  0 (-60) (60))
+                                 ,("foc",  listParam 2.8 [0.5, 0.7, 1, 2, 2.8, 5, 5.5, 9,10])
+                                 ,("sca",  listParam 0.5 [1.1**k|k<-[-20..20]])]
     let sz = Size 300 400
         h = do
             pan   <- getParam param "pan"
@@ -53,7 +49,7 @@ warper name = do
             rho   <- getParam param "rho"
             foc   <- getParam param "foc"
             sca   <- getParam param "sca"
-            let t = warperHomog (pan*degree) (tilt*degree) (rho*degree) foc sca
+            let t = conjugateRotation (pan*degree) (tilt*degree) (rho*degree) foc sca
             return t
         f img = do
             t <- h
@@ -86,10 +82,10 @@ main = do
         c2 = cam2 >>= yuvToGray >>= scale8u32f 0 1
         c3 = cam3 >>= yuvToGray >>= scale8u32f 0 1
 
-    wDest  <- evWindow () "pano" szDst Nothing (mouse (kbdQuit))
+    wDest  <- evWindow () "pano" (Size 320 640) Nothing (mouse (kbdQuit))
 
-    cam12 <- horizPano c1 c2
-    cam <- horizPano cam12 c3
+    cam12 <- panoramic (Size 320 640) c1 c2
+    cam <- panoramic (Size 320 640) cam12 c3
 
     launch' (worker cam wDest)
 

@@ -14,10 +14,10 @@ main = do
 
     state <- prepare ()
 
-    param <- createParameters state [("alpha", realParam (-40) (-100) (100))
-                                     ,("rho",  realParam 0 (-180) (180))
-                                     ,("foc",  listParam 2 [0.5, 0.7, 1, 2, 5,5.5, 9,10])
-                                     ,("sca",  listParam 0.5 [1.1**k|k<-[-20..20]])]
+    param <- createParameters [("alpha", realParam (-40) (-100) (100))
+                              ,("rho",  realParam 0 (-180) (180))
+                              ,("foc",  listParam 2 [0.5, 0.7, 1, 2, 5,5.5, 9,10])
+                              ,("sca",  listParam 0.5 [1.1**k|k<-[-20..20]])]
 
     addWindow "camera" szc Nothing (const (kbdcam ctrl)) state
     addWindow "warped" szw Nothing (const (kbdcam ctrl)) state

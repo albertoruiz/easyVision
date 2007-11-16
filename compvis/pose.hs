@@ -25,16 +25,16 @@ main = do
 
     app <- prepare ()
 
-    o <- createParameters app [("radius",intParam 4 0 10),
-                               ("width",realParam 1.5 0 5),
-                               ("median",intParam 5 3 5),
-                               ("high",intParam 40 0 255),
-                               ("low",intParam 20 0 255),
-                               ("postproc",intParam 1 0 1),
-                               ("minlength",realParam 0.15 0 1),
-                               ("maxdis",realParam 0.06 0 0.1),
-                               ("scale",realParam 0.2 0.01 1),
-                               ("orthotol",realParam 0.25 0.01 0.5)]
+    o <- createParameters [ ("radius",intParam 4 0 10),
+                            ("width",realParam 1.5 0 5),
+                            ("median",intParam 5 3 5),
+                            ("high",intParam 40 0 255),
+                            ("low",intParam 20 0 255),
+                            ("postproc",intParam 1 0 1),
+                            ("minlength",realParam 0.15 0 1),
+                            ("maxdis",realParam 0.06 0 0.1),
+                            ("scale",realParam 0.2 0.01 1),
+                            ("orthotol",realParam 0.25 0.01 0.5)]
 
     addWindow "image" sz Nothing (const $ kbdcam ctrl) app
 
