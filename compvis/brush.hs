@@ -124,16 +124,7 @@ worker3 param inWindow (pl,im) st = do
 
                  return st {points = pl,world = new}
 
-
-
-text2D x y s = do
-    rasterPos (Vertex2 x (y::GLfloat))
-    renderString Helvetica12 s
-
-
 ---------------------------------------------------------
-
-on f g = \x y -> f (g x) (g y)
 
 closestBy f [] p = p
 closestBy f hp p = minimumBy (compare `on` f p) hp

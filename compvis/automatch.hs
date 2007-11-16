@@ -105,8 +105,6 @@ worker grab inWindow st = do
 
 ------------------------------------------------------
 
-on f g = \x y -> f (g x) (g y)
-
 closestBy f [] p = p
 closestBy f hp p = minimumBy (compare `on` f p) hp
 

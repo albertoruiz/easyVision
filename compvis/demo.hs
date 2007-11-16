@@ -18,9 +18,6 @@ import Vision
 import Data.List(minimumBy, maximumBy)
 
 import ImagProc.Ipp.Core
-import Debug.Trace
-
-debug x = trace (show x) x
 
 ------------------------------------------------------------
 
@@ -254,7 +251,7 @@ worker cam param getRoi fft inWindow op = do
              drawImage orig
              setColor 1 0 0
              pointCoordinates (size orig)
-             renderPrimitive Lines $ mapM_ drawSeg segs
+             renderPrimitive Lines $ mapM_ vertex segs
         "LBP" -> do
              orig' <- cam >>= yuvToGray
              roi <- getRoi
@@ -271,19 +268,10 @@ worker cam param getRoi fft inWindow op = do
              renderSignal $ map ((*sc).fromIntegral) (tail h)
     return op
 
-text2D x y s = do
-    rasterPos (Vertex2 x (y::GLfloat))
-    renderString Helvetica12 s
-
 cent (ROI r1 r2 c1 c2) = Pixel (r1 + (r2-r1+1)`div`2) (c1 + (c2-c1+1)`div`2)
 roiFrom2Pixels (Pixel r1 c1) (Pixel r2 c2) = ROI (min r1 r2) (max r1 r2) (min c1 c2) (max c1 c2)
 
 norm (a,b) = sqrt $ fromIntegral a^2 + fromIntegral b^2
-
-drawSeg s = do
-    vertex $ (extreme1 s)
-    vertex $ (extreme2 s)
-
 
 autoscale im = do
     (mn,mx) <- minmax im

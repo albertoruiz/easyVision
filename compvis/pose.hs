@@ -151,6 +151,3 @@ isA4 mbf tol pts = ao < tol && cy < 0
 
 omegaGen f = kgen (recip (f*f))
 
-text2D x y s = do
-    rasterPos (Vertex2 x (y::GLfloat))
-    renderString Helvetica12 s

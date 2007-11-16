@@ -166,9 +166,6 @@ marker def _ a b c d = def a b c d
 closestTo pixel = minimumBy (compare `on` (distP2ROI pixel))
     where distP2ROI (Pixel r c) (_,_,ROI r1 r2 c1 c2) = ((r1+r2)`div`2 - r)^2 + ((c1+c2)`div`2 - c)^2
 
-text2D x y s = do
-    rasterPos (Vertex2 x (y::GLfloat))
-    renderString Helvetica12 s
 
 fst3 (a,_,_) = a
 
@@ -225,8 +222,6 @@ shiftStart r f = \w -> cis (fromIntegral w*r) * f w
 normalizeStart f = shiftStart (-t) f
     where t = phase ((f (1)- (conjugate $ f(-1))))
 
-
-on f g = \x y -> f (g x) (g y)
 
 goodDir f = a where
     (_,_,a) = minimumBy (compare `on` quality) (map (excentricity f) [1..5])

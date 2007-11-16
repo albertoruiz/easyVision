@@ -21,6 +21,7 @@ module EasyVision.Draw
 , Drawable(..)
 , drawTexture
 , setColor
+, text2D
 , drawCamera
 , cameraView
 , drawInterestPoints
@@ -174,6 +175,16 @@ instance Vertex [Double] where
 instance Vertex (Complex Double) where
     vertex (x:+y) = vertex (Vertex2 x y)
     vertexv = undefined
+
+instance Vertex Segment where
+    vertex s = do
+        vertex $ (extreme1 s)
+        vertex $ (extreme2 s)
+    vertexv = undefined
+
+text2D x y s = do
+    rasterPos (Vertex2 x (y::GLfloat))
+    renderString Helvetica12 s
 
 -- | It shows the outline of a camera and an optional image (texture) in its image plane.
 drawCamera :: Double -> Matrix Double -> Maybe ImageFloat -> IO ()

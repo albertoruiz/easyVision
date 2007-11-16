@@ -79,7 +79,7 @@ worker cam op trackball mbf inWindow _ = do
 
         setColor 1 0 0
         lineWidth $= 1
-        mapM_ (renderPrimitive Lines . (mapM_ drawSeg)) (map construct drwclosed4)
+        mapM_ (renderPrimitive Lines . (mapM_ vertex)) (map construct drwclosed4)
 
         setColor 0 1 0
         pointSize $= 2
@@ -112,14 +112,6 @@ vector l = fromList l :: Vector Double
 diagl = diag .vector
 
 norm x = pnorm PNorm2 x
-
-drawSeg s = do
-    vertex $ (extreme1 s)
-    vertex $ (extreme2 s)
-
-text2D x y s = do
-    rasterPos (Vertex2 x (y::GLfloat))
-    renderString Helvetica12 s
 
 p2l (Point x y) = [x,y]
 p2hp (Point x y) = vector [x,y,1]

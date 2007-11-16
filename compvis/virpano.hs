@@ -16,15 +16,29 @@ import NewParam
 
 szDst = Size 320 640
 
-{-
-h10 = (3><3) [0.5,0,0.5,
-              0  ,0.5,0,
-              0  , 0, 1] 
+horizPano cam1 cam2 = do
+    wr1 <- warper "warper1"
+    wr2 <- warper "warper2"
+    return $ do
+        orig1 <- cam1
+        floor <- image szDst
+        set32f 0 (theROI floor) floor
+        (rh1,_) <- getW wr1
+        h1 <- rh1
+        warpOn h1 floor orig1
+        orig2 <- cam2
+        (rh2,_) <- getW wr2
+        h2 <- rh2
+        warpOn h2 floor orig2
+        return floor
 
-h20 = (3><3) [0.5,0,-0.5,
-              0  ,0.5,0,
-              0  , 0, 1]
--}
+warperHomog pan tilt rho foc sca =
+        scaling sca
+        <> kgen foc
+        <> rot1 tilt
+        <> rot2 pan 
+        <> rot3 rho 
+        <> kgen (1/foc)
 
 warper name = do
     (_,param) <- createParameters'  [ ("pan",  realParam (0) (-40) (40))
@@ -46,13 +60,14 @@ warper name = do
             warp sz t img
 
     let drw w img = do
-        inWin w $ f img >>= drawImage
+        inWin w $ do
+            windowStatus $= Shown
+            f img >>= drawImage
 
     w <- evWindow undefined name sz Nothing (const kbdQuit)
+    windowStatus $= Hidden
     putW w (h,drw w)
     return w
-
-
 
 
 main = do
@@ -65,89 +80,28 @@ main = do
 
     (cam1,ctrl1) <- mplayer (args!!0) sz >>= withPause
     (cam2,ctrl2) <- mplayer (args!!1) sz >>= withPause
+    (cam3,ctrl3) <- mplayer (args!!2) sz >>= withPause
 
-    --wimg1 <- evWindow () "image1" sz Nothing (const $ kbdcam ctrl1)
-    --wimg2 <- evWindow () "image2" sz Nothing (const $ kbdcam ctrl2)
+    let c1 = cam1 >>= yuvToGray >>= scale8u32f 0 1
+        c2 = cam2 >>= yuvToGray >>= scale8u32f 0 1
+        c3 = cam3 >>= yuvToGray >>= scale8u32f 0 1
+
     wDest  <- evWindow () "pano" szDst Nothing (mouse (kbdQuit))
 
-    wr1 <- warper "warper1"
-    wr2 <- warper "warper2"
+    cam12 <- horizPano c1 c2
+    cam <- horizPano cam12 c3
 
-    launch' (worker cam1 cam2 wDest wr1 wr2)
+    launch' (worker cam wDest)
 
 -----------------------------------------------------------------
 
-inWindow = undefined
-
-
-worker cam1 cam2 wDest wr1 wr2 = do
-
-    orig1 <- cam1 >>= yuvToGray >>= scale8u32f 0 1 
-    orig2 <- cam2 >>= yuvToGray >>= scale8u32f 0 1 
-
-    (rh1,w1) <- getW wr1
-    w1 orig1
-
-    (rh2,w2) <- getW wr2
-    w2 orig2
-
-    inWin wDest $ do
-        floor <- image szDst
-        set32f 0 (theROI floor) floor
-        h1 <- rh1
-        warpOn h1 floor orig1
-        h2 <- rh2
-        warpOn h2 floor orig2
-        drawImage floor
-
+worker cam wDest = do
+    inWin wDest $
+        cam >>= drawImage
 
 ---------------------------------------------------------
-
-a4aux = [[-1,-r],[1,-r],[1,r],[-1,r]]
-    where r = 1/sqrt 2
-
-a4 = [[   0,    0]
-     ,[   0, 2.97]
-     ,[2.10, 2.97]
-     ,[2.10,    0]]
-
-vector l = fromList l :: Vector Double
-
-diagl = diag .vector
-
-pl (Point x y) = [x,y]
-
-alter pts = map (rotateList pts) [0 .. 3]
-
-rotateList list n = take (length list) $ drop n $ cycle list
-
-drawSeg s = do
-    vertex $ (extreme1 s)
-    vertex $ (extreme2 s)
-
-isA4 mbf tol pts = ao < tol && cy < 0
-    where mbomega = fmap omegaGen mbf
-          ao = autoOrthogonality mbomega h
-          h = estimateHomography (map pl pts) a4
-          Just p = poseFromHomogZ0 mbf h
-          (_,cy,_) = cameraCenter p
-
-omegaGen f = kgen (recip (f*f))
-
-text2D x y s = do
-    rasterPos (Vertex2 x (y::GLfloat))
-    renderString Helvetica12 s
 
 mouse _ st (MouseButton LeftButton) Down _ _ = do
     st $= ()
 
 mouse def _ a b c d = def a b c d
-
-warperHomog pan tilt rho foc sca =
-        scaling sca
-        <> kgen foc
-        <> rot1 tilt
-        <> rot2 pan 
-        <> rot3 rho 
-        <> kgen (1/foc)
- 

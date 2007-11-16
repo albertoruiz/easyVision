@@ -89,6 +89,7 @@ shsc w h = " -vf scale="++show w++":"++show h
 proc w h url
     | "webcam1" `isPrefixOf` url = rep ("webcam1","tv:// -tv driver=v4l:device=/dev/video0"++shsz w h) url
     | "webcam2" `isPrefixOf` url = rep ("webcam2","tv:// -tv driver=v4l:device=/dev/video1"++shsz w h) url
+    | "webcam3" `isPrefixOf` url = rep ("webcam3","tv:// -tv driver=v4l:device=/dev/video2"++shsz w h) url
     | "firewire" `isPrefixOf` url = rep ("firewire","/dev/dv1394 -demuxer rawdv -cache 400"++shsc w h) url
     | "s-video" `isPrefixOf` url = rep ("s-video", "tv:// -tv driver=v4l2:device=/dev/video0"++shsz w h) url
     | otherwise = url ++ shsc w h

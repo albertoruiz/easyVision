@@ -49,16 +49,3 @@ worker cam save inWindow _ = do
         save orig
         windowStatus $= Shown
         return ()
-
-
-
-
-
-
-
-
-
-
-
-
-

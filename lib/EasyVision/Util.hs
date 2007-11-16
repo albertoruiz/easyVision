@@ -14,6 +14,7 @@ Other utilities.
 -----------------------------------------------------------------------------
 
 module EasyVision.Util (
+    on,
     findSize,
     captureGL,
     saveRGB,
@@ -39,6 +40,8 @@ import System.CPUTime
 import Text.Printf
 import Debug.Trace
 import Control.Monad(when)
+
+on f g = \x y -> f (g x) (g y)
 
 timing act = do
     t0 <- getCPUTime

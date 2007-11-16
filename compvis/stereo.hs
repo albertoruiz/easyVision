@@ -92,8 +92,6 @@ worker cam1 cam2 inWindow _ = do
 -}
     return ()
 
-on f g = \x y -> f (g x) (g y)
-
 closestBy f [] p = p
 closestBy f hp p = minimumBy (compare `on` f p) hp
 
@@ -124,15 +122,7 @@ combine f (img1,pts1) (img2,pts2) = do
     setColor 1 0 0
     lineWidth $= 1
     pointCoordinates (size img1)
-    renderPrimitive Lines (mapM_ drawSeg (zipWith Segment (map f pts1) (map f pts2)))
-
-drawSeg s = do
-    vertex $ (extreme1 s)
-    vertex $ (extreme2 s)
-
-text2D x y s = do
-    rasterPos (Vertex2 x (y::GLfloat))
-    renderString Helvetica12 s
+    renderPrimitive Lines (mapM_ vertex (zipWith Segment (map f pts1) (map f pts2)))
 
 -------------------------------------------------------------------------------
 
