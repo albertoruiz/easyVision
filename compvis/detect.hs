@@ -1,51 +1,36 @@
 -- example of virtual camera
 
 import EasyVision
-import System.Environment(getArgs)
-import System.IO.Unsafe
-import Data.Map as Map hiding (map,size)
 import Graphics.UI.GLUT hiding (Size)
-import System
-
-dropFrames n (h:t) = h : dropFrames n (drop n t)
-
-rever ims = (a++b++a++rever c) where
-    a = take 40 ims
-    b = reverse a
-    c = drop 40 ims
-
-------------------------------------------------------------
 
 main = do
-    args <- getArgs
+    sz <- findSize
 
-    let opts = fromList $ zip args (tail args)
-        sz   = findSize args
+    th <- getOption "--sensi" 0.01
 
-    let th = read $ findWithDefault "0.01" "--sensi" opts
-
-    (cam,ctrl) <- mplayer (args!!0) sz
+    (cam,ctrl) <- getCam 0 sz
                   >>= addSmall (Size 90 120)
                   >>= detectMov (th*255*90*120<)
                   >>= withPause
 
-    state <- prepare ()
+    prepare
 
-    addWindow "motion" sz Nothing  (const (kbdcam ctrl)) state
+    w <- evWindow () "motion" sz Nothing  (const (kbdcam ctrl))
+    windowStatus $= Hidden
 
-    sv <- openYUV4Mpeg sz (Map.lookup "--save" opts)
-                          (read `fmap` Map.lookup "--limit" opts)
+    filename <- getRawOption "--save"
+    limit    <- maybeOption "limit"
+    sv <- openYUV4Mpeg sz filename limit
 
-    launch state (worker cam sv)
+    launch (worker w cam sv)
 
 -----------------------------------------------------------------
 
-worker cam save inWindow _ = do
+worker w cam save = do
 
-    inWindow "motion" $ do
+    inWin w $ do
         orig <- cam >>= return . fst
         yuvToRGB orig >>= drawImage
-        system "artsplay /usr/share/sounds/KDE_Notify.wav"
+        -- system "artsplay /usr/share/sounds/KDE_Notify.wav"
         save orig
         windowStatus $= Shown
-        return ()

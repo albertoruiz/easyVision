@@ -14,16 +14,14 @@ import Control.Monad(when)
 import Numeric.LinearAlgebra
 
 main = do
-    args <- getArgs
 
-    let opts = Map.fromList $ zip args (tail args)
-        sz   = findSize args
+    sz <- findSize
 
-    (cam,ctrl) <- mplayer (args!!0) sz >>= withPause
+    (cam,ctrl) <- getCam 0 sz >>= withPause
 
     (tb,kc,mc) <- newTrackball
 
-    app <- prepare ()
+    prepare
 
     o <- createParameters [ ("radius",intParam 4 0 10),
                             ("width",realParam 1.5 0 5),
@@ -36,23 +34,23 @@ main = do
                             ("scale",realParam 0.2 0.01 1),
                             ("orthotol",realParam 0.25 0.01 0.5)]
 
-    addWindow "image" sz Nothing (const $ kbdcam ctrl) app
+    wIm <- evWindow () "image" sz Nothing (const $ kbdcam ctrl)
 
-    addWindow "3D view" (Size 400 400) Nothing undefined app
-    keyboardMouseCallback $= Just (kc (kbdcam ctrl))
+    w3D <- evWindow () "3D view" (Size 400 400) Nothing (const $ kc (kbdcam ctrl))
+    --keyboardMouseCallback $= Just (kc (kbdcam ctrl))
     motionCallback $= Just mc
     depthFunc $= Just Less
     textureFilter Texture2D $= ((Nearest, Nothing), Nearest)
     textureFunction $= Replace
 
-    let mbf = read `fmap` Map.lookup "--focal" opts
+    mbf <- maybeOption "--focal"
 
-    launch app (worker cam o tb mbf)
+    launch (worker wIm w3D cam o tb mbf)
 
 -----------------------------------------------------------------
 
 
-worker cam op trackball mbf inWindow _ = do
+worker wIm w3D cam op trackball mbf = do
 
     radius <- getParam op "radius"
     width  <- getParam op "width"
@@ -71,7 +69,7 @@ worker cam op trackball mbf inWindow _ = do
         polis = segmentsToPolylines maxdis segs
         closed4 = [p | Closed p <- polis, length p == 4]
 
-    inWindow "image" $ do
+    inWin wIm $ do
         drawImage orig
 
         pointCoordinates (size orig)
@@ -90,7 +88,7 @@ worker cam op trackball mbf inWindow _ = do
 
     let a4s = filter (isA4 mbf orthotol) (concatMap alter closed4)
 
-    inWindow "3D view" $ do
+    inWin w3D $ do
         clear [ColorBuffer, DepthBuffer]
         trackball
 

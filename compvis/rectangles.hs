@@ -5,24 +5,17 @@
 module Main where
 
 import EasyVision
-import System.Environment(getArgs)
-import qualified Data.Map as Map
 import Graphics.UI.GLUT hiding (Matrix, Size, Point)
 import Vision
 import Control.Monad(when)
 import Numeric.LinearAlgebra
 
 main = do
-    args <- getArgs
+    sz <- findSize
 
-    let opts = Map.fromList $ zip args (tail args)
-        sz   = findSize args
+    (cam,ctrl) <- getCam 0 sz >>= withPause
 
-    (cam,ctrl) <- mplayer (args!!0) sz >>= withPause
-
-    (tb,kc,mc) <- newTrackball
-
-    app <- prepare ()
+    prepare
 
     o <- createParameters     [("radius",intParam 4 0 10),
                                ("width",realParam 1.5 0 5),
@@ -35,18 +28,16 @@ main = do
                                ("scale",realParam 0.2 0.01 1),
                                ("orthotol",realParam 0.25 0.01 0.5)]
 
-    addWindow "image" (Size 400 400) Nothing (const $ kbdcam ctrl) app
+    wIm <- evWindow () "image" (Size 400 400) Nothing (const $ kbdcam ctrl)
 
-    addWindow "rectified" (Size 400 400) Nothing (const $ kbdcam ctrl) app
+    wRec <- evWindow () "rectified" (Size 400 400) Nothing (const $ kbdcam ctrl)
 
-    let mbf = read `fmap` Map.lookup "--focal" opts :: Maybe Double
-
-    launch app (worker cam o tb mbf)
+    launch (worker wIm wRec cam o)
 
 -----------------------------------------------------------------
 
 
-worker cam op trackball mbf inWindow _ = do
+worker wIm wRec cam op = do
 
     radius <- getParam op "radius"
     width  <- getParam op "width"
@@ -66,7 +57,7 @@ worker cam op trackball mbf inWindow _ = do
         closed4 = [p | Closed p <- polis, length p == 4]
         (fs,recs) = unzip $ map (calibFromRectangle.construct) closed4
 
-    inWindow "image" $ do
+    inWin wIm $ do
         scale8u32f 0 1 orig >>= warp (Size 400 400) (scaling scale) >>= drawImage
 
         pointCoordinates (Size 400 400)
@@ -89,7 +80,7 @@ worker cam op trackball mbf inWindow _ = do
         text2D 0.95 (-0.95) (show fs)
 
 
-    when (length recs >0) $ inWindow "rectified" $ do
+    when (length recs >0) $ inWin wRec $ do
         let rectif = head recs
             rectangle = (head closed4)
             centRec = centerRect rectangle

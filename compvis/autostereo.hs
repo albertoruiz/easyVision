@@ -21,15 +21,12 @@ import qualified Data.Map as Map
 ------------------------------------------------------------
 
 main = do
-    args <- getArgs
+    sz <- findSize
 
-    let opts = Map.fromList $ zip args (tail args)
-        sz   = findSize args
+    (cam1,ctrl1) <- getCam 0 sz >>= withPause
+    (cam2,ctrl2) <- getCam 1 sz >>= withPause
 
-    (cam1,ctrl1) <- mplayer (args!!0) sz >>= withPause
-    (cam2,ctrl2) <- mplayer (args!!1) sz >>= withPause
-
-    state <- prepare ()
+    state <- prepare' ()
 
     addWindow "left" sz Nothing  (const (kbdcam ctrl1)) state
     addWindow "right" sz Nothing (const (kbdcam ctrl2)) state
@@ -52,7 +49,7 @@ main = do
     --sequence (replicate 30 cam2)
 
 
-    launch state (worker cam1 cam2 opts)
+    launch' state (worker cam1 cam2 opts)
 
 -----------------------------------------------------------------
 

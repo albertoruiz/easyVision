@@ -35,7 +35,7 @@ main = do
 
     st <- empty
 
-    state <- prepare st
+    state <- prepare' st
 
     o <- createParameters [ ("h",percent 30),
                             ("smooth",intParam 3 0 10),
@@ -51,7 +51,7 @@ main = do
 
     10 `times` (const cam) $ undefined
 
-    launch state (worker cam o)
+    launch' state (worker cam o)
 
 -----------------------------------------------------------------
 

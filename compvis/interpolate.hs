@@ -1,11 +1,6 @@
 -- example of virtual camera
 
 import EasyVision
-import System.Environment(getArgs)
-import System.IO.Unsafe
-import Data.Map as Map hiding (map,size)
-import Graphics.UI.GLUT hiding (Size)
-import System
 
 -----------------------------------------------------------
 
@@ -20,43 +15,19 @@ asFloat grab = return $ grab >>= yuvToGray >>= scale8u32f 0 1
 ------------------------------------------------------------
 
 main = do
-    args <- getArgs
 
-    let opts = fromList $ zip args (tail args)
-        sz   = findSize args
+    sz <- findSize
 
-    let alpha = read $ findWithDefault "0.9" "--alpha" opts
+    alpha <- getOption "--alpha" 0.9
 
-    state <- prepare ()
+    prepare
 
-    (cam,ctrl) <- mplayer (args!!0) sz
-                  >>= monitorizeIn "original" (Size 150 200) id state
+    (cam,ctrl) <- getCam 0 sz
+                  >>= monitorizeIn "original" (Size 150 200) id
                   >>= asFloat
                   >>= drift alpha >>= interpolate
                   >>= withPause
 
-    addWindow "interpolate" sz Nothing  (const (kbdcam ctrl)) state
+    w <- evWindow () "interpolate" sz Nothing  (const (kbdcam ctrl))
 
-    launch state (worker cam)
-
------------------------------------------------------------------
-
-worker cam inWindow _ = do
-
-    inWindow "interpolate" $ do
-        cam >>= drawImage
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    launch $ inWin w $ cam >>= drawImage

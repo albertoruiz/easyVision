@@ -16,6 +16,8 @@ Other utilities.
 module EasyVision.Util (
     on,
     findSize,
+    getCam, numCams,
+    getOption, getRawOption, maybeOption,
     captureGL,
     saveRGB,
     evSize,
@@ -28,7 +30,7 @@ import Graphics.UI.GLUT hiding (RGB, Matrix, Size, Point)
 import qualified Graphics.UI.GLUT as GL
 import ImagProc.Ipp.Core
 import ImagProc.ImageProcessing(resize32f,yuvToRGB)
-import ImagProc.Camera(mpSize)
+import ImagProc.Camera
 import Foreign (touchForeignPtr,castPtr)
 import ImagProc.Images
 import qualified Data.Map as Map
@@ -40,6 +42,8 @@ import System.CPUTime
 import Text.Printf
 import Debug.Trace
 import Control.Monad(when)
+import System.Environment(getArgs)
+import qualified Data.Map as Map
 
 on f g = \x y -> f (g x) (g y)
 
@@ -50,17 +54,6 @@ timing act = do
     printf "%.2f CPU seconds\n" $ (fromIntegral ((t1 - t0) `div` (10^10)) / 100 :: Double)
 
 debug x = trace (show x) x
-
-{- | It tries to read an optional image size from command line argument list.
-     It admits --rows, --cols, and --size (for 32k 4\/3).
--}
-findSize :: [String] -> Size
-findSize args = if Map.member "--size" opts
-                    then mpSize $ read $ fwd "20" "--size" opts
-                    else Size (read $ fwd "480" "--rows" opts)
-                              (read $ fwd "640" "--cols" opts)
-    where opts = Map.fromList $ zip args (tail args)
-          fwd  = Map.findWithDefault
 
 -- | captures the contents of the current opengl window (very slow)
 captureGL :: IO ImageRGB
@@ -100,3 +93,45 @@ saveRGB Nothing im = do
         k = 3 - length sn
         shj = replicate k '0' ++ sn
     saveRGB (Just (name ++"-"++ shj)) im
+
+-----------------------------------------------------------------------------------
+
+{- | It tries to read an optional image size from command line argument list.
+     It admits --rows, --cols, and --size (for 32k 4\/3).
+-}
+findSize :: IO Size
+findSize = do
+    args <- getArgs
+    let opts = Map.fromList $ zip args (tail args)
+        fwd  = Map.findWithDefault
+        sz   =  if Map.member "--size" opts
+                    then mpSize $ read $ fwd "20" "--size" opts
+                    else Size (read $ fwd "480" "--rows" opts)
+                              (read $ fwd "640" "--cols" opts) 
+    return sz
+
+getCam n sz = do
+    args <- getArgs
+    let opts = Map.fromList $ zip args (tail args)
+    let url = Map.findWithDefault (args!!n) ("--cam"++show n) opts
+    mplayer url sz
+
+getOption name def = do
+    mbopt <- getRawOption name
+    let v = case mbopt of
+                Nothing -> def
+                Just s  -> read s
+    return v
+
+getRawOption name = do
+    args <- getArgs
+    let opts = Map.fromList $ zip args (tail args)
+        s    = Map.lookup name opts
+    return s
+
+maybeOption name = fmap (fmap read) (getRawOption name)
+
+numCams = do
+    args <- getArgs
+    let nc = length $ filter (=="--cam") $ map (take 5) args
+    return nc

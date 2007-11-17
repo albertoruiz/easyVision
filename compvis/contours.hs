@@ -63,14 +63,11 @@ l2p [x,y] = Point x y
 ------------------------------------------------------------
 
 main = do
-    args <- getArgs
+    sz <- findSize
 
-    let opts = Map.fromList $ zip args (tail args)
-        sz   = findSize args
+    (cam, ctrl)  <- getCam 0 sz >>= withPause
 
-    (cam, ctrl)  <- mplayer (args!!0) sz >>= withPause
-
-    state <- prepare ([],Nothing)
+    state <- prepare' ([],Nothing)
 
     o <- createParameters [
         ("umbral2",intParam 128 1 255),
@@ -86,7 +83,7 @@ main = do
 
     addWindow "contours" sz Nothing (marker (kbdcam ctrl)) state
 
-    launch state (worker cam o)
+    launch' state (worker cam o)
 
 -----------------------------------------------------------------
 

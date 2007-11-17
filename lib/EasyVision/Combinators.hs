@@ -23,9 +23,9 @@ module EasyVision.Combinators (
   withPause,
   addSmall,
   detectMov,
+  panoramic,
   monitorizeIn,
   inThread
-
 )where
 
 import ImagProc.Ipp.Core
@@ -37,10 +37,13 @@ import Data.IORef
 import System.IO
 import System
 import System.IO.Unsafe(unsafeInterleaveIO)
-import EasyVision.GUI(addWindow,kbdcam,State)
-import EasyVision.Draw(drawImage,Drawable)
-import Graphics.UI.GLUT(currentWindow,($=),swapBuffers,get)
+import EasyVision.GUI
+import EasyVision.Draw
+import EasyVision.Parameters
+import Graphics.UI.GLUT hiding (Size)
 import Control.Concurrent
+import Vision
+import Numeric.LinearAlgebra
 
 
 
@@ -125,16 +128,15 @@ addSmall sz grab = return $ do
 monitorizeIn :: Drawable im => String    -- ^ window name
                             -> Size      -- ^ window size
                             -> (a->im)   -- ^ selector
-                            -> (IORef (State u)) -- ^ application state
                             -> (IO a)    -- ^ original camera
                             -> IO (IO a) -- ^ new camera
-monitorizeIn name sz selector app cam = do
+monitorizeIn name sz selector cam = do
     (cam', ctrl) <- withPause cam
-    w <- addWindow name sz Nothing (const $ kbdcam ctrl) app
+    w <- evWindow () name sz Nothing (const $ kbdcam ctrl)
     return $ do
         thing <- cam'
         saved <- get currentWindow  -- required, since it may happen inside an inWindow bracket
-        currentWindow $= Just w
+        currentWindow $= Just (evW w)
         drawImage (selector thing)
         swapBuffers
         currentWindow $= saved
@@ -152,3 +154,62 @@ inThread cam = do
                   loop
     forkIO loop
     return (readMVar c)
+
+-----------------------------------------------------------
+
+-- | Creates a panoramic view from two cameras with (nearly) common camera center. Currently the synthetic rotations are set manually, but soon...
+panoramic :: Size -> IO ImageFloat -> IO ImageFloat -> IO (IO ImageFloat)
+panoramic sz cam1 cam2 = do
+    wr1 <- warper "warper1"
+    wr2 <- warper "warper2"
+    return $ do
+        orig1 <- cam1
+        floor <- image sz
+        set32f 0 (theROI floor) floor
+        (rh1,_) <- getW wr1
+        h1 <- rh1
+        warpOn h1 floor orig1
+        orig2 <- cam2
+        (rh2,_) <- getW wr2
+        h2 <- rh2
+        warpOn h2 floor orig2
+        return floor
+
+conjugateRotation pan tilt rho foc sca =
+        scaling sca
+        <> kgen foc
+        <> rot1 tilt
+        <> rot2 pan 
+        <> rot3 rho 
+        <> kgen (1/foc)
+
+warper name = do
+    param <- createParameters   [ ("pan",  realParam (0) (-40) (40))
+                                 ,("tilt", realParam (0) (-30) (30))
+                                 ,("rho",  realParam  0 (-60) (60))
+                                 ,("foc",  listParam 2.8 [0.5, 0.7, 1, 2, 2.8, 5, 5.5, 9,10])
+                                 ,("sca",  listParam 0.5 [1.1**k|k<-[-20..20]])]
+    let sz = Size 300 400
+        h = do
+            pan   <- getParam param "pan"
+            tilt  <- getParam param "tilt"
+            rho   <- getParam param "rho"
+            foc   <- getParam param "foc"
+            sca   <- getParam param "sca"
+            let t = conjugateRotation (pan*degree) (tilt*degree) (rho*degree) foc sca
+            return t
+        f img = do
+            t <- h
+            warp sz t img
+
+    let drw w img = do
+        inWin w $ do
+            windowStatus $= Shown
+            f img >>= drawImage
+
+    w <- evWindow undefined name sz Nothing (const kbdQuit)
+    windowStatus $= Hidden
+    putW w (h,drw w)
+    return w
+
+

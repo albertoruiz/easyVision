@@ -1,93 +1,29 @@
--- new interface
+-- test of panoramic combinator
 
 module Main where
 
 import EasyVision
-import System.Environment(getArgs)
-import qualified Data.Map as Map
 import Graphics.UI.GLUT hiding (Matrix, Size, Point)
-import Vision
-import Control.Monad(when)
-import Numeric.LinearAlgebra
-import Data.IORef
+import Control.Monad(foldM)
 
-
-panoramic sz cam1 cam2 = do
-    wr1 <- warper "warper1"
-    wr2 <- warper "warper2"
-    return $ do
-        orig1 <- cam1
-        floor <- image sz
-        set32f 0 (theROI floor) floor
-        (rh1,_) <- getW wr1
-        h1 <- rh1
-        warpOn h1 floor orig1
-        orig2 <- cam2
-        (rh2,_) <- getW wr2
-        h2 <- rh2
-        warpOn h2 floor orig2
-        return floor
-
-conjugateRotation pan tilt rho foc sca =
-        scaling sca
-        <> kgen foc
-        <> rot1 tilt
-        <> rot2 pan 
-        <> rot3 rho 
-        <> kgen (1/foc)
-
-warper name = do
-    param <- createParameters   [ ("pan",  realParam (0) (-40) (40))
-                                 ,("tilt", realParam (0) (-30) (30))
-                                 ,("rho",  realParam  0 (-60) (60))
-                                 ,("foc",  listParam 2.8 [0.5, 0.7, 1, 2, 2.8, 5, 5.5, 9,10])
-                                 ,("sca",  listParam 0.5 [1.1**k|k<-[-20..20]])]
-    let sz = Size 300 400
-        h = do
-            pan   <- getParam param "pan"
-            tilt  <- getParam param "tilt"
-            rho   <- getParam param "rho"
-            foc   <- getParam param "foc"
-            sca   <- getParam param "sca"
-            let t = conjugateRotation (pan*degree) (tilt*degree) (rho*degree) foc sca
-            return t
-        f img = do
-            t <- h
-            warp sz t img
-
-    let drw w img = do
-        inWin w $ do
-            windowStatus $= Shown
-            f img >>= drawImage
-
-    w <- evWindow undefined name sz Nothing (const kbdQuit)
-    windowStatus $= Hidden
-    putW w (h,drw w)
-    return w
+a & b = panoramic (Size 320 640) a b
 
 
 main = do
-    args <- getArgs
+    sz  <- findSize
+    n <- numCams
 
-    let opts = Map.fromList $ zip args (tail args)
-        sz   = findSize args
+    cams <- mapM (flip getCam sz) [0..n-1]
 
-    prepare'
+    let cf k = cams!!k >>= yuvToGray >>= scale8u32f 0 1
 
-    (cam1,ctrl1) <- mplayer (args!!0) sz >>= withPause
-    (cam2,ctrl2) <- mplayer (args!!1) sz >>= withPause
-    (cam3,ctrl3) <- mplayer (args!!2) sz >>= withPause
+    prepare
 
-    let c1 = cam1 >>= yuvToGray >>= scale8u32f 0 1
-        c2 = cam2 >>= yuvToGray >>= scale8u32f 0 1
-        c3 = cam3 >>= yuvToGray >>= scale8u32f 0 1
+    cam <- foldM (&) (cf 0) (map cf [1..n-1])
 
     wDest  <- evWindow () "pano" (Size 320 640) Nothing (mouse (kbdQuit))
 
-    cam12 <- panoramic (Size 320 640) c1 c2
-    cam <- panoramic (Size 320 640) cam12 c3
-
-    launch' (worker cam wDest)
+    launch (worker cam wDest)
 
 -----------------------------------------------------------------
 

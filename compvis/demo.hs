@@ -22,14 +22,12 @@ import ImagProc.Ipp.Core
 ------------------------------------------------------------
 
 main = do
-    args <- getArgs
 
-    let opts = Map.fromList $ zip args (tail args)
-        sz   = findSize args
+    sz <- findSize
 
-    (cam, ctrl)  <- mplayer (args!!0) sz >>= withPause
+    (cam, ctrl)  <- getCam 0 sz >>= withPause
 
-    state <- prepare "RGB"
+    prepare
 
     o <- createParameters [("umbral",realParam 0.5 0 1),
                            ("umbral2",intParam 128 1 255),
@@ -40,12 +38,11 @@ main = do
                            ("smooth2",intParam 1 0 10),
                            ("lbpThres",intParam 0 0 100)]
 
-    addWindow "demo" sz Nothing (const (kbdcam ctrl)) state
-                                   ---- or undefined ---
+    w <- evWindow "RGB" "demo" sz Nothing (const (kbdcam ctrl))
 
-    getRoi <- roiControl (ROI 0 (height sz-1) (width sz`div`2) (width sz-1)) (kbdcam ctrl)
+    evROI w $= ROI 0 (height sz-1) (width sz`div`2) (width sz-1)
 
-    let mode m = MenuEntry m $ modifyIORef state $ \s -> s {ust = m}
+    let mode m = MenuEntry m $ putW w m
 
     attachMenu LeftButton $ Menu $ map mode
         ["RGB","Gray","Red","Green","Blue","U","V"
@@ -56,13 +53,13 @@ main = do
 
     fft <- genFFT 8 8 DivFwdByN AlgHintFast
 
-    launch state (worker cam o getRoi fft)
+    launch (worker w cam o fft)
 
 -----------------------------------------------------------------
 
 k = 1/(640*480*128)
 
-worker cam param getRoi fft inWindow op = do
+worker wDemo cam param fft = do
 
     th <- getParam param "umbral"
     th2' <- getParam param "umbral2" ::IO Int
@@ -75,7 +72,8 @@ worker cam param getRoi fft inWindow op = do
     fracpix <- getParam param "fracpix"
     lbpThres <- getParam param "lbpThres"
 
-    inWindow "demo" $ case op of
+    op <- getW wDemo
+    inWin wDemo $ case op of
 
         "RGB"  ->
              cam >>= yuvToRGB >>= drawImage
@@ -190,7 +188,7 @@ worker cam param getRoi fft inWindow op = do
              text2D 0.9 0 (show $ length ips)
              drawInterestPoints (size orig) ips
         "Canny" -> do
-             roi <- getRoi
+             roi <- getROI wDemo
              orig <- cam
              im <- yuvToGray orig >>= scale8u32f 0 1
              F s <- (smooth `times` gauss Mask5x5) im
@@ -223,14 +221,14 @@ worker cam param getRoi fft inWindow op = do
              histogram [0,64 .. 256] im >>= return . show >>= text2D 0.9 0.7
         "DCT" -> do
              orig <- cam
-             roi <- getRoi
+             roi <-  getROI wDemo
              im <- yuvToGray orig >>= scale8u32f 0 1
              d <- dct (modifyROI (intersection roi) im) >>= abs32f >>= sqrt32f
              copyROI32f d (theROI d) im
              drawImage im
         "FFT" -> do
              orig <- cam
-             roi <- getRoi
+             roi <-  getROI wDemo
              let p2roi = roi `intersection`ROI (r1 roi) (r1 roi + 2^8-1) (c1 roi) (c1 roi + 2^8-1)
              im <- yuvToGray orig  >>= scale8u32f 0 1 >>= (smooth `times` gauss Mask5x5)
              d <- fft (modifyROI (const p2roi) im) >>= magnitudePack >>= powerSpectrum
@@ -245,7 +243,7 @@ worker cam param getRoi fft inWindow op = do
              drawImage im
         "Segments" -> do
              orig' <- cam >>= yuvToGray
-             roi <- getRoi
+             roi <-  getROI wDemo
              let orig = modifyROI (const roi) orig'
                  segs = segments 4 1.5 5 40 20 False orig
              drawImage orig
@@ -254,7 +252,7 @@ worker cam param getRoi fft inWindow op = do
              renderPrimitive Lines $ mapM_ vertex segs
         "LBP" -> do
              orig' <- cam >>= yuvToGray
-             roi <- getRoi
+             roi <-  getROI wDemo
              let orig = modifyROI (const roi) orig'
              h <- lbp lbpThres orig
              drawImage orig
@@ -262,11 +260,11 @@ worker cam param getRoi fft inWindow op = do
              setColor 0 0 0
              renderAxes
              setColor 1 0 0
-             
+
              let ROI r1 r2 c1 c2 = roi
                  sc = (0.1*256.0::Double) / fromIntegral ((r2-r1-1)*(c2-c1-1))
              renderSignal $ map ((*sc).fromIntegral) (tail h)
-    return op
+
 
 cent (ROI r1 r2 c1 c2) = Pixel (r1 + (r2-r1+1)`div`2) (c1 + (c2-c1+1)`div`2)
 roiFrom2Pixels (Pixel r1 c1) (Pixel r2 c2) = ROI (min r1 r2) (max r1 r2) (min c1 c2) (max c1 c2)

@@ -34,7 +34,7 @@ sizePar = 35
 
 -- | Given an assoc list of names and initial values of some \'global\' application parameters, it creates a window for controlling them and returns a function to get the current value of the desired parameter. There are several types of parameters.
 createParameters :: [(String, Parameter)]
-                 -> IO (Window, Parameters)
+                 -> IO (EVWindow (Map String Parameter))
 createParameters ops = do
     evWindow (Map.fromList ops) "Parameters" (Size (2+length ops * sizePar) 200)
                                 (Just f)
@@ -159,9 +159,9 @@ info (IntParam v _ _) = show v
 class Param a where
     param :: Parameter -> a
     -- | Extracts a parameter given its name.
-    getParam :: (b,Parameters) -> String -> IO a
-    getParam rm s = do
-        m <- readIORef (snd rm)
+    getParam :: EVWindow (Map String Parameter) -> String -> IO a
+    getParam w s = do
+        m <- getW w
         return $ param $ m!s
 
 instance Param Int where

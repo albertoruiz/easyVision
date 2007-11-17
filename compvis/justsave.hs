@@ -8,28 +8,25 @@ import System.Environment(getArgs)
 import Data.Map as Map hiding (map,size)
 
 main = do
-    args <- getArgs
+    sz <- findSize
 
-    let opts = Map.fromList $ zip args (tail args)
-        sz   = findSize args
+    (cam,ctrl) <- getCam 0 sz >>= withPause
 
-    (cam,ctrl) <- mplayer (args!!0) sz >>= withPause
+    prepare
 
-    state <- prepare ()
+    w <- evWindow () "image" sz Nothing  (const (kbdcam ctrl))
 
-    addWindow "image" sz Nothing  (const (kbdcam ctrl)) state
+    filename <- getRawOption "--save"
+    limit    <- maybeOption "limit"
+    sv <- openYUV4Mpeg sz filename limit
 
-    sv <- openYUV4Mpeg sz (Map.lookup "--save" opts)
-                          (read `fmap` Map.lookup "--limit" opts)
-
-    launch state (worker cam sv)
+    launch (worker cam sv w)
 
 -----------------------------------------------------------------
 
-worker cam save inWindow _ = do
+worker cam save w = do
 
-    inWindow "image" $ do
+    inWin w $ do
         orig <- cam
         drawImage orig
         save orig
-        return ()

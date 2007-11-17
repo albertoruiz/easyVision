@@ -12,17 +12,17 @@ main = do
     let sz = Size 288 384
     (cam,ctrl) <- mplayer (args!!0) szc >>= withPause
 
-    state <- prepare ()
+    prepare
 
     param <- createParameters [("alpha", realParam (-40) (-100) (100))
                               ,("rho",  realParam 0 (-180) (180))
                               ,("foc",  listParam 2 [0.5, 0.7, 1, 2, 5,5.5, 9,10])
                               ,("sca",  listParam 0.5 [1.1**k|k<-[-20..20]])]
 
-    addWindow "camera" szc Nothing (const (kbdcam ctrl)) state
-    addWindow "warped" szw Nothing (const (kbdcam ctrl)) state
+    wCam <- evWindow () "camera" szc Nothing (const (kbdcam ctrl))
+    wWarp <-evWindow () "warped" szw Nothing (const (kbdcam ctrl))
 
-    launch state (worker cam param)
+    launch (worker wCam wWarp cam param)
 
 -------------------------------------------------------
 
@@ -37,10 +37,10 @@ warper alpha rho foc sca = r where
 
 ----------------------------------------------------------
 
-worker cam param inWindow st = do
+worker wCam wWarp cam param = do
 
     camera <- cam >>= yuvToGray
-    inWindow "camera" (drawImage camera)
+    inWin wCam (drawImage camera)
 
     alpha <- getParam param "alpha"
     rho   <- getParam param "rho"
@@ -48,7 +48,5 @@ worker cam param inWindow st = do
     sca   <- getParam param "sca"
 
     let t = warper (alpha*degree) (rho*degree) foc sca
-    inWindow "warped" $ do
+    inWin wWarp $ do
         scale8u32f 0 1 camera >>= warp szw t >>= drawImage
-
-    return st

@@ -17,11 +17,11 @@ import qualified Data.Map as Map
 
 ------------------------------------------------------------
 
-pointTracker app sz cam = do
+pointTracker sz cam = do
     (cam',ctrl) <- withPause cam
     ref <- newIORef Nothing
     rmarked <- newIORef []
-    w <- addWindow "tracker" sz (Just (const $ drw ref rmarked)) (marker (rmarked,ref) (kbdcam ctrl)) app
+    w <- evWindow () "tracker" sz (Just (const $ drw ref rmarked)) (marker (rmarked,ref) (kbdcam ctrl))
     opts <- createParameters     [ ("h",percent 20)
                                  , ("locrad",intParam 3 1 30)
                                  , ("smooth",intParam 3 0 10)
@@ -42,7 +42,7 @@ pointTracker app sz cam = do
         --ips <- getSaddlePoints smooth locrad h 300 dim rad img
         ips <- getCorners smooth locrad h 300 img
         writeIORef ref (Just (img,ips))
-        currentWindow $= Just w
+        currentWindow $= Just (evW w)
         postRedisplay Nothing
         return $ (img,ips)
   where drw ref rmarked = do
@@ -79,12 +79,9 @@ pointTracker app sz cam = do
 ------------------------------------------------------------
 
 main = do
-    args <- getArgs
+    sz <- findSize
 
-    let opts = Map.fromList $ zip args (tail args)
-        sz   = findSize args
-
-    state <- prepare ()
+    state <- prepare' ()
 
     opts <- createParameters        [("umb",realParam 0.01 0 0.05),
                                     ("ranUmb", realParam 0.003 0 0.01),
@@ -92,9 +89,9 @@ main = do
                                     ("ranProb", realParam 0.9 0.5 1),
                                     ("seeRansac", intParam 0 0 1)]
 
-    (cam,ctrl) <- mplayer (args!!0) sz >>= pointTracker state sz >>= withPause
+    (cam,ctrl) <- getCam 0 sz >>= pointTracker sz >>= withPause
 
-    launch state (worker cam opts)
+    launch' state (worker cam opts)
 
 -----------------------------------------------------------------
 

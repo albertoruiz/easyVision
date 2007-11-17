@@ -21,15 +21,12 @@ import qualified Data.Map as Map
 ------------------------------------------------------------
 
 main = do
-    args <- getArgs
+    sz <- findSize
 
-    let opts = Map.fromList $ zip args (tail args)
-        sz   = findSize args
+    state <- prepare' ()
 
-    state <- prepare ()
-
-    cam1 <- mplayer (args!!0) sz >>= pointMarker state "left" sz
-    cam2 <- mplayer (args!!1) sz >>= pointMarker state "right" sz
+    cam1 <- getCam 0 sz >>= pointMarker state "left" sz
+    cam2 <- getCam 1 sz >>= pointMarker state "right" sz
 
     addWindow "both"   sz Nothing  undefined state
     addWindow "rectif" sz Nothing  undefined state
@@ -37,7 +34,7 @@ main = do
 
     sequence (replicate 25 cam1)
 
-    launch state (worker cam1 cam2)
+    launch' state (worker cam1 cam2)
 
 -----------------------------------------------------------------
 

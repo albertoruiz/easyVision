@@ -32,7 +32,7 @@ main = do
     let sz = Size 288 384
     (cam,ctrl) <- mplayer (args!!0) sz >>= withPause
 
-    state <- prepare ST { imgs=[]
+    state <- prepare' ST { imgs=[]
                         , corners=[], marked = [], orig = []
                         , pts=[]
                         , basev = 0
@@ -43,7 +43,7 @@ main = do
     addWindow "camera" sz Nothing (marker (const (kbdcam ctrl))) state
     addWindow "selected" sz Nothing keyboard state
 
-    launch state (worker cam)
+    launch' state (worker cam)
 
 -------------------------------------------------------------------
 dist [a,b] [x,y] = sqrt $ (a-x)^2+(b-y)^2

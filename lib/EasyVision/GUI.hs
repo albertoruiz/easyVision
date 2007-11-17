@@ -18,9 +18,9 @@ module EasyVision.GUI (
 -- * Application interface
   State(..)
 , prepare, prepare'
-, addWindow, evWindow
+, addWindow, evWindow, EVWindow(..)
 , launch, launch'
-, InWindow, inWin, getW, putW
+, InWindow, inWin, getW, putW, getROI
 , kbdcam, kbdQuit, roiControl
 -- * Drawing utilities
 , module EasyVision.Draw
@@ -60,10 +60,9 @@ data State userState =
           , ust  :: userState
 }
 
--- | Initializes the application state with a camera and a user-defined state.
-prepare :: userState
+prepare' :: userState
         -> IO (IORef (State userState))
-prepare s = do
+prepare' s = do
     getArgsAndInitialize
     initialDisplayMode $= [DoubleBuffered, WithDepthBuffer]
 
@@ -75,11 +74,10 @@ prepare s = do
 -- | Window selector for the HOpenGL functions
 type InWindow = String -> IO () -> IO ()
 
--- | Starts the application with a worker function (idle callback).
-launch :: IORef (State userState)      -- ^ the state of the application
+launch' :: IORef (State userState)      -- ^ the state of the application
           -> (InWindow -> userState -> IO userState)  -- ^ worker function
           -> IO ()
-launch state worker = do
+launch' state worker = do
     idleCallback $= Just ( do
         st <- readIORef state
         newstate <- worker (inWindow st) (ust st)
@@ -155,19 +153,28 @@ roiControl initROI defaultFunc = do
 -----------------------------------------------------------------
 -- simpler interface, with state in each window
 
-prepare' = do
+-- | Initializes the HOpenGL system.
+prepare :: IO ()
+prepare = do
     getArgsAndInitialize
     initialDisplayMode $= [DoubleBuffered, WithDepthBuffer]
 
-launch' worker = do
+-- | Starts the application with a worker function (idle callback).
+launch :: IO () -> IO ()
+launch worker = do
     idleCallback $= Just worker
     mainLoop
 
 ----------------------------------------------------------------
 
+data EVWindow st = EVW { evW   :: Window
+                       , evSt   :: IORef st
+                       , evROI :: IORef ROI
+                       }
+
 evWindow st0 name size mdisp kbd = do
     st <- newIORef st0
-    w <- createWindow name
+    glw <- createWindow name
     windowSize $= glSize size
     let draw = case mdisp of
             Nothing -> return ()
@@ -176,16 +183,44 @@ evWindow st0 name size mdisp kbd = do
                 fun st
                 swapBuffers
     displayCallback $= draw
-    keyboardMouseCallback $= Just (kbd st)
-    return (w,st)
+
+    let Size h w = size
+        initROI = ROI {r1=0, r2=h-1, c1=0, c2=w-1}
+    r <- newIORef initROI
+
+    keyboardMouseCallback $= Just (kbdroi r initROI (kbd st))
+    motionCallback $= Just (mvroi r)
+
+    return EVW { evW = glw
+               , evSt = st
+               , evROI = r
+               }
 
 ---------------------------------------------------------------
 
-inWin (w,st) f = do
-    currentWindow $= Just w
+inWin w f = do
+    currentWindow $= Just (evW w)
     f
     swapBuffers
 
-getW (w,st) = get st
-putW (w,st) x = st $= x
+getW = get . evSt
+putW w x = evSt w $= x
+
+getROI = get . evROI
+
+----------------------------------------------------------------
+
+minroi = 20
+
+kbdroi r _ _ (MouseButton RightButton) Down _ pos@(Position x y) =
+    modifyIORef r (\ (ROI _ r2 _ c2) ->
+                        ROI (min (r2-minroi) (fromIntegral y)) r2
+                            (min (c2-minroi) (fromIntegral x)) c2)
+kbdroi r initroi _ (Char 'r') Down _ _ = writeIORef r initroi
+kbdroi _ _ defaultFunc a b c d = defaultFunc a b c d
+
+mvroi r (Position x y) =
+    modifyIORef r (\ (ROI r1 _ c1 _) ->
+                        ROI r1 (max (r1+minroi) (fromIntegral y))
+                            c1 (max (c1+minroi) (fromIntegral x)))
 

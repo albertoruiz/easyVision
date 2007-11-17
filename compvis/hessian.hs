@@ -14,12 +14,12 @@ main = do
     let sz = Size 288 384
     (cam,ctrl) <- mplayer (args!!0) sz >>= withPause
 
-    state <- prepare ST {smooth = 5}
+    state <- prepare' ST {smooth = 5}
 
     addWindow "camera" sz Nothing (const (kbdcam ctrl)) state
     addWindow "hessian" sz Nothing keyboard state
 
-    launch state (worker cam)
+    launch' state (worker cam)
 
 --------------------------------------------------------------
 

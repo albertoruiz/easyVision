@@ -55,14 +55,11 @@ initstate = ST { rfloor = cameraAtOrigin,
                  reset = True }
 
 main = do
-    args <- getArgs
+    sz <- findSize
 
-    let opts = Map.fromList $ zip args (tail args)
-        sz   = findSize args
+    (cam,ctrl) <- getCam 0 sz >>= withPause
 
-    (cam,ctrl) <- mplayer (args!!0) sz {- >>= inThread -} >>= withPause
-
-    app <- prepare initstate
+    app <- prepare' initstate
 
     o <- createParameters     [("radius",intParam 4 0 10),
                                ("width",realParam 1.5 0 5),
@@ -85,21 +82,16 @@ main = do
 
     depthFunc $= Just Less
 
-    let mbf = read `fmap` Map.lookup "--focal" opts
+    mbf <- maybeOption "--focal"
 
     partic <- createParticle
 
-    sv <- openYUV4Mpeg sz (Map.lookup "--save" opts)
-                          (read `fmap` Map.lookup "--limit" opts)
-
-    let capt = if "--save" `elem` args then capture sv else \a b c -> a b c
-
-    launch app (worker cam o mbf partic capt)
+    launch' app (worker cam o mbf partic)
 
 -----------------------------------------------------------------
 
 
-worker cam op mbf (getPos,setAccel) capt inWindow st = do
+worker cam op mbf (getPos,setAccel) inWindow st = do
 
     method <- getParam op "method" :: IO Int
     radius <- getParam op "radius"
@@ -155,7 +147,7 @@ worker cam op mbf (getPos,setAccel) capt inWindow st = do
             True -> st { reset = False, rfloor = camera, rprev = camera }
             _    -> st { rprev = camera }
 
-    capt inWindow "virtual ball" $ do
+    inWindow "virtual ball" $ do
         clear [DepthBuffer]
         drawImage orig
         clear [DepthBuffer]

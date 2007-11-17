@@ -54,7 +54,7 @@ main = do
 
     (tb,kc,mc) <- newTrackball
 
-    state <- prepare ST { imgs=[]
+    state <- prepare' ST { imgs=[]
                         , corners=[], marked = []
                         , pts=[]
                         , hs = []
@@ -94,7 +94,7 @@ main = do
     textureFunction $= Replace
     depthFunc $= Just Less
 
-    launch state (worker cam)
+    launch' state (worker cam)
 
 -------------------------------------------------------------------
 

@@ -1,4 +1,5 @@
--- new interface
+-- rectification of an A4 white sheet of paper,
+-- and test of panoramic combinator
 
 module Main where
 
@@ -9,32 +10,25 @@ import Graphics.UI.GLUT hiding (Matrix, Size, Point)
 import Vision
 import Control.Monad(when)
 import Numeric.LinearAlgebra
-import Data.IORef
----------------------------------------------------------------
 
 ----------------------------------------------------------------
 
-szA4 = (Size (32*10) (32*14))
+szA4 = Size (32*10) (32*14)
 
 main = do
-    args <- getArgs
 
-    let opts = Map.fromList $ zip args (tail args)
-        sz   = findSize args
+    sz <- findSize
 
-    prepare'
+    prepare
 
-    (cam,ctrl) <- mplayer (args!!0) sz >>= withPause
+    (cam,ctrl) <- getCam 0 sz >>= withPause
 
     wimg <- evWindow () "image" sz Nothing (const $ kbdcam ctrl)
     wa4  <- evWindow (ident 3) "a4" szA4 Nothing (mouse (kbdcam ctrl))
 
-    launch' (worker cam wimg wa4)
+    launch (worker cam wimg wa4)
 
 -----------------------------------------------------------------
-
-inWindow = undefined
-
 
 worker cam wImage wA4 = do
 
@@ -116,10 +110,6 @@ isA4 mbf tol pts = ao < tol && cy < 0
           (_,cy,_) = cameraCenter p
 
 omegaGen f = kgen (recip (f*f))
-
-text2D x y s = do
-    rasterPos (Vertex2 x (y::GLfloat))
-    renderString Helvetica12 s
 
 mouse _ st (MouseButton LeftButton) Down _ _ = do
     st $= ident 3
