@@ -20,6 +20,7 @@ These are the only definitions required by the \"end user\". Lower level program
 module ImagProc.Images
 ( -- * Image types
   Image (..)
+, ROI(..)
 , ImageRGB
 , ImageGray
 , ImageFloat
@@ -35,6 +36,7 @@ module ImagProc.Images
 
 import ImagProc.Ipp.Core (
      Image(..)
+   , ROI(..)
    , ImageRGB
    , ImageGray
    , ImageFloat

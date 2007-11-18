@@ -22,6 +22,8 @@ module EasyVision.Draw
 , drawTexture
 , setColor
 , text2D
+, renderSignal
+, renderAxes
 , drawCamera
 , cameraView
 , drawInterestPoints
@@ -249,3 +251,14 @@ cameraView m ar near far = do
     loadIdentity
     mat <- newMatrix RowMajor (toList $ flatten $ inv p) :: IO (GLmatrix GLdouble)
     multMatrix mat
+
+------------------------------------------------------
+
+renderSignal ls = do
+    let delta = 1.8/fromIntegral (length ls-1)
+    let points = zipWith Point [0.9, 0.9-delta ..] ls
+    GL.renderPrimitive GL.LineStrip $ mapM_ GL.vertex points
+
+renderAxes = 
+    GL.renderPrimitive GL.Lines $ mapM_ GL.vertex
+        [Point (-1) 0, Point 1 0, Point 0 (-1), Point 0 1]

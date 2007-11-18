@@ -2,6 +2,7 @@
 
 import EasyVision
 import Graphics.UI.GLUT hiding (Size)
+import System
 
 main = do
     sz <- findSize

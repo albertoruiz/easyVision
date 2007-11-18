@@ -23,6 +23,7 @@ module EasyVision.Combinators (
   withPause,
   addSmall,
   detectMov,
+  warper,
   panoramic,
   monitorizeIn,
   inThread
@@ -187,7 +188,7 @@ warper name = do
     param <- createParameters   [ ("pan",  realParam (0) (-40) (40))
                                  ,("tilt", realParam (0) (-30) (30))
                                  ,("rho",  realParam  0 (-60) (60))
-                                 ,("foc",  listParam 2.8 [0.5, 0.7, 1, 2, 2.8, 5, 5.5, 9,10])
+                                 ,("foc",  listParam 2.8 [0.5, 0.7, 1, 2, 2.6, 2.8, 5, 5.5, 9,10])
                                  ,("sca",  listParam 0.5 [1.1**k|k<-[-20..20]])]
     let sz = Size 300 400
         h = do

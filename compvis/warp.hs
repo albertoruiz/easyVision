@@ -1,5 +1,5 @@
 
-import EasyVision
+import EasyVision hiding (warper)
 import System.Environment(getArgs)
 import Numeric.LinearAlgebra
 import Vision

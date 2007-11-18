@@ -281,10 +281,3 @@ fst3 (a,_,_) = a
 shcont (Closed c) = do
     renderPrimitive LineLoop $ mapM_ vertex c
 
-renderSignal ls = do
-    let delta = 1.8/fromIntegral (length ls-1)
-    let points = zipWith Point [0.9, 0.9-delta ..] ls
-    GL.renderPrimitive GL.LineStrip $ mapM_ GL.vertex points
-
-renderAxes = 
-    GL.renderPrimitive GL.Lines $ mapM_ GL.vertex [Point (-1) 0, Point 1 0, Point 0 (-1), Point 0 1]
