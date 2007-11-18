@@ -2,7 +2,7 @@
 import EasyVision
 import ImagProc.Ipp.Core
 import Control.Monad(when)
-import Graphics.UI.GLUT
+import Graphics.UI.GLUT hiding (Point)
 import Data.List(minimumBy)
 
 addFeature fun cam = return $ do
@@ -28,7 +28,7 @@ main = do
 
     prepare
 
-    w <- evWindow (False,[]) "image" sz Nothing  (mouse (kbdcam ctrl))
+    w <- evWindow (False,[]) "video" sz Nothing  (mouse (kbdcam ctrl))
 
     r <- evWindow () "recognized" (mpSize 10)  Nothing  (const (kbdcam ctrl))
 
@@ -49,10 +49,23 @@ worker cam w r = do
         setColor 0 0 0
         renderAxes
         setColor 1 0 0
-        renderSignal (map (*1) v)
+        renderSignal (map (*0.5) v)
 
     when (not $ null pats) $ inWin r $ do
-        drawImage $ fst $ minimumBy (compare `on` dist img) pats
+        let x = minimumBy (compare `on` dist img) pats
+            d = dist x img
+        drawImage $ fst x
+        pointCoordinates (mpSize 5)
+        text2D 0.9 0.6 (show $ round d)
+        when (d>10) $ do
+            setColor 1 0 0
+            lineWidth $= 10
+            renderPrimitive Lines $ mapM_ vertex $
+                [ Point 1 (-1)
+                , Point (-1) 1
+                , Point 1 1
+                , Point (-1) (-1)
+                ]
 
 -----------------------------------------------------
 

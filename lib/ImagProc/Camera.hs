@@ -30,10 +30,6 @@ import Data.IORef
 import System.IO
 import System
 import Data.List(isPrefixOf)
-import Debug.Trace
-
-debug x = trace (show x) x
-
 
 -- | Computes a 4\/3 \'good\' size for both mplayer and IPP. mpSize 20 = 640x480
 mpSize :: Int -> Size
@@ -56,7 +52,7 @@ mplayer url (Size h w) = do
     k <- mallocBytes 1
     poke k '\0'         -- essential!!
 
-    let mpcommand = debug $ proc w h url++" -vo yuv4mpeg:file="++fifo++" -nosound -slave -loop 0"
+    let mpcommand = proc w h url++" -vo yuv4mpeg:file="++fifo++" -nosound -slave -loop 0"
 
     --(i,o,e,p) <- runInteractiveProcess "mplayer" (words mpcommand) Nothing Nothing
     --(i,o,e,p) <- runInteractiveCommand ("mplayer " ++mpcommand)
@@ -100,7 +96,7 @@ proc w h url
     | "firewire" `isPrefixOf` url = rep ("firewire","/dev/dv1394 -demuxer rawdv -cache 400"++shsc w h) url
     | "s-video-di" `isPrefixOf` url =
             rep ("s-video-di", "tv:// -tv driver=v4l2:device=/dev/video0"++shsz w h++" -vf pp=md") url
-    | "s-video " `isPrefixOf` url = rep ("s-video", "tv:// -tv driver=v4l2:device=/dev/video0"++shsz w h) url
+    | "s-video" `isPrefixOf` url = rep ("s-video", "tv:// -tv driver=v4l2:device=/dev/video0"++shsz w h) url
     | otherwise = url ++ shsc w h
 
 -- deinterlace -vf pp=md
