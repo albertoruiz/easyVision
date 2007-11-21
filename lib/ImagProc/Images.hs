@@ -30,7 +30,7 @@ module ImagProc.Images
 , Pixel (..)
 , Point (..)
 , Segment (..), segmentLength
-, pixelsToPoints
+, pixelsToPoints, pointsToPixels
 --, val32f
 ) where
 
@@ -45,6 +45,6 @@ import ImagProc.Ipp.Core (
    , Point(..)
    , Segment(..), segmentLength
    , Size(..)
-   , pixelsToPoints
+   , pixelsToPoints, pointsToPixels
  )
 

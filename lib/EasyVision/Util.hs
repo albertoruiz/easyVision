@@ -17,7 +17,7 @@ module EasyVision.Util (
     on,
     findSize,
     getCam, numCams,
-    getOption, getRawOption, maybeOption,
+    getOption, getRawOption, maybeOption, getFlag,
     captureGL,
     saveRGB,
     evSize,
@@ -130,6 +130,10 @@ getRawOption name = do
     return s
 
 maybeOption name = fmap (fmap read) (getRawOption name)
+
+getFlag name = do
+    args <- getArgs
+    return (name `elem` args)
 
 numCams = do
     args <- getArgs

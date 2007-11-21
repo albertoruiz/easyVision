@@ -161,8 +161,8 @@ inThread cam = do
 -- | Creates a panoramic view from two cameras with (nearly) common camera center. Currently the synthetic rotations are set manually, but soon...
 panoramic :: Size -> IO ImageFloat -> IO ImageFloat -> IO (IO ImageFloat)
 panoramic sz cam1 cam2 = do
-    wr1 <- warper "warper1"
-    wr2 <- warper "warper2"
+    wr1 <- warper sz "warper1"
+    wr2 <- warper sz "warper2"
     return $ do
         orig1 <- cam1
         floor <- image sz
@@ -184,14 +184,13 @@ conjugateRotation pan tilt rho foc sca =
         <> rot3 rho 
         <> kgen (1/foc)
 
-warper name = do
+warper sz name = do
     param <- createParameters   [ ("pan",  realParam (0) (-40) (40))
                                  ,("tilt", realParam (0) (-30) (30))
                                  ,("rho",  realParam  0 (-60) (60))
                                  ,("foc",  listParam 2.8 [0.5, 0.7, 1, 2, 2.6, 2.8, 5, 5.5, 9,10])
                                  ,("sca",  listParam 0.5 [1.1**k|k<-[-20..20]])]
-    let sz = Size 300 400
-        h = do
+    let h = do
             pan   <- getParam param "pan"
             tilt  <- getParam param "tilt"
             rho   <- getParam param "rho"

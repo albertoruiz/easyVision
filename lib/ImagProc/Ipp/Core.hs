@@ -37,7 +37,7 @@ module ImagProc.Ipp.Core
           , Point (..)
           , Segment(..)
           , segmentLength, distPoints
-          , pixelsToPoints, pixelToPointTrans
+          , pixelsToPoints, pointsToPixels, pixelToPointTrans
           , val32f, val32f', val8u
 ) where
 
@@ -52,7 +52,7 @@ import Vision
 ------------------------------------------------------------
 ------------- descriptor of an ipp image -------------------
 
-data Size  = Size  {height :: !Int, width :: !Int} deriving Show
+data Size  = Size  {height :: !Int, width :: !Int} deriving (Show, Eq)
 
 -- | Image type descriptor:
 data ImageType = RGB | Gray | I32f | YUV deriving (Show,Eq)
@@ -317,13 +317,21 @@ pixelToPointTrans Size {width = w', height = h'} = nor where
         ,[   0,      0, 1]]
 
 pixelToList Pixel {row = r, col = c} = [fromIntegral c, fromIntegral r]
+pointToList p = [px p, py p]
 listToPoint [x,y] = Point {px = x, py= y}
+listToPixel [c,r] = Pixel {row = round r, col = round c}
 
 -- | Trasformation from pixels to normalized points.
 pixelsToPoints :: Size -> [Pixel]->[Point]
 pixelsToPoints sz = fix where
     nor = pixelToPointTrans sz
     fix = map listToPoint. ht nor . map pixelToList
+
+-- | Trasformation from pixels to normalized points.
+pointsToPixels :: Size -> [Point]->[Pixel]
+pointsToPixels sz = fix where
+    nor = LA.inv (pixelToPointTrans sz)
+    fix = map listToPixel. ht nor . map pointToList
 
 
 data Segment = Segment {
