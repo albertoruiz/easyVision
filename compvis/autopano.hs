@@ -43,9 +43,7 @@ main = do
 
     w <- warper sz "rot"
 
-    filename <- getRawOption "--save"
-    limit    <- maybeOption "limit"
-    sv <- openYUV4Mpeg sz filename limit
+    sv <- optionalSaver sz
 
     launch (worker cam0 cam1 wImg1 w sv)
 

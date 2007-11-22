@@ -19,6 +19,7 @@ main = do
     filename <- getRawOption "--save"
     limit    <- maybeOption "limit"
     sv <- openYUV4Mpeg sz filename limit
+    -- this is the same as optionalSaver in EasyVision.Util
 
     launch (worker cam sv w)
 

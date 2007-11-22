@@ -21,14 +21,19 @@ lbpN t im = do
 featLBP sz = addFeature $
     \im -> yuvToGray im >>= resize8u sz >>= lbpN 8
 
+
+feat = featLBP (mpSize 5)
+
 main = do
     sz <- findSize
 
-    (cam,ctrl) <- getCam 0 sz >>= featLBP (mpSize 5) >>= withPause
+    (cam,ctrl) <- getCam 0 sz >>= feat >>= withPause
 
     prepare
 
-    w <- evWindow (False,[]) "video" sz Nothing  (mouse (kbdcam ctrl))
+    protos <- getProtos feat
+
+    w <- evWindow (False, protos) "video" sz Nothing  (mouse (kbdcam ctrl))
 
     r <- evWindow () "category" (mpSize 10)  Nothing  (const (kbdcam ctrl))
 
@@ -61,11 +66,7 @@ worker cam w r = do
             setColor 1 0 0
             lineWidth $= 10
             renderPrimitive Lines $ mapM_ vertex $
-                [ Point 1 (-1)
-                , Point (-1) 1
-                , Point 1 1
-                , Point (-1) (-1)
-                ]
+                [ Point 1 (-1), Point (-1) 1, Point 1 1, Point (-1) (-1) ]
 
 -----------------------------------------------------
 
@@ -81,5 +82,18 @@ mouse _ st (Char 'f') Down _ _ = do
     (_,ps) <- get st
     sv <- openYUV4Mpeg (size $ fst $ head $ ps) (Just "catalog.avi") Nothing
     mapM_ (sv.fst) ps
+    writeFile "catalog.labels" $ unlines $ map show [1..length ps]
 
 mouse def _ a b c d = def a b c d
+
+------------------------------------------------------
+
+getProtos feat = do
+    opt <- getRawOption "--catalog"
+    case opt of
+        Nothing -> return []
+        Just catalog -> do
+            labels <- readFile (catalog ++ ".labels")
+            let n = length (lines labels)
+            cam <- mplayer (catalog ++ ".avi") (mpSize 20) >>= feat
+            sequence (replicate n cam)

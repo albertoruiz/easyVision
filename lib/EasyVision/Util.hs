@@ -17,7 +17,9 @@ module EasyVision.Util (
     on,
     findSize,
     getCam, numCams,
-    getOption, getRawOption, maybeOption, getFlag,
+    getOption, getRawOption,
+    maybeOption, getFlag,
+    optionalSaver,
     captureGL,
     saveRGB,
     evSize,
@@ -139,3 +141,8 @@ numCams = do
     args <- getArgs
     let nc = length $ filter (=="--cam") $ map (take 5) args
     return nc
+
+optionalSaver sz = do
+    filename <- getRawOption "--save"
+    limit    <- maybeOption "limit"
+    openYUV4Mpeg sz filename limit

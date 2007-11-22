@@ -19,9 +19,7 @@ main = do
     w <- evWindow () "motion" sz Nothing  (const (kbdcam ctrl))
     windowStatus $= Hidden
 
-    filename <- getRawOption "--save"
-    limit    <- maybeOption "limit"
-    sv <- openYUV4Mpeg sz filename limit
+    sv <- optionalSaver sz
 
     launch (worker w cam sv)
 
