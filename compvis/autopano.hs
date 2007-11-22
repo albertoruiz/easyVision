@@ -39,7 +39,7 @@ main = do
 
     prepare
 
-    wImg1  <- evWindow [0,0,0] "autopanoramic" sz Nothing (mouse kbdQuit)
+    wImg1  <- evWindow (False,[0,0,0]) "autopanoramic" sz Nothing (mouse kbdQuit)
 
     w <- warper sz "rot"
 
@@ -62,10 +62,12 @@ worker cam0 cam1 wImg1 w sv = do
     hi <- rh
 
     inWin wImg1 $ do
-        [pi,ti,ri] <- getW wImg1
-        let [pan,tilt,roll] = findRot sm0 sm1 pi ti ri
+        (opt,[pi,ti,ri]) <- getW wImg1
+        let [pan,tilt,roll] = if opt
+                                then findRot sm0 sm1 pi ti ri
+                                else [pi,ti,ri]
             h = conjugateRotation pan tilt roll 2.8 1
-        putW wImg1 [pan,tilt,roll]
+        putW wImg1 (opt,[pan,tilt,roll])
         base <- warp (size img0) hi img0
         warpOn (hi<>h) base img1
         drawImage base
@@ -97,8 +99,19 @@ cost a b [pan, tilt, roll] = simil a h b
 findRot a b pi ti ri = fst $ minimizeNMSimplex (cost a b) [pi,ti,ri] [0.1*degree, 0.1*degree,0.1*degree] 1E-3 10
 
 
--- click to restart
+-- click to adjust
 mouse _ st (MouseButton LeftButton) Down _ _ = do
-    st $= [0,0,0]
+    (_,p) <- get st
+    st $= (True,p)
+
+-- restart from identity
+mouse _ st (Char 'z') Down _ _ = do
+    st $= (True,[0,0,0])
+
+-- end optimization
+mouse _ st (Char 'o') Down _ _ = do
+    (_,p) <- get st
+    st $= (False,p)
+
 
 mouse def _ a b c d = def a b c d
