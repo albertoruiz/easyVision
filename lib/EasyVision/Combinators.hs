@@ -24,7 +24,6 @@ module EasyVision.Combinators (
   addSmall,
   detectMov,
   warper,
-  panoramic,
   monitorizeIn,
   inThread
 )where
@@ -157,24 +156,6 @@ inThread cam = do
     return (readMVar c)
 
 -----------------------------------------------------------
-
--- | Creates a panoramic view from two cameras with (nearly) common camera center. Currently the synthetic rotations are set manually, but soon...
-panoramic :: Size -> IO ImageFloat -> IO ImageFloat -> IO (IO ImageFloat)
-panoramic sz cam1 cam2 = do
-    wr1 <- warper sz "warper1"
-    wr2 <- warper sz "warper2"
-    return $ do
-        orig1 <- cam1
-        floor <- image sz
-        set32f 0 (theROI floor) floor
-        (rh1,_) <- getW wr1
-        h1 <- rh1
-        warpOn h1 floor orig1
-        orig2 <- cam2
-        (rh2,_) <- getW wr2
-        h2 <- rh2
-        warpOn h2 floor orig2
-        return floor
 
 conjugateRotation pan tilt rho foc sca =
         scaling sca

@@ -2,7 +2,7 @@
 
 import EasyVision
 import ImagProc.Ipp.Core
-import Control.Monad(when)
+import Control.Monad(when,(>=>))
 import Graphics.UI.GLUT hiding (Point)
 import Data.List(minimumBy)
 
@@ -20,7 +20,7 @@ lbpN t im = do
     return $ map ((*sc).fromIntegral) (tail h)
 
 featLBP sz = addFeature $
-    \im -> yuvToGray im >>= resize8u sz >>= lbpN 8
+    yuvToGray >=> resize8u sz >=> lbpN 8
 
 main = do
     sz <- findSize
