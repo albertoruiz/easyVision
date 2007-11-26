@@ -42,6 +42,7 @@ nbayesg eps vs = f where
     pr' x = if x < tol then 0 else 1
     k = sum (map log (toList s'))
     f v = k + 0.5*(norm (d*(v-m)/s'))^2
+    norm x = pnorm PNorm2 x
 
 
 

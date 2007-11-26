@@ -631,7 +631,7 @@ warp :: Size              -- ^ desired size of the result
 warp s h im = do
     r' <- img I32f s
     let r = F r'
-    set32f 0.0 (fullroi r') r
+    set32f (-1.0) (fullroi r') r
     warpOn h r im
     return r
 

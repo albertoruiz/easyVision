@@ -23,7 +23,7 @@ meet a b = innerLevi [dual a, dual b]
 --meet a b = dual $ (dual a) /\ (dual b)
 
 
-instance (Field t, Eq t) => Eq (Tensor t) where
+instance (Element t, Eq t) => Eq (Tensor t) where
     t1 == t2 = error "equality of tensors not yet defined"
 
 instance (Linear Vector t) => Num (Tensor t) where

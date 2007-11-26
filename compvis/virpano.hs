@@ -13,8 +13,8 @@ import Vision
 
 
 -- | Creates a panoramic view from two cameras with (nearly) common camera center. Currently the synthetic rotations are set manually, but soon...
-panoramic :: Size -> IO ImageFloat -> IO ImageFloat -> IO (IO ImageFloat)
-panoramic sz camBase camAdj = do
+panoramic :: Size -> Double -> Double -> Double -> IO ImageFloat -> IO ImageFloat -> IO (IO ImageFloat)
+panoramic sz fi1 fi2 fo camBase camAdj = do
     wMon <- evWindow (False,[0,0,0]) "autopanoramic" sz Nothing (mouse kbdQuit)
     wWar <- warper sz "control"
     return $ do
@@ -30,12 +30,12 @@ panoramic sz camBase camAdj = do
 
         (opt,[pi,ti,ri]) <- getW wMon
         let [pan,tilt,roll] = if opt
-                                then findRot sm0 sm1 pi ti ri
+                                then findRot sm0 fi1 sm1 fi2 pi ti ri
                                 else [pi,ti,ri]
-            h = conjugateRotation pan tilt roll 2.8 1
+            h = conjugateRotation pan tilt roll fi2 fi1
         putW wMon (opt,[pan,tilt,roll])
-        base <- warp (size img0) hi img0
-        warpOn (hi<>h) base img1
+        base <- warp (size img0) (hi<>kgen (fo/fi1)) img0
+        warpOn (hi<>kgen (fo/fi1)<>h) base img1
         saved <- get currentWindow
         inWin wMon $ drawImage base
         currentWindow $= saved
@@ -63,7 +63,7 @@ panoramic sz camBase camAdj = do
 
 
 
-a & b = panoramic (mpSize 5) a b
+a & b = panoramic (mpSize 5) 2.8 2.8 2.0 a b
 
 
 main = do
@@ -76,7 +76,11 @@ main = do
 
     prepare
 
-    cam <- foldM (&) (cf 0) (map cf [1..n-1])
+    --cam <- foldM (&) (cf 0) (map cf [1..n-1])
+
+    cam12 <- panoramic (mpSize 5) 2.8 2.6 1.4 (cf 0) (cf 1)
+
+    cam <- panoramic (mpSize 5) 1.4 2.8 1.0 cam12 (cf 2)
 
     wDest  <- evWindow () "pano" (mpSize 20) Nothing (mouse (kbdQuit))
 
@@ -85,7 +89,7 @@ main = do
 -----------------------------------------------------------------
 
 worker cam wDest = do
-    inWin wDest $
+    inWin wDest $ do
         cam >>= drawImage
 
 ---------------------------------------------------------
@@ -109,13 +113,14 @@ simil0 a b roi = k * sumIm (absIm (f a |-| f b))
 
 pasteOn base h im = unsafePerformIO $ do
     dest <- copy32f base
+    mask <- thresholdVal32f 0 1 IppCmpGreater base
     warpOn h dest im
-    return dest
+    return (dest|*|mask) -- only on valid data
 
 simil a h b = if ok roi then simil0 a p roi else 10
     where p = pasteOn a h b
           roi = effectiveROI (size a) h
-          ok r = r1 r >= 0 && r2 r > 50 + r1 r && c1 r >= 0 && c2 r > 50 + c1 r 
+          ok r = r1 r >= 0 && r2 r > 50 + r1 r && c1 r >= 0 && c2 r > 50 + c1 r
 
 effectiveROI sz h = newroi where
     r = 3/4
@@ -127,15 +132,10 @@ effectiveROI sz h = newroi where
     fullroi (Size h w) = ROI {r1=0, r2=h-1, c1=0, c2=w-1}
     lp [x,y] = Point x y
 
-conjugateRotation pan tilt rho foc sca =
-        scaling sca
-        <> kgen foc
-        <> rot1 tilt
-        <> rot2 pan 
-        <> rot3 rho 
-        <> kgen (1/foc)
+conjugateRotation pan tilt rho fi fo =
+        kgen fo <> rot1 tilt <> rot2 pan <> rot3 rho <> kgen (1/fi)
 
-cost a b [pan, tilt, roll] = simil a h b
-    where h = conjugateRotation pan tilt roll 2.8 1
+cost a fa b fb [pan, tilt, roll] = debug $ simil a h b
+    where h = conjugateRotation pan tilt roll fb fa
 
-findRot a b pi ti ri = fst $ minimizeNMSimplex (cost a b) [pi,ti,ri] [0.1*degree, 0.1*degree,0.1*degree] 1E-3 10
+findRot a fa b fb pi ti ri = fst $ minimizeNMSimplex (cost a fa b fb) [pi,ti,ri] [0.1*degree, 0.1*degree,0.1*degree] 1E-3 10
