@@ -32,27 +32,14 @@ axisToQuat phi axis = Quat { qs = cos (phi/2), qv = sin (phi/2) .* v }
 
 --------------------------------------
 getRotation Quat {qs = w, qv = v} =
-    [ 1.0 - 2.0 * (y^2 + z^2)
-    , 2.0 * (x*y - w*z)
-    , 2.0 * (z*x + w*y)
-    , 0.0
-
-    , 2.0 * (x*y + w*z)
-    , 1.0 - 2.0 * (x^2 - z^2)
-    , 2.0 * (y*z - w*x)
-    , 0.0
-
-    , 2.0 * (x*z - w*y)
-    , 2.0 * (y*z + w*x)
-    , 1.0 - 2.0 * (x^2 + y^2)
-    , 0.0
-
-    , 0.0
-    , 0.0
-    , 0.0
-    , 1.0
-    ] where [x,y,z] = toList v
-
+  let [x, y, z] = toList v
+      x2 = x*x; y2 = y*y; z2 = z*z
+      xy = x*y; xz = x*z; yz = y*z
+      wx = w*x; wy = w*y; wz = w*z
+  in [ 1.0 - 2.0 * (y2 + z2), 2.0 * (xy - wz), 2.0 * (xz + wy), 0,
+       2.0 * (xy + wz), 1.0 - 2.0 * (x2 + z2), 2.0 * (yz - wx), 0,
+       2.0 * (xz - wy), 2.0 * (yz + wx), 1.0 - 2.0 * (x2 + y2), 0,
+       0, 0, 0, 1 ]
 
 infixl 7 ><
 a >< b = asMat a <> b
