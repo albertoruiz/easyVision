@@ -132,3 +132,5 @@ int hsvcode(int kb, int kg, int kw,
             unsigned char * pSrc, int sstep,
             unsigned char * pDst, int dstep,
             int sr1, int sr2, int sc1, int sc2);
+
+int ippiMirror_8u_C1IR(DST,int);

@@ -88,7 +88,7 @@ module ImagProc.ImageProcessing (
 -- * Connected Components
 , floodFill8u, floodFill8uGrad
 -- * Local Binary Patterns
-, lbp, lbpN
+, lbp
 )
 where
 
@@ -947,46 +947,3 @@ lbp th (G im) = unsafePerformIO $ do
     r <- peekArray 256 hist
     free hist
     return r
-
--- normalized lbp histogram
-lbpN t im = map ((*sc).fromIntegral) (tail h) where
-    h = lbp t im
-    ROI r1 r2 c1 c2 = theROI im
-    sc = (256.0::Double) / fromIntegral ((r2-r1-1)*(c2-c1-1))
-
-
-----------------------------------------------------------------------------------------
-
--- | to do
-hsvCodeTest :: Int -> Int -> Int -> ImageRGB -> IO ()
-hsvCodeTest b g w (C im) = do
-    hsvcodeTest b g w (ptr im) (step im) (r1 (vroi im)) (r2 (vroi im)) (c1 (vroi im)) (c2 (vroi im))
-        // checkIPP "hsvcodeTest" [im]
-
--- | to do
-hsvCode :: Int -> Int -> Int -> ImageRGB -> ImageGray
-hsvCode b g w (C im) = unsafePerformIO $ do
-    G r <- image (isize im)
-    set8u 0 (theROI (G r)) (G r)
-    hsvcode b g w
-            (ptr im) (step im)
-            (ptr r) (step r)
-            (r1 (vroi im)) (r2 (vroi im)) (c1 (vroi im)) (c2 (vroi im))
-            // checkIPP "hsvcode" [im]
-    return $ modifyROI (const (vroi im)) (G r)
-
-----------------------------------------------------------------------------------------
-
-warpOn' h r im f met s = do
-    coefs <- newArray (concat h)
-    let Size h w = isize im
-    f (ptr im) (step im) h w
-                           (r1 (vroi im)) (r2 (vroi im)) (c1 (vroi im)) (c2 (vroi im))
-                           (ptr r) (step r)
-                           (r1 (vroi r)) (r2 (vroi r)) (c1 (vroi r)) (c2 (vroi r))
-                           coefs met //warningIPP s [im]
-    free coefs
-
-warpOn8u  h (G r) (G im) = warpOn' h r im warpPerspectiveGray inter_LINEAR "warpOn8u"
-warpOn32f h (F r) (F im) = warpOn' h r im warpPerspective32f inter_LINEAR "warpOn32f"
-warpOn8u3 h (C r) (C im) = warpOn' h r im warpPerspectiveRGB inter_LINEAR "warpOn8u3"
