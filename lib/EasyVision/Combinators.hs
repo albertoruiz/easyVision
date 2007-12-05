@@ -24,12 +24,16 @@ module EasyVision.Combinators (
   addSmall,
   detectMov,
   warper,
+  findRectangles,
+  onlyRectangles,
   monitorizeIn,
   inThread
 )where
 
 import ImagProc.Ipp.Core
 import ImagProc.ImageProcessing
+import ImagProc.Segments
+import ImagProc.Polyline
 import Foreign
 import Foreign.C.Types (CChar,CUChar)
 import Foreign.C.String(newCString)
@@ -40,7 +44,7 @@ import System.IO.Unsafe(unsafeInterleaveIO)
 import EasyVision.GUI
 import EasyVision.Draw
 import EasyVision.Parameters
-import Graphics.UI.GLUT hiding (Size)
+import Graphics.UI.GLUT hiding (Size,Point)
 import Control.Concurrent
 import Vision
 import Numeric.LinearAlgebra
@@ -193,4 +197,69 @@ warper sz name = do
     putW w (h,drw w)
     return w
 
+----------------------------------------------------------------
 
+-- A virtual camera which finds rectangles with a given aspect ratio
+
+findRectangles ratio cam = do
+    op <- createParameters [ ("radius",intParam 4 0 10),
+                             ("width",realParam 1.5 0 5),
+                             ("median",intParam 5 3 5),
+                             ("high",intParam 40 0 255),
+                             ("low",intParam 20 0 255),
+                             ("postproc",intParam 1 0 1),
+                             ("minlength",realParam 0.15 0 1),
+                             ("maxdis",realParam 0.06 0 0.1),
+                             ("orthotol",realParam 0.4 0.01 1.0)]
+    let a4 = [[   0,            0]
+            ,[   0, (2.10*ratio)]
+            ,[2.10, (2.10*ratio)]
+            ,[2.10,           0]]
+    return $ do
+        orig <- cam
+        img <- yuvToGray orig
+        radius <- getParam op "radius"
+        width  <- getParam op "width"
+        median <- getParam op "median"
+        high   <- fromIntegral `fmap` (getParam op "high" :: IO Int)
+        low    <- fromIntegral `fmap` (getParam op "low" :: IO Int)
+        postp  <- getParam op "postproc" :: IO Int
+        let pp = if postp == 0 then False else True
+        minlen <- getParam op "minlength"
+        maxdis <- getParam op "maxdis"
+        orthotol  <- getParam op "orthotol"
+        let
+            mbf = Nothing
+            segs = filter ((>minlen).segmentLength) $ segments radius width median high low pp img
+            polis = segmentsToPolylines maxdis segs
+            closed4 = [p | Closed p <- polis, length p == 4]
+            a4s = filter (isA4 mbf orthotol a4) (concatMap alter closed4)
+        return (orig,a4s)
+
+pl (Point x y) = [x,y]
+
+alter pts = map (rotateList pts) [0 .. 3]
+
+rotateList list n = take (length list) $ drop n $ cycle list
+
+isA4 mbf tol a4 pts = ao < tol && cy < 0
+    where mbomega = fmap omegaGen mbf
+          ao = autoOrthogonality mbomega h
+          h = estimateHomography (map pl pts) a4
+          Just p = poseFromHomogZ0 mbf h
+          (_,cy,_) = cameraCenter p
+          omegaGen f = kgen (recip (f*f))
+
+----------------------------------------------------------------
+
+onlyRectangles sz ratio cam = do
+    fr <- findRectangles ratio cam
+    return $ do
+        (orig,a4s) <- fr
+        let f pts = fst . rectifyQuadrangle sz pts . toFloat $ orig
+        return $ map f a4s
+
+toFloat im = unsafePerformIO $ do
+    yuvToGray im >>= scale8u32f 0 1
+
+------------------------------------------------------------------

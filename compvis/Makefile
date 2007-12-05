@@ -6,7 +6,8 @@ LIBS = -i../lib ../lib/ImagProc/Ipp/auxIpp.o -L../lib/ImagProc/Segments -lsegmen
 ALL = demo hessian warp frontal pose automatch brush \
       stereo detect interpolate rectangles hotpoints \
       autostereo augmented contours dynamic justsave \
-      whiteboard autopano virpano simpleclassifier classifier
+      whiteboard autopano virpano simpleclassifier classifier \
+      cards onlyRects
 
 CDIR = ../lib/ImagProc/Ipp
 
@@ -18,7 +19,7 @@ all: $(ALL)
 auxc: $(CDIR)/auxIpp.o ../lib/ImagProc/Segments/libsegments.a
 
 $(CDIR)/auxIpp.o: $(CDIR)/auxIpp.c $(CDIR)/auxIpp.h
-	gcc -O -c -I$(IPP)/include $(CDIR)/auxIpp.c -o $(CDIR)/auxIpp.o
+	gcc -O4 -c -I$(IPP)/include $(CDIR)/auxIpp.c -o $(CDIR)/auxIpp.o
 
 ../lib/ImagProc/Segments/libsegments.a:
 	cd ../lib/ImagProc/Segments; make

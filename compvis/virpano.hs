@@ -72,15 +72,17 @@ main = do
 
     cams <- mapM (flip getCam sz) [0..n-1]
 
-    let cf k = cams!!k >>= yuvToGray >>= scale8u32f 0 1
+    let cf k = cams!!k >>= yuvToGray >>= scale8u32f 0 1 >>= return . modifyROI (shrink (10,10))
 
     prepare
 
     --cam <- foldM (&) (cf 0) (map cf [1..n-1])
 
-    cam12 <- panoramic (mpSize 5) 2.8 2.6 1.4 (cf 0) (cf 1)
+    --cam12 <- panoramic (mpSize 5) 2.8 2.6 1.4 (cf 0) (cf 1)
 
-    cam <- panoramic (mpSize 5) 1.4 2.8 1.0 cam12 (cf 2)
+    --cam <- panoramic (mpSize 5) 1.4 2.8 1.0 cam12 (cf 2)
+
+    cam <- panoramic (mpSize 5) 2.8 2.8 2.0 (cf 0) (cf 1)
 
     wDest  <- evWindow () "pano" (mpSize 20) Nothing (mouse (kbdQuit))
 
@@ -113,9 +115,10 @@ simil0 a b roi = k * sumIm (absIm (f a |-| f b))
 
 pasteOn base h im = unsafePerformIO $ do
     dest <- copy32f base
-    mask <- thresholdVal32f 0 1 IppCmpGreater base
+    --mask <- thresholdVal32f 0 1 IppCmpGreater base
     warpOn h dest im
-    return (dest|*|mask) -- only on valid data
+    --return (dest|*|mask) -- only on valid data
+    return dest
 
 simil a h b = if ok roi then simil0 a p roi else 10
     where p = pasteOn a h b

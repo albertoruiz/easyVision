@@ -22,7 +22,7 @@ module ImagProc.ImageProcessing (
 , jaehne32f
 , set32f, set8u
 , copyROI32f
-, copyROI8u
+, copyROI8u, copyROI8u'
 , times
 , partit
 -- * Image manipulation
@@ -42,6 +42,8 @@ module ImagProc.ImageProcessing (
 , resize32f
 , resize8u
 , warp, warpOn
+, rectifyQuadrangle
+, blockImage
 -- * Image arithmetic
 , scale32f
 , mul32f, add32f, sub32f
@@ -124,6 +126,18 @@ set8u :: CUChar      -- ^ desired value
        -> ImageGray  -- ^ destination image
        -> IO ()
 set8u v roi (G im) = ippiSet_8u_C1R v // dst im roi // checkIPP "set8u" [im]
+
+
+-- | Writes into a existing image a desired value in a specified roi.
+set8u3 :: CUChar -> CUChar -> CUChar -- ^ desired RGB value
+       -> ROI        -- ^ roi
+       -> ImageRGB   -- ^ destination image
+       -> IO ()
+set8u3 r g b roi (C im) = do
+    v <- mallocArray 3
+    pokeArray v [r,g,b]
+    ippiSet_8u_C3R v // dst im roi // checkIPP "set8u3" [im]
+    free v
 
 
 -- | Creates a 8u Gray image from a 8uC3 RGB image
@@ -279,6 +293,11 @@ copyROI32f (F im) roi (F r) = ippiCopy_32f_C1R // src im roi // dst r roi // che
 -- | Copies the roi of the input image into the destination image.
 copyROI8u :: ImageGray -> ImageGray -> IO ()
 copyROI8u (G r) (G im) = ippiCopy_8u_C1R // src im (vroi im) // dst r (vroi im) // checkIPP "copyROI8u" [im]
+
+-- | Copies the roi of the input image into the roi of the destination image.
+copyROI8u' :: ImageGray -> ImageGray -> IO ()
+copyROI8u' (G r) (G im) = ippiCopy_8u_C1R // src im (vroi im) // dst r (vroi r) // checkIPP "copyROI8u'" [im]
+
 
 
 simplefun1F ippfun roifun msg = g where
@@ -650,6 +669,19 @@ inter_SUPER      =  8 :: Int
 inter_LANCZOS    = 16 :: Int
 --inter_SMOOTH_EDGE = (1 << 31) :: Int
 
+-- | convenience function
+rectifyQuadrangle :: Size -> [Point] -> ImageFloat -> (ImageFloat, Matrix Double)
+rectifyQuadrangle sz pts imf = unsafePerformIO $ do
+    let a4aux = [[-1,-r],[1,-r],[1,r],[-1,r]]
+            where r = 1/ratio
+                  Size h w = sz
+                  ratio = fromIntegral w / fromIntegral h
+        h = estimateHomography a4aux (map pl pts)
+            where pl (Point x y) = [x,y]
+    r <- warp sz h imf
+    return (r, h)
+
+
 -- | Explores an image and returns a list of pixels (as [row,column]) where the image is greater than 0.0.
 getPoints32f :: Int -> ImageFloat -> IO [Pixel]
 getPoints32f mx (F im) = do
@@ -901,3 +933,34 @@ lbp th (G im) = do
     r <- peekArray 256 hist
     free hist
     return r
+
+
+-- | joins images
+blockImage :: [[ImageGray]] -> ImageGray
+blockImage = columnImage . map rowImage
+
+rowImage :: [ImageGray] -> ImageGray
+rowImage l = unsafePerformIO $ do
+    let r = maximum (map (height.size) l)
+        c = maximum (map (width.size) l)
+        n = length l
+    res <- image (Size r (c*n))
+    let roi0 = theROI (head l)
+        rois = take n $ iterate (shift (0,c)) roi0
+        f r i = copyROI8u' (modifyROI (const r) res) i
+    sequence_ $ zipWith f rois l
+    return res
+
+columnImage :: [ImageGray] -> ImageGray
+columnImage l = unsafePerformIO $ do
+    let r = maximum (map (height.size) l)
+        c = maximum (map (width.size) l)
+        n = length l
+    res <- image (Size (r*n) c)
+    let roi0 = theROI (head l)
+        rois = take n $ iterate (shift (r,0)) roi0
+        f r i = copyROI8u' (modifyROI (const r) res) i
+    sequence_ $ zipWith f rois l
+    return res
+
+

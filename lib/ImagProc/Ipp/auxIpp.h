@@ -5,6 +5,7 @@
 
 int ippiSet_32f_C1R(float,DST);
 int ippiSet_8u_C1R(unsigned char,DST);
+int ippiSet_8u_C3R(unsigned char*,DST);
 int ippiImageJaehne_32f_C1R(DST);
 int ippiFilterGauss_32f_C1R(SRC,DST,int);
 int ippiFilterLaplace_32f_C1R(SRC,DST,int);
@@ -52,6 +53,18 @@ int ippiErode_8u_C1R(SRC,DST,char*,VSIZE,VSIZE);
 int ippiNot_8u_C1R(SRC,DST);
 
 int auxWarpPerspective_32f_C1R(void * pSrc, int sstep, int sh, int sw,
+                               int sr1, int sr2, int sc1, int sc2,
+                               void * pDst, int dstep,
+                               int dr1, int dr2, int dc1, int dc2,
+                               const double *h, int interp);
+
+int auxWarpPerspective_8u_C1R(void * pSrc, int sstep, int sh, int sw,
+                               int sr1, int sr2, int sc1, int sc2,
+                               void * pDst, int dstep,
+                               int dr1, int dr2, int dc1, int dc2,
+                               const double *h, int interp);
+
+int auxWarpPerspective_8u_C3R(void * pSrc, int sstep, int sh, int sw,
                                int sr1, int sr2, int sc1, int sc2,
                                void * pDst, int dstep,
                                int dr1, int dr2, int dc1, int dc2,

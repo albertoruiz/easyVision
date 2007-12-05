@@ -33,6 +33,9 @@ foreign import ccall "auxIpp.h ippiSet_32f_C1R"
 foreign import ccall "auxIpp.h ippiSet_8u_C1R"
   ippiSet_8u_C1R :: CUChar -> Ptr() -> Int -> ROISize -> IO Int
 
+foreign import ccall "auxIpp.h ippiSet_8u_C3R"
+  ippiSet_8u_C3R :: Ptr(CUChar) -> Ptr() -> Int -> ROISize -> IO Int
+
 foreign import ccall "auxIpp.h ippiFilterGauss_32f_C1R"
      ippiFilterGauss_32f_C1R :: Ptr() -> Int -> Ptr() -> Int -> ROISize -> Int -> IO Int
 
@@ -173,6 +176,23 @@ foreign import ccall "auxIpp.h auxWarpPerspective_32f_C1R"
                            Int -> Int -> Int -> Int ->
                            Ptr Double -> Int ->
                            IO Int
+
+foreign import ccall "auxIpp.h auxWarpPerspective_8u_C1R"
+     warpPerspectiveGray :: Ptr() -> Int -> Int -> Int ->
+                           Int -> Int -> Int -> Int ->
+                           Ptr() -> Int ->
+                           Int -> Int -> Int -> Int ->
+                           Ptr Double -> Int ->
+                           IO Int
+
+foreign import ccall "auxIpp.h auxWarpPerspective_8u_C3R"
+     warpPerspectiveRGB :: Ptr() -> Int -> Int -> Int ->
+                           Int -> Int -> Int -> Int ->
+                           Ptr() -> Int ->
+                           Int -> Int -> Int -> Int ->
+                           Ptr Double -> Int ->
+                           IO Int
+
 
 foreign import ccall "auxIpp.h ippGetStatusString" ippGetStatusString :: Int -> IO (Ptr CChar)
 

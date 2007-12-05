@@ -29,7 +29,6 @@ module Tensor (
     liftTensor, liftTensor2
 ) where
 
-import Data.Packed.Internal
 import Foreign.Storable
 import Data.List(sort,elemIndex,nub,foldl1',foldl')
 import Numeric.LinearAlgebra hiding (rank)
@@ -57,7 +56,7 @@ coords :: Tensor t -> Vector t
 coords = ten
 
 instance (Show a, Element a) => Show (Tensor a) where
-    show T {dims = [], ten = t} = "scalar "++show (t `at` 0)
+    show T {dims = [], ten = t} = "scalar "++show (t @> 0)
     show t = "("++shdims (dims t) ++") "++ showdt t
 
 asMatrix t = reshape (idxDim $ dims t!!1) (ten t)
@@ -124,13 +123,13 @@ findIdx :: (Element t) => IdxName -> Tensor t
 findIdx name t = ((d1,d2),m) where
     (d1,d2) = span (\d -> idxName d /= name) (dims t)
     c = product (map idxDim d2)
-    m = matrixFromVector RowMajor c (ten t)
+    m = reshape c (ten t)
 
 -- | express the tensor as a matrix with the given index in rows
 putFirstIdx :: (Element t) => String -> Tensor t -> ([IdxDesc], Matrix t)
 putFirstIdx name t = (nd,m')
     where ((d1,d2),m) = findIdx name t
-          m' = matrixFromVector RowMajor c $ flatten $ trans m
+          m' = reshape c $ flatten $ trans m
           nd = d2++d1
           c = dim (ten t) `div` (idxDim $ head d2)
 
@@ -350,7 +349,7 @@ dual t = raise $ leviCivita n `mulT` withIdx t seqind `rawProduct` x
 -- | shows only the relevant components of an antisymmetric tensor
 niceAS :: (Element t, Fractional t) => Tensor t -> [(t, [Int])]
 niceAS t = filter ((/=0.0).fst) $ zip vals base
-    where vals = map ((`at` 0).ten.foldl' partF t) (map (map pred) base)
+    where vals = map ((@> 0).ten.foldl' partF t) (map (map pred) base)
           base = asBase r n
           r = length (dims t)
           n = idxDim . head . dims $ t

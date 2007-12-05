@@ -1,5 +1,4 @@
--- rectification of an (e.g. A4) white sheet of paper,
-
+-- shows all rectangles found
 
 module Main where
 
@@ -9,11 +8,22 @@ import Vision
 import Control.Monad(when)
 import Numeric.LinearAlgebra
 import Text.Printf(printf)
+import Foreign
 
+toGray im = unsafePerformIO $ scale32f8u 0 1 im
+toFloat im = unsafePerformIO $ do
+    yuvToGray im >>= scale8u32f 0 1
+
+zero sz = unsafePerformIO $ do
+    z <- image sz
+    set8u 0 (theROI z) z
+    return z
+
+zeros sz = repeat (zero sz)
 
 main = do
     sz <- findSize
-    ratio <- getOption "--ratio" (sqrt 2)
+    ratio <- getOption "--ratio" (1.5)
     let szA4 = Size (32*10) (round (32*10*ratio))
         nm = "ratio " ++ printf "%.2f" ratio
     prepare
@@ -21,7 +31,7 @@ main = do
     (cam,ctrl) <- getCam 0 sz >>= findRectangles ratio >>= withPause
 
     wimg <- evWindow () "original" sz Nothing (const $ kbdcam ctrl)
-    wa4  <- evWindow (ident 3) nm szA4 Nothing (mouse (kbdcam ctrl))
+    wa4  <- evWindow () nm (Size (32*5*5) (round(32*5*ratio))) Nothing (const (kbdcam ctrl))
 
     launch (worker cam wimg wa4 ratio szA4)
 
@@ -44,25 +54,9 @@ worker cam wImage wA4 ratio szA4 = do
         pointSize $= 5
         mapM_ (renderPrimitive Points . (mapM_ vertex)) a4s
 
-
-    -- see also onlyRectangles
     inWin wA4 $ do
         when (length a4s >0) $ do
-            let pts = head a4s
-                a4aux = [[-1,-r],[1,-r],[1,r],[-1,r]]
-                    where r = 1/ratio
-                h = estimateHomography a4aux (map pl pts)
-                    where pl (Point x y) = [x,y]
-            putW wA4 h
+            let f pts = fst . rectifyQuadrangle szA4 pts . toFloat $ orig
+                res = blockImage $ take 5 (map return $ map (toGray.f) a4s++zeros szA4)
+            drawImage res
 
-        h <- getW wA4
-        imf <- scale8u32f 0 1 =<< yuvToGray orig
-        floor <- warp szA4 h imf
-        drawImage floor
-
----------------------------------------------------------
-
-mouse _ st (MouseButton LeftButton) Down _ _ = do
-    st $= ident 3
-
-mouse def _ a b c d = def a b c d
