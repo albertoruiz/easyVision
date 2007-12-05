@@ -115,11 +115,11 @@ worker cam1 cam2 opts inWindow _ = do
             text2D 0.9 (-0.7) (show ((foc,sturm f)))
         scale <- getParam opts "scale"
         let (rec1, rec2) = stereoRectifiers f pts1 pts2
-        w1 <- warp (size im1) (scaling scale <> rec1) im1
-        w2 <- warp (size im2) (scaling scale <> rec2) im2
+        let w1 = warp 0 (size im1) (scaling scale <> rec1) im1
+        let w2 = warp 0 (size im2) (scaling scale <> rec2) im2
         inWindow "rectif" $ do
             drawImage (0.5 .* w1 |+| 0.5 .* w2)
-        w3 <- warp (size im2) (inv rec1 <> rec2) im2
+        let w3 = warp 0 (size im2) (inv rec1 <> rec2) im2
         inWindow "fixed" $ do
             drawImage (0.5 .* im1 |+| 0.5 .* w3)
 

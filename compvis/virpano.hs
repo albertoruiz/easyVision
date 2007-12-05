@@ -1,4 +1,4 @@
--- test of panoramic combinator
+-- -- test of panoramic combinator
 
 module Main where
 
@@ -34,7 +34,7 @@ panoramic sz fi1 fi2 fo camBase camAdj = do
                                 else [pi,ti,ri]
             h = conjugateRotation pan tilt roll fi2 fi1
         putW wMon (opt,[pan,tilt,roll])
-        base <- warp (size img0) (hi<>kgen (fo/fi1)) img0
+        let base = warp 0 (size img0) (hi<>kgen (fo/fi1)) img0
         warpOn (hi<>kgen (fo/fi1)<>h) base img1
         saved <- get currentWindow
         inWin wMon $ drawImage base

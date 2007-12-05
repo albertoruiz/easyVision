@@ -58,7 +58,7 @@ worker wIm wRec cam op = do
         (fs,recs) = unzip $ map (calibFromRectangle.construct) closed4
 
     inWin wIm $ do
-        scale8u32f 0 1 orig >>= warp (Size 400 400) (scaling scale) >>= drawImage
+        scale8u32f 0 1 orig >>= return . warp 0 (Size 400 400) (scaling scale) >>= drawImage
 
         pointCoordinates (Size 400 400)
 
@@ -89,7 +89,7 @@ worker wIm wRec cam op = do
             sc = scale/0.2*0.5/norm (vector a'- vector c')
             aspectRatio = norm (vector a'- vector d')/ norm (vector a'- vector b')
 
-        scale8u32f 0 1 orig >>= warp (Size 400 400) (scaling sc <> desp (-dx,-dy) <> rectif) >>= drawImage
+        scale8u32f 0 1 orig >>= return . warp 0 (Size 400 400) (scaling sc <> desp (-dx,-dy) <> rectif) >>= drawImage
         pointCoordinates (Size 400 400)
         setColor 1 1 1
         text2D 0.95 (-0.95) (show $ max aspectRatio (1/aspectRatio))

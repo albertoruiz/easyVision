@@ -105,7 +105,7 @@ worker wIm w3D cam op trackball mbf = do
                 h = estimateHomography a4 (map pl pts)
                 Size _ sz = size orig
             imf <- scale8u32f 0 1 orig
-            floor <- warp (Size 256 256) (scaling scale <> h) imf
+            let floor = warp 0 (Size 256 256) (scaling scale <> h) imf
             drawTexture floor $ map (++[-0.01]) $ ht (scaling (1/scale)) [[1,1],[-1,1],[-1,-1],[1,-1]]
 
             imt <- extractSquare 128 imf

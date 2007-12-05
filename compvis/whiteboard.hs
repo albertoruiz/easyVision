@@ -56,9 +56,8 @@ worker cam wImage wA4 ratio szA4 = do
             putW wA4 h
 
         h <- getW wA4
-        imf <- scale8u32f 0 1 =<< yuvToGray orig
-        floor <- warp szA4 h imf
-        drawImage floor
+        im <- yuvToRGB orig
+        drawImage $ warp (0,0,0) szA4 h im
 
 ---------------------------------------------------------
 

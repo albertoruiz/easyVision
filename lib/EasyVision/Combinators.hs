@@ -26,6 +26,7 @@ module EasyVision.Combinators (
   warper,
   findRectangles,
   onlyRectangles,
+  rectifyQuadrangle,
   monitorizeIn,
   inThread
 )where
@@ -48,6 +49,7 @@ import Graphics.UI.GLUT hiding (Size,Point)
 import Control.Concurrent
 import Vision
 import Numeric.LinearAlgebra
+import ImagProc.Generic
 
 
 
@@ -185,7 +187,7 @@ warper sz name = do
             return t
         f img = do
             t <- h
-            warp sz t img
+            return $ warp (0::CUChar) sz t img
 
     let drw w img = do
         inWin w $ do
@@ -217,7 +219,7 @@ findRectangles ratio cam = do
             ,[2.10,           0]]
     return $ do
         orig <- cam
-        img <- yuvToGray orig
+        let img = fromYUV orig
         radius <- getParam op "radius"
         width  <- getParam op "width"
         median <- getParam op "median"
@@ -256,10 +258,24 @@ onlyRectangles sz ratio cam = do
     fr <- findRectangles ratio cam
     return $ do
         (orig,a4s) <- fr
-        let f pts = fst . rectifyQuadrangle sz pts . toFloat $ orig
+        let f pts = fst . rectifyQuadrangle sz pts . fromYUV $ orig
         return $ map f a4s
 
-toFloat im = unsafePerformIO $ do
-    yuvToGray im >>= scale8u32f 0 1
-
 ------------------------------------------------------------------
+
+-- | convenience function
+--rectifyQuadrangle :: Size -> [Point] -> ImageFloat -> (ImageFloat, Matrix Double)
+rectifyQuadrangle sz pts imf = (r,h) where
+    a4aux = [[-1,-r],[1,-r],[1,r],[-1,r]]
+        where r = 1/ratio
+              Size h w = sz
+              ratio = fromIntegral w / fromIntegral h
+    h = estimateHomography a4aux (map pl pts)
+        where pl (Point x y) = [x,y]
+    r = warp' sz h imf
+
+-- initialization not required
+warp' s h im = unsafePerformIO $ do
+    r <- image s
+    warpOn h r im
+    return r

@@ -117,7 +117,7 @@ worker3 param inWindow (pl,im) st = do
                      renderPrimitive Points (mapM_ (vertex.fst) inliers)
 
                  warpOn (scaling 0.5 <> inv h) (world st) im
-                 new <- warp (Size 400 400) (scaling 0.5 <> h <> scaling 2) (world st)
+                 let new = warp 0 (Size 400 400) (scaling 0.5 <> h <> scaling 2) (world st)
 
                  inWindow "warp" $ do
                      drawImage new

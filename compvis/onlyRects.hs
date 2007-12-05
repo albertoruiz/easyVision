@@ -20,10 +20,10 @@ main = do
     (cam,ctrl) <- getCam 0 (mpSize 20)
                >>= onlyRectangles szR ratio
                >>= virtualCamera (return . concat)
-               >>= drift alpha
+--               >>= drift alpha
                >>= withPause
 
     w <- evWindow () nm sz Nothing (const $ kbdcam ctrl)
 
     launch $ do
-        inWin w $ cam >>= drawImage
+        inWin w $ (cam :: IO ImageRGB) >>= drawImage

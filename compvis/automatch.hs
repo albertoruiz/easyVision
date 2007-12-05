@@ -73,7 +73,7 @@ worker grab inWindow st = do
         let r = inHomog $ h <> vector [px,py,1]
         when (norm (r - vector o)<3) $ do
             inWindow "selected" $ do
-                warp (Size 288 384) h camera32f >>= drawImage
+                drawImage $ warp 0 (Size 288 384) h camera32f
                 pointCoordinates (Size 3 4)
                 renderPrimitive LineLoop (mapM_ vertex (ht h (lpl ps)))
 

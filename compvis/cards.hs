@@ -3,7 +3,7 @@
 module Main where
 
 import EasyVision
-import Graphics.UI.GLUT hiding (Matrix, Size, Point)
+import Graphics.UI.GLUT hiding (Matrix, Size, Point,set)
 import Vision
 import Control.Monad(when)
 import Numeric.LinearAlgebra
@@ -14,12 +14,12 @@ toGray im = unsafePerformIO $ scale32f8u 0 1 im
 toFloat im = unsafePerformIO $ do
     yuvToGray im >>= scale8u32f 0 1
 
-zero sz = unsafePerformIO $ do
+zero out sz = unsafePerformIO $ do
     z <- image sz
-    set8u 0 (theROI z) z
+    set out (theROI z) z
     return z
 
-zeros sz = repeat (zero sz)
+zeros sz = repeat (zero (0,50,0) sz)
 
 main = do
     sz <- findSize
@@ -39,7 +39,8 @@ main = do
 
 worker cam wImage wA4 ratio szA4 = do
 
-    (orig,a4s) <- cam
+    (orig',a4s) <- cam
+    orig <- yuvToRGB orig'
 
     inWin wImage $ do
         drawImage orig
@@ -56,7 +57,7 @@ worker cam wImage wA4 ratio szA4 = do
 
     inWin wA4 $ do
         when (length a4s >0) $ do
-            let f pts = fst . rectifyQuadrangle szA4 pts . toFloat $ orig
-                res = blockImage $ take 5 (map return $ map (toGray.f) a4s++zeros szA4)
+            let f pts = fst . rectifyQuadrangle szA4 pts $ orig
+                res = blockImage $ take 5 (map return $ map (f) a4s++zeros szA4)
             drawImage res
 

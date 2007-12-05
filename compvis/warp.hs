@@ -39,7 +39,7 @@ warper alpha rho foc sca = r where
 
 worker wCam wWarp cam param = do
 
-    camera <- cam >>= yuvToGray
+    camera <- cam >>= yuvToRGB
     inWin wCam (drawImage camera)
 
     alpha <- getParam param "alpha"
@@ -49,4 +49,4 @@ worker wCam wWarp cam param = do
 
     let t = warper (alpha*degree) (rho*degree) foc sca
     inWin wWarp $ do
-        scale8u32f 0 1 camera >>= warp szw t >>= drawImage
+        drawImage $ warp (80,0,0) szw t camera

@@ -20,9 +20,10 @@ module ImagProc.ImageProcessing (
 , AlgHint(..)
 -- * Utilities
 , jaehne32f
-, set32f, set8u
-, copyROI32f
-, copyROI8u, copyROI8u'
+, set32f, set8u, set8u3
+, copyROI32f, copyROI32f'
+--, copyROI8u, 
+, copyROI8u', copyROI8u3'
 , times
 , partit
 -- * Image manipulation
@@ -41,9 +42,7 @@ module ImagProc.ImageProcessing (
 , copyMask32f
 , resize32f
 , resize8u
-, warp, warpOn
-, rectifyQuadrangle
-, blockImage
+, warpOn32f, warpOn8u, warpOn8u3
 -- * Image arithmetic
 , scale32f
 , mul32f, add32f, sub32f
@@ -288,6 +287,14 @@ copyROI32f :: ImageFloat -- ^ input image
            -> IO ()
 copyROI32f (F im) roi (F r) = ippiCopy_32f_C1R // src im roi // dst r roi // checkIPP "copyROI32f" [im]
 
+-- | Copies the roi of the input image into the roi of the destination image.
+copyROI32f' :: ImageFloat -- ^ input image
+            -> ROI
+            -> ImageFloat -- ^ destination image
+            -> ROI
+            -> IO ()
+copyROI32f' (F im) r1 (F r) r2 = ippiCopy_32f_C1R // src im r1 // dst r r2 // checkIPP "copyROI32f'" [im]
+
 
 
 -- | Copies the roi of the input image into the destination image.
@@ -295,9 +302,12 @@ copyROI8u :: ImageGray -> ImageGray -> IO ()
 copyROI8u (G r) (G im) = ippiCopy_8u_C1R // src im (vroi im) // dst r (vroi im) // checkIPP "copyROI8u" [im]
 
 -- | Copies the roi of the input image into the roi of the destination image.
-copyROI8u' :: ImageGray -> ImageGray -> IO ()
-copyROI8u' (G r) (G im) = ippiCopy_8u_C1R // src im (vroi im) // dst r (vroi r) // checkIPP "copyROI8u'" [im]
+copyROI8u' :: ImageGray -> ROI -> ImageGray -> ROI -> IO ()
+copyROI8u' (G im) r1 (G r) r2 = ippiCopy_8u_C1R // src im r1 // dst r r2 // checkIPP "copyROI8u'" [im]
 
+-- | Copies the roi of the input image into the roi of the destination image.
+copyROI8u3' :: ImageRGB -> ROI -> ImageRGB -> ROI -> IO ()
+copyROI8u3' (C im) r1 (C r) r2 = ippiCopy_8u_C3R // src im r1 // dst r r2 // checkIPP "copyROI8u3'" [im]
 
 
 simplefun1F ippfun roifun msg = g where
@@ -621,67 +631,6 @@ maxIndx8u (G im) = unsafePerformIO $ do
     return (v,Pixel (r1+y) (c1+x))
 
 
-
-warpOn' h (F r) (F im) = do
-    coefs <- newArray (concat h)
-    let Size h w = isize im
-    warpPerspective32f (ptr im) (step im) h w
-                           (r1 (vroi im)) (r2 (vroi im)) (c1 (vroi im)) (c2 (vroi im))
-                           (ptr r) (step r)
-                           (r1 (vroi r)) (r2 (vroi r)) (c1 (vroi r)) (c2 (vroi r))
-                           coefs inter_LINEAR //warningIPP "warpOn" [im]
-    free coefs
-
-warp' s h im = do
-    r' <- img I32f s
-    let r = F r'
-    set32f 0.0 (fullroi r') r
-    warpOn' h r im
-    return r
-
-
-adapt dst h src = toLists $ inv (pixelToPointTrans (size dst)) <> h <> pixelToPointTrans (size src)
-
--- | Apply a homography (defined on normalized points, see 'pixelsToPoints') to an image.
-warp :: Size              -- ^ desired size of the result
-     -> Matrix Double     -- ^ homography
-     -> ImageFloat        -- ^ source image
-     -> IO ImageFloat     -- ^ result
-warp s h im = do
-    r' <- img I32f s
-    let r = F r'
-    set32f (-1.0) (fullroi r') r
-    warpOn h r im
-    return r
-
--- | The same as 'warp', but the result is written over a preexisting image.
-warpOn :: Matrix Double   -- ^ homography
-       -> ImageFloat      -- ^ destination image
-       -> ImageFloat      -- ^ source image
-       -> IO ()
-warpOn h r im = warpOn' (adapt r h im) r im
-
-
-inter_NN         =  1 :: Int  
-inter_LINEAR     =  2 :: Int  
-inter_CUBIC      =  4 :: Int
-inter_SUPER      =  8 :: Int
-inter_LANCZOS    = 16 :: Int
---inter_SMOOTH_EDGE = (1 << 31) :: Int
-
--- | convenience function
-rectifyQuadrangle :: Size -> [Point] -> ImageFloat -> (ImageFloat, Matrix Double)
-rectifyQuadrangle sz pts imf = unsafePerformIO $ do
-    let a4aux = [[-1,-r],[1,-r],[1,r],[-1,r]]
-            where r = 1/ratio
-                  Size h w = sz
-                  ratio = fromIntegral w / fromIntegral h
-        h = estimateHomography a4aux (map pl pts)
-            where pl (Point x y) = [x,y]
-    r <- warp sz h imf
-    return (r, h)
-
-
 -- | Explores an image and returns a list of pixels (as [row,column]) where the image is greater than 0.0.
 getPoints32f :: Int -> ImageFloat -> IO [Pixel]
 getPoints32f mx (F im) = do
@@ -727,6 +676,12 @@ getCorners smooth rad prop maxn im = do
     return hotPoints
 
 --------------------------------------------------------------------
+inter_NN         =  1 :: Int
+inter_LINEAR     =  2 :: Int
+inter_CUBIC      =  4 :: Int
+inter_SUPER      =  8 :: Int
+inter_LANCZOS    = 16 :: Int
+--inter_SMOOTH_EDGE = (1 << 31) :: Int
 
 genResize32f dst droi im sroi interp = do
     c_resize32f (ptr im) (step im) (height $ isize im) (width $ isize im)
@@ -934,33 +889,16 @@ lbp th (G im) = do
     free hist
     return r
 
+warpOn' h r im f met s = do
+    coefs <- newArray (concat h)
+    let Size h w = isize im
+    f (ptr im) (step im) h w
+                           (r1 (vroi im)) (r2 (vroi im)) (c1 (vroi im)) (c2 (vroi im))
+                           (ptr r) (step r)
+                           (r1 (vroi r)) (r2 (vroi r)) (c1 (vroi r)) (c2 (vroi r))
+                           coefs met //warningIPP s [im]
+    free coefs
 
--- | joins images
-blockImage :: [[ImageGray]] -> ImageGray
-blockImage = columnImage . map rowImage
-
-rowImage :: [ImageGray] -> ImageGray
-rowImage l = unsafePerformIO $ do
-    let r = maximum (map (height.size) l)
-        c = maximum (map (width.size) l)
-        n = length l
-    res <- image (Size r (c*n))
-    let roi0 = theROI (head l)
-        rois = take n $ iterate (shift (0,c)) roi0
-        f r i = copyROI8u' (modifyROI (const r) res) i
-    sequence_ $ zipWith f rois l
-    return res
-
-columnImage :: [ImageGray] -> ImageGray
-columnImage l = unsafePerformIO $ do
-    let r = maximum (map (height.size) l)
-        c = maximum (map (width.size) l)
-        n = length l
-    res <- image (Size (r*n) c)
-    let roi0 = theROI (head l)
-        rois = take n $ iterate (shift (r,0)) roi0
-        f r i = copyROI8u' (modifyROI (const r) res) i
-    sequence_ $ zipWith f rois l
-    return res
-
-
+warpOn8u  h (G r) (G im) = warpOn' h r im warpPerspectiveGray inter_LINEAR "warpOn8u"
+warpOn32f h (F r) (F im) = warpOn' h r im warpPerspective32f inter_LINEAR "warpOn32f"
+warpOn8u3 h (C r) (C im) = warpOn' h r im warpPerspectiveRGB inter_LINEAR "warpOn8u3"

@@ -155,8 +155,7 @@ worker cam inWindow st = do
     when (n > 1) $ do
 
         inWindow "selected" $ do            -- selected view warped into the base view
-            w <- warp (Size 288 384) h (imgs st !! sv)
-            drawImage w
+            drawImage $ warp 0 (Size 288 384) h (imgs st !! sv)
 
     when (length (drfuns st) > 1) $ do
 

@@ -68,7 +68,7 @@ worker cam0 cam1 wImg1 w sv = do
                                 else [pi,ti,ri]
             h = conjugateRotation pan tilt roll 2.8 1
         putW wImg1 (opt,[pan,tilt,roll])
-        base <- warp (size img0) hi img0
+        let base = warp 0 (size img0) hi img0
         warpOn (hi<>h) base img1
         drawImage base
         scale32f8u 0 1 base >>= grayToYUV >>= sv
