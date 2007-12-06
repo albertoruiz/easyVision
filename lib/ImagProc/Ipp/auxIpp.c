@@ -58,6 +58,22 @@ int auxResize_8u_C1R(void * pSrc, int sstep, int sh, int sw,
                               xf,yf,interp);
 }
 
+int auxResize_8u_C3R(void * pSrc, int sstep, int sh, int sw,
+                      int sr1, int sr2, int sc1, int sc2,
+                      void * pDst, int dstep,
+                      int dr1, int dr2, int dc1, int dc2,
+                      int interp)
+{
+    IppiSize srcSize = {sw,sh};
+    IppiRect srcRoi = {sc1,sr1,sc2-sc1+1,sr2-sr1+1};
+    IppiSize dstRoi = {dc2-dc1+1,dr2-dr1+1};
+    double xf = (double)(dc2-dc1+1)/(sc2-sc1+1);
+    double yf = (double)(dr2-dr1+1)/(sr2-sr1+1);
+    return ippiResize_8u_C3R(pSrc,srcSize,sstep,srcRoi,
+                              pDst,dstep,dstRoi,
+                              xf,yf,interp);
+}
+
 
 int getPoints32f(float * pSrc, int sstep, int sr1, int sr2, int sc1, int sc2,
                  int max, int* tot, int* hp) {

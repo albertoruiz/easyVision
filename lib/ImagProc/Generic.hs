@@ -30,24 +30,29 @@ import Vision
 class Image image => GImg pixel image | pixel -> image, image -> pixel where
     set :: pixel -> ROI -> image -> IO ()
     copy :: image -> ROI -> image -> ROI -> IO ()
+    -- | Resizes the roi of a given image.
+    resize :: Size -> image -> image
     warpOnG :: [[Double]] -> image -> image -> IO ()
     fromYUV :: ImageYUV -> image
 
 instance GImg CUChar ImageGray where
     set = set8u
     copy = copyROI8u'
+    resize sz = unsafePerformIO . resize8u sz
     warpOnG = warpOn8u
     fromYUV = unsafePerformIO . yuvToGray
 
 instance GImg Float ImageFloat where
     set = set32f
     copy = copyROI32f'
+    resize sz = unsafePerformIO . resize32f sz
     warpOnG = warpOn32f
     fromYUV i = unsafePerformIO $ yuvToGray i >>= scale8u32f 0 1
 
 instance GImg (CUChar,CUChar,CUChar) ImageRGB where
     set (r,g,b) = set8u3 r g b
     copy = copyROI8u3'
+    resize sz = unsafePerformIO . resize8u3 sz
     warpOnG = warpOn8u3
     fromYUV = unsafePerformIO . yuvToRGB
 

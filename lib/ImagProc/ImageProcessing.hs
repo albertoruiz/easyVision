@@ -40,8 +40,7 @@ module ImagProc.ImageProcessing (
 , copy8u
 , copy8uC3
 , copyMask32f
-, resize32f
-, resize8u
+, resize32f, resize8u, resize8u3
 , warpOn32f, warpOn8u, warpOn8u3
 -- * Image arithmetic
 , scale32f
@@ -683,33 +682,34 @@ inter_SUPER      =  8 :: Int
 inter_LANCZOS    = 16 :: Int
 --inter_SMOOTH_EDGE = (1 << 31) :: Int
 
-genResize32f dst droi im sroi interp = do
-    c_resize32f (ptr im) (step im) (height $ isize im) (width $ isize im)
+genResize f s dst droi im sroi interp = do
+               f (ptr im) (step im) (height $ isize im) (width $ isize im)
                  (r1 sroi) (r2 sroi) (c1 sroi) (c2 sroi)
                  (ptr dst) (step dst)
                  (r1 droi) (r2 droi) (c1 droi) (c2 droi)
-                 interp // checkIPP "genResize32f" [im]
+                 interp // checkIPP s [im]
 
 -- | Resizes the roi of a given image.
 resize32f :: Size -> ImageFloat -> IO ImageFloat
 resize32f s (F im) = do
     r <- img I32f s
-    genResize32f r (fullroi r) im (vroi im) inter_LINEAR
+    genResize c_resize32f "genResize32f" r (fullroi r) im (vroi im) inter_LINEAR
     return (F r)
-
-genResize8u dst droi im sroi interp = do
-    c_resize8u (ptr im) (step im) (height $ isize im) (width $ isize im)
-                 (r1 sroi) (r2 sroi) (c1 sroi) (c2 sroi)
-                 (ptr dst) (step dst)
-                 (r1 droi) (r2 droi) (c1 droi) (c2 droi)
-                 interp // checkIPP "genResize8u" [im]
 
 -- | Resizes the roi of a given image.
 resize8u :: Size -> ImageGray -> IO ImageGray
 resize8u s (G im) = do
     r <- img Gray s
-    genResize8u r (fullroi r) im (vroi im) inter_LINEAR
+    genResize c_resize8u "genResize8u" r (fullroi r) im (vroi im) inter_LINEAR
     return (G r)
+
+-- | Resizes the roi of a given image.
+resize8u3 :: Size -> ImageRGB -> IO ImageRGB
+resize8u3 s (C im) = do
+    r <- img RGB s
+    genResize c_resize8u3 "genResize8u3" r (fullroi r) im (vroi im) inter_LINEAR
+    return (C r)
+
 
 ----------------------------------------------------------------------
 
