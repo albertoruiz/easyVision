@@ -17,6 +17,7 @@ module ImagProc.Generic (
   GImg(..)
 , blockImage
 , warp, warpOn
+, constImage
 )
 where
 
@@ -34,6 +35,7 @@ class Image image => GImg pixel image | pixel -> image, image -> pixel where
     resize :: Size -> image -> image
     warpOnG :: [[Double]] -> image -> image -> IO ()
     fromYUV :: ImageYUV -> image
+    toYUV :: image -> ImageYUV
 
 instance GImg CUChar ImageGray where
     set = set8u
@@ -41,6 +43,7 @@ instance GImg CUChar ImageGray where
     resize sz = unsafePerformIO . resize8u sz
     warpOnG = warpOn8u
     fromYUV = unsafePerformIO . yuvToGray
+    toYUV = unsafePerformIO . grayToYUV
 
 instance GImg Float ImageFloat where
     set = set32f
@@ -48,6 +51,7 @@ instance GImg Float ImageFloat where
     resize sz = unsafePerformIO . resize32f sz
     warpOnG = warpOn32f
     fromYUV i = unsafePerformIO $ yuvToGray i >>= scale8u32f 0 1
+    toYUV i = unsafePerformIO $ scale32f8u 0 1 i >>= grayToYUV
 
 instance GImg (CUChar,CUChar,CUChar) ImageRGB where
     set (r,g,b) = set8u3 r g b
@@ -55,6 +59,7 @@ instance GImg (CUChar,CUChar,CUChar) ImageRGB where
     resize sz = unsafePerformIO . resize8u3 sz
     warpOnG = warpOn8u3
     fromYUV = unsafePerformIO . yuvToRGB
+    toYUV = unsafePerformIO . rgbToYUV
 
 ---------------------------------------------------------
 
@@ -121,3 +126,9 @@ inter_SUPER      =  8 :: Int
 inter_LANCZOS    = 16 :: Int
 --inter_SMOOTH_EDGE = (1 << 31) :: Int
 
+---------------------------------------------------------------------------------
+
+constImage val sz = unsafePerformIO $ do
+    z <- image sz
+    set val (theROI z) z
+    return z

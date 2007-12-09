@@ -2,36 +2,28 @@
 import EasyVision
 import ImagProc.Ipp.Core
 import Control.Monad(when,(>=>))
-import Graphics.UI.GLUT hiding (Point)
-import Data.List(minimumBy)
+import Graphics.UI.GLUT hiding (Point,Size)
+import Data.List(minimumBy, sortBy)
 
-addFeature fun cam = return $ do
-    im' <- cam
-    let im = modifyROI (shrink (100,200)) im'
-    v <- fun im
-    return (im, v)
+purelbp th sz = lbpN th . resize sz . fromYUV
 
--- normalized lbp histogram
-lbpN t im = do
-    h <- lbp t im
-    let ROI r1 r2 c1 c2 = theROI im
-        sc = (256.0::Double) / fromIntegral ((r2-r1-1)*(c2-c1-1))
-    return $ map ((*sc).fromIntegral) (tail h)
+feat im = (im, purelbp 8 (mpSize 4) im)
 
-featLBP sz = addFeature $
-    yuvToGray >=> resize8u sz >=> lbpN 8
-
-
-feat = featLBP (mpSize 5)
 
 main = do
     sz <- findSize
 
-    (cam,ctrl) <- getCam 0 sz >>= feat >>= withPause
+    protos <- getProtos feat
+
+    mapM_ print $ take 10 $ sortBy (compare `on` snd) $ report protos
 
     prepare
 
-    protos <- getProtos feat
+    (cam,ctrl) <- getCam 0 sz
+                  >>= onlyRectangles (mpSize 10) (sqrt 2)
+                  >>= virtualCamera (return . concat)
+                  >>= virtualCamera (return . map (toYUV :: ImageRGB -> ImageYUV))
+                  >>= withPause
 
     w <- evWindow (False, protos) "video" sz Nothing  (mouse (kbdcam ctrl))
 
@@ -43,10 +35,10 @@ main = do
 
 worker cam w r = do
 
-    img@(orig,v) <- cam
+    img@(orig,v) <- feat `fmap` cam
 
     (click,pats) <- getW w
-    when click $ putW w (False, img:pats)
+    when click $ putW w (False, ((img, show (length pats))):pats)
 
     inWin w $ do
         drawImage orig
@@ -57,11 +49,11 @@ worker cam w r = do
         renderSignal (map (*0.5) v)
 
     when (not $ null pats) $ inWin r $ do
-        let x = minimumBy (compare `on` dist img) pats
-            d = dist x img
-        drawImage $ fst x
-        pointCoordinates (mpSize 5)
-        text2D 0.9 0.6 (show $ round d)
+        let x@((im,_),l) = minimumBy (compare `on` dist img) pats
+            d = dist img x
+        drawImage im
+        pointCoordinates (mpSize 10)
+        text2D 0.9 0.6 (l++": "++(show $ round d))
         when (d>10) $ do
             setColor 1 0 0
             lineWidth $= 10
@@ -70,7 +62,9 @@ worker cam w r = do
 
 -----------------------------------------------------
 
-dist (_,u) (_,v) = sum $ map (^2) $ zipWith subtract u v
+dist (_,u) ((_,v),_) = n2 u v
+
+n2 u v = sum $ map (^2) $ zipWith subtract u v
 
 -----------------------------------------------------
 
@@ -80,9 +74,9 @@ mouse _ st (MouseButton LeftButton) Down _ _ = do
 
 mouse _ st (Char 'f') Down _ _ = do
     (_,ps) <- get st
-    sv <- openYUV4Mpeg (size $ fst $ head $ ps) (Just "catalog.avi") Nothing
-    mapM_ (sv.fst) ps
-    writeFile "catalog.labels" $ unlines $ map show [1..length ps]
+    sv <- openYUV4Mpeg (size $ fst $ fst $ head $ ps) (Just "catalog.avi") Nothing
+    mapM_ (sv.fst.fst) ps
+    writeFile "catalog.labels" $ unlines $ [show n ++"\t"++l | (n,l) <- zip [1..length ps] (map snd ps)]
 
 mouse def _ a b c d = def a b c d
 
@@ -93,7 +87,8 @@ getProtos feat = do
     case opt of
         Nothing -> return []
         Just catalog -> do
-            labels <- readFile (catalog ++ ".labels")
-            let n = length (lines labels)
-            cam <- mplayer (catalog ++ ".avi") (mpSize 20) >>= feat
-            sequence (replicate n cam)
+            readCatalog (catalog++".avi") (mpSize 20) (catalog++".labels") Nothing feat
+
+------------------------------------------------------
+
+report protos = [(la ++ " - " ++ lb, n2 u v) | ((_,u),la) <- protos, ((_,v),lb) <- protos, la /= lb]

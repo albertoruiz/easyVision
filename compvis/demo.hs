@@ -254,7 +254,7 @@ worker wDemo cam param fft = do
              orig' <- cam >>= yuvToGray
              roi <-  getROI wDemo
              let orig = modifyROI (const roi) orig'
-             h <- lbp lbpThres orig
+                 h = lbp lbpThres orig
              drawImage orig
              pointCoordinates (size orig)
              setColor 0 0 0

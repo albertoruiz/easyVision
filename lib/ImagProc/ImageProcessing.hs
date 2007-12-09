@@ -84,7 +84,7 @@ module ImagProc.ImageProcessing (
 -- * Connected Components
 , floodFill8u, floodFill8uGrad
 -- * Local Binary Patterns
-, lbp
+, lbp, lbpN
 )
 where
 
@@ -880,14 +880,22 @@ floodFill8uGrad (G im) (Pixel r c) dmin dmax val = do
 -- | Histogram of the 256 possible configurations of 3x3 image patches thresholded by the central pixel. Works inside the image ROI.
 lbp :: Int       -- ^ threshold tolerance
     -> ImageGray -- ^ source image
-    -> IO [Int]  -- result
-lbp th (G im) = do
+    -> [Int]     -- result
+lbp th (G im) = unsafePerformIO $ do
     hist <- mallocArray 256
     lbp8u th (ptr im) (step im) (r1 (vroi im)) (r2 (vroi im)) (c1 (vroi im)) (c2 (vroi im)) hist
         // checkIPP "lbp" [im]
     r <- peekArray 256 hist
     free hist
     return r
+
+-- normalized lbp histogram
+lbpN t im = map ((*sc).fromIntegral) (tail h) where
+    h = lbp t im
+    ROI r1 r2 c1 c2 = theROI im
+    sc = (256.0::Double) / fromIntegral ((r2-r1-1)*(c2-c1-1))
+
+----------------------------------------------------------------------------------------
 
 warpOn' h r im f met s = do
     coefs <- newArray (concat h)

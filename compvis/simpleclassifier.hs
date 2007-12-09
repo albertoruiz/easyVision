@@ -9,18 +9,10 @@ import Data.List(minimumBy)
 addFeature fun cam = return $ do
     im' <- cam
     let im = modifyROI (shrink (100,200)) im'
-    v <- fun im
-    return (im, v)
-
--- normalized lbp histogram
-lbpN t im = do
-    h <- lbp t im
-    let ROI r1 r2 c1 c2 = theROI im
-        sc = (256.0::Double) / fromIntegral ((r2-r1-1)*(c2-c1-1))
-    return $ map ((*sc).fromIntegral) (tail h)
+    return (im, fun im)
 
 featLBP sz = addFeature $
-    yuvToGray >=> resize8u sz >=> lbpN 8
+    lbpN 8 . resize sz . fromYUV
 
 main = do
     sz <- findSize
