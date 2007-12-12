@@ -20,7 +20,7 @@ module ImagProc.Ipp.Core
           ( -- * Image representation
             Img(..), ImageType(..), ROI(..), Size(..)
             -- * Creation of images
-          , img, imgAs, getData32f, setData32f, value
+          , img, imgAs, getData32f, setData32f, setData8u, value
             -- * Regions of interest
           , fullroi, shrink, shift, intersection, roiArea, invalidROIs
             -- * Wrapper tools
@@ -112,6 +112,16 @@ setData32f (F Img {fptr = fp, ptr = p,
     let row k l = pokeArray (advancePtr (castPtr p) (k*jump)) l
     sequence_ $ zipWith row [0..r-1] vs
     touchForeignPtr fp --hmm
+
+-- | Copies the values of list of lists the data into a I32f image. NO range checking.
+setData8u :: ImageGray -> [[CUChar]] -> IO ()
+setData8u (G Img {fptr = fp, ptr = p,
+                  datasize = d, step = s, isize = Size {height = r}}) vs = do
+    let jump = s `quot` d
+    let row k l = pokeArray (advancePtr (castPtr p) (k*jump)) l
+    sequence_ $ zipWith row [0..r-1] vs
+    touchForeignPtr fp --hmm
+
 
 -- | Returns the pixel value of an image at a given row-column. NO range checking.
 value :: (Storable b) => Img -> Int -> Int -> IO b

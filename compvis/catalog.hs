@@ -1,11 +1,12 @@
 import EasyVision
 import Graphics.UI.GLUT
+import System(getArgs)
 
 main = do
     sz <- findSize
-    Just file <- getRawOption "--catalog"
-    catalog <- readCatalog (file++".avi") sz (file++".labels") Nothing id
+    file:_ <- getArgs
+    catalog <- readCatalog (file++".yuv") sz (file++".labels") Nothing id
     n <- getOption "--goto" 1
     prepare
-    catalogBrowser n catalog "catalog" sz
+    catalogBrowser n catalog file sz
     mainLoop
