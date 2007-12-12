@@ -21,6 +21,7 @@ module EasyVision.Combinators (
   -- * Camera combinators
   -- | A few useful combinators
   withPause,
+  withChannels,
   addSmall,
   detectMov,
   warper,
@@ -160,6 +161,12 @@ inThread cam = do
                   loop
     forkIO loop
     return (readMVar c)
+
+-----------------------------------------------------------
+
+-- | to do
+withChannels :: IO ImageYUV -> IO (IO Channels)
+withChannels cam = return $ fmap channels cam
 
 -----------------------------------------------------------
 

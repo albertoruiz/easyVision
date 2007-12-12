@@ -13,7 +13,7 @@ p2roi = ROI r1 (r1 + fftl-1) c1 (c1 + fftl-1)
           c1 = (width sz -fftl) `div` 2
 
 main = do
-    (cam,ctrl) <- getCam 0 sz >>= withPause
+    (cam,ctrl) <- getCam 0 sz >>= withChannels >>= withPause
 
     prepare
 
@@ -26,21 +26,22 @@ main = do
 
     launch $ do
         img <- cam
-        let imf =  fromYUV img
+        let imf = float . gray $ img
         inWin w $ drawImage (modifyROI (const p2roi) imf)
         d <- fft (modifyROI (const p2roi) imf) >>= magnitudePack >>= powerSpectrum
         let c@(Pixel r0 c0) = cent (theROI d)
         set32f 0 (roiFrom2Pixels c c) d
-        (m,Pixel rm cm) <- maxIndx d
+        let up = modifyROI (\r -> r {r2 = r1 r + fftl `div` 2-1})
+        (m,Pixel rm cm) <- maxIndx (up d)
         let ROI r1 _ c1 _ = p2roi
-        let dy = fromIntegral (rm+r1-r0)
-            dx = fromIntegral (cm+c1-c0)
-            alpha = atan2 dy dx
-            nd = sqrt (dx*dx+dy*dy)
+        let dr = fromIntegral (rm+r1-r0)
+            dc = fromIntegral (cm+c1-c0)
+            alpha = atan2 (-dc) (-dr)
+            nd = sqrt (dr*dr+dc*dc)
         sc <- scale32f (1/m) d
         r <- image fftsize
         copy sc (theROI sc) r (theROI r)
-        let h = scaling (nd/8) <> rot3 (alpha+pi/2)
+        let h = scaling (nd/8) <> rot3 (-alpha)
         inWin hz $ drawImage (warp 0 sz h imf)
         inWin f $ do
             drawImage r

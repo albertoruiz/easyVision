@@ -45,7 +45,7 @@ main = do
     let mode m = MenuEntry m $ putW w m
 
     attachMenu LeftButton $ Menu $ map mode
-        ["RGB","Gray","Red","Green","Blue","U","V"
+        ["RGB","Gray","Red","Green","Blue","H","S"
         , "Median","Gaussian","Laplacian","HighPass","Histogram"
         ,"Integral","Threshold","FloodFill","Contours","Distance", "Hessian"
         ,"Corners", "Features", "Segments", "Canny", "DCT", "FFT", "Test 1", "Test 2"
@@ -76,24 +76,19 @@ worker wDemo cam param fft = do
     inWin wDemo $ case op of
 
         "RGB"  ->
-             cam >>= yuvToRGB >>= drawImage
+             drawImage . rgb . channels =<< cam
         "Gray" ->
-             cam >>= yuvToGray >>= drawImage
+             drawImage . gray . channels =<< cam
         "Red" -> do
-             (r,_,_) <- cam >>= yuvToRGB_P
-             drawImage r
+             drawImage . rCh . channels =<< cam
         "Green" -> do
-             (_,g,_) <- cam >>= yuvToRGB_P
-             drawImage g
+             drawImage . gCh . channels =<< cam
         "Blue" -> do
-             (_,_,b) <- cam >>= yuvToRGB_P
-             drawImage b
-        "U" -> do
-             (_,u,_) <- cam >>= yuvToYUV_P
-             drawImage u
-        "V" -> do
-             (_,_,v) <- cam >>= yuvToYUV_P
-             drawImage v
+             drawImage . bCh . channels =<< cam
+        "H" -> do
+             drawImage . hCh . channels =<< cam
+        "S" -> do
+             drawImage . sCh . channels =<< cam
         "Integral" ->
              cam >>= yuvToGray >>= integral >>= scale32f k >>= drawImage
         "Threshold" ->

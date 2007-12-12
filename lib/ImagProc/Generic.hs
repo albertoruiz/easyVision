@@ -18,6 +18,7 @@ module ImagProc.Generic (
 , blockImage
 , warp, warpOn
 , constImage
+, Channels(..), channels, float
 )
 where
 
@@ -128,7 +129,43 @@ inter_LANCZOS    = 16 :: Int
 
 ---------------------------------------------------------------------------------
 
+-- hmmmmmmmm
 constImage val sz = unsafePerformIO $ do
     z <- image sz
     set val (theROI z) z
     return z
+
+---------------------------------------------------------------------------------
+
+data Channels = CHIm
+    { yuv  :: ImageYUV
+    , gray :: ImageGray
+    , rgb  :: ImageRGB
+    , rCh  :: ImageGray
+    , gCh  :: ImageGray
+    , bCh  :: ImageGray
+    , hCh  :: ImageGray
+    , sCh  :: ImageGray
+    }
+
+channels :: ImageYUV -> Channels
+channels img = CHIm
+    { yuv = img
+    , gray = fromYUV img
+    , rgb = rgbAux
+    , rCh = getChannel 0 rgbAux
+    , gCh = getChannel 1 rgbAux
+    , bCh = getChannel 2 rgbAux
+    , hCh = getChannel 0 hsvAux
+    , sCh = getChannel 1 hsvAux
+    }
+    where rgbAux = fromYUV img
+          hsvAux = unsafePerformIO $ rgbToHSV rgbAux
+
+----------------------------------------------------------------------------------
+
+float :: ImageGray -> ImageFloat
+float (G im) = unsafePerformIO $ do
+    let roi = vroi im
+    r <- scale8u32f 0 1 (modifyROI (const (fullroi im)) (G im))
+    return $ modifyROI (const roi) r
