@@ -55,6 +55,8 @@ int ippiErode3x3_8u_C1R(SRC,DST);
 int ippiDilate_8u_C1R(SRC,DST,char*,VSIZE,VSIZE);
 int ippiErode_8u_C1R(SRC,DST,char*,VSIZE,VSIZE);
 int ippiNot_8u_C1R(SRC,DST);
+int ippiAnd_8u_C1R(SRC,SRC,DST);
+int ippiOr_8u_C1R(SRC,SRC,DST);
 
 int auxWarpPerspective_32f_C1R(void * pSrc, int sstep, int sh, int sw,
                                int sr1, int sr2, int sc1, int sc2,

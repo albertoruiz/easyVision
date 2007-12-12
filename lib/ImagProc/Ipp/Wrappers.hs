@@ -179,7 +179,11 @@ foreign import ccall "auxIpp.h ippiErode_8u_C1R"
 foreign import ccall "auxIpp.h ippiNot_8u_C1R"
      ippiNot_8u_C1R :: Ptr() -> Int -> Ptr() -> Int -> ROISize -> IO Int
 
+foreign import ccall "auxIpp.h ippiAnd_8u_C1R"
+     ippiAnd_8u_C1R :: Ptr() -> Int -> Ptr() -> Int -> Ptr() -> Int -> ROISize -> IO Int
 
+foreign import ccall "auxIpp.h ippiOr_8u_C1R"
+     ippiOr_8u_C1R :: Ptr() -> Int -> Ptr() -> Int -> Ptr() -> Int -> ROISize -> IO Int
 
 foreign import ccall "auxIpp.h auxWarpPerspective_32f_C1R"
      warpPerspective32f :: Ptr() -> Int -> Int -> Int ->

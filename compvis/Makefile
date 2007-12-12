@@ -7,7 +7,7 @@ ALL = demo hessian warp frontal pose automatch brush \
       stereo detect interpolate rectangles hotpoints \
       autostereo augmented contours dynamic justsave \
       ocr whiteboard autopano virpano simpleclassifier \
-      classifier cards onlyRects catalog
+      classifier cards onlyRects catalog pseudocolor
 
 CDIR = ../lib/ImagProc/Ipp
 

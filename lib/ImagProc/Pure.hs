@@ -15,7 +15,8 @@ Some image processing routines expressed as pure functions, instead the IO appro
 
 module ImagProc.Pure (
     (.*),
-    (|+|),(|-|),(|*|)
+    (|+|),(|-|),(|*|),
+    andI,orI,notI
 )
 where
 
@@ -34,3 +35,11 @@ v .* im = purifyWith (set32f 0) (scale32f v im)
 a |+| b = purifyWith (set32f 0) (a `add32f` b)
 a |-| b = purifyWith (set32f 0) (a `sub32f` b)
 a |*| b = purifyWith (set32f 0) (a `mul32f` b)
+
+-- | image logic, pixel by pixel, false outside the roi
+andI, orI :: ImageGray -> ImageGray -> ImageGray
+andI a b = purifyWith (set8u 0) (a `and8u` b)
+orI  a b = purifyWith (set8u 0) (a `or8u`  b)
+
+notI :: ImageGray -> ImageGray
+notI a = purifyWith (set8u 0) (not8u a)

@@ -69,7 +69,7 @@ module ImagProc.ImageProcessing (
 , median
 , dilate3x3 --, dilate
 , erode3x3  --, erode
-, not8u
+, not8u, and8u, or8u
 , sobelVert, sobelHoriz
 , secondOrder
 , hessian
@@ -497,6 +497,13 @@ erode3x3 = simplefun1G ippiErode3x3_8u_C1R (shrink (1,1)) "dilate3x3"
 not8u :: ImageGray -> IO ImageGray
 not8u = simplefun1G ippiNot_8u_C1R id "not"
 
+-- | logical AND
+and8u :: ImageGray -> ImageGray -> IO ImageGray
+and8u = simplefun2G ippiAnd_8u_C1R intersection "and8u"
+
+-- | logical OR
+or8u :: ImageGray -> ImageGray -> IO ImageGray
+or8u = simplefun2G ippiOr_8u_C1R intersection "or8u"
 
 ---------------------------------------------
 
