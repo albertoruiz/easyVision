@@ -1,7 +1,5 @@
--- rectification of an (e.g. A4) white sheet of paper,
-
-
-module Main where
+-- rectification of a rectangle with know aspect ratio 
+-- (e.g., an A4 sheet of paper)
 
 import EasyVision
 import Graphics.UI.GLUT hiding (Matrix, Size, Point)
@@ -9,7 +7,6 @@ import Vision
 import Control.Monad(when)
 import Numeric.LinearAlgebra
 import Text.Printf(printf)
-
 
 main = do
     sz <- findSize
@@ -44,8 +41,6 @@ worker cam wImage wA4 ratio szA4 = do
         pointSize $= 5
         mapM_ (renderPrimitive Points . (mapM_ vertex)) a4s
 
-
-    -- see also onlyRectangles
     inWin wA4 $ do
         when (length a4s >0) $ do
             let pts = head a4s

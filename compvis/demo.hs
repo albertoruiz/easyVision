@@ -218,7 +218,7 @@ worker wDemo cam param fft = do
              im <- cam >>= yuvToGray
              drawImage im
              pointCoordinates (size im)
-             histogram [0,64 .. 256] im >>= return . show >>= text2D 0.9 0.7
+             text2D 0.9 0.7 (show $ histogram [0,64 .. 256] im)
         "DCT" -> do
              orig <- cam
              roi <-  getROI wDemo
@@ -234,10 +234,7 @@ worker wDemo cam param fft = do
              d <- fft (modifyROI (const p2roi) im) >>= magnitudePack >>= powerSpectrum
              let c@(Pixel r0 c0) = cent (theROI d)
              set32f 0 (roiFrom2Pixels c c) d
-             (m,Pixel rm cm) <- maxIndx d
-             let ROI r1 _ c1 _ = p2roi
-             print $ (rm+r1-r0,cm+c1-c0)
-             print $ norm (rm+r1-r0,cm+c1-c0)
+             (m,_) <- maxIndx d
              sc <- scale32f (1/m) d
              copyROI32f sc (theROI sc) im
              drawImage im
@@ -268,8 +265,6 @@ worker wDemo cam param fft = do
 
 cent (ROI r1 r2 c1 c2) = Pixel (r1 + (r2-r1+1)`div`2) (c1 + (c2-c1+1)`div`2)
 roiFrom2Pixels (Pixel r1 c1) (Pixel r2 c2) = ROI (min r1 r2) (max r1 r2) (min c1 c2) (max c1 c2)
-
-norm (a,b) = sqrt $ fromIntegral a^2 + fromIntegral b^2
 
 autoscale im = do
     (mn,mx) <- minmax im

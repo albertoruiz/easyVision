@@ -1,7 +1,5 @@
 -- average of all rectangles found
 
-module Main where
-
 import EasyVision
 import Text.Printf(printf)
 
@@ -17,13 +15,13 @@ main = do
         nm = "ratio " ++ printf "%.2f" ratio
     prepare
 
-    (cam,ctrl) <- getCam 0 (mpSize 20)
-               >>= onlyRectangles szR ratio
-               >>= virtualCamera (return . concat)
---               >>= drift alpha
-               >>= withPause
+    cam <- getCam 0 (mpSize 20)
+           >>= monitorizeIn "video" (mpSize 5) id
+           >>= onlyRectangles szR ratio
+           >>= virtualCamera (return . concat)
+           >>= drift alpha
 
-    w <- evWindow () nm sz Nothing (const $ kbdcam ctrl)
+    w <- evWindow () nm sz Nothing (const $ kbdQuit)
 
     launch $ do
-        inWin w $ (cam :: IO ImageRGB) >>= drawImage
+        inWin w $ cam >>= drawImage

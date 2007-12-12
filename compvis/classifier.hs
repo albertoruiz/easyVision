@@ -4,28 +4,28 @@ import ImagProc.Ipp.Core
 import Control.Monad(when,(>=>))
 import Graphics.UI.GLUT hiding (Point,Size)
 import Data.List(minimumBy, sortBy)
+import Classifier
 
-purelbp th sz = lbpN th . resize sz . fromYUV
+machine = distance nearestNeighbour `onP` (const (vector.feat))
 
-feat im = (im, purelbp 8 (mpSize 4) im)
+featG th sz = lbpN th . resize sz . fromYUV
 
+feat = featG 8 (mpSize 8)
 
 main = do
     sz <- findSize
 
-    protos <- getProtos feat
-
-    mapM_ print $ take 10 $ sortBy (compare `on` snd) $ report protos
+    protos <- getProtos sz id
 
     prepare
 
     (cam,ctrl) <- getCam 0 sz
-                  >>= onlyRectangles (mpSize 10) (sqrt 2)
-                  >>= virtualCamera (return . concat)
-                  >>= virtualCamera (return . map (toYUV :: ImageRGB -> ImageYUV))
+--                  >>= onlyRectangles (mpSize 10) (sqrt 2)
+--                  >>= virtualCamera (return . concat)
+--                  >>= virtualCamera (return . map (toYUV :: ImageRGB -> ImageYUV))
                   >>= withPause
 
-    w <- evWindow (False, protos) "video" sz Nothing  (mouse (kbdcam ctrl))
+    w <- evWindow (False, protos, fst $ machine protos) "video" sz Nothing  (mouse (kbdcam ctrl))
 
     r <- evWindow () "category" (mpSize 10)  Nothing  (const (kbdcam ctrl))
 
@@ -35,19 +35,27 @@ main = do
 
 worker cam w r = do
 
-    img@(orig,v) <- feat `fmap` cam
+    img <- cam
 
-    (click,pats) <- getW w
-    when click $ putW w (False, ((img, show (length pats))):pats)
+    let v = feat img
+
+    (click,pats,classify) <- getW w
+    when click $ do
+        let npats = (img, show (length pats)):pats
+            nmach = fst $ machine npats
+        putW w (False, npats, nmach)
 
     inWin w $ do
-        drawImage orig
-        pointCoordinates (size orig)
+        drawImage img
+        pointCoordinates (size img)
         setColor 0 0 0
         renderAxes
         setColor 1 0 0
         renderSignal (map (*0.5) v)
+        when (not $ null pats) $ do
+            text2D 0.9 0.6 (classify img)
 
+{-
     when (not $ null pats) $ inWin r $ do
         let x@((im,_),l) = minimumBy (compare `on` dist img) pats
             d = dist img x
@@ -59,6 +67,7 @@ worker cam w r = do
             lineWidth $= 10
             renderPrimitive Lines $ mapM_ vertex $
                 [ Point 1 (-1), Point (-1) 1, Point 1 1, Point (-1) (-1) ]
+-}
 
 -----------------------------------------------------
 
@@ -69,26 +78,22 @@ n2 u v = sum $ map (^2) $ zipWith subtract u v
 -----------------------------------------------------
 
 mouse _ st (MouseButton LeftButton) Down _ _ = do
-    (_,ps) <- get st
-    st $= (True,ps)
+    (_,ps,m) <- get st
+    st $= (True,ps,m)
 
 mouse _ st (Char 'f') Down _ _ = do
-    (_,ps) <- get st
-    sv <- openYUV4Mpeg (size $ fst $ fst $ head $ ps) (Just "catalog.avi") Nothing
-    mapM_ (sv.fst.fst) ps
+    (_,ps,_) <- get st
+    sv <- openYUV4Mpeg (size $ fst $ head $ ps) (Just "catalog.avi") Nothing
+    mapM_ (sv.fst) ps
     writeFile "catalog.labels" $ unlines $ [show n ++"\t"++l | (n,l) <- zip [1..length ps] (map snd ps)]
 
 mouse def _ a b c d = def a b c d
 
 ------------------------------------------------------
 
-getProtos feat = do
+getProtos sz feat = do
     opt <- getRawOption "--catalog"
     case opt of
         Nothing -> return []
         Just catalog -> do
-            readCatalog (catalog++".avi") (mpSize 20) (catalog++".labels") Nothing feat
-
-------------------------------------------------------
-
-report protos = [(la ++ " - " ++ lb, n2 u v) | ((_,u),la) <- protos, ((_,v),lb) <- protos, la /= lb]
+            readCatalog (catalog++".avi") sz (catalog++".labels") Nothing feat
