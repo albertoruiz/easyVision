@@ -8,7 +8,7 @@ import Classifier
 
 machine = distance nearestNeighbour `onP` (const $ feat 8 (mpSize 8))
 
-feat th sz = vector . lbpN th . resize sz . fromYUV
+feat th sz = vector . lbpN th . resize sz . gray
 
 main = do
     sz <- findSize
@@ -17,13 +17,13 @@ main = do
         nm = "ratio " ++ printf "%.2f" ratio
     prepare
 
-    (cam,ctrl) <- getCam 0 sz >>= findRectangles ratio >>= withPause
+    (cam,ctrl) <- getCam 0 sz >>= withChannels >>= findRectangles ratio >>= withPause
 
     wimg <- evWindow () "original" sz Nothing (const $ kbdcam ctrl)
     wa4  <- evWindow () nm (Size (32*5*5) (round(32*5*ratio))) Nothing (const (kbdcam ctrl))
 
     Just catalog <- getRawOption "--catalog"
-    protos <- readCatalog (catalog++".avi") (mpSize 20) (catalog++".labels") Nothing id
+    protos <- readCatalog (catalog++".yuv") (mpSize 20) (catalog++".labels") Nothing channels
 
     let classify = fst $ machine protos
 
@@ -33,12 +33,12 @@ main = do
 
 worker cam wImage wA4 ratio szA4 classify = do
 
-    (orig',a4s) <- cam
-    orig <- yuvToRGB orig'
+    (chs,a4s) <- cam
+    let orig = rgb chs
 
     let f pts = fst . rectifyQuadrangle szA4 pts $ orig
         seen = map f a4s
-        classes = map (classify. toYUV) seen
+        classes = map (classify. channelsFromRGB) seen
 
     inWin wImage $ do
         drawImage orig

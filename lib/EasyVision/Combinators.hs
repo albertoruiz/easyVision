@@ -226,7 +226,7 @@ findRectangles ratio cam = do
             ,[2.10,           0]]
     return $ do
         orig <- cam
-        let img = fromYUV orig
+        let img = gray orig
         radius <- getParam op "radius"
         width  <- getParam op "width"
         median <- getParam op "median"
@@ -261,11 +261,11 @@ isA4 mbf tol a4 pts = ao < tol && cy < 0
 
 ----------------------------------------------------------------
 
-onlyRectangles sz ratio cam = do
+onlyRectangles sz ratio sel cam = do
     fr <- findRectangles ratio cam
     return $ do
         (orig,a4s) <- fr
-        let f pts = fst . rectifyQuadrangle sz pts . fromYUV $ orig
+        let f pts = fst . rectifyQuadrangle sz pts . sel $ orig
         return $ map f a4s
 
 ------------------------------------------------------------------

@@ -15,7 +15,7 @@ main = do
         nm = "ratio " ++ printf "%.2f" ratio
     prepare
 
-    (cam,ctrl) <- getCam 0 sz >>= findRectangles ratio >>= withPause
+    (cam,ctrl) <- getCam 0 sz >>= withChannels >>= findRectangles ratio >>= withPause
 
     wimg <- evWindow () "original" sz Nothing (const $ kbdcam ctrl)
     wa4  <- evWindow (ident 3) nm szA4 Nothing (mouse (kbdcam ctrl))
@@ -26,7 +26,8 @@ main = do
 
 worker cam wImage wA4 ratio szA4 = do
 
-    (orig,a4s) <- cam
+    (chs,a4s) <- cam
+    let orig = rgb chs
 
     inWin wImage $ do
         drawImage orig
@@ -51,8 +52,7 @@ worker cam wImage wA4 ratio szA4 = do
             putW wA4 h
 
         h <- getW wA4
-        im <- yuvToRGB orig
-        drawImage $ warp (0,0,0) szA4 h im
+        drawImage $ warp (0,0,0) szA4 h orig
 
 ---------------------------------------------------------
 

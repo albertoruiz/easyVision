@@ -18,7 +18,8 @@ module ImagProc.Generic (
 , blockImage
 , warp, warpOn
 , constImage
-, Channels(..), channels, float
+, Channels(..), channels, float,
+  channelsFromRGB
 )
 where
 
@@ -161,6 +162,20 @@ channels img = CHIm
     }
     where rgbAux = fromYUV img
           hsvAux = unsafePerformIO $ rgbToHSV rgbAux
+
+channelsFromRGB :: ImageRGB -> Channels
+channelsFromRGB img = CHIm
+    { yuv = yuvAux
+    , gray = fromYUV yuvAux
+    , rgb = img
+    , rCh = getChannel 0 img
+    , gCh = getChannel 1 img
+    , bCh = getChannel 2 img
+    , hCh = getChannel 0 hsvAux
+    , sCh = getChannel 1 hsvAux
+    }
+    where yuvAux = toYUV img
+          hsvAux = unsafePerformIO $ rgbToHSV img
 
 ----------------------------------------------------------------------------------
 
