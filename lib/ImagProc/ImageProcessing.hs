@@ -34,7 +34,7 @@ module ImagProc.ImageProcessing (
 , rgbToGray
 , grayToYUV
 , rgbToYUV
-, rgbToHSV
+, rgbToHSV, hsvCode
 , hsvToRGB
 , scale8u32f
 , scale32f8u
@@ -953,6 +953,16 @@ lbpN t im = map ((*sc).fromIntegral) (tail h) where
     h = lbp t im
     ROI r1 r2 c1 c2 = theROI im
     sc = (256.0::Double) / fromIntegral ((r2-r1-1)*(c2-c1-1))
+
+
+----------------------------------------------------------------------------------------
+
+-- | Histogram of the 256 possible configurations of 3x3 image patches thresholded by the central pixel. Works inside the image ROI.
+hsvCode :: ImageRGB -- ^ source image
+    -> IO ()        -- result
+hsvCode (C im) = do
+    hsvcode (ptr im) (step im) (r1 (vroi im)) (r2 (vroi im)) (c1 (vroi im)) (c2 (vroi im))
+        // checkIPP "hsvcode" [im]
 
 ----------------------------------------------------------------------------------------
 

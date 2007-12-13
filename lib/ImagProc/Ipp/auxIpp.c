@@ -157,3 +157,44 @@ int lbp8u(int delta, unsigned char * pSrc, int sstep, int sr1, int sr2, int sc1,
     return 0;
     #undef X
 }
+
+//---------------------------- simple color code ---------------------
+
+// this test version overwrites the hsv with prototype color
+
+int hsvcode(unsigned char * pSrc, int sstep, int sr1, int sr2, int sc1, int sc2) {
+    int r,c;
+    for (r=sr1; r<=sr2; r++) {
+        for(c=sc1; c<=sc2; c++) {
+            unsigned char* h = pSrc + r*sstep + c*3;
+            unsigned char* s = h+1;
+            unsigned char* v = s+1;
+            if(*v<60) {
+                *v = 0; // black
+            } else if ((*s<120) && (*v<180)) {
+                *v = 128;
+                *s = 0;   // gray
+            } else if ((*s<80) && (*v>150)) {
+                *v = 255;
+                *s = 0;   // white
+            } else if ((*h<20) || (*h>245)) {  // red
+                *h = 255;
+                *v = 255;
+                *s = 255;
+            } else if ((*h>150) && (*h<190)) { // blue
+                *h = 170;
+                *v = 255;
+                *s = 255; 
+            } else if ((*h>45) && (*h<110)) {  // green
+                *h = 85;
+                *v = 255;
+                *s = 255;
+            } else if ((*h>20) && (*h<46)) {  // yellow
+                *h = 45;
+                *v = 255;
+                *s = 255;
+            }
+        }
+    }
+    return 0;
+}
