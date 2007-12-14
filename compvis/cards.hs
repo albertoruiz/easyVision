@@ -6,14 +6,23 @@ import Numeric.LinearAlgebra
 import Text.Printf(printf)
 import Classifier
 
-machine = distance nearestNeighbour `onP` (const $ feat 8 (mpSize 8))
+machine = distance nearestNeighbour `onP` feat
 
-feat th sz = vector . lbpN th . resize sz . gray
+feat = andP [classlbp, classhsv]
+
+classlbp = normalizeMinMax (0,1) `ofP` outputOf (distance nearestNeighbour) `ofP` const (vector.feat1)
+classhsv = normalizeMinMax (0,1) `ofP` outputOf (distance nearestNeighbour) `ofP` const (vector.feat2)
+
+feat1 = lbpN 8 . resize (mpSize 8) . gray
+
+feat2 = dw . histogramN [0..10] . hsvCode 80 85 175 . hsv
+
+dw (g:b:w:cs) = b:cs
 
 main = do
     sz <- findSize
-    ratio <- getOption "--ratio" (1.5)
-    let szA4 = Size (32*10) (round (32*10*ratio))
+    ratio <- getOption "--ratio" (sqrt 2)
+    let szA4 = sz -- Size (32*10) (round (32*10*ratio))
         nm = "ratio " ++ printf "%.2f" ratio
     prepare
 
@@ -23,7 +32,7 @@ main = do
     wa4  <- evWindow () nm (Size (32*5*5) (round(32*5*ratio))) Nothing (const (kbdcam ctrl))
 
     Just catalog <- getRawOption "--catalog"
-    protos <- readCatalog (catalog++".yuv") (mpSize 20) (catalog++".labels") Nothing channels
+    protos <- readCatalog (catalog++".yuv") sz (catalog++".labels") Nothing channels
 
     let classify = fst $ machine protos
 

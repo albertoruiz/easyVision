@@ -2,14 +2,18 @@ import EasyVision
 import Control.Monad(when,(>=>))
 import Graphics.UI.GLUT hiding (Size,histogram)
 import Classifier
+import Numeric.LinearAlgebra(toList)
 
-machine = distance nearestNeighbour `onP` (const (vector.feat))
+machine = distance nearestNeighbour `onP` feat
 
-featG th sz = lbpN th . resize sz . gray
+feat = andP [classlbp, classhsv]
 
-feat = featG 8 (mpSize 8)
+classlbp = normalizeMinMax (0,1) `ofP` outputOf (distance nearestNeighbour) `ofP` const (vector.feat1)
+classhsv = normalizeMinMax (0,1) `ofP` outputOf (distance nearestNeighbour) `ofP` const (vector.feat2)
 
-feat' = dw . histogramN [0..10] . hsvCode 80 85 175 . hsv
+feat1 = lbpN 8 . resize (mpSize 8) . gray
+
+feat2 = dw . histogramN [0..10] . hsvCode 80 85 175 . hsv
 
 dw (g:b:w:cs) = b:cs
 
@@ -38,9 +42,10 @@ worker cam w = do
 
     img <- cam
 
-    let v = feat img
-
     (click,pats,classify) <- getW w
+
+    let v = toList $ feat pats img
+
     when click $ do
         let npats = (img, "?"):pats
             nmach = fst $ machine npats
