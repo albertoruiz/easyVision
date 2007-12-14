@@ -145,6 +145,7 @@ data Channels = CHIm
     , rCh  :: ImageGray
     , gCh  :: ImageGray
     , bCh  :: ImageGray
+    , hsv  :: ImageRGB
     , hCh  :: ImageGray
     , sCh  :: ImageGray
     }
@@ -157,6 +158,7 @@ channels img = CHIm
     , rCh = getChannel 0 rgbAux
     , gCh = getChannel 1 rgbAux
     , bCh = getChannel 2 rgbAux
+    , hsv = hsvAux
     , hCh = getChannel 0 hsvAux
     , sCh = getChannel 1 hsvAux
     }
@@ -171,6 +173,7 @@ channelsFromRGB img = CHIm
     , rCh = getChannel 0 img
     , gCh = getChannel 1 img
     , bCh = getChannel 2 img
+    , hsv = hsvAux
     , hCh = getChannel 0 hsvAux
     , sCh = getChannel 1 hsvAux
     }

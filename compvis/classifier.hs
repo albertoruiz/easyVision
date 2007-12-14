@@ -1,6 +1,6 @@
 import EasyVision
 import Control.Monad(when,(>=>))
-import Graphics.UI.GLUT hiding (Size)
+import Graphics.UI.GLUT hiding (Size,histogram)
 import Classifier
 
 machine = distance nearestNeighbour `onP` (const (vector.feat))
@@ -8,6 +8,10 @@ machine = distance nearestNeighbour `onP` (const (vector.feat))
 featG th sz = lbpN th . resize sz . gray
 
 feat = featG 8 (mpSize 8)
+
+feat' = dw . histogramN [0..10] . hsvCode 80 85 175 . hsv
+
+dw (g:b:w:cs) = b:cs
 
 onlyCards sz = onlyRectangles sz (sqrt 2) rgb
                >=> virtualCamera (return . map channelsFromRGB . concat)

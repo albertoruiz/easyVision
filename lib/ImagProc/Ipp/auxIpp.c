@@ -162,39 +162,73 @@ int lbp8u(int delta, unsigned char * pSrc, int sstep, int sr1, int sr2, int sc1,
 
 // this test version overwrites the hsv with prototype color
 
-int hsvcode(unsigned char * pSrc, int sstep, int sr1, int sr2, int sc1, int sc2) {
+#define H(V,D) else if (*h<=V) { *h=(D); *v=255; *s=255; }
+
+int hsvcodeTest(int kb, int kg, int kw,
+                unsigned char * pSrc, int sstep, int sr1, int sr2, int sc1, int sc2) {
     int r,c;
     for (r=sr1; r<=sr2; r++) {
         for(c=sc1; c<=sc2; c++) {
             unsigned char* h = pSrc + r*sstep + c*3;
             unsigned char* s = h+1;
             unsigned char* v = s+1;
-            if(*v<60) {
-                *v = 0; // black
-            } else if ((*s<120) && (*v<180)) {
+            if(*v<kb) {                        // black
+                *v = 0;
+            } else if ((*s<kg) && (*v<kw)) {   // gray
                 *v = 128;
-                *s = 0;   // gray
-            } else if ((*s<80) && (*v>150)) {
+                *s = 0;
+            } else if ((*s<kg)) {              // white
                 *v = 255;
-                *s = 0;   // white
-            } else if ((*h<20) || (*h>245)) {  // red
-                *h = 255;
-                *v = 255;
-                *s = 255;
-            } else if ((*h>150) && (*h<190)) { // blue
-                *h = 170;
-                *v = 255;
-                *s = 255; 
-            } else if ((*h>45) && (*h<110)) {  // green
-                *h = 85;
-                *v = 255;
-                *s = 255;
-            } else if ((*h>20) && (*h<46)) {  // yellow
-                *h = 45;
-                *v = 255;
-                *s = 255;
+                *s = 0;
             }
+             H(12,0)     // red
+             H(26,18)    // orange
+             H(46,36)    // yellow
+             H(116,80)   // green
+             H(135,125)  // cyan ??
+             H(200,168)  // blue
+             H(230,215)  // magenta ??
+             else { *h=0; *v=255; *s=255; }    // red
         }
     }
     return 0;
 }
+
+#undef H
+
+// this version creates color codes
+
+#define H(V,D) else if (*h<=V) { *d=(D); }
+
+int hsvcode(int kb, int kg, int kw,
+                unsigned char * pSrc, int sstep,
+                unsigned char * pDst, int dstep,
+                int sr1, int sr2, int sc1, int sc2) {
+    int r,c;
+    for (r=sr1; r<=sr2; r++) {
+        for(c=sc1; c<=sc2; c++) {
+            unsigned char* h = pSrc + r*sstep + c*3;
+            unsigned char* s = h+1;
+            unsigned char* v = s+1;
+            unsigned char* d = pDst + r*dstep + c;
+            if(*v<kb) {                        // black
+                *d = 1;
+            } else if ((*s<kg) && (*v<kw)) {   // gray
+                *d = 0;
+            } else if ((*s<kg)) {              // white
+                *d = 2;
+            }
+             H(12,3)    // red
+             H(26,4)    // orange
+             H(46,5)    // yellow
+             H(116,6)   // green
+             H(135,7)   // cyan ??
+             H(200,8)   // blue
+             H(230,9)   // magenta ??
+             else { *d=3; }    // red
+        }
+    }
+    return 0;
+}
+
+#undef H

@@ -34,7 +34,7 @@ module ImagProc.ImageProcessing (
 , rgbToGray
 , grayToYUV
 , rgbToYUV
-, rgbToHSV, hsvCode
+, rgbToHSV, hsvCode, hsvCodeTest
 , hsvToRGB
 , scale8u32f
 , scale32f8u
@@ -957,12 +957,23 @@ lbpN t im = map ((*sc).fromIntegral) (tail h) where
 
 ----------------------------------------------------------------------------------------
 
--- | Histogram of the 256 possible configurations of 3x3 image patches thresholded by the central pixel. Works inside the image ROI.
-hsvCode :: ImageRGB -- ^ source image
-    -> IO ()        -- result
-hsvCode (C im) = do
-    hsvcode (ptr im) (step im) (r1 (vroi im)) (r2 (vroi im)) (c1 (vroi im)) (c2 (vroi im))
-        // checkIPP "hsvcode" [im]
+-- | to do
+hsvCodeTest :: Int -> Int -> Int -> ImageRGB -> IO ()
+hsvCodeTest b g w (C im) = do
+    hsvcodeTest b g w (ptr im) (step im) (r1 (vroi im)) (r2 (vroi im)) (c1 (vroi im)) (c2 (vroi im))
+        // checkIPP "hsvcodeTest" [im]
+
+-- | to do
+hsvCode :: Int -> Int -> Int -> ImageRGB -> ImageGray
+hsvCode b g w (C im) = unsafePerformIO $ do
+    G r <- image (isize im)
+    set8u 0 (theROI (G r)) (G r)
+    hsvcode b g w
+            (ptr im) (step im)
+            (ptr r) (step r)
+            (r1 (vroi im)) (r2 (vroi im)) (c1 (vroi im)) (c2 (vroi im))
+            // checkIPP "hsvcode" [im]
+    return $ modifyROI (const (vroi im)) (G r)
 
 ----------------------------------------------------------------------------------------
 
