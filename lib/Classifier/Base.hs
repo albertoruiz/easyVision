@@ -278,6 +278,7 @@ mdf exs = f where
 mef :: PCARequest -> Property Attributes Attributes
 mef rq exs = encodeVector . pca rq . stat . fromRows . map fst $ exs
 
+-----------------------------
 
 -- | Independent attribute normalization to zero mean and variance 1
 normalizeAttr :: Property Attributes Attributes

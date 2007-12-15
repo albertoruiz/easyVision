@@ -6,18 +6,26 @@ import Numeric.LinearAlgebra
 import Text.Printf(printf)
 import Classifier
 
+
+-- | distances (kernel?) to samples
+distancesTo :: (a->b->Double) -> [b] -> a -> Attributes
+distancesTo f l x = vector (map (f x) l)
+
+distancesToAll samp = distancesTo (\a b -> pnorm PNorm2 (a-b)) (map fst samp)
+
+feat = andP [classi feat1, classi feat2]
+
+classi feat = normalizeAttr `ofP` distancesToAll `ofP` const (vector.feat)
+--                                outputOf (distance nearestNeighbour)
+
 machine = distance nearestNeighbour `onP` feat
-
-feat = andP [classlbp, classhsv]
-
-classlbp = normalizeMinMax (0,1) `ofP` outputOf (distance nearestNeighbour) `ofP` const (vector.feat1)
-classhsv = normalizeMinMax (0,1) `ofP` outputOf (distance nearestNeighbour) `ofP` const (vector.feat2)
 
 feat1 = lbpN 8 . resize (mpSize 8) . gray
 
 feat2 = dw . histogramN [0..10] . hsvCode 80 85 175 . hsv
 
-dw (g:b:w:cs) = b:cs
+dw (g:b:w:cs) = b:cs -- remove white
+
 
 main = do
     sz <- findSize
@@ -32,7 +40,7 @@ main = do
     wa4  <- evWindow () nm (Size (32*5*5) (round(32*5*ratio))) Nothing (const (kbdcam ctrl))
 
     Just catalog <- getRawOption "--catalog"
-    protos <- readCatalog (catalog++".yuv") sz (catalog++".labels") Nothing channels
+    protos <- getCatalog (catalog++".yuv") sz (catalog++".labels") Nothing channels
 
     let classify = fst $ machine protos
 

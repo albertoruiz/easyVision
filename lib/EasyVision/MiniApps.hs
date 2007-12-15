@@ -15,6 +15,7 @@ Useful windows with associated behaviour.
 
 module EasyVision.MiniApps (
     readCatalog,
+    getCatalog,
     catalogBrowser,
     hsvPalette
 )where
@@ -27,6 +28,9 @@ import Control.Monad(when)
 import ImagProc.Ipp.Core
 import Foreign.C.Types(CUChar)
 import Foreign
+import qualified Data.Map as Map
+import Data.List(sort,nub)
+import EasyVision.Util
 
 -- | reads a labeled video
 readCatalog :: String -> Size -> String -> Maybe Int -> (ImageYUV-> a) -> IO [(a,String)]
@@ -43,6 +47,38 @@ readCatalog video sz classesfile mbn prepro = do
     when (map read frames /= [1..n]) $ error ("inconsistent file "++ classesfile)
     imgs <- sequence (replicate n cam)
     return (zip (map prepro imgs) classes)
+
+----------------------------------------------------------
+
+classMap :: [[String]] -> String -> String
+classMap lls = if null lls then id else search
+    where f l@(h:_) = [(e,h)| e <- l]
+          m = Map.fromList $ concatMap f lls
+          search v = case Map.lookup v m of
+                        Nothing -> v
+                        Just c  -> c
+
+-- | higher level version of getCatalog allowing for --group and --desired
+getCatalog :: String -> Size -> String -> Maybe Int -> (ImageYUV-> a) -> IO [(a,String)]
+getCatalog name sz lbs mbn feat = do
+    dat <- readCatalog name sz lbs mbn feat
+
+    group <- fmap classMap $ getOption "--group" []
+
+    desi <- getFlag "desired"
+
+    desired <- if not desi
+                then fmap concat $ getOption "--group" []
+                else getOption "--desired" []
+
+    let okclasses = [(img, group cl) | (img,cl) <- dat, cl /= "?", desired == [] || cl `elem` desired]
+
+    putStr "Valid images: "
+    print (length okclasses)
+    putStr "Classes found: "
+    print (sort $ nub $ map snd okclasses)
+    return okclasses
+
 
 -- | to do (ImageYUV???)
 catalogBrowser :: Int -> [(ImageYUV, String)] -> String -> Size -> IO (EVWindow (Int, [(ImageYUV, String)]))

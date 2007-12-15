@@ -2,20 +2,26 @@ import EasyVision
 import Control.Monad(when,(>=>))
 import Graphics.UI.GLUT hiding (Size,histogram)
 import Classifier
-import Numeric.LinearAlgebra(toList)
+import Numeric.LinearAlgebra
+
+-- | distances (kernel?) to samples
+distancesTo :: (a->b->Double) -> [b] -> a -> Attributes
+distancesTo f l x = vector (map (f x) l)
+
+distancesToAll samp = distancesTo (\a b -> pnorm PNorm2 (a-b)) (map fst samp)
+
+feat = andP [classi feat1, classi feat2]
+
+classi feat = normalizeAttr `ofP` distancesToAll `ofP` const (vector.feat)
+--                                outputOf (distance nearestNeighbour)
 
 machine = distance nearestNeighbour `onP` feat
-
-feat = andP [classlbp, classhsv]
-
-classlbp = normalizeMinMax (0,1) `ofP` outputOf (distance nearestNeighbour) `ofP` const (vector.feat1)
-classhsv = normalizeMinMax (0,1) `ofP` outputOf (distance nearestNeighbour) `ofP` const (vector.feat2)
 
 feat1 = lbpN 8 . resize (mpSize 8) . gray
 
 feat2 = dw . histogramN [0..10] . hsvCode 80 85 175 . hsv
 
-dw (g:b:w:cs) = b:cs
+dw (g:b:w:cs) = b:cs -- remove white
 
 onlyCards sz = onlyRectangles sz (sqrt 2) rgb
                >=> virtualCamera (return . map channelsFromRGB . concat)
@@ -81,5 +87,4 @@ getProtos sz feat = do
     opt <- getRawOption "--catalog"
     case opt of
         Nothing -> return []
-        Just catalog -> do
-            readCatalog (catalog++".yuv") sz (catalog++".labels") Nothing feat
+        Just catalog -> getCatalog (catalog++".yuv") sz (catalog++".labels") Nothing feat
