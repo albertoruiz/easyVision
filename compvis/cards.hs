@@ -34,13 +34,13 @@ main = do
         nm = "ratio " ++ printf "%.2f" ratio
     prepare
 
-    (cam,ctrl) <- getCam 0 sz >>= withChannels >>= findRectangles ratio >>= withPause
+    (cam,ctrl) <- getCam 0 (mpSize 20) >>= withChannels >>= findRectangles ratio >>= withPause
 
-    wimg <- evWindow () "original" sz Nothing (const $ kbdcam ctrl)
+    wimg <- evWindow () "original" (mpSize 20) Nothing (const $ kbdcam ctrl)
     wa4  <- evWindow () nm (Size (32*5*5) (round(32*5*ratio))) Nothing (const (kbdcam ctrl))
 
     Just catalog <- getRawOption "--catalog"
-    protos <- getCatalog (catalog++".yuv") sz (catalog++".labels") Nothing channels
+    protos <- getCatalog (catalog++".yuv") szA4 (catalog++".labels") Nothing channels
 
     let classify = fst $ machine protos
 

@@ -3,6 +3,9 @@ import Control.Monad(when,(>=>))
 import Graphics.UI.GLUT hiding (Size,histogram)
 import Classifier
 import Numeric.LinearAlgebra
+import Data.List(sortBy)
+
+pcaR r = mef (ReconstructionQuality r)
 
 -- | distances (kernel?) to samples
 distancesTo :: (a->b->Double) -> [b] -> a -> Attributes
@@ -12,14 +15,17 @@ distancesToAll samp = distancesTo (\a b -> pnorm PNorm2 (a-b)) (map fst samp)
 
 feat = andP [classi feat1, classi feat2]
 
-classi feat = normalizeAttr `ofP` distancesToAll `ofP` const (vector.feat)
+feat' = const feat1
+
+classi feat = normalizeAttr `ofP` distancesToAll `ofP` const feat
 --                                outputOf (distance nearestNeighbour)
 
-machine = distance nearestNeighbour `onP` feat
+machine = detailed (distance nearestNeighbour `onP` feat)
+--(distance mahalanobis `onP` (pcaR 0.9 `ofP` feat))
 
-feat1 = lbpN 8 . resize (mpSize 8) . gray
+feat1 = vector . lbpN 8 . resize (mpSize 8) . gray
 
-feat2 = dw . histogramN [0..10] . hsvCode 80 85 175 . hsv
+feat2 = vector . dw . histogramN [0..10] . hsvCode 80 85 175 . hsv
 
 dw (g:b:w:cs) = b:cs -- remove white
 
@@ -38,7 +44,12 @@ main = do
 
     (cam,ctrl) <- getCam 0 sz >>= vc >>= withPause
 
-    w <- evWindow (False, protos, fst $ machine protos) "video" sz Nothing  (mouse (kbdcam ctrl))
+    w <- evWindow (False, protos, machine protos) "video" sz Nothing  (mouse (kbdcam ctrl))
+
+    let prob = preprocess (feat protos) protos
+        shprob = preprocess (mef (NewDimension 4) prob) prob
+
+    scatterWindow "scatter" (Size 400 400) shprob (0,1)
 
     launch (worker cam w)
 
@@ -54,7 +65,7 @@ worker cam w = do
 
     when click $ do
         let npats = (img, "?"):pats
-            nmach = fst $ machine npats
+            nmach = machine npats
         putW w (False, npats, nmach)
 
     inWin w $ do
@@ -65,7 +76,7 @@ worker cam w = do
         setColor 1 0 0
         renderSignal (map (*0.5) v)
         when (not $ null pats) $ do
-            text2D 0.9 0.6 (classify img)
+            text2D 0.9 0.6 (showB 1.2 $ classify img)
 
 -----------------------------------------------------
 
@@ -88,3 +99,5 @@ getProtos sz feat = do
     case opt of
         Nothing -> return []
         Just catalog -> getCatalog (catalog++".yuv") sz (catalog++".labels") Nothing feat
+
+showB h l = unwords $ map fst $ filter ((<h).snd) l

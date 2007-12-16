@@ -20,7 +20,7 @@ module Classifier.Base (
      Feature, TwoGroups, Dicotomizer, multiclass,
      Weights, WeightedDicotomizer, unweight, weight,
 -- * Utilities
-     errorRate, confusion, InfoLabels(..), group, ungroup, createClassifier, scramble, addNoise, selectClasses, splitProportion, posMax, partit, vector,
+     errorRate, confusion, InfoLabels(..), group, ungroup, createClassifier, scramble, addNoise, selectClasses, splitProportion, posMax, partit, vector, detailed,
      module Classifier.Stat,
 -- * Feature extraction combinators
 -- $FEATCOMB
@@ -196,6 +196,16 @@ multiclass' bin l = f where
 -- | selects the examples with the given labels
 selectClasses :: [Label] -> Sample -> Sample
 selectClasses validset exs = filter ( (`elem` validset) .snd) exs
+
+
+-- | to do
+detailed machine prob = classify where
+    (_,f) = machine prob
+    info = snd (group prob)
+    classify v = sortBy (compare `on` snd) (zip (labels info) nordsts)
+        where dsts = map negate $ f v
+              nordsts = map (/minimum (map abs dsts)) dsts
+              on f g = \x y -> f (g x) (g y)
 
 ------------- feature combinators ------------
 
