@@ -51,9 +51,10 @@ on f g = \x y -> f (g x) (g y)
 
 timing act = do
     t0 <- getCPUTime
-    act
+    a <- act
     t1 <- getCPUTime
     printf "%.2f CPU seconds\n" $ (fromIntegral ((t1 - t0) `div` (10^10)) / 100 :: Double)
+    return a
 
 debug x = trace (show x) x
 

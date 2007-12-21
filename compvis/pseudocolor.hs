@@ -1,11 +1,19 @@
 import EasyVision
+import Control.Monad((>=>))
+
+onlyCards sz = onlyRectangles sz (sqrt 2) rgb
+               >=> virtualCamera (return . map channelsFromRGB . concat)
 
 main = do
     sz <- findSize
     prepare
 
+    rects <- getFlag "--rectangles"
+    let vc = if rects then withChannels >=> onlyCards sz
+                      else withChannels
+
     (cam,ctrl) <- getCam 0 sz
-               >>= withChannels
+               >>= vc
                >>= monitorizeIn "video" (mpSize 10) rgb
                >>= withPause
 

@@ -15,9 +15,9 @@ distancesToAll samp = distancesTo (\a b -> pnorm PNorm2 (a-b)) (map fst samp)
 
 feat = andP [classi feat1, classi feat2]
 
-feat' = const feat1
+feat' = const feat2
 
-classi feat = normalizeAttr `ofP` distancesToAll `ofP` const feat
+classi feat = normalizeAttr `ofP` pcaR 0.95 `ofP` distancesToAll `ofP` const feat
 --                                outputOf (distance nearestNeighbour)
 
 machine = detailed (distance nearestNeighbour `onP` feat)
@@ -26,6 +26,7 @@ machine = detailed (distance nearestNeighbour `onP` feat)
 feat1 = vector . lbpN 8 . resize (mpSize 8) . gray
 
 feat2 = vector . dw . histogramN [0..10] . hsvCode 80 85 175 . hsv
+                                                       --135
 
 dw (g:b:w:cs) = b:cs -- remove white
 
@@ -49,7 +50,7 @@ main = do
     let prob = preprocess (feat protos) protos
         shprob = preprocess (mef (NewDimension 4) prob) prob
 
-    scatterWindow "scatter" (Size 400 400) shprob (0,1)
+    --scatterWindow "scatter" (Size 400 400) shprob (0,1)
 
     launch (worker cam w)
 

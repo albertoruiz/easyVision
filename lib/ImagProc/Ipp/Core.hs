@@ -20,7 +20,7 @@ module ImagProc.Ipp.Core
           ( -- * Image representation
             Img(..), ImageType(..), ROI(..), Size(..)
             -- * Creation of images
-          , img, imgAs, getData32f, setData32f, setData8u, value
+          , img, imgAs, getData32f, setData32f, setData8u, value, setValue
             -- * Regions of interest
           , fullroi, shrink, shift, intersection, roiArea, invalidROIs
             -- * Wrapper tools
@@ -130,6 +130,13 @@ value Img {fptr = fp, ptr = p, datasize = d, step = s} r c = do
     v <- peek (advancePtr (castPtr p) (r*jump+c))
     touchForeignPtr fp
     return v
+
+-- | Sets the pixel value of an image at a given row-column. NO range checking.
+setValue :: (Storable b) => Img -> b -> Int -> Int -> IO ()
+setValue Img {fptr = fp, ptr = p, datasize = d, step = s} v r c = do
+    let jump = s `quot` d
+    poke (advancePtr (castPtr p) (r*jump+c)) v
+    touchForeignPtr fp
 
 data ROI = ROI { r1 :: Int  -- ^ upper row
                , r2 :: Int  -- ^ lower row

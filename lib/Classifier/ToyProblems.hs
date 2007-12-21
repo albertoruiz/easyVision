@@ -20,7 +20,9 @@ module Classifier.ToyProblems (
 -- * MNIST database
      mnist, mnistraw,
 -- * 2D drawing
-     combined
+     combined,
+-- * Debug
+     testProb
 ) where
 
 import Numeric.LinearAlgebra
@@ -181,3 +183,16 @@ mnistraw n = do
     let ls = map (show.round) $ toList $ flatten $ dropColumns 784 m
     let mnist = zip vs ls
     return $ splitAt n mnist
+
+-----------------------------------------------------------
+
+testProb :: Sample
+testProb = [ (v[1,1],"1")
+           , (v[2,1],"1")
+           , (v[1,2],"1")
+           , (v[2,2],"1")
+           , (v[4,4],"2")
+           , (v[5,4],"2")
+           , (v[4,5],"2")
+           , (v[5,5],"2")]
+    where v = vector

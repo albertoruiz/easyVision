@@ -1,4 +1,4 @@
-IPP=/opt/intel/ipp/5.2_beta/ia32
+IPP=/opt/intel/ipp/5.3/ia32
 
 LIBS = -i../lib ../lib/ImagProc/Ipp/auxIpp.o -L../lib/ImagProc/Segments -lsegments \
        -L$(IPP)/sharedlib -lguide -lippcore -lippi -lipps -lippcc -lippvc -lippcv

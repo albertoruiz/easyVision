@@ -142,11 +142,7 @@ monitorizeIn name sz selector cam = do
     w <- evWindow () name sz Nothing (const $ kbdcam ctrl)
     return $ do
         thing <- cam'
-        saved <- get currentWindow  -- required, since it may happen inside an inWindow bracket
-        currentWindow $= Just (evW w)
-        drawImage (selector thing)
-        swapBuffers
-        currentWindow $= saved
+        inWin w $ drawImage (selector thing)
         return thing
 
 ---------------------------------------------------------

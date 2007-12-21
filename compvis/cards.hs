@@ -6,6 +6,7 @@ import Numeric.LinearAlgebra
 import Text.Printf(printf)
 import Classifier
 
+pcaR r = mef (ReconstructionQuality r)
 
 -- | distances (kernel?) to samples
 distancesTo :: (a->b->Double) -> [b] -> a -> Attributes
@@ -15,14 +16,15 @@ distancesToAll samp = distancesTo (\a b -> pnorm PNorm2 (a-b)) (map fst samp)
 
 feat = andP [classi feat1, classi feat2]
 
-classi feat = normalizeAttr `ofP` distancesToAll `ofP` const (vector.feat)
---                                outputOf (distance nearestNeighbour)
+classi feat = normalizeAttr `ofP` pcaR 0.95 `ofP` distancesToAll `ofP` const feat
+                                  --outputOf (distance nearestNeighbour) `ofP` const feat
 
 machine = distance nearestNeighbour `onP` feat
 
-feat1 = lbpN 8 . resize (mpSize 8) . gray
+feat1 = vector . lbpN 8 . resize (mpSize 8) . gray
 
-feat2 = dw . histogramN [0..10] . hsvCode 80 85 175 . hsv
+feat2 = vector . dw . histogramN [0..10] . hsvCode 80 85 135 . hsv
+                                                       --175
 
 dw (g:b:w:cs) = b:cs -- remove white
 

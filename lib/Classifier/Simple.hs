@@ -29,6 +29,8 @@ import Data.Array
 import Classifier.Stat
 import Debug.Trace
 
+debug x = trace (show x) x
+
 norm x = pnorm PNorm2 x
 
 -- | mse linear discriminant using the pseudoinverse

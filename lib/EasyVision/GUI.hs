@@ -199,9 +199,11 @@ evWindow st0 name size mdisp kbd = do
 ---------------------------------------------------------------
 
 inWin w f = do
+    saved <- get currentWindow
     currentWindow $= Just (evW w)
     f
     swapBuffers
+    currentWindow $= saved
 
 getW = get . evSt
 putW w x = evSt w $= x

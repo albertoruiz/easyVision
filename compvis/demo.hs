@@ -187,7 +187,8 @@ worker wDemo cam param fft = do
              orig <- cam
              im <- yuvToGray orig >>= scale8u32f 0 1
              F s <- (smooth `times` gauss Mask5x5) im
-             gx <- sobelVert $ F s {vroi = roi `intersection` vroi s}
+             gx' <- sobelVert $ F s {vroi = roi `intersection` vroi s}
+             gx <- scale32f (-1) gx' -- !!!
              gy <- sobelHoriz $ F s {vroi = roi `intersection` vroi s}
              c <- canny (gx,gy) (th/3,th) >>= scale8u32f 0 1
              copyROI32f c (theROI c) im

@@ -207,4 +207,4 @@ scatterWindow name sz exs coor  = do
             (i,j) <- get rdesi
             rdesi $= ((i-1) `mod` n,j)
             postRedisplay Nothing
-        kbd _ _ _ _ _ = return ()
+        kbd _ a b c d = kbdQuit a b c d

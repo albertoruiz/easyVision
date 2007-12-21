@@ -36,9 +36,7 @@ panoramic sz fi1 fi2 fo camBase camAdj = do
         putW wMon (opt,[pan,tilt,roll])
         let base = warp 0 (size img0) (hi<>kgen (fo/fi1)) img0
         warpOn (hi<>kgen (fo/fi1)<>h) base img1
-        saved <- get currentWindow
         inWin wMon $ drawImage base
-        currentWindow $= saved
         return base
   where
     -- click to adjust
