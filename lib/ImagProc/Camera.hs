@@ -83,16 +83,17 @@ mplayer url (Size h w) = do
     return grab
 
 shsz w h = ":width="++show w++":height="++show h
+shsz' w h = ":width=640:height=480" ++ shsc w h
 shsc w h = " -vf scale="++show w++":"++show h
 
 -- be careful with the order
 
 proc w h url
-    | "webcam0" `isPrefixOf` url = rep ("webcam0","tv:// -tv driver=v4l:device=/dev/video0"++shsz w h) url
-    | "webcam1" `isPrefixOf` url = rep ("webcam1","tv:// -tv driver=v4l:device=/dev/video1"++shsz w h) url
-    | "webcam2" `isPrefixOf` url = rep ("webcam2","tv:// -tv driver=v4l:device=/dev/video2"++shsz w h) url
-    | "webcam3" `isPrefixOf` url = rep ("webcam3","tv:// -tv driver=v4l:device=/dev/video3"++shsz w h) url
-    | "webcam" `isPrefixOf` url = rep  ("webcam", "tv:// -tv driver=v4l:device=/dev/video0"++shsz w h) url
+    | "webcam0" `isPrefixOf` url = rep ("webcam0","tv:// -tv driver=v4l:device=/dev/video0"++shsz' w h) url
+    | "webcam1" `isPrefixOf` url = rep ("webcam1","tv:// -tv driver=v4l:device=/dev/video1"++shsz' w h) url
+    | "webcam2" `isPrefixOf` url = rep ("webcam2","tv:// -tv driver=v4l:device=/dev/video2"++shsz' w h) url
+    | "webcam3" `isPrefixOf` url = rep ("webcam3","tv:// -tv driver=v4l:device=/dev/video3"++shsz' w h) url
+    | "webcam" `isPrefixOf` url = rep  ("webcam", "tv:// -tv driver=v4l:device=/dev/video0"++shsz' w h) url
     | "firewire" `isPrefixOf` url = rep ("firewire","/dev/dv1394 -demuxer rawdv -cache 400"++shsc w h) url
     | "s-video-di" `isPrefixOf` url =
             rep ("s-video-di", "tv:// -tv driver=v4l2:device=/dev/video0"++shsz w h++" -vf pp=md") url
