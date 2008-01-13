@@ -1,7 +1,5 @@
-ALL = sim pose physics
+ALL = demostereo stereo autostereo
 
 EASYVISION = ../..
 
 include ../Makefile.include
-
-

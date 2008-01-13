@@ -16,7 +16,7 @@ LIBS = -i$(EVLIB) $(EVLIB)/ImagProc/Ipp/auxIpp.o \
 all: $(ALL) 
 
 %: %.hs auxc
-	ghc -O -fvia-C -threaded --make $< -o $@ $(LIBS)
+	@ghc -O -fvia-C -threaded --make $< -o $@ $(LIBS)
 
 auxc: $(CDIR)/auxIpp.o $(CONTRIB)
 
