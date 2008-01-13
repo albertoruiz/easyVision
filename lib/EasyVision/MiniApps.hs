@@ -285,7 +285,7 @@ regionTracker "" detector = do
 
 regionTracker name detector = do
     det <- regionTracker "" detector
-    e <- evWindow () "kalman" (mpSize 8) Nothing (const kbdQuit)
+    e <- evWindow () name (mpSize 8) Nothing (const kbdQuit)
     return $ do
         (orig, (pt@(Point x y),v@(vx,vy))) <- det
         let pt2 = Point (x+vx) (y+vy)

@@ -4,9 +4,7 @@ import EasyVision hiding (State)
 import Control.Monad((>=>),when)
 import Graphics.UI.GLUT hiding (Point,Matrix,matrix,Size,triangulate)
 import Data.List
-import ImagProc.Ipp.Core
 import Numeric.LinearAlgebra
-import Data.IORef
 import Vision
 import Text.Printf(printf)
 
@@ -19,15 +17,15 @@ norm (vx,vy) = sqrt $ vx * vx + vy*vy
 
 center cam = toList $ inHomog $ nullVector cam
 
-stc0 = kgen 2.7 <>
-                (3><4) [ 1, 0, 0, -3,
-                         0, 1, 0,  0,
-                         0, 0, 1,  0 ]
+stc0 = kgen 2 <>
+        (3><4) [ 1, 0, 0, -3,
+                 0, 1, 0,  0,
+                 0, 0, 1,  0 ]
 
-stc1 = kgen 2.7 <>
-                (3><4) [ 1, 0, 0, 3,
-                         0, 1, 0, 0,
-                         0, 0, 1, 0 ]
+stc1 = kgen 2 <>
+        (3><4) [ 1, 0, 0, 3,
+                 0, 1, 0, 0,
+                 0, 0, 1, 0 ]
 
 main = do
     sz <- findSize
@@ -84,11 +82,11 @@ main = do
             putW w3D (True,(c0,pts1,c1,pts2))
 
        let pts3d = triangulate [(c0, pts1), (c1, pts2)]
-       setColor 1 0 0
+       setColor 0.5 0 0
        pointSize $= 3
        renderPrimitive LineStrip $ mapM_ vertex pts3d
-       setColor 0.5 0 0
-       renderPrimitive LineStrip $ mapM_ vertex pts3d
+       setColor 1 0 0
+       renderPrimitive Points $ mapM_ vertex pts3d
 
        when (length pts1>7) $ do
             let f = estimateFundamental pts2 pts1
@@ -110,8 +108,8 @@ main = do
 
 
 mouse _ st (Char 'x') Down _ _ = do
-    (wasMoving,(_,pts1,_,pts2)) <- get st
-    st $= (False, (stc0,[], stc1,[]))
+    (wasMoving,(c0,pts1,c1,pts2)) <- get st
+    st $= (False, (c0,[], c1,[]))
 
 mouse _ st (Char 'd') Down _ _ = do
     (wasMoving,(c0,pts1,c1,pts2)) <- get st
