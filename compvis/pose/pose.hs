@@ -19,8 +19,6 @@ main = do
 
     (cam,ctrl) <- getCam 0 sz >>= withPause
 
-    (tb,kc,mc) <- newTrackball
-
     prepare
 
     o <- createParameters [ ("radius",intParam 4 0 10),
@@ -36,21 +34,16 @@ main = do
 
     wIm <- evWindow () "image" sz Nothing (const $ kbdcam ctrl)
 
-    w3D <- evWindow () "3D view" (Size 400 400) Nothing (const $ kc (kbdcam ctrl))
-    --keyboardMouseCallback $= Just (kc (kbdcam ctrl))
-    motionCallback $= Just mc
-    depthFunc $= Just Less
-    textureFilter Texture2D $= ((Nearest, Nothing), Nearest)
-    textureFunction $= Replace
+    w3D <- evWindow3D () "3D view" 400 (const (kbdcam ctrl))
 
     mbf <- maybeOption "--focal"
 
-    launch (worker wIm w3D cam o tb mbf)
+    launch (worker wIm w3D cam o mbf)
 
 -----------------------------------------------------------------
 
 
-worker wIm w3D cam op trackball mbf = do
+worker wIm w3D cam op mbf = do
 
     radius <- getParam op "radius"
     width  <- getParam op "width"
@@ -89,8 +82,6 @@ worker wIm w3D cam op trackball mbf = do
     let a4s = filter (isA4 mbf orthotol) (concatMap alter closed4)
 
     inWin w3D $ do
-        clear [ColorBuffer, DepthBuffer]
-        trackball
 
         setColor 0 0 1
         lineWidth $= 2

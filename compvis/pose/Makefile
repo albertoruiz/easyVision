@@ -1,4 +1,4 @@
-ALL = pose augmented dynamic onlyRects rectangles whiteboard
+ALL = pose augmented dynamic onlyRects rectangles whiteboard frontal
 
 EASYVISION = ../..
 

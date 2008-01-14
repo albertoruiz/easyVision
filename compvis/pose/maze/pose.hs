@@ -21,7 +21,7 @@ main = do
   sz <- findSize
   focal <- maybeOption "--focal" :: IO (Maybe Double)
   (cam, ctrl) <- getCam 0 (Size 120 160) >>= withPause
-  (trackball,kc,mc) <- newTrackball
+
   prepare
   params <- createParameters [
               ("min line length",realParam 10 0 30),
@@ -31,20 +31,16 @@ main = do
               ("scale",realParam 0.2 0.01 1),
               ("ortho tolerance",realParam 0.5 0.01 1.0)]
   windowImage <- evWindow () "image" sz Nothing (const $ kbdcam ctrl)
-  window3D <- evWindow () "3D view" (Size 400 400) Nothing (const $ kc (kbdcam ctrl))
-  motionCallback $= Just mc
-
+  window3D <- evWindow3D () "3D view" 400 (const $ kbdcam ctrl)
   -- initialize some opengl stuff
-  depthFunc $= Just Less
-  textureFilter Texture2D $= ((Nearest, Nothing), Nearest)
-  textureFunction $= Replace
+  -- (now automatic)
 
-  launch (worker windowImage window3D cam params trackball focal)
+  launch (worker windowImage window3D cam params focal)
 
 -----------------------------------------------------------------
 
 
-worker windowImage window3D cam params trackball focal = do
+worker windowImage window3D cam params focal = do
 
   minlen <- getParam params "min line length"
   maxdis <- getParam params "max line distance"
@@ -78,8 +74,6 @@ worker windowImage window3D cam params trackball focal = do
   papers <- filterM (isA4 focal orthotol) (concatMap alter closed4)
 
   inWin window3D $ do
-    clear [ColorBuffer, DepthBuffer]
-    trackball
 
     setColor 0 0 1
     lineWidth $= 2

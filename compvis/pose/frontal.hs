@@ -86,15 +86,9 @@ main = do
         ,MenuEntry "Variable f's" (modInfo AllUnknown)
         ]
 
-    addWindow "3D view" (Size 600 600) Nothing keyboard state     -- 3D representation
-    keyboardMouseCallback $= Just (kc (keyboard state))
-    motionCallback $= Just mc
+    w3D <- evWindow3D () "3D view" 600 (const $ keyboard state)     -- 3D representation
 
-    textureFilter Texture2D $= ((Nearest, Nothing), Nearest)
-    textureFunction $= Replace
-    depthFunc $= Just Less
-
-    launch' state (worker cam)
+    launch' state (worker cam w3D)
 
 -------------------------------------------------------------------
 
@@ -123,7 +117,7 @@ mlp = map lp
 
 htp h = ht h . mpl
 
-worker cam inWindow st = do
+worker cam w3D inWindow st = do
     camera <- cam >>= yuvToGray >>= scale8u32f 0 1
     hotPoints <- getCorners 1 7 0.1 200 camera
 
@@ -172,9 +166,7 @@ worker cam inWindow st = do
             Nothing -> return ()
             Just c  -> inWindow "cost" (drawImage c)
 
-        inWindow "3D view" $ do             -- 3D representation
-            clear [ColorBuffer, DepthBuffer]
-            trackball st
+        inWin w3D $ do             -- 3D representation
 
             let ref = htp (inv (cam0 st)) (pts st !!0) -- the rectified homologous points
             let wref = htp r (pts st !!0)              -- this same points in image w

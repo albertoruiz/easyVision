@@ -18,7 +18,7 @@ module EasyVision.GUI (
 -- * Application interface
   State(..)
 , prepare, prepare'
-, addWindow, evWindow, EVWindow(..)
+, addWindow, evWindow, evWindow3D, EVWindow(..)
 , launch, launch'
 , InWindow, inWin, getW, putW, getROI
 , kbdcam, kbdQuit, roiControl
@@ -170,6 +170,7 @@ launch worker = do
 data EVWindow st = EVW { evW   :: Window
                        , evSt   :: IORef st
                        , evROI :: IORef ROI
+                       , evInit :: IO ()
                        }
 
 evWindow st0 name size mdisp kbd = do
@@ -194,6 +195,7 @@ evWindow st0 name size mdisp kbd = do
     return EVW { evW = glw
                , evSt = st
                , evROI = r
+               , evInit = return ()
                }
 
 ---------------------------------------------------------------
@@ -201,6 +203,7 @@ evWindow st0 name size mdisp kbd = do
 inWin w f = do
     saved <- get currentWindow
     currentWindow $= Just (evW w)
+    evInit w
     f
     swapBuffers
     currentWindow $= saved
@@ -209,6 +212,17 @@ getW = get . evSt
 putW w x = evSt w $= x
 
 getROI = get . evROI
+
+----------------------------------------------------------------
+
+evWindow3D ist name sz kbd = do
+    (trackball,kc,mc) <- newTrackball
+    w <- evWindow ist name (Size sz sz) Nothing (kc kbd)
+    motionCallback $= Just mc
+    depthFunc $= Just Less
+    textureFilter Texture2D $= ((Nearest, Nothing), Nearest)
+    textureFunction $= Replace
+    return w { evInit = clear [ColorBuffer, DepthBuffer] >> trackball}
 
 ----------------------------------------------------------------
 

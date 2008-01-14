@@ -25,10 +25,6 @@ import Quaternion
 import Ball
 import Maze
 
-data AppState = AppState
-
-initialState = AppState
-
 -- Sim interval in microseconds, i.e. 500 = 1/20 of a second
 simInterval :: Int
 simInterval = 500
@@ -73,7 +69,7 @@ renderBall ball = do
 nullCallback :: Key -> KeyState -> Modifiers -> Position -> IO ()
 nullCallback _ _ _ _ = return ()
 
-tiltCb :: Sim -> KeyboardMouseCallback -> IORef (State AppState) -> KeyboardMouseCallback
+tiltCb :: Sim -> KeyboardMouseCallback -> IORef () -> KeyboardMouseCallback
 tiltCb sim defaultCb _ a@(Char 'h') b@Down c d = do
   addGravity sim $ vec3 (-0.0001) 0 0 
   defaultCb a b c d
@@ -102,18 +98,13 @@ tiltCb _ defaultCb _ a b c d = defaultCb a b c d
 
 main = do
   size <- findSize
-  (trackball,kc,mc) <- newTrackball
-  app <- prepare' initialState
+  app <- prepare
   sim <- startSim
-  addWindow "sim" size Nothing (tiltCb sim $ kc nullCallback) app
-  motionCallback $= Just mc
-  depthFunc $= Just Less
-  launch' app $ worker trackball sim
+  w <- evWindow3D () "sim" (width size) ((tiltCb sim nullCallback))
+  launch $ worker w sim
 
-worker trackball sim inWindow state = do
-  inWindow "sim" $ do
-    clear [ColorBuffer, DepthBuffer]
-    trackball
+worker w sim = do
+  inWin w $ do
     -- look at the center of the maze
     translate $ Vector3 ((paperMinX-paperMaxX)/2) ((paperMinY-paperMaxY)/2) 0
     -- draw the maze as dark red walls with bright red edges
@@ -125,7 +116,7 @@ worker trackball sim inWindow state = do
     -- draw the ball
     ball <- getBall sim
     renderBall ball
-  return state
+
 
 paperMinX = 0 :: Double
 paperMaxX = 6 :: Double

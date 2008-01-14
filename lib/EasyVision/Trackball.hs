@@ -103,7 +103,7 @@ data TrackballState = TBST {quat :: Quaternion, prev :: [Double],
 
 {- | This function creates a virtual trackball to control the viewpoint in a 3D window. It returns an @IO()@ which sets the appropriate rotation in the current window and the keyboard and mouse movement callbacks which controls the trackball. The keyboard callback admits a default callback. See usage examples in @pose.hs@ and @frontal.hs@.
 -}
-newTrackball :: IO ( (IO(), KeyboardMouseCallback -> KeyboardMouseCallback, MotionCallback)  )
+newTrackball :: IO ( (IO(), (t -> KeyboardMouseCallback) -> (t -> KeyboardMouseCallback), MotionCallback)  )
 newTrackball = do
     st <- newIORef TBST { quat = Quat {qs = 1.0, qv = vector [0,0,0]},
                           prev = [], dist = 20, wsize = 400, vertAngle = 0 }
@@ -127,28 +127,28 @@ newTrackball = do
     return (trackball, quatkbd st, quatmot st)
 
 
-quatkbd str _ (MouseButton LeftButton) Down _ pos@(Position x y) = do
+quatkbd str _ _ (MouseButton LeftButton) Down _ pos@(Position x y) = do
     st <- readIORef str
     let sz = wsize st
     let sz2 = sz/2
     writeIORef str st { prev = [(fromIntegral x - sz2 )/ sz,
                                -(fromIntegral y - sz2) / sz]}
 
-quatkbd str _ (Char 'o') Down _ _ = do
+quatkbd str _ _ (Char 'o') Down _ _ = do
     modifyIORef str $ \s -> s { quat = Quat { qs = 1.0, qv = vector [0,0,0]} }
 
-quatkbd st _ (MouseButton WheelUp) _ (Modifiers{shift=Down}) _ = do
+quatkbd st _ _ (MouseButton WheelUp) _ (Modifiers{shift=Down}) _ = do
     modifyIORef st $ \s -> s { vertAngle = vertAngle s + 1 }
-quatkbd st _ (MouseButton WheelDown) _ (Modifiers{shift=Down}) _ = do
+quatkbd st _ _ (MouseButton WheelDown) _ (Modifiers{shift=Down}) _ = do
     modifyIORef st $ \s -> s { vertAngle = vertAngle s - 1 }
 
-quatkbd st _ (MouseButton WheelUp) _ _ _ = do
+quatkbd st _ _ (MouseButton WheelUp) _ _ _ = do
     modifyIORef st $ \s -> s { dist = dist s *1.1}
-quatkbd st _ (MouseButton WheelDown) _ _ _ = do
+quatkbd st _ _ (MouseButton WheelDown) _ _ _ = do
     modifyIORef st $ \s -> s { dist = dist s /1.1}
 
 
-quatkbd _ k b s m p = k b s m p
+quatkbd _ k st b s m p = k st b s m p
 
 quatmot str pos@(Position x y) = do
     st <- readIORef str

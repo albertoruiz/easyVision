@@ -34,16 +34,10 @@ main = do
     cam0 <- getCam 0 sz >>= tracker ""           "Kalman 1"
     cam1 <- getCam 1 sz >>= tracker "Detector 2" ""
 
-    (trackball,kc,mc) <- newTrackball
-    w3D <- evWindow (True,(stc0,[],stc1,[])) "3D view" (Size 640 640) Nothing (mouse $ kc kbdQuit)
-    motionCallback $= Just mc
-    depthFunc $= Just Less
-    textureFilter Texture2D $= ((Nearest, Nothing), Nearest)
-    textureFunction $= Replace
+    w3D <- evWindow3D (True,(stc0,[],stc1,[])) "3D sensor" 640 (mouse kbdQuit)
 
     launch $ inWin w3D $ do
-       clear [ColorBuffer, DepthBuffer]
-       trackball
+
        (orig0,(p1,v1)) <- cam0
        (orig1,(p2,v2)) <- cam1
 
@@ -51,11 +45,11 @@ main = do
 
        setColor 1 1 1
        imt0 <- extractSquare 128 (float $ gray $ orig0)
-       
+
        drawCamera 0.2 c0 (Just imt0)
 
        imt1 <- extractSquare 128 (float $ gray $ orig1)
-       
+
        drawCamera 0.2 c1 (Just imt1)
 
        let Point x1 y1 = p1
@@ -67,9 +61,6 @@ main = do
        setColor 0 0 1
        pointSize $= 5
        renderPrimitive Points $ mapM_ vertex [[x,y,z]]
-
-
-       
 
        let stopped = norm v1 < 1/640 && norm v2 < 1/640
            moveAgain = norm v1 > 5/640 || norm v2 > 5/640
@@ -87,6 +78,10 @@ main = do
        renderPrimitive LineStrip $ mapM_ vertex pts3d
        setColor 1 0 0
        renderPrimitive Points $ mapM_ vertex pts3d
+
+       pixelCoordinates (Size 640 640)
+       setColor 1 1 1
+       text2D 20 20 (printf "x=%.2f y=%.2f z=%.2f" x y z)
 
        when (length pts1>7) $ do
             let f = estimateFundamental pts2 pts1

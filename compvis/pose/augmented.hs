@@ -20,8 +20,6 @@ main = do
 
     (cam,ctrl) <- getCam 0 sz >>= withPause
 
-    (tb,kc,mc) <- newTrackball
-
     prepare
 
     o <- createParameters     [("radius",intParam 4 0 10),
@@ -34,20 +32,17 @@ main = do
                                ("maxdis",realParam 0.06 0 0.1),
                                ("orthotol",realParam 0.25 0.01 0.5)]
 
-    w <- evWindow () "image" sz Nothing (const $ kc (kbdcam ctrl))
-    motionCallback $= Just mc
+    w <- evWindow () "image" sz Nothing (const $ kbdcam ctrl)
     depthFunc $= Just Less
-    textureFilter Texture2D $= ((Nearest, Nothing), Nearest)
-    textureFunction $= Replace
 
     mbf <- maybeOption "--focal"
 
-    launch (worker cam o tb mbf w)
+    launch (worker cam o mbf w)
 
 -----------------------------------------------------------------
 
 
-worker cam op trackball mbf w = do
+worker cam op mbf w = do
 
     radius <- getParam op "radius"
     width  <- getParam op "width"
