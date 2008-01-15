@@ -14,12 +14,7 @@ import Numeric.LinearAlgebra
 import ImagProc.Ipp
 import ImagProc
 --import Polyline
---import Queue
-
-newQ l = l
-emptyQ l = l == []
-deQ (x:xs) = (x,xs)
-enQ xs x = xs++[x] 
+import Queue
 
 type Segments = Array Int Segment
 
