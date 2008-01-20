@@ -1,6 +1,6 @@
 IPP=/opt/intel/ipp/5.3/ia32
 
-EVLIB = $(EASYVISION)/lib
+EVLIB = $(EASYVISION)/lib/
 
 CDIR = $(EVLIB)/ImagProc/Ipp
 
@@ -8,7 +8,7 @@ CONTRIBPATH = $(EVLIB)/ImagProc/C
 CONTRIB = $(CONTRIBPATH)/Segments/libsegments.a \
           $(CONTRIBPATH)/burns/burns.o
 
-LIBS = -i$(EVLIB) $(EVLIB)/ImagProc/Ipp/auxIpp.o \
+LIBS = -i$(EVLIB) $(CDIR)/auxIpp.o $(CDIR)/adapt.o \
        -L$(CONTRIBPATH)/Segments -lsegments \
        -i$(CONTRIBPATH)/burns $(CONTRIBPATH)/burns/burns.o $(CONTRIBPATH)/burns/bitmap.o \
        -L$(IPP)/sharedlib -lguide -lippcore -lippi -lipps -lippcc -lippvc -lippcv
@@ -18,10 +18,14 @@ all: $(ALL)
 %: %.hs auxc
 	@ghc -O -fvia-C -threaded --make $< -o $@ $(LIBS)
 
-auxc: $(CDIR)/auxIpp.o $(CONTRIB)
+auxc: $(CDIR)/auxIpp.o $(CDIR)/adapt.o $(CONTRIB)
 
 $(CDIR)/auxIpp.o: $(CDIR)/auxIpp.c $(CDIR)/auxIpp.h
 	gcc -O4 -c -I$(IPP)/include $(CDIR)/auxIpp.c -o $(CDIR)/auxIpp.o
+
+$(CDIR)/adapt.o: $(CDIR)/adapter.hs $(CDIR)/functions.txt
+	cd $(CDIR); runhaskell adapter; cd -
+	gcc -O4 -c -I$(IPP)/include $(CDIR)/adapt.c -o $(CDIR)/adapt.o
 
 $(CONTRIBPATH)/Segments/libsegments.a:
 	cd $(CONTRIBPATH)/Segments/; make

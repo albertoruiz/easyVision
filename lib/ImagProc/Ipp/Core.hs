@@ -24,8 +24,8 @@ module ImagProc.Ipp.Core
             -- * Regions of interest
           , fullroi, shrink, shift, intersection, roiArea, invalidROIs
             -- * Wrapper tools
-          , src, dst, checkIPP, warningIPP, (//), purifyWith
-          , ippRect, roiSize
+          , src, dst, dst', checkIPP, warningIPP, (//), purifyWith
+          , ippRect, roiSize, roiSZ
             -- * Image types
           , Image(..)
           , ImageRGB(C)
@@ -149,6 +149,8 @@ starting img roi = plusPtr (ptr img) (r1 roi * step img + c1 roi*(datasize img)*
 
 roiSize (ROI { r1=a, r2=b, c1=x, c2=y}) = encodeAsDouble  (y-x+1)  (b-a+1)
 
+roiSZ ROI { r1=a, r2=b, c1=x, c2=y} f = f (y-x+1)  (b-a+1)
+
 encodeAsDouble :: Int -> Int -> Double
 encodeAsDouble a b = unsafePerformIO $ do
     p <- mallocArray 2
@@ -213,6 +215,8 @@ src im roi f = f (starting im roi) (step im)
 -- | Extracts from a destination Img the pointer to the starting position taken into account the given roi, and applies it to a ipp function.
 dst :: Img -> ROI -> (Ptr () -> Int -> IppRect -> t) -> t
 dst im roi f = f (starting im roi) (step im) (roiSize roi)
+
+dst' im roi f = f (starting im roi) (step im) // roiSZ roi
 
 genCheckIPP act msg ls f = do
     err <- f

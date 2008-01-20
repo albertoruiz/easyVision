@@ -108,6 +108,7 @@ imgAsR1 roifun im = do
     return r {vroi = roifun (vroi im)}
 
 cr1 f im r = f // src im (vroi r) // dst r (vroi r)
+cr1' f im r = f // src im (vroi r) // dst' r (vroi r)
 
 imgAsR2 roifun im1 im2 = do 
     r <- imgAs im1
@@ -184,7 +185,7 @@ yuvToRGB (Y im) = do
     pokeArray psrc [ps, ps `advancePtr` (h*w), ps `advancePtr` (h*w + h*w `div` 4)]
     pstep <- mallocArray 3
     pokeArray pstep [w, w`div`2, w`div`2]
-    ippiYUV420ToRGB_8u_P3C3R (castPtr psrc) pstep (ptr r) (step r) (roiSize (fullroi r)) // checkIPP "yuvToRGB" [im]
+    ippiYUV420ToRGB_8u_P3C3R (castPtr psrc) pstep (ptr r) (step r) // roiSZ (fullroi r) // checkIPP "yuvToRGB" [im]
     free psrc
     free pstep
     return (C r)
@@ -357,6 +358,12 @@ putChannels (G r, G g, G b) = unsafePerformIO $ do
     return $ modifyROI (const roi) (C c)
 
 
+simplefun1F' ippfun roifun msg = g where
+    g (F im) = do
+        r <- imgAsR1 roifun im
+        cr1' ippfun im r // checkIPP msg [im]
+        return (F r)
+
 simplefun1F ippfun roifun msg = g where
     g (F im) = do
         r <- imgAsR1 roifun im
@@ -395,7 +402,7 @@ abs32f  = simplefun1F ippiAbs_32f_C1R  id "abs32f"
 
 -- | The result contains the square roots of the pixels in the input image.
 sqrt32f :: ImageFloat -> IO ImageFloat
-sqrt32f = simplefun1F ippiSqrt_32f_C1R id "sqrt32f"
+sqrt32f = simplefun1F' ippiSqrt_32f_C1R id "sqrt32f"
 
 -- | Applies a vertical Sobel filter (typically used for computing gradient images).
 sobelVert :: ImageFloat -> IO ImageFloat
