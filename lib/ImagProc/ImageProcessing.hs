@@ -108,7 +108,6 @@ imgAsR1 roifun im = do
     return r {vroi = roifun (vroi im)}
 
 cr1 f im r = f // src im (vroi r) // dst r (vroi r)
-cr1' f im r = f // src im (vroi r) // dst' r (vroi r)
 
 imgAsR2 roifun im1 im2 = do 
     r <- imgAs im1
@@ -141,7 +140,7 @@ set8u3 :: CUChar -> CUChar -> CUChar -- ^ desired RGB value
 set8u3 r g b roi (C im) = do
     v <- mallocArray 3
     pokeArray v [r,g,b]
-    ippiSet_8u_C3R v // dst im roi // checkIPP "set8u3" [im]
+    ippiSet_8u_C3R (castPtr v) // dst im roi // checkIPP "set8u3" [im]
     free v
 
 
@@ -203,7 +202,7 @@ rgbToYUV (C im) = do
     pokeArray pdst [ps, ps `advancePtr` (h*w), ps `advancePtr` (h*w + h*w `div` 4)]
     pstep <- mallocArray 3
     pokeArray pstep [w, w`div`2, w`div`2]
-    ippiRGBToYUV420_8u_C3P3R (ptr im) (step im) (castPtr pdst) pstep (roiSize (fullroi r)) // checkIPP "rgbToYUV" [im]
+    ippiRGBToYUV420_8u_C3P3R (ptr im) (step im) (castPtr pdst) pstep // roiSZ (fullroi r) // checkIPP "rgbToYUV" [im]
     free pdst
     free pstep
     return (Y r)
@@ -227,7 +226,7 @@ yuvToRGB_P (Y im) = do
     pokeArray pstep [w, w`div`2, w`div`2]
     pdest <- mallocArray 3
     pokeArray pdest [ptr r, ptr g, ptr b]
-    ippiYUV420ToRGB_8u_P3R (castPtr psrc) pstep (castPtr pdest) (step r) (roiSize (fullroi r)) // checkIPP "yuvToRGB_P" [im]
+    ippiYUV420ToRGB_8u_P3R (castPtr psrc) pstep (castPtr pdest) (step r) // roiSZ (fullroi r) // checkIPP "yuvToRGB_P" [im]
     free psrc
     free pstep
     free pdest
@@ -358,12 +357,6 @@ putChannels (G r, G g, G b) = unsafePerformIO $ do
     return $ modifyROI (const roi) (C c)
 
 
-simplefun1F' ippfun roifun msg = g where
-    g (F im) = do
-        r <- imgAsR1 roifun im
-        cr1' ippfun im r // checkIPP msg [im]
-        return (F r)
-
 simplefun1F ippfun roifun msg = g where
     g (F im) = do
         r <- imgAsR1 roifun im
@@ -402,7 +395,7 @@ abs32f  = simplefun1F ippiAbs_32f_C1R  id "abs32f"
 
 -- | The result contains the square roots of the pixels in the input image.
 sqrt32f :: ImageFloat -> IO ImageFloat
-sqrt32f = simplefun1F' ippiSqrt_32f_C1R id "sqrt32f"
+sqrt32f = simplefun1F ippiSqrt_32f_C1R id "sqrt32f"
 
 -- | Applies a vertical Sobel filter (typically used for computing gradient images).
 sobelVert :: ImageFloat -> IO ImageFloat
@@ -444,9 +437,9 @@ median mask = simplefun1G f (shrink (s,s)) "median" where
                 Mask3x3 -> 1
                 Mask5x5 -> 2
     mk = case mask of
-                Mask3x3 -> ippRect 3 3
-                Mask5x5 -> ippRect 5 5
-    f ps ss pd sd r = ippiFilterMedian_8u_C1R ps ss pd sd r mk (ippRect s s)
+                Mask3x3 -> apSZ 3 3
+                Mask5x5 -> apSZ 5 5
+    f ps ss pd sd r = ippiFilterMedian_8u_C1R ps ss pd sd r // mk // apSZ s s
 
 -- | High pass filter
 highPass8u :: Mask -> ImageGray -> IO ImageGray
@@ -464,7 +457,7 @@ thresholdVal32f :: Float          -- ^ threshold
                 -> ImageFloat     -- ^ source image
                 -> IO ImageFloat  -- ^ result
 thresholdVal32f t v cmp = simplefun1F f id "thresholdVal32f" where
-    f ps ss pd sd r = ippiThreshold_Val_32f_C1R ps ss pd sd r t v (codeCmp cmp)
+    f ps ss pd sd w h = ippiThreshold_Val_32f_C1R ps ss pd sd w h t v (codeCmp cmp)
 
 -- | The result is the source image in which the pixels verifing the comparation with a threshold are set to a desired value.
 thresholdVal8u :: CUChar          -- ^ threshold
@@ -473,7 +466,7 @@ thresholdVal8u :: CUChar          -- ^ threshold
                 -> ImageGray     -- ^ source image
                 -> IO ImageGray  -- ^ result
 thresholdVal8u t v cmp = simplefun1G f id "thresholdVal8u" where
-    f ps ss pd sd r = ippiThreshold_Val_8u_C1R ps ss pd sd r t v (codeCmp cmp)
+    f ps ss pd sd w h = ippiThreshold_Val_8u_C1R ps ss pd sd w h t v (codeCmp cmp)
 
 -- | Binarizes an image.
 binarize8u :: CUChar -- ^ threshold
@@ -492,7 +485,7 @@ binarize8u th False im =
 filterMax32f :: Int -> ImageFloat -> IO ImageFloat
 filterMax32f sz = simplefun1F f (shrink (d,d)) "filterMax32f" where
     d = (sz-1) `quot` 2
-    f ps ss pd sd r = ippiFilterMax_32f_C1R ps ss pd sd r (ippRect sz sz) (ippRect d d)
+    f ps ss pd sd r = ippiFilterMax_32f_C1R ps ss pd sd r // apSZ sz sz // apSZ d d
 
 -- | dilatation 3x3
 dilate3x3 :: ImageGray -> IO ImageGray
@@ -559,14 +552,14 @@ absDiff32f = simplefun2 ippiAbsDiff_32f_C1R intersection "absDiff32f"
 sum8u :: ImageGray -> IO Double
 sum8u (G im) = do
     pf <- malloc
-    (ippiSum_8u_C1R // dst im (vroi im)) pf // checkIPP "sum8u" [im]
+    (ippiSum_8u_C1R // dst im (vroi im)) (castPtr pf) // checkIPP "sum8u" [im]
     r <- peek pf
     return r
 
 sum32f :: ImageFloat -> IO Double
 sum32f (F im) = do
     pf <- malloc
-    (ippiSum_32f_C1R // dst im (vroi im)) pf // checkIPP "sum32f" [im]
+    (ippiSum_32f_C1R // dst im (vroi im)) (castPtr pf) (codeAlgHint AlgHintNone) // checkIPP "sum32f" [im]
     r <- peek pf
     return r
 
@@ -652,7 +645,7 @@ minmax :: ImageFloat -> IO (Float,Float)
 minmax (F im) = do
     mn <- malloc 
     mx <- malloc
-    (ippiMinMax_32f_C1R // dst im (vroi im)) mn mx // checkIPP "minmax" [im]
+    (ippiMinMax_32f_C1R // dst im (vroi im)) (castPtr mn) (castPtr mx) // checkIPP "minmax" [im]
     a <- peek mn
     b <- peek mx
     free mn
@@ -666,7 +659,7 @@ maxIndx (F im) = do
     mx <- malloc
     px <- malloc
     py <- malloc
-    (ippiMaxIndx_32f_C1R // dst im (vroi im)) mx px py // checkIPP "maxIndx" [im]
+    (ippiMaxIndx_32f_C1R // dst im (vroi im)) (castPtr mx) (castPtr px) (castPtr py) // checkIPP "maxIndx" [im]
     v <- peek mx
     x <- peek px
     y <- peek py
@@ -682,7 +675,7 @@ maxIndx8u (G im) = unsafePerformIO $ do
     mx <- malloc
     px <- malloc
     py <- malloc
-    (ippiMaxIndx_8u_C1R // dst im roi) mx px py // checkIPP "maxIndx8u" [im]
+    (ippiMaxIndx_8u_C1R // dst im roi) (castPtr mx) (castPtr px) (castPtr py) // checkIPP "maxIndx8u" [im]
     v <- peek mx
     x <- peek px
     y <- peek py
@@ -783,7 +776,7 @@ canny (F dx, F dy) (l,h) = do
     r <- img Gray (isize dx)
     ps <- malloc
     let roi = intersection (vroi dx) (vroi dy)
-    ippiCannyGetSize (roiSize roi) ps // checkIPP "ippiCannyGetSize" []
+    (ippiCannyGetSize // roiSZ roi) ps // checkIPP "ippiCannyGetSize" []
     s <- peek ps
     buffer <- mallocBytes s
     (ippiCanny_32f8u_C1R // src dx roi // src dy roi // dst r roi) l h buffer
@@ -802,7 +795,7 @@ histogram bins (G im) = unsafePerformIO $ do
     let n = length bins
     pbins <- newArray bins
     pr <- mallocArray n
-    (ippiHistogramRange_8u_C1R // dst im (vroi im)) pr pbins n // checkIPP "histogram" [im]
+    (ippiHistogramRange_8u_C1R // dst im (vroi im)) (castPtr pr) (castPtr pbins) n // checkIPP "histogram" [im]
     r <- peekArray (n-1) pr
     free pbins
     free pr
@@ -844,10 +837,10 @@ genFFT :: Int -- ^ ordx
        -> IO (ImageFloat -> IO (ImageFloat)) -- ^ resulting FFT function
 genFFT ordx ordy flag alg = do
     ptrSt <- malloc
-    ippiFFTInitAlloc_R_32f ptrSt ordx ordy (codeFFTFlag flag) (codeAlgHint alg) // checkIPP "FFTInitAlloc" []
+    ippiFFTInitAlloc_R_32f (castPtr ptrSt) ordx ordy (codeFFTFlag flag) (codeAlgHint alg) // checkIPP "FFTInitAlloc" []
     st <- peek ptrSt
     pn <- malloc
-    ippiFFTGetBufSize_R_32f st pn // checkIPP "FFTGetBufSize" []
+    ippiFFTGetBufSize_R_32f st (castPtr pn) // checkIPP "FFTGetBufSize" []
     n <- peek pn
     buf <- mallocBytes n
     let fft (F im) = do
@@ -902,7 +895,7 @@ genDistanceTransform f metrics (G im) = do
     pmetrics <- newArray metrics
     r' <- img I32f (isize im)
     let r = r' {vroi = vroi im}
-    (f // src im (vroi im) // dst r (vroi r)) pmetrics // checkIPP "ippiDistanceTransform_?_8u32f_C1R" [im]
+    (f // src im (vroi im) // dst r (vroi r)) (castPtr pmetrics) // checkIPP "ippiDistanceTransform_?_8u32f_C1R" [im]
     free pmetrics
     return (F r)
 
@@ -914,11 +907,11 @@ floodFill8u (G im) (Pixel r c) val = do
     let roi@(ROI r1 r2 c1 c2) = vroi im
     pregion <- mallocBytes 48 -- (8+3*8+(4+4+4+4))
     pbufsize <- malloc
-    ippiFloodFillGetSize (roiSize roi) pbufsize // checkIPP "ippiFloodFillGetSize" []
+    (ippiFloodFillGetSize // roiSZ roi) pbufsize // checkIPP "ippiFloodFillGetSize" []
     bufsize <- peek pbufsize
     buf <- mallocBytes bufsize
     free pbufsize
-    (ippiFloodFill_8Con_8u_C1IR // dst im (vroi im)) (ippRect (c-c1) (r-r1)) val pregion buf // checkIPP "ippiFloodFill_8Con_8u_C1IR" [im]
+    (ippiFloodFill_8Con_8u_C1IR // dst im (vroi im) // apSZ (c-c1) (r-r1)) val pregion buf // checkIPP "ippiFloodFill_8Con_8u_C1IR" [im]
     free buf
     [area,value1,value2,value3] <- peekArray 4 (castPtr pregion :: Ptr Double)
     [_,_,_,_,_,_,_,_,x,y,w,h] <- peekArray 12 (castPtr pregion :: Ptr Int)
@@ -933,12 +926,12 @@ floodFill8uGrad (G im) (Pixel r c) dmin dmax val = do
     let roi@(ROI r1 r2 c1 c2) = vroi im
     pregion <- mallocBytes 48 -- (8+3*8+(4+4+4+4))
     pbufsize <- malloc
-    ippiFloodFillGetSize (roiSize roi) pbufsize // checkIPP "ippiFloodFillGetSize" []
+    (ippiFloodFillGetSize // roiSZ roi) pbufsize // checkIPP "ippiFloodFillGetSize" []
     bufsize <- peek pbufsize
     --print bufsize
     buf <- mallocBytes bufsize
     free pbufsize
-    (ippiFloodFill_Grad8Con_8u_C1IR // dst im (vroi im)) (ippRect (c-c1) (r-r1)) val dmin dmax pregion buf // checkIPP "ippiFloodFill_Grad8Con_8u_C1IR" [im]
+    (ippiFloodFill_Grad8Con_8u_C1IR // dst im (vroi im) // apSZ (c-c1) (r-r1)) val dmin dmax pregion buf // checkIPP "ippiFloodFill_Grad8Con_8u_C1IR" [im]
     free buf
     [area,value1,value2,value3] <- peekArray 4 (castPtr pregion :: Ptr Double)
     [_,_,_,_,_,_,_,_,x,y,w,h] <- peekArray 12 (castPtr pregion :: Ptr Int)

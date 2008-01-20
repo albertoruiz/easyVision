@@ -16,7 +16,7 @@ LIBS = -i$(EVLIB) $(CDIR)/auxIpp.o $(CDIR)/adapt.o \
 all: $(ALL) 
 
 %: %.hs auxc
-	@ghc -O -fvia-C -threaded --make $< -o $@ $(LIBS)
+	@ghc -threaded --make $< -o $@ $(LIBS)
 
 auxc: $(CDIR)/auxIpp.o $(CDIR)/adapt.o $(CONTRIB)
 
@@ -24,7 +24,7 @@ $(CDIR)/auxIpp.o: $(CDIR)/auxIpp.c $(CDIR)/auxIpp.h
 	gcc -O4 -c -I$(IPP)/include $(CDIR)/auxIpp.c -o $(CDIR)/auxIpp.o
 
 $(CDIR)/adapt.o: $(CDIR)/adapter.hs $(CDIR)/functions.txt
-	cd $(CDIR); runhaskell adapter; cd -
+	cd $(CDIR); ghc -O --make adapter; ./adapter; cd -
 	gcc -O4 -c -I$(IPP)/include $(CDIR)/adapt.c -o $(CDIR)/adapt.o
 
 $(CONTRIBPATH)/Segments/libsegments.a:

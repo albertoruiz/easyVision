@@ -1,15 +1,17 @@
-import System.Process
+import System.Environment
 import Data.List
 
-ipp = "/opt/intel/ipp/5.3/ia32/include/"
-
-getHeader [header,name] = do
-    f <- readFile (ipp++header)
-    let raw = rep (", ",",") f
+getHeader ipp [header,name] = do
+    f <- readFile (ipp++"/include/"++header)
+    let raw = clean f
         thing = "IPPAPI(IppStatus,"++name++","
-        a = head $ filter (isPrefixOf thing) (tails raw)
+        found = filter (isPrefixOf thing) (tails raw)
+        a = if null found then error $ name ++ " not found on "++header
+                          else head found
         b = head $ filter (isSuffixOf "))") (inits a)
     return (prep.asList $ b)
+
+clean = rep (" (","(")  . rep ("( ","(") . rep (" ( ","(") . rep (", ",",")
 
 rep (c,r) [] = []
 rep (c,r) f@(x:xs) 
@@ -26,9 +28,11 @@ p2 [] = []
 p2 (a:b:rest) = (a,b) : p2 rest
 
 main = do
+    ipp <- getEnv "IPP"
     f <- readFile "functions.txt"
     let names = map words (lines f)
-    hds <- mapM getHeader names
+    hds <- mapM (getHeader ipp) names
+    mapM_ (putStrLn.fst) hds
     writeFile "adapt.h" (chead ++ (unlines $ map mkh hds))
     writeFile "adapt.c" (cdef ++ (unlines $ map mkd hds))
     writeFile "Adapt.hs" (wmod ++ (unlines $ map mkw hds))
@@ -37,6 +41,7 @@ main = do
 mkh' (n,as) = "int "++n ++"x(" ++ concat (intersperse ", " (map tr' as))++")"
 
 tr' ("IppiSize",n) = "int "++n++"_w, "++"int "++n++"_h"
+tr' ("IppiPoint",n) = "int "++n++"_x, "++"int "++n++"_y"
 tr' (t,n) = t++" "++n
 
 
@@ -46,6 +51,11 @@ mkh (n,as) = "int "++n ++"x(" ++ concat (intersperse ", " (map tr as))++");"
 tr (t,n) = ct (t ++ isPointer n)
 
 ct "IppiSize" = "int, int"
+ct "IppiPoint" = "int, int"
+ct "IppiMaskSize" = "int"
+ct "IppCmpOp" = "int"
+ct "IppHintAlgorithm" = "int"
+ct "IppiAxis" = "int"
 ct "int" = "int"
 ct "int*" = "int*"
 ct "float" = "float"
@@ -57,7 +67,13 @@ ct "Ipp8u*" = "void*"
 ct "Ipp8u**" = "void*"
 ct "Ipp32f" = "float"
 ct "Ipp32f*" = "void*"
-ct x = "**** "++x
+ct "Ipp64f" = "double"
+ct "Ipp64f*" = "void*"
+ct "Ipp32s*" = "void*"
+ct "IppiFFTSpec_R_32f**" = "void*"
+ct "IppiFFTSpec_R_32f*" = "void*"
+ct "IppiConnectedComp*" = "void*"
+ct x = error $ " UNKNOWN TYPE: "++x
 
 
 
@@ -65,12 +81,18 @@ ct x = "**** "++x
 
 mkd (n,as)  = mkh' (n,as) ++ " {\n" ++
               auxSizes as ++
+              auxPoints as ++
               "    return "++n++"(" ++ concat (intersperse ", " (map cl as))++");\n}\n"
 
 
 auxSizes as = unlines $ map (initSize.snd) $ filter (\(t,n)->t=="IppiSize") as
 
 initSize n = "    IppiSize "++n++" = {"++n++"_w,"++n++"_h};"
+
+auxPoints as = unlines $ map (initPoint.snd) $ filter (\(t,n)->t=="IppiPoint") as
+
+initPoint n = "    IppiPoint "++n++" = {"++n++"_x,"++n++"_y};"
+
 
 cl (t,n) = takeWhile (/= '[') n
 
@@ -84,6 +106,11 @@ wt (t,n) = ht (t ++ isPointer n)
 isPointer n = if last n == ']' then "*" else ""
 
 ht "IppiSize" = "Int -> Int"
+ht "IppiPoint" = "Int -> Int"
+ht "IppiMaskSize" = "Int"
+ht "IppCmpOp" = "Int"
+ht "IppHintAlgorithm" = "Int"
+ht "IppiAxis" = "Int"
 ht "int" = "Int"
 ht "int*" = "Ptr Int"
 ht "float" = "Float"
@@ -95,14 +122,20 @@ ht "Ipp8u*" = "Ptr ()"
 ht "Ipp8u**" = "Ptr ()"
 ht "Ipp32f" = "Float"
 ht "Ipp32f*" = "Ptr ()"
-ht x = "**** "++x
+ht "Ipp64f" = "Double"
+ht "Ipp64f*" = "Ptr ()"
+ht "Ipp32s*" = "Ptr ()"
+ht "IppiFFTSpec_R_32f*" = "Ptr ()"
+ht "IppiFFTSpec_R_32f**" = "Ptr ()"
+ht "IppiConnectedComp*" = "Ptr ()"
+ht x = error $ " UNKNOWN TYPE: "++x
 
 -----------------------------------------------------------------
 
 wmod  = "-- generated automatically by adapter.hs\n\n"
      ++ "{-# OPTIONS -ffi #-}\n\n"
      ++ "module ImagProc.Ipp.Adapt where\n\n"
-     ++ "import Foreign\n\n"
+     ++ "import Foreign\nimport Foreign.C.Types\n\n"
 
 chead = "/* generated automatically by adapter.hs */\n\n"
 

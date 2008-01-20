@@ -21,20 +21,16 @@ module ImagProc.Ipp.Wrappers where
 import Foreign
 import Foreign.C.Types
 
+
+
 type ROISize = Double
 type IPPPoint = Double
+
+{-
 
 foreign import ccall "auxIpp.h ippiImageJaehne_32f_C1R"
   ippiImageJaehne_32f_C1R :: Ptr() -> Int -> ROISize -> IO Int
 
-foreign import ccall "auxIpp.h ippiSet_32f_C1R"
-  ippiSet_32f_C1R :: Float -> Ptr() -> Int -> ROISize -> IO Int
-
-foreign import ccall "auxIpp.h ippiSet_8u_C1R"
-  ippiSet_8u_C1R :: CUChar -> Ptr() -> Int -> ROISize -> IO Int
-
-foreign import ccall "auxIpp.h ippiSet_8u_C3R"
-  ippiSet_8u_C3R :: Ptr(CUChar) -> Ptr() -> Int -> ROISize -> IO Int
 
 foreign import ccall "auxIpp.h ippiFilterGauss_32f_C1R"
      ippiFilterGauss_32f_C1R :: Ptr() -> Int -> Ptr() -> Int -> ROISize -> Int -> IO Int
@@ -185,6 +181,44 @@ foreign import ccall "auxIpp.h ippiAnd_8u_C1R"
 foreign import ccall "auxIpp.h ippiOr_8u_C1R"
      ippiOr_8u_C1R :: Ptr() -> Int -> Ptr() -> Int -> Ptr() -> Int -> ROISize -> IO Int
 
+foreign import ccall "auxIpp.h ippiFFTInitAlloc_R_32f"
+    ippiFFTInitAlloc_R_32f :: Ptr (Ptr()) -> Int -> Int -> Int -> Int -> IO Int
+
+foreign import ccall "auxIpp.h ippiFFTFree_R_32f"
+    ippiFFTFree_R_32f :: Ptr () -> IO Int
+
+foreign import ccall "auxIpp.h ippiFFTGetBufSize_R_32f"
+    ippiFFTGetBufSize_R_32f :: Ptr () -> Ptr Int -> IO Int
+
+foreign import ccall "auxIpp.h ippiFFTFwd_RToPack_32f_C1R"
+    ippiFFTFwd_RToPack_32f_C1R :: Ptr () -> Int -> Ptr() -> Int -> Ptr() -> Ptr() -> IO Int
+
+foreign import ccall "auxIpp.h ippiMagnitudePack_32f_C1R"
+    ippiMagnitudePack_32f_C1R :: Ptr () -> Int -> Ptr() -> Int -> ROISize -> IO Int
+
+foreign import ccall "auxIpp.h ippiDistanceTransform_3x3_8u32f_C1R" 
+    ippiDistanceTransform_3x3_8u32f_C1R :: Ptr () -> Int -> Ptr() -> Int -> ROISize -> Ptr Float -> IO Int
+
+foreign import ccall "auxIpp.h ippiDistanceTransform_5x5_8u32f_C1R" 
+    ippiDistanceTransform_5x5_8u32f_C1R :: Ptr () -> Int -> Ptr() -> Int -> ROISize -> Ptr Float -> IO Int
+
+
+foreign import ccall "auxIpp.h ippiFloodFillGetSize"
+    ippiFloodFillGetSize :: ROISize -> Ptr Int -> IO Int
+
+foreign import ccall "auxIpp.h ippiFloodFillGetSize_Grad"
+    ippiFloodFillGetSize_Grad :: ROISize -> Ptr Int -> IO Int
+
+foreign import ccall "auxIpp.h ippiFloodFill_8Con_8u_C1IR"
+    ippiFloodFill_8Con_8u_C1IR :: Ptr() -> Int -> ROISize -> IPPPoint -> CUChar -> Ptr () -> Ptr () -> IO Int
+
+foreign import ccall "auxIpp.h ippiFloodFill_Grad8Con_8u_C1IR"
+    ippiFloodFill_Grad8Con_8u_C1IR :: Ptr() -> Int -> ROISize -> IPPPoint -> CUChar -> CUChar -> CUChar -> Ptr () -> Ptr () -> IO Int
+
+foreign import ccall "auxIpp.h ippiMirror_8u_C1IR"
+    ippiMirror_8u_C1IR :: Ptr () -> Int -> ROISize -> Int -> IO Int
+-}
+
 foreign import ccall "auxIpp.h auxWarpPerspective_32f_C1R"
      warpPerspective32f :: Ptr() -> Int -> Int -> Int ->
                            Int -> Int -> Int -> Int ->
@@ -254,39 +288,6 @@ foreign import ccall "auxIpp.h auxDCTInv_32f_C1R"
                           Int -> Int -> Int -> Int ->
                           IO Int
 
-foreign import ccall "auxIpp.h ippiFFTInitAlloc_R_32f"
-    ippiFFTInitAlloc_R_32f :: Ptr (Ptr()) -> Int -> Int -> Int -> Int -> IO Int
-
-foreign import ccall "auxIpp.h ippiFFTFree_R_32f"
-    ippiFFTFree_R_32f :: Ptr () -> IO Int
-
-foreign import ccall "auxIpp.h ippiFFTGetBufSize_R_32f"
-    ippiFFTGetBufSize_R_32f :: Ptr () -> Ptr Int -> IO Int
-
-foreign import ccall "auxIpp.h ippiFFTFwd_RToPack_32f_C1R"
-    ippiFFTFwd_RToPack_32f_C1R :: Ptr () -> Int -> Ptr() -> Int -> Ptr() -> Ptr() -> IO Int
-
-foreign import ccall "auxIpp.h ippiMagnitudePack_32f_C1R"
-    ippiMagnitudePack_32f_C1R :: Ptr () -> Int -> Ptr() -> Int -> ROISize -> IO Int
-
-foreign import ccall "auxIpp.h ippiDistanceTransform_3x3_8u32f_C1R" 
-    ippiDistanceTransform_3x3_8u32f_C1R :: Ptr () -> Int -> Ptr() -> Int -> ROISize -> Ptr Float -> IO Int
-
-foreign import ccall "auxIpp.h ippiDistanceTransform_5x5_8u32f_C1R" 
-    ippiDistanceTransform_5x5_8u32f_C1R :: Ptr () -> Int -> Ptr() -> Int -> ROISize -> Ptr Float -> IO Int
-
-
-foreign import ccall "auxIpp.h ippiFloodFillGetSize"
-    ippiFloodFillGetSize :: ROISize -> Ptr Int -> IO Int
-
-foreign import ccall "auxIpp.h ippiFloodFillGetSize_Grad"
-    ippiFloodFillGetSize_Grad :: ROISize -> Ptr Int -> IO Int
-
-foreign import ccall "auxIpp.h ippiFloodFill_8Con_8u_C1IR"
-    ippiFloodFill_8Con_8u_C1IR :: Ptr() -> Int -> ROISize -> IPPPoint -> CUChar -> Ptr () -> Ptr () -> IO Int
-
-foreign import ccall "auxIpp.h ippiFloodFill_Grad8Con_8u_C1IR"
-    ippiFloodFill_Grad8Con_8u_C1IR :: Ptr() -> Int -> ROISize -> IPPPoint -> CUChar -> CUChar -> CUChar -> Ptr () -> Ptr () -> IO Int
 
 foreign import ccall "auxIpp.h lbp8u"
      lbp8u :: Int -> Ptr () -> Int -> Int -> Int -> Int -> Int -> Ptr Int -> IO Int
@@ -296,5 +297,4 @@ foreign import ccall "auxIpp.h hsvcodeTest"
 foreign import ccall "auxIpp.h hsvcode"
      hsvcode :: Int -> Int -> Int -> Ptr () -> Int -> Ptr () -> Int -> Int -> Int -> Int -> Int -> IO Int
 
-foreign import ccall "auxIpp.h ippiMirror_8u_C1IR"
-    ippiMirror_8u_C1IR :: Ptr () -> Int -> ROISize -> Int -> IO Int
+

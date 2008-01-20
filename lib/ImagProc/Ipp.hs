@@ -21,5 +21,5 @@ module ImagProc.Ipp (
 ) where
 
 import ImagProc.Ipp.Core
-import ImagProc.Ipp.Wrappers hiding (ippiSqrt_32f_C1R,ippiYUV420ToRGB_8u_P3C3R)
+import ImagProc.Ipp.Wrappers
 import ImagProc.Ipp.Adapt

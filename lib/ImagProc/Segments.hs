@@ -28,7 +28,7 @@ import Foreign.C.Types
 import ImagProc.Ipp
 import GHC.Float(float2Double)
 import Control.Monad (when)
-import Data.Array
+import Data.Array hiding ((//))
 import Data.List(sortBy,(\\))
 import Data.Graph
 import Data.Tree
@@ -44,7 +44,7 @@ debug x = trace (show x) x
 
 foreign import ccall "C/Segments/segments.h mycvSegmentsWithParms_8u_C1_C3"
     c_segments :: Ptr () -> Int -> 
-                  Int -> Int -> Double ->
+                  Int -> Int -> Int -> Int ->
                   Ptr (Ptr ()) ->
                   Ptr Int ->
                   Int -> Float ->
@@ -69,9 +69,9 @@ segments :: Int   -- ^ user radius (eg., 4)
 segments rad we medsz th tl pp (G im) = unsafePerformIO $ do
     pi <- malloc
     pn <- malloc
-    let ROI r1 r2 c1 c2 = vroi im `intersection` (shrink (15,15) (fullroi im))
+    let r@(ROI r1 r2 c1 c2) = vroi im `intersection` (shrink (15,15) (fullroi im))
         start = plusPtr (ptr im) (r1* step im + c1)
-    c_segments start (step im) c1 r1 (ippRect (c2-c1+1) (r2-r1+1)) pi pn rad we medsz th tl 1
+    (c_segments start (step im) c1 r1 // roiSZ r) pi pn rad we medsz th tl 1
     when pp (c_post_process_segments pi pn 8 30 0)
     n <- peek pn
     ps <- peek pi
