@@ -23,9 +23,11 @@ auxc: $(CDIR)/auxIpp.o $(CDIR)/adapt.o $(CONTRIB)
 $(CDIR)/auxIpp.o: $(CDIR)/auxIpp.c $(CDIR)/auxIpp.h
 	gcc -O4 -c -I$(IPP)/include $(CDIR)/auxIpp.c -o $(CDIR)/auxIpp.o
 
-$(CDIR)/adapt.o: $(CDIR)/adapter.hs $(CDIR)/functions.txt
-	cd $(CDIR); ghc -O --make adapter; ./adapter; cd -
+$(CDIR)/adapt.o: $(CDIR)/adapt.c $(CDIR)/adapt.h
 	gcc -O4 -c -I$(IPP)/include $(CDIR)/adapt.c -o $(CDIR)/adapt.o
+
+$(CDIR)/adapt.c: $(CDIR)/adapter.hs $(CDIR)/functions.txt
+	cd $(CDIR); ghc -O --make adapter; ./adapter; cd -
 
 $(CONTRIBPATH)/Segments/libsegments.a:
 	cd $(CONTRIBPATH)/Segments/; make

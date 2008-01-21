@@ -144,7 +144,7 @@ data ROI = ROI { r1 :: Int  -- ^ upper row
                , c2 :: Int  -- ^ rightmost column
                } deriving Show
 
-starting :: Img -> ROI -> Ptr ()
+starting :: Img -> ROI -> Ptr a
 starting img roi = plusPtr (ptr img) (r1 roi * step img + c1 roi*(datasize img)*(layers img))
 
 roiSZ ROI { r1=a, r2=b, c1=x, c2=y} = apSZ (y-x+1)  (b-a+1)
@@ -197,11 +197,11 @@ imgAs :: Img -> IO Img
 imgAs Img {itype=t, isize=s, datasize=d, layers=l} = img t s
 
 -- | Extracts from a source Img the pointer to the starting position taken into account the given roi, and applies it to a ipp function.
-src :: Img -> ROI -> (Ptr () -> Int -> t) -> t
+src :: Img -> ROI -> (Ptr a -> Int -> t) -> t
 src im roi f = f (starting im roi) (step im)
 
 -- | Extracts from a destination Img the pointer to the starting position taken into account the given roi, and applies it to a ipp function.
-dst :: Img -> ROI -> (Ptr () -> Int -> Int -> Int -> t) -> t
+dst :: Img -> ROI -> (Ptr a -> Int -> Int -> Int -> t) -> t
 dst im roi f = f (starting im roi) (step im) // roiSZ roi
 
 genCheckIPP act msg ls f = do

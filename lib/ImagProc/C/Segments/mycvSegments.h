@@ -22,25 +22,25 @@ extern "C" {
 #include <ipp.h>
 
 /* Tipo de datos segmento, con todos los campos calculados por las funciones 
- * del módulo. Todos deberían ser autoexplicativos. Los valores medianos 
- * corresponden al valor gris ó vector RGB que caracteriza mejor a la imagen
+ * del mï¿½dulo. Todos deberï¿½an ser autoexplicativos. Los valores medianos 
+ * corresponden al valor gris ï¿½ vector RGB que caracteriza mejor a la imagen
  * fuente a cada lado del segmento. */
 typedef struct {
     float x1,y1,x2,y2; /* Extremos del segmento. */
     unsigned char gray_izq,gray_der; /* Valores de gris medianos. */
     unsigned char r_izq,r_der,g_izq,g_der,b_izq,b_der; /* RGB medianos. */
-    int num_points; /* Número de puntos pasa-alta capturados. */
-    float cx,cy,angle,length; /* Centro, ángulo y longitud del segmento.*/
-    float desv_perp; /* Desviación típica en dirección perpendicular. */
+    int num_points; /* Nï¿½mero de puntos pasa-alta capturados. */
+    float cx,cy,angle,length; /* Centro, ï¿½ngulo y longitud del segmento.*/
+    float desv_perp; /* Desviaciï¿½n tï¿½pica en direcciï¿½n perpendicular. */
 } TSegment;
 
-/* Función que calcula segmentos con precisión subpixel, a partir de una 
- * imagen de entrada de grises (8u_C1). Hay dos versiones, una con parámetros
- * por defecto, y otra cambiando el usuario estos parámetros: */
+/* Funciï¿½n que calcula segmentos con precisiï¿½n subpixel, a partir de una 
+ * imagen de entrada de grises (8u_C1). Hay dos versiones, una con parï¿½metros
+ * por defecto, y otra cambiando el usuario estos parï¿½metros: */
 /*void mycvSegments_8u_C1(Ipp8u *imageIn,IplImage *imageIn,IplImage *imageInGray,
                         TSegment **segments,int *num_segments); */
 void mycvSegmentsWithParms_8u_C1_C3(Ipp8u *imgIn,int stepIn, 
-                                    int x1,int y1,IppiSize roiSize,
+                                    int x1,int y1,int roiSize_w,int roiSize_h,
                                     TSegment **segments,int *num_segments,
                                     int user_radius,float user_width_edgel,
                                     int med_siz,
@@ -48,9 +48,9 @@ void mycvSegmentsWithParms_8u_C1_C3(Ipp8u *imgIn,int stepIn,
                                     unsigned char thres_low,
                                     int one_channel);
 
-/* Función que, de modo eficiente, trata de unir segmentos alineados, agru-
- * pando en torno a los mas largos. También elimina aquellos muy cortos o que
- * no tienen un contraste mínimo. */
+/* Funciï¿½n que, de modo eficiente, trata de unir segmentos alineados, agru-
+ * pando en torno a los mas largos. Tambiï¿½n elimina aquellos muy cortos o que
+ * no tienen un contraste mï¿½nimo. */
 void mycvPostProcessSegments(TSegment **segments,
                              int *numsegments,
                              float minlength,float maxlengthtodel,
