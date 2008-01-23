@@ -29,10 +29,15 @@ all: $(ALL)
 %: %.hs auxc
 	@ghc -threaded --make $< -o $@ $(LIBS)
 
-auxc: $(CDIR)/auxIpp.o $(CDIR)/adapt.o $(CDIR)/Structs.hs $(CONTRIB)
+auxc: $(CDIR)/auxIpp.o $(CDIR)/adapt.o \
+      $(CDIR)/Structs.hs $(CONTRIBPATH)/Segments/Structs.hs\
+      $(CONTRIB)
 
 $(CDIR)/Structs.hs: $(CDIR)/Structs.hsc
 	hsc2hs -I$(IPP)/include $(CDIR)/Structs.hsc
+
+$(CONTRIBPATH)/Segments/Structs.hs: $(CONTRIBPATH)/Segments/Structs.hsc
+	hsc2hs -I$(IPP)/include $(CONTRIBPATH)/Segments/Structs.hsc
 
 $(CDIR)/auxIpp.o: $(CDIR)/auxIpp.c $(CDIR)/auxIpp.h
 	gcc -O4 -c -I$(IPP)/include $(CDIR)/auxIpp.c -o $(CDIR)/auxIpp.o

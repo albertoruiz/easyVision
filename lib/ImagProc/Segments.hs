@@ -36,24 +36,25 @@ import Debug.Trace
 import Vision
 import Numeric.LinearAlgebra
 import ImagProc.Polyline
+import ImagProc.C.Segments.Structs
 
 vector = fromList :: [Double] -> Vector Double
 
 debug x = trace (show x) x
 
 
-foreign import ccall "C/Segments/segments.h mycvSegmentsWithParms_8u_C1_C3"
-    c_segments :: Ptr () -> Int -> 
+foreign import ccall "C/Segments/mycvSegments.h mycvSegmentsWithParms_8u_C1_C3"
+    c_segments :: Ptr CUChar -> Int ->
                   Int -> Int -> Int -> Int ->
-                  Ptr (Ptr ()) ->
-                  Ptr Int ->
+                  Ptr (Ptr CSegment) ->
+                  Ptr CInt ->
                   Int -> Float ->
                   Int ->
                   CUChar -> CUChar -> Int -> IO ()
 
-foreign import ccall "C/Segments/segments.h mycvPostProcessSegments"
-    c_post_process_segments :: Ptr (Ptr ()) ->
-                               Ptr Int ->
+foreign import ccall "C/Segments/mycvSegments.h mycvPostProcessSegments"
+    c_post_process_segments :: Ptr (Ptr CSegment) ->
+                               Ptr CInt ->
                                Float -> Float ->
                                CUChar -> IO ()
 
@@ -79,22 +80,17 @@ segments rad we medsz th tl pp (G im) = unsafePerformIO $ do
         h = fromIntegral h'
         w = fromIntegral w'
         r = (h+1)/(w+1)
-    segs <- mapM (segment ps h w r) [0 .. n-1]
+    csegs <- peekArray (fromIntegral n-1) ps
     touchForeignPtr (fptr im)
     free ps
     free pi
     free pn
-    return segs
+    return $ map (segment h w r) csegs
 
-segment p h w r k = do
-    let jump = (4+5) * sizeOf (undefined ::Float) + 8 + sizeOf (undefined :: Int)
-    --let q = advancePtr (castPtr p) (k*jump) :: Ptr Char
-    let q = plusPtr p (k*jump)
-    s@[x1,y1,x2,y2] <- peekArray 4 (castPtr q :: Ptr Float)
-    let res = Segment { extreme1 = Point (1-2*float2Double x1/w) (r-2*float2Double y1*r/h)
-                      , extreme2 = Point (1-2*float2Double x2/w) (r-2*float2Double y2*r/h)
-                      }
-    return res
+segment h w r (CSegment {seg_x1=x1, seg_y1=y1, seg_x2=x2, seg_y2=y2}) =
+    Segment { extreme1 = Point (1-2*float2Double x1/w) (r-2*float2Double y1*r/h)
+            , extreme2 = Point (1-2*float2Double x2/w) (r-2*float2Double y2*r/h)
+            }
 
 {-
 typedef struct {

@@ -914,7 +914,6 @@ floodFill8u (G im) (Pixel r c) val = do
     pbufsize <- malloc
     (ippiFloodFillGetSize // roiSZ roi) pbufsize // checkIPP "ippiFloodFillGetSize" []
     bufsize <- peek pbufsize
-    print bufsize
     buf <- mallocBytes (fromIntegral bufsize)
     free pbufsize
     (ippiFloodFill_8Con_8u_C1IR // dst im (vroi im) // apSZ (c-c1) (r-r1)) val pregion buf // checkIPP "ippiFloodFill_8Con_8u_C1IR" [im]
