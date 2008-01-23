@@ -50,7 +50,7 @@ foreign import ccall "auxIpp.h ippGetStatusString" ippGetStatusString :: Int -> 
 
 foreign import ccall "auxIpp.h getPoints32f"
     c_getPoints32f :: Ptr Float -> Int -> Int -> Int -> Int -> Int ->
-                      Int -> Ptr Int -> Ptr Int -> IO Int
+                      Int -> Ptr CInt -> Ptr CInt -> IO Int
 
 foreign import ccall "auxIpp.h auxResize_32f_C1R"
      c_resize32f :: Ptr() -> Int -> Int -> Int ->
@@ -92,7 +92,7 @@ foreign import ccall "auxIpp.h auxDCTInv_32f_C1R"
 
 
 foreign import ccall "auxIpp.h lbp8u"
-     lbp8u :: Int -> Ptr () -> Int -> Int -> Int -> Int -> Int -> Ptr Int -> IO Int
+     lbp8u :: Int -> Ptr () -> Int -> Int -> Int -> Int -> Int -> Ptr CInt -> IO Int
 
 foreign import ccall "auxIpp.h hsvcodeTest"
      hsvcodeTest :: Int -> Int -> Int -> Ptr () -> Int -> Int -> Int -> Int -> Int -> IO Int

@@ -700,7 +700,7 @@ getPoints32f mx (F im) = do
                    mx ptot r
     touchForeignPtr (fptr im)
     tot <- peek ptot
-    hp <- peekArray tot r
+    hp <- peekArray (fromIntegral tot) r
     free ptot
     free r
     return (partitPixel hp)
@@ -710,10 +710,10 @@ partit :: Int -> [a] -> [[a]]
 partit _ [] = []
 partit n l  = take n l : partit n (drop n l)
 
-partitPixel :: [Int] -> [Pixel]
+partitPixel :: [CInt] -> [Pixel]
 partitPixel [] = []
 partitPixel [a] = error "partitPixel on a list with odd number of entries"
-partitPixel (r:c:l) = Pixel r c : partitPixel l
+partitPixel (r:c:l) = Pixel (fromIntegral r) (fromIntegral c) : partitPixel l
 
 ----------------------------------------------------------
 -- TO DO: parameters with a record
@@ -950,7 +950,7 @@ lbp th (G im) = unsafePerformIO $ do
         // checkIPP "lbp" [im]
     r <- peekArray 256 hist
     free hist
-    return r
+    return $ map fromIntegral r
 
 -- normalized lbp histogram
 lbpN t im = map ((*sc).fromIntegral) (tail h) where

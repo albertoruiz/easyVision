@@ -92,17 +92,6 @@ segment h w r (CSegment {seg_x1=x1, seg_y1=y1, seg_x2=x2, seg_y2=y2}) =
             , extreme2 = Point (1-2*float2Double x2/w) (r-2*float2Double y2*r/h)
             }
 
-{-
-typedef struct {
-    float x1,y1,x2,y2; /* Extremos del segmento. */
-    unsigned char gray_izq,gray_der; /* Valores de gris medianos. */
-    unsigned char r_izq,r_der,g_izq,g_der,b_izq,b_der; /* RGB medianos. */
-    int num_points; /* Nmero de puntos pasa-alta capturados. */
-    float cx,cy,angle,length; /* Centro, ángulo y longitud del segmento.*/
-    float desv_perp; /* Desviación típica en dirección perpendicular. */
-} TSegment;
--}
-
 ------------------------------------------------------------------------------
 
 
