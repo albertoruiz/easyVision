@@ -1,5 +1,4 @@
 EASYVISION=../../../
-IPP=/opt/intel/ipp/5.3/ia32
 INCLUDE = -I$(IPP)/include
 LIBDIR = -L/usr/lib -L$(IPP)/sharedlib
 LIBS = -lm -lippi -lippcc -lippcv -lGL -lglut

@@ -127,7 +127,7 @@ ht "Ipp64f*" = "Ptr Double"
 ht "Ipp32s*" = "Ptr Int32"
 ht "IppiFFTSpec_R_32f*" = "Ptr ()"
 ht "IppiFFTSpec_R_32f**" = "Ptr ()"
-ht "IppiConnectedComp*" = "Ptr ()"
+ht "IppiConnectedComp*" = "Ptr IppiConnectedComp"
 ht x = error $ " UNKNOWN TYPE: "++x
 
 -----------------------------------------------------------------
@@ -135,7 +135,8 @@ ht x = error $ " UNKNOWN TYPE: "++x
 wmod  = "-- generated automatically by adapter.hs\n\n"
      ++ "{-# OPTIONS -ffi -fvia-C #-}\n\n"
      ++ "module ImagProc.Ipp.Adapt where\n\n"
-     ++ "import Foreign\nimport Foreign.C.Types\n\n"
+     ++ "import Foreign\nimport Foreign.C.Types\n"
+     ++ "import ImagProc.Ipp.Structs\n\n"
 
 chead = "/* generated automatically by adapter.hs */\n\n"
 

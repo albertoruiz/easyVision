@@ -18,8 +18,10 @@ module ImagProc.Ipp (
     module ImagProc.Ipp.Core,
     module ImagProc.Ipp.Wrappers,
     module ImagProc.Ipp.Adapt,
+    module ImagProc.Ipp.Structs
 ) where
 
 import ImagProc.Ipp.Core
 import ImagProc.Ipp.Wrappers
 import ImagProc.Ipp.Adapt
+import ImagProc.Ipp.Structs

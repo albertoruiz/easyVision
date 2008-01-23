@@ -1,4 +1,10 @@
-IPP=/opt/intel/ipp/5.3/ia32
+#################################################################
+## The IPP environment variable is taken from the environment  ##
+## You should include in your .bashrc something like:          ##
+##                                                             ##
+## export IPP=/opt/intel/ipp/5.3/ia32                          ##
+## export LD_LIBRARY_PATH=$IPP/sharedlib                       ##
+#################################################################
 
 EVLIB = $(EASYVISION)/lib/
 
@@ -18,7 +24,10 @@ all: $(ALL)
 %: %.hs auxc
 	@ghc -threaded --make $< -o $@ $(LIBS)
 
-auxc: $(CDIR)/auxIpp.o $(CDIR)/adapt.o $(CONTRIB)
+auxc: $(CDIR)/auxIpp.o $(CDIR)/adapt.o $(CDIR)/Structs.hs $(CONTRIB)
+
+$(CDIR)/Structs.hs: $(CDIR)/Structs.hsc
+	hsc2hs -I$(IPP)/include $(CDIR)/Structs.hsc
 
 $(CDIR)/auxIpp.o: $(CDIR)/auxIpp.c $(CDIR)/auxIpp.h
 	gcc -O4 -c -I$(IPP)/include $(CDIR)/auxIpp.c -o $(CDIR)/auxIpp.o

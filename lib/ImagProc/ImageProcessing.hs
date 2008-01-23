@@ -907,7 +907,7 @@ genDistanceTransform f metrics (G im) = do
 floodFill8u :: ImageGray -> Pixel -> CUChar -> IO (ROI, Int, CUChar)
 floodFill8u (G im) (Pixel r c) val = do
     let roi@(ROI r1 r2 c1 c2) = vroi im
-    pregion <- mallocBytes 48 -- (8+3*8+(4+4+4+4))
+    pregion <- malloc
     pbufsize <- malloc
     (ippiFloodFillGetSize // roiSZ roi) pbufsize // checkIPP "ippiFloodFillGetSize" []
     bufsize <- peek pbufsize
@@ -915,10 +915,9 @@ floodFill8u (G im) (Pixel r c) val = do
     free pbufsize
     (ippiFloodFill_8Con_8u_C1IR // dst im (vroi im) // apSZ (c-c1) (r-r1)) val pregion buf // checkIPP "ippiFloodFill_8Con_8u_C1IR" [im]
     free buf
-    [area,value1,value2,value3] <- peekArray 4 (castPtr pregion :: Ptr Double)
-    [_,_,_,_,_,_,_,_,x,y,w,h] <- peekArray 12 (castPtr pregion :: Ptr Int)
+    IppiConnectedComp area value0 _ _ (IppiRect x y w h) <- peek pregion
     free pregion
-    return (ROI (r1+y) (r1+y+h-1) (c1+x) (c1+x+w-1), round area, round value1)
+    return (ROI (r1+y) (r1+y+h-1) (c1+x) (c1+x+w-1), round area, round value0)
 
 -- | Fills (as a side effect) a connected component in the image, starting at the seed pixel.
 -- This version admits a lower and higher difference in the pixel values.
@@ -926,7 +925,7 @@ floodFill8u (G im) (Pixel r c) val = do
 floodFill8uGrad :: ImageGray -> Pixel -> CUChar -> CUChar -> CUChar-> IO (ROI, Int, CUChar)
 floodFill8uGrad (G im) (Pixel r c) dmin dmax val = do
     let roi@(ROI r1 r2 c1 c2) = vroi im
-    pregion <- mallocBytes 48 -- (8+3*8+(4+4+4+4))
+    pregion <- malloc
     pbufsize <- malloc
     (ippiFloodFillGetSize // roiSZ roi) pbufsize // checkIPP "ippiFloodFillGetSize" []
     bufsize <- peek pbufsize
@@ -935,10 +934,9 @@ floodFill8uGrad (G im) (Pixel r c) dmin dmax val = do
     free pbufsize
     (ippiFloodFill_Grad8Con_8u_C1IR // dst im (vroi im) // apSZ (c-c1) (r-r1)) val dmin dmax pregion buf // checkIPP "ippiFloodFill_Grad8Con_8u_C1IR" [im]
     free buf
-    [area,value1,value2,value3] <- peekArray 4 (castPtr pregion :: Ptr Double)
-    [_,_,_,_,_,_,_,_,x,y,w,h] <- peekArray 12 (castPtr pregion :: Ptr Int)
+    IppiConnectedComp area value0 _ _ (IppiRect x y w h) <- peek pregion
     free pregion
-    return (ROI (r1+y) (r1+y+h-1) (c1+x) (c1+x+w-1), round area, round value1)
+    return (ROI (r1+y) (r1+y+h-1) (c1+x) (c1+x+w-1), round area, round value0)
 
 -- | Histogram of the 256 possible configurations of 3x3 image patches thresholded by the central pixel. Works inside the image ROI.
 lbp :: Int       -- ^ threshold tolerance
