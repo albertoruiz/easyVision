@@ -4,6 +4,11 @@
 ##                                                             ##
 ## export IPP=/opt/intel/ipp/5.3/ia32                          ##
 ## export LD_LIBRARY_PATH=$IPP/sharedlib                       ##
+##                                                             ##
+## in 64 bit machines you may also need:                       ##
+##                                                             ##
+## export IPPS=em64t                                           ##
+##                                                             ##
 #################################################################
 
 EVLIB = $(EASYVISION)/lib/
@@ -17,7 +22,7 @@ CONTRIB = $(CONTRIBPATH)/Segments/libsegments.a \
 LIBS = -i$(EVLIB) $(CDIR)/auxIpp.o $(CDIR)/adapt.o \
        -L$(CONTRIBPATH)/Segments -lsegments \
        -i$(CONTRIBPATH)/burns $(CONTRIBPATH)/burns/burns.o $(CONTRIBPATH)/burns/bitmap.o \
-       -L$(IPP)/sharedlib -lguide -lippcore -lippi -lipps -lippcc -lippvc -lippcv
+       -L$(IPP)/sharedlib -lguide -lippcore$(IPPS) -lippi$(IPPS) -lipps$(IPPS) -lippcc$(IPPS) -lippvc$(IPPS) -lippcv$(IPPS)
 
 all: $(ALL) 
 

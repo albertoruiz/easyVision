@@ -96,11 +96,14 @@ where
 
 import ImagProc.Ipp
 import Foreign hiding (shift)
-import Foreign.C.Types(CUChar)
+import Foreign.C.Types(CUChar,CInt)
 import Vision --hiding ((|-|),(|+|))
 import Numeric.LinearAlgebra
 import Numeric
 
+---------------------------------------
+fi :: Int -> CInt
+fi = fromIntegral
 ---------------------------------------
 
 imgAsR1 roifun im = do 
@@ -183,7 +186,7 @@ yuvToRGB (Y im) = do
     let ps = castPtr (ptr im) :: Ptr CUChar
     pokeArray psrc [ps, ps `advancePtr` (h*w), ps `advancePtr` (h*w + h*w `div` 4)]
     pstep <- mallocArray 3
-    pokeArray pstep [w, w`div`2, w`div`2]
+    pokeArray pstep (map fi [w, w`div`2, w`div`2])
     ippiYUV420ToRGB_8u_P3C3R (castPtr psrc) pstep (castPtr $ ptr r) (step r) // roiSZ (fullroi r) // checkIPP "yuvToRGB" [im]
     free psrc
     free pstep
@@ -201,7 +204,7 @@ rgbToYUV (C im) = do
     let ps = castPtr (ptr r) :: Ptr CUChar
     pokeArray pdst [ps, ps `advancePtr` (h*w), ps `advancePtr` (h*w + h*w `div` 4)]
     pstep <- mallocArray 3
-    pokeArray pstep [w, w`div`2, w`div`2]
+    pokeArray pstep (map fi [w, w`div`2, w`div`2])
     ippiRGBToYUV420_8u_C3P3R (castPtr $ ptr im) (step im) (castPtr pdst) pstep // roiSZ (fullroi r) // checkIPP "rgbToYUV" [im]
     free pdst
     free pstep
@@ -223,7 +226,7 @@ yuvToRGB_P (Y im) = do
     let ps = castPtr (ptr im) :: Ptr CUChar
     pokeArray psrc [ps, ps `advancePtr` (h*w), ps `advancePtr` (h*w + h*w `div` 4)]
     pstep <- mallocArray 3
-    pokeArray pstep [w, w`div`2, w`div`2]
+    pokeArray pstep (map fi [w, w`div`2, w`div`2])
     pdest <- mallocArray 3
     pokeArray pdest [ptr r, ptr g, ptr b]
     ippiYUV420ToRGB_8u_P3R (castPtr psrc) pstep (castPtr pdest) (step r) // roiSZ (fullroi r) // checkIPP "yuvToRGB_P" [im]
@@ -668,7 +671,7 @@ maxIndx (F im) = do
     free mx
     free px
     free py
-    return (v,Pixel y x)
+    return (v,Pixel (fromIntegral y) (fromIntegral x))
 
 -- | Returns the maximum value and its position in the roi of an image8u. The position is relative to the image.
 maxIndx8u :: ImageGray -> (CUChar,Pixel)
@@ -684,7 +687,7 @@ maxIndx8u (G im) = unsafePerformIO $ do
     free mx
     free px
     free py
-    return (v,Pixel (r1+y) (c1+x))
+    return (v,Pixel (r1 + fromIntegral y) (c1 + fromIntegral x))
 
 
 -- | Explores an image and returns a list of pixels (as [row,column]) where the image is greater than 0.0.
@@ -780,7 +783,7 @@ canny (F dx, F dy) (l,h) = do
     let roi = intersection (vroi dx) (vroi dy)
     (ippiCannyGetSize // roiSZ roi) ps // checkIPP "ippiCannyGetSize" []
     s <- peek ps
-    buffer <- mallocBytes s
+    buffer <- mallocBytes (fromIntegral s)
     (ippiCanny_32f8u_C1R // src dx roi // src dy roi // dst r roi) l h buffer
                          // checkIPP "ippiCanny_32f8u_C1R" [dx,dy]
     free buffer
@@ -844,7 +847,7 @@ genFFT ordx ordy flag alg = do
     pn <- malloc
     ippiFFTGetBufSize_R_32f st pn // checkIPP "FFTGetBufSize" []
     n <- peek pn
-    buf <- mallocBytes n
+    buf <- mallocBytes (fromIntegral n)
     let fft (F im) = do
         r <- imgAsR1 id im
         (ippiFFTFwd_RToPack_32f_C1R // src im (vroi im) // src r (vroi r)) st buf // checkIPP "FFTFwd_RToPack_32f_C1R" [im]
@@ -911,7 +914,8 @@ floodFill8u (G im) (Pixel r c) val = do
     pbufsize <- malloc
     (ippiFloodFillGetSize // roiSZ roi) pbufsize // checkIPP "ippiFloodFillGetSize" []
     bufsize <- peek pbufsize
-    buf <- mallocBytes bufsize
+    print bufsize
+    buf <- mallocBytes (fromIntegral bufsize)
     free pbufsize
     (ippiFloodFill_8Con_8u_C1IR // dst im (vroi im) // apSZ (c-c1) (r-r1)) val pregion buf // checkIPP "ippiFloodFill_8Con_8u_C1IR" [im]
     free buf
@@ -929,8 +933,7 @@ floodFill8uGrad (G im) (Pixel r c) dmin dmax val = do
     pbufsize <- malloc
     (ippiFloodFillGetSize // roiSZ roi) pbufsize // checkIPP "ippiFloodFillGetSize" []
     bufsize <- peek pbufsize
-    --print bufsize
-    buf <- mallocBytes bufsize
+    buf <- mallocBytes (fromIntegral bufsize)
     free pbufsize
     (ippiFloodFill_Grad8Con_8u_C1IR // dst im (vroi im) // apSZ (c-c1) (r-r1)) val dmin dmax pregion buf // checkIPP "ippiFloodFill_Grad8Con_8u_C1IR" [im]
     free buf
@@ -996,4 +999,4 @@ warpOn8u3 h (C r) (C im) = warpOn' h r im warpPerspectiveRGB inter_LINEAR "warpO
 
 -- | Mirror (as a side effect) an image.
 mirror8u :: ImageGray -> Int -> IO ()
-mirror8u (G im) axis = (ippiMirror_8u_C1IR // dst im (vroi im)) axis // checkIPP "ippiMirror_8u_C1IR" [im]
+mirror8u (G im) axis = (ippiMirror_8u_C1IR // dst im (vroi im)) (fi axis) // checkIPP "ippiMirror_8u_C1IR" [im]
