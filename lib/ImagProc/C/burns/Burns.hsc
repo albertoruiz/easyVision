@@ -31,10 +31,10 @@ instance Storable Line where
     (#poke Line, y2) ptr y2
 
 foreign import ccall unsafe "static burns.h burns_line_extraction"
-  c_burns_line_extraction :: Ptr () -> Int -> Int -> Int -> Int -> Int -> Double -> Ptr (Ptr Line) -> Ptr Int -> IO ()
+  c_burns_line_extraction :: Ptr () -> Int -> Int -> Int -> Int -> Int -> Double -> Ptr (Ptr Line) -> Ptr CInt -> IO ()
 
 foreign import ccall unsafe "static burns.h burns_line_extraction_demo"
-  c_burns_line_extraction_demo :: Ptr (Ptr Line) -> Ptr Int -> IO ()
+  c_burns_line_extraction_demo :: Ptr (Ptr Line) -> Ptr CInt -> IO ()
 
 foreign import ccall unsafe "static burns.h free_lines"
   c_free_lines :: Ptr Line -> IO ()
@@ -43,7 +43,7 @@ foreign import ccall unsafe "static burns.h print_lines"
   c_print_lines :: Ptr Line -> Int -> IO ()
 
 foreign import ccall unsafe "static bitmap.h read_bmp"
-  c_read_bmp :: CString -> Ptr Int -> Ptr Int -> Ptr Int -> IO (Ptr ())
+  c_read_bmp :: CString -> Ptr CInt -> Ptr CInt -> Ptr CInt -> IO (Ptr ())
 
 foreign import ccall unsafe "stdlib.h &free"
   p_c_free :: FunPtr (Ptr () -> IO ())
@@ -76,7 +76,7 @@ burns_line_extraction (G image) num_buckets min_gradient min_length = unsafePerf
       num_buckets min_gradient min_length lines_ptr num_lines_ptr
     lines <- peek lines_ptr
     num_lines <- peek num_lines_ptr
-    lines_list <- mapM (peekElemOff lines) [0 .. num_lines-1]
+    lines_list <- mapM (peekElemOff lines) [0 .. fromIntegral num_lines-1]
     --mapM_ (putStrLn . show) lines_list
     c_free_lines lines
     let segments = map (segment c1 r1 (isize image)) lines_list
@@ -95,10 +95,10 @@ read_bmp filename = do
     let img = Img {
       fptr=fpixels,
       ptr=pixels,
-      step=step,
+      step=fromIntegral step,
       layers = 1,
       datasize = 3,
       itype=RGB,
-      isize = Size height width,
+      isize = Size (fromIntegral height) (fromIntegral width),
       vroi = fullroi img }
     return $ C img
