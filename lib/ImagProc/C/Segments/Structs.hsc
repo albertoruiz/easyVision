@@ -28,7 +28,7 @@ data CSegment = CSegment {
     seg_x1, seg_y1, seg_x2, seg_y2 :: !Float,
     seg_gray_izq, seg_gray_der :: !CUChar,
     seg_r_izq, seg_r_der, seg_g_izq, seg_g_der, seg_b_izq,b_der :: !CUChar,
-    seg_num_points :: !Int,
+    seg_num_points :: !CInt,
     seg_cx, seg_cy, seg_angle, seg_length :: !Float,
     seg_desv_perp :: !Float
   }

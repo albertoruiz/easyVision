@@ -25,7 +25,7 @@ module ImagProc.Ipp.Structs (
 import Foreign
 import Foreign.C.Types(CInt)
 
-data IppiRect = IppiRect Int Int Int Int
+data IppiRect = IppiRect CInt CInt CInt CInt
 
 instance Storable IppiRect where
     sizeOf _ = #size IppiRect

@@ -104,6 +104,8 @@ import Numeric
 ---------------------------------------
 fi :: Int -> CInt
 fi = fromIntegral
+ti :: CInt -> Int
+ti = fromIntegral
 ---------------------------------------
 
 imgAsR1 roifun im = do 
@@ -920,7 +922,7 @@ floodFill8u (G im) (Pixel r c) val = do
     free buf
     IppiConnectedComp area value0 _ _ (IppiRect x y w h) <- peek pregion
     free pregion
-    return (ROI (r1+y) (r1+y+h-1) (c1+x) (c1+x+w-1), round area, round value0)
+    return (ROI (r1+ ti y) (r1+ti y+ti h-1) (c1+ti x) (c1+ti x+ti w-1), round area, round value0)
 
 -- | Fills (as a side effect) a connected component in the image, starting at the seed pixel.
 -- This version admits a lower and higher difference in the pixel values.
@@ -938,7 +940,7 @@ floodFill8uGrad (G im) (Pixel r c) dmin dmax val = do
     free buf
     IppiConnectedComp area value0 _ _ (IppiRect x y w h) <- peek pregion
     free pregion
-    return (ROI (r1+y) (r1+y+h-1) (c1+x) (c1+x+w-1), round area, round value0)
+    return (ROI (r1+ ti y) (r1+ti y+ti h-1) (c1+ti x) (c1+ti x+ti w-1), round area, round value0)
 
 -- | Histogram of the 256 possible configurations of 3x3 image patches thresholded by the central pixel. Works inside the image ROI.
 lbp :: Int       -- ^ threshold tolerance
