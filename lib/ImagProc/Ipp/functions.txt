@@ -61,3 +61,4 @@ ippcv.h ippiFloodFillGetSize
 ippcv.h ippiFloodFillGetSize_Grad
 ippcv.h ippiFloodFill_8Con_8u_C1IR
 ippcv.h ippiFloodFill_Grad8Con_8u_C1IR
+ippcore.h ippSetNumThreads

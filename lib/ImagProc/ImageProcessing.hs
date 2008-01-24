@@ -26,6 +26,7 @@ module ImagProc.ImageProcessing (
 , copyROI8u', copyROI8u3'
 , times
 , partit
+, ippSetNumThreads
 -- * Image manipulation
 , yuvToRGB
 , yuvToRGB_P

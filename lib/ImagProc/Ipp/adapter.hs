@@ -11,7 +11,7 @@ getHeader ipp [header,name] = do
         b = head $ filter (isSuffixOf "))") (inits a)
     return (prep.asList $ b)
 
-clean = rep (" (","(")  . rep ("( ","(") . rep (" ( ","(") . rep (", ",",")
+clean = rep (") )","))") . rep (" (","(")  . rep ("( ","(") . rep (" ( ","(") . rep (", ",",")
 
 rep (c,r) [] = []
 rep (c,r) f@(x:xs) 
@@ -73,6 +73,7 @@ ct "Ipp32s*" = "int*"
 ct "IppiFFTSpec_R_32f**" = "void*"
 ct "IppiFFTSpec_R_32f*" = "void*"
 ct "IppiConnectedComp*" = "void*"
+ct "numThr" = "int"
 ct x = error $ " UNKNOWN TYPE: "++x
 
 
@@ -128,6 +129,7 @@ ht "Ipp32s*" = "Ptr Int32"
 ht "IppiFFTSpec_R_32f*" = "Ptr ()"
 ht "IppiFFTSpec_R_32f**" = "Ptr ()"
 ht "IppiConnectedComp*" = "Ptr IppiConnectedComp"
+ht "numThr" = "CInt"
 ht x = error $ " UNKNOWN TYPE: "++x
 
 -----------------------------------------------------------------
