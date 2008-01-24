@@ -152,8 +152,8 @@ worker cam params focal sim inWindow state = do
 
   -- Extract segments using Burns' line extraction algorithm and find 4-sided
   -- polygons using extractQuads.
-  let segs = --burns_line_extraction image buckets mingrad minlen
-             segments 4 1.5 5 40 20 True image
+  let segs = burns_line_extraction image buckets mingrad minlen
+             --segments 4 1.5 5 40 20 True image
 
   let  closed4 = [p | Closed p <- extractQuads maxdis segs]
 
