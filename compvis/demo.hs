@@ -53,7 +53,6 @@ main = do
 
     fft <- genFFT 8 8 DivFwdByN AlgHintFast
 
-    ippSetNumThreads 0
     launch (worker w cam o fft)
 
 -----------------------------------------------------------------

@@ -16,10 +16,12 @@ EVLIB = $(EASYVISION)/lib/
 CDIR = $(EVLIB)/ImagProc/Ipp
 
 CONTRIBPATH = $(EVLIB)/ImagProc/C
-CONTRIB = $(CONTRIBPATH)/Segments/libsegments.a \
+CONTRIB = $(CONTRIBPATH)/simple.o \
+          $(CONTRIBPATH)/Segments/libsegments.a \
           $(CONTRIBPATH)/burns/burns.o
 
 LIBS = -i$(EVLIB) $(CDIR)/auxIpp.o $(CDIR)/adapt.o \
+       $(CONTRIBPATH)/simple.o \
        -L$(CONTRIBPATH)/Segments -lsegments \
        -i$(CONTRIBPATH)/burns $(CONTRIBPATH)/burns/burns.o $(CONTRIBPATH)/burns/bitmap.o \
        -L$(IPP)/sharedlib -lguide -lippcore$(IPPS) -lippi$(IPPS) -lipps$(IPPS) -lippcc$(IPPS) -lippvc$(IPPS) -lippcv$(IPPS)
@@ -29,7 +31,7 @@ all: $(ALL)
 %: %.hs auxc
 	@ghc -threaded --make $< -o $@ $(LIBS)
 
-auxc: $(CDIR)/auxIpp.o $(CDIR)/adapt.o \
+auxc: $(CDIR)/auxIpp.o $(CDIR)/adapt.o $()\
       $(CDIR)/Structs.hs $(CONTRIBPATH)/Segments/Structs.hs\
       $(CONTRIB)
 
@@ -41,6 +43,9 @@ $(CONTRIBPATH)/Segments/Structs.hs: $(CONTRIBPATH)/Segments/Structs.hsc
 
 $(CDIR)/auxIpp.o: $(CDIR)/auxIpp.c $(CDIR)/auxIpp.h
 	gcc -O4 -c -I$(IPP)/include $(CDIR)/auxIpp.c -o $(CDIR)/auxIpp.o
+
+$(CONTRIBPATH)/simple.o: $(CONTRIBPATH)/simple.c $(CONTRIBPATH)/simple.h
+	gcc -O4 -c $(CONTRIBPATH)/simple.c -o $(CONTRIBPATH)/simple.o
 
 $(CDIR)/adapt.o: $(CDIR)/adapt.c $(CDIR)/adapt.h
 	gcc -O4 -c -I$(IPP)/include $(CDIR)/adapt.c -o $(CDIR)/adapt.o

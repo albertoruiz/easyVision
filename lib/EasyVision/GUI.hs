@@ -28,7 +28,7 @@ module EasyVision.GUI (
 
 import EasyVision.Draw
 import EasyVision.Util
-import ImagProc.Ipp.Core -- (Size(..))
+import ImagProc.Ipp(Size(..),ippSetNumThreads,ROI(..))
 import Graphics.UI.GLUT hiding (RGB, Matrix, Size)
 import qualified Graphics.UI.GLUT as GL
 import Data.IORef
@@ -158,6 +158,8 @@ prepare :: IO ()
 prepare = do
     getArgsAndInitialize
     initialDisplayMode $= [DoubleBuffered, WithDepthBuffer]
+    ippSetNumThreads 1
+    return ()
 
 -- | Starts the application with a worker function (idle callback).
 launch :: IO () -> IO ()

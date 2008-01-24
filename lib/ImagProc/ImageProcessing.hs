@@ -26,7 +26,6 @@ module ImagProc.ImageProcessing (
 , copyROI8u', copyROI8u3'
 , times
 , partit
-, ippSetNumThreads
 -- * Image manipulation
 , yuvToRGB
 , yuvToRGB_P
@@ -96,6 +95,7 @@ module ImagProc.ImageProcessing (
 where
 
 import ImagProc.Ipp
+import ImagProc.C.Simple
 import Foreign hiding (shift)
 import Foreign.C.Types(CUChar,CInt)
 import Vision --hiding ((|-|),(|+|))
