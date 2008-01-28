@@ -1,5 +1,10 @@
+module Main where
+
 import System.Environment
 import Data.List
+import Debug.Trace
+
+debug x = trace (show x) x
 
 getHeader ipp [header,name] = do
     f <- readFile (ipp++"/include/"++header)
@@ -36,6 +41,7 @@ main = do
     writeFile "adapt.h" (chead ++ (unlines $ map mkh hds))
     writeFile "adapt.c" (cdef ++ (unlines $ map mkd hds))
     writeFile "Adapt.hs" (wmod ++ (unlines $ map mkw hds))
+    writeFile "Auto.hs" (autodefs hds)
 
 
 mkh' (n,as) = "int "++n ++"x(" ++ concat (intersperse ", " (map tr' as))++")"
@@ -144,3 +150,56 @@ chead = "/* generated automatically by adapter.hs */\n\n"
 
 cdef  = "/* generated automatically by adapter.hs */\n\n"
      ++ "#include <ipp.h>\n\n"
+
+------------------------------------------------------------------
+
+restArgs arity args = [(t,n)| (t,n) <- args, arity n]
+mainArgs arity args = [(t,n)| (t,n) <- args, not (arity n)]
+
+reorderArgs arity args = restArgs arity args ++ mainArgs arity args
+
+pickArgs arity args = (restArgs arity args, mainArgs arity args)
+
+arityaux 0 t = not $ t `elem` ["pDst", "dstStep", "DstStep","pDst[3]","dstStep[3]","roiSize","dstRoiSize"]
+
+arityaux 1 t = arityaux 0 t && not (t `elem` ["pSrc", "srcStep","pSrc[3]","srcStep[3]"])
+
+arityaux 2 t = arityaux 0 t && not (t `elem` ["pSrc1", "src1Step", "pSrc2", "src2Step","pSrc1[3]", "src1Step[3]", "pSrc2[3]", "src2Step[3]"])
+
+
+hasDst tns = ("pDst" `elem` tns || "pDst[3]" `elem` tns) && ("roiSize" `elem` tns || "dstRoiSize" `elem` tns)
+arity 2 tns = hasDst tns && ("pSrc2" `elem` tns || "pSrc2[3]" `elem` tns)
+arity 1 tns = hasDst tns && ("pSrc" `elem` tns || "pSrc[3]" `elem` tns)
+arity 0 tns = hasDst tns && not (arity 2 tns) && not (arity 1 tns)
+
+
+autofun k hds = unlines [ver k f | f@(_, args) <- hds, arity k (map snd args)]
+
+autodefs hds = (automod++) $ rep ("DstStep","dstStep") $ rep ("[3]","") $ rep ("(f )","f") $
+    "\n-------- arity 0 -------------\n\n" ++
+    autofun 0 hds
+    ++ "-------- arity 1 -------------\n\n" ++
+    autofun 1 hds
+    ++ "\n------ arity 2 -------------\n\n" ++
+    autofun 2 hds
+    ++ "\n----------------------------\n"
+
+ver k (n,args) = "io"++drop 4 n ++" "++ par ++ " = " ++ mk ++ "\n    where " ++
+                     "f " ++ unwords (map tr args') ++ " = " ++ n ++" "++ unwords (map tr args) ++ "\n"
+    where args' = reorderArgs ari args
+          tr ("IppiSize",n) = n++"_w "++n++"_h"
+          tr ("IppiPoint",n) = n++"_x "++n++"_y"
+          tr (_,n) = n
+          ari = arityaux k
+          par = unwords (map tr (restArgs ari args))
+          mk = autoname++" ("++unwords ["f",par]++")"
+          autoname = "auto_"++show k++"_" ++(suffix n) where
+
+suffix n = (iterate (tail.dropWhile (/='_')) n) !! k
+    where k = length (filter (== '_') n) - 1
+
+automod  = "-- generated automatically by adapter.hs\n\n"
+     ++ "{-# OPTIONS #-}\n\n"
+     ++ "module ImagProc.Ipp.Auto where\n\n"
+--     ++ "import Foreign\nimport Foreign.C.Types\n"
+     ++ "import ImagProc.Ipp.AutoGen\nimport ImagProc.Ipp.Adapt\n"

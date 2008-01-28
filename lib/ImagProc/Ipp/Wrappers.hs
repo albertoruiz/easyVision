@@ -23,6 +23,8 @@ import Foreign.C.Types
 
 foreign import ccall "auxIpp.h ippGetStatusString" ippGetStatusString :: Int -> IO (Ptr CChar)
 
+foreign import ccall "auxIpp.h ippSetNumThreads" ippSetNumThreads :: Int -> IO Int
+
 foreign import ccall "auxIpp.h auxWarpPerspective_32f_C1R"
      warpPerspective32f :: Ptr() -> Int -> Int -> Int ->
                            Int -> Int -> Int -> Int ->

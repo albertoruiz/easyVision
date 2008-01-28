@@ -21,6 +21,7 @@ module Vision.Stereo
 , epipolarQuality
 , epipoles
 , fundamentalFromCameras
+, canonicalCameras
   -- * Essential Matrix
 , estimateEssential
 , estimateEssential'

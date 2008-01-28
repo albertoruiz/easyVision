@@ -22,7 +22,7 @@ module ImagProc.Ipp.Core
             -- * Creation of images
           , img, imgAs, getData32f, setData32f, setData8u, value, setValue
             -- * Regions of interest
-          , fullroi, shrink, shift, intersection, roiArea, invalidROIs
+          , fullroi, shrink, shift, intersection, roiSize, roiArea, invalidROIs
             -- * Wrapper tools
           , src, dst, checkIPP, warningIPP, (//), purifyWith
           , roiSZ, apSZ
@@ -156,6 +156,11 @@ apSZ w h f = f w h
 -- | Creates a roi with the whole size of an image.
 fullroi :: Img -> ROI
 fullroi Img {isize = Size h w} = ROI {r1=0, r2=h-1, c1=0, c2=w-1}
+
+-- | Size of a ROI
+roiSize :: ROI -> Size 
+roiSize r = Size (r2 r - r1 r +1) (c2 r - c1 r +1)
+
 
 -- | Creates a new roi by reducing in (r,c) units the rows and columns or a given roi. If r or c are negative the roi expands.
 shrink :: (Int,Int)  -> ROI -> ROI
