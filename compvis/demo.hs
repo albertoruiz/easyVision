@@ -19,6 +19,10 @@ import Data.List(minimumBy, maximumBy)
 
 import ImagProc.Ipp.Core
 
+import ImagProc.Ipp.Auto
+
+gaussi im = purifyWith (set32f 0) (ioFilterGauss_32f_C1R 55 "kk" (shrink (2,2)) im)
+gaussi' im = unsafePerformIO (ioFilterGauss_32f_C1R 55 "kk" (shrink (2,2)) im)
 ------------------------------------------------------------
 
 main = do
@@ -49,7 +53,7 @@ main = do
         , "Median","Gaussian","Laplacian","HighPass","Histogram"
         ,"Integral","Threshold","FloodFill","Contours","Distance", "Hessian"
         ,"Corners", "Features", "Segments", "Canny", "DCT", "FFT", "Test 1", "Test 2"
-        , "LBP"]
+        , "LBP","GaussianNew"]
 
     fft <- genFFT 8 8 DivFwdByN AlgHintFast
 
@@ -198,8 +202,14 @@ worker wDemo cam param fft = do
              im <- yuvToGray orig
              s <- (smooth `times` median Mask5x5) im
              drawImage s
-        "Gaussian" -> 
-             cam >>= yuvToGray >>= scale8u32f 0 1 >>= (smooth `times` gauss Mask5x5) >>= drawImage
+        "Gaussian" -> do
+             (t,a) <- timing $
+                 cam >>= yuvToGray >>= scale8u32f 0 1 >>= (smooth `times` gauss Mask5x5) >>= drawImage
+             text2D 30 30 t
+        "GaussianNew" -> do
+             (t,a) <- timing $
+                 drawImage . (!!smooth) . iterate gaussi . float . gray . channels =<< cam
+             text2D 30 30 t
         "Laplacian" -> 
              cam >>= yuvToGray >>= scale8u32f (-1) 1 >>= (smooth `times` gauss Mask5x5)
              >>= laplace Mask5x5

@@ -64,7 +64,7 @@ imgAsR1 roifun im = do
     r <- imgAs im
     return r {vroi = roifun (vroi im)}
 
-cr1 f msg im r = f // src im (vroi im) // dst r (vroi r) // checkIPP msg [im]
+cr1 f msg im r = f // src im (vroi r) // dst r (vroi r) // checkIPP msg [im]
 
 auto_1_8u_C1R f msg roifun (G im) = do
     r <- imgAsR1 roifun im
@@ -111,7 +111,7 @@ imgAsR2 roifun im1 im2 = do
     r <- imgAs im1
     return r {vroi = roifun (vroi im1) (vroi im2)}
 
-cr2 f msg im1 im2 r = f // src im1 (vroi im1) // src im2 (vroi im2)// dst r (vroi r) // checkIPP msg [im1,im2]
+cr2 f msg im1 im2 r = f // src im1 (vroi r) // src im2 (vroi r)// dst r (vroi r) // checkIPP msg [im1,im2]
 
 auto_2_8u_C1R f msg roifun (G im1) (G im2) = do
     r <- imgAsR2 roifun im1 im2

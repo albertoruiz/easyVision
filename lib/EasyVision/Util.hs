@@ -53,8 +53,8 @@ timing act = do
     t0 <- getCPUTime
     a <- act
     t1 <- getCPUTime
-    printf "%.2f CPU seconds\n" $ (fromIntegral ((t1 - t0) `div` (10^10)) / 100 :: Double)
-    return a
+    let t = printf "%.2f CPU seconds\n" $ (fromIntegral ((t1 - t0) `div` (10^10)) / 100 :: Double)
+    return (t,a)
 
 debug x = trace (show x) x
 
