@@ -192,7 +192,7 @@ ver k (n,args) = "io"++drop 4 n ++" "++ par ++ " = " ++ mk ++ "\n    where " ++
           tr (_,n) = n
           ari = arityaux k
           par = unwords (map tr (restArgs ari args))
-          mk = autoname++" ("++unwords ["f",par]++")"
+          mk = autoname++" ("++unwords ["f",par]++") "++"\""++n++"\""
           autoname = "auto_"++show k++"_" ++(suffix n) where
 
 suffix n = (iterate (tail.dropWhile (/='_')) n) !! k

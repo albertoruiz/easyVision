@@ -14,6 +14,7 @@ Some image processing routines expressed as pure functions, instead the IO appro
 -----------------------------------------------------------------------------
 
 module ImagProc.Pure (
+    pure,
     (.*),
     (|+|),(|-|),(|*|),
     andI,orI,notI
@@ -21,25 +22,28 @@ module ImagProc.Pure (
 where
 
 import ImagProc.Ipp.Core
+import ImagProc.Generic
 import ImagProc.ImageProcessing
+
+pure f = purifyWith (set zeroP) f
 
 infixl 7  |*|, .*
 infixl 6  |+|, |-|
 
 -- | image scaling, zero outside the roi
 (.*) :: Float -> ImageFloat -> ImageFloat
-v .* im = purifyWith (set32f 0) (scale32f v im)
+v .* im = pure (scale32f v im)
 
 -- | image arithmetic, pixel by pixel, zero outside the roi
 (|+|),(|-|),(|*|) :: ImageFloat -> ImageFloat -> ImageFloat
-a |+| b = purifyWith (set32f 0) (a `add32f` b)
-a |-| b = purifyWith (set32f 0) (a `sub32f` b)
-a |*| b = purifyWith (set32f 0) (a `mul32f` b)
+a |+| b = pure (a `add32f` b)
+a |-| b = pure (a `sub32f` b)
+a |*| b = pure (a `mul32f` b)
 
 -- | image logic, pixel by pixel, false outside the roi
 andI, orI :: ImageGray -> ImageGray -> ImageGray
-andI a b = purifyWith (set8u 0) (a `and8u` b)
-orI  a b = purifyWith (set8u 0) (a `or8u`  b)
+andI a b = pure (a `and8u` b)
+orI  a b = pure (a `or8u`  b)
 
 notI :: ImageGray -> ImageGray
-notI a = purifyWith (set8u 0) (not8u a)
+notI a = pure (not8u a)

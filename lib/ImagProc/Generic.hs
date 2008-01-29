@@ -31,6 +31,7 @@ import Numeric.LinearAlgebra
 import Vision
 
 class Image image => GImg pixel image | pixel -> image, image -> pixel where
+    zeroP :: pixel
     set :: pixel -> ROI -> image -> IO ()
     copy :: image -> ROI -> image -> ROI -> IO ()
     -- | Resizes the roi of a given image.
@@ -40,6 +41,7 @@ class Image image => GImg pixel image | pixel -> image, image -> pixel where
     toYUV :: image -> ImageYUV
 
 instance GImg CUChar ImageGray where
+    zeroP = 0
     set = set8u
     copy = copyROI8u'
     resize sz = unsafePerformIO . resize8u sz
@@ -48,6 +50,7 @@ instance GImg CUChar ImageGray where
     toYUV = unsafePerformIO . grayToYUV
 
 instance GImg Float ImageFloat where
+    zeroP = 0
     set = set32f
     copy = copyROI32f'
     resize sz = unsafePerformIO . resize32f sz
@@ -56,6 +59,7 @@ instance GImg Float ImageFloat where
     toYUV i = unsafePerformIO $ scale32f8u 0 1 i >>= grayToYUV
 
 instance GImg (CUChar,CUChar,CUChar) ImageRGB where
+    zeroP = (0,0,0)
     set (r,g,b) = set8u3 r g b
     copy = copyROI8u3'
     resize sz = unsafePerformIO . resize8u3 sz

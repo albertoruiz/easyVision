@@ -5,7 +5,7 @@
 -- ./demo tv://
 
 import EasyVision
-import Graphics.UI.GLUT hiding (RGB,Size,minmax,histogram,Point)
+import Graphics.UI.GLUT hiding (RGB,Size,minmax,histogram,Point,set)
 import qualified Graphics.UI.GLUT as GL
 import Data.IORef
 import System.Exit
@@ -21,8 +21,12 @@ import ImagProc.Ipp.Core
 
 import ImagProc.Ipp.Auto
 
-gaussi im = purifyWith (set32f 0) (ioFilterGauss_32f_C1R 55 "kk" (shrink (2,2)) im)
-gaussi' im = unsafePerformIO (ioFilterGauss_32f_C1R 55 "kk" (shrink (2,2)) im)
+
+
+gaussp = pure . ioFilterGauss_32f_C1R 55 (shrink (2,2))
+
+gaussi im = unsafePerformIO (ioFilterGauss_32f_C1R 55 (shrink (2,2)) im)
+gaussin n = pure . (n `times` (ioFilterGauss_32f_C1R 55 (shrink (2,2))))
 ------------------------------------------------------------
 
 main = do
@@ -38,7 +42,7 @@ main = do
                            ("area",percent 5),
                            ("h",percent 20),
                            ("fracpix",realParam (1.5) 0 10),
-                           ("smooth",intParam 3 0 10),
+                           ("smooth",intParam 3 0 20),
                            ("smooth2",intParam 1 0 10),
                            ("lbpThres",intParam 0 0 100)]
 
@@ -53,7 +57,7 @@ main = do
         , "Median","Gaussian","Laplacian","HighPass","Histogram"
         ,"Integral","Threshold","FloodFill","Contours","Distance", "Hessian"
         ,"Corners", "Features", "Segments", "Canny", "DCT", "FFT", "Test 1", "Test 2"
-        , "LBP","GaussianNew"]
+        , "LBP","GaussianNew","OtroGaussian"]
 
     fft <- genFFT 8 8 DivFwdByN AlgHintFast
 
@@ -208,7 +212,11 @@ worker wDemo cam param fft = do
              text2D 30 30 t
         "GaussianNew" -> do
              (t,a) <- timing $
-                 drawImage . (!!smooth) . iterate gaussi . float . gray . channels =<< cam
+                 drawImage . (!!smooth) . iterate gaussp . float . gray . channels =<< cam
+             text2D 30 30 t
+        "OtroGaussian" -> do
+             (t,a) <- timing $
+                 drawImage . gaussin smooth . float . gray . channels =<< cam
              text2D 30 30 t
         "Laplacian" -> 
              cam >>= yuvToGray >>= scale8u32f (-1) 1 >>= (smooth `times` gauss Mask5x5)
