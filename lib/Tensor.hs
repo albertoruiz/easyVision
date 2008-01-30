@@ -1,4 +1,4 @@
-{-# OPTIONS_GHC -fglasgow-exts #-}
+{-# OPTIONS_GHC -fglasgow-exts -fallow-undecidable-instances #-}
 
 -----------------------------------------------------------------------------
 -- |
@@ -20,11 +20,11 @@ module Tensor (
     Tensor, tensor, scalar,
     -- * Manipulation
     IdxName, IdxType(..), IdxDesc(..), structure, dims, coords, parts,
-    tridx, withIdx, raise,
+    tridx, withIdx, (!), raise,
     -- * Operations
     addT, mulT,
     -- * Exterior Algebra
-    wedge, dual, leviCivita, innerLevi, innerAT, niceAS,
+    (/\),(\/), dual, leviCivita, innerLevi, innerAT, niceAS,
     -- * Misc
     liftTensor, liftTensor2
 ) where
@@ -50,6 +50,32 @@ instance Show IdxDesc where
 data Tensor t = T { dims   :: [IdxDesc]
                   , ten    :: Vector t
                   }
+
+--------------------------------------------------------------------------
+
+addTOk t1 t2 | compat t1 t2 = addT t1 t2'
+             | otherwise = error "trying to add incompatible tensors"
+    where compat t1 t2 = sort (dims t1) == sort (dims t2)
+          t2' = tridx names t2
+          names = map idxName (dims t1)
+
+subTOk t1 t2 = addTOk t1 (liftTensor negate t2)
+
+instance (Linear Vector t, Eq t) => Eq (Tensor t) where
+    t1 == t2 = sort (dims t1) == sort (dims t2) && coords t1 == coords t2'
+        where t2' = tridx names t2
+              names = map idxName (dims t1)
+
+
+instance (Linear Vector t) => Num (Tensor t) where
+    a + b = addTOk a b
+    a * b = mulT a b
+    negate t = scalar (-1) * t
+    fromInteger n = scalar (fromInteger n)
+    abs t = error "abs for tensors not defined"
+    signum t = error "signum for tensors not defined"
+
+---------------------------------------------------------------------------
 
 -- | returns the coordinates of a tensor in row - major order
 coords :: Tensor t -> Vector t
@@ -139,6 +165,12 @@ withIdx :: Tensor t -> [IdxName] -> Tensor t
 withIdx (T d v) l = T d' v
     where d' = zipWith f d l
           f i n = i {idxName=n}
+
+
+infixl 8 !
+-- | A version of withIdx for single letter index names, all in a String
+(!) :: Tensor t -> String -> Tensor t
+t ! l = withIdx t (map return l)
 
 
 -- | raises or lowers all the indices of a tensor (with euclidean metric)
@@ -355,3 +387,17 @@ niceAS t = filter ((/=0.0).fst) $ zip vals base
           n = idxDim . head . dims $ t
           partF t i = part t (name,i) where name = idxName . head . dims $ t
           asBase r n = filter (\x-> (x==nub x && x==sort x)) $ sequence $ replicate r [1..n]
+
+infixl 5 /\
+-- | the exterior (wedge) product
+(/\) :: (Linear Vector t) => Tensor t -> Tensor t -> Tensor t
+a /\ b = wedge a b
+
+infixl 4 \/
+-- | the \"meet\" operator (e.g. subspace intersection)
+(\/) :: (Linear Vector t) => Tensor t -> Tensor t -> Tensor t
+a \/ b = meet a b
+
+meet a b = innerLevi [dual a, dual b]
+--meet a b = dual $ (dual a) /\ (dual b)
+

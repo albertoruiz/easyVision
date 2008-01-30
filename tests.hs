@@ -112,18 +112,12 @@ a :~n~: b = dist a b < 10^^(-n)
 
 ---------------
 
-infixl 8 !
-t ! l = withIdx t (map return l)
-
-infixl 7 <*>
-(<*>) = mulT
-
 tTrans m = tensor [rows m, -cols m] (flatten m)
 
 eps3 = leviCivita 3
 eps4 = raise $ leviCivita 4
 
-tFundamental c1 c2 = eps3!"pqr" <*> eps4!"bcij" <*> c1!"pb" <*> c1!"qc" <*> c2!"si" <*> c2!"tj" <*> eps3!"stk"
+tFundamental c1 c2 = eps3!"pqr" * eps4!"bcij" * c1!"pb" * c1!"qc" * c2!"si" * c2!"tj" * eps3!"stk"
 
 c1 = syntheticCamera $ easyCamera 40 (0,0,0) (0.5,0,1) 0
 ct1 = tTrans c1
