@@ -19,7 +19,8 @@ module ImagProc.Ipp (
     module ImagProc.Ipp.Wrappers,
     module ImagProc.Ipp.Adapt,
     module ImagProc.Ipp.Structs,
-    module ImagProc.Ipp.Auto
+    module ImagProc.Ipp.Auto,
+    module ImagProc.Ipp.Manual
 ) where
 
 import ImagProc.Ipp.Core
@@ -27,3 +28,4 @@ import ImagProc.Ipp.Wrappers
 import ImagProc.Ipp.Adapt
 import ImagProc.Ipp.Structs
 import ImagProc.Ipp.Auto
+import ImagProc.Ipp.Manual

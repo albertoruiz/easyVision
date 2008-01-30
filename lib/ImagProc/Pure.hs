@@ -21,9 +21,8 @@ module ImagProc.Pure (
 )
 where
 
-import ImagProc.Ipp.Core
+import ImagProc.Ipp
 import ImagProc.Generic
-import ImagProc.ImageProcessing
 
 pure f = purifyWith (set zeroP) f
 

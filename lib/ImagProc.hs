@@ -18,8 +18,6 @@ module ImagProc (
     module ImagProc.Images,
     module ImagProc.Camera,
     module ImagProc.ImageProcessing,
-    module ImagProc.Generic,
-    module ImagProc.Pure,
     module ImagProc.Saddle,
     module ImagProc.Segments,
     module ImagProc.Polyline
@@ -28,8 +26,6 @@ module ImagProc (
 import ImagProc.Images
 import ImagProc.Camera
 import ImagProc.ImageProcessing
-import ImagProc.Generic
-import ImagProc.Pure
 import ImagProc.Saddle
 import ImagProc.Segments
 import ImagProc.Polyline

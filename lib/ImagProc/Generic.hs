@@ -23,8 +23,7 @@ module ImagProc.Generic (
 )
 where
 
-import ImagProc.Ipp.Core
-import ImagProc.ImageProcessing
+import ImagProc.Ipp
 import Foreign.C.Types(CUChar)
 import Foreign hiding (shift)
 import Numeric.LinearAlgebra

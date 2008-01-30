@@ -184,7 +184,7 @@ autodefs hds = (automod++) $ rep ("DstStep","dstStep") $ rep ("[3]","") $ rep ("
     autofun 2 hds
     ++ "\n----------------------------\n"
 
-ver k (n,args) = "io"++drop 4 n ++" "++ par ++ " = " ++ mk ++ "\n    where " ++
+ver k (n,args) = "io"++drop 4 n ++" "++ par ++ " = " ++ scc ++ mk ++ "\n    where " ++
                      "f " ++ unwords (map tr args') ++ " = " ++ n ++" "++ unwords (map tr args) ++ "\n"
     where args' = reorderArgs ari args
           tr ("IppiSize",n) = n++"_w "++n++"_h"
@@ -194,6 +194,7 @@ ver k (n,args) = "io"++drop 4 n ++" "++ par ++ " = " ++ mk ++ "\n    where " ++
           par = unwords (map tr (restArgs ari args))
           mk = autoname++" ("++unwords ["f",par]++") "++"\""++n++"\""
           autoname = "auto_"++show k++"_" ++(suffix n) where
+          scc = "{-# SCC \""++n++"\" #-} "
 
 suffix n = (iterate (tail.dropWhile (/='_')) n) !! k
     where k = length (filter (== '_') n) - 1
@@ -201,5 +202,4 @@ suffix n = (iterate (tail.dropWhile (/='_')) n) !! k
 automod  = "-- generated automatically by adapter.hs\n\n"
      ++ "{-# OPTIONS #-}\n\n"
      ++ "module ImagProc.Ipp.Auto where\n\n"
---     ++ "import Foreign\nimport Foreign.C.Types\n"
      ++ "import ImagProc.Ipp.AutoGen\nimport ImagProc.Ipp.Adapt\n"
