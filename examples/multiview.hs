@@ -1,45 +1,81 @@
+{-# OPTIONS_GHC -fallow-undecidable-instances #-}
+
 import Numeric.LinearAlgebra
 import Vision
 import Tensor
 import Text.Printf(printf)
 import Debug.Trace(trace)
+import Data.List(sort)
 
 debug x = trace (show x) x
+
+debugm m x = trace (m ++ show x) x
+
+norm = pnorm PNorm2
+
+
+addTOk t1 t2 | compat t1 t2 = addT t1 t2'
+             | otherwise = error "trying to add incompatible tensors"
+    where compat t1 t2 = sort (dims t1) == sort (dims t2)
+          t2' = tridx names t2
+          names = map idxName (dims t1)
+
+subTOk t1 t2 = addTOk t1 (liftTensor negate t2)
+
+instance (Linear Vector t, Eq t) => Eq (Tensor t) where
+    t1 == t2 = sort (dims t1) == sort (dims t2) && coords t1 == coords t2'
+        where t2' = tridx names t2
+              names = map idxName (dims t1)
+
+
+instance (Linear Vector t) => Num (Tensor t) where
+    a + b = addTOk a b
+    a * b = mulT a b
+    negate t = scalar (-1) * t
+    fromInteger n = scalar (fromInteger n)
+    abs t = error "abs for tensors not defined"
+    signum t = error "signum for tensors not defined"
+
+distH t1 t2 = min (norm $ coords (nt1 - nt2))
+                  (norm $ coords (nt1 + nt2))
+    where nt1 = norten t1
+          nt2 = norten t2
+
+
+norten t = scalar (1/r) * t
+    where r = pnorm PNorm2 (coords t)
+
+-- or liftTensor unitary
+
 
 disp' :: Int -> Matrix Double -> IO ()
 disp' n = putStrLn . format "  " (printf $ "%."++ show n++"f") . normat
 
 disp = disp' 2
 
+dispS msg m = putStrLn (msg++" = ") >> disp m
+
 dispT' :: Int -> Tensor Double -> IO ()
-dispT' n t = disp' n . reshape c . coords $ t
-    where c = idxDim $ last (dims t)
+dispT' n t = do
+    putStrLn $ unwords $ map (show) (dims t)
+    disp' n . reshape c . coords $ t
+  where c = idxDim $ last (dims t)
 
 dispT = dispT' 2
 
+dispTS msg t = putStr (msg++" = ") >> dispT t
+
 dispV' :: Int -> Vector Double -> IO ()
-dispV' n = putStrLn . concatMap (printf $ "  %."++ show n++"f") . toList . unitary
+dispV' n = putStrLn . (++"\n") . concatMap (printf $ "  %."++ show n++"f") . toList . unitary
 
 dispV = dispV' 2
 
-dist :: (Normed t, Num t) => t -> t -> Double
-dist a b = pnorm Infinity (a-b)
-
-infixl 4 |~|
-a |~| b = a :~8~: b
-
-data Aprox a = (:~) a Int
-
-(~:) :: (Normed a, Num a) => Aprox a -> a -> Bool
-a :~n~: b = dist a b < 10^^(-n)
+dispVS msg v = putStr (msg++" = ") >> dispV v
 
 ---------------
 
 infixl 8 !
 t ! l = withIdx t (map return l)
-
-infixl 7 <*>
-(<*>) = mulT
 
 -- tensor from matrix as transformation
 tTrans m = tensor [rows m, -cols m] (flatten m)
@@ -55,7 +91,7 @@ tc = tcovector . vector
 eps3 = leviCivita 3
 eps4 = raise $ leviCivita 4
 
-tFundamental c1 c2 = eps3!"pqr" <*> eps4!"bcij" <*> c1!"pb" <*> c1!"qc" <*> c2!"si" <*> c2!"tj" <*> eps3!"stk"
+tFundamental c1 c2 = eps3!"pqr" * eps4!"bcij" * c1!"pb" * c1!"qc" * c2!"si" * c2!"tj" * eps3!"stk"
 
 c1 = syntheticCamera $ easyCamera 40 (0,0,0) (0.5,0,1) 0
 ct1 = tTrans c1
@@ -75,48 +111,56 @@ tf13 = tFundamental ct1 ct3 ! "13"
 f23 = fundamentalFromCameras c2 c3
 tf23 = tFundamental ct2 ct3 ! "23"
 
-trifocal m n p = eps4!"abcd" <*> m!"ia" <*> n!"jb" <*> p!"pc" <*> p!"qd" <*> eps3!"pqk"
+trifocal m n p = eps4!"abcd" * m!"ia" * n!"jb" * p!"pc" * p!"qd" * eps3!"pqk"
 
-tri = trifocal ct2 ct3 ct1 -- c' c'' c
+tri = trifocal ct2 ct3 ct1 -- c' c'' c --> i j k
 
-linQuad tri = tri!"kij" <*> tv[0,0,1]!"a" <*> eps3!"ajJ" <*> tri!"KIJ" <*> eps3!"iIr"
+linQuad tri = tri!"kij" * tv[0,0,1]!"a" * eps3!"ajJ" * tri!"KIJ" * eps3!"iIr"
 
-lin tri p = linQuad tri <*> p!"k" <*> p!"K"
+lin tri p = linQuad tri * p!"k" * p!"K"
 
 -- the epipole e' is computed as intersection of...
 epitri tri = epi where
-    epi = lin tri (tv[0,0,1]) !"a" <*> lin tri (tv[1,0,0])!"b" <*> (raise eps3)!"abc"
+    epi = lin tri (tv[0,0,1]) !"a" * lin tri (tv[1,0,0])!"b" * (raise eps3)!"abc"
 
 -- the fundamental 12 is an arbitrary transfer joined to the epipole
-tri2fun12 tri epi2 = tri!"kij" <*> tc[0,0,1]!"j" <*> eps3!"ier" <*> epi2!"e"
+tri2fun12 tri epi2 = tri!"kij" * tc[0,0,1]!"j" * eps3!"ier" * epi2!"e"
 
 
-getCams12 tri = canonicalCameras $ reshape 3 $ coords f
+-- normalize f to get the same results, since the canonical cameras depend on the scale of f (bad)
+getCams12 tri = canonicalCameras $ reshape 3 $ coords $ norten f
     where f = tri2fun12 tri epi2
           epi2 = epitri tri
 
--- but the cameras 1 2 can also be directly obtained by an arbitrary transfer plus "range restoration"
+-- the cameras 1 2 can also be directly obtained by an arbitrary transfer plus "range restoration"
 getCams12' tri = (p1,p2) where
     p1 = cameraAtOrigin
     ep = epitri tri
     added = (coords ep) `outer` vector[0,0,0,1]
-    tcam = tTrans p1!"ka" <*> tri!"kij" <*> tc[0,0,1]!"j"
+    tcam = tTrans p1!"ka" * tri!"kij" * tc[0,0,1]!"j"
     cam = trans $ reshape 3 $ coords tcam
     p2 = cam + added
+
+-- but then c3 goes to infinity... 
+
 
 -- the 3rd camera can be obtained in "algorithmical form" from the images of 1 and
 -- transfer through an arbitrary line in 2 passing by the im of 2.
 -- x appears in two places.
--- it could be used to estimate a camera from the images of arbitrary points
+-- it could be used to estimate a camera from the images of arbitrary points, but the
+-- third camera can be also obtained directly from the tensor given the image of the
+-- three ideal points and the origin, adjusting the scaling factors to get the center,
+-- which can be reconstructed from p1 and p2.
 
-quadCam3 tri = tri!"kij" <*> tTrans p1!"kx" <*> eps3!"ibc" <*> tv[4,-5,7]!"c" <*> tTrans p2!"by"
+quadCam3 tri = tri!"kij" * tTrans p1!"kx" * eps3!"ibc" * tv[4,-5,7]!"c" * tTrans p2!"by"
     where (p1,p2) = getCams12 tri
 
 algoCam3 tri = f
     where q = quadCam3 tri
-          f x = q!"jxy" <*> x!"x" <*> x!"y"
+          f x = q!"jxy" * x!"x" * x!"y"
 
-semiTriangulation cam1 cam2 = eps3!"x23" <*> cam1!"24" <*> cam1!"35" <*> eps4!"456z" <*> cam2!"76" <*> eps3!"78y" <*> tv[1,2,3]!"8"
+-- better indices 12 instead of xy
+semiTriangulation cam1 cam2 = eps3!"x23" * cam1!"24" * cam1!"35" * eps4!"456z" * cam2!"76" * eps3!"78y" * tv[1,2,3]!"8"
 
 somePoints = [
     [1,2,3],
@@ -126,53 +170,53 @@ somePoints = [
     [2,1,1],
     [2,-1,1]]
 
+
+analyzeTrifocal tri = do
+    let e1 = epitri tri
+    dispTS "e1" e1
+    let f12 = tri!"kij" * tc[0,0,1]!"j" * eps3!"ier" * e1!"e"
+    dispTS "f12" f12
+    print (rank $ reshape 3 $ coords f12)
+    let e2 = epitri (tridx ["k","j","i"] tri)
+    dispTS "e2" e2
+    let (p1,p2) = getCams12 tri -- replace by the transfer version
+    dispS "p2" p2
+    let c2 = nullVector p2
+    dispVS "c2" c2
+    let f13 = tri2fun12 (tridx ["k","j","i"] tri) e2
+    dispTS "f13" f13
+    let a = nullVector $ reshape 3 $ coords f13 -- replace by version with contractions
+    dispVS "a" a
+    let a' = tri!"kij" * tvector a!"k" * tc[13,17,19]!"j"
+    dispTS "a'" a'
+    let intersector = semiTriangulation (tTrans p1) (tTrans p2)
+    dispTS "intersector" intersector
+    let c3 = intersector * tvector a!"x" * a'!"y"
+    dispTS "c3" c3
+    let quadCam3 = tri!"kij" * tTrans p1!"kx" * eps3!"ibc" * tv[4,-5,7]!"c" * tTrans p2!"by"
+        algoCam3 x  = quadCam3!"jxy" * x!"x" * x!"y"
+        [x1,x2,x3] = map (coords.algoCam3.tv)[[1,0,0,0],[0,1,0,0],[0,0,1,0]]
+        x = fromColumns [x1,x2,x3, coords e2]
+    dispS "x" x
+    let alpha = nullVector x / coords c3 -- replace by version with contractions
+    dispVS "alpha" alpha
+    let p3 = x <> diag alpha
+    dispS "p3" p3
+    putStr "ranks = " >> (print $ map rank [p1,p2,p3]) >> putStrLn ""
+    let recontri = trifocal (tTrans p2) (tTrans p3) (tTrans p1)
+    dispTS "reconstructed trifocal tensor" recontri
+    putStr "error = " >> print (distH tri recontri) >> putStrLn ""
+    return (p1,p2,p3)
+
+-- we need nullVector of camera (3x4, using "contractions") 
+-- and nullVector from fundamental (3x3, using "intersections")
+
+main' = analyzeTrifocal tri
+
 main = do
-    disp c1
-    dispT ct1
-    disp f12
-    dispT tf12
-    putStrLn "--------------"
-    let epi2 = epitri tri
-    dispV $ c2 <> nullVector c1
-    dispT $ tvector $ snd $ epipoles f12
-    dispT $ tri2fun12 tri epi2
-    putStrLn "--------------"
-    let (p1,p2) = canonicalCameras f12
-    disp $ fundamentalFromCameras p1 p2
-    putStrLn "--------getCams12------"
-    let (p1,p2) = getCams12 tri
-    dispV $ nullVector p1
-    dispV $ nullVector p2
-    disp $ fundamentalFromCameras p1 p2
-    putStrLn "--------the third camera------"
-    let images = map (toList.inHomog.coords.algoCam3 tri.tv.(++[1])) somePoints
-    --print images
-    let p3 = estimateCameraRaw images somePoints
-    disp p3
-    dispV $ nullVector p3
-    print (rank p3)
-    dispT $ trifocal (tTrans p2) (tTrans p3) (tTrans p1)
-    dispT tri
-    putStrLn "--------------"
-    dispV $ nullVector p1
-    dispV $ nullVector p2
-    dispV $ nullVector p3
-    putStr "c3 semitriang: "
-    let a = tvector $ p1 <> nullVector p3
-    let a' = tvector $ p2 <> nullVector p3
-    dispT $ semiTriangulation (tTrans p1) (tTrans p2) <*> a!"x" <*> a'!"y"
-    let epi2 = epitri (trifocal ct3 ct2 ct1)
-    let [x1,x2,x3] = map (coords.algoCam3 tri.tv)[[1,0,0,0],[0,1,0,0],[0,0,1,0]]
-        x = fromColumns [x1,x2,x3, coords epi2]
-    --disp x
-    dispV' 5 $ nullVector x
-    let alpha = nullVector x / nullVector p3
-    dispV' 5 alpha
-    dispV' 5 $ nullVector (x <> diag alpha)
-    disp $ x <> diag alpha
-    disp p3
-
--- so we only need C3 (by triangulation?) (and epi'')
--- But the ratio system only works if C3 does not any zero coord... (!?)
-
-nearlyTrifocal m p = eps4!"abcd" <*> m!"ia" <*> p!"pc" <*> p!"qd" <*> eps3!"pqk"
+    (p1,p2,p3) <- analyzeTrifocal tri
+    let otra = syntheticCamera $ easyCamera 50 (5,-7,13) (3,14,16) 60
+    let tri2 = trifocal (tTrans p2) (tTrans otra) (tTrans p1)
+    (p1',p2',p3') <- analyzeTrifocal tri2
+    printf "dist p3 real = %f\n" $ distH (tTrans otra) (tTrans p3')
+    return ()

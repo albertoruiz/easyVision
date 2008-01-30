@@ -33,13 +33,13 @@ import Foreign.Storable
 import Data.List(sort,elemIndex,nub,foldl1',foldl')
 import Numeric.LinearAlgebra hiding (rank)
 
-data IdxType = Covariant | Contravariant deriving (Show,Eq)
+data IdxType = Covariant | Contravariant deriving (Show,Eq,Ord)
 
 type IdxName = String
 
 data IdxDesc = IdxDesc { idxDim  :: Int,
                          idxType :: IdxType,
-                         idxName :: IdxName } deriving Eq
+                         idxName :: IdxName } deriving (Eq,Ord)
 
 instance Show IdxDesc where
     show (IdxDesc n t name) = name ++ sym t ++"["++show n++"]"
