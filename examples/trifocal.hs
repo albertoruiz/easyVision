@@ -103,8 +103,9 @@ epitri tri = epi where
 tri2fun12 tri epi2 = tri!"kij" * tc[0,0,1]!"j" * eps3!"ier" * epi2!"e"
 
 
--- normalize f to get the same results, since the canonical cameras depend on the scale of f (bad)
-getCams12 tri = canonicalCameras $ reshape 3 $ coords $ norten f
+-- canonicalCameras should be changed to obtain always the same p2...
+-- The standard method depends on the scale (and sign) of f.
+getCams12 tri = canonicalCameras $ reshape 3 $ coords f
     where f = tri2fun12 tri epi2
           epi2 = epitri tri
 
@@ -192,10 +193,12 @@ main' = analyzeTrifocal tri
 
 main = do
     (p1,p2,p3) <- analyzeTrifocal tri
-    let otra = syntheticCamera $ easyCamera 50 (5,-7,13) (3,14,16) 60
-    let tri2 = trifocal (tTrans p2) (tTrans otra) (tTrans p1)
-    (p1',p2',p3') <- analyzeTrifocal tri2
-    printf "dist p3 real = %f\n" $ distH (tTrans otra) (tTrans p3')
+    --let otra = syntheticCamera $ easyCamera 50 (5,-7,13) (3,14,16) 60
+    --let tri2 = trifocal (tTrans p2) (tTrans otra) (tTrans p1)
+    --(p1',p2',p3') <- analyzeTrifocal tri2
+    --printf "dist p3 real = %f\n" $ distH (tTrans otra) (tTrans p3')
+    putStrLn "-----------------"
+    (p1,p2,p3) <- camerasFromTrifocalHZ tri
     return ()
 
 -- The algorithm in Hartley & Zisserman (debugging version)
