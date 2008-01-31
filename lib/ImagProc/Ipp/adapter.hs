@@ -48,6 +48,7 @@ mkh' (n,as) = "int "++n ++"x(" ++ concat (intersperse ", " (map tr' as))++")"
 
 tr' ("IppiSize",n) = "IppiSize* "++n
 tr' ("IppiPoint",n) =  "IppiPoint* "++n
+tr' ("Ipp8u*","pSrc[3]") = "const Ipp8u* const pSrc[3]"
 tr' (t,n) = t++" "++n
 
 
@@ -87,8 +88,6 @@ ct x = error $ " UNKNOWN TYPE: "++x
 -------------------------------------------------------
 
 mkd (n,as)  = mkh' (n,as) ++ " {\n" ++
-              --auxSizes as ++
-              --auxPoints as ++
               "    return "++n++"(" ++ concat (intersperse ", " (map cl as))++");\n}\n"
 
 cl ("IppiSize" , n) = '*':n

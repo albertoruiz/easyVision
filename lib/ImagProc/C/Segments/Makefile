@@ -7,4 +7,4 @@ libsegments.a: $(OBJ)
 	gcc -I$(IPP)/include -O4 -c $<
 
 clean:
-	rm -rf libsegments.a $(OBJ)
+	rm -rf libsegments.a $(OBJ); rm *.o *.hi Structs.hs

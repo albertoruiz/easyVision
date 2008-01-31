@@ -51,7 +51,7 @@ $(CDIR)/adapt.o: $(CDIR)/adapt.c $(CDIR)/adapt.h
 	gcc -O4 -c -I$(IPP)/include $(CDIR)/adapt.c -o $(CDIR)/adapt.o
 
 $(CDIR)/adapt.c: $(CDIR)/adapter.hs $(CDIR)/functions.txt
-	cd $(CDIR); ghc -O --make adapter; ./adapter; cd -
+	cd $(CDIR); ghc -O --make adapter; ./adapter;
 
 $(CONTRIBPATH)/Segments/libsegments.a:
 	cd $(CONTRIBPATH)/Segments/; make
@@ -62,11 +62,16 @@ $(CONTRIBPATH)/burns/burns.o:
 clean:
 	rm -f $(ALL) *.o *.hi
 
-cleanall:
-	rm -f $(ALL) *.o *.hi \
-        $(EVLIB)*.o              $(EVLIB)*.hi \
-        $(EVLIB)EasyVision/*.o   $(EVLIB)EasyVision/*.hi \
-        $(EVLIB)ImagProc/*.o     $(EVLIB)ImagProc/*.hi \
+cleanall: clean
+	cd $(CONTRIBPATH)/Segments/; make clean
+	cd $(CONTRIBPATH)/burns/; make clean
+	cd $(CDIR); rm -f Structs.hs adapt.c adapt.h Adapt.hs Auto.hs adapter.hi adapter; cd -
+	rm -f                                              \
+        $(EVLIB)*.o              $(EVLIB)*.hi              \
+        $(EVLIB)EasyVision/*.o   $(EVLIB)EasyVision/*.hi   \
+        $(EVLIB)ImagProc/*.o     $(EVLIB)ImagProc/*.hi     \
         $(EVLIB)ImagProc/Ipp/*.o $(EVLIB)ImagProc/Ipp/*.hi \
-        $(EVLIB)Vision/*.o       $(EVLIB)Vision/*.hi \
+        $(EVLIB)ImagProc/C/*.o   $(EVLIB)ImagProc/C/*.hi   \
+        $(EVLIB)Vision/*.o       $(EVLIB)Vision/*.hi       \
         $(EVLIB)Classifier/*.o   $(EVLIB)Classifier/*.hi
+
