@@ -46,6 +46,11 @@ dispV = dispV' 2
 
 dispVS msg v = putStr (msg++" = ") >> dispV v
 
+mat rowidx t = reshape c $ coords t'
+    where c = idxDim $ last (dims t')
+          t' = tridx [rowidx] t
+
+
 ---------------
 
 -- tensor from matrix as transformation
@@ -191,3 +196,22 @@ main = do
     (p1',p2',p3') <- analyzeTrifocal tri2
     printf "dist p3 real = %f\n" $ distH (tTrans otra) (tTrans p3')
     return ()
+
+-- The algorithm in Hartley & Zisserman (debugging version)
+camerasFromTrifocalHZ tri = do
+    let p1 = cameraAtOrigin
+    let e1 = norten $ epitri tri
+    dispTS "e1" e1
+    let e2 = norten $ epitri (tridx ["k","j","i"] tri)
+    dispTS "e2" e2
+    let p2 = (mat "i" $ tri!"kij"* raise e2!"j") <|> coords e1    -- (e in l slot, in HZ)
+    disp p2
+    let p3 = (mat "i" (e2!"i"*e2!"j") - ident 3) <> (mat "j" $ tri!"kij"* raise e1!"i") <|> coords e2
+    disp p3
+    putStr "ranks = " >> (print $ map rank [p1,p2,p3]) >> putStrLn ""
+    let recontri = trifocal (tTrans p2) (tTrans p3) (tTrans p1)
+    dispTS "reconstructed trifocal tensor" recontri
+    putStr "error = " >> print (distH tri recontri) >> putStrLn ""
+    dispVS "C2" $ nullVector p2
+    dispVS "C3" $ nullVector p3
+    return (p1,p2,p3)
