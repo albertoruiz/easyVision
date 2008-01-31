@@ -175,7 +175,7 @@ unsigned char mean_from_histogram(int sum_total,int *histo)
  * m� c�oda que utiliza un buen conjunto de par�etros por defecto. Calcula
  * tambi� un valor de gris mediano a ambos lados de cada segmento. */
 void mycvSegmentsWithParms_8u_C1_C3(Ipp8u *imgIn,int stepIn, 
-                                    int x1,int y1, int roiSize_w, int roiSize_h,
+                                    int x1,int y1, IppiSize * proiSize,
                                     TSegment **segments,int *num_segments,
                                     int user_radius,float user_width_edgel,
                                     int med_siz,
@@ -188,7 +188,7 @@ void mycvSegmentsWithParms_8u_C1_C3(Ipp8u *imgIn,int stepIn,
                                    unsigned char thres_high,
                                    unsigned char thres_low)*/
 {
-    IppiSize roiSize = {roiSize_w,roiSize_h};
+    IppiSize roiSize = {proiSize->width,proiSize->height};
     int i,j,k,l,y,x,xc,yc,x_desp,y_desp,last_x,last_y;
     int x2,y2,margin,count_added,stepHipass,stepSmooth,stepGray,oldStepIn=0;
     int index,new_index,num_points_line,dir,try_segments;

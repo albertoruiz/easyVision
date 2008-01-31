@@ -174,6 +174,7 @@ analyzeTrifocal tri = do
         [x1,x2,x3] = map (coords.algoCam3.tv)[[1,0,0,0],[0,1,0,0],[0,0,1,0]]
         x = fromColumns [x1,x2,x3, coords e2]
     dispS "x" x
+    dispVS "cx" $ nullVector x
     let alpha = nullVector x / coords c3 -- replace by version with contractions
     dispVS "alpha" alpha
     let p3 = x <> diag alpha

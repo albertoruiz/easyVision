@@ -45,7 +45,7 @@ debug x = trace (show x) x
 
 foreign import ccall "C/Segments/mycvSegments.h mycvSegmentsWithParms_8u_C1_C3"
     c_segments :: Ptr CUChar -> Int ->
-                  Int -> Int -> Int -> Int ->
+                  Int -> Int -> Ptr IppiSize ->
                   Ptr (Ptr CSegment) ->
                   Ptr CInt ->
                   Int -> Float ->
@@ -72,7 +72,9 @@ segments rad we medsz th tl pp (G im) = unsafePerformIO $ do
     pn <- malloc
     let r@(ROI r1 r2 c1 c2) = vroi im `intersection` (shrink (15,15) (fullroi im))
         start = plusPtr (ptr im) (r1* step im + c1)
-    (c_segments start (step im) c1 r1 // roiSZ r) pi pn rad we medsz th tl 1
+    pr <- malloc 
+    poke pr (roiSZ r)
+    (c_segments start (step im) c1 r1 pr) pi pn rad we medsz th tl 1
     when pp (c_post_process_segments pi pn 8 30 0)
     n <- peek pn
     ps <- peek pi
@@ -85,6 +87,7 @@ segments rad we medsz th tl pp (G im) = unsafePerformIO $ do
     free ps
     free pi
     free pn
+    free pr
     return $ map (segment h w r) csegs
 
 segment h w r (CSegment {seg_x1=x1, seg_y1=y1, seg_x2=x2, seg_y2=y2}) =

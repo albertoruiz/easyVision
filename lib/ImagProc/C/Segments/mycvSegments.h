@@ -39,8 +39,8 @@ typedef struct {
  * por defecto, y otra cambiando el usuario estos par�metros: */
 /*void mycvSegments_8u_C1(Ipp8u *imageIn,IplImage *imageIn,IplImage *imageInGray,
                         TSegment **segments,int *num_segments); */
-void mycvSegmentsWithParms_8u_C1_C3(Ipp8u *imgIn,int stepIn, 
-                                    int x1,int y1,int roiSize_w,int roiSize_h,
+void mycvSegmentsWithParms_8u_C1_C3(Ipp8u *imgIn,int stepIn,
+                                    int x1,int y1, IppiSize* roiSize,
                                     TSegment **segments,int *num_segments,
                                     int user_radius,float user_width_edgel,
                                     int med_siz,

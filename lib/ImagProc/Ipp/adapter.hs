@@ -46,8 +46,8 @@ main = do
 
 mkh' (n,as) = "int "++n ++"x(" ++ concat (intersperse ", " (map tr' as))++")"
 
-tr' ("IppiSize",n) = "int "++n++"_w, "++"int "++n++"_h"
-tr' ("IppiPoint",n) = "int "++n++"_x, "++"int "++n++"_y"
+tr' ("IppiSize",n) = "IppiSize* "++n
+tr' ("IppiPoint",n) =  "IppiPoint* "++n
 tr' (t,n) = t++" "++n
 
 
@@ -56,8 +56,8 @@ mkh (n,as) = "int "++n ++"x(" ++ concat (intersperse ", " (map tr as))++");"
 
 tr (t,n) = ct (t ++ isPointer n)
 
-ct "IppiSize" = "int, int"
-ct "IppiPoint" = "int, int"
+ct "IppiSize" = "void*"
+ct "IppiPoint" = "void*"
 ct "IppiMaskSize" = "int"
 ct "IppCmpOp" = "int"
 ct "IppHintAlgorithm" = "int"
@@ -70,13 +70,13 @@ ct "double" = "double"
 ct "double*" = "double*"
 ct "Ipp8u" = "unsigned char"
 ct "Ipp8u*" = "unsigned char*"
-ct "Ipp8u**" = "void*"
+ct "Ipp8u**" = "void**"
 ct "Ipp32f" = "float"
 ct "Ipp32f*" = "float*"
 ct "Ipp64f" = "double"
 ct "Ipp64f*" = "double*"
 ct "Ipp32s*" = "int*"
-ct "IppiFFTSpec_R_32f**" = "void*"
+ct "IppiFFTSpec_R_32f**" = "void**"
 ct "IppiFFTSpec_R_32f*" = "void*"
 ct "IppiConnectedComp*" = "void*"
 ct "numThr" = "int"
@@ -87,33 +87,44 @@ ct x = error $ " UNKNOWN TYPE: "++x
 -------------------------------------------------------
 
 mkd (n,as)  = mkh' (n,as) ++ " {\n" ++
-              auxSizes as ++
-              auxPoints as ++
+              --auxSizes as ++
+              --auxPoints as ++
               "    return "++n++"(" ++ concat (intersperse ", " (map cl as))++");\n}\n"
 
-
-auxSizes as = unlines $ map (initSize.snd) $ filter (\(t,n)->t=="IppiSize") as
-
-initSize n = "    IppiSize "++n++" = {"++n++"_w,"++n++"_h};"
-
-auxPoints as = unlines $ map (initPoint.snd) $ filter (\(t,n)->t=="IppiPoint") as
-
-initPoint n = "    IppiPoint "++n++" = {"++n++"_x,"++n++"_y};"
-
-
-cl (t,n) = takeWhile (/= '[') n
+cl ("IppiSize" , n) = '*':n
+cl ("IppiPoint", n) = '*':n
+cl (_,n) = takeWhile (/= '[') n
 
 -------------------------------------------------------
 
-mkw (n,as) = "foreign import ccall \"adapt.h "++n++"x\"\n    "++n++" :: "
+mkw (n,as) = rep ("DstStep","dstStep")$ 
+             "foreign import ccall \"adapt.h "++n++"x\"\n    "++n++"x :: "
              ++ concat (intersperse " -> " (map wt as))++" -> IO Int\n"
+             ++ n ++" " ++ unwords (map cl' as) ++ " = do\n"
+             ++ auxStruct initStruct as
+             ++ "    r <- "++n++"x " ++ unwords (map cl'' as)++"\n"
+             ++ auxStruct freeStruct as
+             ++ "    return r\n"
+
+auxStruct act args = unlines $ map (act.snd) $ filter (\(t,n)->t=="IppiSize"||t=="IppiPoint") args
+initStruct n = "    p"++n++" <- malloc\n    poke p"++n++" "++n
+freeStruct n = "    free p"++n
+
+--cl ("IppiSize" , n) = '*':n
+--cl ("IppiPoint", n) = '*':n
+cl' (_,n) = takeWhile (/= '[') n
+
+cl'' ("IppiSize" , n) = 'p':n
+cl'' ("IppiPoint", n) = 'p':n
+cl'' (_,n) = takeWhile (/= '[') n
+
 
 wt (t,n) = ht (t ++ isPointer n)
 
 isPointer n = if last n == ']' then "*" else ""
 
-ht "IppiSize" = "Int -> Int"
-ht "IppiPoint" = "Int -> Int"
+ht "IppiSize" = "Ptr IppiSize"
+ht "IppiPoint" = "Ptr IppiPoint"
 ht "IppiMaskSize" = "CInt"
 ht "IppCmpOp" = "CInt"
 ht "IppHintAlgorithm" = "CInt"
@@ -187,8 +198,8 @@ autodefs hds = (automod++) $ rep ("DstStep","dstStep") $ rep ("[3]","") $ rep ("
 ver k (n,args) = "io"++drop 4 n ++" "++ par ++ " = " ++ scc ++ mk ++ "\n    where " ++
                      "f " ++ unwords (map tr args') ++ " = " ++ n ++" "++ unwords (map tr args) ++ "\n"
     where args' = reorderArgs ari args
-          tr ("IppiSize",n) = n++"_w "++n++"_h"
-          tr ("IppiPoint",n) = n++"_x "++n++"_y"
+          --tr ("IppiSize",n) = n++"_w "++n++"_h"
+          --tr ("IppiPoint",n) = n++"_x "++n++"_y"
           tr (_,n) = n
           ari = arityaux k
           par = unwords (map tr (restArgs ari args))

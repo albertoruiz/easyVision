@@ -18,12 +18,43 @@ Storable instances of some ipp structs.
 #let alignment t = "%lu", (unsigned long)offsetof(struct {char x__; t (y__); }, y__)
 
 module ImagProc.Ipp.Structs (
+    IppiSize(..),
+    IppiPoint(..),
     IppiRect(..),
     IppiConnectedComp(..)
 ) where
 
 import Foreign
 import Foreign.C.Types(CInt)
+
+
+data IppiSize = IppiSize CInt CInt
+
+instance Storable IppiSize where
+    sizeOf _ = #size IppiSize
+    alignment _ = #alignment IppiSize
+    peek ptr = do
+        w <- (#peek IppiSize, width)  ptr
+        h <- (#peek IppiSize, height) ptr
+        return (IppiSize h w)
+    poke ptr (IppiSize h w) = do
+        (#poke IppiSize, width)  ptr w
+        (#poke IppiSize, height) ptr h
+
+
+data IppiPoint = IppiPoint CInt CInt
+
+instance Storable IppiPoint where
+    sizeOf _ = #size IppiPoint
+    alignment _ = #alignment IppiPoint
+    peek ptr = do
+        x <- (#peek IppiPoint, x) ptr
+        y <- (#peek IppiPoint, y) ptr
+        return (IppiPoint x y)
+    poke ptr (IppiPoint x y) = do
+        (#poke IppiPoint, x) ptr x
+        (#poke IppiPoint, y) ptr y
+
 
 data IppiRect = IppiRect CInt CInt CInt CInt
 
@@ -41,6 +72,7 @@ instance Storable IppiRect where
         (#poke IppiRect, y)      ptr y
         (#poke IppiRect, width)  ptr w
         (#poke IppiRect, height) ptr h
+
 
 data IppiConnectedComp = IppiConnectedComp Double Double Double Double IppiRect
 

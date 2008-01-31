@@ -31,8 +31,7 @@ all: $(ALL)
 %: %.hs auxc
 	@ghc -threaded --make $< -o $@ $(LIBS)
 
-auxc: $(CDIR)/auxIpp.o $(CDIR)/adapt.o $()\
-      $(CDIR)/Structs.hs $(CONTRIBPATH)/Segments/Structs.hs\
+auxc: $(CDIR)/auxIpp.o $(CDIR)/adapt.o \
       $(CONTRIB)
 
 $(CDIR)/Structs.hs: $(CDIR)/Structs.hsc

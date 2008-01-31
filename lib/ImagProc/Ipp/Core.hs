@@ -22,10 +22,9 @@ module ImagProc.Ipp.Core
             -- * Creation of images
           , img, imgAs, getData32f, setData32f, setData8u, value, setValue
             -- * Regions of interest
-          , fullroi, shrink, shift, intersection, roiSize, roiArea, invalidROIs
+          , fullroi, shrink, shift, intersection, roiSize, roiArea, invalidROIs, roiSZ
             -- * Wrapper tools
           , src, dst, checkIPP, warningIPP, (//), purifyWith
-          , roiSZ, apSZ
             -- * Image types
           , Image(..)
           , ImageRGB(C)
@@ -41,6 +40,7 @@ module ImagProc.Ipp.Core
           , val32f, val32f', val8u
 ) where
 
+import ImagProc.Ipp.Structs
 import Foreign hiding (shift)
 import Control.Monad(when)
 import ImagProc.Ipp.Wrappers
@@ -147,20 +147,13 @@ data ROI = ROI { r1 :: Int  -- ^ upper row
 starting :: Img -> ROI -> Ptr a
 starting img roi = plusPtr (ptr img) (r1 roi * step img + c1 roi*(datasize img)*(layers img))
 
-roiSZ ROI { r1=a, r2=b, c1=x, c2=y} = apSZ (y-x+1)  (b-a+1)
-
--- | to do
--- ippRect :: Int -> Int -> IppRect
-apSZ w h f = f w h
-
 -- | Creates a roi with the whole size of an image.
 fullroi :: Img -> ROI
 fullroi Img {isize = Size h w} = ROI {r1=0, r2=h-1, c1=0, c2=w-1}
 
 -- | Size of a ROI
-roiSize :: ROI -> Size 
-roiSize r = Size (r2 r - r1 r +1) (c2 r - c1 r +1)
-
+roiSize :: ROI -> Size
+roiSize ROI { r1=a, r2=b, c1=x, c2=y} = Size { height = b-a+1, width = y-x+1 }
 
 -- | Creates a new roi by reducing in (r,c) units the rows and columns or a given roi. If r or c are negative the roi expands.
 shrink :: (Int,Int)  -> ROI -> ROI
@@ -206,8 +199,11 @@ src :: Img -> ROI -> (Ptr a -> Int -> t) -> t
 src im roi f = f (starting im roi) (step im)
 
 -- | Extracts from a destination Img the pointer to the starting position taken into account the given roi, and applies it to a ipp function.
-dst :: Img -> ROI -> (Ptr a -> Int -> Int -> Int -> t) -> t
-dst im roi f = f (starting im roi) (step im) // roiSZ roi
+dst :: Img -> ROI -> (Ptr a -> Int -> IppiSize -> t) -> t
+dst im roi f = f (starting im roi) (step im) (roiSZ roi)
+
+roiSZ = adapt . roiSize
+    where adapt (Size h w) = IppiSize (fromIntegral h) (fromIntegral w)
 
 genCheckIPP act msg ls f = do
     err <- f
