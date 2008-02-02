@@ -1,6 +1,6 @@
 import EasyVision
 import Graphics.UI.GLUT
-import Burns
+import ImagProc.C.Burns
 
 main = do
     sz <- findSize

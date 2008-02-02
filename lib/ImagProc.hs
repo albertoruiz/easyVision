@@ -19,7 +19,7 @@ module ImagProc (
     module ImagProc.Camera,
     module ImagProc.ImageProcessing,
     module ImagProc.Saddle,
-    module ImagProc.Segments,
+    module ImagProc.C.Segments,
     module ImagProc.Polyline
 ) where
 
@@ -27,5 +27,5 @@ import ImagProc.Images
 import ImagProc.Camera
 import ImagProc.ImageProcessing
 import ImagProc.Saddle
-import ImagProc.Segments
+import ImagProc.C.Segments
 import ImagProc.Polyline

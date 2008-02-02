@@ -16,14 +16,16 @@ EVLIB = $(EASYVISION)/lib/
 CDIR = $(EVLIB)/ImagProc/Ipp
 
 CONTRIBPATH = $(EVLIB)/ImagProc/C
-CONTRIB = $(CONTRIBPATH)/simple.o \
+CONTRIB = $(CONTRIBPATH)/Simple/simple.o        \
+          $(CONTRIBPATH)/Segments/Structs.hs    \
           $(CONTRIBPATH)/Segments/libsegments.a \
-          $(CONTRIBPATH)/burns/burns.o
+          $(CONTRIBPATH)/Burns.hs               \
+          $(CONTRIBPATH)/Burns/burns.o
 
 LIBS = -i$(EVLIB) $(CDIR)/auxIpp.o $(CDIR)/adapt.o \
-       $(CONTRIBPATH)/simple.o \
+       $(CONTRIBPATH)/Simple/simple.o \
        -L$(CONTRIBPATH)/Segments -lsegments \
-       -i$(CONTRIBPATH)/burns $(CONTRIBPATH)/burns/burns.o $(CONTRIBPATH)/burns/bitmap.o \
+       $(CONTRIBPATH)/Burns/burns.o \
        -L$(IPP)/sharedlib -lguide -lippcore$(IPPS) -lippi$(IPPS) -lipps$(IPPS) -lippcc$(IPPS) -lippvc$(IPPS) -lippcv$(IPPS)
 
 all: $(ALL) 
@@ -31,21 +33,14 @@ all: $(ALL)
 %: %.hs auxc
 	@ghc -threaded --make $< -o $@ $(LIBS)
 
-auxc: $(CDIR)/auxIpp.o $(CDIR)/adapt.o \
-      $(CDIR)/Structs.hs $(CONTRIBPATH)/Segments/Structs.hs \
+auxc: $(CDIR)/auxIpp.o $(CDIR)/adapt.o $(CDIR)/Structs.hs \
       $(CONTRIB)
 
 $(CDIR)/Structs.hs: $(CDIR)/Structs.hsc
 	hsc2hs -I$(IPP)/include $(CDIR)/Structs.hsc
 
-$(CONTRIBPATH)/Segments/Structs.hs: $(CONTRIBPATH)/Segments/Structs.hsc
-	hsc2hs -I$(IPP)/include $(CONTRIBPATH)/Segments/Structs.hsc
-
 $(CDIR)/auxIpp.o: $(CDIR)/auxIpp.c $(CDIR)/auxIpp.h
 	gcc -O4 -c -I$(IPP)/include $(CDIR)/auxIpp.c -o $(CDIR)/auxIpp.o
-
-$(CONTRIBPATH)/simple.o: $(CONTRIBPATH)/simple.c $(CONTRIBPATH)/simple.h
-	gcc -O4 -c $(CONTRIBPATH)/simple.c -o $(CONTRIBPATH)/simple.o
 
 $(CDIR)/adapt.o: $(CDIR)/adapt.c $(CDIR)/adapt.h
 	gcc -O4 -c -I$(IPP)/include $(CDIR)/adapt.c -o $(CDIR)/adapt.o
@@ -53,17 +48,28 @@ $(CDIR)/adapt.o: $(CDIR)/adapt.c $(CDIR)/adapt.h
 $(CDIR)/adapt.c: $(CDIR)/adapter.hs $(CDIR)/functions.txt
 	cd $(CDIR); ghc -O --make adapter; ./adapter;
 
+
+$(CONTRIBPATH)/Simple/simple.o: $(CONTRIBPATH)/Simple/simple.c $(CONTRIBPATH)/Simple/simple.h
+	gcc -O4 -c $(CONTRIBPATH)/Simple/simple.c -o $(CONTRIBPATH)/Simple/simple.o
+
+$(CONTRIBPATH)/Segments/Structs.hs: $(CONTRIBPATH)/Segments/Structs.hsc
+	hsc2hs -I$(IPP)/include $(CONTRIBPATH)/Segments/Structs.hsc
+
 $(CONTRIBPATH)/Segments/libsegments.a:
 	cd $(CONTRIBPATH)/Segments/; make
 
-$(CONTRIBPATH)/burns/burns.o:
-	cd $(CONTRIBPATH)/burns/; make Burns.o
+$(CONTRIBPATH)/Burns.hs: $(CONTRIBPATH)/Burns.hsc
+	hsc2hs -I$(IPP)/include $(CONTRIBPATH)/Burns.hsc
+
+$(CONTRIBPATH)/Burns/burns.o: $(CONTRIBPATH)/Burns/burns.c $(CONTRIBPATH)/Burns/burns.h
+	gcc -O1 -c -I$(IPP)/include $(CONTRIBPATH)/Burns/burns.c -o $(CONTRIBPATH)/Burns/burns.o
+
 
 clean:
 	rm -f $(ALL) *.o *.hi
 
 cleanall: clean
 	cd $(CONTRIBPATH)/Segments/; make clean
-	cd $(CONTRIBPATH)/burns/; make clean
+	rm -f $(CONTRIBPATH)/Burns.hs
 	cd $(CDIR); rm -f Structs.hs adapt.c adapt.h Adapt.hs Auto.hs adapter
 	rm `find $(EVLIB) -name "*.o" -o -name "*.hi"`

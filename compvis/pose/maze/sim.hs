@@ -32,7 +32,7 @@ import Control.Monad
 import Control.Exception
 import ExtractQuads
 import Quaternion
-import Burns
+import ImagProc.C.Burns
 import Ball
 import Maze
 

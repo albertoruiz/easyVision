@@ -14,7 +14,7 @@ import Vision
 import Control.Monad
 import Control.Exception
 import Numeric.LinearAlgebra
-import Burns
+import ImagProc.C.Burns
 import ExtractQuads
 
 main = do

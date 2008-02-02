@@ -1,6 +1,7 @@
+-- Written by Adrian Quark, 2007
 -- vim: set et ts=2 sw=2:
 {-# OPTIONS -ffi #-}
-module Burns where
+module ImagProc.C.Burns where
 
 import Foreign
 import Foreign.C.Types
@@ -9,7 +10,7 @@ import Foreign.Marshal.Array
 import Foreign.Marshal.Alloc
 import ImagProc.Ipp
 
-#include "burns.h"
+#include "Burns/burns.h"
 #let alignment t = "%lu", (unsigned long)offsetof(struct {char x__; t (y__); }, y__)
 
 data Line = Line Double Double Double Double
@@ -30,20 +31,14 @@ instance Storable Line where
     (#poke Line, x2) ptr x2
     (#poke Line, y2) ptr y2
 
-foreign import ccall unsafe "static burns.h burns_line_extraction"
+foreign import ccall unsafe "static Burns/burns.h burns_line_extraction"
   c_burns_line_extraction :: Ptr () -> Int -> Int -> Int -> Int -> Int -> Double -> Ptr (Ptr Line) -> Ptr CInt -> IO ()
 
-foreign import ccall unsafe "static burns.h burns_line_extraction_demo"
-  c_burns_line_extraction_demo :: Ptr (Ptr Line) -> Ptr CInt -> IO ()
-
-foreign import ccall unsafe "static burns.h free_lines"
+foreign import ccall unsafe "static Burns/burns.h free_lines"
   c_free_lines :: Ptr Line -> IO ()
 
-foreign import ccall unsafe "static burns.h print_lines"
+foreign import ccall unsafe "static Burns/burns.h print_lines"
   c_print_lines :: Ptr Line -> Int -> IO ()
-
-foreign import ccall unsafe "static bitmap.h read_bmp"
-  c_read_bmp :: CString -> Ptr CInt -> Ptr CInt -> Ptr CInt -> IO (Ptr ())
 
 foreign import ccall unsafe "stdlib.h &free"
   p_c_free :: FunPtr (Ptr () -> IO ())
@@ -83,22 +78,3 @@ burns_line_extraction (G image) num_buckets min_gradient min_length = unsafePerf
     --mapM_ (putStrLn . show) segments
     return segments
 
-read_bmp :: String -> IO ImageRGB
-read_bmp filename = do
-  alloca $ \width_ptr -> alloca $ \height_ptr -> alloca $ \step_ptr -> do
-    cfilename <- newCString filename
-    pixels <- c_read_bmp cfilename width_ptr height_ptr step_ptr
-    fpixels <- newForeignPtr p_c_free pixels
-    step <- peek step_ptr
-    width <- peek width_ptr
-    height <- peek height_ptr
-    let img = Img {
-      fptr=fpixels,
-      ptr=pixels,
-      step=fromIntegral step,
-      layers = 1,
-      datasize = 3,
-      itype=RGB,
-      isize = Size (fromIntegral height) (fromIntegral width),
-      vroi = fullroi img }
-    return $ C img

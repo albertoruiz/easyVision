@@ -14,7 +14,7 @@ Interface to the segment extractor by Pedro E. Lopez de Teruel.
 -}
 -----------------------------------------------------------------------------
 
-module ImagProc.Segments (
+module ImagProc.C.Segments (
    
     -- * Segment extraction
     segments,

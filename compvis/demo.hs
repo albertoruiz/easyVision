@@ -23,7 +23,7 @@ import ImagProc.Ipp.Auto
 
 
 
-gaussp = pure . ioFilterGauss_32f_C1R 55 (shrink (2,2))
+gaussp = {-# SCC "gauss" #-} pure . ioFilterGauss_32f_C1R 55 (shrink (2,2))
 
 gaussi im = unsafePerformIO (ioFilterGauss_32f_C1R 55 (shrink (2,2)) im)
 gaussin n = pure . (n `times` (ioFilterGauss_32f_C1R 55 (shrink (2,2))))

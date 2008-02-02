@@ -1,9 +1,7 @@
 #include "burns.h"
-#include "bitmap.h"
 #include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <GL/gl.h>
 
 /**
  * Convenient way to group image parameters which tend to go together.
@@ -339,14 +337,6 @@ static void estimate_line_properties(ImageR regions, Image8u gradient_m, Image16
 	}
 }
 
-static void draw_Image8u(Image8u image) {
-	glClear(GL_COLOR_BUFFER_BIT);
-	glColor3f(1,0,0);
-	glLineWidth(2);
-	glRasterPos2f(0,0);
-	glDrawPixels(image.roi.width, image.roi.height, GL_LUMINANCE, GL_UNSIGNED_BYTE, image.pixels);
-}
-
 static int min(int a, int b) {
 	if (a <= b) return a;
 	else return b;
@@ -520,13 +510,4 @@ void burns_line_extraction(Ipp8u* pixels, int step, int width, int height,
 		rhead = rhead->next;
 		free(rtail);
 	}
-}
-
-void burns_line_extraction_demo(Line** lines, int* num_lines) {
-	IppiSize roi;
-	int rgb_step, gray_step;
-	Ipp8u* rgb_pixels = read_bmp("demo.bmp",  &roi.width, &roi.height, &rgb_step);
-	Ipp8u* gray_pixels = ippiMalloc_8u_C1(roi.width, roi.height, &gray_step);
-	ippiRGBToGray_8u_C3C1R(rgb_pixels, rgb_step, gray_pixels, gray_step, roi);
-	burns_line_extraction(gray_pixels, gray_step, roi.width, roi.height, 8, 50, 10, lines, num_lines);
 }

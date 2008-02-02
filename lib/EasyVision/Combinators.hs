@@ -34,7 +34,7 @@ module EasyVision.Combinators (
 
 import ImagProc.Ipp.Core
 import ImagProc.ImageProcessing
-import ImagProc.Segments
+import ImagProc.C.Segments
 import ImagProc.Polyline
 import Foreign
 import Foreign.C.Types (CChar,CUChar)

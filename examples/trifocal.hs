@@ -148,7 +148,7 @@ somePoints = [
     [2,-1,1]]
 
 
-analyzeTrifocal tri = do
+analyzeTrifocal' tri = do
     let e1 = epitri tri
     dispTS "e1" e1
     let f12 = tri!"kij" * tc[0,0,1]!"j" * eps3!"ier" * e1!"e"
@@ -192,7 +192,7 @@ analyzeTrifocal tri = do
 main' = analyzeTrifocal tri
 
 main = do
-    (p1,p2,p3) <- analyzeTrifocal tri
+    (p1,p2,p3) <- analyzeTrifocal' tri
     --let otra = syntheticCamera $ easyCamera 50 (5,-7,13) (3,14,16) 60
     --let tri2 = trifocal (tTrans p2) (tTrans otra) (tTrans p1)
     --(p1',p2',p3') <- analyzeTrifocal tri2
@@ -218,4 +218,29 @@ camerasFromTrifocalHZ tri = do
     putStr "error = " >> print (distH tri recontri) >> putStrLn ""
     dispVS "C2" $ nullVector p2
     dispVS "C3" $ nullVector p3
+    return (p1,p2,p3)
+
+
+analyzeTrifocal tri = do
+    let p1 = cameraAtOrigin
+    let e1 = epitri tri
+    dispTS "e1" e1
+    let e2 = epitri (tridx ["k","j","i"] tri)
+    dispTS "e2" e2
+    let someline = raise e2!"j" -- tc[2,5,-7]!"j"
+    let p2 = (mat "i" $ tri * someline) <|> coords e1
+    disp p2
+    let otherline = raise e1!"i"-- tc[1,2,3]!"i"
+    let x = (mat "j" $ tri * otherline) <|> coords e2
+    disp x
+    let trichun = trifocal (tTrans p2) (tTrans x) (tTrans p1)
+        anyline = raise e1!"i"-- tc[1,-2,3]!"i"
+        hv = mat "j" $ tri * anyline
+        hx = mat "j" $ trichun * anyline
+        c = hv <> inv hx
+        p3 = c <> x
+        recontri = trifocal (tTrans p2) (tTrans p3) (tTrans p1)
+    printf "inv of condition: %f\n" (rcond hx)
+    dispTS "reconstructed trifocal tensor" recontri
+    putStr "error = " >> print (distH tri recontri) >> putStrLn ""
     return (p1,p2,p3)
