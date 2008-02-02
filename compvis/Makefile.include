@@ -62,7 +62,7 @@ $(CONTRIBPATH)/Burns.hs: $(CONTRIBPATH)/Burns.hsc
 	hsc2hs -I$(IPP)/include $(CONTRIBPATH)/Burns.hsc
 
 $(CONTRIBPATH)/Burns/burns.o: $(CONTRIBPATH)/Burns/burns.c $(CONTRIBPATH)/Burns/burns.h
-	gcc -O1 -c -I$(IPP)/include $(CONTRIBPATH)/Burns/burns.c -o $(CONTRIBPATH)/Burns/burns.o
+	gcc -O0 -c -I$(IPP)/include $(CONTRIBPATH)/Burns/burns.c -o $(CONTRIBPATH)/Burns/burns.o
 
 
 clean:

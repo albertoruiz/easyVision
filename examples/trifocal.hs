@@ -139,13 +139,6 @@ algoCam3 tri = f
 -- better indices 12 instead of xy
 semiTriangulation cam1 cam2 = eps3!"x23" * cam1!"24" * cam1!"35" * eps4!"456z" * cam2!"76" * eps3!"78y" * tv[1,2,3]!"8"
 
-somePoints = [
-    [1,2,3],
-    [1,-2,3],
-    [-2,1,0],
-    [7,7,-3],
-    [2,1,1],
-    [2,-1,1]]
 
 
 analyzeTrifocal' tri = do
@@ -189,17 +182,6 @@ analyzeTrifocal' tri = do
 -- we need nullVector of camera (3x4, using "contractions") 
 -- and nullVector from fundamental (3x3, using "intersections")
 
-main' = analyzeTrifocal tri
-
-main = do
-    (p1,p2,p3) <- analyzeTrifocal' tri
-    --let otra = syntheticCamera $ easyCamera 50 (5,-7,13) (3,14,16) 60
-    --let tri2 = trifocal (tTrans p2) (tTrans otra) (tTrans p1)
-    --(p1',p2',p3') <- analyzeTrifocal tri2
-    --printf "dist p3 real = %f\n" $ distH (tTrans otra) (tTrans p3')
-    putStrLn "-----------------"
-    (p1,p2,p3) <- camerasFromTrifocalHZ tri
-    return ()
 
 -- The algorithm in Hartley & Zisserman (debugging version)
 camerasFromTrifocalHZ tri = do
@@ -221,7 +203,7 @@ camerasFromTrifocalHZ tri = do
     return (p1,p2,p3)
 
 
-analyzeTrifocal tri = do
+analyzeTrifocal'' tri = do
     let p1 = cameraAtOrigin
     let e1 = epitri tri
     dispTS "e1" e1
@@ -244,3 +226,62 @@ analyzeTrifocal tri = do
     dispTS "reconstructed trifocal tensor" recontri
     putStr "error = " >> print (distH tri recontri) >> putStrLn ""
     return (p1,p2,p3)
+
+
+-- this is good and understandable...
+analyzeTrifocal tri = do
+    let e1 = epitri tri
+    dispTS "e1" e1
+    let f12 = tri!"kij" * tc[0,0,1]!"j" * eps3!"ier" * e1!"e"
+    dispTS "f12" f12
+    print (rank $ reshape 3 $ coords f12)
+    let e2 = epitri (tridx ["k","j","i"] tri)
+    dispTS "e2" e2
+    let (p1,p2) = getCams12 tri -- replace by the transfer version
+    dispS "p2" p2
+    let c2 = nullVector p2
+    dispVS "c2" c2
+    let f13 = tri2fun12 (tridx ["k","j","i"] tri) e2
+    dispTS "f13" f13
+    let a = nullVector $ reshape 3 $ coords f13 -- replace by version with contractions
+    dispVS "a" a
+    let a' = tri!"kij" * tvector a!"k" * tc[13,17,19]!"j"
+    dispTS "a'" a'
+    let intersector = semiTriangulation (tTrans p1) (tTrans p2)
+    dispTS "intersector" intersector
+    let c3 = intersector * tvector a!"x" * a'!"y"
+    dispTS "c3" c3
+    let x = cameraAtOrigin <> desp4' (coords c3)
+    dispS "some camera at C3" x
+    dispVS "cx" $ nullVector x
+    let trichun = trifocal (tTrans p2) (tTrans x) (tTrans p1)
+        anyline = raise e1!"i"-- tc[1,-2,3]!"i"
+        hv = mat "j" $ tri * anyline
+        hx = mat "j" $ trichun * anyline
+        c = hv <> inv hx
+        p3 = c <> x
+        recontri = trifocal (tTrans p2) (tTrans p3) (tTrans p1)
+    printf "inv of condition to match some homography: %f\n" (rcond hx)
+    putStr "ranks = " >> (print $ map rank [p1,p2,p3]) >> putStrLn ""
+    dispTS "reconstructed trifocal tensor" recontri
+    putStr "error = " >> print (distH tri recontri) >> putStrLn ""
+    return (p1,p2,p3)
+
+
+desp4' v = (4><4) [ d, 0, 0, -a,
+                    0, d, 0, -b,
+                    0, 0, d, -c,
+                    0, 0, 0, d ]
+    where [a,b,c,d] = toList v
+
+
+main = do
+    putStrLn "-----Hartley & Zisserman ---------"
+    (p1,p2,p3) <- camerasFromTrifocalHZ tri
+    putStrLn "-----With C3 ------------"
+    analyzeTrifocal tri
+    putStrLn "-----With C3, and ratios from vanishing points"
+    analyzeTrifocal' tri
+    putStrLn "-----With aribitrary homography"
+    analyzeTrifocal'' tri
+    return ()
