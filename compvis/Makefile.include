@@ -22,16 +22,18 @@ CONTRIB = $(CONTRIBPATH)/Simple/simple.o        \
           $(CONTRIBPATH)/Burns.hs               \
           $(CONTRIBPATH)/Burns/burns.o
 
-LIBS = -i$(EVLIB) $(CDIR)/auxIpp.o $(CDIR)/adapt.o \
+LIBS = -i$(EVLIB)  -I$(IPP)/include \
+       $(CDIR)/auxIpp.o $(CDIR)/adapt.o \
        $(CONTRIBPATH)/Simple/simple.o \
        -L$(CONTRIBPATH)/Segments -lsegments \
        $(CONTRIBPATH)/Burns/burns.o \
-       -L$(IPP)/sharedlib -lguide -lippcore$(IPPS) -lippi$(IPPS) -lipps$(IPPS) -lippcc$(IPPS) -lippvc$(IPPS) -lippcv$(IPPS)
+       -L$(IPP)/sharedlib -lguide -lippcore$(IPPS) -lippi$(IPPS)\
+       -lipps$(IPPS) -lippcc$(IPPS) -lippvc$(IPPS) -lippcv$(IPPS)
 
 all: $(ALL) 
 
 %: %.hs auxc
-	@ghc -threaded --make $< -o $@ $(LIBS)
+	@ghc -O -fvia-C -threaded --make $< -o $@ $(LIBS)
 
 auxc: $(CDIR)/auxIpp.o $(CDIR)/adapt.o $(CDIR)/Structs.hs \
       $(CONTRIB)

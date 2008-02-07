@@ -43,7 +43,7 @@ vector = fromList :: [Double] -> Vector Double
 debug x = trace (show x) x
 
 
-foreign import ccall "C/Segments/mycvSegments.h mycvSegmentsWithParms_8u_C1_C3"
+foreign import ccall "Segments/mycvSegments.h mycvSegmentsWithParms_8u_C1_C3"
     c_segments :: Ptr CUChar -> Int ->
                   Int -> Int -> Ptr IppiSize ->
                   Ptr (Ptr CSegment) ->
@@ -52,7 +52,7 @@ foreign import ccall "C/Segments/mycvSegments.h mycvSegmentsWithParms_8u_C1_C3"
                   Int ->
                   CUChar -> CUChar -> Int -> IO ()
 
-foreign import ccall "C/Segments/mycvSegments.h mycvPostProcessSegments"
+foreign import ccall "Segments/mycvSegments.h mycvPostProcessSegments"
     c_post_process_segments :: Ptr (Ptr CSegment) ->
                                Ptr CInt ->
                                Float -> Float ->

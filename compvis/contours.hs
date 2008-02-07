@@ -136,7 +136,7 @@ worker cam param inWindow (prots',mbp) = do
              setColor 1 0 0
              --mapM_ (shcont. invFou 50 comps) detected
              mapM_ shcont detected
-             lineWidth $= 1
+             lineWidth $= 2
              setColor 0 0 1
              if (showFou==0) 
                 then mapM_ (shcont) cs

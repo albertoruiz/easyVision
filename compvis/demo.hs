@@ -259,6 +259,7 @@ worker wDemo cam param fft = do
                  segs = segments 4 1.5 5 40 20 False orig
              drawImage orig
              setColor 1 0 0
+             lineWidth $= 2
              pointCoordinates (size orig)
              renderPrimitive Lines $ mapM_ vertex segs
         "LBP" -> do
