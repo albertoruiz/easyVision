@@ -24,6 +24,7 @@ module EasyVision.Draw
 , text2D
 , renderSignal
 , renderAxes
+, drawROI
 , drawCamera
 , cameraView
 , drawInterestPoints
@@ -41,6 +42,8 @@ import Foreign (touchForeignPtr,castPtr)
 import Numeric.LinearAlgebra
 import Vision
 import EasyVision.Trackball
+import EasyVision.Util
+
 
 -- | Types of images that can be shown in a window
 class Drawable a where
@@ -59,21 +62,28 @@ instance Drawable ImageFloat where
 instance Drawable ImageYUV where
     drawImage = drawImageYUV
 
-myDrawPixels m@Img{itype=RGB} = 
-    GL.drawPixels (GL.Size (fromIntegral $ step m `quot` 3) (fromIntegral $ height $ isize m))
-                  (PixelData GL.RGB UnsignedByte (ptr m))
 
-myDrawPixels m@Img{itype=Gray} = 
-    GL.drawPixels (GL.Size (fromIntegral $ step m `quot` (datasize m)) (fromIntegral $ height $ isize m))
-                  (PixelData Luminance UnsignedByte (ptr m))
+pstart im = starting im (vroi im)
 
-myDrawPixels m@Img{itype=I32f} = 
-    GL.drawPixels (GL.Size (fromIntegral $ step m `quot` (datasize m)) (fromIntegral $ height $ isize m))
-                  (PixelData Luminance Float (ptr m))
+szgl = glSize .roiSize . vroi
 
-myDrawPixels m@Img{itype=YUV} = 
-    GL.drawPixels (GL.Size (fromIntegral $ step m `quot` (datasize m)) (fromIntegral $ height $ isize m))
-                  (PixelData CMYK UnsignedByte (ptr m))
+-- GL.Size (fromIntegral $ step im `quot` (datasize im * layers im))
+--                  (fromIntegral $ height $ isize im)
+
+
+myDrawPixels m@Img{itype=RGB} = do
+    GL.rowLength Unpack $= fromIntegral (step m `quot` (datasize m * layers m))
+    GL.drawPixels (szgl m) (PixelData GL.RGB UnsignedByte (pstart m))
+
+myDrawPixels m@Img{itype=Gray} = do
+    GL.rowLength Unpack $= fromIntegral (step m `quot` (datasize m * layers m))
+    GL.drawPixels (szgl m) (PixelData Luminance UnsignedByte (pstart m))
+
+myDrawPixels m@Img{itype=I32f} = do
+    GL.rowLength Unpack $= fromIntegral (step m `quot` (datasize m * layers m))
+    GL.drawPixels (szgl m) (PixelData Luminance Float (pstart m))
+
+myDrawPixels m@Img{itype=YUV} = error "myDrawPixels undefined for YUV"
 
 
 -- | Draws an image in the current window.
@@ -86,7 +96,9 @@ drawImage' m = do
     ortho2D (0) (0.0001+fromIntegral w-1::GLdouble) (0) (0.0001+fromIntegral h-1)
     matrixMode $= Modelview 0
     loadIdentity
-    rasterPos (Vertex2 (0::GLfloat) (fromIntegral h-1.0001))
+    let r = fromIntegral $ r1 $ vroi m
+    let c = fromIntegral $ c1 $ vroi m
+    rasterPos (Vertex2 (c+0::GLfloat) (fromIntegral h-r-1.0001))
     GL.Size vw vh <- get windowSize
     pixelZoom $= (fromIntegral vw/ fromIntegral w,- fromIntegral vh/ fromIntegral h)
     --pixelZoom $= (1,-1)
@@ -94,19 +106,18 @@ drawImage' m = do
     touchForeignPtr (fptr m)
     let r = vroi m
     pixelCoordinates (isize m)
-    draw2Dwith (ortho2D 0.001 (fromIntegral w -0.001) (fromIntegral h-0.001) 0.001)
     setColor 1 1 1
     lineWidth $= 1
-    renderPrimitive LineLoop $ mapM_ vertex $
-        Pixel (r1 r) (c1 r) :
-        Pixel (1+r2 r) (c1 r) :
-        Pixel (1+r2 r) (1+c2 r) :
-        Pixel (r1 r) (1+c2 r) :[]
+    drawROI r
 
 drawImageFloat (F im) = drawImage' im
 drawImageGray (G im) = drawImage' im
 drawImageRGB (C im) = drawImage' im
 drawImageYUV (Y im) = yuvToRGB (Y im) >>= drawImageRGB -- drawImage' im
+
+drawROI r = renderPrimitive LineLoop $ mapM_ vertex
+    [ Pixel (r1 r) (c1 r), Pixel (1+r2 r) (c1 r),
+      Pixel (1+r2 r) (1+c2 r), Pixel (r1 r) (1+c2 r) ]
 
 --------------------------------------------------------------------------------
 
@@ -149,8 +160,8 @@ pointCoordinates (Size h w) = draw2Dwith (ortho2D 1 (-1) (-r) r)
 
 -- | Sets ortho2D to draw 2D unnormalized pixels as x (column, 0 left) and y (row, 0 top).
 pixelCoordinates :: Size -> IO()
---pixelCoordinates (Size h w) = draw2Dwith (ortho2D 0 (fromIntegral w-1) (fromIntegral h-1) 0)
-pixelCoordinates (Size h w) = draw2Dwith (ortho2D 0 (fromIntegral w) (fromIntegral h) 0)
+pixelCoordinates (Size h w) = draw2Dwith (ortho2D eps (fromIntegral w -eps) (fromIntegral h - eps) eps)
+    where eps = 0.0001
 
 draw2Dwith ortho = do
     matrixMode $= Projection

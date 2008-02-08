@@ -20,11 +20,11 @@ module ImagProc.Ipp.Core
           ( -- * Image representation
             Img(..), ImageType(..), ROI(..), Size(..)
             -- * Creation of images
-          , img, imgAs, getData32f, setData32f, setData8u, value, setValue
+          , img, imgAs, getData32f, setData32f, setData8u, value, setValue, clone
             -- * Regions of interest
           , fullroi, shrink, shift, intersection, roiSize, roiArea, invalidROIs, roiSZ
             -- * Wrapper tools
-          , src, dst, checkIPP, warningIPP, (//), purifyWith
+          , src, dst, checkIPP, warningIPP, (//), purifyWith, clearNoROI, starting
             -- * Image types
           , Image(..)
           , ImageRGB(C)
@@ -46,6 +46,7 @@ import Control.Monad(when)
 import ImagProc.Ipp.Wrappers
 import Foreign.C.String(peekCString)
 import Foreign.C.Types
+import Foreign.Marshal.Utils(copyBytes)
 import qualified Numeric.LinearAlgebra as LA
 import Vision
 
@@ -94,6 +95,13 @@ img Gray = img' Gray 1 1
 img RGB  = img' RGB  1 3
 img I32f = img' I32f 4 1
 img YUV  = img' YUV  1 2 -- img' YUV ? ? -- hmm.. is 4:2:0
+
+
+clone im = do
+    c <- img (itype im) (isize im)
+    copyBytes (ptr c) (ptr im) (height (isize im) * step im)
+    return c {vroi = vroi im}
+
 
 -- | Extracts the data in a I32f image into a list of lists.
 getData32f :: ImageFloat -> IO [[Float]]
@@ -248,8 +256,13 @@ invalidROIs img = [r | Just r <- thefour] where
 purifyWith :: Image a => (ROI -> a -> IO ()) -> (IO a) -> a
 purifyWith roifun imgfun = unsafePerformIO $ do
     r <- imgfun
-    mapM_ ((flip roifun) r) (invalidROIs r)
+    clearNoROI roifun r
+    -- mapM_ ((flip roifun) r) (invalidROIs r)
     return r
+
+-- modifies the undefined region of an image.
+clearNoROI :: Image a => (ROI -> a -> IO ()) -> a -> IO ()
+clearNoROI fun im = mapM_ ((flip fun) im) (invalidROIs im)
 
 -- | Operations supported by the different image types.
 class Image a where
@@ -259,7 +272,8 @@ class Image a where
     size :: a -> Size
     -- | gets the 'ROI' of the image
     theROI :: a -> ROI
-    -- | modifies the 'ROI' of an image
+    -- | modifies the valid 'ROI' of an image in a \"safe\" way
+    -- (the new ROI is the intersection of the desired ROI and the old valid ROI)
     modifyROI :: (ROI->ROI) -> a -> a
 
 instance Image ImageFloat where
@@ -268,7 +282,7 @@ instance Image ImageFloat where
         return (F i)
     size (F Img {isize=s}) = s
     theROI (F im) = vroi im
-    modifyROI f (F im) = F im { vroi = f (vroi im) }
+    modifyROI f (F im) = F im { vroi = f (vroi im) `intersection` (vroi im) }
 
 instance Image ImageGray where
     image s = do
@@ -276,7 +290,7 @@ instance Image ImageGray where
         return (G i)
     size (G Img {isize=s}) = s
     theROI (G im) = vroi im
-    modifyROI f (G im) = G im { vroi = f (vroi im) }
+    modifyROI f (G im) = G im { vroi = f (vroi im) `intersection` (vroi im) }
 
 instance Image ImageRGB where
     image s = do
@@ -284,7 +298,7 @@ instance Image ImageRGB where
         return (C i)
     size (C Img {isize=s}) = s
     theROI (C im) = vroi im
-    modifyROI f (C im) = C im { vroi = f (vroi im) }
+    modifyROI f (C im) = C im { vroi = f (vroi im) `intersection` (vroi im) }
 
 instance Image ImageYUV where
     image s = do
@@ -292,7 +306,7 @@ instance Image ImageYUV where
         return (Y i)
     size (Y Img {isize=s}) = s
     theROI (Y im) = vroi im
-    modifyROI f (Y im) = Y im { vroi = f (vroi im) }
+    modifyROI f (Y im) = Y im { vroi = f (vroi im) `intersection` (vroi im) }
 
 
 -- | The IPP 8u_C3 image type

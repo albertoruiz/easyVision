@@ -285,3 +285,48 @@ main = do
     putStrLn "-----With aribitrary homography"
     analyzeTrifocal'' tri
     return ()
+
+
+--------------- other experiments -------------
+
+po = tv[0,0,0,1]
+px = tv[1,0,0,1]
+py = tv[0,1,0,1]
+pz = tv[0,0,1,1]
+
+r1 = po /\ px
+r2 = py /\ pz
+r3 = po /\ py
+
+
+-- recovery of a fundamental matrix from the trifocal tensor from the "algorithmic" transfer.
+-- If it worked for ordinary coordinates the tensor coordinates would be just the images of
+-- the inputs bases. But it is obtained by means of geometric arguments, and we get homogeneous
+-- entities. Nevertheless the scale factors can be easily recovered from two "transposed" versions
+
+-- (it is of course much easier to join a transfer and the epipole)
+
+base = map tvector . toRows . ident
+
+tri2fun12Alg tri x = thing * (x!"k") * (x!"K")
+    where thing = tri!"kij" * eps3!"jJa" * tv[0,0,1]!"a" * tri!"KIJ" * eps3!"iIl"
+
+fh tri = fromColumns $ map (unitary.coords.tri2fun12Alg tri) (base 3)
+
+fv tri = fromRows $ map (unitary.coords.tri2fun21Alg tri) (base 3)
+
+reverseTransfer tri cv x = x!"a" * eps3!"aiI" * cv!"j" * tri!"kij" * tri!"KIJ" * cv!"J" * raise eps3!"kKc"
+
+tri2fun21Alg tri x = reverseTransfer tri (tc[2,7,4]) x !"i" *eps3!"ijk"*reverseTransfer tri (tc[0,-1,8]) x!"j"
+
+exper tri = do
+    let a = fromColumns $ map (unitary.coords.tri2fun12Alg tri) (base 3)
+        b = fromRows $ map (unitary.coords.tri2fun21Alg tri) (base 3)
+
+    let alpha1 = 1
+        beta2  = b@@>(1,0)/a@@>(1,0)
+        alpha2 = b@@>(1,1)/a@@>(1,1) / beta2
+        alpha3 = b@@>(1,2)/a@@>(1,2) / beta2
+
+    disp $ a <> (diag $ fromList [alpha1,alpha2,alpha3])
+    disp $ f12

@@ -70,7 +70,7 @@ segments :: Int   -- ^ user radius (eg., 4)
 segments rad we medsz th tl pp (G im) = unsafePerformIO $ do
     pi <- malloc
     pn <- malloc
-    let r@(ROI r1 r2 c1 c2) = vroi im `intersection` (shrink (15,15) (fullroi im))
+    let r@(ROI r1 r2 c1 c2) = shrink (1,1) $ vroi im `intersection` (shrink (15,15) (fullroi im))
         start = plusPtr (ptr im) (r1* step im + c1)
     pr <- malloc 
     poke pr (roiSZ r)

@@ -55,7 +55,7 @@ main = do
     attachMenu LeftButton $ Menu $ map mode
         ["RGB","Gray","Red","Green","Blue","H","S"
         , "Median","Gaussian","Laplacian","HighPass","Histogram"
-        ,"Integral","Threshold","FloodFill","Contours","Distance", "Hessian"
+        ,"Integral","Threshold","FloodFill","Contours","Distance", "Distance2", "Hessian"
         ,"Corners", "Features", "Segments", "Canny", "DCT", "FFT", "Test 1", "Test 2"
         , "LBP","GaussianNew","OtroGaussian"]
 
@@ -81,6 +81,9 @@ worker wDemo cam param fft = do
     lbpThres <- getParam param "lbpThres"
 
     op <- getW wDemo
+    roi <- getROI wDemo
+    im <- cam
+
     inWin wDemo $ case op of
 
         "RGB"  ->
@@ -142,6 +145,18 @@ worker wDemo cam param fft = do
              distanceTransform [1,1.4,2.2] >>=
              scale32f (1/60) >>=
              drawImage
+        "Distance2" -> do
+             roi <- getROI wDemo
+             orig <- cam
+             im <- yuvToGray orig >>= scale8u32f 0 1
+             F s <- (smooth `times` gauss Mask5x5) im
+             gx' <- sobelVert $ F s {vroi = roi `intersection` vroi s}
+             gx <- scale32f (-1) gx' -- !!!
+             gy <- sobelHoriz $ F s {vroi = roi `intersection` vroi s}
+             c <- canny (gx,gy) (th/3,th) -- >>= scale8u32f 0 1
+             -- copyROI32f c (theROI c) im
+
+             distanceTransform [1,1.4,2.2] (notI c) >>= scale32f (1/60) >>= drawImage
         "Test 1" -> do
              d <- cam >>= yuvToGray
                   >>= smooth2 `times` median Mask5x5 >>= highPass8u Mask5x5
@@ -253,11 +268,10 @@ worker wDemo cam param fft = do
              copyROI32f sc (theROI sc) im
              drawImage im
         "Segments" -> do
-             orig' <- cam >>= yuvToGray
-             roi <-  getROI wDemo
-             let orig = modifyROI (const roi) orig'
-                 segs = segments 4 1.5 5 40 20 False orig
+             let orig = gray (channels im)
+             let segs = segments 4 1.5 5 40 20 False . modifyROI (const roi) $ orig
              drawImage orig
+             drawROI roi
              setColor 1 0 0
              lineWidth $= 2
              pointCoordinates (size orig)
