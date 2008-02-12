@@ -57,7 +57,7 @@ worker wIm w3D cam op mbf = do
     scale  <- getParam op "scale"
     orthotol  <- getParam op "orthotol"
 
-    orig <- cam >>= yuvToGray
+    orig <- cam >>= return . yuvToGray
     let segs = filter ((>minlen).segmentLength) $ segments radius width median high low pp orig
         polis = segmentsToPolylines maxdis segs
         closed4 = [p | Closed p <- polis, length p == 4]
@@ -95,11 +95,11 @@ worker wIm w3D cam op mbf = do
             let pts = head a4s
                 h = estimateHomography a4 (map pl pts)
                 Size _ sz = size orig
-            imf <- scale8u32f 0 1 orig
+            let imf = scale8u32f 0 1 orig
             let floor = warp 0 (Size 256 256) (scaling scale <> h) imf
             drawTexture floor $ map (++[-0.01]) $ ht (scaling (1/scale)) [[1,1],[-1,1],[-1,-1],[1,-1]]
 
-            imt <- extractSquare 128 imf
+            let imt = extractSquare 128 imf
             let Just (cam,path) = cameraFromPlane 1E-3 500 mbf (map pl pts) a4
             --let Just cam = cameraFromHomogZ0 mbf (inv h)
             drawCamera 1 cam (Just imt)

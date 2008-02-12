@@ -55,7 +55,7 @@ worker cam op mbf w = do
     maxdis <- getParam op "maxdis"
     orthotol  <- getParam op "orthotol"
 
-    orig <- cam >>= yuvToGray
+    orig <- cam >>= return . yuvToGray
     let segs = filter ((>minlen).segmentLength) $ segments radius width median high low pp orig
         polis = segmentsToPolylines maxdis segs
         closed4 = [p | Closed p <- polis, length p == 4]

@@ -106,7 +106,7 @@ mkw (n,as) = rep ("DstStep","dstStep")$
              ++ "    return r\n"
 
 auxStruct act args = unlines $ map (act.snd) $ filter (\(t,n)->t=="IppiSize"||t=="IppiPoint") args
-initStruct n = "    p"++n++" <- malloc\n    poke p"++n++" "++n
+initStruct n = "    p"++n++" <- new "++n
 freeStruct n = "    free p"++n
 
 --cl ("IppiSize" , n) = '*':n

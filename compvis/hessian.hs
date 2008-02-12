@@ -23,29 +23,28 @@ main = do
 
 --------------------------------------------------------------
 
-hess s im = purifyWith (copyROI32f im) (iohess s im)
+hess s im = sqrt32f
+          $ abs32f
+          $ hessian
+          $ secondOrder
+          $ (s `times` gauss Mask5x5) im
 
-iohess s im =
-    (s `times` gauss Mask5x5) im
-    >>= secondOrder
-    >>= hessian
-    >>= abs32f
-    >>= sqrt32f
+times n f = (!!n) . iterate f
 
 --------------------------------------------------------------
 
 worker cam inWindow st = do
 
-    camera <- cam >>= yuvToGray >>= scale8u32f 0 1
+    camera <- cam >>= return . scale8u32f 0 1 . yuvToGray
     let h = hess (smooth st) camera
 
     inWindow "hessian" $ do
         drawImage h --{vroi = vroi h}
 
-    (mn,mx) <- minmax h
-    hotPoints <- localMax 7 h
-             >>= thresholdVal32f (mx/5) 0.0 IppCmpLess
-             >>= getPoints32f 1000
+    let (mn,mx) = minmax h
+        hotPoints = getPoints32f 1000
+                  $ thresholdVal32f (mx/5) 0.0 IppCmpLess
+                  $ localMax 7 h
 
     inWindow "camera" $ do
         drawImage camera

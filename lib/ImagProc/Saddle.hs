@@ -21,10 +21,12 @@ module ImagProc.Saddle (
 where
 
 import ImagProc.Ipp.Core
+import ImagProc.C.Simple(getPoints32f)
 import ImagProc.ImageProcessing
 import Data.List(zipWith6)
-import Numeric.LinearAlgebra
+import Numeric.LinearAlgebra hiding ((.*))
 import GHC.Float(float2Double,double2Float)
+import Foreign(unsafePerformIO)
 
 data InterestPoint = IP {
                           ipRawPosition :: Pixel
@@ -45,46 +47,45 @@ getSaddlePoints ::
            -> Int       -- ^ dimension of the feature vector
            -> Float     -- ^ radius of the feature circle
            -> ImageFloat  -- ^ source image
-           -> IO [InterestPoint]  -- ^ result
-getSaddlePoints smooth rad prop maxn fn fr im = do
-    let suaviza = smooth `times` gauss Mask5x5
-    sm <- suaviza im
-    gs <- secondOrder sm
-    h <- hessian gs >>= scale32f (-1.0)
-    (mn,mx) <- minmax h
-    hotPixels'  <- localMax rad h
-                >>= thresholdVal32f (mx*prop) 0.0 IppCmpLess
-    let r = max 0 (ceiling fr - ((rad-1) `div`2))
-    hotPixels <- getPoints32f maxn (modifyROI (shrink (r,r)) hotPixels')
+           -> [InterestPoint]  -- ^ result
+getSaddlePoints smooth rad prop maxn fn fr im = unsafePerformIO $ do
+    let suaviza = (!!smooth) . iterate (gauss Mask5x5)
+        sm = suaviza im
+        gs = secondOrder sm
+        h  = (-1.0) .* hessian gs
+        (mn,mx) = minmax h
+        hotPixels' = thresholdVal32f (mx*prop) 0.0 IppCmpLess (localMax rad h)
+        r = max 0 (ceiling fr - ((rad-1) `div`2))
+        hotPixels = getPoints32f maxn (modifyROI (shrink (r,r)) hotPixels')
 
 
-    let ptp = pixelsToPoints (size im)
+        ptp = pixelsToPoints (size im)
 
-    let hotPoints = ptp hotPixels
+        hotPoints = ptp hotPixels
 
-    let (gx,gy,gxx,gyy,gxy) = gs
+        (gx,gy,gxx,gyy,gxy) = gs
 
-    let loc = zip hotPixels hotPoints
+        loc = zip hotPixels hotPoints
 
-    let dir :: (Pixel, Point) -> IO (Pixel, Float)
+        dir :: (Pixel, Point) -> IO (Pixel, Float)
         dir (pix, Point x y) = do
-        dx <- val32f gx pix
-        dy <- val32f gy pix
-        dxx <- val32f gxx pix
-        dyy <- val32f gyy pix
-        dxy <- val32f gxy pix
-        let (sp,(vx,vy)) = taylor dx dy dxx dyy dxy
-        let sg = signum (dx*vx - dy*vy)
-        return (pix, atan2 (sg*vy) (sg*vx))
+            dx <- val32f gx pix
+            dy <- val32f gy pix
+            dxx <- val32f gxx pix
+            dyy <- val32f gyy pix
+            dxy <- val32f gxy pix
+            let (sp,(vx,vy)) = taylor dx dy dxx dyy dxy
+            let sg = signum (dx*vx - dy*vy)
+            return (pix, atan2 (sg*vy) (sg*vx))
 
     info <- mapM dir loc
     let dirs = map snd info
-    let sp = map fst info
-    let cs = zipWith (circle fn fr) hotPixels dirs
+        sp = map fst info
+        cs = zipWith (circle fn fr) hotPixels dirs
     feats' <-  mapM (extractList sm) cs
     let feats = map (fromList . map float2Double) feats'
 
-    let r = zipWith6 IP sp (ptp sp) (map float2Double dirs) feats (repeat 0) cs
+        r = zipWith6 IP sp (ptp sp) (map float2Double dirs) feats (repeat 0) cs
 
     return r
 
@@ -120,7 +121,7 @@ circle n rad (Pixel r c) ang = cir where
 ----------------------------------------------------
 
 corresp umb h w simil = do
-    (v, p@(Pixel r c)) <- maxIndx simil
+    let (v, p@(Pixel r c)) = maxIndx simil
     if (-v) > umb then return []
              else do set32f (-1000) ROI {r1=r,r2=r,c1=0,c2=w-1} simil
                      set32f (-1000) ROI {r1=0,r2=h-1,c1=c,c2=c} simil

@@ -20,11 +20,11 @@ module ImagProc.Ipp.Core
           ( -- * Image representation
             Img(..), ImageType(..), ROI(..), Size(..)
             -- * Creation of images
-          , img, imgAs, getData32f, setData32f, setData8u, value, setValue, clone
+          , img, imgAs, getData32f, setData32f, setData8u, value, setValue
             -- * Regions of interest
           , fullroi, shrink, shift, intersection, roiSize, roiArea, invalidROIs, roiSZ
             -- * Wrapper tools
-          , src, dst, checkIPP, warningIPP, (//), purifyWith, clearNoROI, starting
+          , src, dst, checkIPP, warningIPP, (//), starting
             -- * Image types
           , Image(..)
           , ImageRGB(C)
@@ -38,6 +38,7 @@ module ImagProc.Ipp.Core
           , segmentLength, distPoints
           , pixelsToPoints, pointsToPixels, pixelToPointTrans
           , val32f, val32f', val8u
+          , module ImagProc.Ipp.Structs, CInt, CUChar, fi, ti
 ) where
 
 import ImagProc.Ipp.Structs
@@ -49,6 +50,14 @@ import Foreign.C.Types
 import Foreign.Marshal.Utils(copyBytes)
 import qualified Numeric.LinearAlgebra as LA
 import Vision
+
+
+---------------------------------------
+fi :: Int -> CInt
+fi = fromIntegral
+ti :: CInt -> Int
+ti = fromIntegral
+---------------------------------------
 
 ------------------------------------------------------------
 ------------- descriptor of an ipp image -------------------
@@ -95,13 +104,6 @@ img Gray = img' Gray 1 1
 img RGB  = img' RGB  1 3
 img I32f = img' I32f 4 1
 img YUV  = img' YUV  1 2 -- img' YUV ? ? -- hmm.. is 4:2:0
-
-
-clone im = do
-    c <- img (itype im) (isize im)
-    copyBytes (ptr c) (ptr im) (height (isize im) * step im)
-    return c {vroi = vroi im}
-
 
 -- | Extracts the data in a I32f image into a list of lists.
 getData32f :: ImageFloat -> IO [[Float]]
@@ -252,17 +254,7 @@ invalidROIs img = [r | Just r <- thefour] where
     ROI r1 r2 c1 c2 = theROI img
     Size h w = size img
 
--- | Given an IO function which is essentially pure except for possibly undefined data outside the ROI, it creates a pure function with the same effect, which applies a given initialization to the region outside the roi. For example, @purifyWith ("set32f" 0) (iofun args)@ creates a pure fun equal to iofun with zero pixels outside the ROI; to copy the data from an image you can use @("copyROI32f" im)@, etc.
-purifyWith :: Image a => (ROI -> a -> IO ()) -> (IO a) -> a
-purifyWith roifun imgfun = unsafePerformIO $ do
-    r <- imgfun
-    clearNoROI roifun r
-    -- mapM_ ((flip roifun) r) (invalidROIs r)
-    return r
 
--- modifies the undefined region of an image.
-clearNoROI :: Image a => (ROI -> a -> IO ()) -> a -> IO ()
-clearNoROI fun im = mapM_ ((flip fun) im) (invalidROIs im)
 
 -- | Operations supported by the different image types.
 class Image a where

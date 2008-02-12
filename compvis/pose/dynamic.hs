@@ -113,7 +113,7 @@ worker cam op mbf (getPos,setAccel) inWindow st = do
     white <- getParam op "white"
     eps <- getParam op "eps" ::IO Double
 -}
-    orig <- cam >>= yuvToGray
+    orig <- cam >>= return . yuvToGray
 
     let segs = filter ((>minlen).segmentLength) $ segments radius width median' high low pp orig
         polis = segmentsToPolylines maxdis segs
@@ -294,7 +294,7 @@ mouse def _ a b c d = def a b c d
 -- readPixels extremely slow, useless
 capture sv inWindow name fun = do
     inWindow name fun
-    captureGL >>= rgbToYUV >>= sv
+    captureGL >>= return . rgbToYUV >>= sv
 
 mbh [] = Nothing
 mbh (a:_) = Just a

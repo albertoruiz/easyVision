@@ -5,7 +5,7 @@ module Main where
 import EasyVision
 import Graphics.UI.GLUT hiding (Matrix, Size, Point)
 import Control.Monad(foldM)
-import ImagProc.Ipp.Core(intersection, purifyWith, shrink, roiArea)
+import ImagProc.Ipp.Core(intersection, shrink, roiArea)
 import Numeric.GSL.Minimization
 import Numeric.LinearAlgebra
 import Foreign
@@ -22,8 +22,8 @@ panoramic sz fi1 fi2 fo camBase camAdj = do
         img1 <- camAdj
 
         let smsz = Size 120 160
-        sm0 <- resize32f smsz img0
-        sm1 <- resize32f smsz img1
+            sm0 = resize smsz img0
+            sm1 = resize smsz img1
 
         (rh,_) <- getW wWar
         hi <- rh
@@ -70,7 +70,7 @@ main = do
 
     cams <- mapM (flip getCam sz) [0..n-1]
 
-    let cf k = cams!!k >>= yuvToGray >>= scale8u32f 0 1 >>= return . modifyROI (shrink (10,10))
+    let cf k = cams!!k >>= return . scale8u32f 0 1 . yuvToGray >>= return . modifyROI (shrink (10,10))
 
     prepare
 
@@ -101,18 +101,14 @@ mouse def _ a b c d = def a b c d
 
 --------------------------------------------------------------
 
-asFloat grab = return $ grab >>= yuvToGray >>= scale8u32f 0 1
+asFloat grab = return $ grab >>= return . scale8u32f 0 1 . yuvToGray
 
-absIm = purifyWith (set32f 0) . abs32f
-
-sumIm = unsafePerformIO . sum32f
-
-simil0 a b roi = k * sumIm (absIm (f a |-| f b))
+simil0 a b roi = k * sum32f (abs32f (f a |-| f b))
     where f = modifyROI (const roi)
           k = recip $ fromIntegral $ roiArea (f a)
 
 pasteOn base h im = unsafePerformIO $ do
-    dest <- copy32f base
+    let dest = clone base
     --mask <- thresholdVal32f 0 1 IppCmpGreater base
     warpOn h dest im
     --return (dest|*|mask) -- only on valid data

@@ -49,7 +49,7 @@ ippi.h  ippiMaxIndx_8u_C1R
 ippcv.h ippiCannyGetSize
 ippcv.h ippiCanny_32f8u_C1R
 ippi.h  ippiHistogramRange_8u_C1R
-ippi.h  ippiMirror_8u_C1IR
+ippi.h  ippiMirror_8u_C1R
 ippi.h ippiFFTInitAlloc_R_32f
 ippi.h ippiFFTFree_R_32f
 ippi.h ippiFFTGetBufSize_R_32f

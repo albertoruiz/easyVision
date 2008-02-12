@@ -59,6 +59,7 @@ htp h (Closed c) = Closed . map l2p . ht h . map p2l $ c
 p2l (Point x y) = [x,y]
 l2p [x,y] = Point x y
 
+times n f = (!!n) . iterate f
 
 ------------------------------------------------------------
 
@@ -101,8 +102,8 @@ worker cam param inWindow (prots',mbp) = do
     eps <- getParam param "eps"
     rotation <- getParam param "rotation"
 
-    orig <- cam >>= yuvToGray
-    im <-(smooth2 `times` median Mask3x3) orig
+    orig <- cam >>= return . yuvToGray
+    let im = (smooth2 `times` median Mask3x3) orig
 
     let (Size h w) = size im
         pixarea = h*w*area`div`1000

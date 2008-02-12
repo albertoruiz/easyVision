@@ -144,9 +144,9 @@ pointMarker app name sz cam = do
         locrad <- getParam opts "locrad"
         meds <- getParam opts "median" :: IO Int
         let diam = 2*locrad+1
-        img <- cam' >>= yuvToGray >>= meds `times` (median Mask3x3) >>= scale8u32f 0 1 
+        img <- cam' >>= return . scale8u32f 0 1 . (meds `times` median Mask3x3) . yuvToGray
         --ips <- getSaddlePoints smooth locrad h 300 dim rad img
-        ips <- getCorners smooth locrad h 300 img
+        let ips = getCorners smooth locrad h 300 img
         writeIORef ref (Just (img,ips))
         currentWindow $= Just w
         postRedisplay Nothing
@@ -183,3 +183,4 @@ pointMarker app name sz cam = do
         closest hp p = minimumBy (compare `on` dist p) hp
             where dist (Pixel a b) (Pixel x y) = (a-x)^2+(b-y)^2
 
+times n f = (!!n) . iterate f

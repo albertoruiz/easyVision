@@ -21,7 +21,11 @@ module ImagProc.Ipp.Structs (
     IppiSize(..),
     IppiPoint(..),
     IppiRect(..),
-    IppiConnectedComp(..)
+    IppiConnectedComp(..),
+    Mask(..), codeMask,
+    IppCmp(..), codeCmp,
+    AlgHint(..), codeAlgHint,
+    FFTNormalization(..), codeFFTFlag
 ) where
 
 import Foreign
@@ -92,3 +96,28 @@ instance Storable IppiConnectedComp where
         (#poke IppiConnectedComp, value[1]) ptr value1
         (#poke IppiConnectedComp, value[2]) ptr value2
         (#poke IppiConnectedComp, rect) ptr rect
+
+
+data Mask = Mask3x3 | Mask5x5
+codeMask Mask3x3 = 33
+codeMask Mask5x5 = 55
+
+data AlgHint = AlgHintNone | AlgHintFast | AlgHintAccurate
+codeAlgHint AlgHintNone     = 0
+codeAlgHint AlgHintFast     = 1
+codeAlgHint AlgHintAccurate = 2
+
+-- | Comparison options
+data IppCmp = IppCmpLess | IppCmpLessEq | IppCmpEq | IppCmpGreaterEq | IppCmpGreater
+codeCmp IppCmpLess      = 0
+codeCmp IppCmpLessEq    = 1
+codeCmp IppCmpEq        = 2
+codeCmp IppCmpGreaterEq = 3
+codeCmp IppCmpGreater   = 4
+
+-- | Normalization options for the FFT
+data FFTNormalization = DivFwdByN | DivInvByN | DivBySqrtN | NoDivByAny
+codeFFTFlag DivFwdByN  = 1
+codeFFTFlag DivInvByN  = 2
+codeFFTFlag DivBySqrtN = 4
+codeFFTFlag NoDivByAny = 8

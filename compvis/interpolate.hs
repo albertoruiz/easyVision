@@ -10,7 +10,7 @@ interpolate = virtualCamera (return . inter)
 drift alpha = virtualCamera (return . drifter)
     where drifter (a:b:rest) = a : drifter ((alpha .* a |+| (1-alpha).* b):rest)
 
-asFloat grab = return $ grab >>= yuvToGray >>= scale8u32f 0 1
+asFloat grab = return $ return . float . yuvToGray =<< grab
 
 ------------------------------------------------------------
 

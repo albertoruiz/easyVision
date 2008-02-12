@@ -113,7 +113,7 @@ drawImage' m = do
 drawImageFloat (F im) = drawImage' im
 drawImageGray (G im) = drawImage' im
 drawImageRGB (C im) = drawImage' im
-drawImageYUV (Y im) = yuvToRGB (Y im) >>= drawImageRGB -- drawImage' im
+drawImageYUV (Y im) = drawImageRGB $ yuvToRGB (Y im)  -- drawImage' im
 
 drawROI r = renderPrimitive LineLoop $ mapM_ vertex
     [ Pixel (r1 r) (c1 r), Pixel (1+r2 r) (c1 r),
@@ -220,7 +220,7 @@ drawCamera size cam (Just imgtext) = do
     renderPrimitive LineLoop $ mapM_ vertex outline
 
 -- | Takes a centered square from an image and resizes it to the desired size (useful to obtain an image texture appropriate for 'drawCamera').
-extractSquare :: Int -> ImageFloat -> IO ImageFloat
+extractSquare :: Int -> ImageFloat -> ImageFloat
 extractSquare sz (F im) = resize32f (Size sz sz) (F im {vroi = roi}) where
     w = width $ isize im
     h = height $ isize im

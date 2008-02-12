@@ -25,6 +25,7 @@ empty = do im <- image (Size 400 400)
                         points = []
                       }
 
+times n f = (!!n) . iterate f
 
 main = do
     args <- getArgs
@@ -63,9 +64,9 @@ worker cam param inWindow st = do
 
     --orig <- grab ocam
     orig <- cam
-    im <- yuvToGray orig >>= scale8u32f 0 1
+    let im = yuvToGray orig // scale8u32f 0 1
 
-    ips <- getSaddlePoints smooth 7 h 500 20 10 im
+        ips = getSaddlePoints smooth 7 h 500 20 10 im
 
     inWindow "camera" $ do
         drawImage im

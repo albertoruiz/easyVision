@@ -117,9 +117,12 @@ mlp = map lp
 
 htp h = ht h . mpl
 
+partit _ [] = []
+partit n l  = take n l : partit n (drop n l)
+
 worker cam w3D inWindow st = do
-    camera <- cam >>= yuvToGray >>= scale8u32f 0 1
-    hotPoints <- getCorners 1 7 0.1 200 camera
+    camera <- cam >>= return . scale8u32f 0 1 . yuvToGray
+    let hotPoints = getCorners 1 7 0.1 200 camera
 
     inWindow "camera" $ do
         drawImage camera
@@ -200,7 +203,7 @@ compute st = do
     costsurf' <- image (Size 50 50)
     let (minim,cost) = explore 50 (60*degree) 3 (0,2) ((0.5*).f)
     setData32f costsurf' cost
-    costsurf <- resize32f (Size 200 200) costsurf'
+    let costsurf = resize32f (Size 200 200) costsurf'
 
     let [rho,yh] = fst $ findSol f minim     -- detailed optimization from the minimum
     let (c0,_) = extractInfo info uhs (rho, yh)
@@ -212,7 +215,7 @@ compute st = do
     --writeFile "real.txt" . show . foldr1 (<->) $ uhs
 
     let cameras = map (cameraFromHomogZ0 Nothing. (<>c0'). inv) (hs st)
-    textures <- mapM (extractSquare 64) (imgs st)
+    let textures = map (extractSquare 64) (imgs st)
     let drs = [drawCamera 0.4 c (Just t) | (Just c,t) <- zip cameras textures]
 
     return st { cam0 = c0'
@@ -252,9 +255,9 @@ marker _ str (MouseButton LeftButton) Down _ pos@(Position x y) = do
     if (length m /= 4)
         then writeIORef str st { ust = u {marked = m} }
         else do
-            camera <- camera (ust st) >>= yuvToGray
+            camera <- camera (ust st) >>= return . yuvToGray
             let hp = pixelsToPoints (size camera) m
-            im  <- scale8u32f 0 1 camera
+            let im = scale8u32f 0 1 camera
             let u' = u { marked = []
                        , imgs = imgs u ++ [im]
                        , pts = pts u ++ [hp]

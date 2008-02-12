@@ -39,7 +39,7 @@ warper alpha rho foc sca = r where
 
 worker wCam wWarp cam param = do
 
-    camera <- cam >>= yuvToRGB
+    camera <- cam >>= return . yuvToRGB
     inWin wCam (drawImage camera)
 
     alpha <- getParam param "alpha"

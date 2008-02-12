@@ -120,13 +120,13 @@ detectMov' cond ((a,f):(b,g):t) =
         then (a,f) : detectMov' cond ((b,g):t)
         else detectMov' cond ((b,g):t)
 
-absdif a b = unsafePerformIO $ absDiff8u a b >>= sum8u
+absdif a b = sum8u (absDiff8u a b)
 
 -- | Given a yuv camera adds a gray version (typically small), to be used with other combinators like 'detectMov'
 addSmall :: Size -> IO ImageYUV -> IO (IO (ImageYUV, ImageGray))
 addSmall sz grab = return $ do
     im <- grab
-    f <- yuvToGray im >>= resize8u sz
+    let f = resize sz (fromYUV im)
     return (im,f)
 
 ---------------------------------------------------------

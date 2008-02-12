@@ -2,7 +2,7 @@
 
 import EasyVision
 import Vision
-import Numeric.LinearAlgebra
+import Numeric.LinearAlgebra hiding ((.*))
 
 fftpow  = 8
 fftl    = 2^8
@@ -11,6 +11,8 @@ sz = mpSize 20
 p2roi = ROI r1 (r1 + fftl-1) c1 (c1 + fftl-1)
     where r1 = (height sz -fftl) `div` 2
           c1 = (width sz -fftl) `div` 2
+
+up = modifyROI (\r -> r {r2 = r1 r + fftl `div` 2 - 1})
 
 main = do
     (cam,ctrl) <- getCam 0 sz >>= withChannels >>= withPause
@@ -28,17 +30,16 @@ main = do
         img <- cam
         let imf = float . gray $ img
         inWin w $ drawImage (modifyROI (const p2roi) imf)
-        d <- fft (modifyROI (const p2roi) imf) >>= magnitudePack >>= powerSpectrum
-        let c@(Pixel r0 c0) = cent (theROI d)
+        let d = powerSpectrum $ magnitudePack $ fft (modifyROI (const p2roi) imf)
+            c@(Pixel r0 c0) = cent (theROI d)
         set32f 0 (roiFrom2Pixels c c) d
-        let up = modifyROI (\r -> r {r2 = r1 r + fftl `div` 2-1})
-        (m,Pixel rm cm) <- maxIndx (up d)
-        let ROI r1 _ c1 _ = p2roi
-        let dr = fromIntegral (rm+r1-r0)
+        let (m,Pixel rm cm) = maxIndx (up d)
+            ROI r1 _ c1 _ = p2roi
+            dr = fromIntegral (rm+r1-r0)
             dc = fromIntegral (cm+c1-c0)
             alpha = atan2 (-dc) (-dr)
             nd = sqrt (dr*dr+dc*dc)
-        sc <- scale32f (1/m) d
+            sc = (1/m) .* d
         r <- image fftsize
         copy sc (theROI sc) r (theROI r)
         let h = scaling (nd/8) <> rot3 (-alpha)

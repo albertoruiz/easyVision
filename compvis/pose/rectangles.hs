@@ -51,14 +51,14 @@ worker wIm wRec cam op = do
     scale  <- getParam op "scale"
     orthotol  <- getParam op "orthotol" :: IO Double
 
-    orig <- cam >>= yuvToGray
+    orig <- cam >>= return . yuvToGray
     let segs = filter ((>minlen).segmentLength) $ segments radius width median high low pp orig
         polis = segmentsToPolylines maxdis segs
         closed4 = [p | Closed p <- polis, length p == 4]
         (fs,recs) = unzip $ map (calibFromRectangle.construct) closed4
 
     inWin wIm $ do
-        scale8u32f 0 1 orig >>= return . warp 0 (Size 400 400) (scaling scale) >>= drawImage
+        drawImage $ warp 0 (Size 400 400) (scaling scale) orig
 
         pointCoordinates (Size 400 400)
 
@@ -89,7 +89,7 @@ worker wIm wRec cam op = do
             sc = scale/0.2*0.5/norm (vector a'- vector c')
             aspectRatio = norm (vector a'- vector d')/ norm (vector a'- vector b')
 
-        scale8u32f 0 1 orig >>= return . warp 0 (Size 400 400) (scaling sc <> desp (-dx,-dy) <> rectif) >>= drawImage
+        drawImage $ warp 0 (Size 400 400) (scaling sc <> desp (-dx,-dy) <> rectif) orig
         pointCoordinates (Size 400 400)
         setColor 1 1 1
         text2D 0.95 (-0.95) (show $ max aspectRatio (1/aspectRatio))

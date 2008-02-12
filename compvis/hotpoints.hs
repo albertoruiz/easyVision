@@ -38,9 +38,10 @@ pointTracker sz cam = do
         locrad <- getParam opts "locrad"
         meds <- getParam opts "median" :: IO Int
         let diam = 2*locrad+1
-        img <- cam' >>= yuvToGray >>= meds `times` (median Mask3x3) >>= scale8u32f 0 1 
+        img' <- cam'
+        let img = float $ meds `times` (median Mask3x3) $ yuvToGray $ img'
         --ips <- getSaddlePoints smooth locrad h 300 dim rad img
-        ips <- getCorners smooth locrad h 300 img
+            ips = getCorners smooth locrad h 300 img
         writeIORef ref (Just (img,ips))
         currentWindow $= Just (evW w)
         postRedisplay Nothing
@@ -141,3 +142,4 @@ text2D x y s = do
     rasterPos (Vertex2 x (y::GLfloat))
     renderString Helvetica12 s
 
+times n f = (!!n) . iterate f

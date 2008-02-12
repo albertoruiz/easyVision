@@ -18,7 +18,7 @@ module ImagProc.Generic (
 , blockImage
 , warp, warpOn
 , constImage
-, Channels(..), channels, float,
+, Channels(..), channels,
   channelsFromRGB
 )
 where
@@ -35,6 +35,7 @@ class Image image => GImg pixel image | pixel -> image, image -> pixel where
     copy :: image -> ROI -> image -> ROI -> IO ()
     -- | Resizes the roi of a given image.
     resize :: Size -> image -> image
+    clone :: image -> image
     warpOnG :: [[Double]] -> image -> image -> IO ()
     fromYUV :: ImageYUV -> image
     toYUV :: image -> ImageYUV
@@ -42,31 +43,34 @@ class Image image => GImg pixel image | pixel -> image, image -> pixel where
 instance GImg CUChar ImageGray where
     zeroP = 0
     set = set8u
-    copy = copyROI8u'
-    resize sz = unsafePerformIO . resize8u sz
+    copy = copyROI8u
+    resize = resize8u
+    clone = clone8u
     warpOnG = warpOn8u
-    fromYUV = unsafePerformIO . yuvToGray
-    toYUV = unsafePerformIO . grayToYUV
+    fromYUV = yuvToGray
+    toYUV = grayToYUV
 
 instance GImg Float ImageFloat where
     zeroP = 0
     set = set32f
-    copy = copyROI32f'
-    resize sz = unsafePerformIO . resize32f sz
+    copy = copyROI32f
+    resize = resize32f
+    clone = clone32f
     warpOnG = warpOn32f
-    fromYUV i = unsafePerformIO $ yuvToGray i >>= scale8u32f 0 1
-    toYUV i = unsafePerformIO $ scale32f8u 0 1 i >>= grayToYUV
+    fromYUV = float . yuvToGray
+    toYUV = grayToYUV . toGray
 
 instance GImg (CUChar,CUChar,CUChar) ImageRGB where
     zeroP = (0,0,0)
     set (r,g,b) = set8u3 r g b
-    copy = copyROI8u3'
-    resize sz = unsafePerformIO . resize8u3 sz
+    copy = copyROI8u3
+    resize = resize8u3
+    clone = clone8uC3
     warpOnG = warpOn8u3
-    fromYUV = unsafePerformIO . yuvToRGB
-    toYUV = unsafePerformIO . rgbToYUV
+    fromYUV = yuvToRGB
+    toYUV = rgbToYUV
 
----------------------------------------------------------
+--------------------------------------------------------------------------
 
 -- | joins images
 blockImage :: GImg p img  => [[img]] -> img
@@ -124,13 +128,6 @@ warpOn :: Matrix Double   -- ^ homography
 -}
 warpOn h r im = warpOnG (adapt r h im) r im
 
-inter_NN         =  1 :: Int  
-inter_LINEAR     =  2 :: Int  
-inter_CUBIC      =  4 :: Int
-inter_SUPER      =  8 :: Int
-inter_LANCZOS    = 16 :: Int
---inter_SMOOTH_EDGE = (1 << 31) :: Int
-
 ---------------------------------------------------------------------------------
 
 -- hmmmmmmmm
@@ -166,7 +163,7 @@ channels img = CHIm
     , sCh = getChannel 1 hsvAux
     }
     where rgbAux = fromYUV img
-          hsvAux = unsafePerformIO $ rgbToHSV rgbAux
+          hsvAux = rgbToHSV rgbAux
 
 channelsFromRGB :: ImageRGB -> Channels
 channelsFromRGB img = CHIm
@@ -181,12 +178,4 @@ channelsFromRGB img = CHIm
     , sCh = getChannel 1 hsvAux
     }
     where yuvAux = toYUV img
-          hsvAux = unsafePerformIO $ rgbToHSV img
-
-----------------------------------------------------------------------------------
-
-float :: ImageGray -> ImageFloat
-float (G im) = unsafePerformIO $ do
-    let roi = vroi im
-    r <- scale8u32f 0 1 (modifyROI (const (fullroi im)) (G im))
-    return $ modifyROI (const roi) r
+          hsvAux = rgbToHSV img

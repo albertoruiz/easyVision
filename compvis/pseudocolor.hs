@@ -29,7 +29,7 @@ main = do
         kb <- fromIntegral `fmap` (getParam o "kb" :: IO Int)
         kg <- fromIntegral `fmap` (getParam o "kg" :: IO Int)
         kw <- fromIntegral `fmap` (getParam o "kw" :: IO Int)
-        img <- cam >>= rgbToHSV . rgb
+        img <- return . rgbToHSV . rgb =<< cam
         hsvCodeTest kb kg kw img
-        drawImage =<< hsvToRGB img
+        drawImage $ hsvToRGB img
 

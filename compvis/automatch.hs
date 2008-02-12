@@ -53,10 +53,10 @@ lpl = map (pl.ipPosition)
 
 worker grab inWindow st = do
 
-    camera <- grab >>= yuvToGray
-    camera32f <- scale8u32f 0 1 camera
+    camera <- grab >>= return . yuvToGray
+    let camera32f = scale8u32f 0 1 camera
 
-    ips <- getSaddlePoints (smooth st) 7 0.05 200 20 10 camera32f
+        ips = getSaddlePoints (smooth st) 7 0.05 200 20 10 camera32f
 
     let ps = map (closestBy distComb ips) (marked st)
 

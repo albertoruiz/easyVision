@@ -44,11 +44,11 @@ main = do
        (wasMoving,(c0,pts1,c1,pts2)) <- getW w3D
 
        setColor 1 1 1
-       imt0 <- extractSquare 128 (float $ gray $ orig0)
+       let imt0 = extractSquare 128 (float $ gray $ orig0)
 
        drawCamera 0.2 c0 (Just imt0)
 
-       imt1 <- extractSquare 128 (float $ gray $ orig1)
+       let imt1 = extractSquare 128 (float $ gray $ orig1)
 
        drawCamera 0.2 c1 (Just imt1)
 

@@ -6,23 +6,19 @@ import EasyVision
 import Graphics.UI.GLUT hiding (Matrix, Size, Point)
 import Control.Monad(foldM)
 import Vision
-import ImagProc.Ipp.Core(intersection, purifyWith, shrink, roiArea)
+import ImagProc.Ipp.Core(intersection, shrink, roiArea)
 import Foreign
 import Numeric.GSL.Minimization
 import Numeric.LinearAlgebra
 
-asFloat grab = return $ grab >>= yuvToGray >>= scale8u32f 0 1
+asFloat grab = return $ grab >>= return . scale8u32f 0 1 . yuvToGray
 
-absIm = purifyWith (set32f 0) . abs32f
-
-sumIm = unsafePerformIO . sum32f
-
-simil0 a b roi = k * sumIm (absIm (f a |-| f b))
+simil0 a b roi = k * sum32f (abs32f (f a |-| f b))
     where f = modifyROI (const roi)
           k = recip $ fromIntegral $ roiArea (f a)
 
 pasteOn base h im = unsafePerformIO $ do
-    dest <- copy32f base
+    let dest = clone base
     warpOn h dest im
     return dest
 
@@ -55,8 +51,8 @@ worker cam0 cam1 wImg1 w sv = do
     img1 <- cam1
 
     let smsz = Size 120 160
-    sm0 <- resize32f smsz img0
-    sm1 <- resize32f smsz img1
+        sm0 = resize smsz img0
+        sm1 = resize smsz img1
 
     (rh,_) <- getW w
     hi <- rh
@@ -71,7 +67,7 @@ worker cam0 cam1 wImg1 w sv = do
         let base = warp 0 (size img0) hi img0
         warpOn (hi<>h) base img1
         drawImage base
-        scale32f8u 0 1 base >>= grayToYUV >>= sv
+        sv $ grayToYUV $ scale32f8u 0 1 base
 
 --------------------------------------
 

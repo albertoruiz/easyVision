@@ -13,7 +13,7 @@ import System.Environment(getArgs)
 import qualified Data.Map as Map
 import Foreign.C.Types
 import Foreign
-import Numeric.LinearAlgebra
+import Numeric.LinearAlgebra hiding ((.*))
 import Vision
 import Data.List(minimumBy, maximumBy)
 
@@ -21,19 +21,17 @@ import ImagProc.Ipp.Core
 
 import ImagProc.Ipp.Auto
 
+times n f = (!!n) . iterate f
 
-
-gaussp = {-# SCC "gauss" #-} pure . ioFilterGauss_32f_C1R 55 (shrink (2,2))
-
-gaussi im = unsafePerformIO (ioFilterGauss_32f_C1R 55 (shrink (2,2)) im)
-gaussin n = pure . (n `times` (ioFilterGauss_32f_C1R 55 (shrink (2,2))))
+--infixl 0 //
+--(//) = flip ($)
 ------------------------------------------------------------
 
 main = do
 
     sz <- findSize
 
-    (cam, ctrl)  <- getCam 0 sz >>= withPause
+    (cam, ctrl)  <- getCam 0 sz >>= withChannels >>= withPause
 
     prepare
 
@@ -65,8 +63,6 @@ main = do
 
 -----------------------------------------------------------------
 
-k = 1/(640*480*128)
-
 worker wDemo cam param fft = do
 
     th <- getParam param "umbral"
@@ -74,44 +70,49 @@ worker wDemo cam param fft = do
     let th2 = fromIntegral th2'
     ph <- getParam param "h" :: IO Int
     let h1 = fromIntegral ph / 100
-    smooth <- getParam param "smooth"
+    smooth <- getParam param "smooth" :: IO Int
     smooth2 <- getParam param "smooth2" :: IO Int
     area <- getParam param "area" :: IO Int
     fracpix <- getParam param "fracpix"
-    lbpThres <- getParam param "lbpThres"
+    lbpThres <- getParam param "lbpThres" :: IO Int
 
     op <- getW wDemo
     roi <- getROI wDemo
-    im <- cam
+    orig <- cam
 
     inWin wDemo $ case op of
 
         "RGB"  ->
-             drawImage . rgb . channels =<< cam
+             drawImage . rgb $ orig
         "Gray" ->
-             drawImage . gray . channels =<< cam
+             drawImage . gray $ orig
         "Red" -> do
-             drawImage . rCh . channels =<< cam
+             drawImage . rCh $ orig
         "Green" -> do
-             drawImage . gCh . channels =<< cam
+             drawImage . gCh $ orig
         "Blue" -> do
-             drawImage . bCh . channels =<< cam
+             drawImage . bCh $ orig
         "H" -> do
-             drawImage . hCh . channels =<< cam
+             drawImage . hCh $ orig
         "S" -> do
-             drawImage . sCh . channels =<< cam
-        "Integral" ->
-             cam >>= yuvToGray >>= integral >>= scale32f k >>= drawImage
+             drawImage . sCh $ orig
+        "Integral" -> do
+             let k = 1/(640*480*128)
+             drawImage . (k.*) . integral . gray $ orig
+             -- cam >>= yuvToGray >>= integral >>= scale32f k >>= drawImage
         "Threshold" ->
-             cam >>=
-             yuvToGray >>=
-             scale8u32f 0 1 >>=
-             thresholdVal32f th 0 IppCmpLess >>=
-             thresholdVal32f th 1 IppCmpGreater >>=
-             drawImage
+             drawImage $ thresholdVal32f th 1 IppCmpGreater
+                       $ thresholdVal32f th 0 IppCmpLess
+                       $ float
+                       $ gray
+                       $ orig
         "FloodFill" -> do
-             im' <- cam >>= yuvToGray >>= smooth2 `times` median Mask3x3 >>= binarize8u th2 True >>= copy8u
-             let im = purifyWith (set8u 0) $ return $ modifyROI (shrink (5,5)) im'
+             let im' = clone
+                  $ binarize8u th2 True 
+                  $ smooth2 `times` median Mask3x3 
+                  $ gray
+                  $ orig
+             let im = {-purifyWith (set8u 0) $ return $-} modifyROI (shrink (5,5)) im'
                  (Size h w) = size im
                  start = (Pixel (h `div`2 ) (w `div`2))
              --(r,a,v) <- floodFill8uGrad im start 5 5 128
@@ -122,10 +123,9 @@ worker wDemo cam param fft = do
              setColor 1 0 0
              text2D 0.9 0 (show (a,v))
         "Contours" -> do
-             orig <- cam
-             im <-yuvToGray orig >>= smooth2 `times` median Mask3x3 
+             let im = (smooth2 `times` median Mask3x3) (gray orig)
              --drawImage orig
-             yuvToGray orig >>= drawImage
+             drawImage (gray orig)
              pixelCoordinates (size im)
              setColor 1 0 0
              lineWidth $= 3
@@ -135,47 +135,54 @@ worker wDemo cam param fft = do
                  cs1 = map (redu.fst3) $ contours 100 pixarea th2 True im
                  cs2 = map (redu.fst3) $ contours 100 pixarea th2 False im
              mapM_ (\c -> renderPrimitive LineLoop $ mapM_ vertex c) (cs1++cs2)
-        "Distance" ->
-             cam >>=
-             yuvToGray >>=
-             scale8u32f 0 1 >>=
-             thresholdVal32f th 0 IppCmpLess >>=
-             thresholdVal32f th 1 IppCmpGreater >>=
-             scale32f8u 0 1 >>=
-             distanceTransform [1,1.4,2.2] >>=
-             scale32f (1/60) >>=
+        "Distance" -> 
              drawImage
+             $ ((1/60) .*)
+             $ distanceTransform [1,1.4,2.2] 
+             $ toGray
+             $ thresholdVal32f th 1 IppCmpGreater
+             $ thresholdVal32f th 0 IppCmpLess
+             $ float
+             $ gray
+             $ orig
         "Distance2" -> do
              roi <- getROI wDemo
-             orig <- cam
-             im <- yuvToGray orig >>= scale8u32f 0 1
-             F s <- (smooth `times` gauss Mask5x5) im
-             gx' <- sobelVert $ F s {vroi = roi `intersection` vroi s}
-             gx <- scale32f (-1) gx' -- !!!
-             gy <- sobelHoriz $ F s {vroi = roi `intersection` vroi s}
-             c <- canny (gx,gy) (th/3,th) -- >>= scale8u32f 0 1
-             -- copyROI32f c (theROI c) im
+             let im = float (gray orig)
+             drawImage im
+             let F s = (smooth `times` gauss Mask5x5) im
+                 gx = (-1) .* sobelVert (F s {vroi = roi `intersection` vroi s})
+                 gy = sobelHoriz $ F s {vroi = roi `intersection` vroi s}
+                 c = canny (gx,gy) (th/3,th)
 
-             distanceTransform [1,1.4,2.2] (notI c) >>= scale32f (1/60) >>= drawImage
+             drawImage $ (1/60) .* distanceTransform [1,1.4,2.2] (notI c)
+
         "Test 1" -> do
-             d <- cam >>= yuvToGray
-                  >>= smooth2 `times` median Mask5x5 >>= highPass8u Mask5x5
-                  >>= binarize8u th2 True >>= smooth `times` median Mask5x5
-             drawImage d
+            drawImage $ smooth `times` median Mask5x5
+                      $ binarize8u th2 True
+                      $ highPass8u Mask5x5
+                      $ smooth2 `times` median Mask5x5
+                      $ gray
+                      $ orig
 
         "Test 2" -> do
-             d <- cam >>= yuvToGray
-                  >>= median Mask5x5 >>= highPass8u Mask5x5
-                  >>= binarize8u th2 False >>= smooth `times` median Mask5x5
-                  >>= distanceTransform [1,1.4,2.2]
-                  >>= gauss Mask5x5
+             let d = gauss Mask5x5
+                   $ distanceTransform [1,1.4,2.2]
+                   $ smooth `times` median Mask5x5
+                   $ binarize8u th2 False
+                   $ highPass8u Mask5x5
+                   $ median Mask5x5
+                   $ gray (orig)
 
-             autoscale d >>= drawImage
+             drawImage (autoscale d)
 
-             (mn,mx) <- minmax d
-             hp <- localMax 21 (modifyROI (shrink (60,60)) d)
-                   >>= thresholdVal32f (mx*h1) 0.0 IppCmpLess
-                   >>= getPoints32f 500
+             let (_,mx) = minmax d
+
+             let hp = getPoints32f 500
+                    $ thresholdVal32f (mx*h1) 0.0 IppCmpLess
+                    $ localMax 21 
+                    $ modifyROI (shrink (60,60)) 
+                    $ d
+
              pixelCoordinates (size d)
              setColor 1 0 0
              pointSize $= 3
@@ -183,12 +190,12 @@ worker wDemo cam param fft = do
              text2D 10 20 (show $ length hp)
 
         "Hessian" ->
-             cam >>= yuvToGray >>= scale8u32f 0 1 >>=
-             smooth `times` gauss Mask5x5 >>= secondOrder >>= hessian >>=
-             abs32f >>= sqrt32f >>= drawImage
+             orig // gray // float //
+             smooth `times` gauss Mask5x5 // secondOrder // hessian //
+             abs32f // sqrt32f // drawImage
         "Corners" -> do
-             im <- cam >>= yuvToGray >>= scale8u32f 0 1
-             ips <- getCorners smooth 7 h1 500 im
+             let im = orig // gray // float
+                 ips = getCorners smooth 7 h1 500 im
              drawImage im
              pixelCoordinates (size im)
              setColor 1 0 0
@@ -196,88 +203,67 @@ worker wDemo cam param fft = do
              renderPrimitive Points (mapM_ vertex ips)
              text2D 10 20 (show $ length ips)
         "Features" -> do
-             orig <- cam
-             im <- yuvToGray orig >>= scale8u32f 0 1
-             ips <- getSaddlePoints smooth 7 h1 500 20 10 im
-             yuvToRGB orig >>= drawImage
+             let im = orig // gray // float
+                 ips = getSaddlePoints smooth 7 h1 500 20 10 im
+             drawImage (rgb orig)
              pointCoordinates (size im)
              setColor 1 0 0
              pointSize $= 3
              text2D 0.9 0 (show $ length ips)
-             drawInterestPoints (size orig) ips
+             drawInterestPoints (size im) ips
         "Canny" -> do
              roi <- getROI wDemo
-             orig <- cam
-             im <- yuvToGray orig >>= scale8u32f 0 1
-             F s <- (smooth `times` gauss Mask5x5) im
-             gx' <- sobelVert $ F s {vroi = roi `intersection` vroi s}
-             gx <- scale32f (-1) gx' -- !!!
-             gy <- sobelHoriz $ F s {vroi = roi `intersection` vroi s}
-             c <- canny (gx,gy) (th/3,th) >>= scale8u32f 0 1
-             copyROI32f c (theROI c) im
+             let im = orig // gray // float
+                 F s = (smooth `times` gauss Mask5x5) im
+                 gx = (-1) .* sobelVert (F s {vroi = roi `intersection` vroi s}) -- !!! (-1)
+                 gy = sobelHoriz $ F s {vroi = roi `intersection` vroi s}
+                 c = canny (gx,gy) (th/3,th)
+             copyROI32f (float c) (theROI c) im (theROI c)
              drawImage im
         "Median" -> do
-             orig <- cam
-             im <- yuvToGray orig
-             s <- (smooth `times` median Mask5x5) im
-             drawImage s
+             drawImage $ (smooth `times` median Mask5x5) $ gray (orig)
         "Gaussian" -> do
              (t,a) <- timing $
-                 cam >>= yuvToGray >>= scale8u32f 0 1 >>= (smooth `times` gauss Mask5x5) >>= drawImage
+                 drawImage . (!!smooth) . iterate (gauss Mask5x5) . float . gray $ orig
              text2D 30 30 t
-        "GaussianNew" -> do
-             (t,a) <- timing $
-                 drawImage . (!!smooth) . iterate gaussp . float . gray . channels =<< cam
-             text2D 30 30 t
-        "OtroGaussian" -> do
-             (t,a) <- timing $
-                 drawImage . gaussin smooth . float . gray . channels =<< cam
-             text2D 30 30 t
-        "Laplacian" -> 
-             cam >>= yuvToGray >>= scale8u32f (-1) 1 >>= (smooth `times` gauss Mask5x5)
-             >>= laplace Mask5x5
-             >>= scale32f8u (-1) 1
-             >>= drawImage
+        "Laplacian" ->
+             orig // gray // scale8u32f (-1) 1 // (smooth `times` gauss Mask5x5)
+             // laplace Mask5x5 // scale32f8u (-1) 1 // drawImage
         "HighPass" -> do
-             orig <- cam
-             im <- yuvToGray orig
-             s <- (smooth `times` median Mask5x5) im >>= highPass8u Mask5x5
+             let s = orig // gray // (smooth `times` median Mask5x5) // highPass8u Mask5x5
              drawImage s
         "Histogram" -> do
-             im <- cam >>= yuvToGray
+             let im = orig // gray
              drawImage im
              pointCoordinates (size im)
              text2D 0.9 0.7 (show $ histogram [0,64 .. 256] im)
         "DCT" -> do
-             orig <- cam
              roi <-  getROI wDemo
-             im <- yuvToGray orig >>= scale8u32f 0 1
-             d <- dct (modifyROI (intersection roi) im) >>= abs32f >>= sqrt32f
-             copyROI32f d (theROI d) im
+             let im = orig // gray // float
+                 d = dct (modifyROI (intersection roi) im) // abs32f // sqrt32f
+             copyROI32f d (theROI d) im (theROI d)
              drawImage im
         "FFT" -> do
-             orig <- cam
              roi <-  getROI wDemo
              let p2roi = roi `intersection`ROI (r1 roi) (r1 roi + 2^8-1) (c1 roi) (c1 roi + 2^8-1)
-             im <- yuvToGray orig  >>= scale8u32f 0 1 >>= (smooth `times` gauss Mask5x5)
-             d <- fft (modifyROI (const p2roi) im) >>= magnitudePack >>= powerSpectrum
+                 im = gray orig  // scale8u32f 0 1 // (smooth `times` gauss Mask5x5)
+                 d = fft (modifyROI (const p2roi) im) // magnitudePack // powerSpectrum
              let c@(Pixel r0 c0) = cent (theROI d)
              set32f 0 (roiFrom2Pixels c c) d
-             (m,_) <- maxIndx d
-             sc <- scale32f (1/m) d
-             copyROI32f sc (theROI sc) im
+             let (m,_) = maxIndx d
+                 sc = (1/m) .* d
+             copyROI32f sc (theROI sc) im (theROI sc)
              drawImage im
         "Segments" -> do
-             let orig = gray (channels im)
-             let segs = segments 4 1.5 5 40 20 False . modifyROI (const roi) $ orig
-             drawImage orig
+             let segs = segments 4 1.5 5 40 20 False . modifyROI (const roi) . gray $ orig
+             drawImage (gray orig)
              drawROI roi
              setColor 1 0 0
              lineWidth $= 2
-             pointCoordinates (size orig)
+             pointCoordinates (size (gray orig))
              renderPrimitive Lines $ mapM_ vertex segs
         "LBP" -> do
-             orig' <- cam >>= yuvToGray
+             let orig' = gray orig
              roi <-  getROI wDemo
              let orig = modifyROI (const roi) orig'
                  h = lbp lbpThres orig
@@ -295,10 +281,7 @@ worker wDemo cam param fft = do
 cent (ROI r1 r2 c1 c2) = Pixel (r1 + (r2-r1+1)`div`2) (c1 + (c2-c1+1)`div`2)
 roiFrom2Pixels (Pixel r1 c1) (Pixel r2 c2) = ROI (min r1 r2) (max r1 r2) (min c1 c2) (max c1 c2)
 
-autoscale im = do
-    (mn,mx) <- minmax im
-    r <- scale32f8u mn mx im
-    return r
+autoscale im = scale32f8u mn mx im where (mn,mx) = minmax im
 
 fst3 (a,_,_) = a
 

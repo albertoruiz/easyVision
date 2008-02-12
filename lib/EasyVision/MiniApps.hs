@@ -113,7 +113,7 @@ hsvPalette = evWindow (128,128,255) "HSV" (Size 256 256) (Just disp) (mouse kbdQ
   where
     disp st = do
         (r',c',k) <- get st
-        drawImage =<< palette k
+        drawImage (palette k)
         pixelCoordinates (Size 256 256)
         setColor 0 0 0
         let r = fromIntegral r'
@@ -258,9 +258,7 @@ regionDetector name cam = do
                 Nothing -> return ()
         return (orig, pc)
 
-detectRange a b im = purifyWith (set8u 0) $
-    thresholdVal8u a 0 IppCmpLess im >>=
-    thresholdVal8u b 0 IppCmpGreater
+detectRange a b = thresholdVal8u b 0 IppCmpGreater . thresholdVal8u a 0 IppCmpLess
 
 fst3 (a,_,_) = a
 fst2 (_,a,_) = a

@@ -33,7 +33,7 @@ module ImagProc.Polyline (
 where
 
 import ImagProc.Images
-import ImagProc.ImageProcessing(copy8u,maxIndx8u,floodFill8u, binarize8u)
+import ImagProc.ImageProcessing(clone,maxIndx8u,floodFill8u, binarize8u)
 import ImagProc.Ipp.Core
 import Foreign.C.Types(CUChar)
 import Foreign
@@ -125,9 +125,9 @@ contours :: Int       -- ^ maximum number of contours
          -> Bool      -- ^ binarization mode (True/False ->detect white/black regions)
          -> ImageGray -- ^ image source
          -> [([Pixel],Int,ROI)]  -- ^ list of contours, with area and ROI
-contours n d th mode im = unsafePerformIO $ do
-    aux <- binarize8u th mode im >>= copy8u
-    auxCont n d aux
+contours n d th mode im = unsafePerformIO $
+    auxCont n d $ clone $ binarize8u th mode im
+
 
 auxCont n d aux = do
     let (v,p) = maxIndx8u aux

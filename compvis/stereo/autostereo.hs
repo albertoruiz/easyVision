@@ -66,13 +66,13 @@ worker cam1 cam2 opts inWindow _ = do
     let diam = 2*locrad+1
 
 
-    im1 <- cam1 >>= yuvToGray >>= scale8u32f 0 1 
-    im2 <- cam2 >>= yuvToGray >>= scale8u32f 0 1
+    im1 <- cam1 >>= return . scale8u32f 0 1 . yuvToGray
+    im2 <- cam2 >>= return . scale8u32f 0 1 . yuvToGray
 
 
-    ips1  <- getSaddlePoints smooth locrad h 300 dim rad im1
+    let ips1 = getSaddlePoints smooth locrad h 300 dim rad im1
 
-    ips2 <- getSaddlePoints smooth locrad h 300 dim rad im2
+        ips2 = getSaddlePoints smooth locrad h 300 dim rad im2
 
     (good1, good2 , _) <- basicMatches (ips1, ips2) distFeat umb
 

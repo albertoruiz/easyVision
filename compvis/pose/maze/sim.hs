@@ -146,9 +146,10 @@ worker cam params focal sim inWindow state = do
   orthotol  <- getParam params "ortho tolerance"
 
   -- get a grayscale image from the webcam
-  image <- cam >>= yuvToGray
-  when (mirrorImage state) $ do
-   mirror8u image 1
+
+  let pm = if mirrorImage state then mirror8u 1 else id
+
+  image <- cam >>= return . pm . yuvToGray
 
   -- Extract segments using Burns' line extraction algorithm and find 4-sided
   -- polygons using extractQuads.

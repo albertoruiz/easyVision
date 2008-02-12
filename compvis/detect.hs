@@ -29,7 +29,7 @@ worker w cam save = do
 
     inWin w $ do
         orig <- cam >>= return . fst
-        yuvToRGB orig >>= drawImage
+        drawImage (yuvToRGB orig)
         -- system "artsplay /usr/share/sounds/KDE_Notify.wav"
         save orig
         windowStatus $= Shown
