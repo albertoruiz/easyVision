@@ -17,7 +17,7 @@ module ImagProc.Generic (
   GImg(..)
 , blockImage
 , warp, warpOn
-, constImage
+, constImage, cloneClear
 , Channels(..), channels,
   channelsFromRGB
 )
@@ -35,17 +35,19 @@ class Image image => GImg pixel image | pixel -> image, image -> pixel where
     copy :: image -> ROI -> image -> ROI -> IO ()
     -- | Resizes the roi of a given image.
     resize :: Size -> image -> image
-    clone :: image -> image
+    clone :: image -> IO image
     warpOnG :: [[Double]] -> image -> image -> IO ()
     fromYUV :: ImageYUV -> image
     toYUV :: image -> ImageYUV
+
+----------------------------------
 
 instance GImg CUChar ImageGray where
     zeroP = 0
     set = set8u
     copy = copyROI8u
     resize = resize8u
-    clone = clone8u
+    clone = ioCopy_8u_C1R id
     warpOnG = warpOn8u
     fromYUV = yuvToGray
     toYUV = grayToYUV
@@ -55,7 +57,7 @@ instance GImg Float ImageFloat where
     set = set32f
     copy = copyROI32f
     resize = resize32f
-    clone = clone32f
+    clone = ioCopy_32f_C1R id
     warpOnG = warpOn32f
     fromYUV = float . yuvToGray
     toYUV = grayToYUV . toGray
@@ -65,10 +67,22 @@ instance GImg (CUChar,CUChar,CUChar) ImageRGB where
     set (r,g,b) = set8u3 r g b
     copy = copyROI8u3
     resize = resize8u3
-    clone = clone8uC3
+    clone = ioCopy_8u_C3R id
     warpOnG = warpOn8u3
     fromYUV = yuvToRGB
     toYUV = rgbToYUV
+
+
+
+-- modifies the undefined region of an image.
+clearNoROI :: Image a => (ROI -> a -> IO ()) -> a -> IO ()
+clearNoROI fun im = mapM_ ((flip fun) im) (invalidROIs im)
+
+--cloneClear' :: Image a => a -> IO ()
+cloneClear im = do
+    r <- clone im
+    clearNoROI (set zeroP) r
+    return r
 
 --------------------------------------------------------------------------
 

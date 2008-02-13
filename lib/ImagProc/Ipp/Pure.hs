@@ -21,12 +21,12 @@ module ImagProc.Ipp.Pure (
     float, toGray, scale32f8u, scale8u32f,
     rgbToHSV, hsvToRGB,
     thresholdVal32f, thresholdVal8u,
-    clone8u, clone32f, clone8uC3,
     filterMax32f,
     sobelVert, sobelHoriz,
     gauss, laplace, median, highPass8u,
     magnitudePack,
-    abs32f, sqrt32f, mirror8u
+    abs32f, sqrt32f, mirror8u,
+    dilate3x3, erode3x3,
 )
 where
 
@@ -104,20 +104,6 @@ thresholdVal8u t v cmp = mkId (ioThreshold_Val_8u_C1R t v (codeCmp cmp))
 
 ------------------------------
 
--- | Creates a image of the same size as the source and copies its roi.
-clone32f :: ImageFloat -> ImageFloat
-clone32f = mkId ioCopy_32f_C1R
-
--- | Creates a image of the same size as the source and copies its roi.
-clone8u :: ImageGray -> ImageGray
-clone8u = mkId ioCopy_8u_C1R
-
--- | Creates a image of the same size as the source and copies its roi.
-clone8uC3 :: ImageRGB -> ImageRGB
-clone8uC3 = mkId ioCopy_8u_C3R
-
-----------------------------------
-
 -- | Changes each pixel by the maximum value in its neighbourhood of given diameter.
 filterMax32f :: Int -> ImageFloat -> ImageFloat
 filterMax32f r = mkShrink (d,d) (ioFilterMax_32f_C1R sz pt) where
@@ -180,3 +166,13 @@ sqrt32f = mkId ioSqrt_32f_C1R
 
 mirror8u :: Int -> ImageGray -> ImageGray
 mirror8u axis = mkId (ioMirror_8u_C1R (fi axis))
+
+-----------------------------------------------------
+
+-- | dilatation 3x3
+dilate3x3 :: ImageGray -> ImageGray
+dilate3x3 = mkShrink (1,1) ioDilate3x3_8u_C1R
+
+-- | erosion 3x3
+erode3x3 :: ImageGray -> ImageGray
+erode3x3 = mkShrink (1,1) ioErode3x3_8u_C1R
