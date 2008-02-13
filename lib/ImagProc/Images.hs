@@ -26,7 +26,7 @@ module ImagProc.Images
 , ImageFloat
 , ImageYUV
   -- * Image coordinates
-, Size (..)
+, Size (..), roiSize, roiArea, shrink
 , Pixel (..)
 , Point (..)
 , Segment (..), segmentLength
@@ -44,7 +44,7 @@ import ImagProc.Ipp.Core (
    , Pixel(..)
    , Point(..)
    , Segment(..), segmentLength
-   , Size(..)
+   , Size(..), roiSize, roiArea, shrink
    , pixelsToPoints, pointsToPixels
  )
 
