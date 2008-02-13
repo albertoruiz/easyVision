@@ -398,6 +398,6 @@ infixl 4 \/
 (\/) :: (Linear Vector t) => Tensor t -> Tensor t -> Tensor t
 a \/ b = meet a b
 
-meet a b = innerLevi [dual a, dual b]
---meet a b = dual $ (dual a) /\ (dual b)
+--meet a b = innerLevi [dual a, dual b]
+meet a b = dual $ (dual a) /\ (dual b)
 

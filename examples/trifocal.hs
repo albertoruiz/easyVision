@@ -298,6 +298,10 @@ r1 = po /\ px
 r2 = py /\ pz
 r3 = po /\ py
 
+r4 = tv[2,2,1,1] /\ tv[3,3,2,1]
+
+pTest = (po /\ px /\ py) \/ r4
+
 
 -- recovery of a fundamental matrix from the trifocal tensor from the "algorithmic" transfer.
 -- If it worked for ordinary coordinates the tensor coordinates would be just the images of
