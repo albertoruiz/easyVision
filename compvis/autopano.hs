@@ -18,7 +18,7 @@ simil0 a b roi = k * sum32f (abs32f (f a |-| f b))
           k = recip $ fromIntegral $ roiArea (f a)
 
 pasteOn base h im = unsafePerformIO $ do
-    let dest = clone base
+    dest <- clone base
     warpOn h dest im
     return dest
 

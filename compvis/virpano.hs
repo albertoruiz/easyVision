@@ -108,7 +108,7 @@ simil0 a b roi = k * sum32f (abs32f (f a |-| f b))
           k = recip $ fromIntegral $ roiArea (f a)
 
 pasteOn base h im = unsafePerformIO $ do
-    let dest = clone base
+    dest <- clone base
     --mask <- thresholdVal32f 0 1 IppCmpGreater base
     warpOn h dest im
     --return (dest|*|mask) -- only on valid data

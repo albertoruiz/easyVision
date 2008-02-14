@@ -18,6 +18,7 @@ where
 
 import ImagProc.Ipp.Core
 import ImagProc.Ipp.Adapt
+import ImagProc.Ipp.Auto
 import ImagProc.Ipp.Wrappers
 import Foreign hiding (shift)
 import Foreign.C.Types(CUChar,CInt)
@@ -460,3 +461,63 @@ histogramN bins im = map ((*sc).fromIntegral) h where
     h = histogram bins im
     ROI r1 r2 c1 c2 = theROI im
     sc = (1.0::Double) / fromIntegral ((r2-r1+1)*(c2-c1+1))
+
+-----------------------------------------------------------------------------------
+
+convolution32f :: [[Float]] -> ImageFloat -> ImageFloat
+convolution32f mask img = unsafePerformIO $ do
+    pKernel <- newArray (concat mask)
+    let r = fi $ length mask
+        rm = r `div` 2
+        c = fi $ length (head mask)
+        cm = c `div` 2
+    r <- ioFilter_32f_C1R pKernel (IppiSize r c) (IppiPoint cm rm) (shrink (ti rm,ti cm)) img
+    free pKernel
+    return r
+
+convolution8u :: [[Int]] -> Int -> ImageGray -> ImageGray
+convolution8u mask divisor img = unsafePerformIO $ do
+    pKernel <- newArray (map fromIntegral $ concat mask)
+    let r = fi $ length mask
+        rm = r `div` 2
+        c = fi $ length (head mask)
+        cm = c `div` 2
+    r <- ioFilter_8u_C1R pKernel (IppiSize r c) (IppiPoint cm rm) divisor (shrink (ti rm,ti cm)) img
+    free pKernel
+    return r
+
+convolutionColumn32f :: [Float] -> ImageFloat -> ImageFloat
+convolutionColumn32f mask img = unsafePerformIO $ do
+    pKernel <- newArray mask
+    let r = length mask
+        rm = r `div` 2
+    r <- ioFilterColumn_32f_C1R pKernel r rm (shrink (rm,0)) img
+    free pKernel
+    return r
+
+convolutionColumn8u :: [Int] -> Int -> ImageGray -> ImageGray
+convolutionColumn8u mask divisor img = unsafePerformIO $ do
+    pKernel <- newArray (map fromIntegral mask)
+    let r = length mask
+        rm = r `div` 2
+    r <- ioFilterColumn_8u_C1R pKernel r rm divisor (shrink (rm,0)) img
+    free pKernel
+    return r
+
+convolutionRow32f :: [Float] -> ImageFloat -> ImageFloat
+convolutionRow32f mask img = unsafePerformIO $ do
+    pKernel <- newArray mask
+    let r = length mask
+        rm = r `div` 2
+    r <- ioFilterRow_32f_C1R pKernel r rm (shrink (0,rm)) img
+    free pKernel
+    return r
+
+convolutionRow8u :: [Int] -> Int -> ImageGray -> ImageGray
+convolutionRow8u mask divisor img = unsafePerformIO $ do
+    pKernel <- newArray (map fromIntegral mask)
+    let r = length mask
+        rm = r `div` 2
+    r <- ioFilterRow_8u_C1R pKernel r rm divisor (shrink (0,rm)) img
+    free pKernel
+    return r

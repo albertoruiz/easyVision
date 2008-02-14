@@ -21,7 +21,8 @@ module ImagProc.ImageProcessing (
     module ImagProc.Generic,
     binarize8u, localMax,
     secondOrder, hessian,
-    getCorners
+    getCorners,
+    filter32f, filter8u
 ) where
 
 import ImagProc.Ipp.Core
@@ -80,3 +81,29 @@ getCorners smooth rad prop maxn im = hotPoints where
               $ thresholdVal32f (mx*prop) 0.0 IppCmpLess
               $ localMax rad h
 
+--------------------------------------------------------------------
+
+-- | general linear filter for 32f images.
+filter32f :: [[Float]]  -- ^ mask
+          -> ImageFloat -- ^ input image
+          -> ImageFloat -- ^ result
+filter32f mask = f where
+    r = length mask
+    c = length (head mask)
+    f = case (r,c) of
+        (1,_) -> convolutionRow32f (concat mask)
+        (_,1) -> convolutionColumn32f (concat mask)
+        _     -> convolution32f mask
+
+-- | general linear filter for 8u images.
+filter8u :: [[Int]]   -- ^ mask
+         -> Int       -- ^ divisor
+         -> ImageGray -- ^ input image
+         -> ImageGray -- ^ result
+filter8u mask = f where
+    r = length mask
+    c = length (head mask)
+    f = case (r,c) of
+        (1,_) -> convolutionRow8u (concat mask)
+        (_,1) -> convolutionColumn8u (concat mask)
+        _     -> convolution8u mask

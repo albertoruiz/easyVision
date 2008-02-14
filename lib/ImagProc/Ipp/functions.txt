@@ -61,3 +61,9 @@ ippcv.h ippiFloodFillGetSize
 ippcv.h ippiFloodFillGetSize_Grad
 ippcv.h ippiFloodFill_8Con_8u_C1IR
 ippcv.h ippiFloodFill_Grad8Con_8u_C1IR
+ippi.h  ippiFilter_32f_C1R
+ippi.h  ippiFilter_8u_C1R
+ippi.h  ippiFilterColumn_32f_C1R
+ippi.h  ippiFilterColumn_8u_C1R
+ippi.h  ippiFilterRow_32f_C1R
+ippi.h  ippiFilterRow_8u_C1R
