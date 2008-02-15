@@ -177,7 +177,9 @@ arityaux 1 t = arityaux 0 t && not (t `elem` ["pSrc", "srcStep","pSrc[3]","srcSt
 arityaux 2 t = arityaux 0 t && not (t `elem` ["pSrc1", "src1Step", "pSrc2", "src2Step","pSrc1[3]", "src1Step[3]", "pSrc2[3]", "src2Step[3]"])
 
 
-hasDst tns = ("pDst" `elem` tns || "pDst[3]" `elem` tns) && ("roiSize" `elem` tns || "dstRoiSize" `elem` tns)
+hasDst tns = ("pDst" `elem` tns || "pDst[3]" `elem` tns) 
+           && ("roiSize" `elem` tns || "dstRoiSize" `elem` tns)
+           && ("dstStep" `elem` tns)
 arity 2 tns = hasDst tns && ("pSrc2" `elem` tns || "pSrc2[3]" `elem` tns)
 arity 1 tns = hasDst tns && ("pSrc" `elem` tns || "pSrc[3]" `elem` tns)
 arity 0 tns = hasDst tns && not (arity 2 tns) && not (arity 1 tns)

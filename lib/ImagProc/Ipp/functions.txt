@@ -67,3 +67,5 @@ ippi.h  ippiFilterColumn_32f_C1R
 ippi.h  ippiFilterColumn_8u_C1R
 ippi.h  ippiFilterRow_32f_C1R
 ippi.h  ippiFilterRow_8u_C1R
+ippcv.h ippiSampleLine_32f_C1R
+ippcv.h ippiSampleLine_8u_C1R

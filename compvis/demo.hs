@@ -6,6 +6,7 @@
 
 import EasyVision
 import Graphics.UI.GLUT hiding (RGB,Size,minmax,histogram,Point,set)
+import GHC.Float(float2Double)
 
 ------------------------------------------------------------
 
@@ -89,25 +90,25 @@ worker wDemo cam param fft = do
             "Threshold" -> drawImage $ binarize8u th2 True $ chan gray
 
             "Laplacian"-> drawImage $ scale32f8u (-1) 1
-                                    $ laplace Mask5x5
-                                    $ smooth `times` gauss Mask5x5
-                                    $ scale8u32f (-1) 1
+                                    . laplace Mask5x5
+                                    . times smooth (gauss Mask5x5)
+                                    . scale8u32f (-1) 1
                                     $ chan gray
 
             "Hessian"  -> drawImage $ sqrt32f
-                                    $ abs32f
-                                    $ hessian
-                                    $ secondOrder
+                                    . abs32f
+                                    . hessian
+                                    . secondOrder
                                     $ gsmooth
 
             "Canny"    -> drawImage $ edges
 
             "Distance" -> drawImage $ (1/60) .* distanceTransform [1,1.4,2.2] (notI $ edges)
             "Distance2"-> drawImage $ ((1/60) .*)
-                                    $ distanceTransform [1,1.4,2.2]
-                                    $ toGray
-                                    $ thresholdVal32f th 1 IppCmpGreater
-                                    $ thresholdVal32f th 0 IppCmpLess
+                                    . distanceTransform [1,1.4,2.2]
+                                    . toGray
+                                    . thresholdVal32f th 1 IppCmpGreater
+                                    . thresholdVal32f th 0 IppCmpLess
                                     $ float $ chan gray
 
             "DCT"      -> drawImage $ sqrt32f . abs32f . dct . float $ chan gray
@@ -132,10 +133,6 @@ worker wDemo cam param fft = do
                               renderAxes
                               setColor 1 0 0
                               renderSignal $ map (*0.2) (tail h)
-
-            "Integral"  -> do let k = 1/(fromIntegral (roiArea $ chan gray) *128)
-                              drawImage . (k.*) . integral $ chan gray
-
 
             "Corners"   -> do let ips = getCorners smooth 7 h1 500 $ float (chan gray)
                               drawROI roi
@@ -187,13 +184,21 @@ worker wDemo cam param fft = do
                               let (m,_) = maxIndx d
                               drawImage $ (1/m) .* d
 
+            "Integral"  -> do let i = integral edges
+                                  ROI r1 r2 c1 c2 = theROI i
+                                  vert = sampleLine32f i (Pixel r1 c2) (Pixel r2 c2)
+                              drawImage . autoscale $ i
+                              pointCoordinates (size i)
+                              renderSignal (map (float2Double.(/(2*last vert))) vert)
 
 -----------------------------------
 
 cent (ROI r1 r2 c1 c2) = Pixel (r1 + (r2-r1+1)`div`2) (c1 + (c2-c1+1)`div`2)
 roiFrom2Pixels (Pixel r1 c1) (Pixel r2 c2) = ROI (min r1 r2) (max r1 r2) (min c1 c2) (max c1 c2)
 
-autoscale im = scale32f8u mn mx im where (mn,mx) = minmax im
+autoscale im = f im
+    where (mn,mx) = minmax im
+          f = if mn == mx then scale32f8u 0 1 else scale32f8u mn mx
 
 fst3 (a,_,_) = a
 

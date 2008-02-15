@@ -521,3 +521,29 @@ convolutionRow8u mask divisor img = unsafePerformIO $ do
     r <- ioFilterRow_8u_C1R pKernel r rm divisor (shrink (0,rm)) img
     free pKernel
     return r
+
+-----------------------------------------------------------------------------------
+
+sampleLine8u :: ImageGray -> Pixel -> Pixel -> [CUChar]
+sampleLine8u (G img) (Pixel pr1 pc1) (Pixel pr2 pc2) = unsafePerformIO $ do
+    let roi = vroi img
+        n = max (abs(pr2-pr1+1)) (abs(pc2-pc1+1))
+    pline <- mallocArray n
+    let pt1 = IppiPoint (fi (pc1-c1 roi)) (fi (pr1-r1 roi))
+        pt2 = IppiPoint (fi (pc2-c1 roi)) (fi (pr2-r1 roi))
+    (ippiSampleLine_8u_C1R // dst img roi) pline pt1 pt2 // checkIPP "ippiSampleLine_8u_C1R" [img]
+    line <- peekArray n pline
+    free pline
+    return line
+
+sampleLine32f :: ImageFloat -> Pixel -> Pixel -> [Float]
+sampleLine32f (F img) (Pixel pr1 pc1) (Pixel pr2 pc2) = unsafePerformIO $ do
+    let roi = vroi img
+        n = max (abs(pr2-pr1+1)) (abs(pc2-pc1+1))
+    pline <- mallocArray n
+    let pt1 = IppiPoint (fi (pc1-c1 roi)) (fi (pr1-r1 roi))
+        pt2 = IppiPoint (fi (pc2-c1 roi)) (fi (pr2-r1 roi))
+    (ippiSampleLine_32f_C1R // dst img roi) pline pt1 pt2 // checkIPP "ippiSampleLine_32f_C1R" [img]
+    line <- peekArray n pline
+    free pline
+    return line
