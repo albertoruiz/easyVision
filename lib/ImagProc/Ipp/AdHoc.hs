@@ -104,6 +104,21 @@ resize8u3 s (C im) = unsafePerformIO $ do
     genResize c_resize8u3 "genResize8u3" r (fullroi r) im (vroi im) inter_LINEAR
     return (C r)
 
+-- | Resizes the full image and its roi
+resize32f' :: Size -> ImageFloat -> ImageFloat
+resize32f' s (F im) = unsafePerformIO $ do
+    r <- img I32f s
+    genResize c_resize32f "genResize32f" r (fullroi r) im (fullroi im) inter_LINEAR
+    let Size h' w' = s
+        Size h w = isize im
+        fh = fromIntegral h' / fromIntegral h
+        fw = fromIntegral w' / fromIntegral w
+        ROI r1 r2 c1 c2 = vroi im
+        f n = fromIntegral n
+        newroi = ROI (ceiling (fh*f r1)) (floor (fh*f r2)) (ceiling(fw*f c1)) (floor(fw*f c2))
+    return (F r {vroi = newroi})
+
+
 ----------------------------------------------------------------------------------------
 
 warpOn' h r im f met s = do

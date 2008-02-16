@@ -95,3 +95,30 @@ foreign import ccall "Simple/simple.h hsvcodeTest"
      hsvcodeTest :: Int -> Int -> Int -> Ptr () -> Int -> Int -> Int -> Int -> Int -> IO Int
 foreign import ccall "Simple/simple.h hsvcode"
      hsvcode :: Int -> Int -> Int -> Ptr () -> Int -> Ptr () -> Int -> Int -> Int -> Int -> Int -> IO Int
+
+-------------------------------------------------------------------------------
+
+-- | Explores 3 images in a scale space pyramid and returns the local maximum
+--   (in the roi of im3, points selected on im2)
+localMaxScale3 :: Int -> Float -> ImageFloat -> ImageFloat -> ImageFloat -> [Pixel]
+localMaxScale3 mx th (F im1) (F im2) (F im3) = unsafePerformIO $ do
+    r <- mallocArray (2*mx)
+    ptot <- malloc
+    ok <- c_localMaxScale3 (castPtr (ptr im1)) (step im1)
+                           (castPtr (ptr im2)) (step im2)
+                           (castPtr (ptr im3)) (step im3)
+                   (r1 (vroi im3)) (r2 (vroi im3)) (c1 (vroi im3)) (c2 (vroi im3))
+                   mx ptot th r
+    touchForeignPtr (fptr im1)
+    touchForeignPtr (fptr im2)
+    touchForeignPtr (fptr im3)
+    tot <- peek ptot
+    hp <- peekArray (fromIntegral tot) r
+    free ptot
+    free r
+    return (partitPixel hp)
+
+foreign import ccall "Simple/simple.h localMaxScale3"
+    c_localMaxScale3 :: Ptr Float -> Int -> Ptr Float -> Int -> Ptr Float -> Int
+                        -> Int -> Int -> Int -> Int ->
+                        Int -> Ptr CInt -> Float -> Ptr CInt -> IO Int

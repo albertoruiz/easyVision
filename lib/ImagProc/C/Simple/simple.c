@@ -9,7 +9,7 @@ int getPoints32f(float * pSrc, int sstep, int sr1, int sr2, int sc1, int sc2,
     for (r=sr1; r<=sr2; r++) {
         for(c=sc1; c<=sc2; c++) {
             if(pos>=maxpos) {
-                *tot = max;
+                *tot = max*2;
                 return 1;
             }
             if(*(pSrc+r*sstep/4+c) > 0.) {
@@ -127,3 +127,95 @@ int hsvcode(int kb, int kg, int kw,
 }
 
 #undef H
+
+//------------ local max in scale space ----------------
+
+int localMaxScale3(float * pSrc1, int sstep1,
+               float * pSrc2, int sstep2,
+               float * pSrc3, int sstep3,
+               int sr1, int sr2, int sc1, int sc2,
+               int max, int* tot, float thres, int* hp) {
+#define X1(r,c) (*(pSrc1+(r)*sstep1/4+(c)))
+#define X2(r,c) (*(pSrc2+(r)*sstep2/4+(c)))
+#define X3(r,c) (*(pSrc3+(r)*sstep3/4+(c)))
+    int r,c;
+    int pos = 0;
+    int maxpos = 2*max-3;
+    for (r=sr1+1; r<sr2; r++) {
+        for(c=sc1+1; c<sc2; c++) {
+            if(pos>=maxpos) {
+                *tot = max*2;
+                return 1;
+            }
+            //printf("%d %d \n",r,c);
+            float x = X2(r,c);
+            if( x > thres
+             && x > X2(r-1,c-1)
+             && x > X2(r-1,c)
+             && x > X2(r-1,c+1)
+             && x > X2(r,c-1)
+             && x > X2(r,c+1)
+             && x > X2(r+1,c-1)
+             && x > X2(r+1,c)
+             && x > X2(r+1,c+1)
+             && x > X1(r-1,c-1)
+             && x > X1(r-1,c)
+             && x > X1(r-1,c+1)
+             && x > X1(r,c-1)
+             && x > X1(r,c)
+             && x > X1(r,c+1)
+             && x > X1(r+1,c-1)
+             && x > X1(r+1,c)
+             && x > X1(r+1,c+1)
+             && x > X3(r-1,c-1)
+             && x > X3(r-1,c)
+             && x > X3(r-1,c+1)
+             && x > X3(r,c-1)
+             && x > X3(r,c)
+             && x > X3(r,c+1)
+             && x > X3(r+1,c-1)
+             && x > X3(r+1,c)
+             && x > X3(r+1,c+1)
+             ||
+                x < -thres
+             && x < X2(r-1,c-1)
+             && x < X2(r-1,c)
+             && x < X2(r-1,c+1)
+             && x < X2(r,c-1)
+             && x < X2(r,c+1)
+             && x < X2(r+1,c-1)
+             && x < X2(r+1,c)
+             && x < X2(r+1,c+1)
+             && x < X1(r-1,c-1)
+             && x < X1(r-1,c)
+             && x < X1(r-1,c+1)
+             && x < X1(r,c-1)
+             && x < X1(r,c)
+             && x < X1(r,c+1)
+             && x < X1(r+1,c-1)
+             && x < X1(r+1,c)
+             && x < X1(r+1,c+1)
+             && x < X3(r-1,c-1)
+             && x < X3(r-1,c)
+             && x < X3(r-1,c+1)
+             && x < X3(r,c-1)
+             && x < X3(r,c)
+             && x < X3(r,c+1)
+             && x < X3(r+1,c-1)
+             && x < X3(r+1,c)
+             && x < X3(r+1,c+1)
+)
+
+             {
+                hp[pos] =  r;
+                hp[pos+1] = c;
+                pos+=2;
+            }
+        }
+    }
+    *tot = pos;
+    return 0;
+}
+#undef X1
+#undef X2
+#undef X3
