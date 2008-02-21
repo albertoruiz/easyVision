@@ -334,3 +334,23 @@ exper tri = do
 
     disp $ a <> (diag $ fromList [alpha1,alpha2,alpha3])
     disp $ f12
+
+
+--------------------------------------------------------------
+
+plucker r = [l12,l13,l14,l23,l42,l34] where
+    [[_,l12,l13,l14],
+     [_,_,l23,_],
+     [_,_,_,l34],
+     [_,l42,_,_] ] = toLists $  mat "i" (r!"ij")
+
+klein [l12,l13,l14,l23,l42,l34] = l12*l34 + l13*l42 + l14*l23
+
+nodec = scalar 0.5 * r1!"12" + r4!"12"
+
+decompose r = (a,b) where
+    v = tv[1,2,3,4] -- any vector
+    a = r!"ij" * raise v!"j"
+    b = r!"ij" * raise a
+
+--------------------------------------------------------------
