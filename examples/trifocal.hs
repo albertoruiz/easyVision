@@ -3,6 +3,7 @@ import Vision
 import Tensor
 import Text.Printf(printf)
 import Debug.Trace(trace)
+import Control.Monad(mplus)
 
 debug x = trace (show x) x
 
@@ -69,6 +70,9 @@ eps4 = raise $ leviCivita 4
 
 tFundamental c1 c2 = eps3!"pqr" * eps4!"bcij" * c1!"pb" * c1!"qc" * c2!"si" * c2!"tj" * eps3!"stk"
 
+tEpipole tFun = tFun!"ap" * (raise eps3!"pqr") * tFun!"bq" * (raise eps3!"abc") * tc[0,0,1]!"c"
+
+
 c1 = syntheticCamera $ easyCamera 40 (0,0,0) (0.5,0,1) 0
 ct1 = tTrans c1
 
@@ -99,6 +103,7 @@ lin tri p = linQuad tri * p!"k" * p!"K"
 epitri tri = epi where
     epi = lin tri (tv[0,0,1]) !"a" * lin tri (tv[1,0,0])!"b" * (raise eps3)!"abc"
 
+
 -- the fundamental 12 is an arbitrary transfer joined to the epipole
 tri2fun12 tri epi2 = tri!"kij" * tc[0,0,1]!"j" * eps3!"ier" * epi2!"e"
 
@@ -109,7 +114,7 @@ getCams12 tri = canonicalCameras $ reshape 3 $ coords f
     where f = tri2fun12 tri epi2
           epi2 = epitri tri
 
--- the cameras 1 2 can also be directly obtained by an arbitrary transfer plus "range restoration"
+-- the cameras 1 2 can also be directly obtained by an arbitrary transfer plus "rank restoration"
 getCams12' tri = (p1,p2) where
     p1 = cameraAtOrigin
     ep = epitri tri
@@ -275,6 +280,43 @@ desp4' v = (4><4) [ d, 0, 0, -a,
     where [a,b,c,d] = toList v
 
 
+-----------------------------
+
+c4 = syntheticCamera $ easyCamera 45 (1,1,-1) (2,1,0) (-30)
+ct4 = tTrans c4
+
+quadrifocal c1 c2 c3 c4 = eps4!"abcd" * c1!"ia" * c2!"jb" * c3!"kc" * c4!"rd"
+
+qua = quadrifocal ct2 ct3 ct1 ct4
+
+algTri qua l1 l2 = l1!"1"* l2!"2" * qua !"1234" * a!"4" * eps3!"3k7" * qua!"5678" * b!"8" * l1!"5"* l2!"6"
+    where a = tc[1,2,3]
+          b = tc[0,1,-2]
+
+checkQua p = do
+    let l1 = tc[3,2,1]
+        l2 = tc[0,1,0]
+        --p = tv[3,5,7]
+    dispT $ tri!"kij" * l1!"i" * l2!"j"
+    dispT $ algTri qua l1 l2
+    putStrLn "----------"
+    dispT $ tri!"kij" * l2!"j" * p!"k"
+    let a = tv[1,1,0]
+        b = tv[0,1,1]
+        pa = eps3!"pqr" * p!"p" * a!"q"
+        pb = eps3!"pqr" * p!"p" * b!"q"
+        qua' = quadrifocal ct1 ct3 ct2 ct4
+        ra = algTri qua' pa l2
+        rb = algTri qua' pb l2
+        r = raise eps3!"pqr" * ra!"p" * rb!"q"
+    dispT r
+    mapM_ dispV $ toColumns $ mat"i" $ tri!"kij" * l2!"j"
+    putStrLn "---"
+    mapM_ dispV $ toRows $ mat"i" $ tri!"kij" * l2!"j"
+    --dispT $ tri!"kij" * l2!"j"
+    dispT $ algTri qua (raise p) l2
+
+
 main = do
     putStrLn "-----Hartley & Zisserman ---------"
     (p1,p2,p3) <- camerasFromTrifocalHZ tri
@@ -282,7 +324,7 @@ main = do
     analyzeTrifocal tri
     putStrLn "-----With C3, and ratios from vanishing points"
     analyzeTrifocal' tri
-    putStrLn "-----With aribitrary homography"
+    putStrLn "-----With arbitrary homography"
     analyzeTrifocal'' tri
     return ()
 
@@ -353,4 +395,30 @@ decompose r = (a,b) where
     a = r!"ij" * raise v!"j"
     b = r!"ij" * raise a
 
---------------------------------------------------------------
+---------------------------------------------------------------
+
+ms s = [scalar s]
+mv v = [tv v]
+
+a *** b = clean $ do
+    x <- a
+    y <- b
+    op <- [(.:.),(/\)]
+    return (x `op` y)
+  where clean = filter (not . null . niceAS)
+
+---------------------------------------------------
+
+-- simulation of quadrifocal tensor using two trifocals
+
+tri123 = trifocal ct2 ct3 ct1
+tri124 = trifocal ct2 ct4 ct1
+
+algQuad = tri123!"kij" * raise eps3!"kaK" * tri124!"KIr"
+
+checkQ l1 l2 l3 = do
+    dispT $ qua!"ijkr" *l1!"i" * l2!"j" * l3!"k"
+    dispT $ algQuad!"ijkIr" * l1!"i" * l1!"I" *l2!"j" * l3!"k"
+    putStrLn "------------------------"
+    dispT $ qua!"ijkr" *l1!"r" * l2!"j" * l3!"k"
+    dispT $ algQuad!"ijkIr" * l1!"r" *l2!"j" * l3!"k"

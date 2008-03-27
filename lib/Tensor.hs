@@ -24,7 +24,7 @@ module Tensor (
     -- * Operations
     addT, mulT,
     -- * Exterior Algebra
-    (/\),(\/), dual, leviCivita, innerLevi, innerAT, niceAS,
+    (/\),(\/), dual, leviCivita, innerLevi, (.:.), innerAT, niceAS, 
     -- * Misc
     liftTensor, liftTensor2
 ) where
@@ -401,3 +401,14 @@ a \/ b = meet a b
 --meet a b = innerLevi [dual a, dual b]
 meet a b = dual $ (dual a) /\ (dual b)
 
+--------------------------------------------------------------
+
+infixl 5 .:.
+-- | full contraction of two tensors (inner product)
+(.:.) :: (Linear Vector t) => Tensor t -> Tensor t -> Tensor t
+(.:.) = fullInner
+
+fullInner t1 t2 = if rank t1 < rank t2
+    then raise (t1 `withIdx` seqind) * t2 `withIdx` seqind
+    else t1 `withIdx` seqind * raise (t2 `withIdx` seqind)
+  where seqind = map show [1..]

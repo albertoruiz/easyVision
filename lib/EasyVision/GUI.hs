@@ -197,7 +197,7 @@ evWindow st0 name size mdisp kbd = do
     return EVW { evW = glw
                , evSt = st
                , evROI = r
-               , evInit = return ()
+               , evInit = clear [ColorBuffer]
                }
 
 ---------------------------------------------------------------
