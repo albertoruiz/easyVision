@@ -19,7 +19,8 @@ module EasyVision.MiniApps (
     catalogBrowser,
     hsvPalette,
     scatterWindow,
-    regionDetector, regionTracker
+    regionDetector, regionTracker,
+    panoramic, similgen
 )where
 
 import Graphics.UI.GLUT as GL hiding (Size,Point,Matrix,matrix)
@@ -37,6 +38,9 @@ import EasyVision.Util
 import Numeric.LinearAlgebra
 import Classifier.Base(group)
 import Data.IORef
+import Vision(kgen,rot1,rot2,rot3,degree,ht)
+import Numeric.GSL.Minimization
+import EasyVision.Combinators(warper)
 
 -- | reads a labeled video
 readCatalog :: String -> Size -> String -> Maybe Int -> (ImageYUV-> a) -> IO [(a,String)]
@@ -339,3 +343,96 @@ blind :: System -> State -> State
 blind (System f h q r) (State x p) = State x' p' where
     x' = f <> x
     p' = f <> p <> trans f + q
+
+-----------------------------------------------------------------------
+
+-- | Creates a panoramic view from two cameras with (nearly) common camera center.
+--
+-- Left click: optimize
+-- z: restart from identity
+-- o: end optimization
+panoramic :: Size              -- ^ of monitor window
+          -> Double            -- ^ focal of base camera
+          -> Double            -- ^ focal of source camera
+          -> Double             -- ^ focal of virtual camera
+          -> IO a               -- ^ base camera
+          -> IO a               -- ^ source camera
+          -> (a -> ImageFloat)  -- ^ how to extract the 'true image' from the cameras
+          -> (a -> ImageFloat)           -- ^ how to extract the first argument to the similarity function
+          -> (a -> ImageFloat)           -- ^ how to extract the second argument to the similarity function
+          -> (ImageFloat -> ImageFloat -> Double) -- ^ the cost function
+          -> IO (IO ImageFloat) -- ^ resulting virtual camera
+panoramic sz fi1 fi2 fo camBase camAdj sel fa fb simil = do
+    wMon <- evWindow (False,[0,0,0]) "autopanoramic" sz Nothing (mouse kbdQuit)
+    wDeb <- evWindow () "debug" (mpSize 5) Nothing (const kbdQuit)
+    wWar <- warper sz "control"
+    return $ do
+        img0raw <- camBase
+        img1raw <- camAdj
+
+        let img0 = sel img0raw
+            img1 = sel img1raw
+
+        (rh,_) <- getW wWar
+        hi <- rh
+
+        (opt,[pi,ti,ri]) <- getW wMon
+        let [pan,tilt,roll] = if opt
+                                then findRot (similgen fa fb simil) img0raw fi1 img1raw fi2 pi ti ri
+                                else [pi,ti,ri]
+            h = conjugateRotation pan tilt roll fi2 fi1
+        putW wMon (opt,[pan,tilt,roll])
+        let base = warp 0 (size img0) (hi<>kgen (fo/fi1)) img0
+        warpOn (hi<>kgen (fo/fi1)<>h) base img1
+        inWin wMon $ drawImage base
+        inWin wDeb $ drawImage (fb img1raw)
+        return base
+  where
+    -- click to adjust
+    mouse _ st (MouseButton LeftButton) Down _ _ = do
+        (_,p) <- get st
+        st $= (True,p)
+
+    -- restart from identity
+    mouse _ st (Char 'z') Down _ _ = do
+        st $= (True,[0,0,0])
+
+    -- end optimization
+    mouse _ st (Char 'o') Down _ _ = do
+        (_,p) <- get st
+        st $= (False,p)
+
+    mouse def _ a b c d = def a b c d
+
+
+
+similgen fa fb dab a h b = if ok roi then simil0 else 1E10
+    where ia = fa a
+          ib = fb b
+          p = warp 0 (size ia) h ib
+          roi = effectiveROI (size ia) h
+          ok r = r1 r >= 0 && r2 r > 50 + r1 r && c1 r >= 0 && c2 r > 50 + c1 r
+          simil0 = k * dab (f ia) (f p) --  sum32f (abs32f (f ia |*| f p))
+              where f = modifyROI (const roi)
+                    k = recip $ fromIntegral $ roiArea (f ia)
+
+effectiveROI sz h = newroi where
+    r = 3/4
+    trrec = pointsToPixels sz . map lp $ ht h [[1,-r], [1,r], [-1, r], [-1, -r]]
+    newroi = intersection (fullroi sz)
+                    ROI {r1 = (minimum $ map row trrec), c1 = (minimum $ map col trrec),
+                         r2 = (maximum $ map row trrec), c2 = (maximum $ map col trrec) }
+
+    fullroi (Size h w) = ROI {r1=0, r2=h-1, c1=0, c2=w-1}
+    lp [x,y] = Point x y
+
+
+
+
+conjugateRotation pan tilt rho fi fo =
+        kgen fo <> rot1 tilt <> rot2 pan <> rot3 rho <> kgen (1/fi)
+
+cost simil a fa b fb [pan, tilt, roll] = simil a h b
+    where h = conjugateRotation pan tilt roll fb fa
+
+findRot simil a fa b fb pi ti ri = fst $ minimizeNMSimplex (cost simil a fa b fb) [pi,ti,ri] [0.1*degree, 0.1*degree,0.1*degree] 1E-3 30
