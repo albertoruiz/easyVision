@@ -20,7 +20,7 @@ module EasyVision.MiniApps (
     hsvPalette,
     scatterWindow,
     regionDetector, regionTracker,
-    panoramic, similgen
+    panoramic
 )where
 
 import Graphics.UI.GLUT as GL hiding (Size,Point,Matrix,matrix)
@@ -41,6 +41,7 @@ import Data.IORef
 import Vision(kgen,rot1,rot2,rot3,degree,ht)
 import Numeric.GSL.Minimization
 import EasyVision.Combinators(warper)
+import Kalman
 
 -- | reads a labeled video
 readCatalog :: String -> Size -> String -> Maybe Int -> (ImageYUV-> a) -> IO [(a,String)]
@@ -278,8 +279,10 @@ regionTracker "" detector = do
         st <- get r
         let st'@(State x c) =
                 case p of
-                    Nothing -> blind sys st
-                    Just (Point x y,_)  -> kalman sys st (vector [x, y])
+                    --Nothing -> blindKalman sys st
+                    --Just (Point x y,_)  -> kalman sys st (vector [x, y])
+                    Nothing -> blindEKF sys' st
+                    Just (Point x y,_)  -> ekf sys' st (vector [x, y])
         r $= st'
         let pt = Point (x@>0) (x@>1)
             v = (x@>2,x@>3)
@@ -322,27 +325,18 @@ r = 10 * diagl [1,1]
 
 s0 = State (vector [0, 0, 0, 0]) (diagl [1, 1, 1, 1])
 
-sys = System f h q r
+sys = LinearSystem f h q r
 
-data System = System {kF, kH, kQ, kR :: Matrix Double}
-data State = State {sX :: Vector Double , sP :: Matrix Double} deriving Show
-type Measurement = Vector Double
+------------------------------ ekf's check --------------
 
-kalman :: System -> State -> Measurement -> State
-kalman (System f h q r) (State x p) z = State x' p' where
-    px = f <> x                            -- prediction
-    pq = f <> p <> trans f + q             -- its covariance
-    y  = z - h <> px                       -- residue
-    cy = h <> pq <> trans h + r            -- its covariance
-    k  = pq <> trans h <> inv cy           -- kalman gain
-    x' = px + k <> y                       -- new state
-    p' = (ident (dim x) - k <> h) <> pq    -- its covariance
+f' [x,y,vx,vy] = [ x+vx
+                 , y+vy
+                 , vx
+                 , vy ]
 
+h' [x,y,vx,vy ] = [x, y]
 
-blind :: System -> State -> State
-blind (System f h q r) (State x p) = State x' p' where
-    x' = f <> x
-    p' = f <> p <> trans f + q
+sys' = System f' h' (const q) (const r)
 
 -----------------------------------------------------------------------
 
