@@ -25,6 +25,7 @@ module EasyVision.Combinators (
   addSmall,
   detectMov,
   warper,
+  findPolygons,
   findRectangles,
   onlyRectangles,
   rectifyQuadrangle,
@@ -48,7 +49,7 @@ import EasyVision.Draw
 import EasyVision.Parameters
 import Graphics.UI.GLUT hiding (Size,Point)
 import Control.Concurrent
-import Vision
+import Vision hiding (consistency)
 import Numeric.LinearAlgebra
 import ImagProc.Generic
 
@@ -234,6 +235,7 @@ findRectangles ratio cam = do
         maxdis <- getParam op "maxdis"
         orthotol  <- getParam op "orthotol"
         let
+            alter pts = map (rotateList pts) [0 .. 3]
             mbf = Nothing
             segs = filter ((>minlen).segmentLength) $ segments radius width median high low pp img
             polis = segmentsToPolylines maxdis segs
@@ -241,11 +243,6 @@ findRectangles ratio cam = do
             a4s = filter (isA4 mbf orthotol a4) (concatMap alter closed4)
         return (orig,a4s)
 
-pl (Point x y) = [x,y]
-
-alter pts = map (rotateList pts) [0 .. 3]
-
-rotateList list n = take (length list) $ drop n $ cycle list
 
 isA4 mbf tol a4 pts = ao < tol && cy < 0
     where mbomega = fmap omegaGen mbf
@@ -282,3 +279,52 @@ warp' s h im = unsafePerformIO $ do
     r <- image s
     warpOn h r im
     return r
+
+------------------------------------------------------------------------
+
+-- A virtual camera which finds a given polygon and gives its pose
+findPolygons :: Maybe Double -> [[Double]] -> IO (Channels) -> IO (IO(Channels,[([Point],CameraParameters)]))
+findPolygons mbf ref cam = do
+    op <- createParameters [ ("radius",intParam 4 0 10),
+                             ("width",realParam 1.5 0 5),
+                             ("median",intParam 5 3 5),
+                             ("high",intParam 40 0 255),
+                             ("low",intParam 20 0 255),
+                             ("postproc",intParam 1 0 1),
+                             ("minlength",realParam 0.15 0 1),
+                             ("maxdis",realParam 0.06 0 0.1),
+                             ("orthotol",realParam 0.4 0.01 1.0)]
+    return $ do
+        orig <- cam
+        let img = gray orig
+        radius <- getParam op "radius"
+        width  <- getParam op "width"
+        median <- getParam op "median"
+        high   <- fromIntegral `fmap` (getParam op "high" :: IO Int)
+        low    <- fromIntegral `fmap` (getParam op "low" :: IO Int)
+        postp  <- getParam op "postproc" :: IO Int
+        let pp = if postp == 0 then False else True
+        minlen <- getParam op "minlength"
+        maxdis <- getParam op "maxdis"
+        orthotol  <- getParam op "orthotol"
+        let
+            l = length ref
+            alter pts = map (rotateList pts) [0 .. l-1]
+            segs = filter ((>minlen).segmentLength) $ segments radius width median high low pp img
+            polis = segmentsToPolylines maxdis segs
+            candis = [p | Closed p <- polis, length p == l]
+            poses = map (consistency mbf orthotol ref) (concatMap alter candis)
+            oks = map snd (filter fst poses)
+        return (orig,oks)
+
+pl (Point x y) = [x,y]
+
+rotateList list n = take (length list) $ drop n $ cycle list
+
+consistency mbf tol ref pts = (ao < tol,(pts,p)) -- && cy < 0
+    where mbomega = fmap omegaGen mbf
+          ao = autoOrthogonality mbomega h
+          h = estimateHomography (map pl pts) ref
+          Just p = poseFromHomogZ0 mbf h
+          (_,cy,_) = cameraCenter p
+          omegaGen f = kgen (recip (f*f))
