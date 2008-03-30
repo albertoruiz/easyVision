@@ -43,6 +43,8 @@ import Data.List(transpose,nub,maximumBy,genericLength,elemIndex, genericTake)
 import System.Random 
 import Debug.Trace(trace)
 
+debug x = trace (show x) x
+
 type Matrix = LA.Matrix Double
 type Vector = LA.Vector Double
 
@@ -139,7 +141,7 @@ focalFromHomogZ0 c = res where
     f = sqrt $ (xix-nix)^2 +(xiy-niy)^2 - nix^2 - niy^2
     res = if f > 0 then Just f else Nothing
 
--- | Obtains the pose of a factorized camera.
+-- | Obtains the pose of a factorized camera. (To do: check that is not in the floor).
 poseFromFactorization :: (Matrix,Matrix,Vector)  -- ^ (k,r,c) as obtained by factorizeCamera
                          -> CameraParameters
 poseFromFactorization (k,r,c) = cp where
