@@ -2,56 +2,15 @@
 
 module EasyVision.Trackball (newTrackball) where
 
-import Numeric.LinearAlgebra hiding ((><))
+import Quaternion
+import Vision.Geometry(cross)
+import Numeric.LinearAlgebra
 import Graphics.UI.GLUT hiding (normalize, Matrix, matrix)
 import Data.IORef
 
 vector v = fromList  v :: Vector Double
-matrix m = fromLists m :: Matrix Double
-
 norm x = pnorm PNorm2 x
 
-data Quaternion = Quat {qs::Double, qv::Vector Double}
-
-normalize Quat{ qs = s, qv = v } = Quat { qs = s/m, qv = v */ m }
-    where m = sqrt $ s^2 + norm v ^ 2
-
-infixl 5 .+.
-Quat{ qs = a, qv = u } .+. Quat{ qs = t, qv = v } =
-  Quat { qs = a + t , qv = u + v }
-
--- composition of rotations (Grassmann product)
-infixl 7 .*.
-Quat{ qs = a, qv = u } .*. Quat{ qs = t, qv = v } = normalize $
-    Quat { qs = a*t - u<.>v, qv = a.*v + t .* u + u >< v }
-
---------------------------------------
-
-axisToQuat phi axis = Quat { qs = cos (phi/2), qv = sin (phi/2) .* v }
-    where v = axis */ norm axis
-
---------------------------------------
-getRotation Quat {qs = w, qv = v} =
-  let [x, y, z] = toList v
-      x2 = x*x; y2 = y*y; z2 = z*z
-      xy = x*y; xz = x*z; yz = y*z
-      wx = w*x; wy = w*y; wz = w*z
-  in [ 1.0 - 2.0 * (y2 + z2), 2.0 * (xy - wz), 2.0 * (xz + wy), 0,
-       2.0 * (xy + wz), 1.0 - 2.0 * (x2 + z2), 2.0 * (yz - wx), 0,
-       2.0 * (xz - wy), 2.0 * (yz + wx), 1.0 - 2.0 * (x2 + y2), 0,
-       0, 0, 0, 1 ]
-
-infixl 7 ><
-a >< b = asMat a <> b
-
-asMat v = matrix [[ 0,-c, b],
-                      [ c, 0,-a],
-                      [-b, a, 0]]
-    where a = v@>0
-          b = v@>1
-          c = v@>2
-
--------------------------------------------------------
 
 -- adapted from tracball.h and trackball.c 
 -- A virtual trackball implementation
@@ -87,7 +46,7 @@ trackball (x',y') (x,y)
   where
     trackballSize = 0.8
 
-    axis = p1 >< p2
+    axis = cross p1 p2
     p1 = vector [x',y',projectToSphere trackballSize (x',y')]
     p2 = vector [x, y, projectToSphere trackballSize (x ,y )]
 
@@ -97,7 +56,7 @@ trackball (x',y') (x,y)
 
 ----------------------------------------------------------------------
 
-data TrackballState = TBST {quat :: Quaternion, prev :: [Double],
+data TrackballState = TBST {tbQuat :: Quaternion, prev :: [Double],
                             dist ::Double, wsize :: Double, vertAngle:: Double}
 
 
@@ -105,11 +64,11 @@ data TrackballState = TBST {quat :: Quaternion, prev :: [Double],
 -}
 newTrackball :: IO ( (IO(), (t -> KeyboardMouseCallback) -> (t -> KeyboardMouseCallback), MotionCallback)  )
 newTrackball = do
-    st <- newIORef TBST { quat = Quat {qs = 1.0, qv = vector [0,0,0]},
+    st <- newIORef TBST { tbQuat = Quat {qs = 1.0, qv = vector [0,0,0]},
                           prev = [], dist = 20, wsize = 400, vertAngle = 0 }
     let trackball = do
             s <- readIORef st
-            let rot = getRotation (quat s)
+            let rot = getRotationH (tbQuat s)
             mat <- newMatrix RowMajor rot :: IO (GLmatrix GLdouble)
             matrixMode $= Projection
             loadIdentity
@@ -135,7 +94,7 @@ quatkbd str _ _ (MouseButton LeftButton) Down _ pos@(Position x y) = do
                                -(fromIntegral y - sz2) / sz]}
 
 quatkbd str _ _ (Char 'o') Down _ _ = do
-    modifyIORef str $ \s -> s { quat = Quat { qs = 1.0, qv = vector [0,0,0]} }
+    modifyIORef str $ \s -> s { tbQuat = 1 }
 
 quatkbd st _ _ (MouseButton WheelUp) _ (Modifiers{shift=Down}) _ = do
     modifyIORef st $ \s -> s { vertAngle = vertAngle s + 1 }
@@ -159,5 +118,5 @@ quatmot str pos@(Position x y) = do
     case prev st of
         [] -> return ()
         [xp,yp] -> do
-            let q = trackball (xp,yp) (xc,yc) .*. quat st
-            writeIORef str st {quat = q, prev = [xc,yc]}
+            let q = trackball (xp,yp) (xc,yc) .*. tbQuat st
+            writeIORef str st {tbQuat = q, prev = [xc,yc]}

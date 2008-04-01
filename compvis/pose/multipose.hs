@@ -21,10 +21,10 @@ main = do
 
     let initState = replicate n cameraAtOrigin
 
-
     w <- evWindow 0 "multipose" sz Nothing (mouse $ kbdQuit)
     w3D <- evWindow3D () "3D view" 400 (const $ kbdQuit)
     w3DSt <- evWindow3D initState "Camera Reference" 400 (const $ kbdQuit)
+    wm <- evWindow () "views" (Size 150 (200*n)) Nothing (const $ kbdQuit)
 
     launch $ do
         (imgs,det) <- unzip `fmap` sequence cams
@@ -45,6 +45,9 @@ main = do
             lineWidth $= 3
             mapM_ (renderPrimitive LineLoop . (mapM_ vertex)) rect
             text2D 0.9 0.6 (show (length rect))
+
+        inWin wm $ drawImage $ blockImage [map gray imgs]
+
 
         inWin w3D $ do -- reference world
             setColor 0 0 1
