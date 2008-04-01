@@ -5,6 +5,7 @@ import Graphics.UI.GLUT hiding (Matrix, Size, Point,set)
 import Vision
 import Numeric.LinearAlgebra
 import Control.Monad(when)
+import Quaternion
 
 main = do
     prepare
@@ -58,6 +59,8 @@ main = do
             mapM_ (\c -> drawCamera 1 c Nothing) (concat ps)
 
 
+        print $ prepareObs ps
+
         st' <- getW w3DSt
         let st = update st' ps
         putW w3DSt st
@@ -77,14 +80,25 @@ update st' ps = st where
         else st'
 
 
-betterRep = factorizeCamera
-asMatrix (k,r,c) = k <> (r <|> -r <> c)
+betterRep = withQuat . factorizeCamera
+    where withQuat (k,r,c) = (k@@>(0,0), toQuat r, c)
+          toQuat = uncurry axisToQuat . rotToAxis
 
-weighted alpha (k1,r1,c1) (k2,r2,c2) = (alpha.*k1+(1-alpha).*k2,
-                                        fix $ alpha.*r1+(1-alpha).*r2, -- !!!
+asMatrix (f,q,c) = (kgen f) <> (r <|> -r <> c)
+    where r = (3><3) . getRotation $ q
+
+weighted alpha (f1,r1,c1) (f2,r2,c2) = (alpha*f1+(1-alpha)*f2,
+                                        slerp r1 r2 alpha,
                                         alpha.*c1+(1-alpha).*c2)
-    where fix m = u<>trans v
-              where (u,_,v) = svd m
+
+------------------------------------------------
+
+prepareObs ps = proc obs where
+    obs = filter (not.null.snd) $ zip [0..] (map (take 1) ps)
+    proc [] = []
+    proc ((k,[p]):rest) = map f rest
+        where f (q,[t]) = ((k,q), betterRep (t<>r))
+                  where r = fst . toCameraSystem $ p
 
 ------------------------------------------------
 

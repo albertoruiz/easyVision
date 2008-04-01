@@ -81,9 +81,12 @@ rotToAxis rot = (angle,axis) where
 
 -------------------------------------------------------
 
-slerp p0 p1 t = quat a * p0 + quat b * p1 where
-    a = sin((1-t)*omega)/sin omega
-    b = sin(t*omega)/sin omega
-    dt = qdot p0 p1
-    omega = if dt > 0 then acos dt else acos (-dt)
-    qdot Quat{ qs = a, qv = u } Quat{ qs = t, qv = v } = a*t + u<.>v
+slerp p0 p1 t = if omega < pi/180/100
+                    then p0
+                    else quat a * p0 + quat b * p1
+    where
+        a = sin((1-t)*omega)/sin omega
+        b = sin(t*omega)/sin omega
+        dt = qdot p0 p1
+        omega = if dt > 0 then acos dt else acos (-dt)
+        qdot Quat{ qs = a, qv = u } Quat{ qs = t, qv = v } = a*t + u<.>v
