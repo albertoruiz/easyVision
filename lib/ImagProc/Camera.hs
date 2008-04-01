@@ -89,6 +89,10 @@ shsc w h = " -vf scale="++show w++":"++show h
 -- be careful with the order
 
 proc w h url
+    | "swebcam0" `isPrefixOf` url = rep ("swebcam0","tv:// -tv driver=v4l2:device=/dev/video0:fps=15"++shsz w h) url
+    | "swebcam1" `isPrefixOf` url = rep ("swebcam1","tv:// -tv driver=v4l2:device=/dev/video1:fps=15"++shsz w h) url
+    | "swebcam2" `isPrefixOf` url = rep ("swebcam2","tv:// -tv driver=v4l2:device=/dev/video2:fps=15"++shsz w h) url
+    | "swebcam3" `isPrefixOf` url = rep ("swebcam3","tv:// -tv driver=v4l2:device=/dev/video3:fps=15"++shsz w h) url
     | "webcam0" `isPrefixOf` url = rep ("webcam0","tv:// -tv driver=v4l:device=/dev/video0"++shsz' w h) url
     | "webcam1" `isPrefixOf` url = rep ("webcam1","tv:// -tv driver=v4l:device=/dev/video1"++shsz' w h) url
     | "webcam2" `isPrefixOf` url = rep ("webcam2","tv:// -tv driver=v4l:device=/dev/video2"++shsz' w h) url
