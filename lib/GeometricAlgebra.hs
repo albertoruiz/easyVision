@@ -2,7 +2,7 @@
 
 module GeometricAlgebra(
     Multivector,
-    ms, mv, e, rever, rotor, meet, (/\), (\/), (-|)
+    ms, mv, e, rever, rotor, meet, (/\), (-|)
 ) where
 
 import Numeric.LinearAlgebra(fromList,toList,reshape,inv,(<>),(<\>),rank,trans)
@@ -124,8 +124,7 @@ e k = MV [(1,[k])]
 infixl 7 /\
 (/\) = ge
 
-infixl 7 \/
-a \/ b = i*((i*b) /\ (i*a))
+
 
 infixl 7 -|
 (-|) = gi
@@ -133,7 +132,7 @@ infixl 7 -|
 
 full k = product . map e $ [1 .. k]
 
-i = full 4
+
 
 meet k a b = (b -| rever (full k)) -| a
 

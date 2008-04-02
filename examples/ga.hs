@@ -2,10 +2,13 @@
 
 import GeometricAlgebra
 
-
 a = mv [2,3,0]
 b = e 1 + e 3
 
+
+infixl 7 \/
+a \/ b = i*((i*b) /\ (i*a))
+    where i = product (map e [1..4])
 
 po = mv[0,0,0,1]
 px = mv[1,0,0,1]
@@ -31,7 +34,7 @@ main = do
      print r
      print (1/r)
      print (rever r)
-     let l4' = r * l4 * rever r
+     let l4' = r * l4 * rever r -- or r * l4 / r if r is not unitary
      print l4
      print l4'
      print $ meet 4 l4' ((e 1 + e 4) /\ (e 2 + e 4)/\ (e 4))

@@ -1,10 +1,11 @@
 module Quaternion(
     Quaternion(..), (.*.),
-    quat,
+    quat, conjQ,
     axisToQuat,
+    quatToAxis,
     rotToAxis,
     getRotation,
-    getRotationH,
+    getRotationHL,
     slerp
 ) where
 
@@ -29,6 +30,13 @@ instance Num Quaternion where
     signum q = error "signum of Quaternion not defined"
     fromInteger = quat . fromInteger
 
+instance Fractional Quaternion where
+    fromRational = quat . fromRational
+    recip q = conjQ q * (quat . recip .qs) (q * conjQ q)
+
+
+conjQ Quat{ qs = s, qv = v } = Quat { qs = s, qv = -v }
+
 quat x = Quat {qs = x, qv = vector [0,0,0] }
 
 normalize Quat{ qs = s, qv = v } = Quat { qs = s/m, qv = v */ m }
@@ -46,18 +54,27 @@ axisToQuat phi axis = Quat { qs = cos (phi/2), qv = sin (phi/2) .* v }
 
 --------------------------------------
 
+quatToAxis q = r where
+    Quat s v = normalize q
+    vn = norm v
+    phi = 2 * atan2 vn s
+    r = if vn > 100*eps then (phi, v */ vn) else (0, vector [1,0,0])
+
+--------------------------------------
+
 getRotation Quat {qs = w, qv = v} =
   let [x, y, z] = toList v
       x2 = x*x; y2 = y*y; z2 = z*z
       xy = x*y; xz = x*z; yz = y*z
       wx = w*x; wy = w*y; wz = w*z
-  in [ 1.0 - 2.0 * (y2 + z2), 2.0 * (xy - wz), 2.0 * (xz + wy)
+  in (3><3)
+     [ 1.0 - 2.0 * (y2 + z2), 2.0 * (xy - wz), 2.0 * (xz + wy)
      , 2.0 * (xy + wz), 1.0 - 2.0 * (x2 + z2), 2.0 * (yz - wx)
      , 2.0 * (xz - wy), 2.0 * (yz + wx), 1.0 - 2.0 * (x2 + y2) ]
 
 ---------------------------------------
 
-getRotationH Quat {qs = w, qv = v} =
+getRotationHL Quat {qs = w, qv = v} =
   let [x, y, z] = toList v
       x2 = x*x; y2 = y*y; z2 = z*z
       xy = x*y; xz = x*z; yz = y*z
@@ -76,12 +93,12 @@ rotToAxis rot = (angle,axis) where
     angleraw = phase $ maximumBy (compare `on` imagPart) (toList l)
     mx = maximum $ map abs $ toList $ flatten $ rot
     rec = getRotation $ axisToQuat angleraw axis
-    ok = (pnorm PNorm1 (flatten rot - vector rec)) / mx < 1E-8
+    ok = (pnorm PNorm1 (flatten rot - flatten rec)) / mx < 1E-8
     angle = if ok then angleraw else -angleraw
 
 -------------------------------------------------------
 
-slerp p0 p1 t = if omega < pi/180/100
+slerp1 p0 p1 t = if omega < pi/180/100
                     then p0
                     else quat a * p0 + quat b * p1
     where
@@ -90,3 +107,8 @@ slerp p0 p1 t = if omega < pi/180/100
         dt = qdot p0 p1
         omega = if dt > 0 then acos dt else acos (-dt)
         qdot Quat{ qs = a, qv = u } Quat{ qs = t, qv = v } = a*t + u<.>v
+
+slerp2 q0 q1 t = q0 * axisToQuat (phi*t) axis where
+    (phi,axis) = quatToAxis $ (1/q0) * q1
+
+slerp = slerp2

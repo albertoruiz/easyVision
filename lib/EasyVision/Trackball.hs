@@ -68,7 +68,7 @@ newTrackball = do
                           prev = [], dist = 20, wsize = 400, vertAngle = 0 }
     let trackball = do
             s <- readIORef st
-            let rot = getRotationH (tbQuat s)
+            let rot = getRotationHL (tbQuat s)
             mat <- newMatrix RowMajor rot :: IO (GLmatrix GLdouble)
             matrixMode $= Projection
             loadIdentity

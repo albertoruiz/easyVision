@@ -116,7 +116,9 @@ findSize = do
 getCam n sz = do
     args <- getArgs
     let opts = Map.fromList $ zip args (tail args)
-    let url = Map.findWithDefault (args!!n) ("--cam"++show n) opts
+    let url = if "--cams" `elem` args
+                then read (opts Map.! "--cams") !! n
+                else Map.findWithDefault (args!!n) ("--cam"++show n) opts
     mplayer url sz
 
 getOption name def = do
@@ -140,7 +142,10 @@ getFlag name = do
 
 numCams = do
     args <- getArgs
-    let nc = length $ filter (=="--cam") $ map (take 5) args
+    let opts = Map.fromList $ zip args (tail args)
+    let nc = if "--cams" `elem` args
+                then length (read (opts Map.! "--cams") :: [String])
+                else length $ filter (=="--cam") $ map (take 5) args
     return nc
 
 optionalSaver sz = do

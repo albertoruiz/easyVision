@@ -85,7 +85,7 @@ betterRep = withQuat . factorizeCamera
           toQuat = uncurry axisToQuat . rotToAxis
 
 asMatrix (f,q,c) = (kgen f) <> (r <|> -r <> c)
-    where r = (3><3) . getRotation $ q
+    where r = getRotation $ q
 
 weighted alpha (f1,r1,c1) (f2,r2,c2) = (alpha*f1+(1-alpha)*f2,
                                         slerp r1 r2 alpha,
