@@ -6,6 +6,8 @@ import Vision
 import Numeric.LinearAlgebra
 import Control.Monad(when)
 import Quaternion
+import Data.List((\\),sortBy)
+import Debug.Trace
 
 main = do
     prepare
@@ -15,7 +17,7 @@ main = do
 
     mbf <- maybeOption "--focal"
 
-    let ref = map (map (/3)) asym'
+    let ref = map (map (/3)) asym
         vc c = c >>= withChannels >>= findPolygons mbf ref
     cams <- mapM (vc . flip getCam sz) [0..n-1]
 
@@ -59,11 +61,13 @@ main = do
             mapM_ (\c -> drawCamera 1 c Nothing) (concat ps)
 
 
-        print $ prepareObs ps
+        --print $ prepareObs ps
 
         st' <- getW w3DSt
         let st = update st' ps
         putW w3DSt st
+
+        --print st
 
         inWin w3DSt $ do -- camera reference
             setColor 1 0 0
@@ -72,13 +76,31 @@ main = do
 
 
 
-update st' ps = st where
-    gcs = map (map (fst.toCameraSystem)) ps
-    obs = map (map (betterRep.(<>( (gcs!!0!!0))))) ps
-    st = if (length (concat ps)==length st')
-        then map asMatrix $ zipWith (weighted 0.95) (map betterRep st') (concat obs)
-        else st'
+update st ps = r where
+    r = if null obs then st else st'
+    obs = prepareObs ps
+    b = fst.fst.head $ obs
+    rb = (fst.toCameraSystem) (st!!b)
+    stb = map (<>rb) st
+    rest = map (\x->(x,Nothing)) (pairs \\ map fst obs)
+    pairs = [(b,k)| k <- [0..length st -1], k/= b]
+    camb = kgen fb <> cameraAtOrigin
+    fb = snd $ toCameraSystem $ ps!!b!!0
+    fullobs = map snd $ sortBy (compare `on` fst) (obs++rest++ [((b,b),Just camb)])
+    stb' = zipWith f stb fullobs
+    st'0 = (fst.toCameraSystem) (stb'!!0)
+    st' = map (<>st'0) stb'
+    f s Nothing = s
+    f s (Just x) = asMatrix $ weighted 0.95 (betterRep s) (betterRep x)
 
+prepareObs ps = proc obs where
+    obs = filter (not.null.snd) $ zip [0..] (map (take 1) ps)
+    proc [] = []
+    proc ((k,[p]):rest) = map f rest
+        where f (q,[t]) = ((k,q), Just (t<>r))
+                  where r = fst . toCameraSystem $ p
+
+------------------------------------------------
 
 betterRep = withQuat . factorizeCamera
     where withQuat (k,r,c) = (k@@>(0,0), toQuat r, c)
@@ -93,24 +115,16 @@ weighted alpha (f1,r1,c1) (f2,r2,c2) = (alpha*f1+(1-alpha)*f2,
 
 ------------------------------------------------
 
-prepareObs ps = proc obs where
-    obs = filter (not.null.snd) $ zip [0..] (map (take 1) ps)
-    proc [] = []
-    proc ((k,[p]):rest) = map f rest
-        where f (q,[t]) = ((k,q), betterRep (t<>r))
-                  where r = fst . toCameraSystem $ p
-
-------------------------------------------------
-
-asym = [ [ 0, 0]
-       , [ 0, 9.7]
-       , [ 5, 9.7]
-       , [ 5, 14.9]
-       , [ 10.5, 14.9]
-       , [ 10.5, 0] ]
+asym = map (map (*5.4))
+       [ [ 0, 0]
+       , [ 0, 2]
+       , [ 1, 2]
+       , [ 2, 1]
+       , [ 2, 0] ]
 
 asym' = [ [ 0, 0]
        , [ 0, 9.7]
+       , [ 5, 9.7]
        , [ 5, 14.9]
        , [ 10.5, 14.9]
        , [ 10.5, 0] ]
