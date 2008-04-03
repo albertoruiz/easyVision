@@ -19,7 +19,9 @@ module Kalman (
     LinearSystem(..),
     kalman, blindKalman,
     System(..),
-    ekf, blindEKF
+    ekf, blindEKF,
+    unscentedSamples,
+    unscentedTransform
 ) where
 
 import Numeric.LinearAlgebra
@@ -93,3 +95,33 @@ blindEKF (System f h q r) (State vx p) = State (vector x') p' where
     x' = f x
     p' = jf <> p <> trans jf + q x
     jf = matrix (jacobian f x)
+
+---------------------------------------------------------------------
+
+unscentedSamples (med,cov) = med : concat [pos,neg] where
+    pos = f (+)
+    neg = f (-)
+    f op = map (op med) ds
+    ds = toColumns $ mr ((fromIntegral n + lambda) .* cov)
+    lambda = alpha^2 * (fromIntegral n + k) - fromIntegral n
+    n = dim med
+    alpha = 1E-3
+    beta = 2
+    k = 0
+    mr' m = v <> diag (sqrt l) where (l,v) = eigSH m
+    mr = chol
+
+unscentedTransform f g = (m',c') where
+    s' = map f s
+    s  = unscentedSamples g
+    wm = fromList $ lambda/(fromIntegral n+lambda) : ws
+    wc = (lambda/(fromIntegral n+lambda) + 1-alpha^2+beta) : ws
+    ws = replicate (2*n) (1/2/(fromIntegral n+lambda))
+    lambda = alpha^2 * (fromIntegral n + k) - fromIntegral n
+    n = dim (fst g)
+    alpha = 1E-3
+    beta = 2
+    k = 0
+    m' = wm <> fromRows s'
+    c' = sum (zipWith f wc s') where f w v = w .* outer vm vm where vm = v - m'
+

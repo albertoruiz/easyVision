@@ -60,7 +60,6 @@ main = do
             lineWidth $= 1
             mapM_ (\c -> drawCamera 1 c Nothing) (concat ps)
 
-
         --print $ prepareObs ps
 
         st' <- getW w3DSt
@@ -74,6 +73,8 @@ main = do
             lineWidth $= 1
             mapM_ (\c -> drawCamera 1 c Nothing) st
 
+        when (not $ null $ head rects) $ do
+            print . concat . (map pl) . head . head $ rects
 
 
 update st ps = r where
@@ -122,21 +123,11 @@ asym = map (map (*5.4))
        , [ 2, 1]
        , [ 2, 0] ]
 
-asym' = [ [ 0, 0]
-       , [ 0, 9.7]
-       , [ 5, 9.7]
-       , [ 5, 14.9]
-       , [ 10.5, 14.9]
-       , [ 10.5, 0] ]
-
-a4 = [[   0,            0]
-     ,[   0, (2.10*ratio)]
-     ,[2.10, (2.10*ratio)]
-     ,[2.10,           0]] where ratio = sqrt 2
-
-
 mouse _ st (MouseButton WheelUp) Down _ _ = do
     st $~ (+1)
 mouse _ st (MouseButton WheelDown) Down _ _ = do
     st $~ (subtract 1)
 mouse def _ a b c d = def a b c d
+
+pl (Point x y) = [x,y]
+
