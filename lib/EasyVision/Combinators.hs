@@ -52,7 +52,9 @@ import Control.Concurrent
 import Vision hiding (consistency)
 import Numeric.LinearAlgebra
 import ImagProc.Generic
+import Debug.Trace
 
+debug x = trace (show x) x
 
 
 {- | Adds a pause control to a camera. Commands:
@@ -322,13 +324,18 @@ pl (Point x y) = [x,y]
 rotateList list n = take (length list) $ drop n $ cycle list
 
 -- (to do: normalize or pass as parameter costHomog value)
-consistency mbf tol ref pts = (ao < tol && costHomog pts ref p < 0.1 ,(pts,p)) -- && cy < 0
+consistency mbf tol ref pts = (okpose && ao < tol && costHomog pts ref p < 1E-1 * perim, (pts,p)) -- && cy < 0
     where mbomega = fmap omegaGen mbf
           ao = autoOrthogonality mbomega h
           h = estimateHomography (map pl pts) ref
-          Just p = poseFromHomogZ0 mbf h
+          pose = poseFromHomogZ0 mbf h
+          okpose = isJust pose
+          isJust Nothing = False
+          isJust _       = True
+          Just p = pose
           (_,cy,_) = cameraCenter p
           omegaGen f = kgen (recip (f*f))
+          perim = perimeter (Closed pts)
 
-costHomog view world c = pnorm PNorm2 $ flatten (fromLists (map pl view) -
+costHomog view world c = pnorm PNorm1 $ flatten (fromLists (map pl view) -
                                         htm  (syntheticCamera c) (fromLists $ map (++[0]) world))

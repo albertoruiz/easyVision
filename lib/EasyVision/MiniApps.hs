@@ -20,13 +20,14 @@ module EasyVision.MiniApps (
     hsvPalette,
     scatterWindow,
     regionDetector, regionTracker,
-    panoramic
+    panoramic,
+    poseTracker
 )where
 
 import Graphics.UI.GLUT as GL hiding (Size,Point,Matrix,matrix)
 import EasyVision.GUI hiding (State)
 import EasyVision.Parameters
-import ImagProc
+import ImagProc hiding ((.*))
 import Data.List(transpose)
 import Control.Monad(when)
 import ImagProc.Ipp.Core
@@ -38,7 +39,7 @@ import EasyVision.Util
 import Numeric.LinearAlgebra
 import Classifier.Base(group)
 import Data.IORef
-import Vision(kgen,rot1,rot2,rot3,degree,ht)
+import Vision
 import Numeric.GSL.Minimization
 import EasyVision.Combinators(warper)
 import Kalman
@@ -270,6 +271,8 @@ fst2 (_,a,_) = a
 
 ----------------------------------------------------------------
 
+
+
 -- | to do
 regionTracker :: String -> IO (Channels,Maybe (Point,[Point])) -> IO (IO (Channels, (Point,(Double,Double))))
 regionTracker "" detector = do
@@ -279,10 +282,10 @@ regionTracker "" detector = do
         st <- get r
         let st'@(State x c) =
                 case p of
-                    --Nothing -> blindKalman sys st
-                    --Just (Point x y,_)  -> kalman sys st (vector [x, y])
-                    Nothing -> blindEKF sys' st
-                    Just (Point x y,_)  -> ekf sys' st (vector [x, y])
+                    Nothing -> blindKalman sys st
+                    Just (Point x y,_)  -> kalman sys st (vector [x, y])
+                    --Nothing -> blindUKF sys' st
+                    --Just (Point x y,_)  -> ukf sys' st (vector [x, y])
         r $= st'
         let pt = Point (x@>0) (x@>1)
             v = (x@>2,x@>3)
@@ -321,7 +324,7 @@ h = matrix [[1,0,0,0],
 
 q = 1 * diagl [1,1,1,1]
 
-r = 10 * diagl [1,1]
+r = 2 * diagl [1,1]
 
 s0 = State (vector [0, 0, 0, 0]) (diagl [1, 1, 1, 1])
 
@@ -336,7 +339,7 @@ f' [x,y,vx,vy] = [ x+vx
 
 h' [x,y,vx,vy ] = [x, y]
 
-sys' = System f' h' (const q) (const r)
+sys' = System f' h' q
 
 -----------------------------------------------------------------------
 
@@ -430,3 +433,57 @@ cost simil a fa b fb [pan, tilt, roll] = simil a h b
     where h = conjugateRotation pan tilt roll fb fa
 
 findRot simil a fa b fb pi ti ri = fst $ minimizeNMSimplex (cost simil a fa b fb) [pi,ti,ri] [0.1*degree, 0.1*degree,0.1*degree] 1E-3 30
+
+
+----------------------------------------------------------------
+
+poseTracker :: Maybe Double -> [[Double]] -> IO(Channels,[([Point],CameraParameters)]) 
+            -> IO (IO(Channels, CameraParameters, (Vector Double, Matrix Double), Maybe ([Point],CameraParameters)))
+poseTracker mbf ref cam = do
+    let sys = case mbf of
+                Nothing -> poseDyn ref
+                Just f -> poseDynWithF f ref
+        initst = case mbf of
+                   Nothing -> State (vector [2,0,0,0,0,0,0,0,0,0,0,0,0]) (diagl [3,1,1,1,10,10,10,10,10,10,5,5,5])
+                   Just f -> State (vector [0,0,0,0,0,0,0,0,0,0,0,0]) (diagl [1,1,1,10,10,10,10,10,10,5,5,5])
+    r <- newIORef (False, initst)
+    return $ do
+        (orig,det) <- cam
+        (ok,st@(State p c)) <- get r
+        let rects = map fst det
+            ps    = map (snd) det
+            obs = vector $ concat $ map pl $ head $ rects
+            obscam = case mbf of
+                        Nothing -> vector $ (cam2list $ head ps) ++ [0,0,0,0,0,0]
+                        _       -> vector $ (drop 1 $ cam2list $ head ps) ++ [0,0,0,0,0,0]
+
+            (ok', State st' err) = case (ok, not (null rects)) of
+                (False,False) -> (False, st)
+                (False,True)  -> (True, State obscam c)
+                (True,False)  -> (True, blindUKF sys st)
+                (True,True)   -> (True, ukf sys st obs)
+
+        r $= (ok', State st' err)
+        let obs' = if null rects then Nothing else Just (head $ rects, extractCam obs)
+            usercam = case mbf of
+                        Nothing -> extractCam st'
+                        Just f  ->  list2cam . (f:) $ take 6 $ toList $ st'
+        return (orig, usercam, (st', err), obs')
+
+
+systemNoise = map (/1000) [0,0,0,0,0,0,0.1,0.1,0.1,0.01,0.01,0.01]
+
+poseDyn world = System syspose (obspose world) (diagl (0.0001: systemNoise)) ((2/640) .* ident (2*length world))
+    where syspose [f,p,t,r,cx,cy,cz,vx,vy,vz,vp,vt,vr] = [f,p+vp,t+vt,r+vr,cx+vx,cy+vy,cz+vz,vx,vy,vz,vp,vt,vr]
+          obspose world pars = concat $ ht (syntheticCamera ( list2cam . take 7 $  pars)) (map (++[0]) world)
+
+poseDynWithF f world = System syspose (obspose world) (diagl systemNoise) ((2/640) .* ident (2*length world))
+    where syspose [p,t,r,cx,cy,cz,vx,vy,vz,vp,vt,vr] = [p+vp,t+vt,r+vr,cx+vx,cy+vy,cz+vz,vx,vy,vz,vp,vt,vr]
+          obspose world pars = concat $ ht (syntheticCamera ( list2cam . (f:) . take 6 $  pars)) (map (++[0]) world)
+
+
+pl (Point x y) = [x,y]
+cam2list (CamPar f p t r (x, y, z)) = [ f, p, t, r, x, y, z ]
+list2cam [ f, p, t, r, x, y, z ] = (CamPar f p t r (x, y, z))
+extractCam = list2cam . take 7 . toList
+

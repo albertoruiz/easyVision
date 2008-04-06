@@ -21,7 +21,8 @@ module Kalman (
     System(..),
     ekf, blindEKF,
     unscentedSamples,
-    unscentedTransform
+    unscentedTransform,
+    ukf, blindUKF
 ) where
 
 import Numeric.LinearAlgebra
@@ -76,7 +77,7 @@ jacobian f v = [[partialDerivative k ((!!s).f) v | k <- [0 .. length v -1]] | s 
 --------------------------------------------------------------------
 
 data System = System {ekF, ekH :: [Double] -> [Double],
-                      ekQ, ekR :: [Double] -> Matrix Double}
+                      ekQ, ekR :: Matrix Double}
 
 --data State = State {sX :: [Double] , sP :: Matrix Double} deriving Show
 --type Measurement = Vector Double
@@ -88,9 +89,9 @@ ekf (System f h q r) (State vx p) z = State x' p' where
     jh = matrix (jacobian h x)
 
     px = f x                               -- prediction
-    pq = jf <> p <> trans jf + q x         -- its covariance
+    pq = jf <> p <> trans jf + q           -- its covariance
     y  = z - vector (h px)                 -- residue
-    cy = jh <> pq <> trans jh + r x        -- its covariance
+    cy = jh <> pq <> trans jh + r          -- its covariance
     k  = pq <> trans jh <> inv cy          -- kalman gain
     x' = vector px + k <> y                -- new state
     p' = (ident (dim x') - k <> jh) <> pq  -- its covariance
@@ -100,32 +101,58 @@ blindEKF :: System -> State -> State
 blindEKF (System f h q r) (State vx p) = State (vector x') p' where
     x = toList vx
     x' = f x
-    p' = jf <> p <> trans jf + q x
+    p' = jf <> p <> trans jf + q
     jf = matrix (jacobian f x)
 
 ---------------------------------------------------------------------
 
-alpha = 1 -- parameter??
+alpha = 0.01 -- parameter??
 beta = 2
 k = 0
 
-unscentedSamples (med,cov) = med : concat [pos,neg] where
+unscentedSamples (med,cov) = (med : concat [pos,neg], (wm,wc)) where
     pos = f (+)
     neg = f (-)
     f op = map (op med) ds
     ds = toColumns $ mr ( (fromIntegral n + lambda) .* cov :: Matrix Double)
-    lambda = alpha^2 * (fromIntegral n + k) - fromIntegral n
-    n = dim med
-    --mr m = v <> diag (sqrt l) where (l,v) = eigSH m
-    mr = trans . chol
-
-unscentedTransform f g = (m',c') where
-    s' = map f s
-    s  = unscentedSamples g
     wm = fromList $ lambda/(fromIntegral n+lambda) : ws
     wc = (lambda/(fromIntegral n+lambda) + 1-alpha^2+beta) : ws
     ws = replicate (2*n) (1/2/(fromIntegral n+lambda))
     lambda = alpha^2 * (fromIntegral n + k) - fromIntegral n
-    n = dim (fst g)
+    n = dim med
+    --mr m = v <> diag (sqrt l) where (l,v) = eigSH m
+    mr = trans . cholSH                       -- no symmetry check
+
+
+unscentedTransform f = fst. unscentedTransformWithSamples f
+
+unscentedTransformWithSamples f g = ((m',c'),(s',w)) where
+    (s, w@(wm,wc)) = unscentedSamples g
+    s' = map f s
     m' = wm <> fromRows s'
     c' = sum (zipWith f wc s') where f w v = w .* outer vm vm where vm = v - m'
+
+
+ukf :: System -> State -> Measurement -> State
+ukf (System f h q r) (State vx p) z = State x' p' where
+    f' = fromList . f . toList
+    h' = fromList . h . toList
+    ((px,pc),(sx,(_,wc))) = unscentedTransformWithSamples f' (vx,p)  -- prediction
+    pq = pc + q                            -- its covariance
+
+    ((mz,cz),(sz,_)) = unscentedTransformWithSamples h' (px,pq)
+    y  = z - mz                            -- residue
+    cy = cz + r                            -- its covariance
+
+    cross = sum (zipWith3 f wc sx sz) where f w x z = w .* outer (x-px) (z-mz)
+
+    k  = cross <> inv cy                   -- kalman gain
+    x' = px + k <> y                       -- new state
+    p' = pq - k <> cy <> trans k           -- its covariance
+
+
+blindUKF :: System -> State -> State
+blindUKF (System f h q r) (State vx p) = State px pq where
+    f' = fromList . f . toList
+    (px,pc) = unscentedTransform f' (vx,p)  -- prediction
+    pq = pc + q                             -- its covariance

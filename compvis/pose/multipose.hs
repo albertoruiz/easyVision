@@ -8,6 +8,8 @@ import Control.Monad(when)
 import Quaternion
 import Data.List((\\),sortBy)
 import Debug.Trace
+import Text.Printf
+import Kalman
 
 main = do
     prepare
@@ -17,7 +19,7 @@ main = do
 
     mbf <- maybeOption "--focal"
 
-    let ref = map (map (/3)) asym
+    let ref = map (map (/4)) asym
         vc c = c >>= withChannels >>= findPolygons mbf ref
     cams <- mapM (vc . flip getCam sz) [0..n-1]
 
@@ -73,8 +75,6 @@ main = do
             lineWidth $= 1
             mapM_ (\c -> drawCamera 1 c Nothing) st
 
-        when (not $ null $ head rects) $ do
-            print . concat . (map pl) . head . head $ rects
 
 
 update st ps = r where
@@ -128,6 +128,4 @@ mouse _ st (MouseButton WheelUp) Down _ _ = do
 mouse _ st (MouseButton WheelDown) Down _ _ = do
     st $~ (subtract 1)
 mouse def _ a b c d = def a b c d
-
-pl (Point x y) = [x,y]
 
