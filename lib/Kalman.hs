@@ -144,7 +144,8 @@ ukf (System f h q r) (State vx p) z = State x' p' where
     y  = z - mz                            -- residue
     cy = cz + r                            -- its covariance
 
-    cross = sum (zipWith3 f wc sx sz) where f w x z = w .* outer (x-px) (z-mz)
+    cross = sum (zipWith3 f wc sx sz)    -- !!!
+        where f w x z = w .* outer (x-px) (z-mz)
 
     k  = cross <> inv cy                   -- kalman gain
     x' = px + k <> y                       -- new state

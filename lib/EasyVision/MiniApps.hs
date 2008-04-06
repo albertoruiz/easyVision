@@ -43,6 +43,7 @@ import Vision
 import Numeric.GSL.Minimization
 import EasyVision.Combinators(warper)
 import Kalman
+import Text.Printf
 
 -- | reads a labeled video
 readCatalog :: String -> Size -> String -> Maybe Int -> (ImageYUV-> a) -> IO [(a,String)]
@@ -435,11 +436,22 @@ cost simil a fa b fb [pan, tilt, roll] = simil a h b
 findRot simil a fa b fb pi ti ri = fst $ minimizeNMSimplex (cost simil a fa b fb) [pi,ti,ri] [0.1*degree, 0.1*degree,0.1*degree] 1E-3 30
 
 
-----------------------------------------------------------------
+------------------------------UKF pose tracker ----------------------------------
 
-poseTracker :: Maybe Double -> [[Double]] -> IO(Channels,[([Point],CameraParameters)]) 
+systemNoise = map (/1000) [0,0,0,0,0,0,0.1,0.1,0.1,0.01,0.01,0.01]
+
+poseDyn world = System syspose (obspose world) (diagl (0.0001: systemNoise)) ((2/640) .* ident (2*length world))
+    where syspose [f,p,t,r,cx,cy,cz,vx,vy,vz,vp,vt,vr] = [f,p+vp,t+vt,r+vr,cx+vx,cy+vy,cz+vz,vx,vy,vz,vp,vt,vr]
+          obspose world pars = concat $ ht (syntheticCamera ( list2cam . take 7 $  pars)) (map (++[0]) world)
+
+poseDynWithF f world = System syspose (obspose world) (diagl systemNoise) ((2/640) .* ident (2*length world))
+    where syspose [p,t,r,cx,cy,cz,vx,vy,vz,vp,vt,vr] = [p+vp,t+vt,r+vr,cx+vx,cy+vy,cz+vz,vx,vy,vz,vp,vt,vr]
+          obspose world pars = concat $ ht (syntheticCamera ( list2cam . (f:) . take 6 $  pars)) (map (++[0]) world)
+
+-- Unscented Kalman filter for pose tracking from a planar reference
+poseTracker :: String -> Maybe Double -> [[Double]] -> IO(Channels,[([Point],CameraParameters)]) 
             -> IO (IO(Channels, CameraParameters, (Vector Double, Matrix Double), Maybe ([Point],CameraParameters)))
-poseTracker mbf ref cam = do
+poseTracker "" mbf ref cam = do
     let sys = case mbf of
                 Nothing -> poseDyn ref
                 Just f -> poseDynWithF f ref
@@ -471,15 +483,32 @@ poseTracker mbf ref cam = do
         return (orig, usercam, (st', err), obs')
 
 
-systemNoise = map (/1000) [0,0,0,0,0,0,0.1,0.1,0.1,0.01,0.01,0.01]
+poseTracker winname mbf ref cam = do
+    w3D <- evWindow3D () "UKF pose tracker" 500 (const $ kbdQuit)
+    cam' <- poseTracker "" mbf ref cam
+    return $ do
+        (img,pose,(st,cov),obs) <- cam'
 
-poseDyn world = System syspose (obspose world) (diagl (0.0001: systemNoise)) ((2/640) .* ident (2*length world))
-    where syspose [f,p,t,r,cx,cy,cz,vx,vy,vz,vp,vt,vr] = [f,p+vp,t+vt,r+vr,cx+vx,cy+vy,cz+vz,vx,vy,vz,vp,vt,vr]
-          obspose world pars = concat $ ht (syntheticCamera ( list2cam . take 7 $  pars)) (map (++[0]) world)
+        inWin w3D $ do
 
-poseDynWithF f world = System syspose (obspose world) (diagl systemNoise) ((2/640) .* ident (2*length world))
-    where syspose [p,t,r,cx,cy,cz,vx,vy,vz,vp,vt,vr] = [p+vp,t+vt,r+vr,cx+vx,cy+vy,cz+vz,vx,vy,vz,vp,vt,vr]
-          obspose world pars = concat $ ht (syntheticCamera ( list2cam . (f:) . take 6 $  pars)) (map (++[0]) world)
+            let scale = 0.5
+                h = f (syntheticCamera pose) where f =  fromColumns . g. toColumns where g [a,b,c,d] = [a,b,d] 
+                floor = warp 0 (Size 256 256) (scaling scale <> inv h) (float $ gray img)
+            when (rank h == 3) $ drawTexture floor $ map (++[-0.01]) $ ht (scaling (1/scale)) [[1,1],[-1,1],[-1,-1],[1,-1]]
+
+            setColor 1 0 0
+            lineWidth $= 2
+            renderPrimitive LineLoop (mapM_ vertex ref)
+
+            lineWidth $= 1
+            setColor 0 0 1
+            drawCamera 0.4 (syntheticCamera pose) (Just (extractSquare 128 (float $ gray img)))
+
+            pixelCoordinates (Size 500 500)
+            setColor 0 0.5 0.5
+            text2D 20 20 (shPose pose)
+
+        return (img,pose,(st,cov),obs)
 
 
 pl (Point x y) = [x,y]
@@ -487,3 +516,7 @@ cam2list (CamPar f p t r (x, y, z)) = [ f, p, t, r, x, y, z ]
 list2cam [ f, p, t, r, x, y, z ] = (CamPar f p t r (x, y, z))
 extractCam = list2cam . take 7 . toList
 
+shPose (CamPar f p t r (cx,cy,cz)) = printf "f=%.2f  pan=%.1f  tilt=%.1f  roll=%.1f (%.1f, %.1f, %.1f)" 
+                                            f (p*degree) (t*degree) (r*degree) (cx*cm) (cy*cm) (cz*cm)
+    where degree = 180/pi
+          cm = 10
