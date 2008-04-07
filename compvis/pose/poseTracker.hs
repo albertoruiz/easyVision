@@ -38,6 +38,7 @@ main = do
 
             --disp $ fromRows [st, sqrt $ takeDiag cov]
             --disp $ cov
+            text2D 0.9 0.7 (printf "%.1f"  $ sum $ drop (dim st - 9) $ take (dim st -6) $ toList $ sqrt $ takeDiag cov)
 
             case obs of
                 Nothing -> return ()

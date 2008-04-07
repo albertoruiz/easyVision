@@ -476,7 +476,7 @@ poseTracker "" mbf ref cam = do
                 (True,True)   -> (True, ukf sys st obs)
 
         r $= (ok', State st' err)
-        let obs' = if null rects then Nothing else Just (head $ rects, extractCam obs)
+        let obs' = if null rects then Nothing else Just (head $ rects, head ps)
             usercam = case mbf of
                         Nothing -> extractCam st'
                         Just f  ->  list2cam . (f:) $ take 6 $ toList $ st'

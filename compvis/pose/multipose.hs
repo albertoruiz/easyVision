@@ -6,7 +6,7 @@ import Vision
 import Numeric.LinearAlgebra
 import Control.Monad(when)
 import Quaternion
-import Data.List((\\),sortBy)
+import Data.List((\\),sortBy,unzip4)
 import Debug.Trace
 import Text.Printf
 import Kalman
@@ -19,8 +19,8 @@ main = do
 
     mbf <- maybeOption "--focal"
 
-    let ref = map (map (/4)) asym
-        vc c = c >>= withChannels >>= findPolygons mbf ref
+    let ref = asym
+        vc c = c >>= withChannels >>= findPolygons mbf ref >>= poseTracker "" mbf ref
     cams <- mapM (vc . flip getCam sz) [0..n-1]
 
 
@@ -32,10 +32,14 @@ main = do
     wm <- evWindow () "views" (Size 150 (200*n)) Nothing (const $ kbdQuit)
 
     launch $ do
-        (imgs,det) <- unzip `fmap` sequence cams
+        (imgs,eps,sts,mbobs) <- unzip4 `fmap` sequence cams
 
-        let rects = map (map fst) det
-            ps    = map (map (syntheticCamera.snd)) det
+        let rects = map (map fst .maybeToList) mbobs
+            --ps    = map (map (syntheticCamera.snd).maybeToList) mbobs
+            ps    = zipWith f eps sts
+                where f p (m,c) = if err > 1 then [] else [syntheticCamera p]
+                          where err = sum $ drop (dim m - 9) $ take (dim m -6) $ toList $ sqrt $ takeDiag c
+
 
         inWin w $ do -- monitorization window
             c' <- getW w
@@ -60,7 +64,7 @@ main = do
             renderPrimitive LineLoop (mapM_ vertex ref)
 
             lineWidth $= 1
-            mapM_ (\c -> drawCamera 1 c Nothing) (concat ps)
+            mapM_ (\c -> drawCamera 0.4 c Nothing) (concat ps)
 
         --print $ prepareObs ps
 
@@ -73,7 +77,7 @@ main = do
         inWin w3DSt $ do -- camera reference
             setColor 1 0 0
             lineWidth $= 1
-            mapM_ (\c -> drawCamera 1 c Nothing) st
+            mapM_ (\c -> drawCamera 0.4 c Nothing) st
 
 
 
@@ -116,12 +120,13 @@ weighted alpha (f1,r1,c1) (f2,r2,c2) = (alpha*f1+(1-alpha)*f2,
 
 ------------------------------------------------
 
-asym = map (map (*5.4))
+asym = map (map (*0.54))
        [ [ 0, 0]
        , [ 0, 2]
        , [ 1, 2]
        , [ 2, 1]
        , [ 2, 0] ]
+
 
 mouse _ st (MouseButton WheelUp) Down _ _ = do
     st $~ (+1)
@@ -129,3 +134,5 @@ mouse _ st (MouseButton WheelDown) Down _ _ = do
     st $~ (subtract 1)
 mouse def _ a b c d = def a b c d
 
+maybeToList Nothing = []
+maybeToList (Just a)  = [a]
