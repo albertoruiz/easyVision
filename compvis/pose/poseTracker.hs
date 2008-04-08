@@ -14,6 +14,12 @@ asym = map (map (*0.54))
        , [ 2, 1]
        , [ 2, 0] ]
 
+a4 =  -- map (map (*0.54))
+     [[   0, 0]
+     ,[   0, r]
+     ,[   1, r]
+     ,[   1, 0]] where r = sqrt 2
+
 main = do
     prepare
     sz <- findSize

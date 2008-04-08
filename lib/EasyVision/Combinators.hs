@@ -284,7 +284,7 @@ warp' s h im = unsafePerformIO $ do
 
 ------------------------------------------------------------------------
 
--- A virtual camera which finds a given polygon and gives its pose
+-- A camera combinator which finds a given polygon and gives its pose
 findPolygons :: Maybe Double -> [[Double]] -> IO (Channels) -> IO (IO(Channels,[([Point],CameraParameters)]))
 findPolygons mbf ref cam = do
     op <- createParameters [ ("radius",intParam 4 0 10),

@@ -34,7 +34,7 @@ import ImagProc.Ipp.Core
 import Foreign.C.Types(CUChar)
 import Foreign
 import qualified Data.Map as Map
-import Data.List(sort,nub,sortBy)
+import Data.List(sort,nub,sortBy,minimumBy)
 import EasyVision.Util
 import Numeric.LinearAlgebra
 import Classifier.Base(group)
@@ -281,7 +281,7 @@ regionTracker "" detector = do
     return $ do
         (orig,p) <- detector
         st <- get r
-        let st'@(State x c) =
+        let st'@(State x c _) =
                 case p of
                     Nothing -> blindKalman sys st
                     Just (Point x y,_)  -> kalman sys st (vector [x, y])
@@ -327,7 +327,7 @@ q = 1 * diagl [1,1,1,1]
 
 r = 2 * diagl [1,1]
 
-s0 = State (vector [0, 0, 0, 0]) (diagl [1, 1, 1, 1])
+s0 = State (vector [0, 0, 0, 0]) (diagl [1, 1, 1, 1]) (vector [0,0])
 
 sys = LinearSystem f h q r
 
@@ -456,27 +456,29 @@ poseTracker "" mbf ref cam = do
                 Nothing -> poseDyn ref
                 Just f -> poseDynWithF f ref
         initst = case mbf of
-                   Nothing -> State (vector [2,0,0,0,0,0,0,0,0,0,0,0,0]) (diagl [3,1,1,1,10,10,10,10,10,10,5,5,5])
-                   Just f -> State (vector [0,0,0,0,0,0,0,0,0,0,0,0]) (diagl [1,1,1,10,10,10,10,10,10,5,5,5])
+                   Nothing -> State (vector [2,0,0,0,0,0,0,0,0,0,0,0,0]) (diagl [3,1,1,1,10,10,10,10,10,10,5,5,5]) (vector $ concat ref)
+                   Just f -> State (vector [0,0,0,0,0,0,0,0,0,0,0,0]) (diagl [1,1,1,10,10,10,10,10,10,5,5,5]) (vector $ concat ref)
     r <- newIORef (False, initst)
     return $ do
-        (orig,det) <- cam
-        (ok,st@(State p c)) <- get r
-        let rects = map fst det
-            ps    = map (snd) det
-            obs = vector $ concat $ map pl $ head $ rects
+        (orig,polys) <- cam
+        (ok,st@(State p c zprev)) <- get r
+        let haveObs = not . null $ polys
+            g = vector . concat . map pl . fst
+            f x = pnorm PNorm2 (zprev - g x)
+            (obspoly,obsps) = minimumBy (compare `on` f) polys
+            obs = vector $ concat $ map pl $ obspoly
             obscam = case mbf of
-                        Nothing -> vector $ (cam2list $ head ps) ++ [0,0,0,0,0,0]
-                        _       -> vector $ (drop 1 $ cam2list $ head ps) ++ [0,0,0,0,0,0]
+                        Nothing -> vector $ (cam2list $ obsps) ++ [0,0,0,0,0,0]
+                        _       -> vector $ (drop 1 $ cam2list $ obsps) ++ [0,0,0,0,0,0]
 
-            (ok', State st' err) = case (ok, not (null rects)) of
+            (ok', State st' err z) = case (ok, haveObs) of
                 (False,False) -> (False, st)
-                (False,True)  -> (True, State obscam c)
+                (False,True)  -> (True, State obscam c obs)
                 (True,False)  -> (True, blindUKF sys st)
                 (True,True)   -> (True, ukf sys st obs)
 
-        r $= (ok', State st' err)
-        let obs' = if null rects then Nothing else Just (head $ rects, head ps)
+        r $= (ok', State st' err z)
+        let obs' = if haveObs then Just (obspoly, obsps) else Nothing
             usercam = case mbf of
                         Nothing -> extractCam st'
                         Just f  ->  list2cam . (f:) $ take 6 $ toList $ st'

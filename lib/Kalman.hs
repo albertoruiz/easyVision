@@ -44,14 +44,15 @@ diagl = diag . vector
 -------------- Ordinary Kalman Filter -------------------------------
 
 data LinearSystem = LinearSystem {kF, kH, kQ, kR :: Matrix Double}
-data State = State {sX :: Vector Double , sP :: Matrix Double} deriving Show
+data State = State {sX :: Vector Double , sP :: Matrix Double, nZ :: Vector Double } deriving Show
 type Measurement = Vector Double
 
 kalman :: LinearSystem -> State -> Measurement -> State
-kalman (LinearSystem f h q r) (State x p) z = State x' p' where
+kalman (LinearSystem f h q r) (State x p _) z = State x' p' zp where
     px = f <> x                            -- prediction
     pq = f <> p <> trans f + q             -- its covariance
-    y  = z - h <> px                       -- residue
+    zp = h <> px                           -- predicted measurement
+    y  = z - zp                            -- residue
     cy = h <> pq <> trans h + r            -- its covariance
     k  = pq <> trans h <> inv cy           -- kalman gain
     x' = px + k <> y                       -- new state
@@ -59,7 +60,7 @@ kalman (LinearSystem f h q r) (State x p) z = State x' p' where
 
 
 blindKalman :: LinearSystem -> State -> State
-blindKalman (LinearSystem f h q r) (State x p) = State x' p' where
+blindKalman (LinearSystem f h q r) (State x p _) = State x' p' (h <> x') where
     x' = f <> x
     p' = f <> p <> trans f + q
 
@@ -83,14 +84,15 @@ data System = System {ekF, ekH :: [Double] -> [Double],
 --type Measurement = Vector Double
 
 ekf :: System -> State -> Measurement -> State
-ekf (System f h q r) (State vx p) z = State x' p' where
+ekf (System f h q r) (State vx p _) z = State x' p' zp where
     x = toList vx
     jf = matrix (jacobian f x)
     jh = matrix (jacobian h x)
 
     px = f x                               -- prediction
     pq = jf <> p <> trans jf + q           -- its covariance
-    y  = z - vector (h px)                 -- residue
+    zp = vector (h px)                     -- predicted measurement
+    y  = z - zp                            -- residue
     cy = jh <> pq <> trans jh + r          -- its covariance
     k  = pq <> trans jh <> inv cy          -- kalman gain
     x' = vector px + k <> y                -- new state
@@ -98,7 +100,7 @@ ekf (System f h q r) (State vx p) z = State x' p' where
 
 
 blindEKF :: System -> State -> State
-blindEKF (System f h q r) (State vx p) = State (vector x') p' where
+blindEKF (System f h q r) (State vx p _) = State (vector x') p' (vector (h x')) where
     x = toList vx
     x' = f x
     p' = jf <> p <> trans jf + q
@@ -134,13 +136,13 @@ unscentedTransformWithSamples f g = ((m',c'),(s',w)) where
 
 
 ukf :: System -> State -> Measurement -> State
-ukf (System f h q r) (State vx p) z = State x' p' where
+ukf (System f h q r) (State vx p _) z = State x' p' mz where
     f' = fromList . f . toList
     h' = fromList . h . toList
     ((px,pc),(sx,(_,wc))) = unscentedTransformWithSamples f' (vx,p)  -- prediction
     pq = pc + q                            -- its covariance
 
-    ((mz,cz),(sz,_)) = unscentedTransformWithSamples h' (px,pq)
+    ((mz,cz),(sz,_)) = unscentedTransformWithSamples h' (px,pq) --predicted measurement
     y  = z - mz                            -- residue
     cy = cz + r                            -- its covariance
 
@@ -153,7 +155,8 @@ ukf (System f h q r) (State vx p) z = State x' p' where
 
 
 blindUKF :: System -> State -> State
-blindUKF (System f h q r) (State vx p) = State px pq where
+blindUKF (System f h q r) (State vx p _) = State px pq (h' px) where
     f' = fromList . f . toList
+    h' = fromList . h . toList
     (px,pc) = unscentedTransform f' (vx,p)  -- prediction
     pq = pc + q                             -- its covariance
