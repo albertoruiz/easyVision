@@ -28,7 +28,7 @@ main = do
 
     w <- evWindow 0 "multipose" sz Nothing (mouse $ kbdQuit)
     w3D <- evWindow3D () "3D view" 400 (const $ kbdQuit)
-    w3DSt <- evWindow3D initState "Camera Reference" 400 (const $ kbdQuit)
+    w3DSt <- evWindow3D initState "Camera Reference" 400 (toSave $ kbdQuit)
     wm <- evWindow () "views" (Size 150 (200*n)) Nothing (const $ kbdQuit)
 
     launch $ do
@@ -136,3 +136,8 @@ mouse def _ a b c d = def a b c d
 
 maybeToList Nothing = []
 maybeToList (Just a)  = [a]
+
+toSave _ st (Char 's') Down _ _ = do
+    cams <- get st
+    writeFile "cameras.txt" (show cams)
+toSave def _ a b c d = def a b c d
