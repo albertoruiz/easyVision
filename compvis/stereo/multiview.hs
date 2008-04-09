@@ -30,11 +30,14 @@ center cam = toList $ inHomog $ nullVector cam
 main = do
     prepare
 
-    file <- getOption "--calib" "cameras.txt"
+    mbf <- getRawOption "--calib"
+    let file = case mbf of
+                Nothing -> "cameras.txt"
+                Just file -> file
     campars <- read `fmap` readFile file
 
     sz <- findSize
-    let n = 2-- length cams
+    let n = length campars
 
     let vc c = c >>= tracker "" "Tracker"
     cams <- mapM (vc . flip getCam sz) [0..n-1]
@@ -66,7 +69,7 @@ main = do
             let [[x,y,z]] = triangulate multi
 
             setColor 0.5 0.5 1
-            mapM_ (\c->renderPrimitive LineStrip $ mapM_ vertex [[x,y,z],c]) (map center campars)
+            mapM_ (\c->renderPrimitive LineStrip $ mapM_ vertex [[x,y,z],c]) (map (center.fst) multi)
             setColor 0 0 1
             pointSize $= 5
             renderPrimitive Points $ mapM_ vertex [[x,y,z]]
@@ -80,7 +83,10 @@ main = do
 
             pixelCoordinates (Size 640 640)
             setColor 1 1 1
-            text2D 20 20 (printf "x=%.2f y=%.2f z=%.2f" x y z)
+            text2D 20 20 (printf "x=%.1f y=%.1f z=%.1f" (10*x) (10*y) (10*z))
+            when (not . null $ l) $ do
+                let [a,b,c] = head l
+                text2D 20 60 (printf "dist = %.1f cm" (10 * sqrt ((x-a)^2 + (y-b)^2 + (z-c)^2)))
 
 
 mouse _ st (Char ' ') Down _ _ = do
