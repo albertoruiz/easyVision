@@ -26,7 +26,7 @@ main = do
 
     let initState = replicate n cameraAtOrigin
 
-    w <- evWindow 0 "multipose" sz Nothing (mouse $ kbdQuit)
+    --w <- evWindow 0 "multipose" sz Nothing (mouse $ kbdQuit)
     w3D <- evWindow3D () "3D view" 400 (const $ kbdQuit)
     w3DSt <- evWindow3D initState "Camera Reference" 400 (toSave $ kbdQuit)
     wm <- evWindow () "views" (Size 150 (200*n)) Nothing (const $ kbdQuit)
@@ -34,13 +34,12 @@ main = do
     launch $ do
         (imgs,eps,sts,mbobs) <- unzip4 `fmap` sequence cams
         let fig v = toLists $ reshape 2 v
-            rects = map (map fig.maybeToList) mbobs
+            rects = map (map (fig.fst).maybeToList) mbobs
             --ps    = map (map (syntheticCamera.snd).maybeToList) mbobs
-            ps    = zipWith f eps sts
-                where f p (m,c) = if err > 1 then [] else [syntheticCamera p]
-                          where err = sum $ drop (dim m - 9) $ take (dim m -6) $ toList $ sqrt $ takeDiag c
-
-
+            ps    = zipWith f eps mbobs
+                where f p Nothing = []
+                      f p (Just (_,err)) = if err > 0.2 then [] else [syntheticCamera p]
+{-
         inWin w $ do -- monitorization window
             c' <- getW w
             let c = c' `mod` n
@@ -54,7 +53,7 @@ main = do
             lineWidth $= 3
             mapM_ (renderPrimitive LineLoop . (mapM_ vertex)) rect
             text2D 0.9 0.6 (show (length rect))
-
+-}
         inWin wm $ drawImage $ blockImage [map gray imgs]
 
 

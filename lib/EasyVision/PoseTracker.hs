@@ -31,10 +31,12 @@ import Vision
 import EasyVision.Combinators(findPolygons,getPolygons)
 import Kalman
 import Text.Printf
+import Classifier.Stat
 
 vector l = fromList l :: Vector Double
 diagl = diag . vector
-
+disp x = putStrLn . format " " (printf "%.0f") $ x
+log10 x = log x / log 10
 
 systemNoise = map (/1000) [0,0,0,0,0,0,0.1,0.1,0.1,0.01,0.01,0.01]
 
@@ -116,7 +118,7 @@ poseTrackerRegion winname mbf ref cam = poseTrackerMonitor poseTrackerRegion win
 
 -- Unscented Kalman filter for pose tracking from a planar reference
 poseTracker :: String -> Maybe Double -> [[Double]] -> IO Channels
-            -> IO (IO(Channels, CameraParameters, (Vector Double, Matrix Double), Maybe (Vector Double)))
+            -> IO (IO(Channels, CameraParameters, (Vector Double, Matrix Double), Maybe (Vector Double, Double)))
 
 poseTracker "" mbf ref cam = do
     tracker <- poseTrackerGen (withRegion ref) mbf ref
@@ -150,12 +152,12 @@ poseTrackerGen (measure,post,cz) (Just foc) world = generalTracker st0 cov0 rest
 withSegments world = (measure,post,cz) where
     measure img zprev = map (vector. concat . map pl . fst) . getPolygons Nothing world $ img
     post = concat
-    cz = ((2/640) .* ident (2*length world))
+    cz = 1E-5 .* ident (2*length world)
 
 withRegion world = (measure,post,cz) where
     measure img zprev =  map (vector.post.map pl). givemecont $ img
     post = concat . map c2l . flip map [-3..3] . normalizeStart . fourierPL . Closed . map lp
-    cz = diag . (* 1E-5) . vector $ [15,15,10,10,5,5,1,1,5,5,10,10,15,15]
+    cz = 1E-5 .* diagl [1,1,1,1,10,10,50,50,10,10,1,1,1,1]
 
 
 
@@ -166,14 +168,20 @@ generalTracker st0 cov0 restart measure f cs h cz user = do
     let initstate = State st0 cov0 (wl h st0)
     r <- newIORef initstate
     rlost <- newIORef True
+    --covz <- newIORef (ident (rows cz))
+    recover <- newIORef 0
     let sys = System f h cs cz
     return $ \img -> do
         st@(State _ c zprev) <- get r
         lost <- get rlost
-        let zs = measure img zprev
+        reco <- get recover
+        let delta = if reco > 0 then 1E10 else 3
+            zs = measure img zprev
+            dist a b = k * sqrt ((a - b) <> icz <.> (a - b))
+                where icz = inv cz
+                      k = recip $ fromIntegral (rows cz)
             hasObs = not (null zs)
             z = minimumBy (compare `on` dist zprev) zs
-                where dist a b = pnorm Infinity (a - b)
             nsts = restart img
             hasInit = not (null nsts)
             st' = if lost
@@ -183,9 +191,18 @@ generalTracker st0 cov0 restart measure f cs h cz user = do
                 else case hasObs of
                         False -> blindUKF sys st
                         True  -> ukf sys st z
-            obs' = if hasObs then Just z else Nothing
+            err = dist z zprev
+            obs' = if hasObs then Just (z, err) else Nothing
         r $= st'
+        recover $= reco - 1
         when (lost && hasInit) (rlost $= False)
+        when (hasObs && err > delta) $ do
+            rlost $= True
+            recover $= 10
+        --when hasObs $ do
+        --    covz `modifyIORef` \c -> 0.95*c + 0.05 .* ((z-zprev) `outer` (z-zprev))
+        --c <- get covz
+        --disp $ negate $ log10 $ fromRows [takeDiag c]
         return (user st', obs')
 
 ----------------------------------------------------------------------------

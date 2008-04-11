@@ -45,11 +45,13 @@ main = do
 
             --disp $ fromRows [st, sqrt $ takeDiag cov]
             --disp $ cov
-            text2D 0.9 0.7 (printf "%.1f"  $ sum $ drop (dim st - 9) $ take (dim st -6) $ toList $ sqrt $ takeDiag cov)
+            --text2D 0.9 0.7 (printf "%.1f"  $ sum $ drop (dim st - 9) $ take (dim st -6) $ toList $ sqrt $ takeDiag cov)
 
             case obs of
                 Nothing -> return ()
-                Just v -> do
+                Just (v,err) -> do
+                    setColor 1 0 0
+                    text2D 0.9 0.7 (printf "%.1f" err)
                     setColor 0.8 0.8 0
                     lineWidth $= 2
                     --let fig = toLists $ reshape 2 v
