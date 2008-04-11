@@ -20,7 +20,7 @@ main = do
     mbf <- maybeOption "--focal"
 
     let ref = asym
-        vc c = c >>= withChannels >>= findPolygons mbf ref >>= poseTracker "" mbf ref
+        vc c = c >>= withChannels >>= poseTracker "" mbf ref
     cams <- mapM (vc . flip getCam sz) [0..n-1]
 
 
@@ -33,8 +33,8 @@ main = do
 
     launch $ do
         (imgs,eps,sts,mbobs) <- unzip4 `fmap` sequence cams
-
-        let rects = map (map fst .maybeToList) mbobs
+        let fig v = toLists $ reshape 2 v
+            rects = map (map fig.maybeToList) mbobs
             --ps    = map (map (syntheticCamera.snd).maybeToList) mbobs
             ps    = zipWith f eps sts
                 where f p (m,c) = if err > 1 then [] else [syntheticCamera p]

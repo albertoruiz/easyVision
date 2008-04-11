@@ -4,6 +4,7 @@ import Graphics.UI.GLUT hiding (Matrix, Size, Point,set)
 import Text.Printf
 import Numeric.LinearAlgebra
 import Control.Monad(when)
+import Numeric.GSL.Fourier
 
 disp m = putStrLn . format " " (printf "%5.2f") $ m
 
@@ -19,13 +20,14 @@ a4 = [[   0, 0]
      ,[   1, r]
      ,[   1, 0]] where r = sqrt 2
 
+
 main = do
     prepare
     sz <- findSize
     mbf <- maybeOption "--focal"
     let ref = asym
 
-    cam <- getCam 0 sz >>= withChannels >>= findPolygons mbf ref >>= poseTracker "visor" mbf ref
+    cam <- getCam 0 sz >>= withChannels >>= poseTracker "visor" mbf ref
 
     w <- evWindow () "img" sz Nothing (const $ kbdQuit)
 
@@ -47,7 +49,24 @@ main = do
 
             case obs of
                 Nothing -> return ()
-                Just (fig,p) -> do
-                    setColor 0 0.5 0
-                    lineWidth $= 3
-                    renderPrimitive LineLoop $ mapM_ vertex fig
+                Just v -> do
+                    setColor 0.8 0.8 0
+                    lineWidth $= 2
+                    --let fig = toLists $ reshape 2 v
+                    --renderPrimitive LineLoop $ mapM_ vertex fig
+                    let fig = invFou 50 3 . map l2c $ toLists $ reshape 2 v
+                    let Closed l = fig
+                    shcont fig
+
+l2c [x,y] = (x:+y)
+
+invFou n w fou = Closed r where
+    f = fromList $ map (fou!!) [3,4,5,6] ++ replicate (n-7) 0 ++ map (fou!!) [ 0,1,2]
+    r = map c2p $ toList $ ifft (fromIntegral n *f)
+    c2p (x:+y) = Point x y
+
+
+shcont (Closed c) = do
+    renderPrimitive LineLoop $ mapM_ vertex c
+    --pointSize $= 5
+    --renderPrimitive Points (vertex (head c))

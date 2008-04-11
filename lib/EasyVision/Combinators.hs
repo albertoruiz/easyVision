@@ -25,7 +25,7 @@ module EasyVision.Combinators (
   addSmall,
   detectMov,
   warper,
-  findPolygons,
+  findPolygons, getPolygons,
   findRectangles,
   onlyRectangles,
   rectifyQuadrangle,
@@ -309,14 +309,7 @@ findPolygons mbf ref cam = do
         minlen <- getParam op "minlength"
         maxdis <- getParam op "maxdis"
         orthotol  <- getParam op "orthotol"
-        let
-            l = length ref
-            alter pts = map (rotateList pts) [0 .. l-1]
-            segs = filter ((>minlen).segmentLength) $ segments radius width median high low pp img
-            polis = segmentsToPolylines maxdis segs
-            candis = [p | Closed p <- polis, length p == l]
-            poses = map (consistency mbf orthotol ref) (concatMap alter candis)
-            oks = map snd (filter fst poses)
+        let oks = getPolygons' radius width median high low pp minlen maxdis orthotol mbf ref img
         return (orig,oks)
 
 pl (Point x y) = [x,y]
@@ -339,3 +332,16 @@ consistency mbf tol ref pts = (okpose && ao < tol && costHomog pts ref p < 1E-1 
 
 costHomog view world c = pnorm PNorm1 $ flatten (fromLists (map pl view) -
                                         htm  (syntheticCamera c) (fromLists $ map (++[0]) world))
+
+-- the essential function used by findPolygons. TO DO: move to a more appropriate module
+getPolygons :: Maybe Double -> [[Double]] -> ImageGray -> [([Point],CameraParameters)]
+getPolygons = getPolygons' 4 1.5 5 40 20 True 0.05 0.06 0.4
+
+getPolygons' radius width median high low pp minlen maxdis orthotol mbf ref img = oks where
+    l = length ref
+    alter pts = map (rotateList pts) [0 .. l-1]
+    segs = filter ((>minlen).segmentLength) $ segments radius width median high low pp img
+    polis = segmentsToPolylines maxdis segs
+    candis = [p | Closed p <- polis, length p == l]
+    poses = map (consistency mbf orthotol ref) (concatMap alter candis)
+    oks = map snd (filter fst poses)

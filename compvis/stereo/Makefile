@@ -1,4 +1,4 @@
-ALL = demostereo stereo autostereo
+ALL = multiview demostereo stereo autostereo
 
 EASYVISION = ../..
 
