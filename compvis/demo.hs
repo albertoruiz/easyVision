@@ -25,7 +25,8 @@ main = do
                            ("fracpix",realParam (1.5) 0 10),
                            ("smooth",intParam 3 0 20),
                            ("smooth2",intParam 1 0 10),
-                           ("lbpThres",intParam 0 0 100)]
+                           ("lbpThres",intParam 0 0 100),
+                           ("difpix",intParam 5 0 30)]
 
     w <- evWindow "Gray" "Demo: Gray" sz Nothing (const (kbdcam ctrl))
 
@@ -38,7 +39,7 @@ main = do
     attachMenu LeftButton $ Menu $ map mode
         ["RGB","Gray","Red","Green","Blue","H","S"
         , "Median","Gaussian","Laplacian","HighPass","Histogram"
-        ,"Integral","Threshold","FloodFill","Contours","Distance", "Distance2", "Hessian"
+        ,"Integral","Threshold","FloodFill","Contours","ContourD","Distance", "Distance2", "Hessian"
         ,"Corners", "Features", "Segments", "Canny", "DCT", "FFT", "LBP"]
 
     fft <- genFFT 8 8 DivFwdByN AlgHintFast
@@ -59,6 +60,7 @@ worker wDemo cam param fft = do
     area <- getParam param "area" :: IO Int
     fracpix <- getParam param "fracpix" :: IO Double
     lbpThres <- getParam param "lbpThres" :: IO Int
+    difpix <- getParam param "difpix" :: IO Int
 
     op <- getW wDemo
     roi <- getROI wDemo
@@ -159,6 +161,13 @@ worker wDemo cam param fft = do
                              setColor 1 0 0
                              lineWidth $= 2
                              mapM_ shcont (cs1++cs2)
+
+            "ContourD" -> do let (Size h w) = size (chan gray)
+                             setColor 1 0 0
+                             shcont
+                                (contourAt difpix (chan gray) (Pixel (h`div`2) (w`div`2)))
+                             pointCoordinates (size $ chan gray)
+                             renderAxes
 
             "FloodFill" -> do im <- cloneClear
                                  $ modifyROI (shrink (1,1))

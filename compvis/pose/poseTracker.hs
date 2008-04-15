@@ -54,11 +54,12 @@ main = do
                     text2D 0.9 0.7 (printf "%.1f" err)
                     setColor 0.8 0.8 0
                     lineWidth $= 2
-                    --let fig = toLists $ reshape 2 v
-                    --renderPrimitive LineLoop $ mapM_ vertex fig
-                    let fig = invFou 50 3 . map l2c $ toLists $ reshape 2 v
-                    let Closed l = fig
-                    shcont fig
+                    if dim v == 10
+                        then do let fig = toLists $ reshape 2 v
+                                renderPrimitive LineLoop $ mapM_ vertex fig
+                        else do let fig = invFou 50 3 . map l2c $ toLists $ reshape 2 v
+                                    Closed l = fig
+                                shcont fig
 
 l2c [x,y] = (x:+y)
 

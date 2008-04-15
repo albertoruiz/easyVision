@@ -26,6 +26,7 @@ module ImagProc.Polyline (
 -- * Extraction
     rawContour,
     contours,
+    contourAt,
 -- * Auxiliary tools
     momentsContour, momentsBoundary,
     eig2x2Dir, asSegments, longestSegments
@@ -33,7 +34,7 @@ module ImagProc.Polyline (
 where
 
 import ImagProc.Images
-import ImagProc.ImageProcessing(cloneClear,maxIndx8u,floodFill8u, binarize8u)
+import ImagProc.ImageProcessing(cloneClear,maxIndx8u,floodFill8u, floodFill8uGrad, binarize8u, median, notI)
 import ImagProc.Ipp.Core
 import Foreign.C.Types(CUChar)
 import Foreign
@@ -145,6 +146,20 @@ auxCont n d aux = do
                     let c = rawContour aux p 128
                     rest <- auxCont (n-1) d aux
                     return ((c,a,r):rest)
+
+
+contourAt :: Int -> ImageGray -> Pixel -> Maybe [Pixel]
+contourAt dif img start = unsafePerformIO $ do
+    aux <- cloneClear (median Mask5x5 img)
+    let ROI lr1 lr2 lc1 lc2 = theROI aux
+        d = fromIntegral dif
+    (r@(ROI r1 r2 c1 c2),a,_) <- floodFill8uGrad aux start d d 0
+    let (v,p) = maxIndx8u $ notI (modifyROI (const r) aux)
+        touches = r1 == lr1 || c1 == lc1 || r2 == lr2 || c2 == lc2
+        pol = if not touches
+                then Just (rawContour aux p 0)
+                else Nothing
+    return pol
 
 
 ----------------------------------------------------------------------
