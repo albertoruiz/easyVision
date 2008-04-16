@@ -31,6 +31,8 @@ import EasyVision.Combinators(findPolygons,getPolygons)
 import Kalman
 import Text.Printf
 import Classifier.Stat
+import Data.Array
+import Debug.Trace
 
 vector l = fromList l :: Vector Double
 diagl = diag . vector
@@ -87,9 +89,9 @@ withSegments world = (measure,post,cz) where
 
 withRegion world = (measure,post,cz) where
     measure img zprev =  map (vector.post.map pl). givemecont zprev $ img
-    post = concat . map c2l . flip map [-3..3] . normalizeStart . fourierPL . Closed . map lp
+    post = concat . map c2l . flip map [-3..3] . memo . normalizeStart . fourierPL . Closed . map lp
     cz = 1E-5 .* diagl [1,1,1,1,10,10,50,50,10,10,1,1,1,1]
-
+    --cz = 1E-5 .* ident 10
 
 normalizeStart f = shiftStart (-t) f
     where t = phase ((f (1)- (conjugate $ f(-1))))
@@ -105,8 +107,9 @@ givemecont' zprev img = cs where
         cs = map proc $ rawconts
 
 givemecont zprev img = cs where
-        x = clip 0.95 $ zprev @> 6
-        y = clip 0.65 $ zprev @> 7
+        x = clip 0.95 $ zprev @> k
+        y = clip 0.65 $ zprev @> (k+1)
+        k = (dim zprev -2) `div` 2
         clip d x = max (-d) (min d x)
         [start] = pointsToPixels (size img) [Point x y]
         rawconts = case contourAt 5 img start of
@@ -123,7 +126,7 @@ generalTracker st0 cov0 restart measure f cs h cz user = do
     let initstate = State st0 cov0 (wl h st0)
     r <- newIORef initstate
     rlost <- newIORef True
-    --covz <- newIORef (ident (rows cz))
+    covz <- newIORef cz
     recover <- newIORef 0
     withoutObs <- newIORef 0
     let sys = System f h cs cz
@@ -132,6 +135,7 @@ generalTracker st0 cov0 restart measure f cs h cz user = do
         lost <- get rlost
         reco <- get recover
         woob <- get withoutObs
+        actcz <- get covz
         let delta = if reco > 0 then 1E10 else 3
             zs = measure img zprev
             dist a b = k * sqrt ((a - b) <> icz <.> (a - b))
@@ -158,7 +162,7 @@ generalTracker st0 cov0 restart measure f cs h cz user = do
             recover $= 10
         when hasObs (withoutObs $= 0)
         when (not hasObs) (withoutObs $~ (+1))
-        --    covz `modifyIORef` \c -> 0.95*c + 0.05 .* ((z-zprev) `outer` (z-zprev))
+        --when (reco < 0 && hasObs) $ covz `modifyIORef` \c -> 0.95*c + 0.05 * ((z-zprev) `outer` (z-zprev))
         --c <- get covz
         --disp $ negate $ log10 $ fromRows [takeDiag c]
         return (user st', obs')
@@ -207,3 +211,7 @@ shPose (CamPar f p t r (cx,cy,cz)) = printf "f=%.2f  pan=%.1f  tilt=%.1f  roll=%
                                             f (p*degree) (t*degree) (r*degree) (cx*cm) (cy*cm) (cz*cm)
     where degree = 180/pi
           cm = 10
+
+memo f = g where
+    m = listArray (-8,8::Int) [f k | k <- [-8..8]]
+    g w = m ! w

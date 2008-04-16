@@ -20,7 +20,7 @@ main = do
     mbf <- maybeOption "--focal"
 
     let ref = asym
-        vc c = c >>= withChannels >>= poseTracker "" mbf ref
+        vc c = c >>= withChannels >>= poseTracker "" mbf ref --  >>= inThread
     cams <- mapM (vc . flip getCam sz) [0..n-1]
 
 

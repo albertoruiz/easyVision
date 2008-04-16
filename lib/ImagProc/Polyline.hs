@@ -154,13 +154,22 @@ contourAt dif img start = unsafePerformIO $ do
     let ROI lr1 lr2 lc1 lc2 = theROI aux
         d = fromIntegral dif
     (r@(ROI r1 r2 c1 c2),a,_) <- floodFill8uGrad aux start d d 0
-    let (v,p) = maxIndx8u $ notI (modifyROI (const r) aux)
+    let st = findStart aux start
         touches = r1 == lr1 || c1 == lc1 || r2 == lr2 || c2 == lc2
         pol = if not touches
-                then Just (rawContour aux p 0)
+                then Just (rawContour aux st 0)
                 else Nothing
     return pol
 
+findStart im = findLimit im left . findLimit im top
+
+findLimit im dir pix
+    | val8u im neig == 0 = findLimit im dir neig
+    | otherwise          = pix
+  where neig = dir pix
+
+top  (Pixel r c) = Pixel (r-1) c
+left (Pixel r c) = Pixel r (c-1)
 
 ----------------------------------------------------------------------
 

@@ -57,14 +57,15 @@ main = do
                     if dim v == 10
                         then do let fig = toLists $ reshape 2 v
                                 renderPrimitive LineLoop $ mapM_ vertex fig
-                        else do let fig = invFou 50 3 . map l2c $ toLists $ reshape 2 v
+                        else do let w = (dim v `div` 2 - 1) `div` 2
+                                    fig = invFou 50 w . map l2c $ toLists $ reshape 2 v
                                     Closed l = fig
                                 shcont fig
 
 l2c [x,y] = (x:+y)
 
 invFou n w fou = Closed r where
-    f = fromList $ map (fou!!) [3,4,5,6] ++ replicate (n-7) 0 ++ map (fou!!) [ 0,1,2]
+    f = fromList $ map (fou!!) [w..2*w] ++ replicate (n-7) 0 ++ map (fou!!) [0..w-1]
     r = map c2p $ toList $ ifft (fromIntegral n *f)
     c2p (x:+y) = Point x y
 

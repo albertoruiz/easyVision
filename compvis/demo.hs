@@ -164,9 +164,11 @@ worker wDemo cam param fft = do
 
             "ContourD" -> do let (Size h w) = size (chan gray)
                              setColor 1 0 0
-                             shcont
-                                (contourAt difpix (chan gray) (Pixel (h`div`2) (w`div`2)))
+                             case contourAt difpix (chan gray) (Pixel (h`div`2) (w`div`2)) of
+                                Nothing -> return ()
+                                Just l  -> shcont l
                              pointCoordinates (size $ chan gray)
+                             setColor 1 1 1
                              renderAxes
 
             "FloodFill" -> do im <- cloneClear
