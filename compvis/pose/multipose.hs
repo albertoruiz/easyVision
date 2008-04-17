@@ -20,7 +20,7 @@ main = do
     mbf <- maybeOption "--focal"
 
     let ref = asym
-        vc c = c >>= withChannels >>= poseTracker "" mbf ref --  >>= inThread
+        vc c = c >>= withChannels >>= poseTracker "" mbf ref >>= inThread
     cams <- mapM (vc . flip getCam sz) [0..n-1]
 
 
@@ -31,7 +31,7 @@ main = do
     w3DSt <- evWindow3D initState "Camera Reference" 400 (toSave $ kbdQuit)
     wm <- evWindow () "views" (Size 150 (200*n)) Nothing (const $ kbdQuit)
 
-    launch $ do
+    launchFreq 25 $ do
         (imgs,eps,sts,mbobs) <- unzip4 `fmap` sequence cams
         let fig v = toLists $ reshape 2 v
             rects = map (map (fig.fst).maybeToList) mbobs

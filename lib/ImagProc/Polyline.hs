@@ -161,7 +161,7 @@ contourAt dif img start = unsafePerformIO $ do
                 else Nothing
     return pol
 
-findStart im = findLimit im left . findLimit im top
+findStart im = fixp (findLimit im left . findLimit im top)
 
 findLimit im dir pix
     | val8u im neig == 0 = findLimit im dir neig
@@ -170,6 +170,9 @@ findLimit im dir pix
 
 top  (Pixel r c) = Pixel (r-1) c
 left (Pixel r c) = Pixel r (c-1)
+
+fixp f p = if s == p then p else fixp f s
+    where s = f p
 
 ----------------------------------------------------------------------
 

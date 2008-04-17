@@ -31,7 +31,7 @@ main = do
 
     w <- evWindow () "img" sz Nothing (const $ kbdQuit)
 
-    launch $ do
+    launchFreq 25 $ do
         (img,pose,(st,cov),obs) <- cam
 
         inWin w $ do

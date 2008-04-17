@@ -10,14 +10,6 @@ import Vision
 import Text.Printf(printf)
 
 
-
-instance (Element a, Read a) => Read (Matrix a) where
-    readsPrec _ s = [(reshape 4 . fromList . read $ thing, rest)]
-        where (a,b) = break (==']') s
-              rest = tail b
-              thing = drop 7 a ++ "]"
-
-
 tracker n1 n2 = withChannels >=> regionDetector n1 >=> regionTracker n2
 
 disp n = putStrLn . format "  " (printf $ "%."++ show n++"f")

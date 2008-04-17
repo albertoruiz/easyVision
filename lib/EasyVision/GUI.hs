@@ -19,7 +19,7 @@ module EasyVision.GUI (
   State(..)
 , prepare, prepare'
 , addWindow, evWindow, evWindow3D, EVWindow(..)
-, launch, launch'
+, launch, launch', launchFreq
 , InWindow, inWin, getW, putW, getROI
 , kbdcam, kbdQuit, roiControl
 -- * Drawing utilities
@@ -166,6 +166,16 @@ launch :: IO () -> IO ()
 launch worker = do
     idleCallback $= Just worker
     mainLoop
+
+-- | Starts the application with a worker function which runs at the desired frequency (in Hz).
+launchFreq :: Int -> IO () -> IO ()
+launchFreq freq worker = do
+    let callback = do
+        addTimerCallback (1000 `div` freq) callback
+        worker
+    addTimerCallback 1000 callback
+    mainLoop
+
 
 ----------------------------------------------------------------
 
