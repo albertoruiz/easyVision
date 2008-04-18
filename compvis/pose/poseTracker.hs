@@ -8,24 +8,11 @@ import Numeric.GSL.Fourier
 
 disp m = putStrLn . format " " (printf "%5.2f") $ m
 
-asym = map (map (*0.54))
-       [ [ 0, 0]
-       , [ 0, 2]
-       , [ 1, 2]
-       , [ 2, 1]
-       , [ 2, 0] ]
-
-a4 = [[   0, 0]
-     ,[   0, r]
-     ,[   1, r]
-     ,[   1, 0]] where r = sqrt 2
-
-
 main = do
     prepare
     sz <- findSize
     mbf <- maybeOption "--focal"
-    let ref = asym
+    let ref = cornerRef
 
     cam <- getCam 0 sz >>= withChannels >>= poseTracker "visor" mbf ref
 

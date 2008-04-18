@@ -1,6 +1,6 @@
 ALL = demo hessian warp  automatch brush \
       detect interpolate hotpoints \
-      contours justsave ocr autopano virpano  \
+      contours justsave ocr \
       pseudocolor segments
 
 EASYVISION = ..

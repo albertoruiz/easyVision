@@ -95,7 +95,7 @@ worker cam op mbf w = do
                     lineWidth $= 1
                     renderPrimitive LineLoop (mapM_ vertex a4)
 
-                    hut
+                    houseModel
 
     return ()
 
@@ -132,34 +132,3 @@ text2D x y s = do
     renderString Helvetica12 s
 
 
-v a b c = vertex $ Vertex3 a b (c::GLdouble)
-
-hut = do
-    setColor 1 0.5 0.5
-    renderPrimitive Polygon $ do
-        v 0.5 0 1.5
-        v 1   0 1
-        v 1   1 1
-        v 0.5 1 1.5
-        v 0.5 0 1.5
-    setColor 1 0.3 0.3
-    renderPrimitive Polygon $ do
-        v 0   0   1
-        v 0.5 0 1.5
-        v 0.5 1 1.5
-        v 0   1   1
-        v 0   0   1
-    setColor 1 0.6 1
-    renderPrimitive Polygon $ do
-        v 0 0 0
-        v 0 0 1
-        v 0 1 1
-        v 0 1 0
-        v 0 0 0
-    setColor 0.6 1 1
-    renderPrimitive Polygon $ do
-        v 1 0 0
-        v 1 0 1
-        v 1 1 1
-        v 1 1 0
-        v 1 0 0

@@ -27,7 +27,7 @@ import EasyVision.Util
 import Numeric.LinearAlgebra
 import Data.IORef
 import Vision
-import EasyVision.Combinators(findPolygons,getPolygons)
+import EasyVision.Combinators(findPolygons,getPolygons,polyconsis)
 import Kalman
 import Text.Printf
 import Classifier.Stat
@@ -47,7 +47,7 @@ poseTracker :: String -> Maybe Double -> [[Double]] -> IO Channels
             -> IO (IO(Channels, CameraParameters, (Vector Double, Matrix Double), Maybe (Vector Double, Double)))
 
 poseTracker "" mbf ref cam = do
-    tracker <- poseTrackerGen (withRegion ref) mbf ref
+    tracker <- poseTrackerGen (withRegion 3 ref) mbf ref
     return $ do
         img <- cam
         ((pose,st,cov),obs) <- tracker (gray img)
@@ -66,7 +66,8 @@ poseTrackerGen (measure,post,cz) Nothing world = generalTracker st0 cov0 restart
           f [foc,p,t,r,cx,cy,cz,vx,vy,vz,vp,vt,vr] = [foc,p+vp,t+vt,r+vr,cx+vx,cy+vy,cz+vz,vx,vy,vz,vp,vt,vr]
           cs = diagl (0.0001: systemNoise)
           h pars = post $ ht (syntheticCamera ( list2cam . take 7 $  pars)) (map (++[0]) world)
-          restart = map (vector . (++ [0,0,0,0,0,0]) .cam2list . snd) . getPolygons Nothing world
+          --restart = map (vector . (++ [0,0,0,0,0,0]) .cam2list . snd) . getPolygons Nothing world
+          restart = map (vector . (++ [0,0,0,0,0,0]) .cam2list . snd) . givemeconts Nothing world
           user (State s c p) = (list2cam $ take 7 $ toList s, s, c)
 
 poseTrackerGen (measure,post,cz) (Just foc) world = generalTracker st0 cov0 restart measure f cs h cz user
@@ -75,7 +76,8 @@ poseTrackerGen (measure,post,cz) (Just foc) world = generalTracker st0 cov0 rest
           f [p,t,r,cx,cy,cz,vx,vy,vz,vp,vt,vr] = [p+vp,t+vt,r+vr,cx+vx,cy+vy,cz+vz,vx,vy,vz,vp,vt,vr]
           cs = diagl systemNoise
           h pars = post $ ht (syntheticCamera ( list2cam . (foc:) .take 6 $  pars)) (map (++[0]) world)
-          restart = map (vector . (++ [0,0,0,0,0,0]) . tail . cam2list . snd) . getPolygons (Just foc) world
+          --restart = map (vector . (++ [0,0,0,0,0,0]) . tail . cam2list . snd) . getPolygons (Just foc) world
+          restart = map (vector . (++ [0,0,0,0,0,0]) . tail . cam2list . snd) . givemeconts (Just foc) world
           user (State s c p) = (list2cam $ (foc:) $ take 6 $ toList s, s, c)
 
 -----------------------------------------------------------------------------------
@@ -87,24 +89,25 @@ withSegments world = (measure,post,cz) where
 
 -----------------------------------------------------------------------------------
 
-withRegion world = (measure,post,cz) where
+withRegion w world = (measure,post,cz) where
     measure img zprev =  map (vector.post.map pl). givemecont zprev $ img
-    post = concat . map c2l . flip map [-3..3] . memo . normalizeStart . fourierPL . Closed . map lp
-    cz = 1E-5 .* diagl [1,1,1,1,10,10,50,50,10,10,1,1,1,1]
-    --cz = 1E-5 .* ident 10
+    post = concat . map c2l . flip map [-w..w] . memo . normalizeStart . fourierPL . Closed . map lp
+    --cz = 1E-5 .* diagl [1,1,1,1,10,10,50,50,10,10,1,1,1,1]
+    cz = 1E-5 .* ident ((2*w+1)*2)
 
 normalizeStart f = shiftStart (-t) f
     where t = phase ((f (1)- (conjugate $ f(-1))))
           shiftStart r f = \w -> cis (fromIntegral w*r) * f w
 
-givemecont' zprev img = cs where
+givemeconts mbf ref img = cs where
         Size h w = size img
         area = 5
         pixarea = h*w*area`div`1000
         rawconts = contours 10 pixarea 128 False img
-        fracpix = 2
-        proc = pixelsToPoints (size img).douglasPeuckerClosed fracpix.fst3
-        cs = map proc $ rawconts
+        fracpix = 6
+        proc = pixelsToPoints (size img) . douglasPeucker fracpix . rot . rot. douglasPeucker fracpix.fst3
+        cs = polyconsis mbf 0.4 ref $ map proc $ rawconts
+        rot l = tail l ++ [head l]
 
 givemecont zprev img = cs where
         x = clip 0.95 $ zprev @> k

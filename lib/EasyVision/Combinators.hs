@@ -25,7 +25,7 @@ module EasyVision.Combinators (
   addSmall,
   detectMov,
   warper,
-  findPolygons, getPolygons,
+  findPolygons, getPolygons, polyconsis,
   findRectangles,
   onlyRectangles,
   rectifyQuadrangle,
@@ -345,3 +345,12 @@ getPolygons' radius width median high low pp minlen maxdis orthotol mbf ref img 
     candis = [p | Closed p <- polis, length p == l]
     poses = map (consistency mbf orthotol ref) (concatMap alter candis)
     oks = map snd (filter fst poses)
+
+
+polyconsis mbf orthotol ref polys = oks
+    where poses = map (consistency mbf orthotol ref) (concatMap alter candis)
+          oks = map snd (filter fst poses)
+          alter pts = map (rotateList pts) [0 .. l-1]
+          l = length ref
+          candis = filter ((==l).length) polys
+

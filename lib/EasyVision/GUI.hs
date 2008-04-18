@@ -24,6 +24,7 @@ module EasyVision.GUI (
 , kbdcam, kbdQuit, roiControl
 -- * Drawing utilities
 , module EasyVision.Draw
+, module EasyVision.Objects
 ) where
 
 import EasyVision.Draw
@@ -37,6 +38,7 @@ import Control.Monad(when)
 import System.Environment(getArgs)
 import qualified Data.Map as Map
 import Data.Map
+import EasyVision.Objects
 
 --import qualified Data.Map as Map
 --import Data.Map((!))

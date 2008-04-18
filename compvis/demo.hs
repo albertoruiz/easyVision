@@ -164,9 +164,14 @@ worker wDemo cam param fft = do
 
             "ContourD" -> do let (Size h w) = size (chan gray)
                              setColor 1 0 0
+                             pointSize $= 5
+                             let f = douglasPeucker fracpix . rot . rot . douglasPeucker fracpix
+                                 --tc (Closed l) = l
+                                 --f = map tc . selectPolygons 0.1 8 . return
+                             --pointCoordinates (size $ chan gray)
                              case contourAt difpix (chan gray) (Pixel (h`div`2) (w`div`2)) of
                                 Nothing -> return ()
-                                Just l  -> shcont l
+                                Just l  -> shcontP $ f l
                              pointCoordinates (size $ chan gray)
                              setColor 1 1 1
                              renderAxes
@@ -216,4 +221,12 @@ fst3 (a,_,_) = a
 shcont ( c) = do
     renderPrimitive LineLoop $ mapM_ vertex c
 
+shcontP ( c) = do
+    renderPrimitive LineLoop $ mapM_ vertex c
+    renderPrimitive Points $ mapM_ vertex c
+    pointSize $= 10
+    renderPrimitive Points $ vertex (head c)
+
 times n f = (!!n) . iterate f
+
+rot l = tail l ++ [head l]

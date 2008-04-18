@@ -19,7 +19,7 @@ main = do
 
     mbf <- maybeOption "--focal"
 
-    let ref = asym
+    let ref = cornerRef
         vc c = c >>= withChannels >>= poseTracker "" mbf ref >>= inThread
     cams <- mapM (vc . flip getCam sz) [0..n-1]
 
@@ -36,9 +36,10 @@ main = do
         let fig v = toLists $ reshape 2 v
             rects = map (map (fig.fst).maybeToList) mbobs
             --ps    = map (map (syntheticCamera.snd).maybeToList) mbobs
-            ps    = zipWith f eps mbobs
-                where f p Nothing = []
-                      f p (Just (_,err)) = if err > 0.2 then [] else [syntheticCamera p]
+            f _    _ Nothing = []
+            f cond p (Just (_,err)) = if cond err then [syntheticCamera p] else []
+            ps    = zipWith (f (<0.2)) eps mbobs
+            other = zipWith (f (>=0.2)) eps mbobs
 {-
         inWin w $ do -- monitorization window
             c' <- getW w
@@ -58,11 +59,15 @@ main = do
 
 
         inWin w3D $ do -- reference world
-            setColor 0 0 1
+            setColor 1 1 0
             lineWidth $= 2
             renderPrimitive LineLoop (mapM_ vertex ref)
 
             lineWidth $= 1
+            setColor 0 0 1
+            mapM_ (\c -> drawCamera 0.4 c Nothing) (concat other)
+            lineWidth $= 3
+            setColor 0 0 1
             mapM_ (\c -> drawCamera 0.4 c Nothing) (concat ps)
 
         --print $ prepareObs ps
@@ -118,14 +123,6 @@ weighted alpha (f1,r1,c1) (f2,r2,c2) = (alpha*f1+(1-alpha)*f2,
                                         alpha.*c1+(1-alpha).*c2)
 
 ------------------------------------------------
-
-asym = map (map (*0.54))
-       [ [ 0, 0]
-       , [ 0, 2]
-       , [ 1, 2]
-       , [ 2, 1]
-       , [ 2, 0] ]
-
 
 mouse _ st (MouseButton WheelUp) Down _ _ = do
     st $~ (+1)

@@ -25,7 +25,7 @@ module EasyVision.Util (
     evSize,
     glSize,
     timing,
-    debug
+    debug,
 )where
 
 import Graphics.UI.GLUT hiding (RGB, Matrix, Size, Point)
