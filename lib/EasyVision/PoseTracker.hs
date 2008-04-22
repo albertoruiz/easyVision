@@ -103,8 +103,10 @@ givemeconts mbf ref img = cs where
         Size h w = size img
         area = 5
         pixarea = h*w*area`div`1000
-        rawconts = contours 10 pixarea 128 False img
-        fracpix = 6
+        rawconts = contours 10 pixarea 128 False img ++
+                   contours 10 pixarea (128+64) False img ++
+                   contours 10 pixarea 64 False img
+        fracpix = 5
         proc = pixelsToPoints (size img) . douglasPeucker fracpix . rot . rot. douglasPeucker fracpix.fst3
         cs = polyconsis mbf 0.4 ref $ map proc $ rawconts
         rot l = tail l ++ [head l]

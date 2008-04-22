@@ -239,9 +239,15 @@ regionDetector "" cam = do
         c2 <- getIntegral o "c2"
         orig <- cam
         let col = detectRange c1 c2 . hsvCode kb kg kw . hsv $ orig
+            Size h w = size col
+            area1 = 5
+            area2 = 100
+            pixarea1 = h*w*area1`div`1000
+            pixarea2 = h*w*area2`div`1000
             rawconts = map (pixelsToPoints (size col). fst3) $
-                       sortBy (compare `on` (negate.fst2)) $
-                       contours 5 200 1 True col
+                       filter ((pixarea2>).snd3) $
+                       sortBy (compare `on` (negate.snd3)) $
+                       contours 20 pixarea1 1 True col
             conts = map momentsContour rawconts
             p = case conts of
                     [] -> Nothing
@@ -269,19 +275,21 @@ regionDetector name cam = do
 detectRange a b = thresholdVal8u b 0 IppCmpGreater . thresholdVal8u a 0 IppCmpLess
 
 fst3 (a,_,_) = a
-fst2 (_,a,_) = a
+snd3 (_,a,_) = a
 
 ----------------------------------------------------------------
 
 
 
 -- | to do
-regionTracker :: String -> IO (Channels,Maybe (Point,[Point])) -> IO (IO (Channels, (Point,(Double,Double))))
+regionTracker :: String -> IO (Channels,Maybe (Point,[Point])) -> IO (IO (Channels, (Int,Point,(Double,Double))))
 regionTracker "" detector = do
     r <- newIORef s0
+    rlost <- newIORef 0
     return $ do
         (orig,p) <- detector
         st <- get r
+        lost <- get rlost
         let st'@(State x c _) =
                 case p of
                     Nothing -> blindKalman sys st
@@ -291,13 +299,16 @@ regionTracker "" detector = do
         r $= st'
         let pt = Point (x@>0) (x@>1)
             v = (x@>2,x@>3)
-        return (orig, (pt,v))
+        case p of
+            Nothing -> rlost $= lost+1
+            Just _  -> rlost $= 0
+        return (orig, (lost,pt,v))
 
 regionTracker name detector = do
     det <- regionTracker "" detector
     e <- evWindow () name (mpSize 8) Nothing (const kbdQuit)
     return $ do
-        (orig, (pt@(Point x y),v@(vx,vy))) <- det
+        (orig, (lost,pt@(Point x y),v@(vx,vy))) <- det
         let pt2 = Point (x+vx) (y+vy)
         inWin e $ do
             drawImage (rgb orig)
@@ -308,7 +319,7 @@ regionTracker name detector = do
             setColor 1 0 0
             lineWidth $= 2
             renderPrimitive Lines $ mapM_ vertex [pt,pt2]
-        return (orig, (pt,v))
+        return (orig, (lost,pt,v))
 
 -- Kalman filter for 2D position and velocity
 

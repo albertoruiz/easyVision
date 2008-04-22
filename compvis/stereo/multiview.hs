@@ -29,12 +29,14 @@ main = do
     campars <- read `fmap` readFile file
 
     sz <- findSize
-    let n = length campars
+    n <- numCams
 
     let vc c = c >>= tracker "" "Tracker"
     cams <- mapM (vc . flip getCam sz) [0..n-1]
 
     w3D <- evWindow3D (False,[]) "3D sensor" 640 (mouse kbdQuit)
+    clearColor $= Color4 1 1 1 1
+    lineSmooth $= Enabled
 
     launch $ inWin w3D $ do
 
@@ -48,14 +50,13 @@ main = do
        setColor 1 0 0
        renderPrimitive Points $ mapM_ vertex l
 
-       setColor 1 1 1
+       setColor 0 0 0
+       lineWidth $= 1.5
 
        let f c im = drawCamera 0.4 c (Just $ float $ gray im)
        sequence $ zipWith f campars imgs
 
-       let ok [[x,y]] = abs x < 0.95 && abs y < 0.65
-           prep (Point x y) = [[x,y]]
-           multi = filter (ok.snd) $ zip campars (map (prep.fst) points)
+       let multi = [ (c,[[x,y]]) | (c,(l,(Point x y),_)) <- zip campars points, abs x < 0.95 && abs y < 0.65, l < 10]
 
        when (length multi > 1) $ do
             let [[x,y,z]] = triangulate multi
