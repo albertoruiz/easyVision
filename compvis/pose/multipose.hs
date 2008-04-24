@@ -1,7 +1,7 @@
 -- experiments on multiview calibration from stabilized pose
 
 import EasyVision hiding ((.*))
-import Graphics.UI.GLUT hiding (Matrix, Size, Point,set)
+import Graphics.UI.GLUT hiding (Matrix, Size, Point,set,triangulate)
 import Vision
 import Numeric.LinearAlgebra
 import Control.Monad(when)
@@ -29,19 +29,19 @@ main = do
     --w <- evWindow 0 "multipose" sz Nothing (mouse $ kbdQuit)
     w3D <- evWindow3D () "3D view" 400 (const $ kbdQuit)
     clearColor $= Color4 1 1 1 1
-    lineSmooth $= Enabled
-    w3DSt <- evWindow3D initState "Camera Reference" 400 (toSave $ kbdQuit)
+    --lineSmooth $= Enabled
+    w3DSt <- evWindow3D initState "Camera Reference" 600 (toSave $ kbdQuit)
     clearColor $= Color4 1 1 1 1
     lineSmooth $= Enabled
     wm <- evWindow () "views" (Size 150 (200*n)) Nothing (const $ kbdQuit)
 
-    launchFreq 25 $ do
+    launchFreq 30 $ do
         (imgs,eps,sts,mbobs) <- unzip4 `fmap` sequence cams
         let fig v = toLists $ reshape 2 v
             rects = map (map (fig.fst).maybeToList) mbobs
             --ps    = map (map (syntheticCamera.snd).maybeToList) mbobs
             f _    _ Nothing = []
-            f cond p (Just (_,err)) = if cond err then [syntheticCamera p] else []
+            f cond p (Just (z,err)) = if cond err then [(syntheticCamera p, toLists $ reshape 2 z)] else []
             ps    = zipWith (f (<0.2)) eps mbobs
             other = zipWith (f (>=0.2)) eps mbobs
 {-
@@ -64,28 +64,45 @@ main = do
 
         inWin w3D $ do -- reference world
             setColor 0 0 0
-            lineWidth $= 1
+            lineWidth $= 2
             renderPrimitive LineLoop (mapM_ vertex ref)
 
             lineWidth $= 1
             setColor 0 0 1
-            mapM_ (\c -> drawCamera 0.4 c Nothing) (concat other)
+            mapM_ (\c -> drawCamera 0.4 c Nothing) (concatMap (map fst) other)
             lineWidth $= 2
             setColor 0 0 1
-            mapM_ (\c -> drawCamera 0.4 c Nothing) (concat ps)
+            mapM_ (\c -> drawCamera 0.4 c Nothing) (concatMap (map fst) ps)
 
         --print $ prepareObs ps
 
         st' <- getW w3DSt
-        let st = update st' ps
+        let st = update st' (map (map fst) ps)
         putW w3DSt st
 
         --print st
 
         inWin w3DSt $ do -- camera reference
-            setColor 1 0 0
-            lineWidth $= 1
-            mapM_ (\c -> drawCamera 0.4 c Nothing) st
+            setColor 0 0 0
+            lineWidth $= 2
+            let g c im = drawCamera 0.5 c (Just $ extractSquare 128 $ float $ gray im)
+            sequence $ zipWith g st imgs
+            let f   _ Nothing = []
+                f p (Just (z,err)) = [(p, toLists $ reshape 2 z)]
+                allofthem = concat $ zipWith f st mbobs
+            when (length allofthem > 1) $ do
+               let pts3D = triangulate allofthem
+               lineWidth $= 2
+               setColor 1 0 0
+               lineWidth $= 1
+               pointSize $= 5
+               renderPrimitive LineLoop $ mapM_ vertex pts3D
+               renderPrimitive Points $ mapM_ vertex pts3D
+               pixelCoordinates (Size 600 600)
+               setColor 0 0 0
+               text2D 20 20 (printf "Maximum Error = %.0f mm" $ 10 * pnorm Infinity (distMat pts3D - distMat ref))
+               text2D 20 40 (printf "Object Size = %.1f cm" $ dis (pts3D!!0) (pts3D!!1))
+               text2D 20 60 (printf "Distance to C0 = %.1f cm" $ dis [0,0,0] (pts3D!!0))
 
 
 
@@ -141,3 +158,12 @@ toSave _ st (Char 's') Down _ _ = do
     cams <- get st
     writeFile "cameras.txt" (show cams)
 toSave def _ a b c d = def a b c d
+
+------------------------------------------------
+
+distMat pol = fromList [ dis p1 p2 | p1 <- pol, p2 <- pol]
+
+dis l1 l2 = (*cm).  sqrt . sum . map (^2) $ zipWith (-) l1 l2
+
+cm = 10
+

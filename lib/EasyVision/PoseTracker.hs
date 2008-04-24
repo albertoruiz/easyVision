@@ -49,7 +49,7 @@ poseTracker :: String -> Maybe Double -> [[Double]] -> IO Channels
             -> IO (IO(Channels, CameraParameters, (Vector Double, Matrix Double), Maybe (Vector Double, Double)))
 
 poseTracker "" mbf ref cam = do
-    tracker <- poseTrackerGen (withRegion 2 ref) mbf ref
+    tracker <- poseTrackerGen (withSegments ref) mbf ref
     return $ do
         img <- cam
         ((pose,st,cov),obs) <- tracker (gray img)
@@ -117,7 +117,7 @@ withSegments world = (measure,post,cz,restart) where
               pixs = pointsToPixels (size img) . map lp . toLists . reshape 2 $ zprev
     post = concat
     cz = 1E-5 .* ident (2*length world)
-    restart = getPolygons
+    restart = givemeconts -- getPolygons
 
 -----------------------------------------------------------------------------------
 
