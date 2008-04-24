@@ -22,7 +22,8 @@ module ImagProc.ImageProcessing (
     binarize8u, localMax,
     secondOrder, hessian,
     getCorners,
-    filter32f, filter8u
+    filter32f, filter8u,
+    gaussS
 ) where
 
 import ImagProc.Ipp.Core
@@ -31,6 +32,7 @@ import ImagProc.Ipp.Pure
 import ImagProc.Ipp.Structs
 import ImagProc.Generic
 import ImagProc.C.Simple
+import Data.List(transpose)
 
 
 -- | Binarizes an image.
@@ -107,3 +109,12 @@ filter8u mask = f where
         (1,_) -> convolutionRow8u (concat mask)
         (_,1) -> convolutionColumn8u (concat mask)
         _     -> convolution8u mask
+
+--------------------------------------------------------------------
+
+-- | to do
+gaussS :: Float -> ImageFloat -> ImageFloat
+gaussS s = filter32f mask . filter32f (transpose mask)
+    where mask = nor [map (fg s) [-k .. k]] where k = fromIntegral (ceiling (2*s))
+          fg s x = exp (-0.5* (x/s)^2)
+          nor m = map (map (/s)) m where s = sum (concat m)

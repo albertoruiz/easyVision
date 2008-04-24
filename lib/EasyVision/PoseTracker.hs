@@ -21,6 +21,7 @@ module EasyVision.PoseTracker (
 import Graphics.UI.GLUT as GL hiding (Size,Point,Matrix,matrix)
 import EasyVision.GUI hiding (State)
 import ImagProc hiding ((.*))
+import qualified ImagProc as IP
 import Control.Monad(when)
 import Data.List(sort,nub,sortBy,minimumBy)
 import EasyVision.Util
@@ -33,6 +34,7 @@ import Text.Printf
 import Classifier.Stat
 import Data.Array
 import Debug.Trace
+import ImagProc.Ipp.Core(intersection,inROI,union)
 
 vector l = fromList l :: Vector Double
 diagl = diag . vector
@@ -47,7 +49,7 @@ poseTracker :: String -> Maybe Double -> [[Double]] -> IO Channels
             -> IO (IO(Channels, CameraParameters, (Vector Double, Matrix Double), Maybe (Vector Double, Double)))
 
 poseTracker "" mbf ref cam = do
-    tracker <- poseTrackerGen (withRegion 3 ref) mbf ref
+    tracker <- poseTrackerGen (withRegion 2 ref) mbf ref
     return $ do
         img <- cam
         ((pose,st,cov),obs) <- tracker (gray img)
@@ -60,40 +62,71 @@ poseTracker winname mbf ref cam = poseTrackerMonitor poseTracker winname mbf ref
 
 systemNoise = map (/1000) [0,0,0,0,0,0,0.1,0.1,0.1,0.01,0.01,0.01]
 
-poseTrackerGen (measure,post,cz) Nothing world = generalTracker st0 cov0 restart measure f cs h cz user
+poseTrackerGen (measure,post,cz,restart) Nothing world = generalTracker st0 cov0 restart' measure f f2 cs h cz user
     where st0 = vector $ (cam2list $ easyCamera 40 (0,0,5) (0,0,0) 0) ++ [0,0,0,0,0,0]
           cov0 = diagl [3,1,1,1,10,10,10,10,10,10,5,5,5]
           f [foc,p,t,r,cx,cy,cz,vx,vy,vz,vp,vt,vr] = [foc,p+vp,t+vt,r+vr,cx+vx,cy+vy,cz+vz,vx,vy,vz,vp,vt,vr]
+          f2 [foc,p,t,r,cx,cy,cz,vx,vy,vz,vp,vt,vr] = [foc,p,t,r,cx,cy,cz,0,0,0,0,0,0]
           cs = diagl (0.0001: systemNoise)
           h pars = post $ ht (syntheticCamera ( list2cam . take 7 $  pars)) (map (++[0]) world)
-          --restart = map (vector . (++ [0,0,0,0,0,0]) .cam2list . snd) . getPolygons Nothing world
-          restart = map (vector . (++ [0,0,0,0,0,0]) .cam2list . snd) . givemeconts Nothing world
+          restart' = map (vector . (++ [0,0,0,0,0,0]) .cam2list . snd) . restart Nothing world
           user (State s c p) = (list2cam $ take 7 $ toList s, s, c)
 
-poseTrackerGen (measure,post,cz) (Just foc) world = generalTracker st0 cov0 restart measure f cs h cz user
+poseTrackerGen (measure,post,cz,restart) (Just foc) world = generalTracker st0 cov0 restart' measure f f2 cs h cz user
     where st0 = vector $ (drop 1 $ cam2list $ easyCamera 40 (0,0,5) (0,0,0) 0) ++ [0,0,0,0,0,0]
           cov0 = diagl [1,1,1,10,10,10,10,10,10,5,5,5]
           f [p,t,r,cx,cy,cz,vx,vy,vz,vp,vt,vr] = [p+vp,t+vt,r+vr,cx+vx,cy+vy,cz+vz,vx,vy,vz,vp,vt,vr]
+          f2 [p,t,r,cx,cy,cz,vx,vy,vz,vp,vt,vr] = [p,t,r,cx,cy,cz,0,0,0,0,0,0]
           cs = diagl systemNoise
           h pars = post $ ht (syntheticCamera ( list2cam . (foc:) .take 6 $  pars)) (map (++[0]) world)
-          --restart = map (vector . (++ [0,0,0,0,0,0]) . tail . cam2list . snd) . getPolygons (Just foc) world
-          restart = map (vector . (++ [0,0,0,0,0,0]) . tail . cam2list . snd) . givemeconts (Just foc) world
+          restart' = map (vector . (++ [0,0,0,0,0,0]) . tail . cam2list . snd) . restart (Just foc) world
           user (State s c p) = (list2cam $ (foc:) $ take 6 $ toList s, s, c)
 
 -----------------------------------------------------------------------------------
 
-withSegments world = (measure,post,cz) where
-    measure img zprev = map (vector. concat . map pl . fst) . getPolygons Nothing world $ img
+improvePoint orig rad p@(Pixel r c) = (v,best) where
+    roig = roiFromPoint rad p
+    h = hessian . secondOrder . gaussS 1.0 $ img
+    img = float $ modifyROI (intersection roig) orig
+    (v,Pixel r' c') = maxIndx ((-1) IP..* h)
+    best = Pixel (r'+r1) (c'+c1)
+    (ROI r1 _ c1 _) = theROI h
+
+roiFromPoint rad (Pixel r c) = ROI (r-rad) (r+rad) (c-rad)  (c+rad)
+
+improve img zprev = if ok then [imp] else []
+    where pixs = pointsToPixels (size img) . map lp . toLists $  reshape 2 $ zprev
+          ok = all (inROI (theROI img)) (pixs)
+          imp = pixelsToPoints (size img) . map (snd.improvePoint img 15) $ pixs
+
+withImproved world = (measure,post,cz,restart) where
+    measure img zprev = impr
+                        --if zprev@>0 > 0 then segs else impr
+        where segs = map (vector. concat . map pl . fst) . getPolygons Nothing world $ img
+              impr = map (vector. concat . map pl. fst) $ polyconsis Nothing 0.2 world $ improve img zprev
     post = concat
     cz = 1E-5 .* ident (2*length world)
+    restart = givemeconts
+
 
 -----------------------------------------------------------------------------------
 
-withRegion w world = (measure,post,cz) where
+withSegments world = (measure,post,cz,restart) where
+    measure img zprev = map (vector. concat . map pl . fst) . getPolygons Nothing world $ img -- modifyROI (intersection search) img
+        where search = foldl1 union (map (roiFromPoint 20) pixs)
+              pixs = pointsToPixels (size img) . map lp . toLists . reshape 2 $ zprev
+    post = concat
+    cz = 1E-5 .* ident (2*length world)
+    restart = getPolygons
+
+-----------------------------------------------------------------------------------
+
+withRegion w world = (measure,post,cz,restart) where
     measure img zprev =  map (vector.post.map pl). givemecont zprev $ img
     post = concat . map c2l . flip map [-w..w] . memo . normalizeStart . fourierPL . Closed . map lp
     --cz = 1E-5 .* diagl [1,1,1,1,10,10,50,50,10,10,1,1,1,1]
     cz = 1E-5 .* ident ((2*w+1)*2)
+    restart = givemeconts
 
 normalizeStart f = shiftStart (-t) f
     where t = phase ((f (1)- (conjugate $ f(-1))))
@@ -117,7 +150,7 @@ givemecont zprev img = cs where
         k = (dim zprev -2) `div` 2
         clip d x = max (-d) (min d x)
         [start] = pointsToPixels (size img) [Point x y]
-        rawconts = case contourAt 5 img start of
+        rawconts = case contourAt 3 img start of
                         Nothing -> []
                         Just p  -> [p]
         fracpix = 2
@@ -127,20 +160,22 @@ givemecont zprev img = cs where
 ---------------------------------------------------------------------------
 
 --generalTracker ::
-generalTracker st0 cov0 restart measure f cs h cz user = do
+generalTracker st0 cov0 restart measure f f2 cs h cz user = do
     let initstate = State st0 cov0 (wl h st0)
     r <- newIORef initstate
     rlost <- newIORef True
     covz <- newIORef cz
-    recover <- newIORef 0
+    recover <- newIORef 10
     withoutObs <- newIORef 0
-    let sys = System f h cs cz
+    let sys1 =  System f h cs cz
+        sys2 = System f2 h cs cz
     return $ \img -> do
         st@(State _ c zprev) <- get r
         lost <- get rlost
         reco <- get recover
         woob <- get withoutObs
         actcz <- get covz
+        let sys = if reco > 0 then sys2 else sys1
         let delta = if reco > 0 then 1E10 else 3
             zs = measure img zprev
             dist a b = k * sqrt ((a - b) <> icz <.> (a - b))
@@ -149,24 +184,25 @@ generalTracker st0 cov0 restart measure f cs h cz user = do
             hasObs = not (null zs)
             z = minimumBy (compare `on` dist zprev) zs
             nsts = restart img
+            err = if lost then 0 else dist z zprev
             hasInit = not (null nsts)
+            newlost = lost && not hasInit || woob > 10 || not lost && hasObs && err > delta
+            newrecover = if newlost then 10 else reco - 1
+            newwoob = if hasObs then 0 else woob +1
             st' = if lost
                 then case hasInit of
                         False -> initstate
-                        True  -> initstate {sX = head nsts, nZ = wl h (head nsts)}
+                        True  -> --trace "R" $ ukf sys initstate {sX = head nsts} (wl h (head nsts))
+                                 initstate {sX = head nsts, nZ = wl h (head nsts)}
                 else case hasObs of
                         False -> blindUKF sys st
                         True  -> ukf sys st z
-            err = dist z zprev
+
             obs' = if hasObs then Just (z, err) else Nothing
         r $= st'
-        recover $= reco - 1
-        when (lost && hasInit) (rlost $= False)
-        when (hasObs && err > delta || woob > 20) $ do
-            rlost $= True
-            recover $= 10
-        when hasObs (withoutObs $= 0)
-        when (not hasObs) (withoutObs $~ (+1))
+        recover $= newrecover
+        rlost $= newlost
+        withoutObs $= newwoob
         --when (reco < 0 && hasObs) $ covz `modifyIORef` \c -> 0.95*c + 0.05 * ((z-zprev) `outer` (z-zprev))
         --c <- get covz
         --disp $ negate $ log10 $ fromRows [takeDiag c]
@@ -176,6 +212,8 @@ generalTracker st0 cov0 restart measure f cs h cz user = do
 
 poseTrackerMonitor tracker winname mbf ref cam = do
     w3D <- evWindow3D () "UKF pose tracker" 500 (const $ kbdQuit)
+    clearColor $= Color4 1 1 1 1
+    --lineSmooth $= Enabled
     cam' <- tracker "" mbf ref cam
     return $ do
         (img,pose,(st,cov),obs) <- cam'
@@ -184,7 +222,7 @@ poseTrackerMonitor tracker winname mbf ref cam = do
 
             let scale = 0.3
                 h = f (syntheticCamera pose) where f =  fromColumns . g. toColumns where g [a,b,c,d] = [a,b,d] 
-                floor = warp 0 (Size 256 256) (scaling scale <> inv h) (float $ gray img)
+                floor = warp 1 (Size 256 256) (scaling scale <> inv h) (float $ gray img)
             when (rank h == 3) $ drawTexture floor $ map (++[-0.01]) $ ht (scaling (1/scale)) [[1,1],[-1,1],[-1,-1],[1,-1]]
 
             setColor 1 0 0

@@ -75,7 +75,7 @@ main = do
                 putW w3D (False,[x,y,z]:l)
 
             pixelCoordinates (Size 640 640)
-            setColor 1 1 1
+            setColor 0 0 0
             text2D 20 20 (printf "x=%.1f y=%.1f z=%.1f" (10*x) (10*y) (10*z))
             when (not . null $ l) $ do
                 let [a,b,c] = head l

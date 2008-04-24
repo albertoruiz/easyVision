@@ -22,7 +22,7 @@ module ImagProc.Ipp.Core
             -- * Creation of images
           , img, imgAs, getData32f, setData32f, setData8u, value, setValue
             -- * Regions of interest
-          , fullroi, shrink, shift, intersection, roiSize, roiArea, invalidROIs, roiSZ
+          , fullroi, shrink, shift, intersection, union, roiSize, roiArea, invalidROIs, roiSZ, inROI
             -- * Wrapper tools
           , src, dst, checkIPP, warningIPP, (//), starting
             -- * Image types
@@ -189,6 +189,14 @@ intersection a b = ROI { r1 = max (r1 a) (r1 b)
                        , c2 = min (c2 a) (c2 b)
                        }
 
+-- | obtains the minimum ROI which contains the arguments
+union :: ROI -> ROI -> ROI
+union a b = ROI { r1 = min (r1 a) (r1 b)
+                , r2 = max (r2 a) (r2 b)
+                , c1 = min (c1 a) (c1 b)
+                , c2 = max (c2 a) (c2 b)
+                }
+
 -- id, const
 
 -- | 'ROI'\'s area in pixels
@@ -198,6 +206,10 @@ roiArea im = w*h where
     w = c2-c1+1
     h = r2-r1+1
 
+
+-- | checks that a pixel is in a ROI
+inROI :: ROI -> Pixel -> Bool
+inROI (ROI r1 r2 c1 c2) (Pixel r c) = r1 <= r && r <= r2 && c1 <= c && c <= c2
 
 
 -- | Creates an image of the same type and size than a given image. Data is not copied.

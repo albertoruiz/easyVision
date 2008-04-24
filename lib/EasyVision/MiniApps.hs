@@ -240,7 +240,7 @@ regionDetector "" cam = do
         orig <- cam
         let col = detectRange c1 c2 . hsvCode kb kg kw . hsv $ orig
             Size h w = size col
-            area1 = 5
+            area1 = 1
             area2 = 100
             pixarea1 = h*w*area1`div`1000
             pixarea2 = h*w*area2`div`1000

@@ -121,11 +121,6 @@ octave n sigmaPrev sigma img = imgp : rest
           sigmaRequired sBase sTot = sqrt (sTot^2 - sBase^2)
           imgp = img --gaussS sigmaPrev img
 
-gaussS s = filter32f mask . filter32f (transpose mask)
-    where mask = nor [map (fg s) [-k .. k]] where k = fromIntegral (ceiling (2*s))
-          fg s x = exp (-0.5* (x/s)^2)
-          nor m = map (map (/s)) m where s = sum (concat m)
-
 pyramid n sigmaPrev sigma img = o : pyramid n sigmaPrev sigma d
     where o = octave n sigmaPrev sigma img
           d = decimate (o!!n)

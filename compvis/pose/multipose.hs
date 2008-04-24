@@ -28,7 +28,11 @@ main = do
 
     --w <- evWindow 0 "multipose" sz Nothing (mouse $ kbdQuit)
     w3D <- evWindow3D () "3D view" 400 (const $ kbdQuit)
+    clearColor $= Color4 1 1 1 1
+    lineSmooth $= Enabled
     w3DSt <- evWindow3D initState "Camera Reference" 400 (toSave $ kbdQuit)
+    clearColor $= Color4 1 1 1 1
+    lineSmooth $= Enabled
     wm <- evWindow () "views" (Size 150 (200*n)) Nothing (const $ kbdQuit)
 
     launchFreq 25 $ do
@@ -59,14 +63,14 @@ main = do
 
 
         inWin w3D $ do -- reference world
-            setColor 1 1 0
-            lineWidth $= 2
+            setColor 0 0 0
+            lineWidth $= 1
             renderPrimitive LineLoop (mapM_ vertex ref)
 
             lineWidth $= 1
             setColor 0 0 1
             mapM_ (\c -> drawCamera 0.4 c Nothing) (concat other)
-            lineWidth $= 3
+            lineWidth $= 2
             setColor 0 0 1
             mapM_ (\c -> drawCamera 0.4 c Nothing) (concat ps)
 

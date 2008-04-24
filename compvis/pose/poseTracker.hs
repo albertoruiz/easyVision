@@ -30,9 +30,14 @@ main = do
             lineWidth $= 3
             renderPrimitive LineLoop $ mapM_ vertex (ht (syntheticCamera pose) (map (++[0]) ref))
 
+            setColor 1 1 1
+            lineWidth $= 1
+            renderAxes
             --disp $ fromRows [st, sqrt $ takeDiag cov]
             --disp $ cov
             --text2D 0.9 0.7 (printf "%.1f"  $ sum $ drop (dim st - 9) $ take (dim st -6) $ toList $ sqrt $ takeDiag cov)
+
+
 
             case obs of
                 Nothing -> return ()
@@ -41,7 +46,7 @@ main = do
                     text2D 0.9 0.7 (printf "%.1f" err)
                     setColor 0.8 0.8 0
                     lineWidth $= 2
-                    if dim v == 10
+                    if dim v == 2*length ref
                         then do let fig = toLists $ reshape 2 v
                                 renderPrimitive LineLoop $ mapM_ vertex fig
                         else do let w = (dim v `div` 2 - 1) `div` 2
