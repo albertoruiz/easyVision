@@ -18,16 +18,23 @@ main = do
     n <- numCams
 
     mbf <- maybeOption "--focal"
+    mbfs <- maybeOption "--focals"
+
+    let focs = case mbfs of
+                Just l -> map Just l
+                Nothing -> repeat mbf
+
+    print (take 2 focs)
 
     let ref = cornerRef
-        vc c = c >>= withChannels >>= poseTracker "" mbf ref >>= inThread
-    cams <- mapM (vc . flip getCam sz) [0..n-1]
+        vc c mbf = c >>= withChannels >>= poseTracker "" mbf ref >>= inThread
+    cams <- sequence $ zipWith vc (map (flip getCam sz) [0..n-1]) focs
 
 
     let initState = replicate n cameraAtOrigin
 
     --w <- evWindow 0 "multipose" sz Nothing (mouse $ kbdQuit)
-    w3D <- evWindow3D () "3D view" 400 (const $ kbdQuit)
+    w3D <- evWindow3D () "World Reference" 400 (const $ kbdQuit)
     clearColor $= Color4 1 1 1 1
     --lineSmooth $= Enabled
     w3DSt <- evWindow3D initState "Camera Reference" 600 (toSave $ kbdQuit)
