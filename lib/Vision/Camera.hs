@@ -38,7 +38,7 @@ import qualified Numeric.LinearAlgebra as LA
 import qualified Numeric.GSL as G
 import Vision.Geometry
 import Vision.Estimation(homogSystem, withNormalization, estimateHomography)
-import Classifier.Stat
+import Util.Stat
 import Data.List(transpose,nub,maximumBy,genericLength,elemIndex, genericTake)
 import System.Random 
 import Debug.Trace(trace)

@@ -1,6 +1,6 @@
 A system for fast prototyping of pattern recognition and computer vision applications.
 
-It requires GSLHaskell, HOpenGL, MPlayer, and IPP.
+It requires hmatrix, HOpenGL, MPlayer, and IPP.
 
 Download: @darcs get http:\/\/perception.inf.um.es\/~aruiz\/darcs\/easyVision@
 

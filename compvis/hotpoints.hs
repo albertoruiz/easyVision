@@ -12,7 +12,7 @@ import Numeric.LinearAlgebra hiding ((.*))
 import Control.Monad(when)
 import Vision
 import GHC.Float(float2Double,double2Float)
-import Classifier.Stat
+import Util.Stat
 import qualified Data.Map as Map
 
 ------------------------------------------------------------

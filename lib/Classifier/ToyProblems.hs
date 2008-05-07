@@ -31,7 +31,7 @@ import Data.List(intersperse)
 
 import System
 import Classifier.Base
-import Classifier.Stat
+import Util.Stat
 
 ------------------------- drawing utilities --------------------------
 

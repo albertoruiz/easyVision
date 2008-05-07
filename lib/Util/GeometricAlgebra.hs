@@ -1,12 +1,12 @@
 -- experiments with Geometric Algebra
 
-module GeometricAlgebra(
+module Util.GeometricAlgebra(
     Multivector,
     ms, mv, e, rever, rotor, meet, (/\), (-|)
 ) where
 
 import Numeric.LinearAlgebra(fromList,toList,reshape,inv,(<>),(<\>),rank,trans)
-import Tensor hiding ((/\),(\/))
+import Util.Tensor hiding ((/\),(\/))
 import Data.List
 import Control.Monad(filterM)
 import Data.Function(on)

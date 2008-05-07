@@ -1,6 +1,6 @@
 -- experiments with Geometric Algebra
 
-import GeometricAlgebra
+import Util.GeometricAlgebra
 
 a = mv [2,3,0]
 b = e 1 + e 3

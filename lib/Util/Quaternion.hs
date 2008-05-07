@@ -1,4 +1,4 @@
-module Quaternion(
+module Util.Quaternion(
     Quaternion(..), (.*.),
     quat, conjQ,
     axisToQuat,

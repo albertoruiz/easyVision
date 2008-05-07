@@ -1,40 +1,17 @@
 #! /bin/bash
 
 echo "Preparing the documentation..."
-rm -f doc/*
-haddock Classifier.hs \
-        Classifier/Stat.hs \
-        Classifier/Base.hs \
-        Classifier/Simple.hs \
-        Classifier/Kernel.hs \
-        Classifier/Neural.hs \
-        Classifier/Adaboost.hs \
-        Classifier/SVM.hs \
-        Classifier/ToyProblems.hs \
-        Vision.hs \
-        Vision/Geometry.hs \
-        Vision/Estimation.hs \
-        Vision/Camera.hs \
-        Vision/Stereo.hs \
-        Vision/Autofrontal.hs \
-        Tensor.hs \
-        ImagProc.hs \
-        ImagProc/Ipp.hs \
-        ImagProc/Ipp/Wrappers.hs \
-        ImagProc/Ipp/Core.hs \
-        ImagProc/Images.hs \
-        ImagProc/Camera.hs \
-        ImagProc/ImageProcessing.hs \
-        ImagProc/Pure.hs \
-        ImagProc/Saddle.hs \
-        ImagProc/Segments.hs \
-        ImagProc/Polyline.hs \
-        EasyVision.hs \
-        EasyVision/GUI.hs \
-        EasyVision/Combinators.hs \
-        EasyVision/Parameters.hs \
-        EasyVision/Draw.hs \
-        EasyVision/Util.hs \
-        EasyVision/Trackball.hs --hide=Ipp.Trackball \
-        --use-package=base --use-package=OpenGL \
-        -o doc -h -t easyVision -p prologue.txt # 2> /dev/null
+rm -rf doc/*
+mkdir doc/src
+
+SRCS=`ls *.hs``echo ' '``find Util Vision Classifier EasyVision ImagProc \
+      | grep .hs | grep -v .hsc | grep -v parser.hs | grep -v adapter.hs`
+
+for file in $SRCS
+do HsColour -html -anchor $file > doc/src/`echo $file | sed 's/\//-/g' | sed s/.hs/.html/g`
+done
+
+haddock $SRCS \
+        -o doc -h -t easyVision -p prologue.txt  -B ~/apps/ghc/lib/ghc-6.8.2/ \
+        --source-module="../doc/src/%{MODULE/./-}.html" \
+        --source-entity="../doc/src/%{MODULE/./-}.html#%{NAME}"

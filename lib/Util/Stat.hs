@@ -1,6 +1,6 @@
 -----------------------------------------------------------------------------
 {- |
-Module      :  Classifier.Stat
+Module      :  Util.Stat
 Copyright   :  (c) Alberto Ruiz 2006-7
 License     :  GPL-style
 
@@ -13,7 +13,7 @@ Statistical characterization of multivariate samples and Principal Component Ana
 -}
 -----------------------------------------------------------------------------
 
-module Classifier.Stat
+module Util.Stat
 ( Stat(..)
 , stat
 

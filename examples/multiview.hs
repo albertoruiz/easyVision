@@ -1,5 +1,5 @@
 import Vision
-import Tensor
+import Util.Tensor
 import Numeric.LinearAlgebra
 
 vector l = fromList l :: Vector Double

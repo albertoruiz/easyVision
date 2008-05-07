@@ -26,7 +26,7 @@ module Vision.Estimation
 ) where
 
 import Numeric.LinearAlgebra
-import Classifier.Stat
+import Util.Stat
 import Vision.Geometry
 import Data.List(transpose,nub,maximumBy,genericLength,elemIndex)
 import System.Random 

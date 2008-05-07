@@ -2,7 +2,7 @@
 
 module EasyVision.Trackball (newTrackball) where
 
-import Quaternion
+import Util.Quaternion
 import Vision.Geometry(cross)
 import Numeric.LinearAlgebra
 import Graphics.UI.GLUT hiding (normalize, Matrix, matrix)

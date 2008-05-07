@@ -5,11 +5,11 @@ import Graphics.UI.GLUT hiding (Matrix, Size, Point,set,triangulate)
 import Vision
 import Numeric.LinearAlgebra
 import Control.Monad(when)
-import Quaternion
+import Util.Quaternion
 import Data.List((\\),sortBy,unzip4)
 import Debug.Trace
 import Text.Printf
-import Kalman
+import Util.Kalman
 
 main = do
     prepare

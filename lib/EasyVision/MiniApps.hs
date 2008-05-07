@@ -42,7 +42,7 @@ import Data.IORef
 import Vision
 import Numeric.GSL.Minimization
 import EasyVision.Combinators(warper)
-import Kalman
+import Util.Kalman
 import Text.Printf
 import EasyVision.PoseTracker
 

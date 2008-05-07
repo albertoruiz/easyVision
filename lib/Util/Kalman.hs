@@ -2,7 +2,7 @@
 
 -----------------------------------------------------------------------------
 -- |
--- Module      :  Kalman
+-- Module      :  Util.Kalman
 -- Copyright   :  (c) Alberto Ruiz 2008
 -- License     :  GPL-style
 --
@@ -14,7 +14,7 @@
 -- (to do: a general implementation)
 -----------------------------------------------------------------------------
 
-module Kalman (
+module Util.Kalman (
     State(..),
     LinearSystem(..),
     kalman, blindKalman,

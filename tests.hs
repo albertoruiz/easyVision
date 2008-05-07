@@ -7,7 +7,7 @@ import System.Random(randomRs,mkStdGen)
 import System.Directory(doesFileExist)
 import System(system)
 import Control.Monad(when)
-import Tensor
+import Util.Tensor
 
 realMatrix = fromLists :: [[Double]] -> Matrix Double
 realVector = fromList ::  [Double] -> Vector Double

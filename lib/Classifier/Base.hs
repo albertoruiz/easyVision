@@ -21,7 +21,7 @@ module Classifier.Base (
      Weights, WeightedDicotomizer, unweight, weight,
 -- * Utilities
      errorRate, confusion, InfoLabels(..), group, ungroup, createClassifier, scramble, addNoise, selectClasses, splitProportion, posMax, partit, vector, detailed,
-     module Classifier.Stat,
+     module Util.Stat,
 -- * Feature extraction combinators
 -- $FEATCOMB
      Property, withPreprocess, onP, ofP, andP, outputOf, preprocess,
@@ -36,7 +36,7 @@ import Data.List(sortBy, sort, nub, elemIndex, intersperse, transpose, partition
 import qualified Data.Map as Map
 import System.Random
 import Data.Array
-import Classifier.Stat
+import Util.Stat
 import Debug.Trace
 
 debug x = trace (show x) x

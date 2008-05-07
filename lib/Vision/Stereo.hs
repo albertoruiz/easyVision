@@ -40,7 +40,7 @@ import Numeric.GSL
 import Vision.Geometry
 import Vision.Estimation
 import Vision.Camera(kgen,cameraAtOrigin)
-import Classifier.Stat
+import Util.Stat
 import Data.List(transpose,nub,maximumBy,genericLength,elemIndex, genericTake)
 import System.Random 
 import Debug.Trace(trace)

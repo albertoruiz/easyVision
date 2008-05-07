@@ -2,7 +2,7 @@
 
 import Vision
 import Numeric.LinearAlgebra
-import Quaternion
+import Util.Quaternion
 
 r = rot2 0.2 <> rot3 0.1 <> rot1 0.5
 

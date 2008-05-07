@@ -2,7 +2,7 @@
 
 -----------------------------------------------------------------------------
 -- |
--- Module      :  Tensor
+-- Module      :  Util.Tensor
 -- Copyright   :  (c) Alberto Ruiz 2007
 -- License     :  GPL-style
 --
@@ -15,7 +15,7 @@
 -----------------------------------------------------------------------------
 
 
-module Tensor (
+module Util.Tensor (
     -- * Construction
     Tensor, tensor, scalar,
     -- * Manipulation

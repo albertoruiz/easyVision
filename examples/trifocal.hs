@@ -1,6 +1,6 @@
 import Numeric.LinearAlgebra
 import Vision
-import Tensor
+import Util.Tensor
 import Text.Printf(printf)
 import Debug.Trace(trace)
 import Control.Monad(mplus)

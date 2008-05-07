@@ -29,9 +29,9 @@ import Numeric.LinearAlgebra
 import Data.IORef
 import Vision
 import EasyVision.Combinators(findPolygons,getPolygons,polyconsis)
-import Kalman
+import Util.Kalman
 import Text.Printf
-import Classifier.Stat
+import Util.Stat
 import Data.Array
 import Debug.Trace
 import ImagProc.Ipp.Core(intersection,inROI,union)

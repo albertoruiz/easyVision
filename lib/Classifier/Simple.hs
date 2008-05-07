@@ -26,7 +26,7 @@ import Data.List(sortBy, sort, nub, elemIndex, intersperse, transpose, partition
 import qualified Data.Map as Map
 import System.Random
 import Data.Array
-import Classifier.Stat
+import Util.Stat
 import Debug.Trace
 
 debug x = trace (show x) x
