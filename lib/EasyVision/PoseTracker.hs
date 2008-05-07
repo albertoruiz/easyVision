@@ -49,7 +49,7 @@ poseTracker :: String -> Maybe Double -> [[Double]] -> IO Channels
             -> IO (IO(Channels, CameraParameters, (Vector Double, Matrix Double), Maybe (Vector Double, Double)))
 
 poseTracker "" mbf ref cam = do
-    tracker <- poseTrackerGen (withSegments ref) mbf ref
+    tracker <- poseTrackerGen (withRegion 4 ref) mbf ref
     return $ do
         img <- cam
         ((pose,st,cov),obs) <- tracker (gray img)
@@ -198,7 +198,7 @@ generalTracker st0 cov0 restart measure f f2 cs h cz user = do
                         False -> blindUKF sys st
                         True  -> ukf sys st z
 
-            obs' = if hasObs then Just (z, err) else Nothing
+            obs' = if hasObs && reco < 0 then Just (z, err) else Nothing
         r $= st'
         recover $= newrecover
         rlost $= newlost

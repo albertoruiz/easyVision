@@ -24,7 +24,7 @@ main = do
                 Just l -> map Just l
                 Nothing -> repeat mbf
 
-    print (take 2 focs)
+    print (take n focs)
 
     let ref = cornerRef
         vc c mbf = c >>= withChannels >>= poseTracker "" mbf ref >>= inThread
@@ -97,7 +97,7 @@ main = do
             let f   _ Nothing = []
                 f p (Just (z,err)) = [(p, toLists $ reshape 2 z)]
                 allofthem = concat $ zipWith f st mbobs
-            when (length allofthem > 1) $ do
+            when (False && length allofthem > 1) $ do
                let pts3D = triangulate allofthem
                lineWidth $= 2
                setColor 1 0 0

@@ -38,8 +38,8 @@ main = do
 
     launch $ inWin w3D $ do
 
-       (orig0,(p1,v1)) <- cam0
-       (orig1,(p2,v2)) <- cam1
+       (orig0,(lost1,p1,v1)) <- cam0
+       (orig1,(lost2,p2,v2)) <- cam1
 
        (wasMoving,(c0,pts1,c1,pts2)) <- getW w3D
 
