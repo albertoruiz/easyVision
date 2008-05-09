@@ -2,7 +2,7 @@ module Main where
 
 import Text.ParserCombinators.Parsec
 import System.Environment
-import Data.List(tails,isPrefixOf)
+import Data.List(tails,isPrefixOf,inits,isSuffixOf)
 
 type Argument = ([String], String)
 
@@ -49,8 +49,8 @@ main = do
     let coms = comments f
     let hds = map (addComment coms) (headers f)
     print.length $ hds
-    mapM_ shfun (take 5 . drop 1000 $ hds)
-    putStr . unlines . map name $ hds
+    mapM_ shfun hds
+    --putStr . unlines . map name $ hds
 
 
 comments f = case parse parseComments "" f of
@@ -66,15 +66,27 @@ parseComment = do
 
 contained x = any (x `isPrefixOf`) . tails
 
-addComment coms h = h {doc = clean x} where
+addComment coms h = h {doc = ok x} where
     nm = adjust (name h)
-    x = head . filter (contained nm) $ coms
+    x = head . (++["Not Found"]) . filter (contained nm) $ coms
     adjust = fst . break (=='_')
+    ok = getPurpose . clean
 
 clean ('/':'/':'/':rest) = clean ('/':'/':rest)
 clean ('/':'/':rest) = clean rest
 clean (x:xs) = x: clean xs
 clean x = x
+
+getPurpose = beforeLast "\n" . entre "Purpose:" ":"
+
+entre s1 s2 = before s2 . after s1
+
+after  s =     drop (length s) . head . (++[""]) . snd . break (s `isPrefixOf`) . tails
+before s = dropBack (length s) . head . (++[""]) . snd . break (s `isSuffixOf`) . inits
+
+dropBack k s = take (length s - k) s
+
+beforeLast what s = reverse $ after (reverse what) (reverse s)
 
 shfun h = do
     putStrLn (replicate 70 '=')

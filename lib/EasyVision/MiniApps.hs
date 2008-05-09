@@ -290,12 +290,8 @@ regionTracker "" detector = do
         (orig,p) <- detector
         st <- get r
         lost <- get rlost
-        let st'@(State x c _) =
-                case p of
-                    Nothing -> blindKalman sys st
-                    Just (Point x y,_)  -> kalman sys st (vector [x, y])
-                    --Nothing -> blindUKF sys' st
-                    --Just (Point x y,_)  -> ukf sys' st (vector [x, y])
+        let g (Point x y,_) = vector [x,y]
+            st'@(State x c _) = kalman sys st (fmap g p)
         r $= st'
         let pt = Point (x@>0) (x@>1)
             v = (x@>2,x@>3)

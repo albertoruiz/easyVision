@@ -195,8 +195,8 @@ generalTracker st0 cov0 restart measure f f2 cs h cz user = do
                         True  -> --trace "R" $ ukf sys initstate {sX = head nsts} (wl h (head nsts))
                                  initstate {sX = head nsts, nZ = wl h (head nsts)}
                 else case hasObs of
-                        False -> blindUKF sys st
-                        True  -> ukf sys st z
+                        False -> ukf sys st Nothing
+                        True  -> ukf sys st (Just z)
 
             obs' = if hasObs && reco < 0 then Just (z, err) else Nothing
         r $= st'

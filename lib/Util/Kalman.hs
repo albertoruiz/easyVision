@@ -8,21 +8,21 @@
 --
 -- Maintainer  :  Alberto Ruiz <aruiz@um.es>
 -- Stability   :  provisional
--- Portability :  portable (uses FFI)
 --
--- Kalman and Extended Kalman filter
--- (to do: a general implementation)
+-- Kalman, Extended Kalman, and Unscented Kalman filters.
+--
 -----------------------------------------------------------------------------
 
 module Util.Kalman (
     State(..),
+    Measurement,
     LinearSystem(..),
-    kalman, blindKalman,
+    kalman,
     System(..),
-    ekf, blindEKF,
+    ekf,
     unscentedSamples,
     unscentedTransform,
-    ukf, blindUKF
+    ukf,
 ) where
 
 import Numeric.LinearAlgebra
@@ -47,8 +47,8 @@ data LinearSystem = LinearSystem {kF, kH, kQ, kR :: Matrix Double}
 data State = State {sX :: Vector Double , sP :: Matrix Double, nZ :: Vector Double } deriving Show
 type Measurement = Vector Double
 
-kalman :: LinearSystem -> State -> Measurement -> State
-kalman (LinearSystem f h q r) (State x p _) z = State x' p' zp where
+kalman' :: LinearSystem -> State -> Measurement -> State
+kalman' (LinearSystem f h q r) (State x p _) z = State x' p' zp where
     px = f <> x                            -- prediction
     pq = f <> p <> trans f + q             -- its covariance
     zp = h <> px                           -- predicted measurement
@@ -64,6 +64,10 @@ blindKalman (LinearSystem f h q r) (State x p _) = State x' p' (h <> x') where
     x' = f <> x
     p' = f <> p <> trans f + q
 
+-- | Kalman filter update step
+kalman :: LinearSystem -> State -> Maybe Measurement -> State
+kalman sys st (Just m) = kalman'     sys st m
+kalman sys st Nothing  = blindKalman sys st
 
 -------------- Extended Kalman Filter -------------------------------
 
@@ -83,8 +87,8 @@ data System = System {ekF, ekH :: [Double] -> [Double],
 --data State = State {sX :: [Double] , sP :: Matrix Double} deriving Show
 --type Measurement = Vector Double
 
-ekf :: System -> State -> Measurement -> State
-ekf (System f h q r) (State vx p _) z = State x' p' zp where
+ekf' :: System -> State -> Measurement -> State
+ekf' (System f h q r) (State vx p _) z = State x' p' zp where
     x = toList vx
     jf = matrix (jacobian f x)
     jh = matrix (jacobian h x)
@@ -105,6 +109,11 @@ blindEKF (System f h q r) (State vx p _) = State (vector x') p' (vector (h x')) 
     x' = f x
     p' = jf <> p <> trans jf + q
     jf = matrix (jacobian f x)
+
+-- | Extended Kalman Filter update step
+ekf :: System -> State -> Maybe Measurement -> State
+ekf sys st (Just m) = ekf'     sys st m
+ekf sys st Nothing  = blindEKF sys st
 
 ---------------------------------------------------------------------
 
@@ -135,8 +144,8 @@ unscentedTransformWithSamples f g = ((m',c'),(s',w)) where
     c' = sum (zipWith f wc s') where f w v = w .* outer vm vm where vm = v - m'
 
 
-ukf :: System -> State -> Measurement -> State
-ukf (System f h q r) (State vx p _) z = State x' p' mz where
+ukf' :: System -> State -> Measurement -> State
+ukf' (System f h q r) (State vx p _) z = State x' p' mz where
     f' = fromList . f . toList
     h' = fromList . h . toList
     ((px,pc),(sx,(_,wc))) = unscentedTransformWithSamples f' (vx,p)  -- prediction
@@ -160,3 +169,8 @@ blindUKF (System f h q r) (State vx p _) = State px pq (h' px) where
     h' = fromList . h . toList
     (px,pc) = unscentedTransform f' (vx,p)  -- prediction
     pq = pc + q                             -- its covariance
+
+-- | Unscented Kalman Filter update step
+ukf :: System -> State -> Maybe Measurement -> State
+ukf sys st (Just m) = ukf'     sys st m
+ukf sys st Nothing  = blindUKF sys st

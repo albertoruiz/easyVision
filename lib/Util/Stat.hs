@@ -40,7 +40,7 @@ data Stat = Stat { meanVector              :: Vector Double
                  , whitener                :: Matrix Double
                  }
 
--- | Creates a 'Stat' structure from a matrix. Of course, due to lazyness, only the fields required by the particular application will be actually computed.
+-- | Creates a 'Stat' structure from a matrix. Of course, due to laziness, only the fields required by the particular application will be actually computed.
 stat :: Matrix Double -> Stat
 stat x = s where
     m = sumColumns x / fromIntegral (rows x)
