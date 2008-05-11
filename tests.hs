@@ -89,7 +89,7 @@ statTest = (whc =~= ident (rows whc)) &&
            (tc =~= ident (rows  tc)) where
     xs = randomMatrix 100 (10,20) (100,2) <|> randomMatrix 17 (-1,2) (100,2)
     st = stat xs
-    whc = covarianceMatrix $ stat $ normalizedData st
+    whc = covarianceMatrix $ stat $ whitenedData st
     m = meanVector st
     w = whitener st
     f x = w<>(x-m)

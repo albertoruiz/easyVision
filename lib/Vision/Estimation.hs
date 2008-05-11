@@ -87,8 +87,8 @@ withNormalization :: (Matrix Double -> Matrix Double) -- ^ left modifier (inv fo
 withNormalization lt estimateRelation dest orig = lt wd <> h <> wo where
     std = stat (matrix dest)
     sto = stat (matrix orig)
-    nd = toLists (normalizedData std)
-    no = toLists (normalizedData sto)
+    nd = toLists (whitenedData std)
+    no = toLists (whitenedData sto)
     h = estimateRelation nd no
     wd = whiteningTransformation std
     wo = whiteningTransformation sto

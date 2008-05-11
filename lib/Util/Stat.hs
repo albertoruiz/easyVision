@@ -27,6 +27,7 @@ module Util.Stat
 
 import Numeric.LinearAlgebra
 import Data.List(transpose,sortBy,minimumBy)
+import Data.Function(on)
 
 -- | 1st and 2nd order statistics and other useful information extracted from a multivariate sample, where observations are given as rows of a matrix.
 
@@ -35,21 +36,26 @@ data Stat = Stat { meanVector              :: Vector Double
                  , eigenvalues             :: Vector Double
                  , eigenvectors            :: Matrix Double
                  , invCov                  :: Matrix Double
-                 , normalizedData          :: Matrix Double
+                 , whitenedData            :: Matrix Double
                  , whiteningTransformation :: Matrix Double -- ^ homogeneous transformation which includes centering
                  , whitener                :: Matrix Double
+                 , varianceVector          :: Vector Double
+                 , normalizedData          :: Matrix Double
                  }
 
 -- | Creates a 'Stat' structure from a matrix. Of course, due to laziness, only the fields required by the particular application will be actually computed.
 stat :: Matrix Double -> Stat
 stat x = s where
-    m = sumColumns x / fromIntegral (rows x)
+    m = mean x
     xc = x |-| m
     c = (trans xc <> xc) / fromIntegral (rows x -1)
     (l,v') = eigSH' c
     v = trans v'
     lastrow = fromList $ replicate (cols x) 0 ++[1.0::Double]
     w = diag (1/sqrt l) <> v
+    n = rows x
+    n' = fromIntegral n / fromIntegral (n-1)
+    vars = n' .* mean (xc^2)
     s = Stat { meanVector = m
              , covarianceMatrix = c
              , eigenvalues = l
@@ -59,15 +65,30 @@ stat x = s where
              , whiteningTransformation = w <|> -w <> m
                                            <->
                                          lastrow
-             , normalizedData = xc <> trans w
+             , whitenedData = xc <> trans w
+             , varianceVector = vars
+             , normalizedData = (x |-| m) |/| sqrt vars
              }
 
 sumColumns m = constant 1 (rows m) <> m
 
+byRows op mat vec = mat `op` (ones `outer` vec)
+    where ones = constant 1 (rows mat)
 
 infixl 5 |-|, |+|
-mat |-| vec = mat - constant 1 (rows mat) `outer` vec
-mat |+| vec = mat + constant 1 (rows mat) `outer` vec
+infixl 7 |/| -- : |*|
+
+(|-|) = byRows (-)
+(|+|) = byRows (+)
+--(|*|) = byRows (*)
+(|/|) = byRows (/)
+
+----------------------------------------------------------------------
+
+mean m = ones <> m
+    where r = rows m
+          k = 1 / fromIntegral r
+          ones = constant k r
 
 ----------------------------------------------------------------------
 
@@ -109,9 +130,6 @@ pca (ReconstructionQuality prec) st = pca (NewDimension n) st where
     prec' = if prec <=0.0 || prec >= 1.0
                 then error "the reconstruction quality must be 0<prec<1"
                 else prec
-
-
-on f g = \x y -> f (g x) (g y)
 
 {- | PedroE's algorithm. For example, with @dist x y = abs (x-y)@ we have:
 
