@@ -47,7 +47,7 @@ $(CDIR)/auxIpp.o: $(CDIR)/auxIpp.c $(CDIR)/auxIpp.h
 $(CDIR)/adapt.o: $(CDIR)/adapt.c $(CDIR)/adapt.h
 	gcc -O4 -c -I$(IPP)/include $(CDIR)/adapt.c -o $(CDIR)/adapt.o
 
-$(CDIR)/adapt.c: $(CDIR)/adapter.hs $(CDIR)/functions.txt
+$(CDIR)/adapt.c: $(CDIR)/adapter.hs $(CDIR)/Parser.hs $(CDIR)/functions.txt
 	cd $(CDIR); ghc -O --make adapter; ./adapter;
 
 

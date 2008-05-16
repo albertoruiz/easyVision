@@ -3,45 +3,37 @@ module Main where
 import System.Environment
 import Data.List
 import Debug.Trace
+import Parser
+import Control.Monad
 
 debug x = trace (show x) x
-
-getHeader ipp [header,name] = do
-    f <- readFile (ipp++"/include/"++header)
-    let raw = clean f
-        thing = "IPPAPI(IppStatus,"++name++","
-        found = filter (isPrefixOf thing) (tails raw)
-        a = if null found then error $ name ++ " not found on "++header
-                          else head found
-        b = head $ filter (isSuffixOf "))") (inits a)
-    return (prep.asList $ b)
-
-clean = rep (") )","))") . rep (" (","(")  . rep ("( ","(") . rep (" ( ","(") . rep (", ",",")
 
 rep (c,r) [] = []
 rep (c,r) f@(x:xs) 
   | c `isPrefixOf` f = r ++ rep (c,r) (drop (length c) f)
   | otherwise        = x:(rep (c,r) xs)
 
-asList = words . rep ("\n"," ") . rep ("("," ") . rep (")"," ") . rep (","," ") . rep ("const"," ")
+noconst h = h { args = map f (args h) }
+    where f (ts,n) = (filter (/="const") ts, n)
 
-prep hl = (name,args) where
-    name = hl!!2
-    args = p2 $ drop 3 hl
-
-p2 [] = []
-p2 (a:b:rest) = (a,b) : p2 rest
+-- convert the parsed header structure to the most simple tuple used before
+toTuple h = (name h, map f (args h))
+    where f ([t],n) = (t,n)
 
 main = do
     ipp <- getEnv "IPP"
     f <- readFile "functions.txt"
-    let names = map words (lines f)
-    hds <- mapM (getHeader ipp) names
-    mapM_ (putStrLn.fst) hds
+    let hdsnames = map words (lines f)
+        names = map last hdsnames
+        headers = map ((ipp++"/include/")++) $ nub (map head hdsnames)
+    hs <- fmap (map noconst . filter ((`elem` names) . name) . concatMap getHeaders) (mapM readFile headers)
+    mapM_ (print.name) hs
+
+    let hds = map toTuple hs
     writeFile "adapt.h" (chead ++ (unlines $ map mkh hds))
     writeFile "adapt.c" (cdef ++ (unlines $ map mkd hds))
     writeFile "Adapt.hs" (wmod ++ (unlines $ map mkw hds))
-    writeFile "Auto.hs" (autodefs hds)
+    writeFile "Auto.hs" (autodefs hs)
 
 
 mkh' (n,as) = "int "++n ++"x(" ++ concat (intersperse ", " (map tr' as))++")"
@@ -185,7 +177,8 @@ arity 1 tns = hasDst tns && ("pSrc" `elem` tns || "pSrc[3]" `elem` tns)
 arity 0 tns = hasDst tns && not (arity 2 tns) && not (arity 1 tns)
 
 
-autofun k hds = unlines [ver k f | f@(_, args) <- hds, arity k (map snd args)]
+--autofun k hds = unlines [ver k f | f@(_, args) <- hds, arity k (map snd args)]
+autofun k hds = unlines [ver k (toTuple h) (doc h) | h <- hds, arity k (map snd (args h))]
 
 autodefs hds = (automod++) $ rep ("DstStep","dstStep") $ rep ("[3]","") $ rep ("(f )","f") $
     "\n-------- arity 0 -------------\n\n" ++
@@ -196,7 +189,7 @@ autodefs hds = (automod++) $ rep ("DstStep","dstStep") $ rep ("[3]","") $ rep ("
     autofun 2 hds
     ++ "\n----------------------------\n"
 
-ver k (n,args) = "io"++drop 4 n ++" "++ par ++ " = " ++ scc ++ mk ++ "\n    where " ++
+ver k (n,args) doc = mkdoc ++ "io"++drop 4 n ++" "++ par ++ " = " ++ scc ++ mk ++ "\n    where " ++
                      "f " ++ unwords (map tr args') ++ " = " ++ n ++" "++ unwords (map tr args) ++ "\n"
     where args' = reorderArgs ari args
           --tr ("IppiSize",n) = n++"_w "++n++"_h"
@@ -207,6 +200,7 @@ ver k (n,args) = "io"++drop 4 n ++" "++ par ++ " = " ++ scc ++ mk ++ "\n    wher
           mk = autoname++" ("++unwords ["f",par]++") "++"\""++n++"\""
           autoname = "auto_"++show k++"_" ++(suffix n) where
           scc = "{-# SCC \""++n++"\" #-} "
+          mkdoc = "{- | " ++ doc ++ " -}\n"
 
 suffix n = (iterate (tail.dropWhile (/='_')) n) !! k
     where k = length (filter (== '_') n) - 1

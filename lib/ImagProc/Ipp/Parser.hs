@@ -1,4 +1,7 @@
-module Main where
+module Parser(
+    Argument, Header(..),
+    getHeaders
+) where
 
 import Text.ParserCombinators.Parsec
 import System.Environment
@@ -46,11 +49,14 @@ main = do
     ipp <- getEnv "IPP"
     header:_ <- getArgs
     f <- readFile (ipp++"/include/"++header)
-    let coms = comments f
-    let hds = map (addComment coms) (headers f)
+    let hds = getHeaders f
     print.length $ hds
     mapM_ shfun hds
     --putStr . unlines . map name $ hds
+
+getHeaders :: String -> [Header]
+getHeaders f = map (addComment coms) (headers f)
+    where coms = comments f
 
 
 comments f = case parse parseComments "" f of

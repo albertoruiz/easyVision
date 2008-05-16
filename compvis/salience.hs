@@ -57,7 +57,7 @@ main = do
             cs = map (redu.fst3) $ contours 100 pixarea 128 True (toGray imgreg)
 
         inWin w2 $ do
-            drawImage imgreg
+            drawImage $ copyMask32f (float $ gray orig) (toGray imgreg)
 
         inWin w $ do
             let pts = getPoints32f 200 . thresholdVal32f (mx*th) 0 IppCmpLess . localMax (2*rad+1) $ img
@@ -69,10 +69,10 @@ main = do
             setColor 1 0 0
             when (not (null pts)) $ do
                 renderPrimitive Points (mapM_ vertex (pixelsToPoints sz pts))
-            --pixelCoordinates sz
-            --setColor 1 0 0
-            --lineWidth $= 2
-            --mapM_ shcont cs
+            pixelCoordinates sz
+            setColor 1 0 0
+            lineWidth $= 2
+            mapM_ shcont cs
 
 fst3 (a,_,_) = a
 
