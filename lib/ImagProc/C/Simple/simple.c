@@ -5,7 +5,7 @@ int getPoints32f(float * pSrc, int sstep, int sr1, int sr2, int sc1, int sc2,
                  int max, int* tot, int* hp) {
     int r,c;
     int pos = 0;
-    int maxpos = 2*max-3;
+    int maxpos = 2*max;
     for (r=sr1; r<=sr2; r++) {
         for(c=sc1; c<=sc2; c++) {
             if(pos>=maxpos) {
@@ -140,11 +140,11 @@ int localMaxScale3(float * pSrc1, int sstep1,
 #define X3(r,c) (*(pSrc3+(r)*sstep3/4+(c)))
     int r,c;
     int pos = 0;
-    int maxpos = 2*max-3;
+    int maxpos = 2*max;
     for (r=sr1+1; r<sr2; r++) {
         for(c=sc1+1; c<sc2; c++) {
             if(pos>=maxpos) {
-                *tot = max*2;
+                *tot = maxpos;
                 return 1;
             }
             //printf("%d %d \n",r,c);

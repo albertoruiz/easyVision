@@ -23,7 +23,7 @@ module ImagProc.ImageProcessing (
     secondOrder, hessian,
     getCorners,
     filter32f, filter8u,
-    gaussS
+    gaussS,gaussS'
 ) where
 
 import ImagProc.Ipp.Core
@@ -113,8 +113,12 @@ filter8u mask = f where
 --------------------------------------------------------------------
 
 -- | to do
-gaussS :: Float -> ImageFloat -> ImageFloat
-gaussS s = filter32f mask . filter32f (transpose mask)
-    where mask = nor [map (fg s) [-k .. k]] where k = fromIntegral (ceiling (2*s))
+gaussS' :: Float -> Float -> ImageFloat -> ImageFloat
+gaussS' ext s = filter32f mask . filter32f (transpose mask)
+    where mask = nor [map (fg s) [-k .. k]] where k = fromIntegral (ceiling (ext*s))
           fg s x = exp (-0.5* (x/s)^2)
           nor m = map (map (/s)) m where s = sum (concat m)
+
+-- | to do
+gaussS :: Float -> ImageFloat -> ImageFloat
+gaussS = gaussS' 3

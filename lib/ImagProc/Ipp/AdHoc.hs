@@ -282,6 +282,22 @@ maxIndx (F im) = unsafePerformIO $ do
     free py
     return (v,Pixel (fromIntegral y) (fromIntegral x))
 
+-- | Returns the maximum value and its position in the roi of an image32f. The position is relative to the image.
+maxIndx32f :: ImageFloat -> (Float,Pixel)
+maxIndx32f (F im) = unsafePerformIO $ do
+    let roi@(ROI r1 r2 c1 c2) = vroi im
+    mx <- malloc
+    px <- malloc
+    py <- malloc
+    (ippiMaxIndx_32f_C1R // dst im (vroi im)) mx px py // checkIPP "maxIndx" [im]
+    v <- peek mx
+    x <- peek px
+    y <- peek py
+    free mx
+    free px
+    free py
+    return (v,Pixel (r1+fromIntegral y) (c1+fromIntegral x))
+
 -- | Returns the maximum value and its position in the roi of an image8u. The position is relative to the image.
 maxIndx8u :: ImageGray -> (CUChar,Pixel)
 maxIndx8u (G im) = unsafePerformIO $ do
