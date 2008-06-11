@@ -16,6 +16,8 @@ ippi.h  ippiCopy_8u_C3R
 ippi.h  ippiCopy_8u_C3C1R
 ippi.h  ippiCopy_8u_C1C3R
 ippcv.h ippiIntegral_8u32f_C1R
+ippcv.h ippiSqrIntegral_8u32f_C1R
+ippcv.h ippiRecStdDev_32f_C1R
 ippi.h ippiAbs_32f_C1R
 ippi.h  ippiFilterSobelVert_32f_C1R
 ippi.h  ippiFilterSobelHoriz_32f_C1R
@@ -46,6 +48,10 @@ ippi.h  ippiImageJaehne_32f_C1R
 ippi.h  ippiMinMax_32f_C1R
 ippi.h  ippiMaxIndx_32f_C1R
 ippi.h  ippiMaxIndx_8u_C1R
+ippi.h  ippiMaxEvery_8u_C1IR
+ippi.h  ippiMaxEvery_32f_C1IR
+ippi.h  ippiMinEvery_8u_C1IR
+ippi.h  ippiMinEvery_32f_C1IR
 ippcv.h ippiCannyGetSize
 ippcv.h ippiCanny_32f8u_C1R
 ippi.h  ippiHistogramRange_8u_C1R

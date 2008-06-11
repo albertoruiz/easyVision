@@ -30,7 +30,9 @@ plotpoints (x1,y1) (x2,y2) title l = do
     gnuplot $ "set size square; plot "++rg x1 x2++" "++rg y1 y2++" \"-\" with points title '"++title++"'\n"
               ++ prep l
 
-centerFlip xwidth [x, y] = [-(x-c)/c,-(y-c)/c] where c = fromIntegral xwidth / 2
+centerFlip xwidth ywidth [x, y] = [-(x-c)/c,-(y-d)/c]
+    where c = fromIntegral xwidth / 2
+          d = fromIntegral ywidth / 2
 
 flipx = \[x,y]->[-x,y]
     
@@ -49,14 +51,14 @@ correctFundamental f = f' where
 
 
 
-stereo xwidth datafile = do    
+stereo xwidth ywidth datafile = do    
     correspondences <- readMatrix `fmap` readFile datafile
     let raw  = toLists $ takeColumns 2 correspondences
     let raw'  = toLists $ dropColumns 2 correspondences
-    plotpoints (0,xwidth) (xwidth,0) "first view" raw
-    plotpoints (0,xwidth) (xwidth,0) "second view" raw'
-    let pts = map (centerFlip xwidth) raw
-    let pts' = map (centerFlip xwidth) raw'
+    plotpoints (0,ywidth) (xwidth,0) "first view" raw
+    plotpoints (0,ywidth) (xwidth,0) "second view" raw'
+    let pts = map (centerFlip xwidth ywidth) raw
+    let pts' = map (centerFlip xwidth ywidth) raw'
     plotpoints (1,-1) (-1,1) "first view" pts
     plotpoints (1,-1) (-1,1) "second view" pts'
 
@@ -177,5 +179,5 @@ rectif datafile = do
 -}
     
 main = do
-    stereo 640 "corrs.txt"
+    stereo 640 640 "corrs.txt"
     --rectif "correspondences.txt"

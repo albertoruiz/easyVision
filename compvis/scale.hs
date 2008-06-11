@@ -1,5 +1,7 @@
+{-# OPTIONS -fbang-patterns #-}
+
 import EasyVision
-import Data.List(transpose,minimumBy)
+import Data.List(transpose,minimumBy,foldl1')
 import Graphics.UI.GLUT hiding (RGB,Size,minmax,histogram,Point,set)
 import Debug.Trace
 import Foreign
@@ -7,10 +9,31 @@ import ImagProc.Ipp.Core
 import Text.Printf(printf)
 import GHC.Float(float2Double)
 import Control.Monad(when)
+import Control.Parallel.Strategies
+
+inParallel x = parMap rnf id x
+
+data Stage = Stage
+    { stSigma    :: Float
+    , stResponse :: ImageFloat
+    , stMaxLoc   :: ImageFloat
+    , stFiltMax  :: ImageFloat }
+
+mkStage fun img sigma = Stage
+    { stSigma    = sigma
+    , stResponse = resp
+    , stMaxLoc   = maxloc
+    , stFiltMax  = filtMax
+    } where resp = fun sigma img
+            maxloc  = copyMask32f resp mask
+            mask    = compare32f IppCmpEq filtMax resp
+            filtMax = filterMax32f (round (2*sigma)) resp
+
+---------------------------------------------------------------
 
 hsrespP sigma = sqrt32f
              . thresholdVal32f 0 0 IppCmpLess 
-             . hessian 
+             . hessian
              . secondOrder 
              . ((sigma^2/10) .*)
              . gaussS sigma
@@ -40,7 +63,7 @@ exper sigma = id
 main = do
     sz <- findSize
 
-    (cam,ctrl) <- getCam 0 sz >>= withChannels >>= inThread >>= withPause
+    (cam,ctrl) <- getCam 0 sz >>= withChannels {- >>= inThread-} >>= withPause
 
     prepare
 
@@ -56,9 +79,9 @@ main = do
                           ]
 
     w <- evWindow (Pixel 200 200,[]) "scale" sz Nothing  (mouse (kbdcam ctrl))
-    wd <- evWindow () "feature" (Size 200 200) Nothing (const (kbdcam ctrl))
+    wd <- evWindow 0 "feature" (Size 200 200) Nothing (const (kbdcam ctrl))
 
-    launchFreq 25 (worker o cam w wd)
+    launchFreq 10 (worker o cam w wd)
 
 -----------------------------------------------------------------
 
@@ -75,7 +98,7 @@ worker o cam w wd = do
     what <- getParam o "what" :: IO Int
     steps <- getParam o "steps" :: IO Int
 
-    let sigmas = [sigma*k^n | n <- [0..]] where k = 2**(1/fromIntegral steps)
+    let sigmas = [sigma*k^i | i <- [0..n+1]] where k = 2**(1/fromIntegral steps)
 
     orig <- cam
     let imr = if test == 1 then blob rtest
@@ -87,30 +110,62 @@ worker o cam w wd = do
             3 -> laresp
             4 -> exper
 
-        pyr = map (flip proc imr) sigmas
+        pyr = parMap rnf (mkStage proc imr) sigmas
 
-        rawpts = siftPoints 100 h pyr sigmas
-        pts = take tot $ concat $ reverse $ take n $ zipWith (fixPts steps sigma) rawpts [1..]
+
+    let rawpts = inParallel $ detectPoints 100 h pyr
+        pts = take tot $ concat $ reverse $ zipWith (fixPts steps sigma) rawpts [1..]
 
     inWin w $ do
-        drawImage $ if what == 0 then (pyr!!n) else imr
+        drawImage $ if what == 0 then (stResponse $ pyr!!n) else imr
         mapM_ box pts
+        --text2D 20 20 (show $ map (size.stResponse) pyr)
 
 
-    inWin wd $ when (not $ null pts) $ do
+
+    inWin wd $ when (not (null pts)) $ do
         (clicked,_) <- getW w
         let sel = minimumBy (compare `on` dist clicked) pts
             feat = float $ resize (Size 50 50) (modifyROI (const $ roiOf sel) $ gray orig)
         drawImage $ scale32f8u (-1) 1 $ sobelHoriz feat
 
+    frame <- getW wd
+    when (frame==100) $ error "terminado"
+    putW wd (frame+1)
+
 ------------------------------------------------------------------
 
-siftPoints nmax h imgs sigmas = zipWith3 (localMaxScale3 nmax h) l1 l2 l3
-    where l1 = zipWith g imgs sigmas
-          l2 = zipWith f (tail imgs) (tail sigmas)
-          l3 = zipWith g (tail $ tail imgs) (tail $ tail sigmas)
-          f im s = localMax (round (2*s)) im
-          g im s = filterMax32f (round (2*s)) im
+detectPoints nmax h stages = zipWith3 (localMaxScale3 nmax h) l1 l2 l3
+    where l1 = map stFiltMax stages
+          l2 = map stMaxLoc  (tail stages)
+          l3 = tail (tail l1)
+
+
+detectPoints' nmax h stages = zipWith3 fun l1 l2 l3
+    where l1 = stages
+          l2 = tail l1
+          l3 = tail l2
+          fun a b c = extractPixels h (maxLoc3 a b c)
+
+maxLoc3 stUp stIt stDown = copyMask32f it mask
+    where mask = compare32f IppCmpEq maxOf3 it
+          it = stMaxLoc stIt
+          maxOf3 = foldl1' maxEvery (map stFiltMax [stUp,stIt,stDown])
+
+foldI f a img = go r1 c1 a
+    where ROI r1 r2 c1 c2 = theROI img
+          go !r !c s = if r==r2 && c==c2 
+                         then f s r c
+                         else if c==c2
+                                 then go (r+1) c1   (f s r c)
+                                 else go r    (c+1) (f s r c)
+
+
+extractPixels' h img = foldI f [] img
+    where f ps a b = if val a b > h then Pixel a b : ps else ps
+          val i j = unsafePerformIO $ val32f img (Pixel i j)
+
+extractPixels h img = getPoints32f 200 (thresholdVal32f h 0 IppCmpLess img)
 
 ------------------------------------------------------------------
 
@@ -162,3 +217,12 @@ mouse def _ a b c d = def a b c d
 autoscale im = f im
     where (mn,mx) = minmax im
           f = if mn == mx then scale32f8u 0 1 else scale32f8u mn mx
+
+instance NFData Pixel where
+    rnf (Pixel r c) = rnf r
+
+instance NFData Stage where
+    rnf s = rnf (stMaxLoc s)
+
+instance NFData ImageFloat where
+    rnf (F x) = rwhnf (ptr x)

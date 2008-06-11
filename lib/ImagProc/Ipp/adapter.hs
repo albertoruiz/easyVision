@@ -155,12 +155,12 @@ cdef  = "/* generated automatically by adapter.hs */\n\n"
 
 ------------------------------------------------------------------
 
-restArgs arity args = [(t,n)| (t,n) <- args, arity n]
-mainArgs arity args = [(t,n)| (t,n) <- args, not (arity n)]
+restArgs ar args = [(t,n)| (t,n) <- args, ar n]
+mainArgs ar args = [(t,n)| (t,n) <- args, not (ar n)]
 
-reorderArgs arity args = restArgs arity args ++ mainArgs arity args
+reorderArgs ar args = restArgs ar args ++ mainArgs ar args
 
-pickArgs arity args = (restArgs arity args, mainArgs arity args)
+pickArgs ar args = (restArgs ar args, mainArgs ar args)
 
 arityaux 0 t = not $ t `elem` ["pDst", "dstStep", "DstStep","pDst[3]","dstStep[3]","roiSize","dstRoiSize"]
 
@@ -168,25 +168,33 @@ arityaux 1 t = arityaux 0 t && not (t `elem` ["pSrc", "srcStep","pSrc[3]","srcSt
 
 arityaux 2 t = arityaux 0 t && not (t `elem` ["pSrc1", "src1Step", "pSrc2", "src2Step","pSrc1[3]", "src1Step[3]", "pSrc2[3]", "src2Step[3]"])
 
+arityaux 11 t = not (t `elem` ["pSrc","srcStep","pSrcDst","srcDstStep","roiSize"])
 
-hasDst tns = ("pDst" `elem` tns || "pDst[3]" `elem` tns) 
+
+-- arity is the general detector, while arityaux is the detector of additional arguments
+hasDst tns = ("pDst" `elem` tns || "pDst[3]" `elem` tns)
            && ("roiSize" `elem` tns || "dstRoiSize" `elem` tns)
            && ("dstStep" `elem` tns)
 arity 2 tns = hasDst tns && ("pSrc2" `elem` tns || "pSrc2[3]" `elem` tns)
 arity 1 tns = hasDst tns && ("pSrc" `elem` tns || "pSrc[3]" `elem` tns)
 arity 0 tns = hasDst tns && not (arity 2 tns) && not (arity 1 tns)
+arity 11 tns = "pSrcDst" `elem` tns -- inplace
 
 
 --autofun k hds = unlines [ver k f | f@(_, args) <- hds, arity k (map snd args)]
 autofun k hds = unlines [ver k (toTuple h) (doc h) | h <- hds, arity k (map snd (args h))]
 
-autodefs hds = (automod++) $ rep ("DstStep","dstStep") $ rep ("[3]","") $ rep ("(f )","f") $
+autodefs hds = (automod++) $ rep ("srcDstXStep","srcDstStep")
+                           $ rep ("DstStep","dstStep") $ rep ("srcDstStep","srcDstXStep")
+                           $ rep ("[3]","") $ rep ("(f )","f") $
     "\n-------- arity 0 -------------\n\n" ++
     autofun 0 hds
     ++ "-------- arity 1 -------------\n\n" ++
     autofun 1 hds
     ++ "\n------ arity 2 -------------\n\n" ++
     autofun 2 hds
+    ++ "\n------ inplace arity 2 ------\n\n" ++
+    autofun 11 hds
     ++ "\n----------------------------\n"
 
 ver k (n,args) doc = mkdoc ++ "io"++drop 4 n ++" "++ par ++ " = " ++ scc ++ mk ++ "\n    where " ++

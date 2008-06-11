@@ -22,6 +22,7 @@ module ImagProc.Ipp.Pure (
     rgbToHSV, hsvToRGB,
     thresholdVal32f, thresholdVal8u,
     filterMax32f,
+    maxEvery, minEvery,
     sobelVert, sobelHoriz,
     gauss, laplace, median, highPass8u,
     magnitudePack,
@@ -41,6 +42,12 @@ infixl 6  |+|, |-|
 mkId f = unsafePerformIO . f id
 mkInt f a b = unsafePerformIO (f intersection a b)
 mkShrink s f = unsafePerformIO . f (shrink s)
+
+-- should be generic using clone (must break cycle of import)
+mkIdIPInt32f f a b = unsafePerformIO $ do
+    r <- ioCopy_32f_C1R (intersection (theROI a)) b
+    f undefined a r
+    return r
 
 
 -- | image scaling
@@ -176,3 +183,13 @@ dilate3x3 = mkShrink (1,1) ioDilate3x3_8u_C1R
 -- | erosion 3x3
 erode3x3 :: ImageGray -> ImageGray
 erode3x3 = mkShrink (1,1) ioErode3x3_8u_C1R
+
+------------------------------------------------------
+
+-- | pixelwise maximum of two images
+maxEvery :: ImageFloat -> ImageFloat -> ImageFloat
+maxEvery = mkIdIPInt32f ioMaxEvery_32f_C1IR
+
+-- | pixelwise minimum of two images
+minEvery :: ImageFloat -> ImageFloat -> ImageFloat
+minEvery = mkIdIPInt32f ioMinEvery_32f_C1IR

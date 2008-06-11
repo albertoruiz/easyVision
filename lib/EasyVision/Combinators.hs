@@ -157,6 +157,7 @@ inThread cam = do
     cam >>= putMVar c
     let loop = do img <- cam
                   swapMVar c img
+                  threadDelay (10^6 `div` 50)
                   loop
     forkIO loop
     return (readMVar c)

@@ -35,7 +35,10 @@ module ImagProc.Ipp.AutoGen(
 
     auto_2_8u_C1R,
     auto_2_32f_C1R,
-    auto_2_8u_C1RSfs
+    auto_2_8u_C1RSfs,
+
+    auto_11_8u_C1IR,
+    auto_11_32f_C1IR
 
 ) where
 
@@ -107,7 +110,7 @@ auto_1_32f_C1MR = error $ "auto_1_32f_C1MR not yet defined"
 
 ----------------------------------------------------------
 
-imgAsR2 roifun im1 im2 = do 
+imgAsR2 roifun im1 im2 = do
     r <- imgAs im1
     return r {vroi = roifun (vroi im1) (vroi im2)}
 
@@ -124,3 +127,15 @@ auto_2_32f_C1R f msg roifun (F im1) (F im2) = do
     return (F r)
 
 auto_2_8u_C1RSfs = auto_2_8u_C1R
+
+------------------------------------------------------------
+
+-- in place, roifun not used, using the rois of the inputs
+
+cr2i f msg im1 im2 = f // src im1 (vroi im1) // dst im2 (vroi im2) // checkIPP msg [im1,im2]
+
+auto_11_32f_C1IR f msg _ (F im1) (F im2) = do
+    cr2i f msg im1 im2
+
+auto_11_8u_C1IR f msg _ (G im1) (G im2) = do
+    cr2i f msg im1 im2
