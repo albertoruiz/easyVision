@@ -38,6 +38,7 @@ main = do
 
 mkh' (n,as) = "int "++n ++"x(" ++ concat (intersperse ", " (map tr' as))++")"
 
+tr' ("IppiRect",n) = "IppiRect* "++n
 tr' ("IppiSize",n) = "IppiSize* "++n
 tr' ("IppiPoint",n) =  "IppiPoint* "++n
 tr' ("Ipp8u*","pSrc[3]") = "const Ipp8u* const pSrc[3]"
@@ -49,6 +50,7 @@ mkh (n,as) = "int "++n ++"x(" ++ concat (intersperse ", " (map tr as))++");"
 
 tr (t,n) = ct (t ++ isPointer n)
 
+ct "IppiRect" = "void*"
 ct "IppiSize" = "void*"
 ct "IppiPoint" = "void*"
 ct "IppiMaskSize" = "int"
@@ -82,6 +84,7 @@ ct x = error $ " UNKNOWN TYPE: "++x
 mkd (n,as)  = mkh' (n,as) ++ " {\n" ++
               "    return "++n++"(" ++ concat (intersperse ", " (map cl as))++");\n}\n"
 
+cl ("IppiRect" , n) = '*':n
 cl ("IppiSize" , n) = '*':n
 cl ("IppiPoint", n) = '*':n
 cl (_,n) = takeWhile (/= '[') n
@@ -97,7 +100,7 @@ mkw (n,as) = rep ("DstStep","dstStep")$
              ++ auxStruct freeStruct as
              ++ "    return r\n"
 
-auxStruct act args = unlines $ map (act.snd) $ filter (\(t,n)->t=="IppiSize"||t=="IppiPoint") args
+auxStruct act args = unlines $ map (act.snd) $ filter (\(t,n)->t=="IppiSize"||t=="IppiPoint"||t=="IppiRect") args
 initStruct n = "    p"++n++" <- new "++n
 freeStruct n = "    free p"++n
 
@@ -114,6 +117,7 @@ wt (t,n) = ht (t ++ isPointer n)
 
 isPointer n = if last n == ']' then "*" else ""
 
+ht "IppiRect" = "Ptr IppiSize"
 ht "IppiSize" = "Ptr IppiSize"
 ht "IppiPoint" = "Ptr IppiPoint"
 ht "IppiMaskSize" = "CInt"
@@ -164,9 +168,11 @@ pickArgs ar args = (restArgs ar args, mainArgs ar args)
 
 arityaux 0 t = not $ t `elem` ["pDst", "dstStep", "DstStep","pDst[3]","dstStep[3]","roiSize","dstRoiSize"]
 
-arityaux 1 t = arityaux 0 t && not (t `elem` ["pSrc", "srcStep","pSrc[3]","srcStep[3]"])
+arityaux 1 t = arityaux 0 t && not (t `elem` ["pSrc", "srcStep","pSrc[3]","srcStep[3]", "pSqr", "sqrStep"])
 
-arityaux 2 t = arityaux 0 t && not (t `elem` ["pSrc1", "src1Step", "pSrc2", "src2Step","pSrc1[3]", "src1Step[3]", "pSrc2[3]", "src2Step[3]"])
+arityaux 2 t = arityaux 0 t && not (t `elem` ["pSrc1", "src1Step", "pSrc2", "src2Step","pSrc1[3]",
+                                              "src1Step[3]", "pSrc2[3]", "src2Step[3]",
+                                              "pSrc", "srcStep","pSqr","sqrStep"])
 
 arityaux 11 t = not (t `elem` ["pSrc","srcStep","pSrcDst","srcDstStep","roiSize"])
 
@@ -175,11 +181,13 @@ arityaux 11 t = not (t `elem` ["pSrc","srcStep","pSrcDst","srcDstStep","roiSize"
 hasDst tns = ("pDst" `elem` tns || "pDst[3]" `elem` tns)
            && ("roiSize" `elem` tns || "dstRoiSize" `elem` tns)
            && ("dstStep" `elem` tns)
-arity 2 tns = hasDst tns && ("pSrc2" `elem` tns || "pSrc2[3]" `elem` tns)
-arity 1 tns = hasDst tns && ("pSrc" `elem` tns || "pSrc[3]" `elem` tns)
+arity 2 tns = hasDst tns && ("pSrc2" `elem` tns || "pSrc2[3]" `elem` tns || special tns)
+arity 1 tns = hasDst tns && ("pSrc" `elem` tns || "pSrc[3]" `elem` tns) && not (special tns)
 arity 0 tns = hasDst tns && not (arity 2 tns) && not (arity 1 tns)
 arity 11 tns = "pSrcDst" `elem` tns -- inplace
 
+
+special tns = "pSrc srcStep pSqr sqrStep pDst dstStep roiSize rect" == unwords tns
 
 --autofun k hds = unlines [ver k f | f@(_, args) <- hds, arity k (map snd args)]
 autofun k hds = unlines [ver k (toTuple h) (doc h) | h <- hds, arity k (map snd (args h))]

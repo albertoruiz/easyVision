@@ -31,6 +31,7 @@ module ImagProc.Ipp.Core
           , ImageRGB(C)
           , ImageGray(G)
           , ImageFloat(F)
+          , ImageDouble(D)
           , ImageYUV (Y)
           -- * Image coordinates
           , Pixel (..)
@@ -68,7 +69,7 @@ ti = fromIntegral
 data Size  = Size  {height :: !Int, width :: !Int} deriving (Show, Eq)
 
 -- | Image type descriptor:
-data ImageType = RGB | Gray | I32f | YUV deriving (Show,Eq)
+data ImageType = RGB | Gray | I32f | I64f | YUV deriving (Show,Eq)
 
 -- | Image representation:
 data Img = Img { fptr :: {-# UNPACK #-}!(ForeignPtr ())  -- ^ automatic allocated memory
@@ -106,6 +107,7 @@ img' t sz ly (Size r c) = do
 img Gray = img' Gray 1 1
 img RGB  = img' RGB  1 3
 img I32f = img' I32f 4 1
+img I64f = img' I64f 8 1
 img YUV  = img' YUV  1 2 -- img' YUV ? ? -- hmm.. is 4:2:0
 
 -- | Extracts the data in a I32f image into a list of lists.
@@ -291,6 +293,14 @@ instance Image ImageFloat where
     theROI (F im) = vroi im
     modifyROI f (F im) = F im { vroi = f (vroi im) `intersection` (vroi im) }
 
+instance Image ImageDouble where
+    image s = do
+        i <- img I64f s
+        return (D i)
+    size (D Img {isize=s}) = s
+    theROI (D im) = vroi im
+    modifyROI f (D im) = D im { vroi = f (vroi im) `intersection` (vroi im) }
+
 instance Image ImageGray where
     image s = do
         i <- img Gray s
@@ -324,6 +334,9 @@ newtype ImageGray  = G Img
 
 -- | The IPP 32f_C1 image type
 newtype ImageFloat = F Img
+
+-- | The IPP 64f_C1 image type (used mainly as an auxiliary buffer for certain operations)
+newtype ImageDouble = D Img
 
 -- | The yuv 4:2:0 image obtained by mplayer -vo yuv4mpeg
 newtype ImageYUV = Y Img

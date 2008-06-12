@@ -16,9 +16,9 @@ ippi.h  ippiCopy_8u_C3R
 ippi.h  ippiCopy_8u_C3C1R
 ippi.h  ippiCopy_8u_C1C3R
 ippcv.h ippiIntegral_8u32f_C1R
-ippcv.h ippiSqrIntegral_8u32f_C1R
-ippcv.h ippiRecStdDev_32f_C1R
-ippi.h ippiAbs_32f_C1R
+ippcv.h ippiSqrIntegral_8u32f64f_C1R
+ippcv.h ippiRectStdDev_32f_C1R
+ippi.h  ippiAbs_32f_C1R
 ippi.h  ippiFilterSobelVert_32f_C1R
 ippi.h  ippiFilterSobelHoriz_32f_C1R
 ippi.h  ippiFilterGauss_32f_C1R

@@ -38,7 +38,9 @@ module ImagProc.Ipp.AutoGen(
     auto_2_8u_C1RSfs,
 
     auto_11_8u_C1IR,
-    auto_11_32f_C1IR
+    auto_11_32f_C1IR,
+
+    auto_1_8u32f64f_C1R
 
 ) where
 
@@ -68,6 +70,8 @@ imgAsR1 roifun im = do
     return r {vroi = roifun (vroi im)}
 
 cr1 f msg im r = f // src im (vroi r) // dst r (vroi r) // checkIPP msg [im]
+
+cr12 f msg im r1 r2 = f // src im (vroi r2) // src r1 (vroi r2) // dst r2 (vroi r2) // checkIPP msg [im]
 
 auto_1_8u_C1R f msg roifun (G im) = do
     r <- imgAsR1 roifun im
@@ -101,6 +105,15 @@ auto_1_32f8u_C1R f msg roifun (F im) = do
     let r = r' { vroi = roifun (vroi im) }
     cr1 f msg im r
     return (G r)
+
+auto_1_8u32f64f_C1R f msg roifun (F im) = do
+    r' <- img I32f (isize im)
+    let r = r' { vroi = roifun (vroi im) }
+    s' <- img I64f (isize im)
+    let s = s' { vroi = roifun (vroi im) }
+    cr12 f msg im r s
+    return (F r, D s)
+
 
 auto_1_8u_P3C3R = error $ "auto_1_8u_P3C3R not yet defined"
 auto_1_8u_C3P3R = error $ "auto_1_8u_C3P3R not yet defined"
