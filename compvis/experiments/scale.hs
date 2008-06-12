@@ -10,6 +10,7 @@ import Text.Printf(printf)
 import GHC.Float(float2Double)
 import Control.Monad(when)
 import Control.Parallel.Strategies
+import ImagProc.C.Simple(localMaxScale3Simplified)
 
 inParallel x = parMap rnf id x
 
@@ -27,7 +28,12 @@ mkStage fun img sigma = Stage
     } where resp = fun sigma img
             maxloc  = copyMask32f resp mask
             mask    = compare32f IppCmpEq filtMax resp
-            filtMax = filterMax32f (round (2*sigma)) resp
+            filtMax = filterMax32f (1+2*round (sigma)) resp
+
+detectPoints nmax h stages = zipWith3 (localMaxScale3Simplified nmax h) l1 l2 l3
+    where l1 = map stFiltMax stages
+          l2 = map stMaxLoc  (tail stages)
+          l3 = tail (tail l1)
 
 ---------------------------------------------------------------
 
@@ -63,7 +69,7 @@ exper sigma = id
 main = do
     sz <- findSize
 
-    (cam,ctrl) <- getCam 0 sz >>= withChannels {- >>= inThread-} >>= withPause
+    (cam,ctrl) <- getCam 0 sz >>= withChannels >>= inThread >>= withPause
 
     prepare
 
@@ -80,6 +86,7 @@ main = do
 
     w <- evWindow (Pixel 200 200,[]) "scale" sz Nothing  (mouse (kbdcam ctrl))
     wd <- evWindow 0 "feature" (Size 200 200) Nothing (const (kbdcam ctrl))
+--     wdebug <- evWindow () "debug" sz Nothing  (const (kbdcam ctrl))
 
     launchFreq 10 (worker o cam w wd)
 
@@ -110,17 +117,24 @@ worker o cam w wd = do
             3 -> laresp
             4 -> exper
 
-        pyr = parMap rnf (mkStage proc imr) sigmas
+        pyr = map (mkStage proc imr) sigmas
 
 
-    let rawpts = inParallel $ detectPoints 100 h pyr
+    let rawpts = detectPoints 100 h pyr
         pts = take tot $ concat $ reverse $ zipWith (fixPts steps sigma) rawpts [1..]
 
+    --timing $ print $ length $ concat $ rawpts
+
+--     timing $ 
     inWin w $ do
         drawImage $ if what == 0 then (stResponse $ pyr!!n) else imr
         mapM_ box pts
         --text2D 20 20 (show $ map (size.stResponse) pyr)
 
+
+--     inWin wdebug $ do
+--      drawImage $ --maxLoc3 (stFiltMax $ pyr!!(n-1)) (stMaxLoc $ pyr!!n) (stFiltMax $ pyr!!(n+1))
+--                      maxEvery (stFiltMax $ pyr!!(n-1)) (stFiltMax $ pyr!!(n+1))
 
 
     inWin wd $ when (not (null pts)) $ do
@@ -130,42 +144,8 @@ worker o cam w wd = do
         drawImage $ scale32f8u (-1) 1 $ sobelHoriz feat
 
     frame <- getW wd
-    when (frame==100) $ error "terminado"
+    --when (frame==100) $ error "terminado"
     putW wd (frame+1)
-
-------------------------------------------------------------------
-
-detectPoints nmax h stages = zipWith3 (localMaxScale3 nmax h) l1 l2 l3
-    where l1 = map stFiltMax stages
-          l2 = map stMaxLoc  (tail stages)
-          l3 = tail (tail l1)
-
-
-detectPoints' nmax h stages = zipWith3 fun l1 l2 l3
-    where l1 = stages
-          l2 = tail l1
-          l3 = tail l2
-          fun a b c = extractPixels h (maxLoc3 a b c)
-
-maxLoc3 stUp stIt stDown = copyMask32f it mask
-    where mask = compare32f IppCmpEq maxOf3 it
-          it = stMaxLoc stIt
-          maxOf3 = foldl1' maxEvery (map stFiltMax [stUp,stIt,stDown])
-
-foldI f a img = go r1 c1 a
-    where ROI r1 r2 c1 c2 = theROI img
-          go !r !c s = if r==r2 && c==c2 
-                         then f s r c
-                         else if c==c2
-                                 then go (r+1) c1   (f s r c)
-                                 else go r    (c+1) (f s r c)
-
-
-extractPixels' h img = foldI f [] img
-    where f ps a b = if val a b > h then Pixel a b : ps else ps
-          val i j = unsafePerformIO $ val32f img (Pixel i j)
-
-extractPixels h img = getPoints32f 200 (thresholdVal32f h 0 IppCmpLess img)
 
 ------------------------------------------------------------------
 
@@ -187,6 +167,16 @@ fixPts steps sigma l n = map g l where g x = (x,round $ 1.5*sigma*k^n) where k =
 
 dist (Pixel a b) (Pixel r c, n) = (a-r)^2 + (b-c)^2
 
+-------------------------------------------------------------------
+
+mouse _ st (MouseButton LeftButton) Down _ pos@(Position x y) = do
+    (_,l) <- get st
+    st $= (Pixel (fromIntegral y) (fromIntegral x), l)
+mouse _ st (Char 'y') Down _ _ = do
+    (p,l) <- get st
+    st $= (p, p:l)
+mouse def _ a b c d = def a b c d
+
 -------------------------------------
 
 blob rad = unsafePerformIO $ do
@@ -205,18 +195,11 @@ copyTo sz roi im = unsafePerformIO $ do
     copy peq (theROI peq) r roi
     return r
 
-
-mouse _ st (MouseButton LeftButton) Down _ pos@(Position x y) = do
-    (_,l) <- get st
-    st $= (Pixel (fromIntegral y) (fromIntegral x), l)
-mouse _ st (Char 'y') Down _ _ = do
-    (p,l) <- get st
-    st $= (p, p:l)
-mouse def _ a b c d = def a b c d
-
 autoscale im = f im
     where (mn,mx) = minmax im
           f = if mn == mx then scale32f8u 0 1 else scale32f8u mn mx
+
+-------------------------------------
 
 instance NFData Pixel where
     rnf (Pixel r c) = rnf r

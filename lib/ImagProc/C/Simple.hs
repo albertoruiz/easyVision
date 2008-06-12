@@ -98,17 +98,14 @@ foreign import ccall "Simple/simple.h hsvcode"
 
 -------------------------------------------------------------------------------
 
--- | Explores 3 images in a scale space pyramid and returns the local maximum
---   (in the roi of im3, points selected on im2)
-localMaxScale3 :: Int -> Float -> ImageFloat -> ImageFloat -> ImageFloat -> [Pixel]
-localMaxScale3 mx th (F im1) (F im2) (F im3) = unsafePerformIO $ do
+genLocMax f mx th (F im1) (F im2) (F im3) = unsafePerformIO $ do
     r <- mallocArray (2*mx)
     ptot <- malloc
-    ok <- c_localMaxScale3 (castPtr (ptr im1)) (step im1)
-                           (castPtr (ptr im2)) (step im2)
-                           (castPtr (ptr im3)) (step im3)
-                   (r1 (vroi im3)) (r2 (vroi im3)) (c1 (vroi im3)) (c2 (vroi im3))
-                   mx ptot th r
+    ok <- f (castPtr (ptr im1)) (step im1)
+            (castPtr (ptr im2)) (step im2)
+            (castPtr (ptr im3)) (step im3)
+            (r1 (vroi im3)) (r2 (vroi im3)) (c1 (vroi im3)) (c2 (vroi im3))
+            mx ptot th r
     touchForeignPtr (fptr im1)
     touchForeignPtr (fptr im2)
     touchForeignPtr (fptr im3)
@@ -118,7 +115,38 @@ localMaxScale3 mx th (F im1) (F im2) (F im3) = unsafePerformIO $ do
     free r
     return (partitPixel hp)
 
+
+-- | Explores 3 images in a scale space pyramid and returns the local maximum
+--   (in the roi of im3, points selected on im2)
+localMaxScale3 :: Int -> Float -> ImageFloat -> ImageFloat -> ImageFloat -> [Pixel]
+localMaxScale3 = genLocMax c_localMaxScale3
+
 foreign import ccall "Simple/simple.h localMaxScale3"
     c_localMaxScale3 :: Ptr Float -> Int -> Ptr Float -> Int -> Ptr Float -> Int
                         -> Int -> Int -> Int -> Int ->
                         Int -> Ptr CInt -> Float -> Ptr CInt -> IO Int
+
+-------------
+
+-- | A special version of localMaxScale3 for images with filtermaximum
+localMaxScale3Simplified :: Int -> Float -> ImageFloat -> ImageFloat -> ImageFloat -> [Pixel]
+localMaxScale3Simplified = genLocMax c_localMaxScale3Simplified
+
+foreign import ccall "Simple/simple.h localMaxScale3Simplified"
+    c_localMaxScale3Simplified
+                        :: Ptr Float -> Int -> Ptr Float -> Int -> Ptr Float -> Int
+                        -> Int -> Int -> Int -> Int ->
+                        Int -> Ptr CInt -> Float -> Ptr CInt -> IO Int
+
+-------------------------------------------------------------------------------
+
+-- | simple C function for benchmarks
+foreign import ccall "Simple/simple.h csum32f"
+    c_sum32f :: Ptr Float -> Int
+                -> Int -> Int -> Int -> Int
+                -> IO Double
+
+csum32f (F im) = unsafePerformIO $ do
+    let ROI r1 r2 c1 c2 = vroi im
+    r <- c_sum32f (castPtr (ptr im)) (step im) r1 r2 c1 c2
+    return r

@@ -1,4 +1,5 @@
 {-# OPTIONS -fffi #-}
+{-# LANGUAGE MagicHash, UnboxedTuples, BangPatterns #-}
 
 -----------------------------------------------------------------------------
 {- |
@@ -51,6 +52,8 @@ import Foreign.Marshal.Utils(copyBytes)
 import qualified Numeric.LinearAlgebra as LA
 import Vision
 
+import GHC.Base
+import GHC.IOBase
 
 ---------------------------------------
 fi :: Int -> CInt
@@ -68,14 +71,14 @@ data Size  = Size  {height :: !Int, width :: !Int} deriving (Show, Eq)
 data ImageType = RGB | Gray | I32f | YUV deriving (Show,Eq)
 
 -- | Image representation:
-data Img = Img { fptr :: ForeignPtr ()  -- ^ automatic allocated memory
-               , ptr  :: Ptr ()         -- ^ starting point of the image with the required alignment
-               , step :: Int            -- ^ number of bytes of a padded row
-               , itype :: ImageType     -- ^ type of image
-               , datasize :: Int        -- ^ size in bytes of the base type
-               , layers :: Int          -- ^ number of layers
-               , isize :: Size          -- ^ rows and columns of the image
-               , vroi :: ROI            -- ^ ROI where data is assumed to be valid
+data Img = Img { fptr :: {-# UNPACK #-}!(ForeignPtr ())  -- ^ automatic allocated memory
+               , ptr  :: {-# UNPACK #-}!(Ptr ())         -- ^ starting point of the image with the required alignment
+               , step :: {-# UNPACK #-}!Int              -- ^ number of bytes of a padded row
+               , itype :: ImageType                      -- ^ type of image
+               , datasize :: {-# UNPACK #-}!Int          -- ^ size in bytes of the base type
+               , layers :: Int                           -- ^ number of layers
+               , isize :: Size                           -- ^ rows and columns of the image
+               , vroi :: ROI                             -- ^ ROI where data is assumed to be valid
                }
 
 
@@ -375,8 +378,7 @@ distPoints (Point a b) (Point x y) = sqrt $ (a-x)^2+(b-y)^2
 
 
 
-
-
+-------------------------------------------------------------------
 
 -- | Returns the pixel value of an image at a given pixel. NO range checking.
 val32f :: ImageFloat -> Pixel -> IO Float
@@ -401,3 +403,5 @@ val8u (G Img {fptr = fp, ptr = p, datasize = d, step = s}) (Pixel r c) = unsafeP
     v <- peek (advancePtr (castPtr p) (r*s+c))
     touchForeignPtr fp
     return v
+
+------------------------------------------------------------------

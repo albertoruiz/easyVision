@@ -33,7 +33,7 @@ LIBS = -i$(EVLIB)  -I$(IPP)/include \
 all: $(ALL) 
 
 %: %.hs auxc
-	@ghc -O -threaded --make $< -o $@ $(LIBS)
+	@ghc -O2 -threaded --make $< -o $@ $(LIBS)
 
 auxc: $(CDIR)/auxIpp.o $(CDIR)/adapt.o $(CDIR)/Structs.hs \
       $(CONTRIB)

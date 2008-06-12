@@ -45,8 +45,9 @@ mkShrink s f = unsafePerformIO . f (shrink s)
 
 -- should be generic using clone (must break cycle of import)
 mkIdIPInt32f f a b = unsafePerformIO $ do
-    r <- ioCopy_32f_C1R (intersection (theROI a)) b
-    f undefined a r
+    let roi = intersection (theROI a) (theROI b)
+    r <- ioCopy_32f_C1R (const roi) b
+    f undefined (modifyROI (const roi) a) r
     return r
 
 

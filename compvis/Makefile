@@ -1,4 +1,4 @@
-ALL = demo hessian warp  automatch brush \
+ALL = demo hessian warp \
       detect interpolate hotpoints \
       contours justsave ocr \
       pseudocolor segments
