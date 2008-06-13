@@ -106,7 +106,7 @@ auto_1_32f8u_C1R f msg roifun (F im) = do
     cr1 f msg im r
     return (G r)
 
-auto_1_8u32f64f_C1R f msg roifun (F im) = do
+auto_1_8u32f64f_C1R f msg roifun (G im) = do
     r' <- img I32f (isize im)
     let r = r' { vroi = roifun (vroi im) }
     s' <- img I64f (isize im)

@@ -26,7 +26,8 @@ main = do
                            ("smooth",intParam 3 0 20),
                            ("smooth2",intParam 1 0 10),
                            ("lbpThres",intParam 0 0 100),
-                           ("difpix",intParam 5 0 30)]
+                           ("difpix",intParam 5 0 30),
+                           ("radius",intParam 5 1 100)]
 
     w <- evWindow "Gray" "Demo: Gray" sz Nothing (const (kbdcam ctrl))
 
@@ -39,7 +40,7 @@ main = do
     attachMenu LeftButton $ Menu $ map mode
         ["RGB","Gray","Red","Green","Blue","H","S"
         , "Median","Gaussian","Laplacian","HighPass","Histogram"
-        ,"Integral","Threshold","FloodFill","Contours","ContourD","Distance", "Distance2", "Hessian"
+        ,"Integral","RecStdDev","Threshold","FloodFill","Contours","ContourD","Distance", "Distance2", "Hessian"
         ,"Corners", "Features", "Segments", "Canny", "DCT", "FFT", "LBP"]
 
     fft <- genFFT 8 8 DivFwdByN AlgHintFast
@@ -61,6 +62,7 @@ worker wDemo cam param fft = do
     fracpix <- getParam param "fracpix" :: IO Double
     lbpThres <- getParam param "lbpThres" :: IO Int
     difpix <- getParam param "difpix" :: IO Int
+    radius <- getParam param "radius" :: IO Int
 
     op <- getW wDemo
     roi <- getROI wDemo
@@ -206,6 +208,9 @@ worker wDemo cam param fft = do
                               drawImage . autoscale $ i
                               pointCoordinates (size i)
                               renderSignal (map (float2Double.(/(2*last vert))) vert)
+
+            "RecStdDev" -> do let i = rectStdDev radius radius .  sqrIntegral $ chan gray
+                              drawImage . autoscale $ i
 
 -----------------------------------
 

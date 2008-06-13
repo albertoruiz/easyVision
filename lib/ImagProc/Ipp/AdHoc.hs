@@ -440,20 +440,6 @@ genDistanceTransform f metrics (G im) = unsafePerformIO $ do
 
 -------------------------------------------------------------------------
 
--- | Creates an integral (cumulative sum) 32f image from an 8u image. Obtains a roi of the same size, but each pixel has the sum of the pixels strictly less than its position, so the first row and column contains zeroes and the last ones are not taken into account (sorry for the sentence).
-integral :: ImageGray -> ImageFloat
-integral (G im) = unsafePerformIO $ do
-    r' <- img I32f (isize im)
-    -- strange roi ...
-    let ROI r1 r2 c1 c2 = vroi im
-    let roi = ROI r1 (r2-1) c1 (c2-1)-- `intersection` vroi r'
-    let r = r' {vroi = roi}
-    (cr1 ippiIntegral_8u32f_C1R im r) 0 // checkIPP "integral" [im]
-    return (F r {vroi = vroi im})
-  where cr1 f im r = f // src im (vroi r) // dst r (vroi r)
-
-----------------------------------------------------------------------------
-
 -- | Canny's edge detector.
 canny :: (ImageFloat,ImageFloat) -- ^ image gradient (dx,dy)
       -> (Float,Float)           -- ^ low and high threshold
@@ -578,3 +564,38 @@ sampleLine32f (F img) (Pixel pr1 pc1) (Pixel pr2 pc2) = unsafePerformIO $ do
     line <- peekArray n pline
     free pline
     return line
+
+----------------------------------------------------------------------------
+
+-- | Creates an integral (cumulative sum) 32f image from an 8u image. Obtains a roi of the same size, but each pixel has the sum of the pixels strictly less than its position, so the first row and column contains zeroes and the last ones are not taken into account (sorry for the sentence).
+integral :: ImageGray -> ImageFloat
+integral im = unsafePerformIO $ do
+    -- strange roi ...
+    let ROI r1 r2 c1 c2 = theROI im
+        roi = ROI r1 (r2-1) c1 (c2-1) -- `intersection` vroi r'
+    ioIntegral_8u32f_C1R 0 (const roi) im
+
+----------------------------------------------------------------------------
+
+-- | Similar to integral, computing also the integral of the squares
+sqrIntegral :: ImageGray -> (ImageFloat,ImageDouble)
+sqrIntegral im = unsafePerformIO $ do
+    -- strange roi ...
+    let ROI r1 r2 c1 c2 = theROI im
+        roi = ROI r1 (r2-1) c1 (c2-1) -- `intersection` vroi r'
+    ioSqrIntegral_8u32f64f_C1R 0 0 (const roi) im
+
+----------------------------------------------------------------------------
+
+-- | Calculates standard deviation on rectangular window
+rectStdDev :: Int -- ^ height of rectangle
+           -> Int -- ^ width
+           -> (ImageFloat,ImageDouble)  -- ^ integral images obtained from 'sqrIntegral'
+           -> ImageFloat
+rectStdDev h w (F imx, D imx2) = unsafePerformIO $ do
+    with (IppiRect 0 0 (1+2*fromIntegral h) (1+2*fromIntegral w)) $ \prect -> do
+        F r <- image (isize imx)
+        (ippiRectStdDev_32f_C1R // src imx sroi // src imx2 sroi // dst r droi) prect // checkIPP "ippiRectStdDev_32f_C1R" [imx,imx2]
+        return (F r {vroi = droi})
+  where droi = shrink (h,w) (vroi imx)
+        sroi = shift (-h,-w) droi

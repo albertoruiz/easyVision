@@ -27,13 +27,13 @@ module ImagProc.Ipp.Pure (
     gauss, laplace, median, highPass8u,
     magnitudePack,
     abs32f, sqrt32f, mirror8u,
-    dilate3x3, erode3x3,
+    dilate3x3, erode3x3
 )
 where
 
 import ImagProc.Ipp.Core
 import ImagProc.Ipp.Auto
-import Foreign(unsafePerformIO)
+import Foreign
 
 infixl 7  |*|, .*
 infixl 6  |+|, |-|
@@ -194,3 +194,5 @@ maxEvery = mkIdIPInt32f ioMaxEvery_32f_C1IR
 -- | pixelwise minimum of two images
 minEvery :: ImageFloat -> ImageFloat -> ImageFloat
 minEvery = mkIdIPInt32f ioMinEvery_32f_C1IR
+
+------------------------------------------------------

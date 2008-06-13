@@ -117,7 +117,7 @@ wt (t,n) = ht (t ++ isPointer n)
 
 isPointer n = if last n == ']' then "*" else ""
 
-ht "IppiRect" = "Ptr IppiSize"
+ht "IppiRect" = "Ptr IppiRect"
 ht "IppiSize" = "Ptr IppiSize"
 ht "IppiPoint" = "Ptr IppiPoint"
 ht "IppiMaskSize" = "CInt"
