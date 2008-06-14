@@ -28,7 +28,7 @@ main = do
                            ("smooth2",intParam 1 0 10),
                            ("lbpThres",intParam 0 0 100),
                            ("difpix",intParam 5 0 30),
-                           ("radius",intParam 5 1 100)]
+                           ("radius",intParam 5 0 100)]
 
     w <- evWindow "Gray" "Demo: Gray" sz Nothing (const (kbdcam ctrl))
 
@@ -40,7 +40,7 @@ main = do
 
     attachMenu LeftButton $ Menu $ map mode
         ["RGB","Gray","Red","Green","Blue","H","S"
-        , "Median","Gaussian","NGaussian1","FilterBox","Laplacian","HighPass","Histogram"
+        , "Median","Gaussian","NGaussian1","FilterBox","FilterMax","Box vs Gauss","Laplacian","HighPass","Histogram"
         ,"Integral","RecStdDev","Threshold","FloodFill","Contours","ContourD","Distance", "Distance2", "Hessian"
         ,"Corners", "Features", "Segments", "Canny", "DCT", "FFT", "LBP"]
 
@@ -102,11 +102,12 @@ worker wDemo cam param fft = do
                                     . scale8u32f (-1) 1
                                     $ chan gray
 
-            "Hessian"  -> drawImage $ sqrt32f
+            "Hessian"  -> drawImage $ autoscale
+                                    . sqrt32f
                                     . abs32f
                                     . hessian
                                     . secondOrder
-                                    $ gsmooth
+                                    $ gaussS sigma (float (chan gray))
 
             "Canny"    -> drawImage $ edges
 
@@ -217,6 +218,19 @@ worker wDemo cam param fft = do
 
             "FilterBox" -> do let i = filterBox radius radius . float $ chan gray
                               drawImage i
+
+            "FilterMax" -> do let i = filterMax radius . float $ chan gray
+                              drawImage i
+
+            "Box vs Gauss"-> do let s = float (chan gray)
+                                    g = gaussS sigma s
+                                    b = filterBox radius radius s
+                                    ROI r1 r2 c1 c2 = theROI s
+                                    cm = (c1 + c2) `div` 2
+                                    roi1 = ROI r1 r2 c1 cm
+                                    roi2 = ROI r1 r2 cm c2
+                                drawImage (modifyROI (const roi1) g)
+                                drawImage (modifyROI (const roi2) b)
 
 -----------------------------------
 

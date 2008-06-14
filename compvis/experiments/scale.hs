@@ -28,7 +28,7 @@ mkStage fun img sigma = Stage
     } where resp = fun sigma img
             maxloc  = copyMask32f resp mask
             mask    = compare32f IppCmpEq filtMax resp
-            filtMax = filterMax32f (1+2*round (sigma)) resp
+            filtMax = filterMax (round sigma) resp
 
 detectPoints nmax h stages = zipWith3 (localMaxScale3Simplified nmax h) l1 l2 l3
     where l1 = map stFiltMax stages

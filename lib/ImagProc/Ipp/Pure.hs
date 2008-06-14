@@ -21,7 +21,7 @@ module ImagProc.Ipp.Pure (
     float, toGray, scale32f8u, scale8u32f,
     rgbToHSV, hsvToRGB,
     thresholdVal32f, thresholdVal8u,
-    filterMax32f, filterBox,
+    filterMax, filterBox,
     maxEvery, minEvery,
     sobelVert, sobelHoriz,
     gauss, laplace, median, highPass8u,
@@ -112,12 +112,12 @@ thresholdVal8u t v cmp = mkId (ioThreshold_Val_8u_C1R t v (codeCmp cmp))
 
 ------------------------------
 
--- | Changes each pixel by the maximum value in its neighbourhood of given diameter.
-filterMax32f :: Int -> ImageFloat -> ImageFloat
-filterMax32f r = mkShrink (d,d) (ioFilterMax_32f_C1R sz pt) where
-    d = (r-1) `quot` 2
-    sz = IppiSize (fi r) (fi r)
-    pt = IppiPoint (fi d) (fi d)
+-- | Changes each pixel by the maximum value in its neighbourhood of given radius.
+filterMax :: Int -> ImageFloat -> ImageFloat
+filterMax r = mkShrink (r,r) (ioFilterMax_32f_C1R sz pt) where
+    d = fi (2*r+1)
+    sz = IppiSize d d
+    pt = IppiPoint (fi r) (fi r)
 
 -------------------------------
 

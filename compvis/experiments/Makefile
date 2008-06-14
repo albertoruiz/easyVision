@@ -1,4 +1,4 @@
-ALL = automatch brush contpoly \
+ALL = automatch brush \
       cornertracker foldimage salience \
       scale sift stsift
 

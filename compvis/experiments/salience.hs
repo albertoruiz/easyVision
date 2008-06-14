@@ -15,7 +15,7 @@ import Vision(scaling)
 salience s1 s2 = gaussS s2 . sqrt32f . abs32f . hessian . secondOrder . gaussS s1
 
 salience' th n s1 s2 = gaussS s2 . thresholdVal32f th 1 IppCmpGreater . thresholdVal32f th 0 IppCmpLess
-                       . filterMax32f n . sqrt32f . abs32f . hessian . secondOrder . gaussS s1
+                       . filterMax n . sqrt32f . abs32f . hessian . secondOrder . gaussS s1
 
 ------------------------------------------------------------
 
@@ -87,7 +87,7 @@ main = do
             drawROI roi
 
         inWin w $ do
-            let pts = getPoints32f 200 . thresholdVal32f (mx*th) 0 IppCmpLess . localMax (2*rad+1) $ img
+            let pts = getPoints32f 200 . thresholdVal32f (mx*th) 0 IppCmpLess . localMax rad $ img
             if what == 0
                 then drawImage (imgs)
                 else drawImage (autoscale img)

@@ -44,7 +44,7 @@ worker cam inWindow st = do
     let (mn,mx) = minmax h
         hotPoints = getPoints32f 1000
                   $ thresholdVal32f (mx/5) 0.0 IppCmpLess
-                  $ localMax 7 h
+                  $ localMax 3 h
 
     inWindow "camera" $ do
         drawImage camera

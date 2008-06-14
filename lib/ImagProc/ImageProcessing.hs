@@ -45,11 +45,11 @@ binarize8u th False = notI . binarize8u th True
 
 
 -- | Nonmaximum supression. Given an I32f image returns a copy of the input image with all the pixels which are not local maxima set to 0.0.
-localMax :: Int         -- ^ diameter of the filterMax32f
+localMax :: Int         -- ^ radius of the 'filterMax'
          -> ImageFloat  -- ^ input image
          -> ImageFloat   -- ^ result
-localMax d g = copyMask32f g mask where
-    mg = filterMax32f d g
+localMax r g = copyMask32f g mask where
+    mg = filterMax r g
     mask = compare32f IppCmpEq mg g
 
 -- | Given an image I32f, computes the first and second order derivatives (gx,gy,gxx,gyy,gxy).
@@ -70,7 +70,7 @@ hessian (_,_,gxx,gyy,gxy) = gxx |*| gyy |-| gxy |*| gxy
 
 -- | Returns a list of interest points in the image (as unnormalized [x,y]). They are the local minimum of the determinant of the hessian (saddlepoints).
 getCorners :: Int       -- ^ degree of smoothing (e.g. 1)
-           -> Int       -- ^ radius of the localmin filter (e.g. 7)
+           -> Int       -- ^ radius of the localmin filter (e.g. 3)
            -> Float     -- ^ fraction of the maximum response allowed (e.g. 0.1)
            -> Int       -- ^ maximum number of interest points
            -> ImageFloat  -- ^ source image
