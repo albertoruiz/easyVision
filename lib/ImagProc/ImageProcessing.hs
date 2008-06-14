@@ -112,13 +112,17 @@ filter8u mask = f where
 
 --------------------------------------------------------------------
 
--- | to do
-gaussS' :: Float -> Float -> ImageFloat -> ImageFloat
+-- | A version of gaussS with controlable precision. 
+gaussS' :: Float      -- ^ mask radius (in sigma units)
+        -> Float      -- ^ sigma
+        -> ImageFloat -- ^ source image
+        -> ImageFloat -- ^ result
 gaussS' ext s = filter32f mask . filter32f (transpose mask)
     where mask = nor [map (fg s) [-k .. k]] where k = fromIntegral (ceiling (ext*s))
           fg s x = exp (-0.5* (x/s)^2)
           nor m = map (map (/s)) m where s = sum (concat m)
 
--- | to do
+-- | Gaussian filter of given sigma (implemented as two 1-d filters). Mask radius is 3 sigma (@gaussS = gaussS' 3@).
 gaussS :: Float -> ImageFloat -> ImageFloat
-gaussS = gaussS' 3
+gaussS s | s > 0     = gaussS' 3 s
+         | otherwise = id

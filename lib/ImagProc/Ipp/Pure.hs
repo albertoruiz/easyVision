@@ -21,7 +21,7 @@ module ImagProc.Ipp.Pure (
     float, toGray, scale32f8u, scale8u32f,
     rgbToHSV, hsvToRGB,
     thresholdVal32f, thresholdVal8u,
-    filterMax32f,
+    filterMax32f, filterBox,
     maxEvery, minEvery,
     sobelVert, sobelHoriz,
     gauss, laplace, median, highPass8u,
@@ -118,6 +118,14 @@ filterMax32f r = mkShrink (d,d) (ioFilterMax_32f_C1R sz pt) where
     d = (r-1) `quot` 2
     sz = IppiSize (fi r) (fi r)
     pt = IppiPoint (fi d) (fi d)
+
+-------------------------------
+
+-- | image average in rectangles of given semiheight and semiwidth
+filterBox :: Int -> Int -> ImageFloat -> ImageFloat
+filterBox h w = mkShrink (h,w) (ioFilterBox_32f_C1R sz pt) where
+    sz = IppiSize (fi (2*w+1)) (fi (2*h+1))
+    pt = IppiPoint (fi w) (fi h)
 
 -----------------------------------
 

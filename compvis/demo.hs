@@ -18,8 +18,9 @@ main = do
 
     prepare
 
-    o <- createParameters [("umbral",realParam 0.5 0 1),
-                           ("umbral2",intParam 128 1 255),
+    o <- createParameters [("threshold",realParam 0.5 0 1),
+                           ("sigma",realParam 3 0 20),
+                           ("threshold2",intParam 128 1 255),
                            ("area",percent 5),
                            ("h",percent 20),
                            ("fracpix",realParam (1.5) 0 10),
@@ -39,7 +40,7 @@ main = do
 
     attachMenu LeftButton $ Menu $ map mode
         ["RGB","Gray","Red","Green","Blue","H","S"
-        , "Median","Gaussian","Laplacian","HighPass","Histogram"
+        , "Median","Gaussian","NGaussian1","FilterBox","Laplacian","HighPass","Histogram"
         ,"Integral","RecStdDev","Threshold","FloodFill","Contours","ContourD","Distance", "Distance2", "Hessian"
         ,"Corners", "Features", "Segments", "Canny", "DCT", "FFT", "LBP"]
 
@@ -51,8 +52,8 @@ main = do
 
 worker wDemo cam param fft = do
 
-    th <- getParam param "umbral"
-    th2' <- getParam param "umbral2" ::IO Int
+    th <- getParam param "threshold"
+    th2' <- getParam param "threshold2" ::IO Int
     let th2 = fromIntegral th2'
     ph <- getParam param "h" :: IO Int
     let h1 = fromIntegral ph / 100
@@ -63,6 +64,7 @@ worker wDemo cam param fft = do
     lbpThres <- getParam param "lbpThres" :: IO Int
     difpix <- getParam param "difpix" :: IO Int
     radius <- getParam param "radius" :: IO Int
+    sigma <- getParam param "sigma"
 
     op <- getW wDemo
     roi <- getROI wDemo
@@ -87,7 +89,8 @@ worker wDemo cam param fft = do
             "H"     -> drawImage $ chan hCh
             "S"     -> drawImage $ chan sCh
 
-            "Gaussian" -> drawImage $ gsmooth
+            "NGaussian1" -> drawImage $ gsmooth
+            "Gaussian" -> drawImage $ gaussS sigma (float (chan gray))
             "Median"   -> drawImage $ smooth `times` median Mask5x5 $ chan gray
             "HighPass" -> drawImage $ highPass8u Mask5x5 $ smooth `times` median Mask5x5 $ chan gray
 
@@ -211,6 +214,9 @@ worker wDemo cam param fft = do
 
             "RecStdDev" -> do let i = rectStdDev radius radius .  sqrIntegral $ chan gray
                               drawImage . autoscale $ i
+
+            "FilterBox" -> do let i = filterBox radius radius . float $ chan gray
+                              drawImage i
 
 -----------------------------------
 

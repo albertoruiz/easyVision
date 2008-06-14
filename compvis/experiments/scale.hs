@@ -38,7 +38,7 @@ detectPoints nmax h stages = zipWith3 (localMaxScale3Simplified nmax h) l1 l2 l3
 ---------------------------------------------------------------
 
 hsrespP sigma = sqrt32f
-             . thresholdVal32f 0 0 IppCmpLess 
+             . thresholdVal32f 0 0 IppCmpLess
              . hessian
              . secondOrder 
              . ((sigma^2/10) .*)
@@ -108,7 +108,7 @@ worker o cam w wd = do
     let sigmas = [sigma*k^i | i <- [0..n+1]] where k = 2**(1/fromIntegral steps)
 
     orig <- cam
-    let imr = if test == 1 then blob rtest
+    let imr = if test == 1 then gaussS 2 $ blob rtest
                      else (float $ gray orig)
 
         proc = case mode of
@@ -119,6 +119,9 @@ worker o cam w wd = do
 
         pyr = map (mkStage proc imr) sigmas
 
+        auxStd = sqrIntegral (toGray imr)
+        procStd sigma im = (1/255).* rectStdDev s s im where s = round sigma
+        pyr' = map (mkStage procStd auxStd) [1,2,3,4,5,6,7,9,12,15,19,24,30,38]
 
     let rawpts = detectPoints 100 h pyr
         pts = take tot $ concat $ reverse $ zipWith (fixPts steps sigma) rawpts [1..]
@@ -130,7 +133,8 @@ worker o cam w wd = do
         drawImage $ if what == 0 then (stResponse $ pyr!!n) else imr
         mapM_ box pts
         --text2D 20 20 (show $ map (size.stResponse) pyr)
-
+--         let x = stResponse $ pyr!!n
+--         text2D 20 20 $ show (minmax x)
 
 --     inWin wdebug $ do
 --      drawImage $ --maxLoc3 (stFiltMax $ pyr!!(n-1)) (stMaxLoc $ pyr!!n) (stFiltMax $ pyr!!(n+1))

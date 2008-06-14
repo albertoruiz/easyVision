@@ -593,9 +593,11 @@ rectStdDev :: Int -- ^ height of rectangle
            -> (ImageFloat,ImageDouble)  -- ^ integral images obtained from 'sqrIntegral'
            -> ImageFloat
 rectStdDev h w (F imx, D imx2) = unsafePerformIO $ do
-    with (IppiRect 0 0 (1+2*fromIntegral h) (1+2*fromIntegral w)) $ \prect -> do
+    with (IppiRect 0 0 (1+2*fromIntegral w) (1+2*fromIntegral h)) $ \prect -> do
         F r <- image (isize imx)
         (ippiRectStdDev_32f_C1R // src imx sroi // src imx2 sroi // dst r droi) prect // checkIPP "ippiRectStdDev_32f_C1R" [imx,imx2]
         return (F r {vroi = droi})
   where droi = shrink (h,w) (vroi imx)
         sroi = shift (-h,-w) droi
+
+----------------------------------------------------------------------------
