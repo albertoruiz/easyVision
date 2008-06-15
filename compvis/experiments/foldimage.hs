@@ -35,37 +35,33 @@ main = do
             timing $ print $ sum $ map (fst.minmax) ims
             timing $ printf "%.1f\n" $ sum $ map sum32f ims
             timing $ printf "%.1f\n" $ sum $ map csum32f ims
-            timing $ printf "%.1f\n" $ sum $ map hsum ims
+            timing $ printf "%.1f\n" $ sum $ map (foldImage hsum 0) ims
+--             timing $ printf "%.1d\n" $ sum $ map (foldImage hcount (0::Int)) ims
 
 
-hsum img = foldImage f 0 img
-    where f !p !jump !i !j !s = s + float2Double (uval p jump i j)
+hsum !p !k !s = s + float2Double (uval p k)
 {-# INLINE hsum #-}
 
-count img = foldImage f (0::Double) img
-    where f !p !jump !i !j !s = s+1
-{-# INLINE count #-}
-
+hcount !p !k !s = s+1
+{-# INLINE hcount #-}
 --------------------------------------------------------------------------
 
 inlinePerformIO :: IO a -> a
 inlinePerformIO (IO m) = case m realWorld# of (# _, r #) -> r
 {-# INLINE inlinePerformIO #-}
 
---uval :: Ptr Float -> Int -> Int -> Int -> Float
-uval !p !j !r !c = inlinePerformIO $ peekElemOff p (r*j+c)
+uval !p !k = inlinePerformIO $ peekElemOff p k
 {-# INLINE uval #-}
 
 --foldImage :: (Ptr Float -> Int -> Int -> Int -> t -> t) -> t -> ImageFloat -> t
-foldImage f x (i@(F img)) = inlinePerformIO $ withForeignPtr (fptr img) $ const $ return (go r1 c1 x)
-    where ROI r1 r2 c1 c2 = vroi img
-          p = castPtr (ptr img) :: Ptr Float
-          jump = step img `quot` datasize img
-          go !r !c !s = if r==r2 && c==c2
-                         then (s + float2Double (uval p jump r c))
-                         else if c==c2
-                                 then go (r+1) c1   (s + float2Double (uval p jump r c))
-                                 else go r    (c+1) (s + float2Double (uval p jump r c))
-            where --here = f p jump r c s
-                  !here = (s + float2Double (uval p jump r c))
-                  {-# INLINE here #-}
+foldImage f x (i@(F img)) = inlinePerformIO $ withForeignPtr (fptr img) $ const $ return (go tot x)
+    where jump = step img `div` datasize img
+          ROI r1 r2 c1 c2 = vroi img
+          p = advancePtr (castPtr (ptr img)) (r1*jump+c1) :: Ptr Float
+          c = c2-c1+2
+          tot = (r2 - r1) * jump + c2-c1
+
+          go 0 s = f p (0::Int) s
+          go !j !s = if j `rem` jump < c then go (j-1) (f p j s)
+                                         else go (j-1) s
+
