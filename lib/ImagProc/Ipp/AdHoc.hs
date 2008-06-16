@@ -601,3 +601,21 @@ rectStdDev h w (F imx, D imx2) = unsafePerformIO $ do
         sroi = shift (-h,-w) droi
 
 ----------------------------------------------------------------------------
+
+-- | Watershed segmentation.
+watershed :: ImageGray -- ^ seeds
+          -> ImageGray -- ^ source image
+          -> ImageGray -- ^ result
+watershed seed  (G im) = unsafePerformIO $ do
+    let roi = vroi im
+    G r <- ioCopy_8u_C1R (const roi) seed
+    ps <- malloc
+    (ippiSegmentWatershedGetBufferSize_8u_C1R (roiSZ roi)) ps // checkIPP "ippiSegmentWatershedGetBufferSize" []
+    s <- peek ps
+    buffer <- mallocBytes (fromIntegral s)
+    let norm = codeNorm IppiNormL2
+        flag = codeSegment "IPP_SEGMENT_DISTANCE" + codeSegment "IPP_SEGMENT_BORDER_8"
+    (ippiSegmentWatershed_8u_C1IR // src im roi // dst r roi) norm flag buffer // checkIPP "ippiSegmentWatershed_8u_C1IR" [im]
+    free buffer
+    free ps
+    return (G r {vroi = roi})

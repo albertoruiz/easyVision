@@ -76,3 +76,5 @@ ippi.h  ippiFilterRow_32f_C1R
 ippi.h  ippiFilterRow_8u_C1R
 ippcv.h ippiSampleLine_32f_C1R
 ippcv.h ippiSampleLine_8u_C1R
+ippcv.h ippiSegmentWatershedGetBufferSize_8u_C1R
+ippcv.h ippiSegmentWatershed_8u_C1IR

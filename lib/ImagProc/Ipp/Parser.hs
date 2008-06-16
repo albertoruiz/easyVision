@@ -30,7 +30,9 @@ parseHeader = do
     symbol ","
     params <- between (symbol "(") (symbol ")") (sepBy (many ident) (char ','))
     symbol ")"
-    let separate xs = (init xs, last xs)
+    let separate xs = (init xs, fixPtr $ last xs)
+        fixPtr ('*':b) = b++"[]" -- "misplaced" space: pointers should be properly parsed
+        fixPtr x = x
     return $ Header { name = n, tyre = tr, args = map separate params , doc = "" }
 
 ident = do 

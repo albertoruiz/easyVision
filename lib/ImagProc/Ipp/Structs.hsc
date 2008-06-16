@@ -25,6 +25,8 @@ module ImagProc.Ipp.Structs (
     Mask(..), codeMask,
     IppCmp(..), codeCmp,
     AlgHint(..), codeAlgHint,
+    IppiNorm(..), codeNorm,
+    codeSegment,
     FFTNormalization(..), codeFFTFlag
 ) where
 
@@ -121,3 +123,16 @@ codeFFTFlag DivFwdByN  = 1
 codeFFTFlag DivInvByN  = 2
 codeFFTFlag DivBySqrtN = 4
 codeFFTFlag NoDivByAny = 8
+
+-- | Norm types
+data IppiNorm = IppiNormInf | IppiNormL1 | IppiNormL2 | IppiNormFM
+
+codeNorm IppiNormInf = 0
+codeNorm IppiNormL1  = 1
+codeNorm IppiNormL2  = 2
+codeNorm IppiNormFM  = 3
+
+codeSegment "IPP_SEGMENT_QUEUE"    = 0x01
+codeSegment "IPP_SEGMENT_DISTANCE" = 0x02
+codeSegment "IPP_SEGMENT_BORDER_4" = 0x40
+codeSegment "IPP_SEGMENT_BORDER_8" = 0x80
