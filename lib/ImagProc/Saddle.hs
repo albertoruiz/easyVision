@@ -23,25 +23,16 @@ where
 import ImagProc.Ipp.Core
 import ImagProc.C.Simple(getPoints32f)
 import ImagProc.ImageProcessing
-import Data.List(zipWith6)
+import Data.List(zipWith4)
 import Numeric.LinearAlgebra hiding ((.*))
 import GHC.Float(float2Double,double2Float)
 import Foreign(unsafePerformIO)
-
-data InterestPoint = IP {
-                          ipRawPosition :: Pixel
-                        , ipPosition    :: Point
-                        , ipOrientation :: Double
-                        , ipDescriptor  :: Vector Double
-                        , ipTime        :: Int
-                        , ipSample      :: [Pixel]
-                        } deriving (Eq, Show)
 
 
 -- | Returns interest points in the image and a very simple local descriptor.
 getSaddlePoints ::
               Int       -- ^ degree of smoothing (e.g. 1)
-           -> Int       -- ^ radius of the localmin filter (e.g. 7)
+           -> Int       -- ^ radius of the localmin filter (e.g. 3)
            -> Float    -- ^ fraction of the maximum response allowed (e.g. 0.1)
            -> Int       -- ^ maximum number of interest points
            -> Int       -- ^ dimension of the feature vector
@@ -84,8 +75,9 @@ getSaddlePoints smooth rad prop maxn fn fr im = unsafePerformIO $ do
         cs = zipWith (circle fn fr) hotPixels dirs
     feats' <-  mapM (extractList sm) cs
     let feats = map (fromList . map float2Double) feats'
+        Size _ w = size im
 
-        r = zipWith6 IP sp (ptp sp) (map float2Double dirs) feats (repeat 0) cs
+        r = zipWith4 IP (ptp sp) (repeat (2*float2Double fr / fromIntegral w)) (map float2Double dirs) feats
 
     return r
 

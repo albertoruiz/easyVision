@@ -233,15 +233,17 @@ drawInterestPoints sz ipts = do
     pointCoordinates sz
     renderPrimitive Points (mapM_ drawPts ipts)
     renderPrimitive Lines  (mapM_ drawOris ipts)
-    pixelCoordinates sz
     mapM_ drawSample ipts
-  where 
+  where
     drawOris IP {ipPosition = p@(Point x y), ipOrientation = a} = do
         vertex $ p
         vertex $ Point (x+0.05*cos a) (y+0.05*sin a)
     drawPts IP {ipPosition = p@(Point x y)} = do
         vertex $ p
-    drawSample IP {ipSample = pts} = renderPrimitive LineLoop (mapM_ vertex pts)
+    drawSample IP {ipPosition = p@(Point x y), ipScale = rad} = renderPrimitive LineLoop (mapM_ vertex (circle x y 16 rad))
+
+circle x y n rad = [Point (x+rad*cos ang) (y+rad*sin ang) | ang <- [0, d .. 2*pi-d]]
+    where d = 2*pi/fromIntegral n
 
 -- | sets the opengl view of a given camera matrix
 cameraView :: Matrix Double -- ^ 3x4 camera matrix (with K=diag f f 1)

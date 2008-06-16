@@ -37,6 +37,7 @@ module ImagProc.Ipp.Core
           , Pixel (..)
           , Point (..)
           , Segment(..)
+          , InterestPoint(..)
           , segmentLength, distPoints
           , pixelsToPoints, pointsToPixels, pixelToPointTrans
           , val32f, val32f', val8u
@@ -389,7 +390,14 @@ segmentLength (Segment {extreme1 = e1, extreme2 = e2}) = distPoints e1 e2
 distPoints :: Point -> Point -> Double
 distPoints (Point a b) (Point x y) = sqrt $ (a-x)^2+(b-y)^2
 
+-----------------------------------------------------------------------------
 
+data InterestPoint = IP {
+      ipPosition    :: Point
+    , ipScale       :: Double
+    , ipOrientation :: Double
+    , ipDescriptor  :: LA.Vector Double
+    } deriving (Eq, Show)
 
 -------------------------------------------------------------------
 

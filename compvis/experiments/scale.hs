@@ -1,7 +1,5 @@
-{-# OPTIONS -fbang-patterns #-}
-
 import EasyVision
-import Data.List(transpose,minimumBy,foldl1')
+import Data.List(transpose,minimumBy,foldl1',nub)
 import Graphics.UI.GLUT hiding (RGB,Size,minmax,histogram,Point,set)
 import Debug.Trace
 import Foreign
@@ -10,30 +8,10 @@ import Text.Printf(printf)
 import GHC.Float(float2Double)
 import Control.Monad(when)
 import Control.Parallel.Strategies
-import ImagProc.C.Simple(localMaxScale3Simplified)
+import Control.Concurrent
+import ImagProc.InterestPoints
 
 inParallel x = parMap rnf id x
-
-data Stage = Stage
-    { stSigma    :: Float
-    , stResponse :: ImageFloat
-    , stMaxLoc   :: ImageFloat
-    , stFiltMax  :: ImageFloat }
-
-mkStage fun img sigma = Stage
-    { stSigma    = sigma
-    , stResponse = resp
-    , stMaxLoc   = maxloc
-    , stFiltMax  = filtMax
-    } where resp = fun sigma img
-            maxloc  = copyMask32f resp mask
-            mask    = compare32f IppCmpEq filtMax resp
-            filtMax = filterMax (round sigma) resp
-
-detectPoints nmax h stages = zipWith3 (localMaxScale3Simplified nmax h) l1 l2 l3
-    where l1 = map stFiltMax stages
-          l2 = map stMaxLoc  (tail stages)
-          l3 = tail (tail l1)
 
 ---------------------------------------------------------------
 
@@ -43,6 +21,11 @@ hsrespP sigma = sqrt32f
              . secondOrder 
              . ((sigma^2/10) .*)
              . gaussS sigma
+
+
+getSigmas sigma steps = [sigma*k^i | i <- [0..]] where k = 2**(1/fromIntegral steps)
+
+---------------------------------------------------------------
 
 hsrespN sigma = sqrt32f
              . thresholdVal32f 0 0 IppCmpLess
@@ -66,6 +49,13 @@ exper sigma = id
              . ((sigma^2/10) .*)
              . gaussS sigma
 
+hsrespPBox k = sqrt32f
+             . thresholdVal32f 0 0 IppCmpLess
+             . hessian
+             . secondOrder
+             . ((fromIntegral k^2/10) .*)
+             . filterBox k k
+
 main = do
     sz <- findSize
 
@@ -77,10 +67,10 @@ main = do
                           ,("steps",intParam 3 1 10)
                           ,("n",intParam 13  0 20)
                           ,("tot",intParam 200 1 500)
-                          ,("h",realParam 0.3 0 1)
+                          ,("h",realParam 0.3 0 2)
                           ,("rtest",intParam 10 0 100)
-                          ,("what",intParam 1 0 1)
-                          ,("mode",intParam 1 1 4)
+                          ,("what",intParam 0 0 2)
+                          ,("mode",intParam 1 1 6)
                           ,("test",intParam 0 0 1)
                           ]
 
@@ -105,7 +95,9 @@ worker o cam w wd = do
     what <- getParam o "what" :: IO Int
     steps <- getParam o "steps" :: IO Int
 
-    let sigmas = [sigma*k^i | i <- [0..n+1]] where k = 2**(1/fromIntegral steps)
+    let sigmas = take (n+2) $ getSigmas sigma steps
+        boxes = take (n+2) [1,2,3,4,5,6,8,10,13,17,21,27,34,43,54]
+        sigmaboxes = map boxToSigma boxes
 
     orig <- cam
     let imr = if test == 1 then gaussS 2 $ blob rtest
@@ -117,20 +109,36 @@ worker o cam w wd = do
             3 -> laresp
             4 -> exper
 
-        pyr = map (mkStage proc imr) sigmas
+        hessianBox sigma = hsrespPBox (sigmaToBox sigma)
 
         auxStd = sqrIntegral (toGray imr)
-        procStd sigma im = (1/255).* rectStdDev s s im where s = round sigma
-        pyr' = map (mkStage procStd auxStd) [1,2,3,4,5,6,7,9,12,15,19,24,30,38]
+        procStd sigma im = (2*1/255).* rectStdDev b b im where b = sigmaToBox sigma
 
-    let rawpts = detectPoints 100 h pyr
-        pts = take tot $ concat $ reverse $ zipWith (fixPts steps sigma) rawpts [1..]
 
+
+        (pts,pyr) = if mode < 5 then getInterestPoints proc sigmas 100 tot h imr
+                                else case mode of
+                                            5 -> getInterestPoints hessianBox sigmaboxes 100 tot h imr
+                                            6 -> getInterestPoints procStd sigmaboxes 100 tot h auxStd
+
+
+--     print $ map sigmaToBox sigmas
+--     print $ map sigmaToBox sigmaboxes
+
+--     let pyr = map (mkStage funbox imr) sigmaboxes
+
+--     print $ map stSigma pyr
+--     print $ map (sigmaToBox.stSigma) pyr
+--     print $ map (round.stSigma) pyr
+
+    
     --timing $ print $ length $ concat $ rawpts
 
---     timing $ 
+--     timing $
     inWin w $ do
-        drawImage $ if what == 0 then (stResponse $ pyr!!n) else imr
+        when (what == 0) $ drawImage imr
+        when (what == 2) $ drawImage (rgb orig)
+        when (what == 1) $ drawImage (stResponse $ pyr!!n)
         mapM_ box pts
         --text2D 20 20 (show $ map (size.stResponse) pyr)
 --         let x = stResponse $ pyr!!n
@@ -167,9 +175,12 @@ roiOf (p, n) = roiFromPixel (3*n`div`2) p
 
 roiFromPixel rad (Pixel r c) = ROI (r-rad) (r+rad) (c-rad)  (c+rad)
 
-fixPts steps sigma l n = map g l where g x = (x,round $ 1.5*sigma*k^n) where k = 2**(1/fromIntegral steps)
+-- fixPts l s = map g l where g x = (x,round $ 1.7*s)
 
 dist (Pixel a b) (Pixel r c, n) = (a-r)^2 + (b-c)^2
+
+sigmaToBox s = round $ (s * sqrt 12 - 1) / 2
+boxToSigma b = (1 + 2 * fromIntegral b) / sqrt 12
 
 -------------------------------------------------------------------
 
