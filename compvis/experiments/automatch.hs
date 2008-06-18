@@ -141,8 +141,6 @@ ip p = IP { ipDescriptor  = 0
           , ipRawPosition = p
           , ipPosition    = I.Point 0 0
           , ipOrientation = 0
-          , ipTime        = 0
-          , ipSample      = []
           }
 
 marker _ str (MouseButton LeftButton) Down _ pos@(Position x y) = do

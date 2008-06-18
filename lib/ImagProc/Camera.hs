@@ -7,8 +7,8 @@ Copyright   :  (c) Alberto Ruiz 2006-2008
 License     :  GPL-style
 
 Maintainer  :  Alberto Ruiz (aruiz at um dot es)
-Stability   :  very provisional
-Portability :  hmm...
+Stability   :  provisional
+Portability :  ghc
 
 Image acquisition from real cameras and other video sources using MPlayer.
 
@@ -103,16 +103,17 @@ yuvHeader h w filename = do
     hPutStrLn handle $ "YUV4MPEG2 W"++show w++" H"++show h++" F25000000:1000000 Ip A0:0"
     return handle
 
--- | creates a function to save frames in the mplayer yuv4mpeg format
-openYUV4Mpeg :: Size -> Maybe FilePath -> Maybe Int -> IO (ImageYUV -> IO())
+-- | creates a function to save frames in the mplayer yuv4mpeg format.
+openYUV4Mpeg :: Size      -- ^ size of the recorded video
+             -> FilePath  -- ^ output filename.
+             -> Maybe Int -- ^ optional number of frames to save.
+             -> IO (ImageYUV -> IO()) -- ^ returns a function to add a new frame to the video
 
-openYUV4Mpeg _ Nothing _ = return $ const (return ())
-
-openYUV4Mpeg (Size h w) (Just filename) Nothing = do
+openYUV4Mpeg (Size h w) filename Nothing = do
     handle <- yuvHeader h w filename
     return (saveYUV4Mpeg handle)
 
-openYUV4Mpeg (Size h w) (Just filename) (Just limit) = do
+openYUV4Mpeg (Size h w) filename (Just limit) = do
     handle <- yuvHeader h w filename
     framesSaved <- newIORef 0
     return $ \im -> do

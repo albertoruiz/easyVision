@@ -35,6 +35,7 @@ import Util.Stat
 import Data.Array
 import Debug.Trace
 import ImagProc.Ipp.Core(intersection,inROI,union)
+import Data.Function(on)
 
 vector l = fromList l :: Vector Double
 diagl = diag . vector

@@ -45,6 +45,7 @@ import EasyVision.Combinators(warper)
 import Util.Kalman
 import Text.Printf
 import EasyVision.PoseTracker
+import Data.Function(on)
 
 -- | reads a labeled video
 readCatalog :: String -> Size -> String -> Maybe Int -> (ImageYUV-> a) -> IO [(a,String)]

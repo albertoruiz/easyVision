@@ -1,6 +1,5 @@
-ALL = automatch brush \
-      cornertracker foldimage salience \
-      scale sift stsift
+ALL = brush foldimage salience \
+      scale sift
 
 EASYVISION = ../..
 

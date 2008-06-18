@@ -1,32 +1,35 @@
 -----------------------------------------------------------------------------
 {- |
 Module      :  EasyVision.Util
-Copyright   :  (c) Alberto Ruiz 2006
+Copyright   :  (c) Alberto Ruiz 2006-8
 License     :  GPL-style
 
 Maintainer  :  Alberto Ruiz (aruiz at um dot es)
-Stability   :  very provisional
-Portability :  hmm...
+Stability   :  provisional
 
-Other utilities.
+General utilities.
 
 -}
 -----------------------------------------------------------------------------
 
-module EasyVision.Util (
-    on,
-    findSize,
+module EasyVision.Util(
+    -- * Command line options
+    getRawOption, getOption,
+    getFlag, hasValue, maybeOption,
+    -- * Camera selection
     getCam, numCams,
-    getOption, getRawOption,
-    maybeOption, getFlag,
+    findSize,
+    -- * Misc graphics utilities
     optionalSaver,
     captureGL,
     saveRGB,
     evSize,
     glSize,
+    -- * Debug
     timing,
     debug,
-    getAliases
+    -- * Other
+    on
 )where
 
 import Graphics.UI.GLUT hiding (RGB, Matrix, Size, Point)
@@ -36,7 +39,6 @@ import ImagProc.ImageProcessing(resize32f,yuvToRGB)
 import ImagProc.Camera
 import Foreign (touchForeignPtr,castPtr)
 import ImagProc.Images
-import qualified Data.Map as Map
 import System.IO
 import System
 import Data.List(isPrefixOf,foldl',tails,findIndex)
@@ -46,16 +48,16 @@ import Text.Printf
 import Debug.Trace
 import Control.Monad(when)
 import System.Environment(getArgs,getEnvironment)
-import qualified Data.Map as Map
+import Data.Function(on)
 
-on f g = \x y -> f (g x) (g y)
-
+timing :: IO a -> IO ()
 timing act = do
     t0 <- getCPUTime
     act
     t1 <- getCPUTime
     printf "%.3f s CPU\n" $ (fromIntegral (t1 - t0) / (10^12 :: Double)) :: IO ()
 
+debug :: Show x => x -> x
 debug x = trace (show x) x
 
 -- | captures the contents of the current opengl window (very slow)
@@ -70,10 +72,15 @@ captureGL = do
     return img
 
 -- we should use only one size type
+-- | converts an OpenGL Size into a 'Size'
+evSize :: GL.Size -> Size
 evSize (GL.Size w h) = Size    (t h) (t w) where t = fromIntegral.toInteger
+
+-- | converts a 'Size' into an OpenGL Size.
+glSize :: Size -> GL.Size
 glSize (Size    h w) = GL.Size (t w) (t h) where t = fromIntegral.toInteger
 
--- | Writes to file (with automatic name if Nothing) a RGB image in png format.
+-- | Writes to a file (with automatic name if Nothing) a RGB image in png format.
 -- (uses imagemagick' convert.)
 saveRGB :: Maybe FilePath -> ImageRGB -> IO ()
 saveRGB (Just filename) (C im) = do
@@ -99,12 +106,12 @@ saveRGB Nothing im = do
 
 -----------------------------------------------------------------------------------
 
-{- | It tries to read an optional image size from command line argument list.
-     It admits --rows, --cols, and --size (for 32k 4\/3).
+{- | Extracts an optional image size from command line.
+     It admits --rows, --cols, and --size (for 32k 4\/3). The default is --size=20 (640x480).
 -}
 findSize :: IO Size
 findSize = do
-    okSize <- optionGiven "--size"
+    okSize <- getFlag "--size"
     mps <- getOption "--size" 20
     r   <- getOption "--rows" 480
     c   <- getOption "--cols" 640
@@ -112,8 +119,10 @@ findSize = do
                 then mpSize mps
                 else Size r c
 
-
-
+-- | returns a camera from the n-th user argument
+getCam :: Int  -- ^ n-th camera url supplied by the user (or defined in cameras.def)
+       -> Size -- ^ desired size
+       -> IO (IO ImageYUV)
 getCam n sz = do
     args <- cleanOpts `fmap` getArgs
     aliases <- getAliases
@@ -122,7 +131,11 @@ getCam n sz = do
                 else fst (aliases!!n)
     mplayer (expand aliases url) sz
 
-
+-- | extracts an option from the command line. From --alpha=1.5 we get 1.5::Double.
+getOption :: Read a
+          => String  -- ^ option name (e.g. \"--alpha\")
+          -> a       -- ^ default value
+          -> IO a    -- ^ result
 getOption name def = do
     mbopt <- getRawOption name
     let v = case mbopt of
@@ -130,7 +143,9 @@ getOption name def = do
                 Just s  -> read s
     return v
 
-
+-- | searches for an optional argument
+getRawOption :: String -- ^ option name
+             -> IO (Maybe String)
 getRawOption name = do
     args <- getArgs
     let opts = filter ((name++"=") `isPrefixOf`) args
@@ -140,19 +155,25 @@ getRawOption name = do
   where val = tail . dropWhile (/= '=')
 
 
-optionGiven name = do
-    o <- getRawOption name
-    return $ case o of
-                Nothing -> False
-                Just _  -> True
-
 maybeOption name = fmap (fmap read) (getRawOption name)
 
+-- | checks if --option=something has been given in the command line.
+hasValue :: String -- ^ option name, including the dashes (e.g. \"--opt\").
+         -> IO Bool
+hasValue name = do
+    x <- getRawOption name
+    return $ case x of
+        Nothing -> False
+        Just _  -> True
+
+-- | checks if --option or --option=something has been given in the command line.
+getFlag :: String -- ^ option name, including the dashes (e.g. \"--opt\").
+        -> IO Bool
 getFlag name = do
     args <- getArgs
-    return (name `elem` args)
+    return (any (isPrefixOf name) args)
 
--- | Number of explicit camera arguments supplied (automatic alias are not used)
+-- | Number of explicit camera arguments supplied (automatic aliases from cameras.def are not taken into account).
 numCams :: IO Int
 numCams = (length . cleanOpts) `fmap` getArgs
 
@@ -183,9 +204,12 @@ replace (a,b) c = case findIndex (isPrefixOf a) (tails c) of
 
 ----------------------------------------------
 
+optionalSaver :: Size -> IO (ImageYUV -> IO ())
 optionalSaver sz = do
     filename <- getRawOption "--save"
-    limit    <- maybeOption "limit"
-    openYUV4Mpeg sz filename limit
+    limit    <- maybeOption "--limit"
+    case filename of
+        Nothing   -> return $ const (return ())
+        Just path -> openYUV4Mpeg sz path limit
 
 ----------------------------------------------

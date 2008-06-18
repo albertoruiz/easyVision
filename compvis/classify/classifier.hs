@@ -87,7 +87,7 @@ mouse _ st (MouseButton LeftButton) Down _ _ = do
 
 mouse _ st (Char 'f') Down _ _ = do
     (_,ps,_) <- get st
-    sv <- openYUV4Mpeg (size $ rgb $ fst $ head $ ps) (Just "catalog.yuv") Nothing
+    sv <- openYUV4Mpeg (size $ rgb $ fst $ head $ ps) "catalog.yuv" Nothing
     mapM_ (sv.yuv.fst) ps
     writeFile "catalog.labels" $ unlines $ [show n ++"\t"++l | (n,l) <- zip [1..length ps] (map snd ps)]
 
