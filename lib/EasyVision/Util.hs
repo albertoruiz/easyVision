@@ -26,6 +26,7 @@ module EasyVision.Util (
     glSize,
     timing,
     debug,
+    getAliases
 )where
 
 import Graphics.UI.GLUT hiding (RGB, Matrix, Size, Point)
@@ -38,13 +39,13 @@ import ImagProc.Images
 import qualified Data.Map as Map
 import System.IO
 import System
-import Data.List(isPrefixOf)
-import Directory(getDirectoryContents)
+import Data.List(isPrefixOf,foldl',tails,findIndex)
+import Directory(getDirectoryContents,doesFileExist)
 import System.CPUTime
 import Text.Printf
 import Debug.Trace
 import Control.Monad(when)
-import System.Environment(getArgs)
+import System.Environment(getArgs,getEnvironment)
 import qualified Data.Map as Map
 
 on f g = \x y -> f (g x) (g y)
@@ -112,13 +113,15 @@ findSize = do
                               (read $ fwd "640" "--cols" opts) 
     return sz
 
+
 getCam n sz = do
-    args <- getArgs
-    let opts = Map.fromList $ zip args (tail args)
-    let url = if "--cams" `elem` args
-                then read (opts Map.! "--cams") !! n
-                else Map.findWithDefault (args!!n) ("--cam"++show n) opts
-    mplayer url sz
+    args <- cleanOpts `fmap` getArgs
+    aliases <- getAliases
+    let url = if n < length args
+                then args!!n
+                else fst (aliases!!n)
+    mplayer (expand aliases url) sz
+
 
 getOption name def = do
     mbopt <- getRawOption name
@@ -127,11 +130,15 @@ getOption name def = do
                 Just s  -> read s
     return v
 
+
 getRawOption name = do
     args <- getArgs
-    let opts = Map.fromList $ zip args (tail args)
-        s    = Map.lookup name opts
-    return s
+    let opts = filter ((name++"=") `isPrefixOf`) args
+    return $ case opts of
+        [] -> Nothing
+        xs -> Just (val (last xs))
+  where val = tail . dropWhile (/= '=')
+
 
 maybeOption name = fmap (fmap read) (getRawOption name)
 
@@ -139,15 +146,38 @@ getFlag name = do
     args <- getArgs
     return (name `elem` args)
 
-numCams = do
-    args <- getArgs
-    let opts = Map.fromList $ zip args (tail args)
-    let nc = if "--cams" `elem` args
-                then length (read (opts Map.! "--cams") :: [String])
-                else length $ filter (=="--cam") $ map (take 5) args
-    return nc
+-- | Number of explicit camera arguments supplied (automatic alias are not used)
+numCams :: IO Int
+numCams = (length . cleanOpts) `fmap` getArgs
+
+getAliases = do
+    env <- getEnvironment
+    let ev = lookup "EASYVISION" env
+        Just path = ev
+    okHere <- doesFileExist "cameras.def"
+    okThere <- case ev of
+        Nothing   -> return False
+        Just path -> doesFileExist (path++"cameras.def")
+    fmap prepareAlias $
+        if okHere
+                then readFile "cameras.def"
+                else if okThere
+                        then let Just path = ev in readFile (path++"cameras.def")
+                        else return []
+
+cleanOpts = filter (not . isPrefixOf "-")
+
+prepareAlias = filter (uncurry (/=)) . map (break (==' ')) . lines
+
+expand ali s = foldl' (flip replace) s ali
+
+replace (a,b) c = case findIndex (isPrefixOf a) (tails c) of
+    Nothing -> c
+    Just i  -> take i c ++ b ++ replace (a,b) (drop (i+length a) c)
 
 optionalSaver sz = do
     filename <- getRawOption "--save"
     limit    <- maybeOption "limit"
     openYUV4Mpeg sz filename limit
+
+----------------------------------------------

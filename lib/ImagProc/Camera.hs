@@ -3,7 +3,7 @@
 -----------------------------------------------------------------------------
 {- |
 Module      :  ImagProc.Camera
-Copyright   :  (c) Alberto Ruiz 2006
+Copyright   :  (c) Alberto Ruiz 2006-2008
 License     :  GPL-style
 
 Maintainer  :  Alberto Ruiz (aruiz at um dot es)
@@ -28,8 +28,11 @@ import Foreign.C.Types (CChar,CUChar)
 import Foreign.C.String(newCString)
 import Data.IORef
 import System.IO
+import System.Environment
 import System
 import Data.List(isPrefixOf)
+import System.Directory(doesFileExist)
+import Control.Monad(when)
 
 -- | Computes a 4\/3 \'good\' size for both mplayer and IPP. mpSize 20 = 640x480
 mpSize :: Int -> Size
@@ -52,7 +55,8 @@ mplayer url (Size h w) = do
     k <- mallocBytes 1
     poke k '\0'         -- essential!!
 
-    let mpcommand = proc w h url++" -vo yuv4mpeg:file="++fifo++" -nosound -slave -loop 0"
+    let mpcommand = url ++ " -vf scale=" ++ show w ++ ":" ++ show h
+                    ++ " -vo yuv4mpeg:file="++fifo++" -nosound -slave -loop 0"
 
     --(i,o,e,p) <- runInteractiveProcess "mplayer" (words mpcommand) Nothing Nothing
     --(i,o,e,p) <- runInteractiveCommand ("mplayer " ++mpcommand)
@@ -82,34 +86,7 @@ mplayer url (Size h w) = do
 
     return grab
 
-shsz w h = ":width="++show w++":height="++show h
-shsz' w h = ":width=640:height=480" ++ shsc w h
-shsc w h = " -vf scale="++show w++":"++show h
-
--- be careful with the order
-
-proc w h url
-    | "swebcam0" `isPrefixOf` url = rep ("swebcam0","tv:// -tv driver=v4l2:device=/dev/video0:fps=25"++shsz w h) url
-    | "swebcam1" `isPrefixOf` url = rep ("swebcam1","tv:// -tv driver=v4l2:device=/dev/video1:fps=25"++shsz w h) url
-    | "swebcam2" `isPrefixOf` url = rep ("swebcam2","tv:// -tv driver=v4l2:device=/dev/video2:fps=25"++shsz w h) url
-    | "swebcam3" `isPrefixOf` url = rep ("swebcam3","tv:// -tv driver=v4l2:device=/dev/video3:fps=25"++shsz w h) url
-    | "webcam0" `isPrefixOf` url = rep ("webcam0","tv:// -tv driver=v4l:device=/dev/video0"++shsz' w h) url
-    | "webcam1" `isPrefixOf` url = rep ("webcam1","tv:// -tv driver=v4l:device=/dev/video1"++shsz' w h) url
-    | "webcam2" `isPrefixOf` url = rep ("webcam2","tv:// -tv driver=v4l:device=/dev/video2"++shsz' w h) url
-    | "webcam3" `isPrefixOf` url = rep ("webcam3","tv:// -tv driver=v4l:device=/dev/video3"++shsz' w h) url
-    | "webcam" `isPrefixOf` url = rep  ("webcam", "tv:// -tv driver=v4l:device=/dev/video0"++shsz' w h) url
-    | "firewire" `isPrefixOf` url = rep ("firewire","/dev/dv1394 -demuxer rawdv -cache 400"++shsc w h) url
-    | "s-video-di" `isPrefixOf` url =
-            rep ("s-video-di", "tv:// -tv driver=v4l2:device=/dev/video0"++shsz w h++" -vf pp=md") url
-    | "s-video" `isPrefixOf` url = rep ("s-video", "tv:// -tv driver=v4l2:device=/dev/video0"++shsz w h) url
-    | otherwise = url ++ shsc w h
-
 -- deinterlace -vf pp=md
-
-rep (c,r) [] = []
-rep (c,r) f@(x:xs) 
-  | c `isPrefixOf` f = r ++ rep (c,r) (drop (length c) f)
-  | otherwise        = x:(rep (c,r) xs)
 
 ------------------------------------------------
 
