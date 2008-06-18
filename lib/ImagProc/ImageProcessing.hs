@@ -126,3 +126,4 @@ gaussS' ext s = filter32f mask . filter32f (transpose mask)
 gaussS :: Float -> ImageFloat -> ImageFloat
 gaussS s | s > 0     = gaussS' 3 s
          | otherwise = id
+

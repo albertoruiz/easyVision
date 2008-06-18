@@ -602,20 +602,32 @@ rectStdDev h w (F imx, D imx2) = unsafePerformIO $ do
 
 ----------------------------------------------------------------------------
 
--- | Watershed segmentation.
-watershed :: ImageGray -- ^ seeds
-          -> ImageGray -- ^ source image
-          -> ImageGray -- ^ result
-watershed seed  (G im) = unsafePerformIO $ do
+-- | Watershed segmentation basic routine which overwrites the seeds image. See the higher level version 'watershed'.
+watershed8u :: ImageGray -- ^ source image
+            -> ImageGray -- ^ seeds
+            -> IO ()
+watershed8u (G im) (G seed) = do
     let roi = vroi im
-    G r <- ioCopy_8u_C1R (const roi) seed
     ps <- malloc
     (ippiSegmentWatershedGetBufferSize_8u_C1R (roiSZ roi)) ps // checkIPP "ippiSegmentWatershedGetBufferSize" []
     s <- peek ps
     buffer <- mallocBytes (fromIntegral s)
     let norm = codeNorm IppiNormL2
         flag = codeSegment "IPP_SEGMENT_DISTANCE" + codeSegment "IPP_SEGMENT_BORDER_8"
-    (ippiSegmentWatershed_8u_C1IR // src im roi // dst r roi) norm flag buffer // checkIPP "ippiSegmentWatershed_8u_C1IR" [im]
+    (ippiSegmentWatershed_8u_C1IR // src im roi // dst seed roi) norm flag buffer // checkIPP "ippiSegmentWatershed_8u_C1IR" [im]
     free buffer
     free ps
-    return (G r {vroi = roi})
+
+----------------------
+
+-- | watershed segmentation
+watershed :: ImageGray      -- ^ source image
+          -> [(Pixel,Int)]  -- ^ seeds
+          -> ImageGray      -- ^ result
+watershed im seeds = unsafePerformIO $ do
+    G s <- image (size im)
+    set8u 0 (vroi s) (G s)
+    let put (Pixel r c, v) = setValue s (fromIntegral v :: CUChar) r c
+    mapM_ put seeds
+    watershed8u im (G s)
+    return $ G (s {vroi = theROI im})
