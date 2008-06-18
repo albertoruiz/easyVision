@@ -104,14 +104,14 @@ saveRGB Nothing im = do
 -}
 findSize :: IO Size
 findSize = do
-    args <- getArgs
-    let opts = Map.fromList $ zip args (tail args)
-        fwd  = Map.findWithDefault
-        sz   =  if Map.member "--size" opts
-                    then mpSize $ read $ fwd "20" "--size" opts
-                    else Size (read $ fwd "480" "--rows" opts)
-                              (read $ fwd "640" "--cols" opts) 
-    return sz
+    okSize <- optionGiven "--size"
+    mps <- getOption "--size" 20
+    r   <- getOption "--rows" 480
+    c   <- getOption "--cols" 640
+    return $ if okSize
+                then mpSize mps
+                else Size r c
+
 
 
 getCam n sz = do
@@ -139,6 +139,12 @@ getRawOption name = do
         xs -> Just (val (last xs))
   where val = tail . dropWhile (/= '=')
 
+
+optionGiven name = do
+    o <- getRawOption name
+    return $ case o of
+                Nothing -> False
+                Just _  -> True
 
 maybeOption name = fmap (fmap read) (getRawOption name)
 
@@ -174,6 +180,8 @@ expand ali s = foldl' (flip replace) s ali
 replace (a,b) c = case findIndex (isPrefixOf a) (tails c) of
     Nothing -> c
     Just i  -> take i c ++ b ++ replace (a,b) (drop (i+length a) c)
+
+----------------------------------------------
 
 optionalSaver sz = do
     filename <- getRawOption "--save"
