@@ -10,6 +10,7 @@ import Control.Monad(when)
 import Control.Parallel.Strategies
 import Control.Concurrent
 import ImagProc.InterestPoints
+import ImagProc.Descriptors
 
 inParallel x = parMap rnf id x
 
@@ -121,6 +122,9 @@ worker o cam w wd = do
                                             5 -> getInterestPoints hessianBox sigmaboxes 100 tot h imr
                                             6 -> getInterestPoints procStd sigmaboxes 100 tot h auxStd
 
+        (gx,gy,_,_,_) = secondOrder $ (2 .*) $ gaussS 1 imr
+        ga = abs32f gx |+| abs32f gy
+        feats = map (extractFeature ga gx gy) pts
 
 --     print $ map sigmaToBox sigmas
 --     print $ map sigmaToBox sigmaboxes
@@ -134,12 +138,12 @@ worker o cam w wd = do
     
     --timing $ print $ length $ concat $ rawpts
 
---     timing $
-    inWin w $ do
+    timing $
+     inWin w $ do
         when (what == 0) $ drawImage imr
         when (what == 2) $ drawImage (rgb orig)
         when (what == 1) $ drawImage (stResponse $ pyr!!n)
-        mapM_ box pts
+        sequence $ zipWith boxFeat pts feats
         --text2D 20 20 (show $ map (size.stResponse) pyr)
 --         let x = stResponse $ pyr!!n
 --         text2D 20 20 $ show (minmax x)
@@ -181,6 +185,16 @@ dist (Pixel a b) (Pixel r c, n) = (a-r)^2 + (b-c)^2
 
 sigmaToBox s = round $ (s * sqrt 12 - 1) / 2
 boxToSigma b = (1 + 2 * fromIntegral b) / sqrt 12
+
+-------------------------------------------------------------------
+
+extractFeature ga gx gy x@(p,n) = histodir (r ga) (r gx) (r gy)
+    where r = modifyROI (const (roiOf x))
+
+boxFeat p@(Pixel r c, n) h = do
+    box p
+    setColor 0 0.5 0
+    drawHisto (c-18) r (300*h)
 
 -------------------------------------------------------------------
 
