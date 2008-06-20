@@ -45,6 +45,7 @@ main = do
 --             timing $ print hd
             setColor 1 0 0
             drawHisto (5+c1 (theROI ga)) (r2 (theROI ga)) (1000*hd)
+            drawHisto (100+c1 (theROI ga)) (r2 (theROI ga)) (1000* norDir hd)
 
 
 hsum !p !k !s = s + float2Double (uval p k)
@@ -54,3 +55,9 @@ hcount !p !k !s = s+1
 {-# INLINE hcount #-}
 
 sumv v = v <.> constant 1 (dim v)
+
+norDir v = fromList (l2++l1)
+    where p = vectorMaxIndex v
+          l = toList v
+          l1 = take p l
+          l2 = drop p l

@@ -11,6 +11,13 @@ import Control.Parallel.Strategies
 import Control.Concurrent
 import ImagProc.InterestPoints
 import ImagProc.Descriptors
+import Numeric.LinearAlgebra hiding ((.*))
+
+data DIP = DIP {
+    ipRawPosition :: Pixel,
+    ipRawScale    :: Int,
+    ip            :: InterestPoint }
+
 
 inParallel x = parMap rnf id x
 
@@ -75,7 +82,7 @@ main = do
                           ,("test",intParam 0 0 1)
                           ]
 
-    w <- evWindow (Pixel 200 200,[]) "scale" sz Nothing  (mouse (kbdcam ctrl))
+    w <- evWindow (False, Pixel 0 0, constant (0::Double) 36) "scale" sz Nothing  (mouse (kbdcam ctrl))
     wd <- evWindow 0 "feature" (Size 200 200) Nothing (const (kbdcam ctrl))
 --     wdebug <- evWindow () "debug" sz Nothing  (const (kbdcam ctrl))
 
@@ -126,6 +133,13 @@ worker o cam w wd = do
         ga = abs32f gx |+| abs32f gy
         feats = map (extractFeature ga gx gy) pts
 
+    (clicked,p,v) <- getW w
+    when (clicked && not (null feats)) $ do
+        let sel = minimumBy (compare `on` (dist p.ipRawPosition)) feats
+        putW w (False,p, (ipDescriptor.ip) sel)
+
+    let best = minimumBy (compare `on` (distv v.ipDescriptor.ip)) feats
+
 --     print $ map sigmaToBox sigmas
 --     print $ map sigmaToBox sigmaboxes
 
@@ -143,7 +157,8 @@ worker o cam w wd = do
         when (what == 0) $ drawImage imr
         when (what == 2) $ drawImage (rgb orig)
         when (what == 1) $ drawImage (stResponse $ pyr!!n)
-        sequence $ zipWith boxFeat pts feats
+        lineWidth $= 1
+        mapM_ boxFeat feats
         --text2D 20 20 (show $ map (size.stResponse) pyr)
 --         let x = stResponse $ pyr!!n
 --         text2D 20 20 $ show (minmax x)
@@ -153,11 +168,14 @@ worker o cam w wd = do
 --                      maxEvery (stFiltMax $ pyr!!(n-1)) (stFiltMax $ pyr!!(n+1))
 
 
-    inWin wd $ when (not (null pts)) $ do
-        (clicked,_) <- getW w
-        let sel = minimumBy (compare `on` dist clicked) pts
-            feat = float $ resize (Size 50 50) (modifyROI (const $ roiOf sel) $ gray orig)
-        drawImage $ scale32f8u (-1) 1 $ sobelHoriz feat
+        when (not (null feats)) $ do
+            lineWidth $= 4
+            boxFeat best
+
+    when (not (null feats)) $ inWin wd $ do
+            let roi = roiOf (ipRawPosition best, ipRawScale best) 
+                im = modifyROI (const roi) imr
+            drawImage $ resize (Size 100 100) im
 
     frame <- getW wd
     --when (frame==100) $ error "terminado"
@@ -165,45 +183,52 @@ worker o cam w wd = do
 
 ------------------------------------------------------------------
 
-box (Pixel r c, n) = do
-    setColor 1 0 0
-    renderPrimitive LineLoop $ do
-        vertex (Pixel (r-n) (c-n))
-        vertex (Pixel (r-n) (c+n))
-        vertex (Pixel (r+n) (c+n))
-        vertex (Pixel (r+n) (c-n))
-    setColor 1 1 1
-    text2D (fromIntegral c) (fromIntegral r) (show n)
-
 roiOf (p, n) = roiFromPixel (3*n`div`2) p
 
 roiFromPixel rad (Pixel r c) = ROI (r-rad) (r+rad) (c-rad)  (c+rad)
 
--- fixPts l s = map g l where g x = (x,round $ 1.7*s)
+dist (Pixel a b) (Pixel r c) = (a-r)^2 + (b-c)^2
 
-dist (Pixel a b) (Pixel r c, n) = (a-r)^2 + (b-c)^2
+distv a b = pnorm PNorm2 (a-b)
 
 sigmaToBox s = round $ (s * sqrt 12 - 1) / 2
 boxToSigma b = (1 + 2 * fromIntegral b) / sqrt 12
 
 -------------------------------------------------------------------
 
-extractFeature ga gx gy x@(p,n) = histodir (r ga) (r gx) (r gy)
-    where r = modifyROI (const (roiOf x))
+extractFeature ga gx gy x@(p,n) = r where
+    r = DIP { ipRawPosition = p,
+              ipRawScale    = n,
+              ip            = pt }
+    pt = IP { ipPosition = head $ pixelsToPoints (size ga) [p],
+              ipScale = fromIntegral n / w2,
+              ipOrientation = 10 * fromIntegral (vectorMaxIndex feat) * pi / 180,
+              ipDescriptor = norDir feat }
+    g = modifyROI (const (roiOf x))
+    feat = histodir (g ga) (g gx) (g gy)
+    Size _ w = size ga
+    w2 = fromIntegral w / 2
 
-boxFeat p@(Pixel r c, n) h = do
-    box p
+norDir v = fromList (l2++l1)
+    where p = vectorMaxIndex v
+          l = toList v
+          l1 = take p l
+          l2 = drop p l
+
+boxFeat p = do
+    let Pixel r c = ipRawPosition p
     setColor 0 0.5 0
-    drawHisto (c-18) r (300*h)
+    drawHisto (c-18) r (300* (ipDescriptor.ip) p)
+    setColor 1 1 1
+    text2D (fromIntegral c) (fromIntegral r) (show $ ipRawScale p)
+    setColor 1 0 0
+    drawROI $ roiFromPixel (ipRawScale p) (ipRawPosition p)
 
 -------------------------------------------------------------------
 
 mouse _ st (MouseButton LeftButton) Down _ pos@(Position x y) = do
-    (_,l) <- get st
-    st $= (Pixel (fromIntegral y) (fromIntegral x), l)
-mouse _ st (Char 'y') Down _ _ = do
-    (p,l) <- get st
-    st $= (p, p:l)
+    (_,_,v) <- get st
+    st $= (True, Pixel (fromIntegral y) (fromIntegral x), v)
 mouse def _ a b c d = def a b c d
 
 -------------------------------------
