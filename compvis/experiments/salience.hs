@@ -118,8 +118,6 @@ autoscale im = f im
     where (mn,mx) = minmax im
           f = if mn == mx then scale32f8u 0 1 else scale32f8u mn mx
 
-roiFromPixel rad (Pixel r c) = ROI (r-rad) (r+rad) (c-rad)  (c+rad)
-
 setROI val roi im = unsafePerformIO $ do
     r <- clone im
     set val (intersection (theROI r) roi) r

@@ -19,7 +19,11 @@ module ImagProc.ROI
   intersection,
   union,
   roiArea,
-  inROI
+  inROI,
+  roiGrid,
+  roiFromPixel,
+  roiFrom2Pixels,
+  roiCenter
 ) where
 
 import ImagProc.Base
@@ -69,3 +73,26 @@ roiArea (ROI r1 r2 c1 c2) = w*h where
 -- | checks that a pixel is in a ROI
 inROI :: ROI -> Pixel -> Bool
 inROI (ROI r1 r2 c1 c2) (Pixel r c) = r1 <= r && r <= r2 && c1 <= c && c <= c2
+
+-- | divides a ROI into n x m subregions
+roiGrid :: Int -- ^ rows of rois
+        -> Int -- ^ columns of rois
+        -> ROI -- ^ input ROI
+        -> [ROI]
+roiGrid kr kc (ROI r1 r2 c1 c2) = [ROI a (a+dr-1) b (b+dc-1) | a <- [r1,r1+dr .. r2-dr+1]
+                                                             , b <- [c1,c1+dc .. c2-dc+1]]
+    where dr = (r2-r1+1) `div` kr
+          dc = (c2-c1+1) `div` kc
+
+-- | creates a square ROI around a pixel (the size of the ROI is (2*radius+1)^2).
+roiFromPixel :: Int -- ^ radius
+             -> Pixel -> ROI
+roiFromPixel rad (Pixel r c) = ROI (r-rad) (r+rad) (c-rad)  (c+rad)
+
+-- | creates a ROI from opposite vertices
+roiFrom2Pixels :: Pixel -> Pixel -> ROI
+roiFrom2Pixels (Pixel r1 c1) (Pixel r2 c2) = ROI (min r1 r2) (max r1 r2) (min c1 c2) (max c1 c2)
+
+-- | the central pixel of a ROI
+roiCenter :: ROI -> Pixel
+roiCenter (ROI r1 r2 c1 c2) = Pixel (r1 + (r2-r1+1)`div`2) (c1 + (c2-c1+1)`div`2)

@@ -201,7 +201,7 @@ worker wDemo cam param fft = do
             "FFT" ->       do let p2roi = ROI (r1 roi) (r1 roi + 2^8-1) (c1 roi) (c1 roi + 2^8-1)
                                   d = sqrt32f . powerSpectrum . magnitudePack . fft
                                     $ modifyROI (const p2roi) gsmooth
-                                  c@(Pixel r0 c0) = cent (theROI d)
+                                  c@(Pixel r0 c0) = roiCenter (theROI d)
                               set 0 (roiFrom2Pixels c c) d
                               let (m,_) = maxIndx d
                               drawImage $ (1/m) .* d
@@ -234,8 +234,7 @@ worker wDemo cam param fft = do
 
 -----------------------------------
 
-cent (ROI r1 r2 c1 c2) = Pixel (r1 + (r2-r1+1)`div`2) (c1 + (c2-c1+1)`div`2)
-roiFrom2Pixels (Pixel r1 c1) (Pixel r2 c2) = ROI (min r1 r2) (max r1 r2) (min c1 c2) (max c1 c2)
+
 
 autoscale im = f im
     where (mn,mx) = minmax im

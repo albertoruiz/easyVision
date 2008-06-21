@@ -191,8 +191,6 @@ worker o cam w wd = do
 
 roiOf (p, n) = roiFromPixel (3*n`div`2) p
 
-roiFromPixel rad (Pixel r c) = ROI (r-rad) (r+rad) (c-rad)  (c+rad)
-
 dist (Pixel a b) (Pixel r c) = (a-r)^2 + (b-c)^2
 
 distv a b = pnorm PNorm2 (a-b)

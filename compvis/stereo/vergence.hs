@@ -58,7 +58,7 @@ main = do
             w1 = proc $ warp 0 (size im1) (scaling scale <> rec1) im1
             w2 = proc $ warp 0 (size im2) (scaling (d1/d0*scale) <> rec2) im2
 
-            roi = roiFromPoint rad orig where [orig] = pointsToPixels sz [Point 0 0]
+            roi = roiFromPixel rad orig where [orig] = pointsToPixels sz [Point 0 0]
 
             disc = rawDisc (modifyROI (const roi) w1) (modifyROI (const roi) w2)
 
@@ -114,7 +114,5 @@ mouse def _ _ a b c d = def a b c d
 vector l = fromList l :: Vector Double
 
 norm = pnorm PNorm2
-
-roiFromPoint rad (Pixel r c) = ROI (r-rad) (r+rad) (c-rad)  (c+rad)
 
 rawDisc im1 im2 = sum32f (abs32f (im1 |-| im2)) / fromIntegral (roiArea $ theROI im1)

@@ -31,7 +31,7 @@ main = do
         let imf = float . gray $ img
         inWin w $ drawImage (modifyROI (const p2roi) imf)
         let d = powerSpectrum $ magnitudePack $ fft (modifyROI (const p2roi) imf)
-            c@(Pixel r0 c0) = cent (theROI d)
+            c@(Pixel r0 c0) = roiCenter (theROI d)
         set32f 0 (roiFrom2Pixels c c) d
         let (m,Pixel rm cm) = maxIndx (up d)
             ROI r1 _ c1 _ = p2roi
@@ -48,5 +48,4 @@ main = do
             drawImage r
             text2D 20 20 (show (round nd,round (alpha*180/pi)))
 
-cent (ROI r1 r2 c1 c2) = Pixel (r1 + (r2-r1+1)`div`2) (c1 + (c2-c1+1)`div`2)
-roiFrom2Pixels (Pixel r1 c1) (Pixel r2 c2) = ROI (min r1 r2) (max r1 r2) (min c1 c2) (max c1 c2)
+
