@@ -15,6 +15,7 @@ import ImagProc.C.Simple(csum32f)
 import Numeric.LinearAlgebra hiding ((.*))
 import ImagProc.ImageFold
 import ImagProc.Descriptors
+import Vision(unitary)
 
 main = do
     sz <- findSize
@@ -45,7 +46,9 @@ main = do
 --             timing $ print hd
             setColor 1 0 0
             drawHisto (5+c1 (theROI ga)) (r2 (theROI ga)) (1000*hd)
-            drawHisto (100+c1 (theROI ga)) (r2 (theROI ga)) (1000* norDir hd)
+            let sd = surfDesc 3 (gx,gy) roi
+            drawHisto (200+c1 (theROI ga)) (r2 (theROI ga)) (100*sd)
+            printf "%.2f\n" $ (10::Double) * fromIntegral (vectorMaxIndex hd)
 
 
 hsum !p !k !s = s + float2Double (uval p k)

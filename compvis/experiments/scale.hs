@@ -2,7 +2,7 @@
 
 import EasyVision
 import Data.List(transpose,minimumBy,foldl1',nub)
-import Graphics.UI.GLUT hiding (RGB,Size,minmax,histogram,Point,set)
+import Graphics.UI.GLUT hiding (Matrix,RGB,Size,minmax,histogram,Point,set)
 import Debug.Trace
 import Foreign
 import ImagProc.Ipp.Core
@@ -14,7 +14,7 @@ import Control.Concurrent
 import ImagProc.InterestPoints
 import ImagProc.Descriptors
 import Numeric.LinearAlgebra hiding ((.*))
-import Vision(rot3)
+import Vision(rot3,scaling,desp)
 
 data DIP = DIP {
     ipRawPosition :: Pixel,
@@ -83,10 +83,11 @@ main = do
                           ,("what",intParam 0 0 2)
                           ,("mode",intParam 1 1 6)
                           ,("test",intParam 0 0 1)
+                          ,("sc",realParam 2 0 5)
                           ]
 
     w <- evWindow (False, Pixel 0 0, constant (0::Double) 36) "scale" sz Nothing  (mouse (kbdcam ctrl))
-    wd <- evWindow 0 "feature" (Size 200 200) Nothing (const (kbdcam ctrl))
+    wd <- evWindow 0 "feature" sz Nothing (const (kbdcam ctrl))
 --     wdebug <- evWindow () "debug" sz Nothing  (const (kbdcam ctrl))
 
     launchFreq 10 (worker o cam w wd)
@@ -97,6 +98,7 @@ main = do
 
 worker o cam w wd = do
 
+    PAR(sc)
     PAR(tot)
     PAR(n)
     PAR(steps) :: IO Int
@@ -106,6 +108,7 @@ worker o cam w wd = do
     PAR(mode)  :: IO Int
     PAR(h)
     PAR(what)  :: IO Int
+
 
     let sigmas = take (n+2) $ getSigmas sigma steps
         boxes = take (n+2) [1,2,3,4,5,6,8,10,13,17,21,27,34,43,54]
@@ -133,7 +136,7 @@ worker o cam w wd = do
                                             5 -> getInterestPoints hessianBox sigmaboxes 100 tot h imr
                                             6 -> getInterestPoints procStd sigmaboxes 100 tot h auxStd
 
-        (gx,gy,_,_,_) = secondOrder $ (2 .*) $ gaussS 1 imr
+        (gx,gy,_,_,_) = secondOrder $ (sc .*) $ gaussS 1 imr
         ga = abs32f gx |+| abs32f gy
         feats = map (extractFeature ga gx gy) pts
 
@@ -177,11 +180,18 @@ worker o cam w wd = do
             boxFeat best
 
     when (not (null feats)) $ inWin wd $ do
-            let roi = roiOf (ipRawPosition best, ipRawScale best) 
-                im = modifyROI (const roi) imr
-                r  = rot3 (ipOrientation.ip $ best)
-            drawImage $ warp 0 (Size 100 100) r $ resize (Size 100 100) im
+            let roi = roiOf (ipRawPosition best, ipRawScale best)
+                roi2 = roiOf (ipRawPosition best, 3*ipRawScale best `div`2)
+--                        expandROI 1.5 roi
+                im = modifyROI (const roi2) imr
+                Point x y = ipPosition (ip best)
+                r  = desp (x,y) <>rot3 ((ipOrientation.ip) best) <> desp (-x,-y)
+            drawImage $ warp 0 (mpSize 20) r im
+            drawROI roi
             text2D 20 20 (printf "%.2f" $ distv (ipDescriptor.ip $ best) v)
+            let g = modifyROI (const roi)
+                oris = histodir (g ga) (g gx) (g gy)
+            drawHisto 50 240 (1000*oris)
 
     frame <- getW wd
     --when (frame==100) $ error "terminado"
@@ -189,7 +199,7 @@ worker o cam w wd = do
 
 ------------------------------------------------------------------
 
-roiOf (p, n) = roiFromPixel (3*n`div`2) p
+roiOf (p, n) = roiFromPixel (2*n) p
 
 dist (Pixel a b) (Pixel r c) = (a-r)^2 + (b-c)^2
 
@@ -197,6 +207,10 @@ distv a b = pnorm PNorm2 (a-b)
 
 sigmaToBox s = round $ (s * sqrt 12 - 1) / 2
 boxToSigma b = (1 + 2 * fromIntegral b) / sqrt 12
+
+expandROI x roi@(ROI r1 r2 c1 c2) = debug $ shrink (-d,-d) (debug roi)
+    where d = ceiling ((x * s - s)/ 2)
+          s =  fromIntegral $ max (c2-c1+1) (r2-r1+1)
 
 -------------------------------------------------------------------
 
@@ -206,10 +220,11 @@ extractFeature ga gx gy x@(p,n) = r where
               ip            = pt }
     pt = IP { ipPosition = head $ pixelsToPoints (size ga) [p],
               ipScale = fromIntegral n / w2,
-              ipOrientation = 10 * fromIntegral (vectorMaxIndex feat) * pi / 180,
-              ipDescriptor = norDir feat }
+              ipOrientation = 10 * fromIntegral (1+vectorMaxIndex oris) * pi / 180,
+              ipDescriptor = feat }
     g = modifyROI (const (roiOf x))
-    feat = histodir (g ga) (g gx) (g gy)
+    oris = histodir (g ga) (g gx) (g gy)
+    feat = surfDesc 3 (gx,gy) (roiFromPixel (2*n) p)
     Size _ w = size ga
     w2 = fromIntegral w / 2
 
@@ -222,7 +237,7 @@ norDir v = fromList (l2++l1)
 boxFeat p = do
     let Pixel r c = ipRawPosition p
     setColor 0 0.5 0
-    drawHisto (c-18) r (300* (ipDescriptor.ip) p)
+    drawHisto (c-18) r (50* (ipDescriptor.ip) p)
     setColor 1 1 1
     text2D (fromIntegral c) (fromIntegral r) (show $ ipRawScale p)
     setColor 1 0 0
@@ -267,3 +282,5 @@ instance NFData Stage where
 
 instance NFData ImageFloat where
     rnf (F x) = rwhnf (ptr x)
+
+---------------------------------------
