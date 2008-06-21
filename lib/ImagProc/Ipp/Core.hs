@@ -19,11 +19,11 @@ Experimental interface to Intel Integrated Performance Primitives for image proc
 
 module ImagProc.Ipp.Core
           ( -- * Image representation
-            Img(..), ImageType(..), ROI(..), Size(..)
+            Img(..), ImageType(..)
             -- * Creation of images
           , img, imgAs, getData32f, setData32f, setData8u, value, setValue
             -- * Regions of interest
-          , fullroi, shrink, shift, intersection, union, roiSize, roiArea, invalidROIs, roiSZ, inROI
+          , fullroi, invalidROIs, roiSZ, validArea
             -- * Wrapper tools
           , src, dst, checkIPP, warningIPP, (//), starting
             -- * Image types
@@ -34,16 +34,13 @@ module ImagProc.Ipp.Core
           , ImageDouble(D)
           , ImageYUV (Y)
           -- * Image coordinates
-          , Pixel (..)
-          , Point (..)
-          , Segment(..)
-          , InterestPoint(..)
-          , segmentLength, distPoints
-          , pixelsToPoints, pointsToPixels, pixelToPointTrans
           , val32f, val32f', val8u
           , module ImagProc.Ipp.Structs, CInt, CUChar, fi, ti
+          , module ImagProc.Base, module ImagProc.ROI
 ) where
 
+import ImagProc.Base
+import ImagProc.ROI
 import ImagProc.Ipp.Structs
 import Foreign hiding (shift)
 import Control.Monad(when)
@@ -51,8 +48,6 @@ import ImagProc.Ipp.Wrappers
 import Foreign.C.String(peekCString)
 import Foreign.C.Types
 import Foreign.Marshal.Utils(copyBytes)
-import qualified Numeric.LinearAlgebra as LA
-import Vision
 
 import GHC.Base
 import GHC.IOBase
@@ -66,8 +61,6 @@ ti = fromIntegral
 
 ------------------------------------------------------------
 ------------- descriptor of an ipp image -------------------
-
-data Size  = Size  {height :: !Int, width :: !Int} deriving (Show, Eq)
 
 -- | Image type descriptor:
 data ImageType = RGB | Gray | I32f | I64f | YUV deriving (Show,Eq)
@@ -154,11 +147,7 @@ setValue Img {fptr = fp, ptr = p, datasize = d, step = s} v r c = do
     poke (advancePtr (castPtr p) (r*jump+c)) v
     touchForeignPtr fp
 
-data ROI = ROI { r1 :: Int  -- ^ upper row
-               , r2 :: Int  -- ^ lower row
-               , c1 :: Int  -- ^ leftmost column
-               , c2 :: Int  -- ^ rightmost column
-               } deriving Show
+---------------------------------------------------------------
 
 starting :: Img -> ROI -> Ptr a
 starting img roi = plusPtr (ptr img) (r1 roi * step img + c1 roi*(datasize img)*(layers img))
@@ -167,55 +156,12 @@ starting img roi = plusPtr (ptr img) (r1 roi * step img + c1 roi*(datasize img)*
 fullroi :: Img -> ROI
 fullroi Img {isize = Size h w} = ROI {r1=0, r2=h-1, c1=0, c2=w-1}
 
--- | Size of a ROI
-roiSize :: ROI -> Size
-roiSize ROI { r1=a, r2=b, c1=x, c2=y} = Size { height = b-a+1, width = y-x+1 }
-
--- | Creates a new roi by reducing in (r,c) units the rows and columns or a given roi. If r or c are negative the roi expands.
-shrink :: (Int,Int)  -> ROI -> ROI
-shrink (r,c) roi =
-    ROI {r1=(r1 roi) +r, 
-         r2=(r2 roi) -r,
-         c1=(c1 roi) +c,
-         c2=(c2 roi) -c}
-
--- | Creates a new roi by moving (r,c) units the position of a given roi.
-shift :: (Int,Int)  -> ROI -> ROI
-shift (r,c) roi =
-    ROI {r1=(r1 roi) +r, 
-         r2=(r2 roi) +r,
-         c1=(c1 roi) +c,
-         c2=(c2 roi) +c}
-
--- | Creates a new roi as the intersection of two given roi's.
-intersection :: ROI -> ROI -> ROI
-intersection a b = ROI { r1 = max (r1 a) (r1 b)
-                       , r2 = min (r2 a) (r2 b)
-                       , c1 = max (c1 a) (c1 b)
-                       , c2 = min (c2 a) (c2 b)
-                       }
-
--- | obtains the minimum ROI which contains the arguments
-union :: ROI -> ROI -> ROI
-union a b = ROI { r1 = min (r1 a) (r1 b)
-                , r2 = max (r2 a) (r2 b)
-                , c1 = min (c1 a) (c1 b)
-                , c2 = max (c2 a) (c2 b)
-                }
 
 -- id, const
 
 -- | 'ROI'\'s area in pixels
-roiArea :: Image a => a -> Int
-roiArea im = w*h where
-    ROI r1 r2 c1 c2 = theROI im
-    w = c2-c1+1
-    h = r2-r1+1
-
-
--- | checks that a pixel is in a ROI
-inROI :: ROI -> Pixel -> Bool
-inROI (ROI r1 r2 c1 c2) (Pixel r c) = r1 <= r && r <= r2 && c1 <= c && c <= c2
+validArea :: Image a => a -> Int
+validArea = roiArea . theROI
 
 
 -- | Creates an image of the same type and size than a given image. Data is not copied.
@@ -342,62 +288,6 @@ newtype ImageDouble = D Img
 -- | The yuv 4:2:0 image obtained by mplayer -vo yuv4mpeg
 newtype ImageYUV = Y Img
 
--- | Normalized image coordinates, with x from +1 to -1 (for a right handed 3D reference system with z pointing forward)
-data Point = Point { px    :: !Double, py :: !Double} deriving (Eq, Show)
-
--- | Raw image coordinates
-data Pixel = Pixel { row   :: !Int,    col :: !Int } deriving (Eq, Show)
-
--- | Auxiliary homogeneous transformation from 'Pixel's to 'Point's
-pixelToPointTrans :: Size -> LA.Matrix Double
-pixelToPointTrans Size {width = w', height = h'} = nor where
-    w = fromIntegral w'
-    h = fromIntegral h'
-    r = h/w
-    nor = LA.fromLists
-        [[-2/w,      0, 1]
-        ,[   0, -2*r/h, r]
-        ,[   0,      0, 1]]
-
-pixelToList Pixel {row = r, col = c} = [fromIntegral c, fromIntegral r]
-pointToList p = [px p, py p]
-listToPoint [x,y] = Point {px = x, py= y}
-listToPixel [c,r] = Pixel {row = round r, col = round c}
-
--- | Trasformation from pixels to normalized points.
-pixelsToPoints :: Size -> [Pixel]->[Point]
-pixelsToPoints sz = fix where
-    nor = pixelToPointTrans sz
-    fix = map listToPoint. ht nor . map pixelToList
-
--- | Trasformation from pixels to normalized points.
-pointsToPixels :: Size -> [Point]->[Pixel]
-pointsToPixels sz = fix where
-    nor = LA.inv (pixelToPointTrans sz)
-    fix = map listToPixel. ht nor . map pointToList
-
-
-data Segment = Segment {
-    extreme1 :: !Point,
-    extreme2 :: !Point
-}
-
--- | The length of a segment.
-segmentLength :: Segment -> Double
-segmentLength (Segment {extreme1 = e1, extreme2 = e2}) = distPoints e1 e2
-
--- | Euclidean distance between two points
-distPoints :: Point -> Point -> Double
-distPoints (Point a b) (Point x y) = sqrt $ (a-x)^2+(b-y)^2
-
------------------------------------------------------------------------------
-
-data InterestPoint = IP {
-      ipPosition    :: Point
-    , ipScale       :: Double
-    , ipOrientation :: Double
-    , ipDescriptor  :: LA.Vector Double
-    } deriving (Eq, Show)
 
 -------------------------------------------------------------------
 

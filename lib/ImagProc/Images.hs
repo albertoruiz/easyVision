@@ -20,31 +20,21 @@ These are the only definitions required by the \"end user\". Lower level program
 module ImagProc.Images
 ( -- * Image types
   Image (..)
-, ROI(..)
 , ImageRGB
 , ImageGray
 , ImageFloat
 , ImageYUV
-  -- * Image coordinates
-, Size (..), roiSize, roiArea, shrink
-, Pixel (..)
-, Point (..)
-, Segment (..), segmentLength
-, pixelsToPoints, pointsToPixels
---, val32f
+, module ImagProc.Base
+, module ImagProc.ROI
 ) where
 
 import ImagProc.Ipp.Core (
      Image(..)
-   , ROI(..)
    , ImageRGB
    , ImageGray
    , ImageFloat
-   , ImageYUV
-   , Pixel(..)
-   , Point(..)
-   , Segment(..), segmentLength
-   , Size(..), roiSize, roiArea, shrink
-   , pixelsToPoints, pointsToPixels
- )
+   , ImageYUV )
+
+import ImagProc.Base
+import ImagProc.ROI
 

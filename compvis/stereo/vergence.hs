@@ -1,5 +1,5 @@
 
-import EasyVision
+import EasyVision hiding (shift)
 import Graphics.UI.GLUT hiding (RGB,Size,Point)
 import Numeric.LinearAlgebra hiding ((.*))
 import qualified Numeric.LinearAlgebra as LA
@@ -117,4 +117,4 @@ norm = pnorm PNorm2
 
 roiFromPoint rad (Pixel r c) = ROI (r-rad) (r+rad) (c-rad)  (c+rad)
 
-rawDisc im1 im2 = sum32f (abs32f (im1 |-| im2)) / fromIntegral (roiArea im1)
+rawDisc im1 im2 = sum32f (abs32f (im1 |-| im2)) / fromIntegral (roiArea $ theROI im1)

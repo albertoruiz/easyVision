@@ -6,7 +6,7 @@ import EasyVision
 import Graphics.UI.GLUT hiding (Matrix, Size, Point)
 import Control.Monad(foldM)
 import Vision
-import ImagProc.Ipp.Core(intersection, shrink, roiArea)
+import ImagProc.Ipp.Core(intersection, shrink, validArea)
 import Foreign
 import Numeric.GSL.Minimization
 import Numeric.LinearAlgebra
@@ -15,7 +15,7 @@ asFloat grab = return $ grab >>= return . scale8u32f 0 1 . yuvToGray
 
 simil0 a b roi = k * sum32f (abs32f (f a |-| f b))
     where f = modifyROI (const roi)
-          k = recip $ fromIntegral $ roiArea (f a)
+          k = recip $ fromIntegral $ validArea (f a)
 
 pasteOn base h im = unsafePerformIO $ do
     dest <- clone base

@@ -14,7 +14,6 @@ We extract points with high negative det hessian response (Saddle points in a qu
 -----------------------------------------------------------------------------
 
 module ImagProc.Saddle (
- InterestPoint(..),
  getSaddlePoints,
  basicMatches
 )

@@ -1,3 +1,5 @@
+{-# LANGUAGE CPP #-}
+
 import EasyVision
 import Data.List(transpose,minimumBy,foldl1',nub)
 import Graphics.UI.GLUT hiding (RGB,Size,minmax,histogram,Point,set)
@@ -12,6 +14,7 @@ import Control.Concurrent
 import ImagProc.InterestPoints
 import ImagProc.Descriptors
 import Numeric.LinearAlgebra hiding ((.*))
+import Vision(rot3)
 
 data DIP = DIP {
     ipRawPosition :: Pixel,
@@ -90,18 +93,19 @@ main = do
 
 -----------------------------------------------------------------
 
+#define PAR(S) S <- getParam o "S"
+
 worker o cam w wd = do
 
-    tot <- getParam o "tot" :: IO Int
-    n <- getParam o "n" :: IO Int
-    steps <- getParam o "steps" :: IO Int
-    sigma <- getParam o "sigma" :: IO Float
-    rtest <- getParam o "rtest" :: IO Int
-    test <- getParam o "test" :: IO Int
-    mode <- getParam o "mode" :: IO Int
-    h <- getParam o "h" :: IO Float
-    what <- getParam o "what" :: IO Int
-    steps <- getParam o "steps" :: IO Int
+    PAR(tot)
+    PAR(n)
+    PAR(steps) :: IO Int
+    PAR(sigma)
+    PAR(rtest) :: IO Int
+    PAR(test)  :: IO Int
+    PAR(mode)  :: IO Int
+    PAR(h)
+    PAR(what)  :: IO Int
 
     let sigmas = take (n+2) $ getSigmas sigma steps
         boxes = take (n+2) [1,2,3,4,5,6,8,10,13,17,21,27,34,43,54]
@@ -175,7 +179,9 @@ worker o cam w wd = do
     when (not (null feats)) $ inWin wd $ do
             let roi = roiOf (ipRawPosition best, ipRawScale best) 
                 im = modifyROI (const roi) imr
-            drawImage $ resize (Size 100 100) im
+                r  = rot3 (ipOrientation.ip $ best)
+            drawImage $ warp 0 (Size 100 100) r $ resize (Size 100 100) im
+            text2D 20 20 (printf "%.2f" $ distv (ipDescriptor.ip $ best) v)
 
     frame <- getW wd
     --when (frame==100) $ error "terminado"

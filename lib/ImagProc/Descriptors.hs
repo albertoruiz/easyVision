@@ -52,7 +52,7 @@ histodir :: ImageFloat -- ^ |g|
          -> Vector Double -- ^ normalized histogram
 histodir ga gx gy =  nor $ histo 36 $ map (getBin 36) $ foldImage3 captureDirs [] ga gx gy
     where nor = (k .*)
-          k = recip . fromIntegral . roiArea $ ga
+          k = recip . fromIntegral . validArea $ ga
 
 -- | representation of the elements of a vector as vertical bars from a starting position
 drawHisto :: Int -- ^ column

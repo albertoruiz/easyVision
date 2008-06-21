@@ -421,7 +421,7 @@ similgen fa fb dab a h b = if ok roi then simil0 else 1E10
           ok r = r1 r >= 0 && r2 r > 50 + r1 r && c1 r >= 0 && c2 r > 50 + c1 r
           simil0 = k * dab (f ia) (f p) --  sum32f (abs32f (f ia |*| f p))
               where f = modifyROI (const roi)
-                    k = recip $ fromIntegral $ roiArea (f ia)
+                    k = recip $ fromIntegral $ validArea (f ia)
 
 effectiveROI sz h = newroi where
     r = 3/4
