@@ -1,65 +1,55 @@
+{-# LANGUAGE CPP #-}
 
 import EasyVision
-import Graphics.UI.GLUT hiding (Size,minmax)
-import Data.IORef
-import System.Environment(getArgs)
-import ImagProc.Ipp
-
-data MyState = ST {smooth :: Int}
-
---------------------------------------------------------------
+import Numeric.LinearAlgebra
 
 main = do
-    args <- getArgs
-    let sz = Size 288 384
-    (cam,ctrl) <- mplayer (args!!0) sz >>= withPause
+    sz <- findSize
 
-    state <- prepare' ST {smooth = 5}
+    (cam,ctrl) <- getCam 0 sz >>= withChannels >>= inThread >>= withPause
 
-    addWindow "camera" sz Nothing (const (kbdcam ctrl)) state
-    addWindow "hessian" sz Nothing keyboard state
+    prepare
 
-    launch' state (worker cam)
+    o <- createParameters [("sigma",realParam 1.0 0 3)
+                          ,("steps",intParam 3 1 10)
+                          ,("n",intParam 13  0 20)
+                          ,("tot",intParam 200 1 500)
+                          ,("h",realParam 0.3 0 2)
+                          ,("mode",intParam 1 1 6)
+                          ]
 
---------------------------------------------------------------
+#define PAR(S) S <- getParam o "S"
 
-hess s im = sqrt32f
-          $ abs32f
-          $ hessian
-          $ secondOrder
-          $ (s `times` gauss Mask5x5) im
 
-times n f = (!!n) . iterate f
+    w <- evWindow (False, Pixel 0 0, constant (0::Double) 36) "Interest Points" sz Nothing  (const (kbdcam ctrl))
 
---------------------------------------------------------------
+    launchFreq 15 $ do
 
-worker cam inWindow st = do
+        PAR(n)
+        PAR(steps) :: IO Int
+        PAR(sigma)
+        PAR(mode)  :: IO Int
+        PAR(h)
+        PAR(tot)
 
-    camera <- cam >>= return . scale8u32f 0 1 . yuvToGray
-    let h = hess (smooth st) camera
+        let sigmas = take (n+2) $ getSigmas sigma steps
 
-    inWindow "hessian" $ do
-        drawImage h --{vroi = vroi h}
+        orig <- cam
+        let imr = float $ gray $ orig
 
-    let (mn,mx) = minmax h
-        hotPoints = getPoints32f 1000
-                  $ thresholdVal32f (mx/5) 0.0 IppCmpLess
-                  $ localMax 3 h
+            feats = take tot $ fullHessian sigmas 100 h usurf imr
 
-    inWindow "camera" $ do
-        drawImage camera
-        pointSize $= 3
-        setColor 0 0.5 0
-        pixelCoordinates (size camera)
-        renderPrimitive Points $ mapM_ vertex hotPoints
+        inWin w $ do
+            drawImage (rgb orig)
+            mapM_ boxFeat feats
 
-    return st
 
------------------------------------------------------------------
 
-keyboard st (MouseButton WheelUp) _ _ _ = do
-    modifyIORef st $ \s -> s {ust = (ust s) {smooth = smooth (ust s) + 1}}
-keyboard st (MouseButton WheelDown) _ _ _ = do
-    modifyIORef st $ \s -> s {ust = (ust s) {smooth = max (smooth (ust s) - 1) 0}}
-keyboard _ _ _ _ _ = return ()
-------------------------------------------------------------------
+boxFeat p = do
+    let Pixel r c = ipRawPosition p
+--     setColor 0 0.5 0
+--     drawVector (c-18) (r+2*ipRawScale p) (50* (ipDescriptor.ip) p)
+    setColor 1 1 1
+    text2D (fromIntegral c) (fromIntegral r) (show $ ipRawScale p)
+    setColor 1 0 0
+    drawROI $ roiFromPixel (ipRawScale p) (ipRawPosition p)

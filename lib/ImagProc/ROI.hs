@@ -23,7 +23,8 @@ module ImagProc.ROI
   roiGrid,
   roiFromPixel,
   roiFrom2Pixels,
-  roiCenter
+  roiCenter,
+  roiRadius
 ) where
 
 import ImagProc.Base
@@ -96,3 +97,7 @@ roiFrom2Pixels (Pixel r1 c1) (Pixel r2 c2) = ROI (min r1 r2) (max r1 r2) (min c1
 -- | the central pixel of a ROI
 roiCenter :: ROI -> Pixel
 roiCenter (ROI r1 r2 c1 c2) = Pixel (r1 + (r2-r1+1)`div`2) (c1 + (c2-c1+1)`div`2)
+
+-- | the inverse of roiFromPixel
+roiRadius :: ROI -> Int
+roiRadius (ROI r1 r2 c1 c2) = min ((r2-r1+1)`div`2) ((c2-c1+1)`div`2)

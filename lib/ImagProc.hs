@@ -21,7 +21,8 @@ module ImagProc (
     module ImagProc.Saddle,
     module ImagProc.C.Simple,
     module ImagProc.C.Segments,
-    module ImagProc.Polyline
+    module ImagProc.Polyline,
+    module ImagProc.InterestPoints
 ) where
 
 import ImagProc.Images
@@ -31,3 +32,4 @@ import ImagProc.Saddle
 import ImagProc.C.Simple
 import ImagProc.C.Segments
 import ImagProc.Polyline
+import ImagProc.InterestPoints

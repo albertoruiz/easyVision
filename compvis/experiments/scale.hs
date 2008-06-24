@@ -12,17 +12,17 @@ import Control.Monad(when)
 import Control.Parallel.Strategies
 import Control.Concurrent
 import ImagProc.InterestPoints
-import ImagProc.Descriptors
 import Numeric.LinearAlgebra hiding ((.*))
-import Vision(rot3,scaling,desp)
-
-data DIP = DIP {
-    ipRawPosition :: Pixel,
-    ipRawScale    :: Int,
-    ip            :: InterestPoint }
-
+import Vision(rot3,scaling,desp,unitary)
 
 inParallel x = parMap rnf id x
+
+
+---------------------------------------------------------------------
+
+
+---------------------------------------------------------------
+
 
 ---------------------------------------------------------------
 
@@ -32,11 +32,6 @@ hsrespP sigma = sqrt32f
              . secondOrder 
              . ((sigma^2/10) .*)
              . gaussS sigma
-
-
-getSigmas sigma steps = [sigma*k^i | i <- [0..]] where k = 2**(1/fromIntegral steps)
-
----------------------------------------------------------------
 
 hsrespN sigma = sqrt32f
              . thresholdVal32f 0 0 IppCmpLess
@@ -83,13 +78,14 @@ main = do
                           ,("what",intParam 0 0 2)
                           ,("mode",intParam 1 1 6)
                           ,("test",intParam 0 0 1)
-                          ,("sc",realParam 2 0 5)
+                          ,("rot",realParam 0 (-180) 180)
                           ]
 
     w <- evWindow (False, Pixel 0 0, constant (0::Double) 36) "scale" sz Nothing  (mouse (kbdcam ctrl))
-    wd <- evWindow 0 "feature" sz Nothing (const (kbdcam ctrl))
+--    wd <- evWindow 0 "feature" sz Nothing (const (kbdcam ctrl))
 --     wdebug <- evWindow () "debug" sz Nothing  (const (kbdcam ctrl))
 
+    let wd = 1
     launchFreq 10 (worker o cam w wd)
 
 -----------------------------------------------------------------
@@ -98,7 +94,7 @@ main = do
 
 worker o cam w wd = do
 
-    PAR(sc)
+    PAR(rot)
     PAR(tot)
     PAR(n)
     PAR(steps) :: IO Int
@@ -111,34 +107,41 @@ worker o cam w wd = do
 
 
     let sigmas = take (n+2) $ getSigmas sigma steps
-        boxes = take (n+2) [1,2,3,4,5,6,8,10,13,17,21,27,34,43,54]
-        sigmaboxes = map boxToSigma boxes
+--         boxes = take (n+2) [1,2,3,4,5,6,8,10,13,17,21,27,34,43,54]
+--         sigmaboxes = map boxToSigma boxes
 
     orig <- cam
     let imr = if test == 1 then gaussS 2 $ blob rtest
-                     else (float $ gray orig)
+                           else (warp 0 (size (gray orig)) (rot3 (rot*pi/180)) $ float $ gray orig)
 
-        proc = case mode of
-            1 -> hsrespP
-            2 -> hsrespN
-            3 -> laresp
-            4 -> exper
+--         proc = case mode of
+--             1 -> hsrespP
+--             2 -> hsrespN
+--             3 -> laresp
+--             4 -> exper
 
-        hessianBox sigma = hsrespPBox (sigmaToBox sigma)
+--         hessianBox sigma = hsrespPBox (sigmaToBox sigma)
 
-        auxStd = sqrIntegral (toGray imr)
-        procStd sigma im = (2*1/255).* rectStdDev b b im where b = sigmaToBox sigma
+--         auxStd = sqrIntegral (toGray imr)
+--         procStd sigma im = (2*1/255).* rectStdDev b b im where b = sigmaToBox sigma
 
+--         responses = map (mkHessP imr) sigmas
 
+--         (pts,pyr) = getInterestPoints 100 h (map pyrResp responses)
 
-        (pts,pyr) = if mode < 5 then getInterestPoints proc sigmas 100 tot h imr
+{-        (pts,pyr) = if mode < 5 then getInterestPoints (mkStage proc) sigmas 100 tot h imr
                                 else case mode of
-                                            5 -> getInterestPoints hessianBox sigmaboxes 100 tot h imr
-                                            6 -> getInterestPoints procStd sigmaboxes 100 tot h auxStd
+                                            5 -> getInterestPoints (mkStage hessianBox) sigmaboxes 100 tot h imr-}
+--                                             6 -> getInterestPoints procStd sigmaboxes 100 tot h auxStd
 
-        (gx,gy,_,_,_) = secondOrder $ (sc .*) $ gaussS 1 imr
-        ga = abs32f gx |+| abs32f gy
-        feats = map (extractFeature ga gx gy) pts
+{-        (gx,gy,_,_,_) = secondOrder $ (sc .*) $ gaussS 1 imr
+        ga = abs32f gx |+| abs32f gy-}
+--         feats = take tot $ concat $ reverse $ zipWith f (tail responses) pts
+--             where f a bs = map (extractFeature a) bs
+
+
+        feats = take tot $ fullHessian sigmas 100 h usurf imr
+
 
     (clicked,p,v) <- getW w
     when (clicked && not (null feats)) $ do
@@ -146,7 +149,7 @@ worker o cam w wd = do
         putW w (False,p, (ipDescriptor.ip) sel)
 
     let best = minimumBy (compare `on` (distv v.ipDescriptor.ip)) feats
-
+        bestdist = distv (ipDescriptor.ip $ best) v
 --     print $ map sigmaToBox sigmas
 --     print $ map sigmaToBox sigmaboxes
 
@@ -159,11 +162,11 @@ worker o cam w wd = do
     
     --timing $ print $ length $ concat $ rawpts
 
-    timing $
-     inWin w $ do
+    --timing $
+    inWin w $ do
         when (what == 0) $ drawImage imr
         when (what == 2) $ drawImage (rgb orig)
-        when (what == 1) $ drawImage (stResponse $ pyr!!n)
+        --when (what == 1) $ drawImage (stResponse $ pyr!!n)
         lineWidth $= 1
         mapM_ boxFeat feats
         --text2D 20 20 (show $ map (size.stResponse) pyr)
@@ -175,31 +178,20 @@ worker o cam w wd = do
 --                      maxEvery (stFiltMax $ pyr!!(n-1)) (stFiltMax $ pyr!!(n+1))
 
 
-        when (not (null feats)) $ do
-            lineWidth $= 4
+        when (not (null feats) && bestdist < 0.3) $ do
             boxFeat best
+            drawImage $ autoscale $  ipPatch best
+            text2D 20 20 (printf "%.2f" bestdist)
+            drawVector 50 100 $ 50*v
+            drawVector 100 100 $ 50*(ipDescriptor.ip) best
+            drawVector 50 200 $ 100*(unitary $ ipHistoOris best)
 
-    when (not (null feats)) $ inWin wd $ do
-            let roi = roiOf (ipRawPosition best, ipRawScale best)
-                roi2 = roiOf (ipRawPosition best, 3*ipRawScale best `div`2)
---                        expandROI 1.5 roi
-                im = modifyROI (const roi2) imr
-                Point x y = ipPosition (ip best)
-                r  = desp (x,y) <>rot3 ((ipOrientation.ip) best) <> desp (-x,-y)
-            drawImage $ warp 0 (mpSize 20) r im
-            drawROI roi
-            text2D 20 20 (printf "%.2f" $ distv (ipDescriptor.ip $ best) v)
-            let g = modifyROI (const roi)
-                oris = histodir (g ga) (g gx) (g gy)
-            drawHisto 50 240 (1000*oris)
 
-    frame <- getW wd
-    --when (frame==100) $ error "terminado"
-    putW wd (frame+1)
+--     frame <- getW wd
+--     when (frame==100) $ error "terminado"
+--     putW wd (frame+1)
 
 ------------------------------------------------------------------
-
-roiOf (p, n) = roiFromPixel (2*n) p
 
 dist (Pixel a b) (Pixel r c) = (a-r)^2 + (b-c)^2
 
@@ -214,30 +206,15 @@ expandROI x roi@(ROI r1 r2 c1 c2) = debug $ shrink (-d,-d) (debug roi)
 
 -------------------------------------------------------------------
 
-extractFeature ga gx gy x@(p,n) = r where
-    r = DIP { ipRawPosition = p,
-              ipRawScale    = n,
-              ip            = pt }
-    pt = IP { ipPosition = head $ pixelsToPoints (size ga) [p],
-              ipScale = fromIntegral n / w2,
-              ipOrientation = 10 * fromIntegral (1+vectorMaxIndex oris) * pi / 180,
-              ipDescriptor = feat }
-    g = modifyROI (const (roiOf x))
-    oris = histodir (g ga) (g gx) (g gy)
-    feat = surfDesc 3 (gx,gy) (roiFromPixel (2*n) p)
-    Size _ w = size ga
-    w2 = fromIntegral w / 2
 
-norDir v = fromList (l2++l1)
-    where p = vectorMaxIndex v
-          l = toList v
-          l1 = take p l
-          l2 = drop p l
+
+
+
 
 boxFeat p = do
     let Pixel r c = ipRawPosition p
-    setColor 0 0.5 0
-    drawHisto (c-18) r (50* (ipDescriptor.ip) p)
+--     setColor 0 0.5 0
+--     drawVector (c-18) (r+2*ipRawScale p) (50* (ipDescriptor.ip) p)
     setColor 1 1 1
     text2D (fromIntegral c) (fromIntegral r) (show $ ipRawScale p)
     setColor 1 0 0
@@ -274,13 +251,13 @@ autoscale im = f im
 
 -------------------------------------
 
-instance NFData Pixel where
-    rnf (Pixel r c) = rnf r
-
-instance NFData Stage where
-    rnf s = rnf (stMaxLoc s)
-
-instance NFData ImageFloat where
-    rnf (F x) = rwhnf (ptr x)
+-- instance NFData Pixel where
+--     rnf (Pixel r c) = rnf r
+-- 
+-- instance NFData Stage where
+--     rnf s = rnf (stMaxLoc s)
+-- 
+-- instance NFData ImageFloat where
+--     rnf (F x) = rwhnf (ptr x)
 
 ---------------------------------------

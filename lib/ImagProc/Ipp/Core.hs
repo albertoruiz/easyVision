@@ -21,7 +21,7 @@ module ImagProc.Ipp.Core
           ( -- * Image representation
             Img(..), ImageType(..)
             -- * Creation of images
-          , img, imgAs, getData32f, setData32f, setData8u, value, setValue
+          , img, imgAs, getData32f, setData32f, setData8u, value, setValue, fval
             -- * Regions of interest
           , fullroi, invalidROIs, roiSZ, validArea
             -- * Wrapper tools
@@ -290,6 +290,9 @@ newtype ImageYUV = Y Img
 
 
 -------------------------------------------------------------------
+
+fval :: ImageFloat -> Pixel -> Float
+fval im = unsafePerformIO . val32f' im
 
 -- | Returns the pixel value of an image at a given pixel. NO range checking.
 val32f :: ImageFloat -> Pixel -> IO Float

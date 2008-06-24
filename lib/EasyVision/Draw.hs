@@ -28,6 +28,7 @@ module EasyVision.Draw
 , drawCamera
 , cameraView
 , drawInterestPoints
+, drawVector
 , extractSquare
 , newTrackball
 ) where
@@ -275,3 +276,20 @@ renderSignal ls = do
 renderAxes = 
     GL.renderPrimitive GL.Lines $ mapM_ GL.vertex
         [Point (-1) 0, Point 1 0, Point 0 (-1), Point 0 1]
+
+--------------------------------------------------------------------------
+
+-- | representation of the elements of a vector as vertical bars from a starting position
+drawVector :: Int -- ^ column
+          -> Int -- ^ row
+          -> Vector Double -- ^ input vector
+          -> IO ()
+drawVector x y v = do
+    let f k = vertex (Vertex2 x1 y1) >> vertex (Vertex2 x2 y2)
+            where x1 = fromIntegral (x+k) :: GLint
+                  y1 = fromIntegral y
+                  x2 = x1
+                  y2 = y1 + round (-v@>k)
+    renderPrimitive Lines $ do
+        mapM_ f [0..dim v -1]
+        vertex (Pixel y x) >> vertex (Pixel y (x+dim v -1))
