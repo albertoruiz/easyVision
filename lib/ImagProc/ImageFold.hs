@@ -45,11 +45,12 @@ foldImage f x (F img) =
           ROI r1 r2 c1 c2 = vroi img
           p = advancePtr (castPtr (ptr img)) (r1*jump+c1) :: Ptr Float
           c = c2-c1+1
+          d = jump - c
           tot = (r2 - r1) * jump + c2-c1
 
           go 0 s = f p (0::Int) s
           go !j !s = if j `rem` jump < c then go (j-1) (f p j s)
-                                         else go (j-1) s
+                                         else go (j-d) s
 
 foldImage2 f x (F img1) (F img2) =
     unsafePerformIO $ withForeignPtr (fptr img1) $ const
@@ -60,11 +61,12 @@ foldImage2 f x (F img1) (F img2) =
           p1 = advancePtr (castPtr (ptr img1)) (r1*jump+c1) :: Ptr Float
           p2 = advancePtr (castPtr (ptr img2)) (r1*jump+c1) :: Ptr Float
           c = c2-c1+1
+          d = jump - c
           tot = (r2 - r1) * jump + c2-c1
 
           go 0 s = f p1 p2 (0::Int) s
           go !j !s = if j `rem` jump < c then go (j-1) (f p1 p2 j s)
-                                         else go (j-1) s
+                                         else go (j-d) s
 
 foldImage3 f x (F img1) (F img2) (F img3 ) =
     unsafePerformIO $ withForeignPtr (fptr img1) $ const
@@ -77,11 +79,12 @@ foldImage3 f x (F img1) (F img2) (F img3 ) =
           p2 = advancePtr (castPtr (ptr img2)) (r1*jump+c1) :: Ptr Float
           p3 = advancePtr (castPtr (ptr img3)) (r1*jump+c1) :: Ptr Float
           c = c2-c1+1
+          d = jump - c
           tot = (r2 - r1) * jump + c2-c1
 
           go 0 s = f p1 p2 p3 (0::Int) s
           go !j !s = if j `rem` jump < c then go (j-1) (f p1 p2 p3 j s)
-                                         else go (j-1) s
+                                         else go (j-d) s
 
 traverseImage3 f (F img1) (F img2) (F img3 ) =
     unsafePerformIO $ withForeignPtr (fptr img1) $ const
@@ -94,8 +97,10 @@ traverseImage3 f (F img1) (F img2) (F img3 ) =
           p2 = advancePtr (castPtr (ptr img2)) (r1*jump+c1) :: Ptr Float
           p3 = advancePtr (castPtr (ptr img3)) (r1*jump+c1) :: Ptr Float
           c = c2-c1+1
+          d = jump - c
           tot = (r2 - r1) * jump + c2-c1
 
           go 0 = f p1 p2 p3 (0::Int)
-          go !j = do when (j `rem` jump < c) $ f p1 p2 p3 j
-                     go (j-1)
+          go !j = if j `rem` jump < c
+                    then f p1 p2 p3 j >> go (j-1)
+                    else go (j-d)

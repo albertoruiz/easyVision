@@ -33,7 +33,7 @@ main = do
     w <- evWindow "Gray" "Demo: Gray" sz Nothing (const (kbdcam ctrl))
 
 
-    let d = height sz `div` 5
+    let d = height sz `div` 10
     evROI w $= ROI d (height sz-d) d (width sz-d)
 
     let mode m = MenuEntry m $ do { putW w m; windowTitle $= "Demo: "++m }
@@ -42,7 +42,7 @@ main = do
         ["RGB","Gray","Red","Green","Blue","H","S"
         , "Median","Gaussian","NGaussian1","FilterBox","FilterMax","Box vs Gauss","Laplacian","HighPass","Histogram"
         ,"Integral","RecStdDev","Threshold","FloodFill","Contours","ContourD","Distance", "Distance2", "Hessian"
-        ,"Corners", "Features", "Segments", "Canny", "DCT", "FFT", "LBP"]
+        ,"Corners", "InterestPts", "Segments", "Canny", "DCT", "FFT", "LBP"]
 
     fft <- genFFT 8 8 DivFwdByN AlgHintFast
 
@@ -156,6 +156,13 @@ worker wDemo cam param fft = do
                              pointSize $= 3
                              text2D 0.9 0 (show $ length ips)
                              drawInterestPoints (size $ chan gray) ips
+
+            "InterestPts" -> do let imr = float (chan gray)
+                                    feats = fullHessian (take (13+2) $ getSigmas 1.0 3) 100 0.3 usurf imr
+                                drawImage (chan rgb)
+                                let boxfeat p = drawROI $ roiFromPixel (ipRawScale p) (ipRawPosition p)
+                                mapM_ boxfeat feats
+
 
             "Contours" -> do let (Size h w) = size (chan gray)
                                  pixarea = h*w*area`div`1000
