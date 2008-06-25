@@ -14,6 +14,7 @@ import Control.Concurrent
 import ImagProc.InterestPoints
 import Numeric.LinearAlgebra hiding ((.*))
 import Vision(rot3,scaling,desp,unitary)
+import ImagProc.ScaleSpace(Stage(..))
 
 inParallel x = parMap rnf id x
 
@@ -25,6 +26,12 @@ inParallel x = parMap rnf id x
 
 
 ---------------------------------------------------------------
+
+mkHessP = mkExtPyr k fun where
+    k sigma = sigma^2/10
+    fun = sqrt32f
+        . thresholdVal32f 0 0 IppCmpLess
+        . hessian
 
 hsrespP sigma = sqrt32f
              . thresholdVal32f 0 0 IppCmpLess
@@ -139,8 +146,8 @@ worker o cam w wd = do
 --         feats = take tot $ concat $ reverse $ zipWith f (tail responses) pts
 --             where f a bs = map (extractFeature a) bs
 
-
-        feats = take tot $ fullHessian sigmas 100 h usurf imr
+        (feats',pyr) = multiscalePoints mkHessP surf sigmas 100 h imr
+        feats = take tot feats'
 
 
     (clicked,p,v) <- getW w
@@ -166,7 +173,7 @@ worker o cam w wd = do
     inWin w $ do
         when (what == 0) $ drawImage imr
         when (what == 2) $ drawImage (rgb orig)
-        --when (what == 1) $ drawImage (stResponse $ pyr!!n)
+        when (what == 1) $ drawImage (stResponse $ pyr!!n)
         lineWidth $= 1
         mapM_ boxFeat feats
         --text2D 20 20 (show $ map (size.stResponse) pyr)

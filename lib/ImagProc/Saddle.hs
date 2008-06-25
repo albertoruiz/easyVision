@@ -28,6 +28,9 @@ import GHC.Float(float2Double,double2Float)
 import Foreign(unsafePerformIO)
 
 
+-- to do: rewrite all this
+val32f im = return . fval im
+
 -- | Returns interest points in the image and a very simple local descriptor.
 getSaddlePoints ::
               Int       -- ^ degree of smoothing (e.g. 1)

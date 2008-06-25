@@ -69,8 +69,7 @@ histodir :: ImageFloat -- ^ |g|
          -> Vector Double -- ^ normalized histogram
 histodir ga gx gy = (slavmat <>) $ (k .*) $ runSTVector $ do
     h <- newVector (0::Double) 36
-    let inc k = modifyVector h k (+1)
-        addDir !p0 !p1 !p2 !k = modifyVector h (getBin 36 $ atan2 (uval p2 k) (uval p1 k)) (+ float2Double (uval p0 k))
+    let addDir !p0 !p1 !p2 !k = modifyVector h (getBin 36 $ atan2 (uval p2 k) (uval p1 k)) (+ float2Double (uval p0 k))
         {-# INLINE addDir #-}
     traverseImage3 addDir ga gx gy
     return h

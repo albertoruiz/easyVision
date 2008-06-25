@@ -14,10 +14,13 @@ Scale and rotation invariant interest points.
 -----------------------------------------------------------------------------
 
 module ImagProc.InterestPoints (
-    DetailedInterestPoint(..), ExtPyr(..),
+    DetailedInterestPoint(..),
     getSigmas,
     fullHessian,
-    surf, usurf
+    surf, usurf,
+    -- * devel tools
+    ExtPyr(..), mkExtPyr,
+    multiscalePoints
 )
 where
 
@@ -45,41 +48,47 @@ data ExtPyr = EP {
     pyrResp :: (ImageFloat,Float) }
 
 
-mkHessP img sigma =
+mkHessP = mkExtPyr k fun where
+    k sigma = sigma^2/10
+    fun = sqrt32f
+        . thresholdVal32f 0 0 IppCmpLess
+        . hessian
+
+mkExtPyr k fun img sigma =
     EP { pyrImg =  smoothed,
          pyrGrad = grads,
-         pyrAbsGrad = abs32f gx |+| abs32f gy,
+         pyrAbsGrad = sqrt32f $ gx |*| gx |+| gy |*| gy,
          pyrResp = (resp,sigma) }
     where
-        smoothed = k .* gaussS sigma img
-        k = sigma^2/10
+        smoothed = k sigma .* gaussS sigma img
         grads@(gx,gy,_,_,_) = secondOrder smoothed
         resp     = fun grads
-        fun = sqrt32f
-            . thresholdVal32f 0 0 IppCmpLess
-            . hessian
 
 -- | specific method to obtain invariant descriptors of image regions
 type Descriptor = ExtPyr -> (Pixel,Int) -> DetailedInterestPoint
 
 -- | This is a reference implementation of the determinant of Hessian method without any
 -- optimization for speed (although it is not too slow...)
-fullHessian :: [Float] -- ^ desired scales
+fullHessian :: Descriptor
+            -> [Float] -- ^ desired scales
             -> Int     -- ^ maximum number of points per level (e.g. 100)
             -> Float   -- ^ response threshold
-            -> Descriptor
             -> ImageFloat -- ^ Input image
             -> [DetailedInterestPoint]
-fullHessian sigmas nmax h descript imr = feats
-    where responses = map (mkHessP imr) sigmas
+fullHessian d s n h = fst . multiscalePoints mkHessP d s n h
+
+
+multiscalePoints resp descript sigmas nmax h imr = (feats,pyr)
+    where responses = map (resp imr) sigmas
           (pts,pyr) = getLocalMaxima nmax h (map pyrResp responses)
           feats = concat $ reverse $ zipWith f (tail responses) pts
              where f a bs = map (descript a) bs
 
+
 ----------------------------------------------------------------------------------
 
 -- | scale only invariant version of 'surf'.
-usurf :: ExtPyr -> (Pixel,Int) -> DetailedInterestPoint
+usurf :: Descriptor
 usurf EP { pyrImg = im,
                     pyrAbsGrad = ga,
                     pyrGrad = (gx,gy,_,_,_) 
@@ -105,7 +114,7 @@ usurf EP { pyrImg = im,
 
 
 -- | Scale and rotation invariant descriptor of Bay, Tuytelaars and Van Gool, ECCV 2006.
-surf :: ExtPyr -> (Pixel,Int) -> DetailedInterestPoint
+surf :: Descriptor
 surf EP { pyrImg = im,
                     pyrAbsGrad = ga,
                     pyrGrad = (gx,gy,_,_,_) 

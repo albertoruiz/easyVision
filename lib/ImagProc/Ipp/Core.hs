@@ -21,7 +21,7 @@ module ImagProc.Ipp.Core
           ( -- * Image representation
             Img(..), ImageType(..)
             -- * Creation of images
-          , img, imgAs, getData32f, setData32f, setData8u, value, setValue, fval
+          , img, imgAs, getData32f, setData32f, setData8u, setValue
             -- * Regions of interest
           , fullroi, invalidROIs, roiSZ, validArea
             -- * Wrapper tools
@@ -34,7 +34,8 @@ module ImagProc.Ipp.Core
           , ImageDouble(D)
           , ImageYUV (Y)
           -- * Image coordinates
-          , val32f, val32f', val8u
+          , val8u, fval
+          -- * Reexported modules
           , module ImagProc.Ipp.Structs, CInt, CUChar, fi, ti
           , module ImagProc.Base, module ImagProc.ROI
 ) where
@@ -51,6 +52,7 @@ import Foreign.Marshal.Utils(copyBytes)
 
 import GHC.Base
 import GHC.IOBase
+import GHC.ForeignPtr(mallocPlainForeignPtrBytes)
 
 ---------------------------------------
 fi :: Int -> CInt
@@ -68,9 +70,10 @@ data ImageType = RGB | Gray | I32f | I64f | YUV deriving (Show,Eq)
 -- | Image representation:
 data Img = Img { fptr :: {-# UNPACK #-}!(ForeignPtr ())  -- ^ automatic allocated memory
                , ptr  :: {-# UNPACK #-}!(Ptr ())         -- ^ starting point of the image with the required alignment
-               , step :: {-# UNPACK #-}!Int              -- ^ number of bytes of a padded row
+               , step :: Int                             -- ^ number of bytes of a padded row
+               , jump :: {-# UNPACK #-}!Int              -- ^ number of image elements of a padded row
                , itype :: ImageType                      -- ^ type of image
-               , datasize :: {-# UNPACK #-}!Int          -- ^ size in bytes of the base type
+               , datasize :: Int                         -- ^ size in bytes of the base type
                , layers :: Int                           -- ^ number of layers
                , isize :: Size                           -- ^ rows and columns of the image
                , vroi :: ROI                             -- ^ ROI where data is assumed to be valid
@@ -81,7 +84,7 @@ img' t sz ly (Size r c) = do
     let w = c*sz*ly
     let rest = w `mod` 32
     let c' = if rest == 0 then w else w + 32 - rest
-    fp <- mallocForeignPtrBytes (r*c'+31)
+    fp <- mallocPlainForeignPtrBytes (r*c'+31)
     let p' = unsafeForeignPtrToPtr fp
     let p = alignPtr p' 32
     --print (p', p) -- debug
@@ -92,8 +95,9 @@ img' t sz ly (Size r c) = do
         , fptr = fp
         , ptr = p
         , step = c'
+        , jump = c' `div` sz
         , itype = t
-        , vroi = fullroi res 
+        , vroi = fullroi res
         }
     return res
 
@@ -131,21 +135,6 @@ setData8u (G Img {fptr = fp, ptr = p,
     sequence_ $ zipWith row [0..r-1] vs
     touchForeignPtr fp --hmm
 
-
--- | Returns the pixel value of an image at a given row-column. NO range checking.
-value :: (Storable b) => Img -> Int -> Int -> IO b
-value Img {fptr = fp, ptr = p, datasize = d, step = s} r c = do
-    let jump = s `quot` d
-    v <- peek (advancePtr (castPtr p) (r*jump+c))
-    touchForeignPtr fp
-    return v
-
--- | Sets the pixel value of an image at a given row-column. NO range checking.
-setValue :: (Storable b) => Img -> b -> Int -> Int -> IO ()
-setValue Img {fptr = fp, ptr = p, datasize = d, step = s} v r c = do
-    let jump = s `quot` d
-    poke (advancePtr (castPtr p) (r*jump+c)) v
-    touchForeignPtr fp
 
 ---------------------------------------------------------------
 
@@ -291,16 +280,19 @@ newtype ImageYUV = Y Img
 
 -------------------------------------------------------------------
 
-fval :: ImageFloat -> Pixel -> Float
-fval im = unsafePerformIO . val32f' im
+inlinePerformIO :: IO a -> a
+inlinePerformIO (IO m) = case m realWorld# of (# _, r #) -> r
+{-# INLINE inlinePerformIO #-}
+
 
 -- | Returns the pixel value of an image at a given pixel. NO range checking.
-val32f :: ImageFloat -> Pixel -> IO Float
-val32f (F Img {fptr = fp, ptr = p, datasize = d, step = s}) (Pixel r c) = do
-    let jump = s `quot` d
-    v <- peek (advancePtr (castPtr p) (r*jump+c))
+fval :: ImageFloat -> Pixel -> Float
+fval (F Img {fptr = fp, ptr = p, jump = j}) (Pixel r c) = inlinePerformIO $ do
+    v <- peek (advancePtr (castPtr p) (r*j+c))
     touchForeignPtr fp
     return v
+{-# INLINE fval #-}
+
 
 -- | Returns the pixel value of an image at a given pixel with range checking
 val32f' :: ImageFloat -> Pixel -> IO Float
@@ -311,11 +303,18 @@ val32f' (F Img {fptr = fp, ptr = p, datasize = d, step = s, vroi = ROI r1 r2 c1 
     touchForeignPtr fp
     return v
 
--- | Returns the pixel value of an image at a given pixel. NO range checking.
+-- | Returns the value of an image at a given pixel. NO range checking.
 val8u :: ImageGray -> Pixel -> CUChar
-val8u (G Img {fptr = fp, ptr = p, datasize = d, step = s}) (Pixel r c) = unsafePerformIO $ do
-    v <- peek (advancePtr (castPtr p) (r*s+c))
+val8u (G Img {fptr = fp, ptr = p, jump=j}) (Pixel r c) = inlinePerformIO $ do
+    v <- peek (advancePtr (castPtr p) (r*j+c))
     touchForeignPtr fp
     return v
+{-# INLINE val8u #-}
 
 ------------------------------------------------------------------
+
+-- | Sets the pixel value of an image at a given row-column. NO range checking.
+setValue :: (Storable b) => Img -> b -> Int -> Int -> IO ()
+setValue Img {fptr = fp, ptr = p, jump = j} v r c = do
+    poke (advancePtr (castPtr p) (r*j+c)) v
+    touchForeignPtr fp
