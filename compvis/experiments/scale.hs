@@ -86,6 +86,7 @@ main = do
                           ,("mode",intParam 1 1 6)
                           ,("test",intParam 0 0 1)
                           ,("rot",realParam 0 (-180) 180)
+                          ,("err",realParam 0.3 0 1)
                           ]
 
     w <- evWindow (False, Pixel 0 0, constant (0::Double) 36) "scale" sz Nothing  (mouse (kbdcam ctrl))
@@ -103,6 +104,7 @@ worker o cam w wd = do
 
     PAR(rot)
     PAR(tot)
+    PAR(err)
     PAR(n)
     PAR(steps) :: IO Int
     PAR(sigma)
@@ -146,7 +148,7 @@ worker o cam w wd = do
 --         feats = take tot $ concat $ reverse $ zipWith f (tail responses) pts
 --             where f a bs = map (extractFeature a) bs
 
-        (feats',pyr) = multiscalePoints mkHessP surf sigmas 100 h imr
+        (feats',pyr) = multiscalePoints mkHessP (usurf 3 3) sigmas 100 h imr
         feats = take tot feats'
 
 
@@ -169,13 +171,13 @@ worker o cam w wd = do
     
     --timing $ print $ length $ concat $ rawpts
 
-    --timing $
+  
     inWin w $ do
         when (what == 0) $ drawImage imr
         when (what == 2) $ drawImage (rgb orig)
         when (what == 1) $ drawImage (stResponse $ pyr!!n)
         lineWidth $= 1
-        mapM_ boxFeat feats
+        timing $ mapM_ boxFeat feats
         --text2D 20 20 (show $ map (size.stResponse) pyr)
 --         let x = stResponse $ pyr!!n
 --         text2D 20 20 $ show (minmax x)
@@ -185,7 +187,7 @@ worker o cam w wd = do
 --                      maxEvery (stFiltMax $ pyr!!(n-1)) (stFiltMax $ pyr!!(n+1))
 
 
-        when (not (null feats) && bestdist < 0.3) $ do
+        when (not (null feats) && bestdist < err) $ do
             boxFeat best
             drawImage $ autoscale $  ipPatch best
             text2D 20 20 (printf "%.2f" bestdist)

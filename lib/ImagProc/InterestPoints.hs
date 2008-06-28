@@ -87,9 +87,11 @@ multiscalePoints resp descript sigmas nmax h imr = (feats,pyr)
 
 ----------------------------------------------------------------------------------
 
--- | scale only invariant version of 'surf'.
-usurf :: Descriptor
-usurf EP { pyrImg = im,
+-- | scale-only invariant version of 'surf'.
+usurf :: Int -- ^ size of region in scale units (e.g. 2 or 3)
+      -> Int -- ^ number of rows and columns in the grid (e.g. 3 or 4)
+      -> Descriptor
+usurf rad grid EP { pyrImg = im,
                     pyrAbsGrad = ga,
                     pyrGrad = (gx,gy,_,_,_) 
                    }
@@ -103,21 +105,23 @@ usurf EP { pyrImg = im,
               ipScale = fromIntegral n / w2,
               ipOrientation = angle,
               ipDescriptor = feat }
-    roi = roiFromPixel (2*n) p
+    roi = roiFromPixel (rad*n) p
     f = modifyROI (const roi)
     oris = histodir (f ga) (f gx) (f gy)
     angle = head $ angles oris
-    feat = usurfRaw 3 (gx,gy) roi
+    feat = usurfRaw grid (gx,gy) roi
     Size _ w = size ga
     w2 = fromIntegral w / 2
     patch = f im
 
 
--- | Scale and rotation invariant descriptor of Bay, Tuytelaars and Van Gool, ECCV 2006.
-surf :: Descriptor
-surf EP { pyrImg = im,
-                    pyrAbsGrad = ga,
-                    pyrGrad = (gx,gy,_,_,_) 
+-- | Scale and rotation invariant descriptor of Bay, Tuytelaars and Van Gool, ECCV 2006. (draft)
+surf :: Int -- ^ size of region in scale units (e.g. 2 or 3)
+     -> Int -- ^ number of rows and columns in the grid (e.g. 3 or 4)
+     -> Descriptor
+surf rad grid EP { pyrImg = im,
+                   pyrAbsGrad = ga,
+                   pyrGrad = (gx,gy,_,_,_) 
                    }
                x@(p,n) = r where
     r = DIP { ipRawPosition = p,
@@ -129,11 +133,13 @@ surf EP { pyrImg = im,
               ipScale = fromIntegral n / w2,
               ipOrientation = angle,
               ipDescriptor = feat }
-    roi = roiFromPixel (2*n) p
+    roi = roiFromPixel (rad*n) p
     f = modifyROI (const roi)
     oris = histodir (f ga) (f gx) (f gy)
     angle = head $ angles oris
-    feat = surfRaw angle 3 im roi
+    feat = usurfRaw grid (gx',gy') roi
+        where (gx',gy',_,_,_) = secondOrder patch
     Size _ w = size ga
     w2 = fromIntegral w / 2
-    patch = normRot angle roi im
+    patch = rotateROI angle roi im
+

@@ -23,7 +23,8 @@ module ImagProc.ImageProcessing (
     secondOrder, hessian,
     getCorners,
     filter32f, filter8u,
-    gaussS,gaussS'
+    gaussS, gaussS',
+    rotateROI
 ) where
 
 import ImagProc.Ipp.Core
@@ -33,7 +34,8 @@ import ImagProc.Ipp.Structs
 import ImagProc.Generic
 import ImagProc.C.Simple
 import Data.List(transpose)
-
+import Vision(rot3,scaling,desp,unitary)
+import Numeric.LinearAlgebra hiding ((.*))
 
 -- | Binarizes an image.
 binarize8u :: CUChar -- ^ threshold
@@ -127,3 +129,23 @@ gaussS :: Float -> ImageFloat -> ImageFloat
 gaussS s | s > 0     = gaussS' 3 s
          | otherwise = id
 
+--------------------------------------------------------------------
+
+-- | rotates a roi a given angle. 
+--   (A slightly larger roi (3/2) is actually rotated to ensure that the whole final region has valid data,
+--   but this cannot be guaranteed if the desired roi is too close to the valid roi of the source.)
+rotateROI :: (GImg t im)
+          => Double -- ^ rotation angle
+          -> ROI    -- ^ region
+          -> im
+          -> im
+rotateROI angle roi im = im' where
+    sz = size im
+    p = roiCenter $ roi
+    rad = roiRadius roi
+    [Point x y] = pixelsToPoints sz [p]
+    roi2 = roiFromPixel (3*rad`div`2) p
+    f2 = modifyROI (const roi2)
+    f1 = modifyROI (const roi)
+    r  = desp (x,y) <> rot3 (-angle) <> desp (-x,-y)
+    im' = f1 $ warp zeroP sz r (f2 im)

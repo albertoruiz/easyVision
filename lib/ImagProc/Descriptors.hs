@@ -17,9 +17,7 @@ Interest point descriptors.
 module ImagProc.Descriptors (
     histodir,
     angles,
-    usurfRaw,
-    surfRaw,
-    normRot
+    usurfRaw
 )
 where
 
@@ -30,7 +28,6 @@ import Graphics.UI.GLUT hiding (Size,Point)
 import Data.Packed.ST
 import ImagProc.ImageProcessing hiding ((.*))
 import Vision(unitary)
-import Vision(rot3,scaling,desp,unitary)
 import GHC.Float(float2Double,double2Float)
 
 captureDirs !p0 !p1 !p2 !k !s =
@@ -96,7 +93,7 @@ angles oris = [10 * fromIntegral (1+vectorMaxIndex oris) * pi / 180]
 
 --------------------------------------------------------------------------
 
--- | the SURF descriptor without rotation invariance
+-- | the U-SURF descriptor (without rotation invariance)
 usurfRaw :: Int -- ^ subdivisions (e.g. 3 or 4)
          -> (ImageFloat,ImageFloat) -- ^ gx,gy
          -> ROI
@@ -108,25 +105,3 @@ usurfRaw n (gx,gy) roi = v where
     vsx = mapr sd rois gx
     vsy = mapr sd rois gy
     sd im = [sum32f im, sum32f (abs32f im)]
-
--- | the SURF descriptor
-surfRaw :: Double -- ^ angle
-         -> Int -- ^ subdivisions (e.g. 3 or 4)
-         -> ImageFloat -- ^ source
-         -> ROI        -- ^ region of interest
-         -> Vector Double
-surfRaw angle n im roi = usurfRaw n (gx,gy) roi where
-    (gx,gy,_,_,_) = secondOrder $ normRot angle roi im
-
-
-normRot :: Double -> ROI -> ImageFloat -> ImageFloat
-normRot angle roi im = im' where
-    sz = size im
-    p = roiCenter $ roi
-    rad = roiRadius roi
-    [Point x y] = pixelsToPoints sz [p]
-    roi2 = roiFromPixel (3*rad`div`2) p
-    f2 = modifyROI (const roi2)
-    f1 = modifyROI (const roi)
-    r  = desp (x,y) <> rot3 (-angle) <> desp (-x,-y)
-    im' = f1 $ warp 0 sz r (f2 im)
