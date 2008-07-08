@@ -75,12 +75,14 @@ roiArea (ROI r1 r2 c1 c2) = w*h where
 inROI :: ROI -> Pixel -> Bool
 inROI (ROI r1 r2 c1 c2) (Pixel r c) = r1 <= r && r <= r2 && c1 <= c && c <= c2
 
+-- TO DO: fix roiGrid
+
 -- | divides a ROI into n x m subregions
 roiGrid :: Int -- ^ rows of rois
         -> Int -- ^ columns of rois
         -> ROI -- ^ input ROI
         -> [ROI]
-roiGrid kr kc (ROI r1 r2 c1 c2) = [ROI a (a+dr-1) b (b+dc-1) | a <- [r1,r1+dr .. r2-dr+1]
+roiGrid kr kc (ROI r1 r2 c1 c2) = take (kr*kc) $ [ROI a (a+dr-1) b (b+dc-1) | a <- [r1,r1+dr .. r2-dr+1]
                                                              , b <- [c1,c1+dc .. c2-dc+1]]
     where dr = (r2-r1+1) `div` kr
           dc = (c2-c1+1) `div` kc

@@ -15,15 +15,9 @@ import ImagProc.InterestPoints
 import Numeric.LinearAlgebra hiding ((.*))
 import Vision(rot3,scaling,desp,unitary)
 import ImagProc.ScaleSpace(Stage(..))
+import GHC.Float(float2Double,double2Float)
 
 inParallel x = parMap rnf id x
-
-
----------------------------------------------------------------------
-
-
----------------------------------------------------------------
-
 
 ---------------------------------------------------------------
 
@@ -104,7 +98,7 @@ main = do
 worker o cam w wd = do
 
     PAR(rot)
-    PAR(tot)
+    PAR(tot)   :: IO Int
     PAR(err)
     PAR(n)
     PAR(steps) :: IO Int
@@ -122,7 +116,7 @@ worker o cam w wd = do
 --         sigmaboxes = map boxToSigma boxes
 
     orig <- cam
-    let imr = if test == 1 then gaussS 2 $ blob rtest dtest
+    let imr = if test == 1 then gaussS 1 $ blob rtest dtest
                            else (warp 0 (size (gray orig)) (rot3 (rot*pi/180)) $ float $ gray orig)
 
 --         proc = case mode of
@@ -151,10 +145,15 @@ worker o cam w wd = do
 --             where f a bs = map (extractFeature a) bs
 
         descrip = --dummyFeat
-                  (surf 2 4)
-        (feats',pyr) = multiscalePoints mkHessP descrip sigmas 100 h imr
-        feats = take tot feats'
+                  (usurf 2 4)
 
+        (feats1,pyr1) = multiscalePoints mkHessP descrip (take 5 sigmas) 100 h imr
+        (feats2,pyr2) = multiscalePoints mkHessP descrip sigmas 100 h (decimate imr)
+
+        --pyr = pyr1 --take 5 pyr1 ++ pyr2
+
+        (feats',pyr) = multiscalePoints mkHessP descrip sigmas 100 h imr
+        feats = concat $ reverse feats'
 
     (clicked,p,v) <- getW w
     when (clicked && not (null feats)) $ do
@@ -181,7 +180,9 @@ worker o cam w wd = do
         when (what == 2) $ drawImage (rgb orig)
         when (what == 1) $ drawImage (stResponse $ pyr!!n)
         lineWidth $= 1
-        mapM_ boxFeat feats
+        drawInterestPoints (size imr) (map ip feats)
+        let w = width (size imr)
+        mapM_ (boxFeat w) feats
         --text2D 20 20 (show $ map (size.stResponse) pyr)
 --         let x = stResponse $ pyr!!n
 --         text2D 20 20 $ show (minmax x)
@@ -192,7 +193,7 @@ worker o cam w wd = do
 
 
         when (not (null feats) && bestdist < err) $ do
-            boxFeat best
+            boxFeat w best
             drawImage $ autoscale $  ipPatch best
             text2D 20 20 (printf "%.2f" bestdist)
             drawVector 50 100 $ 50*v
@@ -224,14 +225,14 @@ expandROI x roi@(ROI r1 r2 c1 c2) = debug $ shrink (-d,-d) (debug roi)
 
 
 
-boxFeat p = do
-    let Pixel r c = ipRawPosition p
+boxFeat w p = do
+    let Point x y = ipPosition (ip p)
 --     setColor 0 0.5 0
 --     drawVector (c-18) (r+2*ipRawScale p) (50* (ipDescriptor.ip) p)
     setColor 1 1 1
-    text2D (fromIntegral c) (fromIntegral r) (show $ ipRawScale p)
-    setColor 1 0 0
-    drawROI $ roiFromPixel (ipRawScale p) (ipRawPosition p)
+    text2D (double2Float x) (double2Float y) (printf "%.1f" (0.5*fromIntegral w*ipScale (ip p)))
+    --setColor 1 0 0
+    --drawROI $ roiFromPixel (ipRawScale p) (ipRawPosition p)
 
 -------------------------------------------------------------------
 
@@ -274,3 +275,9 @@ autoscale im = f im
 --     rnf (F x) = rwhnf (ptr x)
 
 ---------------------------------------
+
+decimate orig = thresholdVal32f 0 0 IppCmpLess $ resize (Size h' w') orig
+    where
+    Size h w = size orig
+    h' = h`div`2
+    w' = w`div`2

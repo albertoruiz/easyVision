@@ -66,13 +66,13 @@ localMaxScale nmax h stages = zipWith3 (localMaxScale3Simplified nmax h) l1 l2 l
 getLocalMaxima :: Int      -- ^ maximum number of points at each scale
                   -> Float   -- ^ response threshold
                   -> [(ImageFloat, Float)] -- ^ responses at different increasing scales
-                  -> ([[(Pixel,Int)]],[Stage]) -- ^ interest points with scale and the pyramid
+                  -> ([[(Pixel, Float)]],[Stage]) -- ^ interest points with scale and the pyramid
 getLocalMaxima nmax h resps = (pts,pyr) where
         rawpts = localMaxScale nmax h pyr
         pts = zipWith fixPts rawpts [1..]
         sigmas = map stSigma pyr
         pyr = map mkStage resps
-        fixPts l k = map (g k) l where g k p = (p,round $ 1.4* interpolateScale p k)
+        fixPts l k = map (g k) l where g k p = (p, 1.4* interpolateScale p k)
         interpolateScale p k = inter sa a sb b sc c
             where a = flip fval p $ stResponse (pyr!!(k-1))
                   b = flip fval p $ stResponse (pyr!!(k))

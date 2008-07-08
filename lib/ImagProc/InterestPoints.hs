@@ -30,6 +30,7 @@ import ImagProc.ImageProcessing
 import Numeric.LinearAlgebra hiding ((.*))
 import ImagProc.ScaleSpace
 import ImagProc.Descriptors
+import GHC.Float(float2Double)
 
 
 data DetailedInterestPoint = DIP {
@@ -61,7 +62,7 @@ mkExtPyr k fun img sigma =
         resp     = fun grads
 
 -- | specific method to obtain invariant descriptors of image regions
-type Descriptor = ExtPyr -> (Pixel,Int) -> DetailedInterestPoint
+type Descriptor = ExtPyr -> (Pixel,Float) -> DetailedInterestPoint
 
 -- | This is a reference implementation of the determinant of Hessian method without any
 -- optimization for speed (although it is not too slow...)
@@ -71,70 +72,65 @@ fullHessian :: Descriptor
             -> Float   -- ^ response threshold
             -> ImageFloat -- ^ Input image
             -> [DetailedInterestPoint]
-fullHessian d s n h = fst . multiscalePoints mkHessP d s n h
+fullHessian d s n h = concat . reverse . fst . multiscalePoints mkHessP d s n h
 
 
 multiscalePoints resp descript sigmas nmax h imr = (feats,pyr)
     where responses = map (resp imr) sigmas
           (pts,pyr) = getLocalMaxima nmax h (map pyrResp responses)
-          feats = concat $ reverse $ zipWith f (tail responses) pts
+          feats = zipWith f (tail responses) pts
              where f a bs = map (descript a) bs
-
 
 ----------------------------------------------------------------------------------
 
 -- | scale-only invariant version of 'surf'.
-usurf :: Int -- ^ size of region in scale units (e.g. 2 or 3)
+usurf :: Float -- ^ size of region in scale units (e.g. 2 or 3)
       -> Int -- ^ number of rows and columns in the grid (e.g. 3 or 4)
       -> Descriptor
 usurf rad grid EP { pyrImg = im,
                     pyrGrad = Grads {gm = dm, gx = dx, gy = dy}
                    }
-               x@(p,n) = r where
+               x@(p,s) = r where
     r = DIP { ipRawPosition = p,
-              ipRawScale    = n,
+              ipRawScale    = round s,
               ip            = pt,
               ipPatch       = patch,
               ipHistoOris   = oris }
     pt = IP { ipPosition = head $ pixelsToPoints (size im) [p],
-              ipScale = fromIntegral n / w2,
+              ipScale = float2Double $ 2 * s / fromIntegral (width (size im)),
               ipOrientation = angle,
               ipDescriptor = feat }
-    roi = roiFromPixel (rad*n) p
+    roi = roiFromPixel (round (rad*s)) p
     f = modifyROI (const roi)
     oris = histodir (f dm) (f dx) (f dy)
     angle = head $ angles oris
     feat = usurfRaw grid (dx,dy) roi
-    Size _ w = size im
-    w2 = fromIntegral w / 2
     patch = f im
 
 
 -- | Scale and rotation invariant descriptor of Bay, Tuytelaars and Van Gool, ECCV 2006. (draft)
-surf :: Int -- ^ size of region in scale units (e.g. 2 or 3)
+surf :: Float -- ^ size of region in scale units (e.g. 2 or 3)
      -> Int -- ^ number of rows and columns in the grid (e.g. 3 or 4)
      -> Descriptor
 surf rad grid EP { pyrImg = im,
                    pyrGrad = Grads {gm = dm, gx = dx, gy = dy}
                    }
-               x@(p,n) = r where
+               x@(p,s) = r where
     r = DIP { ipRawPosition = p,
-              ipRawScale    = n,
+              ipRawScale    = round s,
               ip            = pt,
               ipPatch       = patch,
               ipHistoOris   = oris }
     pt = IP { ipPosition = head $ pixelsToPoints (size im) [p],
-              ipScale = fromIntegral n / w2,
+              ipScale = float2Double $ 2 * s / fromIntegral (width (size im)),
               ipOrientation = angle,
               ipDescriptor = feat }
-    roi = roiFromPixel (rad*n) p
+    roi = roiFromPixel (round (rad*s)) p
     f = modifyROI (const roi)
     oris = histodir (f dm) (f dx) (f dy)
     angle = head $ angles oris
     feat = usurfRaw grid (dx',dy') roi
         where Grads {gx = dx', gy = dy'} = gradients patch
-    Size _ w = size im
-    w2 = fromIntegral w / 2
     patch = rotateROI angle roi im
 
 

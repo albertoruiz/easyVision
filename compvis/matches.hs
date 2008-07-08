@@ -125,6 +125,8 @@ main1 = do
         let (good1, good2 , _) = basicMatches (vs, map ip $ feats) distFeat err
             matches = zip good1 good2
 
+            ok = not (null vs) && not (null feats)
+
         inWin w $ do
             drawImage (rgb orig)
             lineWidth $= 1
@@ -132,13 +134,13 @@ main1 = do
             mapM_ boxFeat feats
             setColor 0 0 0
             drawROI roi
-            when (not $ null vs) $ do
+            when ok $ do
                 setColor 1 1 1
                 text2D 20 20 $ printf "%d matches" (length matches)
                 pointCoordinates sz
                 drawInterestPoints sz good2
 
-        when (not (null vs) && not (null feats) ) $ inWin wm $ do
+        when ok $ inWin wm $ do
             let pair = blockImage [[prev,gray orig]]
             drawImage pair
             pointCoordinates (size pair)
