@@ -12,10 +12,10 @@ import Vision(scaling)
 
 -------------------------------
 
-salience s1 s2 = gaussS s2 . sqrt32f . abs32f . hessian . secondOrder . gaussS s1
+salience s1 s2 = gaussS s2 . sqrt32f . abs32f . hessian . gradients . gaussS s1
 
 salience' th n s1 s2 = gaussS s2 . thresholdVal32f th 1 IppCmpGreater . thresholdVal32f th 0 IppCmpLess
-                       . filterMax n . sqrt32f . abs32f . hessian . secondOrder . gaussS s1
+                       . filterMax n . sqrt32f . abs32f . hessian . gradients . gaussS s1
 
 ------------------------------------------------------------
 
@@ -77,7 +77,7 @@ main = do
             ns = if m > 1 then g (setROI 0 roi acs) else acs
 
         inWin wn $ do
-            let x = ((sigma^2/10) .*) . sqrt32f . thresholdVal32f (th) 0 IppCmpLess. hessian . secondOrder . gaussS sigma $ imgs
+            let x = ((sigma^2/10) .*) . sqrt32f . thresholdVal32f (th) 0 IppCmpLess. hessian . gradients . gaussS sigma $ imgs
                 --(_,m) = minmax x
             drawImage x
             --text2D 40 40 (show m)

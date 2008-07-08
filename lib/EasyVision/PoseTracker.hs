@@ -87,7 +87,7 @@ poseTrackerGen (measure,post,cz,restart) (Just foc) world = generalTracker st0 c
 
 improvePoint orig rad p@(Pixel r c) = (v,best) where
     roig = roiFromPoint rad p
-    h = hessian . secondOrder . gaussS 1.0 $ img
+    h = hessian . gradients . gaussS 1.0 $ img
     img = float $ modifyROI (intersection roig) orig
     (v,Pixel r' c') = maxIndx ((-1) IP..* h)
     best = Pixel (r'+r1) (c'+c1)

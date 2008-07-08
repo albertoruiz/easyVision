@@ -1,7 +1,7 @@
 ALL = demo hessian warp \
       detect interpolate hotpoints \
       contours justsave ocr \
-      pseudocolor segments
+      pseudocolor segments matches
 
 EASYVISION = ..
 

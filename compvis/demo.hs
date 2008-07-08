@@ -106,7 +106,7 @@ worker wDemo cam param fft = do
                                     . sqrt32f
                                     . abs32f
                                     . hessian
-                                    . secondOrder
+                                    . gradients
                                     $ gaussS sigma (float (chan gray))
 
             "Canny"    -> drawImage $ edges
@@ -158,7 +158,7 @@ worker wDemo cam param fft = do
                              drawInterestPoints (size $ chan gray) ips
 
             "InterestPts" -> do let imr = float (chan gray)
-                                    feats = fullHessian usurf (take (13+2) $ getSigmas 1.0 3) 100 0.3 imr
+                                    feats = fullHessian (usurf 2 4) (take (13+2) $ getSigmas 1.0 3) 100 0.3 imr
                                 drawImage (chan rgb)
                                 let boxfeat p = drawROI $ roiFromPixel (ipRawScale p) (ipRawPosition p)
                                 mapM_ boxfeat feats

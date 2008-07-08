@@ -44,8 +44,8 @@ getSaddlePoints ::
 getSaddlePoints smooth rad prop maxn fn fr im = unsafePerformIO $ do
     let suaviza = (!!smooth) . iterate (gauss Mask5x5)
         sm = suaviza im
-        gs = secondOrder sm
-        h  = (-1.0) .* hessian gs
+        g = gradients sm
+        h  = (-1.0) .* hessian g
         (mn,mx) = minmax h
         hotPixels' = thresholdVal32f (mx*prop) 0.0 IppCmpLess (localMax rad h)
         r = max 0 (ceiling fr - ((rad-1) `div`2))
@@ -56,17 +56,15 @@ getSaddlePoints smooth rad prop maxn fn fr im = unsafePerformIO $ do
 
         hotPoints = ptp hotPixels
 
-        (gx,gy,gxx,gyy,gxy) = gs
-
         loc = zip hotPixels hotPoints
 
         dir :: (Pixel, Point) -> IO (Pixel, Float)
         dir (pix, Point x y) = do
-            dx <- val32f gx pix
-            dy <- val32f gy pix
-            dxx <- val32f gxx pix
-            dyy <- val32f gyy pix
-            dxy <- val32f gxy pix
+            dx <-  val32f (gx g)  pix
+            dy <-  val32f (gy g)  pix
+            dxx <- val32f (gxx g) pix
+            dyy <- val32f (gyy g) pix
+            dxy <- val32f (gxy g) pix
             let (sp,(vx,vy)) = taylor dx dy dxx dyy dxy
             let sg = signum (dx*vx - dy*vy)
             return (pix, atan2 (sg*vy) (sg*vx))
@@ -122,8 +120,8 @@ corresp umb h w simil = do
                      sig <- corresp umb h w simil
                      return (p:sig)
 
-basicMatches :: ([a],[a]) -> (a -> a -> Double) -> Double -> IO ([a],[a],ImageFloat)
-basicMatches (pl,ql) dist umb = do
+basicMatches :: ([a],[a]) -> (a -> a -> Double) -> Double -> ([a],[a],ImageFloat)
+basicMatches (pl,ql) dist umb = unsafePerformIO $ do
     let n1 = length pl
     let n2 = length ql
     c <- image (Size n1 n2)

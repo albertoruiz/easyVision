@@ -35,23 +35,23 @@ main = do
             drawImage img
             let ims = [modifyROI (shrink (2,2)) (k.*img)|k<-[1..10]]
             let roi = ROI 201 300 201 300
-                (gx,gy,_,_,_) = secondOrder $ (sc .*) $ gaussS 1 $ modifyROI (const roi) img
-                ga = abs32f gx |+| abs32f gy
-            --drawROI (theROI ga)
-            drawImage gy
+                g = gradients $ (sc .*) $ gaussS 1 $ modifyROI (const roi) img
+            --drawROI (theROI (gm g))
+            drawImage (gy g)
             putStrLn "------- "
             timing $ print $ sum $ map (fst.minmax) ims
-            timing $ print $ (fst.minmax) ga
+            timing $ print $ (fst.minmax) (gm g)
             timing $ printf "%.1f\n" $ sum $ map sum32f ims
             timing $ printf "%.1f\n" $ sum $ map csum32f ims
             timing $ printf "%.1f\n" $ sum $ map (foldImage hsum 0) ims
             timing $ printf "pixNum = %.1d\n" $ sum $ map (foldImage hcount (0::Int)) ims
-            let hd = histodir ga gx gy
+            let hd = histodir (gm g) (gx g) (gy g)
 --             timing $ print hd
             setColor 1 0 0
-            drawVector (5+c1 (theROI ga)) (r2 (theROI ga)) (1000*hd)
-            let sd = usurfRaw 3 (gx,gy) roi
-            drawVector (200+c1 (theROI ga)) (r2 (theROI ga)) (100*sd)
+            let xroi = theROI (gm g)
+            drawVector (5+c1 xroi) (r2 xroi) (1000*hd)
+            let sd = usurfRaw 3 (gx g,gy g) roi
+            drawVector (200+c1 xroi) (r2 xroi) (100*sd)
             text2D 20 20 $ printf "%.0f" $ head $ map (*(180/pi)) $ angles hd
 
 

@@ -32,7 +32,7 @@ main = do
 
     let sz = Size (480`div`2) (640`div`2)
 
-    (cam, ctrl)  <- mplayer (args!!0) sz >>= withPause
+    (cam, ctrl)  <- getCam 0 sz >>= withPause
 
     st <- empty
 
@@ -92,7 +92,7 @@ worker3 param inWindow (pl,im) st = do
     ranumb <- getParam param "ranUmb"
     prob   <- getParam param "ranProb"
 
-    (pnew, pold, _) <- basicMatches (pl, points st) (distComb alpha) umb
+    let (pnew, pold, _) = basicMatches (pl, points st) (distComb alpha) umb
                                             --(Just $ \c ->
                                             --inWindow "cost" (scale32f (-see) c >>= drawImage))
 

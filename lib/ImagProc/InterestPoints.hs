@@ -39,12 +39,9 @@ data DetailedInterestPoint = DIP {
     ipHistoOris   :: Vector Double,
     ipPatch       :: ImageFloat }
 
-type Grads = (ImageFloat,ImageFloat,ImageFloat,ImageFloat,ImageFloat)
-
 data ExtPyr = EP {
     pyrImg :: ImageFloat,
     pyrGrad :: Grads,
-    pyrAbsGrad :: ImageFloat,
     pyrResp :: (ImageFloat,Float) }
 
 
@@ -57,11 +54,10 @@ mkHessP = mkExtPyr k fun where
 mkExtPyr k fun img sigma =
     EP { pyrImg =  smoothed,
          pyrGrad = grads,
-         pyrAbsGrad = sqrt32f $ gx |*| gx |+| gy |*| gy,
          pyrResp = (resp,sigma) }
     where
         smoothed = k sigma .* gaussS sigma img
-        grads@(gx,gy,_,_,_) = secondOrder smoothed
+        grads    = gradients smoothed
         resp     = fun grads
 
 -- | specific method to obtain invariant descriptors of image regions
@@ -92,8 +88,7 @@ usurf :: Int -- ^ size of region in scale units (e.g. 2 or 3)
       -> Int -- ^ number of rows and columns in the grid (e.g. 3 or 4)
       -> Descriptor
 usurf rad grid EP { pyrImg = im,
-                    pyrAbsGrad = ga,
-                    pyrGrad = (gx,gy,_,_,_) 
+                    pyrGrad = Grads {gm = dm, gx = dx, gy = dy}
                    }
                x@(p,n) = r where
     r = DIP { ipRawPosition = p,
@@ -101,16 +96,16 @@ usurf rad grid EP { pyrImg = im,
               ip            = pt,
               ipPatch       = patch,
               ipHistoOris   = oris }
-    pt = IP { ipPosition = head $ pixelsToPoints (size ga) [p],
+    pt = IP { ipPosition = head $ pixelsToPoints (size im) [p],
               ipScale = fromIntegral n / w2,
               ipOrientation = angle,
               ipDescriptor = feat }
     roi = roiFromPixel (rad*n) p
     f = modifyROI (const roi)
-    oris = histodir (f ga) (f gx) (f gy)
+    oris = histodir (f dm) (f dx) (f dy)
     angle = head $ angles oris
-    feat = usurfRaw grid (gx,gy) roi
-    Size _ w = size ga
+    feat = usurfRaw grid (dx,dy) roi
+    Size _ w = size im
     w2 = fromIntegral w / 2
     patch = f im
 
@@ -120,8 +115,7 @@ surf :: Int -- ^ size of region in scale units (e.g. 2 or 3)
      -> Int -- ^ number of rows and columns in the grid (e.g. 3 or 4)
      -> Descriptor
 surf rad grid EP { pyrImg = im,
-                   pyrAbsGrad = ga,
-                   pyrGrad = (gx,gy,_,_,_) 
+                   pyrGrad = Grads {gm = dm, gx = dx, gy = dy}
                    }
                x@(p,n) = r where
     r = DIP { ipRawPosition = p,
@@ -129,17 +123,18 @@ surf rad grid EP { pyrImg = im,
               ip            = pt,
               ipPatch       = patch,
               ipHistoOris   = oris }
-    pt = IP { ipPosition = head $ pixelsToPoints (size ga) [p],
+    pt = IP { ipPosition = head $ pixelsToPoints (size im) [p],
               ipScale = fromIntegral n / w2,
               ipOrientation = angle,
               ipDescriptor = feat }
     roi = roiFromPixel (rad*n) p
     f = modifyROI (const roi)
-    oris = histodir (f ga) (f gx) (f gy)
+    oris = histodir (f dm) (f dx) (f dy)
     angle = head $ angles oris
-    feat = usurfRaw grid (gx',gy') roi
-        where (gx',gy',_,_,_) = secondOrder patch
-    Size _ w = size ga
+    feat = usurfRaw grid (dx',dy') roi
+        where Grads {gx = dx', gy = dy'} = gradients patch
+    Size _ w = size im
     w2 = fromIntegral w / 2
     patch = rotateROI angle roi im
+
 

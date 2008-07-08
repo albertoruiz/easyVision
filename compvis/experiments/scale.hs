@@ -36,7 +36,7 @@ mkHessP = mkExtPyr k fun where
 hsrespP sigma = sqrt32f
              . thresholdVal32f 0 0 IppCmpLess
              . hessian
-             . secondOrder 
+             . gradients 
              . ((sigma^2/10) .*)
              . gaussS sigma
 
@@ -44,12 +44,12 @@ hsrespN sigma = sqrt32f
              . thresholdVal32f 0 0 IppCmpLess
              . ((-1).*)
              . hessian 
-             . secondOrder 
+             . gradients 
              . ((sigma^2/10) .*)
              . gaussS sigma
 
-laresp sigma = ((-1).*). (\(_,_,gxx,gyy,_) -> gxx |+| gyy)
-             . secondOrder 
+laresp sigma = ((-1).*). (\g -> gxx g |+| gyy g)
+             . gradients 
              -- . ((sigma/3) .*)
              . ((sigma^2/10) .*)
              . gaussS sigma
@@ -58,14 +58,14 @@ exper sigma = id
              . gaussS 2
              . abs32f
              . hessian
-             . secondOrder 
+             . gradients 
              . ((sigma^2/10) .*)
              . gaussS sigma
 
 hsrespPBox k = sqrt32f
              . thresholdVal32f 0 0 IppCmpLess
              . hessian
-             . secondOrder
+             . gradients
              . ((fromIntegral k^2/10) .*)
              . filterBox k k
 
@@ -82,6 +82,7 @@ main = do
                           ,("tot",intParam 200 1 500)
                           ,("h",realParam 0.3 0 2)
                           ,("rtest",intParam 10 0 100)
+                          ,("dtest",intParam 0 0 100)
                           ,("what",intParam 0 0 2)
                           ,("mode",intParam 1 1 6)
                           ,("test",intParam 0 0 1)
@@ -89,7 +90,7 @@ main = do
                           ,("err",realParam 0.3 0 1)
                           ]
 
-    w <- evWindow (False, Pixel 0 0, constant (0::Double) 36) "scale" sz Nothing  (mouse (kbdcam ctrl))
+    w <- evWindow (False, Pixel 0 0, 0) "scale" sz Nothing  (mouse (kbdcam ctrl))
 --    wd <- evWindow 0 "feature" sz Nothing (const (kbdcam ctrl))
 --     wdebug <- evWindow () "debug" sz Nothing  (const (kbdcam ctrl))
 
@@ -109,6 +110,7 @@ worker o cam w wd = do
     PAR(steps) :: IO Int
     PAR(sigma)
     PAR(rtest) :: IO Int
+    PAR(dtest)  :: IO Int
     PAR(test)  :: IO Int
     PAR(mode)  :: IO Int
     PAR(h)
@@ -120,7 +122,7 @@ worker o cam w wd = do
 --         sigmaboxes = map boxToSigma boxes
 
     orig <- cam
-    let imr = if test == 1 then gaussS 2 $ blob rtest
+    let imr = if test == 1 then gaussS 2 $ blob rtest dtest
                            else (warp 0 (size (gray orig)) (rot3 (rot*pi/180)) $ float $ gray orig)
 
 --         proc = case mode of
@@ -143,12 +145,14 @@ worker o cam w wd = do
                                             5 -> getInterestPoints (mkStage hessianBox) sigmaboxes 100 tot h imr-}
 --                                             6 -> getInterestPoints procStd sigmaboxes 100 tot h auxStd
 
-{-        (gx,gy,_,_,_) = secondOrder $ (sc .*) $ gaussS 1 imr
+{-        (gx,gy,_,_,_) = gradients $ (sc .*) $ gaussS 1 imr
         ga = abs32f gx |+| abs32f gy-}
 --         feats = take tot $ concat $ reverse $ zipWith f (tail responses) pts
 --             where f a bs = map (extractFeature a) bs
 
-        (feats',pyr) = multiscalePoints mkHessP (usurf 3 3) sigmas 100 h imr
+        descrip = --dummyFeat
+                  (surf 2 4)
+        (feats',pyr) = multiscalePoints mkHessP descrip sigmas 100 h imr
         feats = take tot feats'
 
 
@@ -177,7 +181,7 @@ worker o cam w wd = do
         when (what == 2) $ drawImage (rgb orig)
         when (what == 1) $ drawImage (stResponse $ pyr!!n)
         lineWidth $= 1
-        timing $ mapM_ boxFeat feats
+        mapM_ boxFeat feats
         --text2D 20 20 (show $ map (size.stResponse) pyr)
 --         let x = stResponse $ pyr!!n
 --         text2D 20 20 $ show (minmax x)
@@ -192,7 +196,7 @@ worker o cam w wd = do
             drawImage $ autoscale $  ipPatch best
             text2D 20 20 (printf "%.2f" bestdist)
             drawVector 50 100 $ 50*v
-            drawVector 100 100 $ 50*(ipDescriptor.ip) best
+            drawVector 150 100 $ 50*(ipDescriptor.ip) best
             drawVector 50 200 $ 100*(unitary $ ipHistoOris best)
 
 
@@ -238,10 +242,10 @@ mouse def _ a b c d = def a b c d
 
 -------------------------------------
 
-blob rad = unsafePerformIO $ do
+blob rad desp = unsafePerformIO $ do
     img <- image (Size 480 640)
     let vals = [[f r c | c <- [1..640]]| r <- [1..480]]
-            where f r c = if (r-240)^2 + (c-320)^2 < rad^2 then 0.7 else 0.2
+            where f r c = if (r-240-desp)^2 + (c-320-desp)^2 < rad^2 then 0.7 else 0.2
     setData32f img vals
     return img
 

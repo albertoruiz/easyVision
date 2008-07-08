@@ -1,26 +1,18 @@
 -- image classification using the LBP texture descriptor
 
 import EasyVision
-import ImagProc.Ipp.Core
-import Control.Monad(when,(>=>))
+import Control.Monad(when)
 import Graphics.UI.GLUT hiding (Point, histogram)
 import Data.List(minimumBy)
-import Foreign
-import Classifier
-import Vision
 import Numeric.LinearAlgebra
+import Vision
 
-addFeature fun cam = return $ do
-    im' <- cam
-    let im = modifyROI (shrink (100,200)) im'
-    return (im, fun im)
-
-feat = lbpN 8 . resize (mpSize 5) . fromYUV
+feat = vector . lbpN 8 . resize (mpSize 5) . modifyROI (shrink (100,200))
 
 main = do
     sz <- findSize
 
-    (cam,ctrl) <- getCam 0 sz >>= addFeature feat >>= withPause
+    (cam,ctrl) <- getCam 0 sz >>= withPause
 
     prepare
 
@@ -34,18 +26,22 @@ main = do
 
 worker cam w r = do
 
-    img@(orig,v) <- cam
+    orig <- cam
+
+    let roi = shrink (100,200) (theROI orig)
+
+        v   = feat (fromYUV orig)
+        img = (orig, v)
 
     (click,pats) <- getW w
-    when click $ putW w (False, img:pats)
+    when click $ putW w (False, versions orig ++ pats)
 
     inWin w $ do
         drawImage orig
-        pointCoordinates (size orig)
         setColor 0 0 0
-        renderAxes
+        drawROI roi
         setColor 1 0 0
-        renderSignal (map (*5) v)
+        drawVector (c1 roi) (c2 roi-5) (20*v)
 
     when (not $ null pats) $ inWin r $ do
         let x = minimumBy (compare `on` dist img) pats
@@ -61,7 +57,11 @@ worker cam w r = do
 
 -----------------------------------------------------
 
-dist (_,u) (_,v) = sum $ map (^2) $ zipWith subtract u v
+dist (_,u) (_,v) = norm (u-v)
+
+norm = pnorm PNorm2
+
+vector v = fromList v :: Vector Double
 
 -----------------------------------------------------
 
@@ -72,3 +72,10 @@ mouse _ st (MouseButton LeftButton) Down _ _ = do
 
 mouse def _ a b c d = def a b c d
 
+-----------------------------------------------------
+
+versions im = map f ws where
+    ws = [rot3 (r*degree) <> scaling k | r <- [-20,-10 .. 20], k <- [0.8,1,1.2] ]
+    f w = (im, feat x)
+        where x = warp 0 (size im) w img
+              img = fromYUV im

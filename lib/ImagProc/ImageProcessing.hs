@@ -20,7 +20,7 @@ module ImagProc.ImageProcessing (
     module ImagProc.Ipp.Pure,
     module ImagProc.Generic,
     binarize8u, localMax,
-    secondOrder, hessian,
+    Grads(..),gradients, hessian,
     getCorners,
     filter32f, filter8u,
     gaussS, gaussS',
@@ -54,18 +54,22 @@ localMax r g = copyMask32f g mask where
     mg = filterMax r g
     mask = compare32f IppCmpEq mg g
 
--- | Given an image I32f, computes the first and second order derivatives (gx,gy,gxx,gyy,gxy).
-secondOrder :: ImageFloat -> (ImageFloat,ImageFloat,ImageFloat,ImageFloat,ImageFloat)
-secondOrder image = (gx,gy,gxx,gyy,gxy) where
-    gx  = sobelVert image
-    gy  = sobelHoriz image
-    gxx = sobelVert gx
-    gyy = sobelHoriz gy
-    gxy = sobelHoriz gx
 
--- | Obtains the determinant of the hessian operator from the 'secondOrder' derivatives.
-hessian :: (ImageFloat,ImageFloat,ImageFloat,ImageFloat,ImageFloat) -> ImageFloat
-hessian (_,_,gxx,gyy,gxy) = gxx |*| gyy |-| gxy |*| gxy
+data Grads = Grads { gm, gx, gy, gxx, gyy, gxy :: ImageFloat }
+
+-- | convenience function for frequently used image gradients
+gradients :: ImageFloat -> Grads
+gradients image = Grads {gm = m, gx = x, gy = y, gxx = xx, gyy = yy, gxy = xy }
+    where x  = sobelVert image
+          y  = sobelHoriz image
+          xx = sobelVert x
+          yy = sobelHoriz y
+          xy = sobelHoriz x
+          m = sqrt32f $ x |*| x |+| y |*| y
+
+-- | Obtains the determinant of the hessian operator
+hessian :: Grads -> ImageFloat
+hessian g = gxx g |*| gyy g |-| gxy g |*| gxy g
 
 -----------------------------------------------------------------
 -- TO DO: parameters with a record
@@ -79,7 +83,7 @@ getCorners :: Int       -- ^ degree of smoothing (e.g. 1)
            -> [Pixel]    -- ^ result
 getCorners smooth rad prop maxn im = hotPoints where
     suaviza x = iterate (gauss Mask5x5) x !! smooth
-    h = (-1.0) .* hessian (secondOrder (suaviza im))
+    h = (-1.0) .* hessian (gradients (suaviza im))
     (mn,mx) = minmax h
     hotPoints = getPoints32f maxn
               $ thresholdVal32f (mx*prop) 0.0 IppCmpLess

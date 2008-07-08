@@ -1,5 +1,5 @@
 ALL = brush foldimage salience \
-      scale sift
+      scale sift benchmark
 
 EASYVISION = ../..
 
