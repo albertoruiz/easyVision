@@ -57,12 +57,7 @@ main2 = do
 
         let [feats0,feats1] = parMap rnf (map ip . interestPoints n h) [orig0,orig1]
 
-        let (good1, good2 , _) = basicMatches (feats0, feats1) distFeat err
-            -- (f,inliers) = estimateFundamentalRansac ranProb ranThres (prep good2) (prep good1)
-            -- (pts2,pts1) = unzip inliers
-            matches = zip good1 good2
-            -- goodmatches = zip pts1 pts2
-            -- (e,foc,err) = estimateEssential 2 f
+        let matches = basicMatches (feats0, feats1) distFeat err
 
         inWin wm $  do
             let pair = blockImage [[gray orig0, gray orig1]]
@@ -122,8 +117,7 @@ main1 = do
         when (null vs && not (null sel)) $ do
             putW w (sel,gray orig)
 
-        let (good1, good2 , _) = basicMatches (vs, map ip $ feats) distFeat err
-            matches = zip good1 good2
+        let matches = basicMatches (vs, map ip $ feats) distFeat err
 
             ok = not (null vs) && not (null feats)
 
@@ -138,7 +132,7 @@ main1 = do
                 setColor 1 1 1
                 text2D 20 20 $ printf "%d matches" (length matches)
                 pointCoordinates sz
-                drawInterestPoints sz good2
+                drawInterestPoints sz (map snd matches)
 
         when ok $ inWin wm $ do
             let pair = blockImage [[prev,gray orig]]

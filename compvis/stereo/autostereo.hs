@@ -74,7 +74,7 @@ worker cam1 cam2 opts inWindow _ = do
 
         ips2 = getSaddlePoints smooth locrad h 300 dim rad im2
 
-        (good1, good2 , _) = basicMatches (ips1, ips2) distFeat umb
+        (good1, good2 , _) = basicMatches' (ips1, ips2) distFeat umb
 
 
     inWindow "left" $ do

@@ -15,6 +15,7 @@ We extract points with high negative det hessian response (Saddle points in a qu
 
 module ImagProc.Saddle (
  getSaddlePoints,
+ basicMatches',
  basicMatches
 )
 where
@@ -120,8 +121,8 @@ corresp umb h w simil = do
                      sig <- corresp umb h w simil
                      return (p:sig)
 
-basicMatches :: ([a],[a]) -> (a -> a -> Double) -> Double -> ([a],[a],ImageFloat)
-basicMatches (pl,ql) dist umb = unsafePerformIO $ do
+basicMatches' :: ([a],[b]) -> (a -> b -> Double) -> Double -> ([a],[b],ImageFloat)
+basicMatches' (pl,ql) dist umb = unsafePerformIO $ do
     let n1 = length pl
     let n2 = length ql
     c <- image (Size n1 n2)
@@ -132,3 +133,8 @@ basicMatches (pl,ql) dist umb = unsafePerformIO $ do
     let pizq = map ((pl!!).row) corrs
     let pder = map ((ql!!).col) corrs
     return (pizq,pder,c)
+
+-- | Given two lists of objects and a distance function returns a list of pairs of compatible matches below a given threshold.
+basicMatches :: ([a],[b]) -> (a -> b -> Double) -> Double -> [(a,b)]
+basicMatches l d t = zip good1 good2 where
+    (good1,good2,_) = basicMatches' l d t
