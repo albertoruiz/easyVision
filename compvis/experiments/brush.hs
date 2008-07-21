@@ -92,7 +92,7 @@ worker3 param inWindow (pl,im) st = do
     ranumb <- getParam param "ranUmb"
     prob   <- getParam param "ranProb"
 
-    let (pnew, pold, _) = basicMatches' (pl, points st) (distComb alpha) umb
+    let (pnew, pold, _,_,_) = basicMatches' (pl, points st) (distComb alpha) umb
                                             --(Just $ \c ->
                                             --inWindow "cost" (scale32f (-see) c >>= drawImage))
 

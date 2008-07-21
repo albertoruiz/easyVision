@@ -19,6 +19,7 @@ Interface to a few simple algorithms implemented in C.
 module ImagProc.C.Simple where
 
 import ImagProc.Ipp.Core
+import ImagProc.Generic(clone)
 import ImagProc.Ipp.AdHoc(set8u)
 import Foreign
 import Foreign.C.Types
@@ -74,10 +75,12 @@ foreign import ccall "Simple/simple.h lbp8u"
 -----------------------------------------------------------------------------
 
 -- | to do
-hsvCodeTest :: Int -> Int -> Int -> ImageRGB -> IO ()
-hsvCodeTest b g w (C im) = do
+hsvCodeTest :: Int -> Int -> Int -> ImageRGB -> ImageRGB
+hsvCodeTest b g w (C orig) = unsafePerformIO $ do
+    C im <- clone (C orig)
     hsvcodeTest b g w (ptr im) (step im) (r1 (vroi im)) (r2 (vroi im)) (c1 (vroi im)) (c2 (vroi im))
         // checkIPP "hsvcodeTest" [im]
+    return (C im)
 
 -- | to do
 hsvCode :: Int -> Int -> Int -> ImageRGB -> ImageGray

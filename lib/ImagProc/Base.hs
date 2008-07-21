@@ -60,13 +60,15 @@ listToPixel [c,r] = Pixel {row = round r, col = round c}
 
 -- | Trasformation from pixels to normalized points.
 pixelsToPoints :: Size -> [Pixel]->[Point]
-pixelsToPoints sz = fix where
+pixelsToPoints sz [] = []
+pixelsToPoints sz ps = fix ps where
     nor = pixelToPointTrans sz
     fix = map listToPoint. ht nor . map pixelToList
 
 -- | Trasformation from pixels to normalized points.
 pointsToPixels :: Size -> [Point]->[Pixel]
-pointsToPixels sz = fix where
+pointsToPixels sz [] = []
+pointsToPixels sz ps = fix ps where
     nor = LA.inv (pixelToPointTrans sz)
     fix = map listToPixel. ht nor . map pointToList
 

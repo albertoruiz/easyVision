@@ -23,7 +23,7 @@ where
 import ImagProc.Ipp.Core
 import ImagProc.C.Simple(getPoints32f)
 import ImagProc.ImageProcessing
-import Data.List(zipWith4)
+import Data.List(zipWith4,(\\))
 import Numeric.LinearAlgebra hiding ((.*))
 import GHC.Float(float2Double,double2Float)
 import Foreign(unsafePerformIO)
@@ -121,7 +121,7 @@ corresp umb h w simil = do
                      sig <- corresp umb h w simil
                      return (p:sig)
 
-basicMatches' :: ([a],[b]) -> (a -> b -> Double) -> Double -> ([a],[b],ImageFloat)
+basicMatches' :: ([a],[b]) -> (a -> b -> Double) -> Double -> ([a],[b],[a],[b],ImageFloat)
 basicMatches' (pl,ql) dist umb = unsafePerformIO $ do
     let n1 = length pl
     let n2 = length ql
@@ -130,11 +130,15 @@ basicMatches' (pl,ql) dist umb = unsafePerformIO $ do
     setData32f c t
     let fumb = double2Float umb
     corrs <- corresp fumb n1 n2 c
-    let pizq = map ((pl!!).row) corrs
-    let pder = map ((ql!!).col) corrs
-    return (pizq,pder,c)
+    let okizq = map ((pl!!).row) corrs
+        okder = map ((ql!!).col) corrs
+        norows = [0..n1-1] \\ map row corrs
+        nocols = [0..n2-1] \\ map col corrs
+        noizq = map (pl!!) norows
+        noder = map (ql!!) nocols
+    return (okizq,okder,noizq,noder,c)
 
 -- | Given two lists of objects and a distance function returns a list of pairs of compatible matches below a given threshold.
 basicMatches :: ([a],[b]) -> (a -> b -> Double) -> Double -> [(a,b)]
 basicMatches l d t = zip good1 good2 where
-    (good1,good2,_) = basicMatches' l d t
+    (good1,good2,_,_,_) = basicMatches' l d t
