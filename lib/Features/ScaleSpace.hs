@@ -1,6 +1,6 @@
 -----------------------------------------------------------------------------
 {- |
-Module      :  ImagProc.ScaleSpace
+Module      :  Features.ScaleSpace
 Copyright   :  (c) Alberto Ruiz 2008
 License     :  GPL-style
 
@@ -13,7 +13,7 @@ Scale-space tools.
 -}
 -----------------------------------------------------------------------------
 
-module ImagProc.ScaleSpace (
+module Features.ScaleSpace (
     getLocalMaxima,
     Stage(..),
     getSigmas

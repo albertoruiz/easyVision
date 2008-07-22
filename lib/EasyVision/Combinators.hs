@@ -36,7 +36,7 @@ module EasyVision.Combinators (
 import ImagProc.Ipp.Core
 import ImagProc.ImageProcessing
 import ImagProc.C.Segments
-import ImagProc.Polyline
+import Features.Polyline
 import Foreign
 import Foreign.C.Types (CChar,CUChar)
 import Foreign.C.String(newCString)

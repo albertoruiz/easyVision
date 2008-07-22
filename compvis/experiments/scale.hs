@@ -11,10 +11,9 @@ import GHC.Float(float2Double)
 import Control.Monad(when)
 import Control.Parallel.Strategies
 import Control.Concurrent
-import ImagProc.InterestPoints
 import Numeric.LinearAlgebra hiding ((.*))
 import Vision(rot3,scaling,desp,unitary)
-import ImagProc.ScaleSpace(Stage(..))
+import Features.ScaleSpace(Stage(..))
 import GHC.Float(float2Double,double2Float)
 
 inParallel x = parMap rnf id x

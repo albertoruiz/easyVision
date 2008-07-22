@@ -1,5 +1,7 @@
-ALL = brush foldimage salience \
-      scale sift benchmark
+ALL = brush foldimage \
+      scale sift benchmark \
+      salience salience2 \
+      tracks
 
 EASYVISION = ../..
 

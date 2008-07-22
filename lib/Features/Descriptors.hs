@@ -1,7 +1,7 @@
 {-# OPTIONS -fbang-patterns #-}
 -----------------------------------------------------------------------------
 {- |
-Module      :  ImagProc.Descriptors
+Module      :  Features.Descriptors
 Copyright   :  (c) Alberto Ruiz 2008
 License     :  GPL-style
 
@@ -14,7 +14,7 @@ Interest point descriptors.
 -}
 -----------------------------------------------------------------------------
 
-module ImagProc.Descriptors (
+module Features.Descriptors (
     histodir,
     angles,
     usurfRaw

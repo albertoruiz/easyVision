@@ -18,18 +18,10 @@ module ImagProc (
     module ImagProc.Images,
     module ImagProc.Camera,
     module ImagProc.ImageProcessing,
-    module ImagProc.Saddle,
-    module ImagProc.C.Simple,
-    module ImagProc.C.Segments,
-    module ImagProc.Polyline,
-    module ImagProc.InterestPoints
+    module ImagProc.C.Simple
 ) where
 
 import ImagProc.Images
 import ImagProc.Camera
 import ImagProc.ImageProcessing
-import ImagProc.Saddle
 import ImagProc.C.Simple
-import ImagProc.C.Segments
-import ImagProc.Polyline
-import ImagProc.InterestPoints

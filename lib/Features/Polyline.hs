@@ -1,6 +1,6 @@
 -----------------------------------------------------------------------------
 {- |
-Module      :  ImagProc.Polyline
+Module      :  Features.Polyline
 Copyright   :  (c) Alberto Ruiz 2007
 License     :  GPL-style
 
@@ -13,7 +13,7 @@ Some operations with polylines.
 -}
 -----------------------------------------------------------------------------
 
-module ImagProc.Polyline (
+module Features.Polyline (
 -- * Operations
     Polyline(..),
     perimeter,

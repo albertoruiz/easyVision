@@ -35,7 +35,7 @@ import Data.Tree
 import Debug.Trace
 import Vision
 import Numeric.LinearAlgebra
-import ImagProc.Polyline
+import Features.Polyline
 import ImagProc.C.Segments.Structs
 
 vector = fromList :: [Double] -> Vector Double

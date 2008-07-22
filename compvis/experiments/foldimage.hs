@@ -14,7 +14,7 @@ import GHC.Float(float2Double)
 import ImagProc.C.Simple(csum32f)
 import Numeric.LinearAlgebra hiding ((.*))
 import ImagProc.ImageFold
-import ImagProc.Descriptors
+import Features.Descriptors
 import Vision(unitary,rot3)
 
 

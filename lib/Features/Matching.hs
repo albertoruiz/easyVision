@@ -1,6 +1,6 @@
 -----------------------------------------------------------------------------
 {- |
-Module      :  ImagProc.Saddle
+Module      :  Features.Saddle
 Copyright   :  (c) Alberto Ruiz 2006
 License     :  GPL-style
 
@@ -13,7 +13,7 @@ We extract points with high negative det hessian response (Saddle points in a qu
 -}
 -----------------------------------------------------------------------------
 
-module ImagProc.Saddle (
+module Features.Matching (
  getSaddlePoints,
  basicMatches',
  basicMatches

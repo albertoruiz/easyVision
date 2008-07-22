@@ -1,6 +1,6 @@
 -----------------------------------------------------------------------------
 {- |
-Module      :  ImagProc.InterestPoints
+Module      :  Features.InterestPoints
 Copyright   :  (c) Alberto Ruiz 2008
 License     :  GPL-style
 
@@ -13,7 +13,7 @@ Scale and rotation invariant interest points.
 -}
 -----------------------------------------------------------------------------
 
-module ImagProc.InterestPoints (
+module Features.InterestPoints (
     DetailedInterestPoint(..),
     getSigmas,
     fullHessian,
@@ -28,8 +28,8 @@ import ImagProc.Images
 import ImagProc.Ipp.Pure
 import ImagProc.ImageProcessing
 import Numeric.LinearAlgebra hiding ((.*))
-import ImagProc.ScaleSpace
-import ImagProc.Descriptors
+import Features.ScaleSpace
+import Features.Descriptors
 import GHC.Float(float2Double)
 
 

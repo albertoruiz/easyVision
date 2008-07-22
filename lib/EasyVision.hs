@@ -22,7 +22,8 @@ module EasyVision (
     module EasyVision.Combinators,
     module EasyVision.Util,
     module EasyVision.MiniApps,
-    module ImagProc
+    module ImagProc,
+    module Features
 ) where
 
 import EasyVision.GUI
@@ -31,3 +32,4 @@ import EasyVision.Combinators
 import EasyVision.Util
 import EasyVision.MiniApps
 import ImagProc
+import Features

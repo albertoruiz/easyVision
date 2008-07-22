@@ -36,7 +36,7 @@ module EasyVision.Draw
 import Graphics.UI.GLUT hiding (RGB, Matrix, Size, Point)
 import qualified Graphics.UI.GLUT as GL
 import ImagProc.Ipp.Core
-import ImagProc.Saddle
+import Features.Matching
 import ImagProc.ImageProcessing(resize32f,yuvToRGB)
 import Data.IORef
 import Foreign (touchForeignPtr,castPtr)

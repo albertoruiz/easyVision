@@ -1,3 +1,5 @@
+{-# OPTIONS_HADDOCK hide #-}
+
 module Parser(
     Argument, Header(..),
     getHeaders
