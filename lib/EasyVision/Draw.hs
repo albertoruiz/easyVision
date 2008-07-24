@@ -238,7 +238,7 @@ drawInterestPoints sz ipts = do
   where
     drawOris IP {ipPosition = p@(Point x y), ipOrientation = a} = do
         vertex $ p
-        vertex $ Point (x+0.05*cos a) (y+0.05*sin a)
+        vertex $ Point (x-0.05*cos a) (y+0.05*sin a)
     drawPts IP {ipPosition = p@(Point x y)} = do
         vertex $ p
     drawSample IP {ipPosition = p@(Point x y), ipScale = rad} = renderPrimitive LineLoop (mapM_ vertex (circle x y 16 rad))

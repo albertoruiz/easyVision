@@ -71,6 +71,7 @@ main = do
 
     o <- createParameters [("sigma",realParam 1.0 0 3)
                           ,("steps",intParam 3 1 10)
+                          ,("n0",intParam 0  0 20)
                           ,("n",intParam 13  0 20)
                           ,("tot",intParam 200 1 500)
                           ,("h",realParam 0.3 0 2)
@@ -99,6 +100,7 @@ worker o cam w wd = do
     PAR(rot)
     PAR(tot)   :: IO Int
     PAR(err)
+    PAR(n0)
     PAR(n)
     PAR(steps) :: IO Int
     PAR(sigma)
@@ -110,7 +112,7 @@ worker o cam w wd = do
     PAR(what)  :: IO Int
 
 
-    let sigmas = take (n+2) $ getSigmas sigma steps
+    let sigmas = drop n0 $ take (n+2) $ getSigmas sigma steps
 --         boxes = take (n+2) [1,2,3,4,5,6,8,10,13,17,21,27,34,43,54]
 --         sigmaboxes = map boxToSigma boxes
 
@@ -144,7 +146,7 @@ worker o cam w wd = do
 --             where f a bs = map (extractFeature a) bs
 
         descrip = --dummyFeat
-                  (usurf 2 4)
+                  (surf 2 3)
 
         (feats1,pyr1) = multiscalePoints mkHessP descrip (take 5 sigmas) 100 h imr
         (feats2,pyr2) = multiscalePoints mkHessP descrip sigmas 100 h (decimate imr)

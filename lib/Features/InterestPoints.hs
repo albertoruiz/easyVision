@@ -32,7 +32,6 @@ import Features.ScaleSpace
 import Features.Descriptors
 import GHC.Float(float2Double)
 
-
 data DetailedInterestPoint = DIP {
     ipRawPosition :: Pixel,
     ipRawScale    :: Int,
@@ -102,7 +101,8 @@ usurf rad grid EP { pyrImg = im,
               ipDescriptor = feat }
     roi = roiFromPixel (round (rad*s)) p
     f = modifyROI (const roi)
-    oris = histodir (f dm) (f dx) (f dy)
+    oris = (slavmat <>) $ fromList $ histoDir (f dm) (f dx) (f dy) (float2Double $ rad*s/2) (Pixel 0 0) 36
+           -- histodir (f dm) (f dx) (f dy)
     angle = head $ angles oris
     feat = usurfRaw grid (dx,dy) roi
     patch = f im
@@ -127,7 +127,8 @@ surf rad grid EP { pyrImg = im,
               ipDescriptor = feat }
     roi = roiFromPixel (round (rad*s)) p
     f = modifyROI (const roi)
-    oris = histodir (f dm) (f dx) (f dy)
+    oris = (slavmat <>) $ fromList $ histoDir (f dm) (f dx) (f dy) (float2Double $ rad*s/2) p 36
+           -- histodir (f dm) (f dx) (f dy)
     angle = head $ angles oris
     feat = usurfRaw grid (dx',dy') roi
         where Grads {gx = dx', gy = dy'} = gradients patch

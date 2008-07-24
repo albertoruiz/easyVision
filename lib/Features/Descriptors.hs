@@ -17,7 +17,8 @@ Interest point descriptors.
 module Features.Descriptors (
     histodir,
     angles,
-    usurfRaw
+    usurfRaw,
+    histoDir, slavmat
 )
 where
 
@@ -29,6 +30,7 @@ import Data.Packed.ST
 import ImagProc.ImageProcessing hiding ((.*))
 import Vision(unitary)
 import GHC.Float(float2Double,double2Float)
+import ImagProc.C.Simple(histoDir)
 
 captureDirs !p0 !p1 !p2 !k !s =
     if (uval p0 k > 1)

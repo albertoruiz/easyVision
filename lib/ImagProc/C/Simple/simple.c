@@ -1,5 +1,6 @@
 #include<stdlib.h>
 #include<stdio.h>
+#include<math.h>
 
 int getPoints32f(float * pSrc, int sstep, int sr1, int sr2, int sc1, int sc2,
                  int max, int* tot, int* hp) {
@@ -269,3 +270,41 @@ double csum32f(float * pSrc, int sstep, int sr1, int sr2, int sc1, int sc2) {
     return sum;
 }
 #undef X
+
+//---------------------------- histogram of local gradient orientations  ---------------------
+
+inline
+int getBin(int n, float a) {
+ return (int)(.5 + n*(M_PI+a)/2/M_PI) % n;
+// round ((fromIntegral n)*(pi + a)/2/pi) `rem` n
+}
+
+#define GETBIN(n,a) ((int)(.5 + (n)*(M_PI+(a))/2/M_PI) % (n))
+#define GAUSS(sigma,rc,cc,r,c) exp( 0.5/sigma/sigma*((r-rc)*(r-rc)+(c-cc)*(c-cc)))
+
+int histodir(float * pSrc1, int sstep1,
+             float * pSrc2, int sstep2,
+             float * pSrc3, int sstep3,
+             int sr1, int sr2, int sc1, int sc2,
+             double sigma, int rm, int cm,
+             int n, double* histogram) {
+    #define M(r,c) (*(pSrc1+(r)*sstep1/4+(c)))
+    #define X(r,c) (*(pSrc2+(r)*sstep2/4+(c)))
+    #define Y(r,c) (*(pSrc3+(r)*sstep3/4+(c)))
+    int r,c;
+    int k;
+    for(k=0; k<n; k++) {
+        histogram[k]=0;
+    }
+    for (r=sr1; r<=sr2; r++) {
+        for(c=sc1; c<=sc2; c++) {
+            int    bin = GETBIN(n, atan2 (Y(r,c),X(r,c)));
+            double val = M(r,c)*GAUSS(sigma,rm,cm,r,c);
+            histogram[bin]+=val;
+        }
+    }
+    return 0;
+    #undef M
+    #undef X
+    #undef Y
+}

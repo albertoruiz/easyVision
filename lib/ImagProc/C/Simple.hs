@@ -23,6 +23,7 @@ import ImagProc.Generic(clone)
 import ImagProc.Ipp.AdHoc(set8u)
 import Foreign
 import Foreign.C.Types
+import Numeric.LinearAlgebra
 
 -- | Explores an image and returns a list of pixels (as [row,column]) where the image is greater than 0.0.
 getPoints32f :: Int -> ImageFloat -> [Pixel]
@@ -153,3 +154,30 @@ csum32f (F im) = unsafePerformIO $ do
     let ROI r1 r2 c1 c2 = vroi im
     r <- c_sum32f (castPtr (ptr im)) (step im) r1 r2 c1 c2
     return r
+
+-----------------------------------------------------------------------------
+
+-- | Histogram of local gradient directions, useful for interest point descriptors
+histoDir :: ImageFloat -- ^ gm (modulus of gradient)
+         -> ImageFloat -- ^ gx
+         -> ImageFloat -- ^ gy
+         -> Double     -- ^ sigma for smoothing
+         -> Pixel      -- ^ smoothing center
+         -> Int        -- ^ number of bins (e.g. 36, 8, etc.)
+         -> [Double]
+histoDir (F ga) (F gx) (F gy) sigma (Pixel r c) n = unsafePerformIO $ do
+    hist <- mallocArray n
+    c_histodir (ptr ga) (step ga) (ptr gx) (step gx) (ptr gy) (step gy)
+               (r1 (vroi ga)) (r2 (vroi ga)) (c1 (vroi ga)) (c2 (vroi ga))
+               sigma r c n hist
+               // checkIPP "c_histodir" [ga,gx,gy]
+    res <- peekArray n hist
+    free hist
+    return res
+
+
+foreign import ccall "Simple/simple.h histodir"
+     c_histodir :: Ptr () -> Int -> Ptr () -> Int -> Ptr () -> Int
+                -> Int -> Int -> Int -> Int
+                -> Double -> Int -> Int
+                -> Int -> Ptr Double -> IO Int
