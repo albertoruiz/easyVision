@@ -1,4 +1,4 @@
-ALL = simpleclassifier classifier cards catalog
+ALL = lbpclassifier ipclassifier classifier cards catalog
 
 EASYVISION = ../..
 
