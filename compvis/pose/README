@@ -1,0 +1,20 @@
+pose estimation and tracking
+----------------------------
+
+- pose: simple pose estimation from an A4 sheet of paper
+
+- augmented: adding a virtual object to the scene
+
+- dynamic: the virtual object moves
+
+- onlyRects: a camera combinator which "averages" all the rectangles found in the input sequence
+
+- rectangles: metric rectification of a planar scene from a single rectangle and uncalibrated diag(f,f,1) camera.
+
+- whiteboard: rectifies a white rectangle
+
+- frontal: automatic metric rectification (from manually selected points) from several views (demo for BMVC)
+
+- poseTracker: demo of camera pose estimation using ukf
+
+- multipose: multicamera calibration using a planar reference

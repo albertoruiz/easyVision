@@ -1,0 +1,22 @@
+simple examples
+---------------
+
+- demo: several image processing filters and image properties which can be selected from a menu.
+
+- record: plays a given image source, which can be optionally recorded in a file.
+
+- warp: applies a synthetic rotation to the image source
+
+- detect: motion detector
+
+- interpolate: examples of camera combinators (image sequence processing using ordinary list functions)
+
+- pseudocolor: computes simple color index from HSV
+
+- fft: uses peak in fft to normalize orientation and scale of text
+
+- matches: shows interest point correspondences
+
+- dethessian: simple object recognition based on interest points
+
+- contours: affine invariant silhouette recognition

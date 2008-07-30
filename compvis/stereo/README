@@ -1,0 +1,12 @@
+basic 3D reconstruction experiments
+-----------------------------------
+
+- multiview: 3D point detector from blue regions using multiple cameras calibrated with ../pose/multipose
+
+- demostereo: autocalibration and 3D point detector from blue regions.
+
+- vergence: demo of synthetic stereo rectification and distance measurement from a calibrated pair using ../pose/multipose
+
+* stereo: epipolar geometry from manually selected points
+
+* autostereo: automatic epipolar geometry

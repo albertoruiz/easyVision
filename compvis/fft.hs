@@ -29,7 +29,9 @@ main = do
     launch $ do
         img <- cam
         let imf = float . gray $ img
-        inWin w $ drawImage (modifyROI (const p2roi) imf)
+        inWin w $ do
+            drawImage imf
+            drawROI p2roi
         let d = powerSpectrum $ magnitudePack $ fft (modifyROI (const p2roi) imf)
             c@(Pixel r0 c0) = roiCenter (theROI d)
         set32f 0 (roiFrom2Pixels c c) d

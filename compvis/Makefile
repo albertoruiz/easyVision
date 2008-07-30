@@ -1,7 +1,7 @@
-ALL = demo hessian warp \
-      detect interpolate hotpoints \
-      contours justsave ocr \
-      pseudocolor segments matches
+ALL = demo dethessian warp \
+      detect interpolate \
+      contours record fft \
+      pseudocolor matches
 
 EASYVISION = ..
 

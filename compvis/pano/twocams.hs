@@ -1,51 +1,39 @@
--- panoramic with a single camera.
--- Click on the image to get the base view and 
--- on the autopanoramic window to start the optimization
-
 import EasyVision
 import Graphics.UI.GLUT hiding (Size, Point, Matrix)
 
 
 main = do
-    sz <- findSize
+    sz  <- findSize
 
-    --(cam,ctrl) <- getCam 0 sz >>= withChannels >>= withPause
-    (cam,ctrl) <- getCam 0 sz >>= withChannels >>= addDist >>= withPause
+    f <- getOption "--focal" 2.8
 
     prepare
 
-    w  <- evWindow Nothing "image" sz Nothing  (mouse (kbdcam ctrl))
-    --wd <- evWindow Nothing "diff"  sz Nothing  (mouse (kbdcam ctrl))
+    (cam0,ctrl0) <- getCam 0 sz >>= withChannels >>= monitorizeIn "cam0" (mpSize 5) (gray) >>= addDist >>= withPause
+    (cam1,ctrl1) <- getCam 1 sz >>= withChannels >>= monitorizeIn "cam1" (mpSize 5) (gray) >>= addDist >>= withPause
 
-    let vcam = do
-        st <- getW w
-        case st of
-            Nothing -> do orig <- cam
-                          putW w (Just orig)
-            _       -> return ()
-        Just i <- getW w
-        return i
+
+
 
 {-
-    p <- panoramic (mpSize 5) 2.8 2.8 2.0 vcam cam (float.gray)
+    p <- panoramic (mpSize 5) 2.8 2.8 2.0 cam0 cam1 (float.gray)
                                                    (float . resize (mpSize 5) . gray)
                                                    (float . resize (mpSize 5) . gray)
                                                    (\a b -> sum32f (abs32f (a |-| b)))
-
 -}
 
-    p <- panoramic (mpSize 5) 2.8 2.8 2.0 vcam cam (float.gray.fst)
+
+    p <- panoramic (mpSize 20) f f 2.0 cam0 cam1   (float.gray.fst)
                                                    (fst.snd)
                                                    (snd.snd)
                                                    (\d e -> sum32f (d |*| e))
 
-
-    launch (worker vcam cam w  p)
+    launch (worker p)
 
 -----------------------------------------------------------------
 
 edgedist img = (r, float edges) where
-    th = 0.3
+    th = 0.5
     smooth = 2
     gsmooth = smooth `times` gauss Mask5x5 $ float $ resize (mpSize 10) $ gray $ img
     edges = canny (gx,gy) (th/3,th) where gx = (-1) .* sobelVert gsmooth
@@ -59,9 +47,9 @@ addDist cam = return $ do
     return (orig, (r, e))
 
 
-worker vcam cam w  p = do
-    inWin w $ do
-        p >>= drawImage
+worker  p = do
+    p
+    return ()
 
 
 -------------------------------------------------

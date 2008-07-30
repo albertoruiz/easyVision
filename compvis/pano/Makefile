@@ -1,4 +1,4 @@
-ALL = autopano virpano1 virpano2
+ALL = autopano single twocams
 
 EASYVISION = ../..
 

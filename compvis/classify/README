@@ -1,0 +1,12 @@
+Object classification experiments
+---------------------------------
+
+- catalog: browser of database of labeled images
+
+- lbpclassifier: using local binary patterns
+
+- ipclassifier: using interest points
+
+* classifier: experiments
+
+* cards: demo of card rectification and classification
