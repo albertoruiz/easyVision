@@ -1,5 +1,5 @@
 ALL = demo dethessian warp \
-      detect interpolate \
+      detect interpolate static \
       contours record fft \
       pseudocolor matches
 

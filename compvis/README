@@ -9,6 +9,8 @@ simple examples
 
 - detect: motion detector
 
+- static: detector of static frames
+
 - interpolate: examples of camera combinators (image sequence processing using ordinary list functions)
 
 - pseudocolor: computes simple color index from HSV

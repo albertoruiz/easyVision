@@ -23,13 +23,15 @@ module EasyVision.Combinators (
   withPause,
   withChannels,
   addSmall,
-  detectMov,
+  detectMotion,
+  detectStatic,
+  temporalEnvironment,
   warper,
   findPolygons, getPolygons, polyconsis,
   findRectangles,
   onlyRectangles,
   rectifyQuadrangle,
-  monitorizeIn,
+  monitorizeIn, monitorizeGen,
   inThread
 )where
 
@@ -53,6 +55,9 @@ import Vision hiding (consistency)
 import Numeric.LinearAlgebra
 import ImagProc.Generic
 import Debug.Trace
+import Data.List(tails)
+import Control.Monad(when,(>=>))
+import ImagProc.Camera(mpSize)
 
 debug x = trace (show x) x
 
@@ -114,9 +119,9 @@ virtualCamera filt grab = grabAll grab >>= filt >>= createGrab
 
 --------------------------------------------------------------------------
 
--- | Movement detector with a desired condition on the absolute pixel difference in the roi of two consecutive images (computed with help of 'addSmall').
-detectMov :: (Double -> Bool) -> IO (ImageYUV, ImageGray) -> IO (IO (ImageYUV, ImageGray))
-detectMov cond = virtualCamera (return . detectMov' cond)
+-- | Motion detector with a desired condition on the absolute pixel difference in the roi of two consecutive images (computed with help of 'addSmall').
+detectMotion :: (Double -> Bool) -> IO (ImageYUV, ImageGray) -> IO (IO (ImageYUV, ImageGray))
+detectMotion cond = virtualCamera (return . detectMov' cond)
 
 detectMov' cond ((a,f):(b,g):t) =
     if cond (absdif f g)
@@ -132,6 +137,83 @@ addSmall sz grab = return $ do
     let f = resize sz (fromYUV im)
     return (im,f)
 
+-- | Camera combinator which creates a list of the past and future values of a property in each frame (and applies a given function to it).
+temporalEnvironment :: ([p] -> x) -- ^ function to apply to the temporal enviroment (you can of course use id)
+                    -> Int        -- ^ number of frames in the past
+                    -> Int        -- ^ number of frames in the future
+                    -> IO (a,p)   -- ^ source camera
+                    -> IO (IO (a, x)) -- ^ result
+temporalEnvironment g past future = virtualCamera (return . f) where
+    f = map (adjust . unzip) . slidingGroup time
+    time = past + future + 1
+    adjust (cams, env)  = (cams!!past, g env)
+    slidingGroup n = map (take n) . tails
+
+----------------------------------------------------------
+-- Detector of static frames
+
+addDiff = virtualCamera (return . auxDif)
+    where auxDif ((a,f):(b,g):t) = (a, nrm (size f) $ absdif f g) : auxDif ((b,g):t)
+          nrm (Size r w) = (/n) where n = fromIntegral (r*w*255)
+
+data StaticDetectorState = SDSGetIt
+                         | SDSWaitUp
+                         | SDSWaitDown
+                         deriving (Eq,Show)
+
+auxStatic th SDSGetIt x = SDSWaitUp
+
+auxStatic th SDSWaitUp x | last x > 5*th = SDSWaitDown
+                         | otherwise        = SDSWaitUp
+
+auxStatic th SDSWaitDown x | maximum x < th = SDSGetIt
+                           | otherwise      = SDSWaitDown
+
+addSDS th = virtualCamera (return . f SDSWaitUp)
+    where f st ((c,p):rest) = (c,(p,st')) : f st' rest
+               where st' = auxStatic th st p
+
+getIt xs = [c | (c,(_,st)) <- xs, st == SDSGetIt ]
+
+monitorStatic th (imag,(env,st)) = do
+    drawImage imag
+    setColor 1 0 0
+    text2D 30 30 (show st)
+    pointCoordinates (size imag)
+    lineWidth $= 2
+    renderSignal (map (10*) env)
+    setColor 0.5 0 0
+    lineWidth $= 1
+    renderAxes
+    renderPrimitive Lines $ mapM_ vertex [Point (-0.1) (10*th), Point 0.1 (10*th)]
+    renderPrimitive Lines $ mapM_ vertex [Point (-0.1) (5*10*th), Point 0.1 (5*10*th)]
+
+-- | Detector of static frames.
+detectStatic :: Double -- ^ threshold (.e.g., 0.01)
+             -> Int    -- ^ number of frames which must be \"quiet\" (e.g. 5)
+             -> IO ImageYUV -- ^ source camera
+             -> IO (IO (ImageYUV)) -- ^ virtual camera
+detectStatic th nframes =
+    addSmall (mpSize 3)
+    >=> addDiff
+    -- >=> temporalEnvironment mean 3 0  -- for local extremes
+    >=> temporalEnvironment id nframes 0
+    >=> addSDS th
+    >=> monitorizeGen "temp env" (mpSize 10) (monitorStatic th)
+    >=> virtualCamera (return . getIt)
+
+---
+
+mean l = sum l / fromIntegral (length l)
+
+-- std l = sqrt $ mean $ map ((^2).subtract (mean l)) l
+-- 
+-- posMax l = p where
+--     Just p = elemIndex (maximum l) l
+-- 
+-- posMin l = p where
+--     Just p = elemIndex (minimum l) l
+
 ---------------------------------------------------------
 
 -- | The grabbed image (extracted from a general structure by the selector) is automatically shown in a window in each grab. The window provides a simple camera control with the keyboard. See the example interpolate.hs.
@@ -146,6 +228,19 @@ monitorizeIn name sz selector cam = do
     return $ do
         thing <- cam'
         inWin w $ drawImage (selector thing)
+        return thing
+
+-- | Generic monitorization function for a camera combinator.
+monitorizeGen :: String        -- ^ window name
+                 -> Size       -- ^ window size
+                 -> (a->IO ()) -- ^ monitorization function
+                 -> (IO a)     -- ^ original camera
+                 -> IO (IO a)  -- ^ new camera
+monitorizeGen name sz fun cam = do
+    w <- evWindow () name sz Nothing (const kbdQuit)
+    return $ do
+        thing <- cam
+        inWin w (fun thing)
         return thing
 
 ---------------------------------------------------------

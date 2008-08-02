@@ -11,7 +11,7 @@ main = do
 
     (cam,ctrl) <- getCam 0 sz
                   >>= addSmall (Size 90 120)
-                  >>= detectMov (th*255*90*120<)
+                  >>= detectMotion (th*255*90*120<)
                   >>= withPause
 
     prepare
