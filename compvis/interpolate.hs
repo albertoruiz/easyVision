@@ -23,7 +23,7 @@ main = do
     prepare
 
     (cam,ctrl) <- getCam 0 sz
-                  >>= monitorizeIn "original" (Size 150 200) id
+                  >>= monitorizeIn "original" (Size 150 200) drawImage
                   >>= asFloat
                   >>= drift alpha >>= interpolate
                   >>= withPause

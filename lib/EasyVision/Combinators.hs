@@ -31,7 +31,7 @@ module EasyVision.Combinators (
   findRectangles,
   onlyRectangles,
   rectifyQuadrangle,
-  monitorizeIn, monitorizeGen,
+  monitorizeIn,
   inThread
 )where
 
@@ -199,7 +199,7 @@ detectStatic th nframes =
     -- >=> temporalEnvironment mean 3 0  -- for local extremes
     >=> temporalEnvironment id nframes 0
     >=> addSDS th
-    >=> monitorizeGen "temp env" (mpSize 10) (monitorStatic th)
+    >=> monitorizeIn "temp env" (mpSize 10) (monitorStatic th)
     >=> virtualCamera (return . getIt)
 
 ---
@@ -217,12 +217,12 @@ mean l = sum l / fromIntegral (length l)
 ---------------------------------------------------------
 
 -- | The grabbed image (extracted from a general structure by the selector) is automatically shown in a window in each grab. The window provides a simple camera control with the keyboard. See the example interpolate.hs.
-monitorizeIn :: Drawable im => String    -- ^ window name
+monitorizeIn' :: Drawable im => String    -- ^ window name
                             -> Size      -- ^ window size
                             -> (a->im)   -- ^ selector
                             -> (IO a)    -- ^ original camera
                             -> IO (IO a) -- ^ new camera
-monitorizeIn name sz selector cam = do
+monitorizeIn' name sz selector cam = do
     (cam', ctrl) <- withPause cam
     w <- evWindow () name sz Nothing (const $ kbdcam ctrl)
     return $ do
@@ -230,13 +230,13 @@ monitorizeIn name sz selector cam = do
         inWin w $ drawImage (selector thing)
         return thing
 
--- | Generic monitorization function for a camera combinator.
-monitorizeGen :: String        -- ^ window name
-                 -> Size       -- ^ window size
-                 -> (a->IO ()) -- ^ monitorization function
-                 -> (IO a)     -- ^ original camera
-                 -> IO (IO a)  -- ^ new camera
-monitorizeGen name sz fun cam = do
+-- | Generic monitorization function for a camera combinator. The monitorization function is invoked in the window with the grabbed object.
+monitorizeIn :: String     -- ^ window name
+             -> Size       -- ^ window size
+             -> (a->IO ()) -- ^ monitorization function
+             -> (IO a)     -- ^ original camera
+             -> IO (IO a)  -- ^ new camera
+monitorizeIn name sz fun cam = do
     w <- evWindow () name sz Nothing (const kbdQuit)
     return $ do
         thing <- cam

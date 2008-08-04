@@ -16,7 +16,7 @@ main = do
     prepare
 
     cam <- getCam 0 (mpSize 20)
-           >>= monitorizeIn "video" (mpSize 5) id
+           >>= monitorizeIn "video" (mpSize 5) drawImage
            >>= withChannels
            >>= onlyRectangles szR ratio gray
            >>= virtualCamera (return . map float . concat)
