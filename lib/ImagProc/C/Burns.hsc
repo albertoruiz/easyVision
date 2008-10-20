@@ -1,6 +1,6 @@
 -- Written by Adrian Quark, 2007
 -- vim: set et ts=2 sw=2:
-{-# OPTIONS -ffi #-}
+{-# LANGUAGE ForeignFunctionInterface #-}
 module ImagProc.C.Burns where
 
 import Foreign

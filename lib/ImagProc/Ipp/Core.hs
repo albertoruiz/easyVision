@@ -1,5 +1,7 @@
-{-# OPTIONS -fffi #-}
-{-# LANGUAGE MagicHash, UnboxedTuples, BangPatterns #-}
+{-# LANGUAGE ForeignFunctionInterface,
+             MagicHash,
+             UnboxedTuples,
+             BangPatterns #-}
 
 -----------------------------------------------------------------------------
 {- |

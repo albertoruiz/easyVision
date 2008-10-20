@@ -1,4 +1,4 @@
-{-# OPTIONS -fffi -fglasgow-exts #-}
+{-# LANGUAGE ForeignFunctionInterface #-}
 
 -----------------------------------------------------------------------------
 {- |

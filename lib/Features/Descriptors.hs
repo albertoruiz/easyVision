@@ -1,4 +1,4 @@
-{-# OPTIONS -fbang-patterns #-}
+{-# LANGUAGE BangPatterns #-}
 -----------------------------------------------------------------------------
 {- |
 Module      :  Features.Descriptors

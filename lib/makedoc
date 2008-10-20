@@ -12,6 +12,6 @@ do HsColour -html -anchor $file > doc/src/`echo $file | sed 's/\//-/g' | sed s/.
 done
 
 haddock $SRCS \
-        -o doc -h -t easyVision -p prologue.txt  -B ~/apps/ghc/lib/ghc-6.8.2/ \
+        -o doc -h -t easyVision -p prologue.txt  -B ~/apps/ghc/lib/ghc-6.8.3/ \
         --source-module="../doc/src/%{MODULE/./-}.html" \
         --source-entity="../doc/src/%{MODULE/./-}.html#%{NAME}"

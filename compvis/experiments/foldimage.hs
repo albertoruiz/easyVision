@@ -1,4 +1,4 @@
-{-# OPTIONS -fbang-patterns #-}
+{-# LANGUAGE BangPatterns #-}
 
 import EasyVision
 --import Data.List(transpose,minimumBy,foldl1')

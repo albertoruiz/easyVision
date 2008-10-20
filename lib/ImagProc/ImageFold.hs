@@ -1,4 +1,3 @@
-{-# OPTIONS -fbang-patterns #-}
 {-# LANGUAGE MagicHash, UnboxedTuples, BangPatterns #-}
 -----------------------------------------------------------------------------
 {- |

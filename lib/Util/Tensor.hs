@@ -1,4 +1,4 @@
-{-# OPTIONS_GHC -fglasgow-exts -fallow-undecidable-instances #-}
+{-# LANGUAGE UndecidableInstances, FlexibleContexts #-}
 
 -----------------------------------------------------------------------------
 -- |
@@ -67,7 +67,7 @@ instance (Linear Vector t, Eq t) => Eq (Tensor t) where
               names = map idxName (dims t1)
 
 
-instance (Linear Vector t) => Num (Tensor t) where
+instance (Field t) => Num (Tensor t) where
     a + b = addTOk a b
     a * b = mulT a b
     negate t = scalar (-1) * t
@@ -219,11 +219,11 @@ compatIdx t1 n1 t2 n2 = compatIdxAux d1 d2 where
 outer' u v = flatten (outer u v)
 
 -- | tensor product without without any contractions
-rawProduct :: (Element t, Num t) => Tensor t -> Tensor t -> Tensor t
+rawProduct :: (Field t) => Tensor t -> Tensor t -> Tensor t
 rawProduct (T d1 v1) (T d2 v2) = T (d1++d2) (outer' v1 v2)
 
 -- | contraction of the product of two tensors 
-contraction2 :: (Element t, Num t) => Tensor t -> IdxName -> Tensor t -> IdxName -> Tensor t
+contraction2 :: (Field t) => Tensor t -> IdxName -> Tensor t -> IdxName -> Tensor t
 contraction2 t1 n1 t2 n2 =
     if compatIdx t1 n1 t2 n2
         then T (tail d1 ++ tail d2) (flatten m)
@@ -251,7 +251,7 @@ contraction1c t n = contraction1 renamed n' n
           (h,_:r) = break (==n) (map idxName (dims t))
 
 -- | alternative and inefficient version of contraction2
-contraction2' :: (Linear Vector t) => Tensor t -> IdxName -> Tensor t -> IdxName -> Tensor t
+contraction2' :: (Field t) => Tensor t -> IdxName -> Tensor t -> IdxName -> Tensor t
 contraction2' t1 n1 t2 n2 =
     if compatIdx t1 n1 t2 n2
         then contraction1 (rawProduct t1 t2) n1 n2
@@ -268,14 +268,14 @@ contractionsC t is = foldl' contraction1c t is
 
 
 -- | applies a contraction on the first indices of the tensors
-contractionF :: (Linear Vector t) => Tensor t -> Tensor t -> Tensor t
+contractionF :: (Field t) => Tensor t -> Tensor t -> Tensor t
 contractionF t1 t2 = contraction2 t1 n1 t2 n2
     where n1 = fn t1
           n2 = fn t2
           fn = idxName . head . dims
 
 -- | computes all compatible contractions of the product of two tensors that would arise if the index names were equal
-possibleContractions :: (Linear Vector t) => Tensor t -> Tensor t -> [Tensor t]
+possibleContractions :: (Field t) => Tensor t -> Tensor t -> [Tensor t]
 possibleContractions t1 t2 = [ contraction2 t1 n1 t2 n2 | n1 <- names t1, n2 <- names t2, compatIdx t1 n1 t2 n2 ]
 
 
@@ -288,7 +288,7 @@ desiredContractions1 t = [ n1 | (a,n1) <- x , (b,n2) <- x, a/=b, n1==n2]
     where x = zip [0..] (names t)
 
 -- | tensor product with the convention that repeated indices are contracted.
-mulT :: (Linear Vector t) => Tensor t -> Tensor t -> Tensor t
+mulT :: (Field t) => Tensor t -> Tensor t -> Tensor t
 mulT t1 t2 = r where
     t1r = contractionsC t1 (desiredContractions1 t1)
     t2r = contractionsC t2 (desiredContractions1 t2)
@@ -332,21 +332,21 @@ sym t = T (dims t) (ten (sym' (withIdx t seqind)))
     where sym' t = sumT $ map (flip tridx t) (perms (names t))
               where nms = map idxName . dims
 
-antisym :: (Linear Vector t) => Tensor t -> Tensor t
+antisym :: (Field t) => Tensor t -> Tensor t
 antisym t = T (dims t) (ten (antisym' (withIdx t seqind)))
     where antisym' t = sumT $ map (scsig . flip tridx t) (perms (names t))
           scsig t = scalar (signature (nms t)) `rawProduct` t
               where nms = map idxName . dims
 
 -- | the wedge product of two tensors (implemented as the antisymmetrization of the ordinary tensor product).
-wedge :: (Linear Vector t, Fractional t) => Tensor t -> Tensor t -> Tensor t
+wedge :: (Field t, Fractional t) => Tensor t -> Tensor t -> Tensor t
 wedge a b = antisym (rawProduct (norper a) (norper b))
     where norper t = rawProduct t (scalar (recip $ fromIntegral $ fact (rank t)))
 
 -- antinorper t = rawProduct t (scalar (fromIntegral $ fact (rank t)))
 
 -- | The euclidean inner product of two completely antisymmetric tensors
-innerAT :: (Fractional t, Element t) => Tensor t -> Tensor t -> t
+innerAT :: (Fractional t, Field t) => Tensor t -> Tensor t -> t
 innerAT t1 t2 = dot (ten t1) (ten t2) / fromIntegral (fact $ rank t1)
 
 fact :: (Num t, Enum t) => t -> t
@@ -359,20 +359,20 @@ seqind :: [String]
 seqind = map show [1..]
 
 -- | completely antisymmetric covariant tensor of dimension n
-leviCivita :: (Linear Vector t) => Int -> Tensor t
+leviCivita :: (Field t) => Int -> Tensor t
 leviCivita n = antisym $ foldl1 rawProduct $ zipWith withIdx auxbase seqind'
     where auxbase = map tc (toRows (ident n))
           tc = tensorFromVector Covariant
           ident n = diag $ fromList $ replicate n 1
 
 -- | contraction of leviCivita with a list of vectors (and raise with euclidean metric)
-innerLevi :: (Linear Vector t) => [Tensor t] -> Tensor t
+innerLevi :: (Field t) => [Tensor t] -> Tensor t
 innerLevi vs = raise $ foldl' contractionF (leviCivita n) vs
     where n = idxDim . head . dims . head $ vs
 
 
 -- | obtains the dual of a multivector (with euclidean metric)
-dual :: (Linear Vector t, Fractional t) => Tensor t -> Tensor t
+dual :: (Field t, Fractional t) => Tensor t -> Tensor t
 dual t = raise $ leviCivita n `mulT` withIdx t seqind `rawProduct` x
     where n = idxDim . head . dims $ t
           x = scalar (recip $ fromIntegral $ fact (rank t))
@@ -390,12 +390,12 @@ niceAS t = filter ((/=0.0).fst) $ zip vals base
 
 infixl 5 /\
 -- | the exterior (wedge) product
-(/\) :: (Linear Vector t) => Tensor t -> Tensor t -> Tensor t
+(/\) :: (Field t) => Tensor t -> Tensor t -> Tensor t
 a /\ b = wedge a b
 
 infixl 4 \/
 -- | the \"meet\" operator (e.g. subspace intersection)
-(\/) :: (Linear Vector t) => Tensor t -> Tensor t -> Tensor t
+(\/) :: (Field t) => Tensor t -> Tensor t -> Tensor t
 a \/ b = meet a b
 
 --meet a b = innerLevi [dual a, dual b]
@@ -405,7 +405,7 @@ meet a b = dual $ (dual a) /\ (dual b)
 
 infixl 5 .:.
 -- | full contraction of two tensors (inner product)
-(.:.) :: (Linear Vector t) => Tensor t -> Tensor t -> Tensor t
+(.:.) :: (Field t) => Tensor t -> Tensor t -> Tensor t
 (.:.) = fullInner
 
 fullInner t1 t2 = if rank t1 < rank t2

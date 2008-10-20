@@ -1,4 +1,4 @@
-{-# OPTIONS -ffi #-}
+{-# LANGUAGE ForeignFunctionInterface #-}
 -----------------------------------------------------------------------------
 {- |
 Module      :  ImagProc.Ipp.Structs

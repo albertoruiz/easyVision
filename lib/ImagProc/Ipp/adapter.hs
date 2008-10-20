@@ -149,7 +149,8 @@ ht x = error $ " UNKNOWN TYPE: "++x
 -----------------------------------------------------------------
 
 wmod  = "-- generated automatically by adapter.hs\n\n"
-     ++ "{-# OPTIONS -ffi -fvia-C #-}\n\n"
+     ++ "{-# LANGUAGE ForeignFunctionInterface #-}\n"
+     ++ "{-# OPTIONS -fvia-C #-}\n\n"
      ++ "module ImagProc.Ipp.Adapt where\n\n"
      ++ "import Foreign\nimport Foreign.C.Types\n"
      ++ "import ImagProc.Ipp.Structs\n\n"

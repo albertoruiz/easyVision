@@ -1,5 +1,5 @@
-{-# OPTIONS -fffi -fvia-C #-}
-
+{-# LANGUAGE ForeignFunctionInterface #-}
+{-# OPTIONS -fvia-C #-}
 -----------------------------------------------------------------------------
 {- |
 Module      :  ImagProc.Ipp.Wrappers

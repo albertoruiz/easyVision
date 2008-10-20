@@ -4,5 +4,5 @@ It requires hmatrix, HOpenGL, MPlayer, and IPP.
 
 Download: @darcs get http:\/\/perception.inf.um.es\/~aruiz\/darcs\/easyVision@
 
-More info: <http://Alberrto.googlepages.com/easyvision>
+More info: <http://www.easyVision.googlepages.com>
 

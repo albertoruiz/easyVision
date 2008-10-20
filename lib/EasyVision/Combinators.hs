@@ -1,5 +1,3 @@
-{-# OPTIONS -fffi -fglasgow-exts #-}
-
 -----------------------------------------------------------------------------
 {- |
 Module      :  EasyVision.Combinators
