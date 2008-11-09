@@ -10,3 +10,5 @@ Object classification experiments
 * classifier: experiments
 
 * cards: demo of card rectification and classification
+
+- roisel: a tool for selection of images with associated roi

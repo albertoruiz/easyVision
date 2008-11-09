@@ -1,7 +1,7 @@
 ALL = demo dethessian warp \
       detect interpolate static \
       contours record fft \
-      pseudocolor matches
+      pseudocolor matches background
 
 EASYVISION = ..
 

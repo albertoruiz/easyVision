@@ -11,3 +11,5 @@ webcam3        tv:// -tv driver=v4l:device=/dev/video3
 firewire       /dev/dv1394 -demuxer rawdv -cache 400
 s-video-di     tv:// -tv driver=v4l2:device=/dev/video0 -vf pp=md
 s-video        tv:// -tv driver=v4l2:device=/dev/video0
+
+test           $VIDEOS/penguin.dv

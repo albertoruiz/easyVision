@@ -7,6 +7,10 @@
 import EasyVision
 import Graphics.UI.GLUT hiding (RGB,Size,minmax,histogram,Point,set)
 import GHC.Float(float2Double)
+import Data.Colour.SRGB
+import qualified Data.Colour.Names as Col
+
+setColor' c = setColor r g b where (r,g,b) = toSRGB c
 
 ------------------------------------------------------------
 
@@ -123,7 +127,8 @@ worker wDemo cam param fft = do
 
             "Segments" -> do let segs = segments 4 1.5 5 40 20 True (chan gray)
                              drawROI roi
-                             setColor 1 1 0
+                             --setColor 1 1 0
+                             setColor' Col.yellow
                              lineWidth $= 2
                              pointCoordinates (size (gray orig))
                              renderPrimitive Lines $ mapM_ vertex segs
@@ -161,6 +166,7 @@ worker wDemo cam param fft = do
                                     feats = fullHessian (usurf 2 4) (take (13+2) $ getSigmas 1.0 3) 100 0.3 imr
                                 drawImage (chan rgb)
                                 let boxfeat p = drawROI $ roiFromPixel (ipRawScale p) (ipRawPosition p)
+                                setColor' Col.red
                                 mapM_ boxfeat feats
 
 

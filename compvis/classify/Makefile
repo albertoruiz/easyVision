@@ -1,4 +1,4 @@
-ALL = lbpclassifier ipclassifier classifier cards catalog
+ALL = lbpclassifier ipclassifier classifier cards catalog roisel
 
 EASYVISION = ../..
 

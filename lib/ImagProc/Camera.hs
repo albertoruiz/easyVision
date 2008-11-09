@@ -61,7 +61,7 @@ mplayer url (Size h w) = do
     --(i,o,e,p) <- runInteractiveProcess "mplayer" (words mpcommand) Nothing Nothing
     --(i,o,e,p) <- runInteractiveCommand ("mplayer " ++mpcommand)
 
-    putStr "Please abort (Ctrl-C) and check the URL\r"
+    putStr "Press Ctrl-C and check the URL\r"
     system $ "mplayer "++ mpcommand ++" >/dev/null 2>/dev/null &"
 
     f <- openFile fifo ReadMode

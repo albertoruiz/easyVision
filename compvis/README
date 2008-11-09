@@ -22,3 +22,5 @@ simple examples
 - dethessian: simple object recognition based on interest points
 
 - contours: affine invariant silhouette recognition
+
+- background: detection of something different from a background image

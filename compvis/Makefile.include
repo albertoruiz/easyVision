@@ -11,8 +11,8 @@
 ##                                                             ##
 #################################################################
 
-# required in ghc-6.10-rc (?) for hsc2hs
-GHCINST = $(HOME)/apps/ghc/lib/ghc-6.10.0.20081019
+# required in ghc-6.10.1 for hsc2hs
+GHCINC = $(HOME)/apps/ghc/lib/ghc-6.10.1/include
 
 EVLIB = $(EASYVISION)/lib/
 
@@ -42,7 +42,7 @@ auxc: $(CDIR)/auxIpp.o $(CDIR)/adapt.o $(CDIR)/Structs.hs \
       $(CONTRIB)
 
 $(CDIR)/Structs.hs: $(CDIR)/Structs.hsc
-	hsc2hs -I$(IPP)/include -I$(GHCINST)/include $(CDIR)/Structs.hsc
+	hsc2hs -I$(IPP)/include -I$(GHCINC) $(CDIR)/Structs.hsc
 
 $(CDIR)/auxIpp.o: $(CDIR)/auxIpp.c $(CDIR)/auxIpp.h
 	gcc -O4 -c -I$(IPP)/include $(CDIR)/auxIpp.c -o $(CDIR)/auxIpp.o
@@ -58,13 +58,13 @@ $(CONTRIBPATH)/Simple/simple.o: $(CONTRIBPATH)/Simple/simple.c $(CONTRIBPATH)/Si
 	gcc -O4 -c $(CONTRIBPATH)/Simple/simple.c -o $(CONTRIBPATH)/Simple/simple.o
 
 $(CONTRIBPATH)/Segments/Structs.hs: $(CONTRIBPATH)/Segments/Structs.hsc
-	hsc2hs -I$(IPP)/include -I$(GHCINST)/include $(CONTRIBPATH)/Segments/Structs.hsc
+	hsc2hs -I$(IPP)/include -I$(GHCINC) $(CONTRIBPATH)/Segments/Structs.hsc
 
 $(CONTRIBPATH)/Segments/libsegments.a:
 	cd $(CONTRIBPATH)/Segments/; make
 
 $(CONTRIBPATH)/Burns.hs: $(CONTRIBPATH)/Burns.hsc
-	hsc2hs -I$(IPP)/include -I$(GHCINST)/include $(CONTRIBPATH)/Burns.hsc
+	hsc2hs -I$(IPP)/include -I$(GHCINC) $(CONTRIBPATH)/Burns.hsc
 
 $(CONTRIBPATH)/Burns/burns.o: $(CONTRIBPATH)/Burns/burns.c $(CONTRIBPATH)/Burns/burns.h
 	gcc -O0 -c -I$(IPP)/include $(CONTRIBPATH)/Burns/burns.c -o $(CONTRIBPATH)/Burns/burns.o

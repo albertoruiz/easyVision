@@ -9,6 +9,9 @@ import System(system)
 import Control.Monad(when)
 import Util.Tensor
 
+import Debug.Trace
+debug x = trace (show x) x
+
 realMatrix = fromLists :: [[Double]] -> Matrix Double
 realVector = fromList ::  [Double] -> Vector Double
 

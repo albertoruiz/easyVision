@@ -120,20 +120,19 @@ columnImage l = unsafePerformIO $ do
 adapt dst h src = toLists $ inv (pixelToPointTrans (size dst)) <> h <> pixelToPointTrans (size src)
 
 -- | Apply a homography (defined on normalized points, see 'pixelsToPoints') to an image.
-{-
-warp :: Size              -- ^ desired size of the result
+warp :: (GImg pixel img) 
+     =>  pixel            -- ^ default value for regions outside the transformed roi
+     -> Size              -- ^ desired size of the result
      -> Matrix Double     -- ^ homography
-     -> ImageFloat        -- ^ source image
-     -> IO ImageFloat     -- ^ result
--}
-
+     -> img               -- ^ source image
+     -> img               -- ^ result
 warp out s h im = unsafePerformIO $ do
     r <- image s
     set out (theROI r) r
     warpOn h r im
     return r
 
--- | The same as 'warp', but the result is written over a preexisting image.
+-- The same as 'warp', but the result is written over a preexisting image.
 {-
 warpOn :: Matrix Double   -- ^ homography
        -> ImageFloat      -- ^ destination image

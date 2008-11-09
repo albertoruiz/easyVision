@@ -1,6 +1,6 @@
 -- save captured video
 -- then you can convert the generated yuv to a nicer format:
--- $ ./justsave webcam1 --save=file.yuv [--limit=numframes]
+-- $ ./record webcam1 --save=file.yuv [--limit=numframes]
 -- $ mencoder file.yuv -o file.avi -ovc lavc -fps 15
 
 import EasyVision

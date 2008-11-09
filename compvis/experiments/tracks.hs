@@ -64,8 +64,8 @@ main = do
             matches = zip g1 g2
             ok = length prevpts > 0 && length pts > 0
 
-        let --f1 (a,b) = b:a
-            f1 (a,b) = [b,last a]
+        let f1 (a,b) = b:a
+            --f1 (a,b) = [b,last a]
             f2 p     = [p]
 
         when (not ok) $ putW w (map f2 pts)
