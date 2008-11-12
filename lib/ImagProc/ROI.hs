@@ -20,7 +20,8 @@ module ImagProc.ROI
   union,
   roiArea,
   inROI,
-  roiGrid,
+  roiGrid, roiGridStep,
+  overlap,
   roiFromPixel,
   roiFrom2Pixels,
   roiCenter,
@@ -68,8 +69,8 @@ union a b = ROI { r1 = min (r1 a) (r1 b)
 -- | 'ROI'\'s area in pixels
 roiArea :: ROI -> Int
 roiArea (ROI r1 r2 c1 c2) = w*h where
-    w = c2-c1+1
-    h = r2-r1+1
+    w = max 0 $ c2-c1+1
+    h = max 0 $ r2-r1+1
 
 -- | checks that a pixel is in a ROI
 inROI :: ROI -> Pixel -> Bool
@@ -86,6 +87,23 @@ roiGrid kr kc (ROI r1 r2 c1 c2) = take (kr*kc) $ [ROI a (a+dr-1) b (b+dc-1) | a 
                                                              , b <- [c1,c1+dc .. c2-dc+1]]
     where dr = (r2-r1+1) `div` kr
           dc = (c2-c1+1) `div` kc
+
+-- | creates a grid of rois of given size and overlap inside a given roi
+roiGridStep :: Int -- ^ heigh of rois
+            -> Int -- ^ width of rois
+            -> Int -- ^ step in rows
+            -> Int -- ^ step in columns
+            -> ROI -> [ROI]
+roiGridStep wr wc sr sc (ROI r1 r2 c1 c2) = [ROI r (r+wr-1) c (c+wc-1) | r<-rs, c<-cs]
+    where rs = [r1,r1+sr .. r2-wr+1]
+          cs = [c1,c1+sc .. c2-wc+1]
+
+-- | the ratio of common area
+overlap :: ROI -> ROI -> Double
+overlap roi1 roi2 = fromIntegral ai / fromIntegral (min a1 a2)
+    where ai = roiArea (intersection roi1 roi2)
+          a1 = roiArea roi1
+          a2 = roiArea roi2
 
 -- | creates a square ROI around a pixel (the size of the ROI is (2*radius+1)^2).
 roiFromPixel :: Int -- ^ radius
