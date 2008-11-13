@@ -38,7 +38,7 @@ mse :: Dicotomizer
 mse (g1,g2) = f where
     m = (fromRows g1 <-> fromRows g2) <|> constant 1 (dim b)
     b = join [constant 1 (length g1), constant (-1) (length g2)]
-    w = pinv m <> b
+    w = m <\> b
     f v = tanh (join [v,1] <.> w)
 
 --------------------------------------------------------------------------------
@@ -104,7 +104,7 @@ mseWeighted (g1,g2) d = f where
     b = join [constant 1 (length g1), constant (-1) (length g2)]
     rd  = sqrt d
     rd' = outer rd (constant 1 (cols m))
-    w = pinv (m*rd') <> (b*rd)
+    w = (m*rd') <\> (b*rd)
     f v = tanh (join [v,1] <.> w)
 
 

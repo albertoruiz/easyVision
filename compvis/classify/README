@@ -12,3 +12,5 @@ Object classification experiments
 * cards: demo of card rectification and classification
 
 - roisel: a tool for selection of images with associated roi
+
+- roiclass: detection of regions based on examples created by roisel
