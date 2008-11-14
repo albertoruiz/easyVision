@@ -8,7 +8,7 @@ $ ./roiclass 'newvideo -benchmark' selectedtest selected1 selected2 etc.
 -}
 
 import EasyVision
-import Graphics.UI.GLUT
+import Graphics.UI.GLUT hiding (histogram)
 import Control.Monad(when)
 import System(getArgs)
 import Data.Colour.SRGB
@@ -18,16 +18,19 @@ import Classifier
 import Data.List(maximumBy)
 import Text.Printf
 
-setColor' c = setColor r g b where (r,g,b) = toSRGB c
 
 genrois = roiGridStep 50 200 25 25
 -- genrois = roiGridStep 100 100 25 25
-commonproc = gray.channels
--- feat = vector .lbpN 8
-feat = vector. map fromIntegral . lbp 8
+
+commonproc im = (chan, highPass8u  Mask5x5 . median Mask5x5 .  gray $ chan)
+    where chan = channels im
+
+feat = [ (vector. map fromIntegral . lbp 4, gray.fst)
+       , (histov [0,8 .. 256], snd)
+       ]
 -- machine =  distance gaussian `onP` mef (NewDimension 15)
 -- machine = multiclass mse `onP` mef (ReconstructionQuality 0.95)
--- machine = multiclass mse `onP` mef (NewDimension 15)
+-- machine = multiclass mse `onP` mef (NewDimension 10)
 -- machine = distance ordinary
 machine = multiclass mse
 
@@ -45,19 +48,14 @@ main = do
 
     putStrLn $ show (length examples) ++ " total examples"
 
-
     rawtest <- readSelectedRois sz test
     let test = concatMap (createExamples commonproc genrois feat) rawtest
 
     putStrLn $ show (length test) ++ " total test examples"
-    
 
 
     shConf test classifier
     shErr  test classifier
-
---     error "hasta aq"
-    -- print $ classifier $ constant 0 256
     -- evaluation required in "two places" to avoid
     -- relearning the classifier in each frame (!!??)
 
@@ -66,15 +64,21 @@ main = do
     launch $ inWin w $ do
         img <- camtest
         drawImage img
-        let candis = genrois (theROI img)
-            imgproc = commonproc img
+        let imgproc = commonproc img
+            candis = map (\r -> (r,imgproc)) (genrois (theROI img))
         lineWidth $= 1
         setColor' Col.gray
-        mapM_ drawROI (filter ((=="+").classifier.feat.flip modifyROI imgproc. const) candis)
-        let strength = detector . feat . flip modifyROI imgproc. const
-        lineWidth $= 3
-        setColor' Col.red
-        drawROI $ maximumBy (compare `on` strength) candis
+        let pos = filter ((=="+").classifier. features feat) candis
+        mapM_ (drawROI.fst) pos
+        when (not.null $ pos) $ do
+            lineWidth $= 3
+            setColor' Col.red
+            let best = maximumBy (compare `on` detector . features feat) pos
+            drawROI (fst best)
+--             lineWidth $= 1
+--             setColor' Col.white
+--             drawVector 100 400 $ features feat best
+
 
 readSelectedRois sz file = do
     roisraw <- readFile (file++".yuv.roi")
@@ -88,10 +92,20 @@ readSelectedRois sz file = do
 createExamples commonproc candirois feat (img,roi) = ps ++ ns
     where candis = candirois (theROI img)
           imgproc = commonproc img
-          prois = filter ((>0.5).overlap roi) candis
-          nrois = filter ((<0.2).overlap roi) candis
-          ps = map (\r -> (feat (modifyROI (const r) imgproc), "+")) prois
-          ns = map (\r -> (feat (modifyROI (const r) imgproc), "-")) nrois
+          ps = ejs "+" . sel (>0.5) $ candis
+          ns = ejs "-" . sel (<0.2) $ candis
+          ejs t = map (\r -> (features feat (r, imgproc), t))
+          sel c = filter (c.overlap roi)
 
 shErr d c = putStrLn $ (printf "error %.3f" $ 100 * errorRate d c) ++ " %"
 shConf d c = putStrLn $ format " " (show.round) (confusion d c)
+
+unitary v = v */ pnorm PNorm2 v
+
+overROI (feat, sel) (r, obj) = feat (modifyROI (const r) (sel obj))
+
+features fs x = join $ map (flip overROI x) fs
+
+histov l = vector . map fromIntegral . histogram l
+
+setColor' c = setColor r g b where (r,g,b) = toSRGB c
