@@ -7,10 +7,7 @@
 import EasyVision
 import Graphics.UI.GLUT hiding (RGB,Size,minmax,histogram,Point,set)
 import GHC.Float(float2Double)
-import Data.Colour.SRGB
 import qualified Data.Colour.Names as Col
-
-setColor' c = setColor r g b where (r,g,b) = toSRGB c
 
 ------------------------------------------------------------
 

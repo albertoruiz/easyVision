@@ -12,10 +12,7 @@ import EasyVision
 import Graphics.UI.GLUT
 import Control.Monad(when)
 import System(getArgs)
-import Data.Colour.SRGB
 import qualified Data.Colour.Names as Col
-
-setColor' c = setColor r g b where (r,g,b) = toSRGB c
 
 main = do
     args <- getArgs

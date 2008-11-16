@@ -20,7 +20,7 @@ module EasyVision.Draw
 , pixelCoordinates
 , Drawable(..)
 , drawTexture
-, setColor
+, setColor, setColor'
 , text2D
 , renderSignal
 , renderAxes
@@ -44,6 +44,9 @@ import Numeric.LinearAlgebra
 import Vision
 import EasyVision.Trackball
 import EasyVision.Util
+import qualified Data.Colour.RGBSpace as Col
+import Data.Colour.SRGB
+import Data.Colour
 
 
 -- | Types of images that can be shown in a window
@@ -153,6 +156,10 @@ drawTexture (F im) [v1,v2,v3,v4] = do
 -- | Sets the current color to the given R, G, and B components.
 setColor :: Float -> Float -> Float -> IO ()
 setColor r g b = currentColor $= Color4 r g (b::GLfloat) 1
+
+-- | Sets the current color to the given R, G, and B components.
+setColor' :: Colour Float -> IO ()
+setColor' c = setColor r g b where Col.RGB {Col.channelRed = r, Col.channelGreen = g, Col.channelBlue = b} = toSRGB c
 
 -- | Sets ortho2D to draw 2D normalized points in a right handed 3D system (x from -1 (left) to +1 (right) and y from -1 (bottom) to +1 (top)).
 pointCoordinates :: Size -> IO()

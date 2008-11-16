@@ -1,7 +1,8 @@
 ALL = brush foldimage \
       scale sift benchmark \
       salience salience2 \
-      tracks hotpoints segments
+      tracks hotpoints segments \
+      capturepoly
 
 EASYVISION = ../..
 

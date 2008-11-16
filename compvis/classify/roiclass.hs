@@ -11,7 +11,6 @@ import EasyVision
 import Graphics.UI.GLUT hiding (histogram)
 import Control.Monad(when)
 import System(getArgs)
-import Data.Colour.SRGB
 import qualified Data.Colour.Names as Col
 import Numeric.LinearAlgebra
 import Classifier
@@ -107,5 +106,3 @@ overROI (feat, sel) (r, obj) = feat (modifyROI (const r) (sel obj))
 features fs x = join $ map (flip overROI x) fs
 
 histov l = vector . map fromIntegral . histogram l
-
-setColor' c = setColor r g b where (r,g,b) = toSRGB c
