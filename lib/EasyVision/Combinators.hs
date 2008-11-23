@@ -111,15 +111,15 @@ grabAll grab = do
     return (im:rest)
 
 -- | Creates a virtual camera by some desired processing of the infinite list of images produced by another camera.
-virtualCamera :: ([a]-> IO [b]) -> IO a -> IO (IO b)
-virtualCamera filt grab = grabAll grab >>= filt >>= createGrab
+virtualCamera :: ([a]-> [b]) -> IO a -> IO (IO b)
+virtualCamera filt grab = filt `fmap` grabAll grab >>= createGrab
 
 
 --------------------------------------------------------------------------
 
 -- | Motion detector with a desired condition on the absolute pixel difference in the roi of two consecutive images (computed with help of 'addSmall').
 detectMotion :: (Double -> Bool) -> IO (ImageYUV, ImageGray) -> IO (IO (ImageYUV, ImageGray))
-detectMotion cond = virtualCamera (return . detectMov' cond)
+detectMotion cond = virtualCamera (detectMov' cond)
 
 detectMov' cond ((a,f):(b,g):t) =
     if cond (absdif f g)
@@ -141,7 +141,7 @@ temporalEnvironment :: ([p] -> x) -- ^ function to apply to the temporal envirom
                     -> Int        -- ^ number of frames in the future
                     -> IO (a,p)   -- ^ source camera
                     -> IO (IO (a, x)) -- ^ result
-temporalEnvironment g past future = virtualCamera (return . f) where
+temporalEnvironment g past future = virtualCamera f where
     f = map (adjust . unzip) . slidingGroup time
     time = past + future + 1
     adjust (cams, env)  = (cams!!past, g env)
@@ -150,7 +150,7 @@ temporalEnvironment g past future = virtualCamera (return . f) where
 ----------------------------------------------------------
 -- Detector of static frames
 
-addDiff = virtualCamera (return . auxDif)
+addDiff = virtualCamera auxDif
     where auxDif ((a,f):(b,g):t) = (a, nrm (size f) $ absdif f g) : auxDif ((b,g):t)
           nrm (Size r w) = (/n) where n = fromIntegral (r*w*255)
 
@@ -167,7 +167,7 @@ auxStatic th SDSWaitUp x | last x > 5*th = SDSWaitDown
 auxStatic th SDSWaitDown x | maximum x < th = SDSGetIt
                            | otherwise      = SDSWaitDown
 
-addSDS th = virtualCamera (return . f SDSWaitUp)
+addSDS th = virtualCamera (f SDSWaitUp)
     where f st ((c,p):rest) = (c,(p,st')) : f st' rest
                where st' = auxStatic th st p
 
@@ -198,7 +198,7 @@ detectStatic th nframes =
     >=> temporalEnvironment id nframes 0
     >=> addSDS th
     >=> monitorizeIn "temp env" (mpSize 10) (monitorStatic th)
-    >=> virtualCamera (return . getIt)
+    >=> virtualCamera getIt
 
 ---
 

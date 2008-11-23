@@ -3,7 +3,7 @@
 import EasyVision
 import Text.Printf(printf)
 
-drift alpha = virtualCamera (return . drifter)
+drift alpha = virtualCamera drifter
     where drifter (a:b:rest) = a : drifter ((alpha .* a |+| (1-alpha).* b):rest)
 
 main = do
@@ -19,7 +19,7 @@ main = do
            >>= monitorizeIn "video" (mpSize 5) drawImage
            >>= withChannels
            >>= onlyRectangles szR ratio gray
-           >>= virtualCamera (return . map float . concat)
+           >>= virtualCamera (map float . concat)
            >>= drift alpha
 
     w <- evWindow () nm sz Nothing (const $ kbdQuit)

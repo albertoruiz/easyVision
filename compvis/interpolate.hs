@@ -4,10 +4,10 @@ import EasyVision
 
 -----------------------------------------------------------
 
-interpolate = virtualCamera (return . inter)
+interpolate = virtualCamera inter
     where inter (a:b:rest) = a: (0.5.*a |+| 0.5.*b) :inter (b:rest)
 
-drift alpha = virtualCamera (return . drifter)
+drift alpha = virtualCamera drifter
     where drifter (a:b:rest) = a : drifter ((alpha .* a |+| (1-alpha).* b):rest)
 
 asFloat grab = return $ return . float . yuvToGray =<< grab

@@ -31,7 +31,7 @@ feat2 = vector . dw . histogramN [0..10] . hsvCode 80 85 175 . hsv
 dw (g:b:w:cs) = b:cs -- remove white
 
 onlyCards sz = onlyRectangles sz (sqrt 2) rgb
-               >=> virtualCamera (return . map channelsFromRGB . concat)
+               >=> virtualCamera (map channelsFromRGB . concat)
 
 main = do
     sz <- findSize

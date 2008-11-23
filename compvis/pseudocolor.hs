@@ -2,7 +2,7 @@ import EasyVision
 import Control.Monad((>=>))
 
 onlyCards sz = onlyRectangles sz (sqrt 2) rgb
-               >=> virtualCamera (return . map channelsFromRGB . concat)
+               >=> virtualCamera (map channelsFromRGB . concat)
 
 main = do
     sz <- findSize
