@@ -41,22 +41,23 @@ norm x = pnorm PNorm2 x
 -- | Minimum squares solution of a (possibly overconstrained) homogeneous linear system.
 --   (We assume that the solution is 1D).
 homogSystem :: [[Double]]    -- ^ elements in the coefficient matrix
-            -> Vector Double -- ^ Solution
-homogSystem coeffs = sol where
+            -> (Vector Double, Double) -- ^ (Solution, error)
+homogSystem coeffs = (sol,err) where
     r = length coeffs
     c = length (head coeffs)
     mat | r >= c   = matrix coeffs
         | r == c-1 = matrix (head coeffs : coeffs)
         | otherwise = error "homogSystem with rows<cols-1"
-    (_,_,v) = svd mat
+    (_,s,v) = svd mat
     sol = flatten $ dropColumns (c-1) v
+    err = s @> (c-1)
 
 -- FIXME: use a list of tuples insted of two arguments
 -- | estimates a homography using the basic linear method
 estimateHomographyRaw :: [[Double]] -> [[Double]] -> Matrix Double
 estimateHomographyRaw dest orig = h where
     eqs = concat (zipWith eq dest orig)
-    h = reshape 3 $ homogSystem eqs
+    h = reshape 3 $ fst $ homogSystem eqs
     eq [bx,by] [ax,ay] = 
         [[  0,  0,  0,t14,t15,t16,t17,t18,t19],
          [t21,t22,t23,  0,  0,  0,t27,t28,t29],

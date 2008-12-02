@@ -55,7 +55,7 @@ norm x = pnorm PNorm2 x
 
 estimateFundamentalRaw :: [[Double]] -> [[Double]] -> Matrix Double
 estimateFundamentalRaw l r = f where
-    f = reshape 3 $ homogSystem eqs
+    f = reshape 3 $ fst $ homogSystem eqs
     eqs = zipWith eq l r
     eq [xl, yl] [xr, yr] = [xl*xr, xl*yr, xl, xr*yl, yl*yr, yl, xr, yr, 1.0]
 

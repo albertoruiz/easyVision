@@ -275,7 +275,7 @@ factorizeCamera m = (normat3 k, signum (det r) `scale` r ,c) where
 
 estimateCameraRaw image world = h where
     eqs = concat (zipWith eq image world)
-    h = reshape 4 $ homogSystem eqs
+    h = reshape 4 $ fst $ homogSystem eqs
     eq [bx,by] [ax,ay,az] = 
         [[  0,  0,  0,  0,t15,t16,t17,t18,t19,t110,t111,t112],
          [t21,t22,t23,t24,  0,  0,  0,  0,t29,t210,t211,t212],
