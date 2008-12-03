@@ -10,6 +10,7 @@ import Vision.Estimation(homogSystem)
 import Control.Monad(when)
 import Data.List(sortBy)
 import Vision.Geometry
+import Numeric.GSL.Polynomials
 
 ------------------------------------------------------------
 
@@ -24,7 +25,7 @@ main = do
     o <- createParameters [("threshold",intParam 128 1 255),
                            ("area",percent 5),
                            ("tolerance",percent 10),
-                           ("fracpix",realParam (1.5) 0 10)]
+                           ("fracpix",realParam (0.8) 0 10)]
 
     w <- evWindow () "Ellipses" sz Nothing (const (kbdcam ctrl))
 
@@ -58,13 +59,29 @@ worker w cam param = do
         mapM_ shcont candidates
         setColor' Col.red
         lineWidth $= 3
-        mapM_ (shcont . Closed . showConic) ellipses
+        mapM_ (disppl . conicPoints) ellipses
         when (length ellipses >= 1) $ do
-            let w = scaling 0.2 <> whitenEllipse (head ellipses)
+            let w = whitenEllipse (head ellipses)
             lineWidth $= 1
-            setColor' Col.blue
-            mapM_ (dispConic w) ellipses
-
+            --setColor' Col.gray
+            --mapM_ (disppl. ht w. conicPoints) ellipses
+            when (length ellipses >= 2) $ do
+                let (mx,my,_,_,a) = analyzeConic $ Closed $ map l2p $ ht w $ conicPoints $ ellipses !! 1
+                    w2 = chooseRot mx my a
+                setColor' Col.green
+                mapM_ (disppl. ht (scaling 0.2<>w2<>w). conicPoints) ellipses
+                let coeffs = getCoeffs $ fst $ estimateConicRaw $ map l2p $ ht (w2<>w) $ conicPoints $ ellipses !! 1
+                let coeffs' = (-1,-16,8,11/4)
+                let sol = htc (comp $ inv (w2<>w)) $ intersectionReduced coeffs
+--                 mapM_ print $ sol
+--                 let f (x,y) = x^2+y^2-1
+--                     k x = x:+0
+--                     g (a,b,e,f) (x,y) = k a*x^2 + k b*y^2 + x + k e*y + k f
+--                 print $ sum $ map (magnitude.g coeffs) sol
+--                 putStrLn "---------------------"
+                let omega = getOmega sol
+                setColor' Col.blue
+                mapM_ shLine omega
 
 fst3 (a,_,_) = a
 
@@ -101,12 +118,12 @@ estimateConicRaw ps = (con,err) where
     eqs = map eq ps
     eq (Point x y) = [x*x, y*y, x*y, x, y, 1.0]
 
-showConic (mx,my,d1,d2,a) = xs where
-    xs = map pt ts
-    ts = tail $ toList $ linspace 30 (0,2*pi)
-    pt t = Point (mx + x*cos a - y*sin a) (my + x*sin a + y*cos a)
-        where x = d1*cos t
-              y = d2*sin t
+getCoeffs m' = (a,b,e,f) where
+    m = m' */ m' @@> (0,2)
+    a = m @@> (0,0)
+    b = m @@> (1,1)
+    f = m @@> (2,2)
+    e = m @@> (1,2)
 
 analyzeConic (Closed ps) = (mx,my,d1,d2,a) where
     (mx,my,cxx,cyy,cxy) = momentsContour ps
@@ -118,6 +135,54 @@ areaConic (_,_,d1,d2,_) = pi*d1*d2
 
 whitenEllipse (mx,my,d1,d2,a) = diag (fromList [1/d1,1/d2,1]) <> rot3 (a) <> desp (-mx,-my)
 
+disppl l = renderPrimitive LineLoop $ mapM_ vertex l
 
+conicPoints (mx,my,d1,d2,a) = xs where
+    xs = map pt ts
+    ts = tail $ toList $ linspace 50 (0,2*pi)
+    pt t = [mx + x*cos a - y*sin a, my + x*sin a + y*cos a]
+        where x = d1*cos t
+              y = d2*sin t
 
-dispConic w c = renderPrimitive LineLoop $ mapM_ vertex $ ht w $ map (\(Point x y) -> [x,y]) (showConic c)
+chooseRot mx my a = w where
+    v = fromList [mx,my,1]
+    [mx',my',_] = toList $ rot3 a <> v
+    w = if abs mx' > abs my'
+        then rot3 a
+        else rot3 (a+pi/2)
+
+htp h (Closed c) = Closed . map l2p . ht h . map p2l $ c
+p2l (Point x y) = [x,y]
+l2p [x,y] = Point x y
+
+coefs (a,b,e,f) =
+    [ -1 + a*a + 2*a*f + f*f
+    , 2*a*e + 2*e*f
+    , 1 - 2*a*a + 2*a*b + e*e - 2*a*f + 2*b*f 
+    , -2*a*e + 2*b*e
+    , a*a - 2*a*b + b*b]
+
+thex (a',b',e',f') y = -a-f - e*y + (a-b)*y*y
+    where a = a':+0
+          b = b':+0
+          e = e':+0
+          f = f':+0
+
+intersectionReduced prob = map sol (polySolve (coefs prob)) where
+    sol y = [x,y] where x = thex prob y
+
+getOmega pts = map linf pts where
+    linf [x,y] = toList $ unitary $ snd $ fromComplex $ crossc v (conj v)
+        where v = fromList [x,y,1]
+
+asMatC v = fromLists [[ 0,-c, b],
+                      [ c, 0,-a],
+                      [-b, a, 0]]
+    where a = v@>0
+          b = v@>1
+          c = v@>2
+
+crossc a b = asMatC a <> b
+
+shLine [a,b,c] = renderPrimitive Lines $ mapM f [-1,1]
+    where f x = vertex $ Point x ((-a*x-c)/b)
