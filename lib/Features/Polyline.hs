@@ -20,6 +20,7 @@ module Features.Polyline (
     orientation,
     whitenContour, whitener,
     fourierPL,
+    norm2Cont,
 -- * Reduction
     douglasPeucker, douglasPeuckerClosed,
     selectPolygons,
@@ -334,6 +335,17 @@ prepareFourierPL c = (zs,ts,cs,ds,hs) where
     cs = zipWith3 f bBs (tail (cycle ts)) aAs
         where f b t a = b + t*a
 
+--------------------------------------------------------------------------------
+-- | The average squared distance to the origin, assuming a parameterization between 0 and 1.
+-- | it is the same as sum [magnitude (f k) ^2 | k <- [- n .. n]] where n is sufficiently large
+-- | and f = fourierPL contour
+norm2Cont :: Polyline -> Double
+norm2Cont c@(Closed ps) = 1/3/perimeter c * go (ps++[head ps]) where
+    go [_] = 0
+    go (a@(Point x1 y1) : b@(Point x2 y2) : rest) =
+        distPoints a b *
+        (x1*x1 + x2*x2 + x1*x2 + y1*y1 + y2*y2 + y1*y2)
+        + go (b:rest)
 --------------------------------------------------------------------------------
 
 longestSegments k poly = filter ok ss
