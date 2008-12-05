@@ -50,7 +50,7 @@ homogSystem coeffs = (sol,err) where
         | otherwise = error "homogSystem with rows<cols-1"
     (_,s,v) = svd mat
     sol = flatten $ dropColumns (c-1) v
-    err = s @> (c-1)
+    err = s @> (c-1) / (sum $ toList s)
 
 -- FIXME: use a list of tuples insted of two arguments
 -- | estimates a homography using the basic linear method

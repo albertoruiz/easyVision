@@ -25,20 +25,23 @@ main = do
     o <- createParameters [("threshold",intParam 128 1 255),
                            ("area",percent 5),
                            ("tolerance",percent 10),
-                           ("fracpix",realParam (0.8) 0 10)]
+                           ("fracpix",realParam 0.8 0 10),
+                           ("scale", realParam 0.3 0 5)]
 
-    w <- evWindow () "Ellipses" sz Nothing (const (kbdcam ctrl))
+    w  <- evWindow () "Ellipses" sz Nothing (const (kbdcam ctrl))
+    wr <- evWindow () "Rectif"   sz Nothing (const (kbdcam ctrl))
 
-    launch (worker w cam o)
+    launch (worker w wr cam o)
 
 -----------------------------------------------------------------
 
-worker w cam param = do
+worker w wr cam param = do
 
     th2 <- fromIntegral `fmap` (getParam param "threshold" ::IO Int)
     area <- getParam param "area"
     fracpix <- getParam param "fracpix"
     tol <- getParam param "tolerance"
+    sc  <- getParam param "scale"
 
     orig <- cam
 
@@ -79,9 +82,33 @@ worker w cam param = do
 --                     g (a,b,e,f) (x,y) = k a*x^2 + k b*y^2 + x + k e*y + k f
 --                 print $ sum $ map (magnitude.g coeffs) sol
 --                 putStrLn "---------------------"
-                let omega = getOmega sol
+                let (ij,other) = selectSol (ellipses!!0) (ellipses!!1) sol
+                let [h1,h2] = getHorizs [ij,other]
                 setColor' Col.blue
-                mapM_ shLine omega
+                shLine h1
+                setColor' Col.yellow
+                shLine h2
+                let cir = fromList $ ij++[1]
+                    omega = fst $ fromComplex $ cir `outer` conj cir + conj cir `outer` cir
+                    (s,u) = eigSH omega -- positive definite by construction
+--                 print $ normat3 $ omega
+--                 print $ normat3 $ u <> diag s <> trans u
+--                 print $ v - trans u
+--                 print s
+                let [a,b,_] = toList s
+                    t = trans $ diagl [sqrt a, sqrt b, 1] <> trans u
+                --inWin wr $ drawImage $ warp 0 (size $ gray orig) (scaling 0.2 <> w) (gray orig)
+--                 print $ pnorm PNorm2 $ (normat3 $ t <> diagl [1,1,0] <> trans t) - (normat3 omega)
+                let rec' = diagl [1,-1,1] <> inv t
+                    (mx,my,_,_,_) = ellipses!!0
+                    [[dx,dy]] = ht rec' [[mx,my]]
+                    rec = desp (-dx,-dy) <> rec'
+                    (mx2,my2,_,_,_) = ellipses!!1
+                    [d@[a,b]] = ht rec [[mx2,my2]]
+                    s = pnorm PNorm2 (fromList d)
+                    ang = atan2 b a + pi
+                inWin wr $ drawImage $ warp (0,0,0) (size $ gray orig) (scaling (sc/s) <> rot3 ang <> rec) (rgb orig)
+
 
 fst3 (a,_,_) = a
 
@@ -94,7 +121,7 @@ shcontP (Closed c) = do
     pointSize $= 5
     renderPrimitive Points $ vertex (head c)
 
-isEllipse' tol (Closed ps) = s/k < fromIntegral (tol::Int)/200000
+isEllipse' tol (Closed ps) = s/k < fromIntegral (tol::Int)/2000000
     where (con,s) = estimateConicRaw ps
           [a,b,f] = toList $ takeDiag con
           k = (sqrt (abs (a/f)) + sqrt (abs (b/f))) * fromIntegral (length ps)
@@ -155,6 +182,8 @@ htp h (Closed c) = Closed . map l2p . ht h . map p2l $ c
 p2l (Point x y) = [x,y]
 l2p [x,y] = Point x y
 
+diagl = diag . fromList
+
 coefs (a,b,e,f) =
     [ -1 + a*a + 2*a*f + f*f
     , 2*a*e + 2*e*f
@@ -171,7 +200,7 @@ thex (a',b',e',f') y = -a-f - e*y + (a-b)*y*y
 intersectionReduced prob = map sol (polySolve (coefs prob)) where
     sol y = [x,y] where x = thex prob y
 
-getOmega pts = map linf pts where
+getHorizs pts = map linf pts where
     linf [x,y] = toList $ unitary $ snd $ fromComplex $ crossc v (conj v)
         where v = fromList [x,y,1]
 
@@ -186,3 +215,9 @@ crossc a b = asMatC a <> b
 
 shLine [a,b,c] = renderPrimitive Lines $ mapM f [-1,1]
     where f x = vertex $ Point x ((-a*x-c)/b)
+
+selectSol (x1,y1,_,_,_) (x2,y2,_,_,_) pts = (ij,other) where
+    ls = getHorizs pts
+    ij    = head [v | (v,l) <- zip pts ls, f l (x1,y1) * f l (x2,y2) > 0 ]
+    other = head [v | (v,l) <- zip pts ls, f l (x1,y1) * f l (x2,y2) < 0 ]
+    f [a,b,c] (x,y) = a*x + b*y + c
