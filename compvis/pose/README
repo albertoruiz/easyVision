@@ -18,3 +18,5 @@ pose estimation and tracking
 - poseTracker: demo of camera pose estimation using ukf
 
 - multipose: multicamera calibration using a planar reference
+
+- ellipses: metric rectification of a planar scene from the images of two or more circles

@@ -1,4 +1,4 @@
--- ellipse detection and rectification from circles
+-- ellipse detection and similar rectification from the images of circles
 
 import EasyVision
 import Graphics.UI.GLUT hiding (RGB,Size,minmax,histogram,Point,set,Matrix)
@@ -10,6 +10,7 @@ import Vision.Estimation(homogSystem)
 import Control.Monad(when)
 import Data.List(sortBy)
 import Vision.Geometry
+import Vision.Camera
 import Numeric.GSL.Polynomials
 
 ------------------------------------------------------------
@@ -88,6 +89,9 @@ worker w wr cam param = do
                 shLine h1
                 setColor' Col.yellow
                 shLine h2
+                pointSize $= 5
+                setColor' Col.purple
+                renderPrimitive Points $ mapM (vertex.map realPart) [ij,other]
                 let cir = fromList $ ij++[1]
                     omega = fst $ fromComplex $ cir `outer` conj cir + conj cir `outer` cir
                     (s,u) = eigSH omega -- positive definite by construction
@@ -107,7 +111,10 @@ worker w wr cam param = do
                     [d@[a,b]] = ht rec [[mx2,my2]]
                     s = pnorm PNorm2 (fromList d)
                     ang = atan2 b a + pi
-                inWin wr $ drawImage $ warp (0,0,0) (size $ gray orig) (scaling (sc/s) <> rot3 ang <> rec) (rgb orig)
+                inWin wr $ do
+                    drawImage $ warp (0,0,0) (size $ gray orig) (scaling (sc/s) <> rot3 ang <> rec) (rgb orig)
+                    text2D 30 30 $ show $ focalFromHomogZ0 t
+                    -- it is also encoded in the circular points
 
 
 fst3 (a,_,_) = a
@@ -201,17 +208,8 @@ intersectionReduced prob = map sol (polySolve (coefs prob)) where
     sol y = [x,y] where x = thex prob y
 
 getHorizs pts = map linf pts where
-    linf [x,y] = toList $ unitary $ snd $ fromComplex $ crossc v (conj v)
+    linf [x,y] = toList $ unitary $ snd $ fromComplex $ cross v (conj v)
         where v = fromList [x,y,1]
-
-asMatC v = fromLists [[ 0,-c, b],
-                      [ c, 0,-a],
-                      [-b, a, 0]]
-    where a = v@>0
-          b = v@>1
-          c = v@>2
-
-crossc a b = asMatC a <> b
 
 shLine [a,b,c] = renderPrimitive Lines $ mapM f [-1,1]
     where f x = vertex $ Point x ((-a*x-c)/b)

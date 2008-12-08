@@ -142,16 +142,16 @@ degree :: Double
 degree = pi / 180
 
 -- | 3x3 antisymmetric matrix
-asMat :: Vector Double -> Matrix Double
-asMat v = matrix [[ 0,-c, b],
-                  [ c, 0,-a],
-                  [-b, a, 0]]
+asMat :: Field a => Vector a -> Matrix a
+asMat v = (3><3) [ 0,-c, b,
+                   c, 0,-a,
+                  -b, a, 0]
     where a = v@>0
           b = v@>1
           c = v@>2
 
 -- | vector cross product
-cross :: Vector Double -> Vector Double -> Vector Double
+cross :: Field a => Vector a -> Vector a -> Vector a
 cross a b = asMat a <> b
 
 -- | obtains a normalized version of a homogeneous matrix dividing by the bottom-right element.
