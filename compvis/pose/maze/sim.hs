@@ -29,7 +29,7 @@ import Data.Maybe
 import Data.IORef
 import Control.Concurrent
 import Control.Monad
-import Control.Exception
+import Control.OldException
 import ExtractQuads
 import Quaternion
 import ImagProc.C.Burns

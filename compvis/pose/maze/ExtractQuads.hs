@@ -13,7 +13,7 @@ import Vision.Geometry
 import Numeric.LinearAlgebra
 import ImagProc.Ipp
 import ImagProc
---import Polyline
+import Features.Polyline
 import Queue
 
 type Segments = Array Int Segment
