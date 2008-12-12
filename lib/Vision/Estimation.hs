@@ -32,6 +32,8 @@ import Data.List(transpose,nub,maximumBy,genericLength,elemIndex)
 import System.Random 
 import Debug.Trace(trace)
 
+debug x = trace (show x) x
+
 matrix = fromLists :: [[Double]] -> Matrix Double
 vector = fromList ::  [Double] -> Vector Double
 
@@ -50,7 +52,7 @@ homogSystem coeffs = (sol,err) where
         | otherwise = error "homogSystem with rows<cols-1"
     (_,s,v) = svd mat
     sol = flatten $ dropColumns (c-1) v
-    err = s @> (c-1) / (sum $ toList s)
+    err = s @> (c-1)
 
 -- FIXME: use a list of tuples insted of two arguments
 -- | estimates a homography using the basic linear method

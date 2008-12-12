@@ -30,7 +30,9 @@ main = do
                            ("sigma1",realParam 6 0.1 10),
                            ("sigma2",realParam 6 0.1 20),
                            ("thres",realParam 0.4 0 1),
-                           ("what",intParam 0 0 3)]
+                           ("what",intParam 0 0 5),
+                           ("satur",realParam 3 1 5)
+                           ]
 
 #define PAR(S) S <- getParam o "S"
 
@@ -41,6 +43,7 @@ main = do
         PAR(sigma2)
         PAR(what) :: IO Int
         PAR(rad)
+        PAR(satur)
 
         let imgs = float . gray $ orig
 
@@ -72,6 +75,9 @@ main = do
                         setColor 1 0 0
                         when (not (null pts)) $ do
                             renderPrimitive Points (mapM_ vertex (pixelsToPoints sz pts))
+                4 -> drawImage (autosc satur img |*| imgs)
+                5 -> drawImage (imgs |-| autosc satur img |*| imgs |+| 
+                                autosc satur img |*| gaussS 6 imgs)
 
 fst3 (a,_,_) = a
 
@@ -82,5 +88,7 @@ autoscale im = f im
     where (mn,mx) = minmax im
           f = if mn == mx then scale32f8u 0 1 else scale32f8u mn mx
 
+autosc k im = thresholdVal32f 1 1 IppCmpGreater $ (k/mx) .* im where
+    (_,mx) = minmax im
 
 binarize32f th = thresholdVal32f th 1 IppCmpGreater . thresholdVal32f th 0 IppCmpLess
