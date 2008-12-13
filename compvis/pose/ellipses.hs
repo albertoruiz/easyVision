@@ -1,6 +1,6 @@
 -- ellipse detection and similar rectification from the images of circles
 
-import EasyVision
+import EasyVision hiding ((.*))
 import Graphics.UI.GLUT hiding (RGB,Size,minmax,histogram,Point,set,Matrix)
 import qualified Data.Colour.Names as Col
 import Numeric.GSL.Fourier
@@ -30,13 +30,11 @@ main = do
                            ("area",percent 5),
                            ("tolerance",percent 10),
                            ("fracpix",realParam 0.8 0 10),
-                           ("scale", realParam 1 0 5)]
+                           ("scale", realParam 1 0 5),
+                           ("method", intParam 1 1 3)]
 
     w  <- evWindow () "Ellipses" sz  Nothing (const (kbdcam ctrl))
     wr <- evWindow () "Rectif"   sz' Nothing (const (kbdcam ctrl))
-
---     mapM_ print [(k,foudebug k) | k <- [-5..5]]
---     error "fin"
 
     launch (worker w wr cam o)
 
@@ -49,6 +47,7 @@ worker w wr cam param = do
     fracpix <- getParam param "fracpix"
     tol <- getParam param "tolerance"
     sc  <- getParam param "scale"
+    method  <- getParam param "method" :: IO Int
 
     orig <- cam
 
@@ -63,23 +62,35 @@ worker w wr cam param = do
             candidates = cs1++cs2 -- ++[control]
             rawellipses = filter (isEllipse tol) candidates
             ellipses = sortBy (compare `on` (negate.areaConic)) $ map analyzeConic rawellipses
-
+            okellipses = sortBy (compare `on` (negate.perimeter)) rawellipses
+            est (Closed ps) = fst $ estimateConicRaw ps
+            okellip = map est okellipses
         pointCoordinates (size $ gray orig)
-        setColor' Col.yellow
         lineWidth $= 1
+        setColor' Col.yellow
         mapM_ shcont candidates
         setColor' Col.red
         lineWidth $= 3
-        mapM_ (disppl . conicPoints) ellipses
+        --mapM_ (disppl . conicPoints) ellipses
+        mapM_ (disppl . conicPoints. fst .analyzeEllipse) okellip
+        mapM_ (disppl . conicMajor. fst . analyzeEllipse) okellip
+        lineWidth $= 1
+        setColor' Col.gray
+        mapM_ shcont okellipses
         when (length ellipses >= 2) $ do
-            let (w,coeffs) = reduceConics (ellipses!!0) (ellipses!!1)
-                coeffs' = (-1,-16,8,11/4)
+            -- print $ analyzeEllipse (head $ okellip)
+            let (w, coeffs) = case method of
+                    1 -> reduceConics (okellip!!0) (okellip!!1)
+                    2 -> reduceConics' (okellip!!0) (okellip!!1)
+                    3 -> reduceConicsEmpirical (ellipses!!0) (ellipses!!1)
+                -- coeffs' = (-1,-16,8,11/4)
                 sol = htc (comp $ inv w) $ intersectionReduced coeffs
                 (ij,other) = selectSol (ellipses!!0) (ellipses!!1) sol
                 [h1,h2] = getHorizs [ij,other]
-            --lineWidth $= 1
-            --setColor' Col.green
-            --mapM_ (disppl. ht (scaling 0.2<>w). conicPoints) ellipses
+            lineWidth $= 1
+            setColor' Col.green
+            mapM_ (disppl. ht (scaling 0.2<>w). conicPoints) ellipses
+            --print sol'
             setColor' Col.blue
             shLine h1
             setColor' Col.yellow
@@ -156,6 +167,9 @@ conicPoints (mx,my,d1,d2,a) = xs where
         where x = d1*cos t
               y = d2*sin t
 
+conicMajor (mx,my,d1,d2,a) = 
+    [[mx,my],[mx+d1*cos a,my+d1*sin a]]
+
 chooseRot mx my a = w where
     v = fromList [mx,my,1]
     [mx',my',_] = toList $ rot3 a <> v
@@ -180,8 +194,59 @@ similarFrom2Points [ax,ay] [bx,by] [a'x,a'y] [b'x,b'y] = t where
     t = rot3 (-ang) <> scaling s <> desp (dx,dy)
 
 -------------------------------------------------------------------
+
+mt m = trans (inv m)
+
+analyzeEllipse m = ((mx,my,dx,dy,alpha),t) where
+    a = m@@>(0,0)
+    b = m@@>(1,1)
+    c = m@@>(0,1)
+    phi = 0.5 * atan2 (2*c) (b-a)
+    t1 = rot3 (-phi)
+    m1 = t1 <> m <> trans t1
+    a' = m1@@>(0,0)
+    b' = m1@@>(1,1)
+    t2 = diagl [sqrt (a'/b'), 1,1]
+    m2' = mt t2 <> m1 <> inv t2
+    m2 = m2' */ m2'@@>(0,0)
+    d'' = m2@@>(0,2)
+    e'' = m2@@>(1,2)
+    f'' = m2@@>(2,2)
+    sc  = sqrt (d''^2 + e''^2 - f'')
+    t3 = scaling (1/sc) <> desp (d'',e'')
+    t = t3 <> t2 <> t1
+    m3 = mt t <> m <> inv t
+    [mx,my,_] = toList (inv t <> fromList [0,0,1])
+    [sx,sy,_] = toList $ sc .* (1 / takeDiag t2)
+    (dx,dy,alpha) = if sx > sy
+        then (sx,sy,-phi)
+        else (sy,sx,-phi-pi/2)
+
 -- moves two ellipses to reduced form for easy intersection
-reduceConics ell1 ell2 = (w, coeffs) where
+reduceConics c1 c2 = (w, coeffs) where
+    w1 = snd $ analyzeEllipse c1
+    (mx,my,_,_,a) = fst $ analyzeEllipse (mt w1 <> c2 <> inv w1)
+    w2 = chooseRot mx my a
+    w = w2 <> w1
+    coeffs = getCoeffs (mt w <> c2 <> inv w)
+
+
+reduceConics' c1 c2 = (trans $ inv w, coeffs) where
+    (s,v) = eigSH c1
+    sg = signum s
+    t1 = p <> diag (sg / sqrt (abs s)) <> trans v
+    c2' = t1 <> c2 <> trans t1
+    a = c2'@@>(0,0)
+    b = c2'@@>(1,1)
+    c = c2'@@>(0,1)
+    phi = 0.5 * atan2 (2*c) (b-a)
+    t2 = rot3 (-phi)
+    c2'' = t2 <> c2' <> trans t2
+    w = t2 <> t1
+    coeffs = getCoeffs c2''
+    p = (if sg@>1 < 0 then flipud else id) (ident 3)
+
+reduceConicsEmpirical ell1 ell2 = (w, coeffs) where
     w1 = whitenEllipse ell1
     (mx,my,_,_,a) = analyzeConic $ Closed $ map l2p $ ht w1 $ conicPoints $ ell2
     w2 = chooseRot mx my a
@@ -255,8 +320,5 @@ orthoTest [x,y] = innerLines n0 h where
 
 innerLines l m = (l.*.m)/ sqrt (l.*.l) / sqrt(m.*.m)
     where a.*.b = a <> mS <.> b
-
-debugpoly = Closed [Point 0 0, Point 1 0, Point 1 1, Point 0 1]
-foudebug = fourierPL debugpoly
 
 control = Closed [Point (0.5+0.4*cos t) (0.5+0.1*sin t) | t <- tail $ toList (linspace 20 (0,2*pi))]
