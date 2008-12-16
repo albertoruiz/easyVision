@@ -31,6 +31,10 @@ module Vision.Camera
 , toCameraSystem
 , estimateCamera
 , estimateCameraRaw
+, rectifierFromCircularPoint
+, rectifierFromDualConic
+, focalFromCircularPoint
+, circularConsistency
 ) where
 
 import Numeric.LinearAlgebra hiding (Matrix, Vector)
@@ -50,6 +54,7 @@ type Vector = LA.Vector Double
 
 matrix = fromLists :: [[Double]] -> Matrix
 vector = fromList ::  [Double] -> Vector
+diagl = diag . vector
 
 norm x = pnorm PNorm2 x
 
@@ -346,3 +351,37 @@ refineCamera2 prec nmax cam mview mworld = (betterCam,path) where
 
 list2par [f,p,t,r,cx,cy,cz] = CamPar f p t r (cx,cy,cz)
 par2list (CamPar f p t r (cx,cy,cz)) = [f,p,t,r,cx,cy,cz]
+
+----------------------------------------------------------
+
+-- Metric rectification tools
+
+rectifierFromCircularPoint :: (Complex Double, Complex Double) -> Matrix
+rectifierFromCircularPoint (x,y) = rectifierFromDualConic omega where
+    cir = fromList [x,y,1]
+    omega = fst $ fromComplex $ cir `outer` conj cir + conj cir `outer` cir
+
+rectifierFromDualConic :: Matrix -> Matrix
+rectifierFromDualConic omega = inv t where
+    (s,u) = eigSH omega -- positive definite by construction
+    [a,b,_] = toList s
+    t = trans $ diagl [sqrt a, sqrt b, 1] <> trans u
+    -- 0 =~= norm $ (normat3 $ t <> diagl [1,1,0] <> trans t) - (normat3 omega)
+
+focalFromCircularPoint :: (Complex Double,Complex Double) -> Double
+focalFromCircularPoint (cx,cy) = x * sqrt (1-(y/x)^2) where
+    j' = fromList [cx,cy]
+    pn = fst $ fromComplex j'
+    x = norm (complex pn - j')
+    y = norm pn
+    -- alpha = asin (y/x)
+
+-- | Consistency with diag(f,f,1) camera.
+circularConsistency :: (Complex Double, Complex Double) -> Double
+circularConsistency (x,y) = innerLines n0 h where
+    n0 = fromList[realPart x, realPart y, 1] `cross` fromList[0,0,1]
+    h = snd $ fromComplex $ cross jh (conj jh)
+    jh = fromList [x,y,1]
+
+innerLines l m = (l.*.m)/ sqrt (l.*.l) / sqrt(m.*.m)
+    where a.*.b = a <> mS <.> b
