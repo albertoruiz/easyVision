@@ -42,7 +42,7 @@ main = do
     attachMenu LeftButton $ Menu $ map mode
         ["RGB","Gray","Red","Green","Blue","H","S"
         , "Median","Gaussian","NGaussian1","FilterBox","FilterMax","Box vs Gauss","Laplacian","HighPass","Histogram"
-        ,"Integral","RecStdDev","Threshold","FloodFill","Contours","ContourD","Distance", "Distance2", "Hessian"
+        ,"Integral","RecStdDev","Threshold","OtsuThres","FloodFill","Contours","ContourD","Distance", "Distance2", "Hessian"
         ,"Corners", "InterestPts", "Segments", "Canny", "DCT", "FFT", "LBP"]
 
     fft <- genFFT 8 8 DivFwdByN AlgHintFast
@@ -96,6 +96,7 @@ worker wDemo cam param fft = do
             "HighPass" -> drawImage $ highPass8u Mask5x5 $ smooth `times` median Mask5x5 $ chan gray
 
             "Threshold" -> drawImage $ binarize8u th2 True $ chan gray
+            "OtsuThres" -> drawImage $ binarize8u (otsuThreshold $ chan gray) True $ chan gray
 
             "Laplacian"-> drawImage $ scale32f8u (-1) 1
                                     . laplace Mask5x5

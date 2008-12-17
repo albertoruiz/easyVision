@@ -352,6 +352,15 @@ sum32f (F im) = unsafePerformIO $ do
     free pf
     return r
 
+-- | Computes the Otsu threshold of a 8u image, useful for binarization
+otsuThreshold :: ImageGray -> CUChar
+otsuThreshold (G im) = unsafePerformIO $ do
+    pf <- malloc
+    (ippiComputeThreshold_Otsu_8u_C1R // dst im (vroi im)) pf // checkIPP "otsuThreshold" [im]
+    r <- peek pf
+    free pf
+    return r
+
 ---------------------------------------------------------
 
 -- | Discrete cosine transform of a 32f image.
