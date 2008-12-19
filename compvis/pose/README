@@ -20,3 +20,5 @@ pose estimation and tracking
 - multipose: multicamera calibration using a planar reference
 
 - ellipses: metric rectification of a planar scene from the images of two or more circles
+
+- rightAngles: metric rectification of a planar scene from (manually selected) the images of right angles

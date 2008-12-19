@@ -1,5 +1,6 @@
 ALL = poseTracker multipose pose augmented dynamic \
-      onlyRects rectangles whiteboard frontal ellipses
+      onlyRects rectangles whiteboard frontal \
+      ellipses rightAngles
 
 EASYVISION = ../..
 

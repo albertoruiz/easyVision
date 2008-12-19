@@ -32,7 +32,8 @@ module Vision.Camera
 , estimateCamera
 , estimateCameraRaw
 , rectifierFromCircularPoint
-, rectifierFromDualConic
+, rectifierFromAbsoluteDualConic
+, estimateAbsoluteDualConic
 , focalFromCircularPoint
 , circularConsistency
 ) where
@@ -357,16 +358,26 @@ par2list (CamPar f p t r (cx,cy,cz)) = [f,p,t,r,cx,cy,cz]
 -- Metric rectification tools
 
 rectifierFromCircularPoint :: (Complex Double, Complex Double) -> Matrix
-rectifierFromCircularPoint (x,y) = rectifierFromDualConic omega where
+rectifierFromCircularPoint (x,y) = rectifierFromAbsoluteDualConic omega where
     cir = fromList [x,y,1]
     omega = fst $ fromComplex $ cir `outer` conj cir + conj cir `outer` cir
 
-rectifierFromDualConic :: Matrix -> Matrix
-rectifierFromDualConic omega = inv t where
-    (s,u) = eigSH omega -- positive definite by construction
+rectifierFromAbsoluteDualConic :: Matrix -> Matrix
+rectifierFromAbsoluteDualConic omega = inv t where
+    (s,u) = eigSH omega -- positive semidefinite by construction
     [a,b,_] = toList s
     t = trans $ diagl [sqrt a, sqrt b, 1] <> trans u
     -- 0 =~= norm $ (normat3 $ t <> diagl [1,1,0] <> trans t) - (normat3 omega)
+
+-- | from pairs of images of orthogonal lines
+estimateAbsoluteDualConic ::  [([Double],[Double])] -> Matrix
+estimateAbsoluteDualConic pls = signum (det con) .* con where
+    con = (3><3) [a,c,d
+                 ,c,b,e
+                 ,d,e,f]
+    [a,b,c,d,e,f] = toList $ fst $ homogSystem $ eqs
+    eqs = map eq pls
+    eq ([a,b,c],[a',b',c']) = [a*a', b*b', a*b'+a'*b, c*a'+a*c', c*b'+c'*b, c*c']
 
 focalFromCircularPoint :: (Complex Double,Complex Double) -> Double
 focalFromCircularPoint (cx,cy) = x * sqrt (1-(y/x)^2) where

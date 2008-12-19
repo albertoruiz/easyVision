@@ -5,7 +5,6 @@ import Graphics.UI.GLUT hiding (Size)
 import System(getArgs)
 import Control.Monad(when)
 import ImagProc.Ipp.Core
-import Foreign
 
 main = do
     sz <- findSize
@@ -57,6 +56,9 @@ zoom title szz img = evWindow (Pixel (h`div`2) (w`div`2),z0) title isz (Just dis
         (Pixel r c,z) <- get st
         st $= clip (Pixel (r+(fromIntegral y-s2)*z`div`s2) (c+(fromIntegral x-s2)*z`div`s2) ,z)
         postRedisplay Nothing
+    mouse _ st (Char 'q') Down _ _ = do
+        Just w <- get currentWindow
+        destroyWindow w
     mouse def _ a b c d = def a b c d
 
     clip (Pixel r c, z) = (Pixel r' c', z') where
