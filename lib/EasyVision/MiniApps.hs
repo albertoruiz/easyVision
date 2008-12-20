@@ -358,7 +358,9 @@ sys' = System f' h' q
 -- | Creates a panoramic view from two cameras with (nearly) common camera center.
 --
 -- Left click: optimize
+--
 -- z: restart from identity
+--
 -- o: end optimization
 panoramic :: Size              -- ^ of monitor window
           -> Double            -- ^ focal of base camera
@@ -449,12 +451,14 @@ findRot simil a fa b fb pi ti ri = fst $ minimizeNMSimplex (cost simil a fa b fb
 
 -----------------------------------------------------------------------
 
--- | Creates a \"zoom\" window, in which we can easily observe pixel numeric values. When the zoom is very large the gray level of the pixels
---   is also shown. The function returns an update function to change the image to be zoomed (in the same location as the previous one).
+-- | Creates a \"zoom\" window, in which we can easily observe pixel values. When the zoom level is very large numeric pixel values
+--   are also shown. The function returns an update function to change the image to be zoomed (in the same location as the previous one).
 --
 -- click: center pixel
+--
 -- mouse wheel: zoom in and zoom out
--- q: destroy window
+--
+-- q: destroy this window (only)
 
 zoom :: String        -- ^ window title
       -> Int          -- ^ size in pixels of the zoom window
@@ -477,7 +481,7 @@ zoom title szz img0 = do
         k@(img,p,z) <- get st
         let roi = roiFromPixel z p
             imgz = modifyROI (const roi) img
-        drawImage $ resize isz imgz
+        drawImage $ resize8u InterpNN isz imgz
         pointCoordinates isz
         setColor 0.4 0 0
         when (z>12) renderAxes

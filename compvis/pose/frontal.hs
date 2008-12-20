@@ -14,7 +14,7 @@
 
 module Main where
 
-import EasyVision
+import EasyVision hiding (zoom)
 import ImagProc.Ipp.Core(image,ImageFloat(F),fullroi,setData32f)
 import Graphics.UI.GLUT hiding (Matrix, Size, Point)
 import Data.IORef
@@ -203,7 +203,7 @@ compute st = do
     costsurf' <- image (Size 50 50)
     let (minim,cost) = explore 50 (60*degree) 3 (0,2) ((0.5*).f)
     setData32f costsurf' cost
-    let costsurf = resize32f (Size 200 200) costsurf'
+    let costsurf = resize (Size 200 200) costsurf'
 
     let [rho,yh] = fst $ findSol f minim     -- detailed optimization from the minimum
     let (c0,_) = extractInfo info uhs (rho, yh)

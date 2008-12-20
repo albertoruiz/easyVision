@@ -69,11 +69,17 @@ copyROI8u3 :: ImageRGB -> ROI -> ImageRGB -> ROI -> IO ()
 copyROI8u3 (C im) r1 (C r) r2 = ippiCopy_8u_C3R // src im r1 // dst r r2 // checkIPP "copyROI8u3'" [im]
 
 --------------------------------------------------------------------
-inter_NN         =  1 :: Int
-inter_LINEAR     =  2 :: Int
-inter_CUBIC      =  4 :: Int
-inter_SUPER      =  8 :: Int
-inter_LANCZOS    = 16 :: Int
+data InterpolationMode = InterpNN
+                       | InterpLinear
+                       | InterpCubic
+                       | InterpSuper
+                       | InterpLanczos
+
+interCode InterpNN      =  1 :: Int
+interCode InterpLinear  =  2
+interCode InterpCubic   =  4
+interCode InterpSuper   =  8
+interCode InterpLanczos = 16
 --inter_SMOOTH_EDGE = (1 << 31) :: Int
 
 genResize f s dst droi im sroi interp = do
@@ -84,31 +90,31 @@ genResize f s dst droi im sroi interp = do
                  interp // checkIPP s [im]
 
 -- | Resizes the roi of a given image.
-resize32f :: Size -> ImageFloat -> ImageFloat
-resize32f s (F im) = unsafePerformIO $ do
+resize32f :: InterpolationMode -> Size -> ImageFloat -> ImageFloat
+resize32f itp s (F im) = unsafePerformIO $ do
     r <- img I32f s
-    genResize c_resize32f "genResize32f" r (fullroi r) im (vroi im) inter_LINEAR
+    genResize c_resize32f "genResize32f" r (fullroi r) im (vroi im) (interCode itp)
     return (F r)
 
 -- | Resizes the roi of a given image.
-resize8u :: Size -> ImageGray -> ImageGray
-resize8u s (G im) = unsafePerformIO $ do
+resize8u :: InterpolationMode -> Size -> ImageGray -> ImageGray
+resize8u itp s (G im) = unsafePerformIO $ do
     r <- img Gray s
-    genResize c_resize8u "genResize8u" r (fullroi r) im (vroi im) inter_NN
+    genResize c_resize8u "genResize8u" r (fullroi r) im (vroi im) (interCode itp)
     return (G r)
 
 -- | Resizes the roi of a given image.
-resize8u3 :: Size -> ImageRGB -> ImageRGB
-resize8u3 s (C im) = unsafePerformIO $ do
+resize8u3 :: InterpolationMode -> Size -> ImageRGB -> ImageRGB
+resize8u3 itp s (C im) = unsafePerformIO $ do
     r <- img RGB s
-    genResize c_resize8u3 "genResize8u3" r (fullroi r) im (vroi im) inter_LINEAR
+    genResize c_resize8u3 "genResize8u3" r (fullroi r) im (vroi im) (interCode itp)
     return (C r)
 
 -- | Resizes the full image and its roi
-resize32f' :: Size -> ImageFloat -> ImageFloat
-resize32f' s (F im) = unsafePerformIO $ do
+resize32f' :: InterpolationMode -> Size -> ImageFloat -> ImageFloat
+resize32f' itp s (F im) = unsafePerformIO $ do
     r <- img I32f s
-    genResize c_resize32f "genResize32f" r (fullroi r) im (fullroi im) inter_LINEAR
+    genResize c_resize32f "genResize32f" r (fullroi r) im (fullroi im) (interCode itp)
     let Size h' w' = s
         Size h w = isize im
         fh = fromIntegral h' / fromIntegral h
@@ -131,9 +137,9 @@ warpOn' h r im f met s = do
                            coefs met //warningIPP s [im]
     free coefs
 
-warpOn8u  h (G r) (G im) = warpOn' h r im warpPerspectiveGray inter_LINEAR "warpOn8u"
-warpOn32f h (F r) (F im) = warpOn' h r im warpPerspective32f inter_LINEAR "warpOn32f"
-warpOn8u3 h (C r) (C im) = warpOn' h r im warpPerspectiveRGB inter_LINEAR "warpOn8u3"
+warpOn8u  h (G r) (G im) = warpOn' h r im warpPerspectiveGray (interCode InterpLinear) "warpOn8u"
+warpOn32f h (F r) (F im) = warpOn' h r im warpPerspective32f (interCode InterpLinear) "warpOn32f"
+warpOn8u3 h (C r) (C im) = warpOn' h r im warpPerspectiveRGB (interCode InterpLinear) "warpOn8u3"
 
 -------------------------------------------------------------------
 

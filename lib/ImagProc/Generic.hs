@@ -46,7 +46,7 @@ instance GImg CUChar ImageGray where
     zeroP = 0
     set = set8u
     copy = copyROI8u
-    resize = resize8u
+    resize = resize8u InterpLinear
     clone = ioCopy_8u_C1R id
     warpOnG = warpOn8u
     fromYUV = yuvToGray
@@ -56,7 +56,7 @@ instance GImg Float ImageFloat where
     zeroP = 0
     set = set32f
     copy = copyROI32f
-    resize = resize32f
+    resize = resize32f InterpLinear
     clone = ioCopy_32f_C1R id
     warpOnG = warpOn32f
     fromYUV = float . yuvToGray
@@ -66,7 +66,7 @@ instance GImg (CUChar,CUChar,CUChar) ImageRGB where
     zeroP = (0,0,0)
     set (r,g,b) = set8u3 r g b
     copy = copyROI8u3
-    resize = resize8u3
+    resize = resize8u3 InterpLinear
     clone = ioCopy_8u_C3R id
     warpOnG = warpOn8u3
     fromYUV = yuvToRGB

@@ -128,7 +128,7 @@ pyramid n sigmaPrev sigma img = o : pyramid n sigmaPrev sigma d
 siftPoints nmax h dogs = zipWith3 (localMaxScale3 nmax h) dogs (tail dogs) (tail (tail dogs))
 
 
-decimate img = modifyROI (shrink (1,1)) $ resize32f' sz  img
+decimate img = modifyROI (shrink (1,1)) $ resize32f' InterpLinear sz  img
     where Size h w = roiSize (theROI img)
           sz = Size (h`div`2) (w`div`2)
 

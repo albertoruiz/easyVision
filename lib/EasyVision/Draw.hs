@@ -37,7 +37,7 @@ import Graphics.UI.GLUT hiding (RGB, Matrix, Size, Point)
 import qualified Graphics.UI.GLUT as GL
 import ImagProc.Ipp.Core
 import Features.Matching
-import ImagProc.ImageProcessing(resize32f,yuvToRGB)
+import ImagProc.ImageProcessing(resize,yuvToRGB)
 import Data.IORef
 import Foreign (touchForeignPtr,castPtr)
 import Numeric.LinearAlgebra
@@ -229,7 +229,7 @@ drawCamera size cam (Just imgtext) = do
 
 -- | Takes a centered square from an image and resizes it to the desired size (useful to obtain an image texture appropriate for 'drawCamera').
 extractSquare :: Int -> ImageFloat -> ImageFloat
-extractSquare sz (F im) = resize32f (Size sz sz) (F im {vroi = roi}) where
+extractSquare sz (F im) = resize (Size sz sz) (F im {vroi = roi}) where
     w = width $ isize im
     h = height $ isize im
     d = w-h
