@@ -24,3 +24,5 @@ simple examples
 - contours: affine invariant silhouette recognition
 
 - background: detection of something different from a background image
+
+- zoom: demo of zoom window, useful to observe pixel values

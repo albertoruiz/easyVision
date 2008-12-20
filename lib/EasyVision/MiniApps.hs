@@ -21,6 +21,7 @@ module EasyVision.MiniApps (
     scatterWindow,
     regionDetector, regionTracker,
     panoramic,
+    zoom,
     module EasyVision.PoseTracker
 )where
 
@@ -445,3 +446,74 @@ cost simil a fa b fb [pan, tilt, roll] = simil a h b
 
 findRot simil a fa b fb pi ti ri = fst $ minimizeNMSimplex (cost simil a fa b fb) [pi,ti,ri] [0.1*degree, 0.1*degree,0.1*degree] 1E-3 30
 
+
+-----------------------------------------------------------------------
+
+-- | Creates a \"zoom\" window, in which we can easily observe pixel numeric values. When the zoom is very large the gray level of the pixels
+--   is also shown. The function returns an update function to change the image to be zoomed (in the same location as the previous one).
+--
+-- click: center pixel
+-- mouse wheel: zoom in and zoom out
+-- q: destroy window
+
+zoom :: String        -- ^ window title
+      -> Int          -- ^ size in pixels of the zoom window
+      -> ImageGray    -- ^ initial image to analyze
+      -> IO (ImageGray -> IO ()) -- ^ update function
+zoom title szz img0 = do
+    w <- evWindow (img0,Pixel (h`div`2) (w`div`2),z0)
+                  title isz (Just disp) (mouse kbdQuit)
+    let f im = do
+            (_,p,z) <- getW w
+            putW w (im,p,z)
+            postRedisplay (Just (evW w))
+    return f
+    where
+    isz = Size szz szz
+    Size h w = size img0
+    s2 = (szz-1) `div` 2
+    z0 = min h w `div` 2
+    disp st = do
+        k@(img,p,z) <- get st
+        let roi = roiFromPixel z p
+            imgz = modifyROI (const roi) img
+        drawImage $ resize isz imgz
+        pointCoordinates isz
+        setColor 0.4 0 0
+        when (z>12) renderAxes
+        when (z<=12) $ do
+            pixelCoordinates (Size (2*z+1) (2*z+1))
+            let ROI r1 r2 c1 c2 = theROI imgz
+                v = fromIntegral (2*z+1) / fromIntegral szz
+                dx = 0.5 - 5*v
+                dy = 0.5 + 5*v
+            setColor 0.6 0.6 0.6
+            renderPrimitive Lines $ sequence_ [vertex (Pixel (r-r1) 0) >> vertex (Pixel (r-r1) (c2-c1+1)) |r<-[r1..r2]]
+            renderPrimitive Lines $ sequence_ [vertex (Pixel 0 (c-c1)) >> vertex (Pixel (r2-r1+1) (c-c1)) |c<-[c1..c2]]
+            setColor 0 0 0.7
+            sequence_ [text2D' (fromIntegral (c-c1) +dx) (fromIntegral (r-r1) +dy) (show $ imgz `val8u` (Pixel r c)) |r<-[r1..r2],c<-[c1..c2]]
+    mouse _ st (MouseButton WheelUp) Down _ _ = do
+        (im,p,z) <- get st
+        st $= clip (im,p,z+(max 1 $ z`div`10))
+        postRedisplay Nothing
+    mouse _ st (MouseButton WheelDown) Down _ _ = do
+        (im,p,z) <- get st
+        st $= clip (im,p,z-(max 1 $ z`div`10))
+        postRedisplay Nothing
+    mouse _ st (MouseButton LeftButton) Down _ (Position x y) = do
+        (im,Pixel r c,z) <- get st
+        st $= clip (im, Pixel (r+(fromIntegral y-s2)*z`div`s2) (c+(fromIntegral x-s2)*z`div`s2) ,z)
+        postRedisplay Nothing
+    mouse _ st (Char 'q') Down _ _ = do
+        Just w <- get currentWindow
+        destroyWindow w
+    mouse def _ a b c d = def a b c d
+
+    clip (im,Pixel r c, z) = (im,Pixel r' c', z') where
+        z' = max 1 $ min (min h w`div`2) $ z
+        r' = max z' $ min (h-z'-1) $ r
+        c' = max z' $ min (w-z'-1) $ c
+
+    text2D' x y s = do
+        rasterPos (Vertex2 x (y::GLfloat))
+        renderString Helvetica10 s
