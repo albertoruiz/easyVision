@@ -15,7 +15,7 @@ p2roi = ROI r1 (r1 + fftl-1) c1 (c1 + fftl-1)
 up = modifyROI (\r -> r {r2 = r1 r + fftl `div` 2 - 1})
 
 main = do
-    (cam,ctrl) <- getCam 0 sz >>= withChannels >>= withPause
+    (cam,ctrl) <- getCam 0 sz ~> channels >>= withPause
 
     prepare
 

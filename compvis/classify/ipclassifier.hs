@@ -20,7 +20,7 @@ interestPoints n h orig = feats where
 main = do
     sz <- findSize
 
-    (cam,ctrl) <- getCam 0 sz >>= inThread >>= withChannels >>= withPause
+    (cam,ctrl) <- getCam 0 sz >>= inThread ~> channels >>= withPause
 
     prepare
 

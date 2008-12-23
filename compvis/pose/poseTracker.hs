@@ -14,7 +14,7 @@ main = do
     mbf <- maybeOption "--focal"
     let ref = cornerRef
 
-    cam <- getCam 0 sz >>= withChannels >>= poseTracker "visor" mbf ref
+    cam <- getCam 0 sz ~> channels >>= poseTracker "visor" mbf ref
 
     w <- evWindow () "img" sz Nothing (const $ kbdQuit)
 

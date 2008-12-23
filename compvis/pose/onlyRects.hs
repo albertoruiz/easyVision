@@ -17,9 +17,9 @@ main = do
 
     cam <- getCam 0 (mpSize 20)
            >>= monitorizeIn "video" (mpSize 5) drawImage
-           >>= withChannels
+           ~>  channels
            >>= onlyRectangles szR ratio gray
-           >>= virtualCamera (map float . concat)
+           ~~> map float . concat
            >>= drift alpha
 
     w <- evWindow () nm sz Nothing (const $ kbdQuit)

@@ -9,10 +9,10 @@ main = do
     prepare
 
     rects <- getFlag "--rectangles"
-    let vc = if rects then withChannels >=> onlyCards sz
-                      else withChannels
+    let vc = if rects then onlyCards sz
+                      else return . id
 
-    (cam,ctrl) <- getCam 0 sz
+    (cam,ctrl) <- getCam 0 sz ~> channels
                >>= vc
                >>= monitorizeIn "video" (mpSize 10) (drawImage.rgb)
                >>= withPause

@@ -62,12 +62,12 @@ main2 = do
     file:_ <- getArgs
     prepare
 
-    roisraw <- readFile (file++".yuv.roi")
+    roisraw <- readFile (file++".roi")
     let rois = map read (lines roisraw) :: [ROI]
         nframes = length rois
     print nframes
 
-    cam <- mplayer (file++".yuv -benchmark") sz
+    cam <- mplayer (file++" -benchmark") sz
     imgs <- sequence (replicate nframes cam)
     putStrLn $ show (length imgs) ++ " cases"
 

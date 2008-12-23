@@ -36,7 +36,7 @@ main = do
         nm = "ratio " ++ printf "%.2f" ratio
     prepare
 
-    (cam,ctrl) <- getCam 0 (mpSize 20) >>= withChannels >>= findRectangles ratio >>= withPause
+    (cam,ctrl) <- getCam 0 (mpSize 20) ~> channels >>= findRectangles ratio >>= withPause
 
     wimg <- evWindow () "original" (mpSize 20) Nothing (const $ kbdcam ctrl)
     wa4  <- evWindow () nm (Size (32*5*5) (round(32*5*ratio))) Nothing (const (kbdcam ctrl))

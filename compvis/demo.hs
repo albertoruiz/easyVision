@@ -15,7 +15,7 @@ main = do
 
     sz <- findSize
 
-    (cam, ctrl)  <- getCam 0 sz  >>= withChannels >>= withPause
+    (cam, ctrl)  <- getCam 0 sz  ~> channels >>= withPause
 
     prepare
 

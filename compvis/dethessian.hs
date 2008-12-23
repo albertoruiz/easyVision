@@ -13,7 +13,7 @@ import Text.Printf(printf)
 main = do
     sz <- findSize
 
-    (cam,ctrl) <- getCam 0 sz >>= withChannels >>= inThread >>= withPause
+    (cam,ctrl) <- getCam 0 sz ~> channels >>= inThread >>= withPause
 
     prepare
 

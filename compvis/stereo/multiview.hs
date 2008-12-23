@@ -19,6 +19,9 @@ norm (vx,vy) = sqrt $ vx * vx + vy*vy
 
 center cam = toList $ inHomog $ nullVector cam
 
+withChannels = return . fmap channels
+
+
 main = do
     prepare
 

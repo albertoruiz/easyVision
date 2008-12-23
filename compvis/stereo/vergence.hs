@@ -13,7 +13,7 @@ main = do
     sz <- findSize
     n <- numCams
 
-    let vc c = c >>= withChannels
+    let vc c = c ~> channels
     cams <- mapM (vc . flip getCam sz) [0..n-1]
 
     mbf <- getRawOption "--calib"

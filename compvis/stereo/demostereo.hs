@@ -10,6 +10,8 @@ import Text.Printf(printf)
 
 tracker n1 n2 = withChannels >=> regionDetector n1 >=> regionTracker n2
 
+withChannels = return . fmap channels
+
 disp n = putStrLn . format "  " (printf $ "%."++ show n++"f")
 mean l = sum l / genericLength l
 

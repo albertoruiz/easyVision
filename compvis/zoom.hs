@@ -21,33 +21,29 @@ main1 = do
     prepare
     cam <- mplayer ("mf://"++file) sz
     img <- cam
-    zoom "Image" 600 (gray $ channels img)
+    zoomer "Image" 600 (gray $ channels img)
     mainLoop
 
 -- live zoom from a video
 main2 = do
     sz <- findSize
     prepare
-    cam <- getCam 0 sz >>= withChannels
-    img <- cam
-    z <- zoom "Zoom" 600 (gray img)
-    w <- evWindow () "Video" sz Nothing (const kbdQuit)
-    launch $ do
-        img <- cam
-        z (gray img)
-        inWin w $ drawImage (gray img)
+    cam <- getCam 0 sz ~> channels
+                       >>= zoomWindow "Zoom" 600 gray
+                       >>= monitorizeIn "Video" sz (drawImage.rgb)
+    launch $ cam >> return ()
 
 -- click to analyze frame in a new window
 main3 = do
     sz <- findSize
     prepare
-    cam <- getCam 0 sz >>= withChannels
+    cam <- getCam 0 sz ~> channels
     w <- evWindow False "Video" sz Nothing (mouse kbdQuit)
     launch $ inWin w $ do
         img <- cam
         drawImage (gray img)
         st <- getW w
-        when st $ zoom "zoom" 600 (gray img) >> return ()
+        when st $ zoomer "zoom" 600 (gray img) >> return ()
         putW w False
   where
     mouse _ st (MouseButton LeftButton) Down _ _ = do

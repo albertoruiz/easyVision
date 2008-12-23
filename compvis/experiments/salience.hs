@@ -25,7 +25,7 @@ main = do
 
     sz <- findSize
 
-    (cam, ctrl)  <- getCam 0 sz  >>= withChannels >>= withPause
+    (cam, ctrl)  <- getCam 0 sz  ~>channels >>= withPause
 
     w <- evWindow () "image" sz Nothing  (const (kbdcam ctrl))
     w2 <- evWindow () "pru" sz Nothing  (const (kbdcam ctrl))

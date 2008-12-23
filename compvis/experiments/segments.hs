@@ -6,8 +6,7 @@ main = do
     sz <- findSize
     prepare
 
-    (cam,ctrl) <- getCam 0 sz
-                  >>= withChannels >>= withPause
+    (cam,ctrl) <- getCam 0 sz ~> channels >>= withPause
 
     e <- evWindow () "segments" sz Nothing (const (kbdcam ctrl))
 

@@ -14,7 +14,7 @@ import System(getArgs)
 import qualified Data.Colour.Names as Col
 import Numeric.LinearAlgebra
 import Classifier
-import Data.List(maximumBy)
+import Data.List(maximumBy,isPrefixOf)
 import Text.Printf
 
 
@@ -37,7 +37,7 @@ machine = multiclass mse
 
 main = do
     sz <- findSize
-    video:test:files <- getArgs
+    video:test:files <- fmap (filter (not . isPrefixOf "--")) getArgs
     prepare
 
     rawexamples <- mapM (readSelectedRois sz) files
@@ -80,10 +80,10 @@ main = do
 
 
 readSelectedRois sz file = do
-    roisraw <- readFile (file++".yuv.roi")
+    roisraw <- readFile (file++".roi")
     let rois = map read (lines roisraw) :: [ROI]
         nframes = length rois
-    cam <- mplayer (file++".yuv -benchmark") sz
+    cam <- mplayer (file++" -benchmark") sz
     imgs <- sequence (replicate nframes cam)
     putStrLn $ show nframes ++ " cases in " ++ file
     return (zip imgs rois)

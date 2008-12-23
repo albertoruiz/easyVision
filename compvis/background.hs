@@ -8,7 +8,7 @@ main = do
     sz <- findSize
     prepare
 
-    cam <- getCam 0 sz >>= withChannels
+    cam <- getCam 0 sz ~> channels
     w <- evWindow (True,undefined) "contour" sz Nothing (mouse kbdQuit)
 
     launch $ do

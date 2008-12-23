@@ -27,7 +27,7 @@ main = do
     print (take n focs)
 
     let ref = cornerRef
-        vc c mbf = c >>= withChannels >>= poseTracker "" mbf ref >>= inThread
+        vc c mbf = c ~> channels >>= poseTracker "" mbf ref >>= inThread
     cams <- sequence $ zipWith vc (map (flip getCam sz) [0..n-1]) focs
 
 

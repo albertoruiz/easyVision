@@ -12,7 +12,7 @@ main = do
     f <- getOption "--focal" 2.8
 
     --(cam,ctrl) <- getCam 0 sz >>= withChannels >>= withPause
-    (cam,ctrl) <- getCam 0 sz >>= withChannels >>= addDist >>= withPause
+    (cam,ctrl) <- getCam 0 sz ~> channels >>= addDist >>= withPause
 
     prepare
 

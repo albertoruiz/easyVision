@@ -10,7 +10,7 @@ import GHC.Float(float2Double)
 main = do
     sz <- findSize
 
-    (cam,ctrl) <- getCam 0 sz >>= withChannels >>= withPause
+    (cam,ctrl) <- getCam 0 sz ~> channels >>= withPause
 
     prepare
 

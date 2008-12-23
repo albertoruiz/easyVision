@@ -38,12 +38,12 @@ main = do
 
     protos <- getProtos sz channels
     rects <- getFlag "--rectangles"
-    let vc = if rects then withChannels >=> onlyCards sz -- same size if we want to save more prototypes
-                      else withChannels
+    let vc = if rects then onlyCards sz -- same size if we want to save more prototypes
+                      else return . id
 
     prepare
 
-    (cam,ctrl) <- getCam 0 sz >>= vc >>= withPause
+    (cam,ctrl) <- getCam 0 sz ~> channels >>= vc >>= withPause
 
     w <- evWindow (False, protos, machine protos) "video" sz Nothing  (mouse (kbdcam ctrl))
 

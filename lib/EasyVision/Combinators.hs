@@ -15,11 +15,10 @@ Camera combinators: higher order functions which make virtual cameras from other
 
 module EasyVision.Combinators (
   -- * Virtual camera generator
-  virtualCamera,
+  virtualCamera, (~~>), (~>),
   -- * Camera combinators
   -- | A few useful combinators
   withPause,
-  withChannels,
   addSmall,
   detectMotion,
   detectStatic,
@@ -114,6 +113,15 @@ grabAll grab = do
 virtualCamera :: ([a]-> [b]) -> IO a -> IO (IO b)
 virtualCamera filt grab = filt `fmap` grabAll grab >>= createGrab
 
+-- | shortcut for @>>= virtualCamera f@
+(~~>) :: IO (IO a) -> ([a]-> [b]) -> IO (IO b)
+infixl 1 ~~>
+gencam ~~> f = (gencam >>= virtualCamera f)
+
+-- | shortcut for @>>= virtualCamera (map f)@, or equivalently, @>>= return . fmap f@.
+(~>) :: IO (IO a) -> (a-> b) -> IO (IO b)
+infixl 1 ~>
+gencam ~> f = gencam >>= return . fmap f
 
 --------------------------------------------------------------------------
 
@@ -258,9 +266,9 @@ inThread cam = do
 
 -----------------------------------------------------------
 
--- | to do
-withChannels :: IO ImageYUV -> IO (IO Channels)
-withChannels cam = return $ fmap channels cam
+-- -- | to do
+-- withChannels :: IO ImageYUV -> IO (IO Channels)
+-- withChannels cam = return $ fmap channels cam
 
 -----------------------------------------------------------
 

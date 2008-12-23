@@ -21,7 +21,7 @@ module EasyVision.MiniApps (
     scatterWindow,
     regionDetector, regionTracker,
     panoramic,
-    zoom,
+    zoomer, zoomWindow,
     module EasyVision.PoseTracker
 )where
 
@@ -460,11 +460,11 @@ findRot simil a fa b fb pi ti ri = fst $ minimizeNMSimplex (cost simil a fa b fb
 --
 -- q: destroy this window (only)
 
-zoom :: String        -- ^ window title
-      -> Int          -- ^ size in pixels of the zoom window
-      -> ImageGray    -- ^ initial image to analyze
-      -> IO (ImageGray -> IO ()) -- ^ update function
-zoom title szz img0 = do
+zoomer :: String        -- ^ window title
+       -> Int          -- ^ size in pixels of the zoom window
+       -> ImageGray    -- ^ initial image to analyze
+       -> IO (ImageGray -> IO ()) -- ^ update function
+zoomer title szz img0 = do
     w <- evWindow (img0,Pixel (h`div`2) (w`div`2),z0)
                   title isz (Just disp) (mouse kbdQuit)
     let f im = do
@@ -521,3 +521,13 @@ zoom title szz img0 = do
     text2D' x y s = do
         rasterPos (Vertex2 x (y::GLfloat))
         renderString Helvetica10 s
+
+-- | zoom window as a virtual camera
+zoomWindow :: String -> Int -> (a -> ImageGray) -> IO a -> IO (IO a)
+zoomWindow winname sz f cam = do
+    i0 <- cam
+    z <- zoomer winname sz (f i0)
+    return $ do
+        im <- cam
+        z (f im)
+        return im
