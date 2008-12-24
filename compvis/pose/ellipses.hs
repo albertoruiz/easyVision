@@ -140,16 +140,6 @@ isEllipse tol c = (ft-f1)/ft < fromIntegral (tol::Int)/1000 where
 
 ----------------------------------------------------------------
 
--- computes a similar 2D homogeneous transformation with moves 2 points to a desired position
-similarFrom2Points [ax,ay] [bx,by] [a'x,a'y] [b'x,b'y] = t where
-    dx = a'x - ax
-    dy = a'y - ay
-    s = sqrt ((b'x-a'x)^2 + (b'y-a'y)^2) / sqrt ((bx-ax)^2 + (by-ay)^2)
-    ang = atan2 (b'y-a'y) (b'x-a'x) - atan2 (by-ay) (bx-ax)
-    t = rot3 (-ang) <> scaling s <> desp (dx,dy)
-
--------------------------------------------------------------------
-
 tangentEllipses c1 c2 = map ((++[1]). t2l) $ intersectionEllipses (inv c1) (inv c2)
 
 --------------------------------------------------------------------

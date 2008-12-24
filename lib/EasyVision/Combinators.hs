@@ -15,7 +15,7 @@ Camera combinators: higher order functions which make virtual cameras from other
 
 module EasyVision.Combinators (
   -- * Virtual camera generator
-  virtualCamera, (~~>), (~>),
+  virtualCamera, (~~>), (>~~>), (~>), (>~>),
   -- * Camera combinators
   -- | A few useful combinators
   withPause,
@@ -122,6 +122,17 @@ gencam ~~> f = (gencam >>= virtualCamera f)
 (~>) :: IO (IO a) -> (a-> b) -> IO (IO b)
 infixl 1 ~>
 gencam ~> f = gencam >>= return . fmap f
+
+-- | composition version of @~>@
+(>~>) :: (t -> IO (IO a)) -> (a -> b) -> t -> IO (IO b)
+infixl 1 >~>
+f >~> g = \x -> f x ~> g
+
+-- | composition version of @~~>@
+(>~~>) :: (t -> IO (IO a)) -> ([a] -> [b]) -> t -> IO (IO b)
+infixl 1 >~~>
+f >~~> g = \x -> f x ~~> g
+
 
 --------------------------------------------------------------------------
 

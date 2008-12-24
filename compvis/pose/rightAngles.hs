@@ -22,13 +22,15 @@ main = do
 --------------------------------------------------------------
 
 rightAngles img = do
-    wrect <- evWindow (ident 3) "Metric Rectification" (Size 600 600) (Just disp2) (const kbdQuit)
-    worig <- evWindow [] "Image" (size img) (Just disp) (mouse wrect kbdQuit)
+    wrect <- evWindow ([],ident 3) "Metric Rectification" (Size 600 600) (Just disp2) (const kbdQuit)
+    worig <- evWindow testpoints "Image" (size img) (Just disp) (mouse wrect kbdQuit)
     return ()
     where
     disp2 st = do
-        rec <- get st
-        drawImage $ warp (0,0,0) (Size 600 600) (scaling 0.5 <> rec) img
+        (ps,rec) <- get st
+        drawImage $ warp (0,0,0) (Size 600 600) rec img
+        pointCoordinates (Size 600 600)
+        mapM_ (renderPrimitive LineStrip . mapM_ vertex) (partit 3 $ reverse ps)
     disp st = do
         drawImage img
         ps <- get st
@@ -38,7 +40,9 @@ rightAngles img = do
     mouse wrect _ st (MouseButton LeftButton) Down _ (Position x y) = do
         st $~ (Pixel (fromIntegral y) (fromIntegral x) :)
         ps <- get st
-        putW wrect $ rectifier $ pixelsToPoints (size img) $ ps
+        let pts = pixelsToPoints (size img) $ ps
+            rec = rectifier pts
+        putW wrect (htp rec pts, rec)
         postRedisplay Nothing
         postRedisplay (Just $ evW wrect)
     mouse _ _ st (Char 'x') Down _ _ = do
@@ -48,7 +52,7 @@ rightAngles img = do
 
 --------------------------------------------------------------
 
-rectifier ps | length ps >= 15 && ok = rectifierFromAbsoluteDualConic omega
+rectifier ps | length ps >= 15 && ok = relocate (diagl [-1,1,1] <> rectifierFromAbsoluteDualConic omega)
              | otherwise             = ident 3
     where
     omega = estimateAbsoluteDualConic pairlines
@@ -58,3 +62,14 @@ rectifier ps | length ps >= 15 && ok = rectifierFromAbsoluteDualConic omega
     ok = posdef omega
     p2vh (Point x y) = fromList [x,y,1]
     posdef mat = minimum (toList s) >= 0 where (s,_) = eigSH mat
+    relocate h = r <> h where
+        r = similarFrom2Points a b [0,1] [0,-1]
+        [a,b] = ht h [[0,0.75],[0,-0.75]]
+
+diagl = diag . fromList
+htp h = ht h . map p2l
+p2l (Point x y) = [x,y]
+--l2p [x,y] = Point x y
+
+-------------------------------------------------------------------
+testpoints= [Pixel {row = 452, col = 253},Pixel {row = 198, col = 392},Pixel {row = 223, col = 483},Pixel {row = 315, col = 391},Pixel {row = 304, col = 207},Pixel {row = 189, col = 242},Pixel {row = 355, col = 515},Pixel {row = 249, col = 191},Pixel {row = 430, col = 34},Pixel {row = 130, col = 335},Pixel {row = 231, col = 262},Pixel {row = 180, col = 101},Pixel {row = 241, col = 424},Pixel {row = 352, col = 33},Pixel {row = 101, col = 32},Pixel {row = 250, col = 593},Pixel {row = 169, col = 504},Pixel {row = 214, col = 327},Pixel {row = 315, col = 392},Pixel {row = 399, col = 133},Pixel {row = 221, col = 107}]

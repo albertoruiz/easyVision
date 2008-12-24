@@ -47,6 +47,8 @@ module Vision.Geometry
 , normatdet
 , normat
 , normat3
+-- * Utilities
+, similarFrom2Points
 ) where
 
 import Numeric.LinearAlgebra
@@ -187,3 +189,12 @@ htm :: Matrix Double -- ^ transformation
     -> Matrix Double -- ^ inhomogeneous input vectors (as rows)
     -> Matrix Double -- ^ transformed vectors (as rows)
 htm h = inHomogMat . (<> trans h) . homogMat
+
+-- | Computes a similar 2D homogeneous transformation with moves 2 points to desired positions.
+similarFrom2Points :: [Double] -> [Double] -> [Double] -> [Double] -> Matrix Double
+similarFrom2Points [ax,ay] [bx,by] [a'x,a'y] [b'x,b'y] = t where
+    dx = a'x - ax
+    dy = a'y - ay
+    s = sqrt ((b'x-a'x)^2 + (b'y-a'y)^2) / sqrt ((bx-ax)^2 + (by-ay)^2)
+    ang = atan2 (b'y-a'y) (b'x-a'x) - atan2 (by-ay) (bx-ax)
+    t = desp (a'x,a'y) <> rot3 (-ang) <> scaling s <> desp (-ax,-ay)
