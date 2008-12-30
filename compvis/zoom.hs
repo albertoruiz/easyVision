@@ -30,7 +30,7 @@ main2 = do
     prepare
     cam <- getCam 0 sz ~> channels
                        >>= zoomWindow "Zoom" 600 gray
-                       >>= monitorizeIn "Video" sz (drawImage.rgb)
+                       >>= monitor "Video" sz (drawImage.rgb)
     launch $ cam >> return ()
 
 -- click to analyze frame in a new window

@@ -16,7 +16,7 @@ main = do
     prepare
 
     cam <- getCam 0 (mpSize 20)
-           >>= monitorizeIn "video" (mpSize 5) drawImage
+           >>= monitor "video" (mpSize 5) drawImage
            ~>  channels
            >>= onlyRectangles szR ratio gray
            ~~> map float . concat

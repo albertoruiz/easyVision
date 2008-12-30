@@ -28,7 +28,7 @@ module EasyVision.Combinators (
   findRectangles,
   onlyRectangles,
   rectifyQuadrangle,
-  monitorizeIn,
+  monitor,
   inThread
 )where
 
@@ -72,6 +72,7 @@ withPause grab = do
     paused <- newIORef False
     frozen <- newIORef undefined
     step   <- newIORef False
+    pass   <- newIORef True
 
     let control command = do
         case command of
@@ -79,15 +80,18 @@ withPause grab = do
                        p <- readIORef paused
                        if p then grab >>= writeIORef frozen
                             else return ()
-         "step"   -> do modifyIORef step not
+         "step"   -> modifyIORef step not
+         "pass"   -> modifyIORef pass not
 
     let virtual = do
         s <- readIORef step
         p <- readIORef paused
+        g <- readIORef pass
+        let grab' = if g then grab >> readIORef frozen else readIORef frozen
         if not s && p
-             then readIORef frozen
+             then grab'
              else 
-                if s then if p then readIORef frozen
+                if s then if p then grab'
                                else do writeIORef paused True
                                        grab >>= writeIORef frozen
                                        readIORef frozen
@@ -216,7 +220,7 @@ detectStatic th nframes =
     -- >=> temporalEnvironment mean 3 0  -- for local extremes
     >=> temporalEnvironment id nframes 0
     >=> addSDS th
-    >=> monitorizeIn "temp env" (mpSize 10) (monitorStatic th)
+    >=> monitor "temp env" (mpSize 10) (monitorStatic th)
     >=> virtualCamera getIt
 
 ---
@@ -233,30 +237,18 @@ mean l = sum l / fromIntegral (length l)
 
 ---------------------------------------------------------
 
--- | The grabbed image (extracted from a general structure by the selector) is automatically shown in a window in each grab. The window provides a simple camera control with the keyboard. See the example interpolate.hs.
-monitorizeIn' :: Drawable im => String    -- ^ window name
-                            -> Size      -- ^ window size
-                            -> (a->im)   -- ^ selector
-                            -> (IO a)    -- ^ original camera
-                            -> IO (IO a) -- ^ new camera
-monitorizeIn' name sz selector cam = do
+-- | Generic display function for a camera combinator. The monitor function is invoked in the window with the grabbed object.
+--   The window includes a withPause controller.
+monitor :: String     -- ^ window name
+        -> Size       -- ^ window size
+        -> (a->IO ()) -- ^ monitor function
+        -> (IO a)     -- ^ original camera
+        -> IO (IO a)  -- ^ new camera
+monitor name sz fun cam = do
     (cam', ctrl) <- withPause cam
-    w <- evWindow () name sz Nothing (const $ kbdcam ctrl)
+    w <- evWindow () name sz Nothing (const (kbdcam ctrl))
     return $ do
         thing <- cam'
-        inWin w $ drawImage (selector thing)
-        return thing
-
--- | Generic monitorization function for a camera combinator. The monitorization function is invoked in the window with the grabbed object.
-monitorizeIn :: String     -- ^ window name
-             -> Size       -- ^ window size
-             -> (a->IO ()) -- ^ monitorization function
-             -> (IO a)     -- ^ original camera
-             -> IO (IO a)  -- ^ new camera
-monitorizeIn name sz fun cam = do
-    w <- evWindow () name sz Nothing (const kbdQuit)
-    return $ do
-        thing <- cam
         inWin w (fun thing)
         return thing
 

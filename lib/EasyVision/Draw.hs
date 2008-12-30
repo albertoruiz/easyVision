@@ -37,7 +37,7 @@ import Graphics.UI.GLUT hiding (RGB, Matrix, Size, Point)
 import qualified Graphics.UI.GLUT as GL
 import ImagProc.Ipp.Core
 import Features.Matching
-import ImagProc.ImageProcessing(resize,yuvToRGB)
+import ImagProc.ImageProcessing(resize,yuvToRGB,toGray)
 import Data.IORef
 import Foreign (touchForeignPtr,castPtr)
 import Numeric.LinearAlgebra
@@ -114,7 +114,7 @@ drawImage' m = do
     lineWidth $= 1
     drawROI r
 
-drawImageFloat (F im) = drawImage' im
+drawImageFloat (F im) = drawImageGray $ toGray (F im) -- drawImage' im
 drawImageGray (G im) = drawImage' im
 drawImageRGB (C im) = drawImage' im
 drawImageYUV (Y im) = drawImageRGB $ yuvToRGB (Y im)  -- drawImage' im

@@ -1,4 +1,4 @@
--- example of virtual camera
+-- example of virtual cameras
 
 import EasyVision
 
@@ -23,7 +23,7 @@ main = do
     prepare
 
     (cam,ctrl) <- getCam 0 sz
-                  >>= monitorizeIn "original" (Size 150 200) drawImage
+                  >>= monitor "original" (Size 150 200) drawImage
                   >>= asFloat
                   >>= drift alpha >>= interpolate
                   >>= withPause

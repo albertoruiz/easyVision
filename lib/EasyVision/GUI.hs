@@ -117,7 +117,8 @@ installWindow name (Size hei wid) Nothing kbdcallback state = do
 kbdcam :: (String->IO ()) -> KeyboardMouseCallback
 kbdcam ctrl = kbd where
     kbd (Char 'p') Down _ _ = ctrl "pause"
-    kbd (Char ' ') Down _ _ = ctrl "pause"
+    kbd (Char ' ') Down Modifiers {shift=Up} _ = ctrl "pause"
+    kbd (Char ' ') Down Modifiers {shift=Down} _ = ctrl "pass"
     kbd (Char 's') Down _ _ = ctrl "step"
     kbd a b c d = kbdQuit a b c d
 

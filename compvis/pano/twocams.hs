@@ -9,8 +9,8 @@ main = do
 
     prepare
 
-    (cam0,ctrl0) <- getCam 0 sz ~> channels >>= monitorizeIn "cam0" (mpSize 5) (drawImage.gray) >>= addDist >>= withPause
-    (cam1,ctrl1) <- getCam 1 sz ~> channels >>= monitorizeIn "cam1" (mpSize 5) (drawImage.gray) >>= addDist >>= withPause
+    (cam0,ctrl0) <- getCam 0 sz ~> channels >>= monitor "cam0" (mpSize 5) (drawImage.gray) >>= addDist >>= withPause
+    (cam1,ctrl1) <- getCam 1 sz ~> channels >>= monitor "cam1" (mpSize 5) (drawImage.gray) >>= addDist >>= withPause
 
 
 

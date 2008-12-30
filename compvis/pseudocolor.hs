@@ -14,7 +14,7 @@ main = do
 
     (cam,ctrl) <- getCam 0 sz ~> channels
                >>= vc
-               >>= monitorizeIn "video" (mpSize 10) (drawImage.rgb)
+               >>= monitor "video" (mpSize 10) (drawImage.rgb)
                >>= withPause
 
     hsvPalette
