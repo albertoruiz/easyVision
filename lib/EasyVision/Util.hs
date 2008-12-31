@@ -50,12 +50,13 @@ import Control.Monad(when)
 import System.Environment(getArgs,getEnvironment)
 import Data.Function(on)
 
-timing :: IO a -> IO ()
+timing :: IO a -> IO a
 timing act = do
     t0 <- getCPUTime
-    act
+    r <- act
     t1 <- getCPUTime
-    printf "%.3f s CPU\n" $ (fromIntegral (t1 - t0) / (10^12 :: Double)) :: IO ()
+    printf "%4.0f ms CPU\n" $ (fromIntegral (t1 - t0) / (10^9 :: Double))
+    return r
 
 debug :: Show x => x -> x
 debug x = trace (show x) x

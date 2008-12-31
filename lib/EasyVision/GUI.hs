@@ -21,7 +21,7 @@ module EasyVision.GUI (
 , addWindow, evWindow, evWindow3D, EVWindow(..)
 , launch, launch', launchFreq
 , InWindow, inWin, getW, putW, getROI
-, kbdcam, kbdQuit, roiControl
+, kbdcam, kbdQuit
 -- * Drawing utilities
 , module EasyVision.Draw
 , module EasyVision.Objects
@@ -130,29 +130,6 @@ kbdQuit (Char '\27') Down _ _ = exitWith ExitSuccess
 kbdQuit (Char   'i') Down _ _ = captureGL >>= saveRGB Nothing
 kbdQuit _ _ _ _               = return ()
 
--- | Installs mouse support for interactive selection of a 'ROI' (region of interest) in a window. The ROI is selected with the right button. The initial ROI can be recovered with the key R.
-roiControl :: ROI                    -- ^ initial roi
-           -> KeyboardMouseCallback  -- ^ keyboard callback for the window
-           -> IO (IO ROI)            -- ^ function to retrieve the current roi
-roiControl initROI defaultFunc = do
-    r <- newIORef initROI
-    keyboardMouseCallback $= Just (kbd r defaultFunc)
-    motionCallback $= Just (mv r)
-    return (readIORef r)
-        where
-            d = 20
-            kbd r _ (MouseButton RightButton) Down _ pos@(Position x y) =
-                modifyIORef r (\ (ROI _ r2 _ c2) ->
-                                  ROI (min (r2-d) (fromIntegral y)) r2
-                                      (min (c2-d) (fromIntegral x)) c2)
-            kbd r _ (Char 'r') Down _ _ = writeIORef r initROI
-            kbd _ defaultFunc a b c d = defaultFunc a b c d
-            mv r (Position x y) =
-                modifyIORef r (\ (ROI r1 _ c1 _) ->
-                                  ROI r1 (max (r1+d) (fromIntegral y))
-                                      c1 (max (c1+d) (fromIntegral x)))
-
-
 -----------------------------------------------------------------
 -- simpler interface, with state in each window
 
@@ -243,10 +220,14 @@ evWindow3D ist name sz kbd = do
 
 minroi = 20
 
-kbdroi r _ _ (MouseButton RightButton) Down _ pos@(Position x y) =
+kbdroi r _ _ (MouseButton RightButton) Down Modifiers {shift=Up} pos@(Position x y) =
     modifyIORef r (\ (ROI _ r2 _ c2) ->
                         ROI (min (r2-minroi) (fromIntegral y)) r2
                             (min (c2-minroi) (fromIntegral x)) c2)
+kbdroi r _ _ (MouseButton RightButton) Down Modifiers {shift=Down} pos@(Position x y) =
+    modifyIORef r (\ (ROI r1 _ c1 _) ->
+                        ROI r1 (max (r1+minroi) (fromIntegral y))
+                            c1 (max (c1+minroi) (fromIntegral x)))
 kbdroi r initroi _ (Char 'r') Down _ _ = writeIORef r initroi
 kbdroi _ _ defaultFunc a b c d = defaultFunc a b c d
 
@@ -254,4 +235,3 @@ mvroi r (Position x y) =
     modifyIORef r (\ (ROI r1 _ c1 _) ->
                         ROI r1 (max (r1+minroi) (fromIntegral y))
                             c1 (max (c1+minroi) (fromIntegral x)))
-
