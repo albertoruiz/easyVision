@@ -1,31 +1,30 @@
 import EasyVision
 import Graphics.UI.GLUT
+import Control.Arrow
 
-camera = prepare >> findSize >>= getCam 0 ~> float . gray . channels
+camera = prepare >> findSize >>= getCam 0 ~> (channels >>> gray >>> float)
 observe winname f = monitor winname (mpSize 20) f
-run = launch . (>> return ())
+run = (>> return ()) >>> launch
 
 data Param = Param { sigma :: Float, rad :: Int, thres :: Float }
 
 main =   camera >>= userParam
-     ~>  wi corners
+     ~>  fst &&& corners
      >>= observe "corners" sh >>= run
 
-corners (x,p) = getPoints32f 100
-              . localMax (rad p)
-              . thresholdVal32f (thres p) 0 IppCmpLess
-              . fixscale
-              . hessian
-              . gradients
-              . gaussS (sigma p)
-              $ x
-
-wi f x = (x, f x)
+corners (x,p) =  gaussS (sigma p)
+             >>> gradients
+             >>> hessian
+             >>> fixscale
+             >>> thresholdVal32f (thres p) 0 IppCmpLess
+             >>> localMax (rad p)
+             >>> getPoints32f 100
+              $  x
 
 fixscale im = (1/mn) .* im
     where (mn,_) = EasyVision.minmax im
 
-sh ((im,_), pts) = do
+sh (im, pts) = do
     drawImage im
     pointSize $= 5; setColor 1 0 0
     renderPrimitive Points $ mapM_ vertex pts

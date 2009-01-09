@@ -60,7 +60,7 @@ worker wIm w3D cam op mbf = do
     orig <- cam >>= return . yuvToGray
     let segs = filter ((>minlen).segmentLength) $ segments radius width median high low pp orig
         polis = segmentsToPolylines maxdis segs
-        closed4 = [p | Closed p <- polis, length p == 4]
+        closed4 = [p | Closed p <- polis, length p == length a4]
 
     inWin wIm $ do
         drawImage orig
@@ -112,6 +112,8 @@ worker wIm w3D cam op mbf = do
 
 ---------------------------------------------------------
 
+--a4 = cornerRef
+
 a4 = [[   0,    0]
      ,[   0, 2.97]
      ,[2.10, 2.97]
@@ -123,7 +125,7 @@ diagl = diag .vector
 
 pl (Point x y) = [x,y]
 
-alter pts = map (rotateList pts) [0 .. 3]
+alter pts = map (rotateList pts)  [0 .. length a4 -1]
 
 rotateList list n = take (length list) $ drop n $ cycle list
 

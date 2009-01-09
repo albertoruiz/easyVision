@@ -60,24 +60,32 @@ main = do
 
     (camtest,ctrl) <- mplayer video sz >>= detectStatic 0.01 5 >>= withPause
     w <- evWindow () "Plates detection" sz Nothing  (const (kbdcam ctrl))
-    launch $ inWin w $ do
+    t <- evWindow () "threshold" sz Nothing  (const (kbdcam ctrl))
+    launch $ do
         img <- camtest
-        drawImage img
         let imgproc = commonproc img
             candis = map (\r -> (r,imgproc)) (genrois (theROI img))
         lineWidth $= 1
         setColor' Col.gray
         let pos = filter ((=="+").classifier. features feat) candis
+            best = maximumBy (compare `on` detector . features feat) pos
         mapM_ (drawROI.fst) pos
-        when (not.null $ pos) $ do
-            lineWidth $= 3
-            setColor' Col.red
-            let best = maximumBy (compare `on` detector . features feat) pos
-            drawROI (fst best)
+
+        inWin w $ do
+            drawImage img
+            when (not.null $ pos) $ do
+                lineWidth $= 3
+                setColor' Col.red
+                drawROI (fst best)
 --             lineWidth $= 1
 --             setColor' Col.white
 --             drawVector 100 400 $ features feat best
 
+        inWin t $ when (not.null $ pos) $ do
+            drawImage (binarize (gray $ channels img) (fst best))
+
+binarize img roi = binarize8u t True img where
+    t = otsuThreshold (modifyROI (const roi) img)
 
 readSelectedRois sz file = do
     roisraw <- readFile (file++".roi")
