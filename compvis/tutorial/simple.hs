@@ -9,11 +9,11 @@ main = do
     cam <- mplayer ("mf://"++file) sz
     img <- cam
 
-    let f = float.gray.channels $ img
+    let x = float.gray.channels $ img
 
     watch "Image" (const id) img
-    watch "3 * 4" (const $ gaussS 3 . gaussS 4) f
-    watch "Gaussian" (gaussS . fromIntegral) f
+    watch "3 * 4" (const $ gaussS 3 . gaussS 4) x
+    watch "Gaussian" (gaussS . fromIntegral) x
 
     mainLoop
 
