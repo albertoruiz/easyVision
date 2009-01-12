@@ -1,10 +1,10 @@
 import EasyVision
 
-camera = prepare >> findSize >>= getCam 0
+camera = findSize >>= getCam 0
 
-observe winname f = monitor winname (mpSize 20) (drawImage.f)
+observe = monitor "Video" (mpSize 20) drawImage
 
-run = launch . (>> return ())
+run c = prepare >> (c >>= launch . (>> return ()))
 
 
-main = camera >>= observe "Video" id >>= run
+main = run (camera >>= observe)

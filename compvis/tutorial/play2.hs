@@ -1,9 +1,9 @@
 import EasyVision
 
-camera = prepare >> findSize >>= getCam 0
+camera = findSize >>= getCam 0
 observe winname f = monitor winname (mpSize 20) (drawImage.f)
-run = launch . (>> return ())
+run c = prepare >> (c >>= launch . (>> return ()))
 
 f = gaussS 5.7 . float . gray . channels
 
-main = camera >>= observe "Video" f >>= run
+main = run (camera >>= observe "Gauss" f)

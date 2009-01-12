@@ -2,10 +2,10 @@ import EasyVision
 import Graphics.UI.GLUT
 import Control.Monad(when)
 
-camera = prepare >> findSize >>= getCam 0 ~> gray.channels
-run = launch . (>> return ())
+camera = findSize >>= getCam 0 ~> gray.channels
+run c = prepare >> (c >>= launch . (>> return ()))
 
-main = camera >>= bgDiff >>= run
+main = run (camera >>= bgDiff)
 
 bgDiff cam = do
     w <- evWindow (True,undefined) "bg diff" (mpSize 20) Nothing (mouse kbdQuit)
