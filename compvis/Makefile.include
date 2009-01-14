@@ -28,7 +28,7 @@ CONTRIB = $(CONTRIBPATH)/Simple/simple.o        \
 LIBS = -i$(EVLIB)  -I$(IPP)/include \
        $(CDIR)/auxIpp.o $(CDIR)/adapt.o \
        $(CONTRIBPATH)/Simple/simple.o \
-       -L$(CONTRIBPATH)/Segments -lsegments \
+       $(CONTRIBPATH)/Segments/libsegments.a \
        $(CONTRIBPATH)/Burns/burns.o \
        -L$(IPP)/sharedlib -lguide -lippcore$(IPPS) -lippi$(IPPS)\
        -lipps$(IPPS) -lippcc$(IPPS) -lippvc$(IPPS) -lippcv$(IPPS)
