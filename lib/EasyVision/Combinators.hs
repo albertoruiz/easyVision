@@ -269,12 +269,6 @@ inThread cam = do
 
 -----------------------------------------------------------
 
--- -- | to do
--- withChannels :: IO ImageYUV -> IO (IO Channels)
--- withChannels cam = return $ fmap channels cam
-
------------------------------------------------------------
-
 conjugateRotation pan tilt rho foc sca =
         scaling sca
         <> kgen foc

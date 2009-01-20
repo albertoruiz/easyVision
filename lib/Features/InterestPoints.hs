@@ -60,6 +60,8 @@ mkExtPyr k fun img sigma =
         grads    = gradients smoothed
         resp     = fun grads
 
+-- note: the cascading property does not show a significant speedup (and loses roi)
+
 -- | specific method to obtain invariant descriptors of image regions
 type Descriptor = ExtPyr -> (Pixel,Float) -> DetailedInterestPoint
 

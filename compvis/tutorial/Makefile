@@ -3,7 +3,8 @@ ALL = play play0 play1 play2 play3 \
       state state2 \
       param1 param2 param3 \
       simple pose \
-      roisel roibrowse roiclass
+      roisel roibrowse roiclass \
+      conc0 conc1
 EASYVISION = ../..
 
 include ../Makefile.include
