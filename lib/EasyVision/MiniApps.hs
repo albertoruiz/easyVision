@@ -465,12 +465,13 @@ zoomer :: String        -- ^ window title
        -> ImageGray    -- ^ initial image to analyze
        -> IO (ImageGray -> IO ()) -- ^ update function
 zoomer title szz img0 = do
-    w <- evWindow (img0,Pixel (h`div`2) (w`div`2),z0)
+    w <- evWindow (img0,Pixel (h`div`2) (w`div`2),z0,True)
                   title isz (Just disp) (mouse kbdQuit)
     let f im = do
-            (_,p,z) <- getW w
-            putW w (im,p,z)
-            postRedisplay (Just (evW w))
+            (_,p,z,ok) <- getW w
+            when ok $ do
+                putW w (im,p,z,ok)
+                postRedisplay (Just (evW w))
     return f
     where
     isz = Size szz szz
@@ -478,7 +479,7 @@ zoomer title szz img0 = do
     s2 = (szz-1) `div` 2
     z0 = min h w `div` 2
     disp st = do
-        k@(img,p,z) <- get st
+        k@(img,p,z,_) <- get st
         let roi = roiFromPixel z p
             imgz = modifyROI (const roi) img
         drawImage $ resize8u InterpNN isz imgz
@@ -497,23 +498,27 @@ zoomer title szz img0 = do
             setColor 0 0 0.7
             sequence_ [text2D' (fromIntegral (c-c1) +dx) (fromIntegral (r-r1) +dy) (show $ imgz `val8u` (Pixel r c)) |r<-[r1..r2],c<-[c1..c2]]
     mouse _ st (MouseButton WheelUp) Down _ _ = do
-        (im,p,z) <- get st
-        st $= clip (im,p,z+(max 1 $ z`div`10))
+        (im,p,z,ok) <- get st
+        st $= clip (im,p,z+(max 1 $ z`div`10),ok)
         postRedisplay Nothing
     mouse _ st (MouseButton WheelDown) Down _ _ = do
-        (im,p,z) <- get st
-        st $= clip (im,p,z-(max 1 $ z`div`10))
+        (im,p,z,ok) <- get st
+        st $= clip (im,p,z-(max 1 $ z`div`10),ok)
         postRedisplay Nothing
     mouse _ st (MouseButton LeftButton) Down _ (Position x y) = do
-        (im,Pixel r c,z) <- get st
-        st $= clip (im, Pixel (r+(fromIntegral y-s2)*z`div`s2) (c+(fromIntegral x-s2)*z`div`s2) ,z)
+        (im,Pixel r c,z,ok) <- get st
+        st $= clip (im, Pixel (r+(fromIntegral y-s2)*z`div`s2) (c+(fromIntegral x-s2)*z`div`s2) ,z, ok)
+        postRedisplay Nothing
+    mouse _ st (Char ' ') Down _ _ = do
+        (im,Pixel r c,z,ok) <- get st
+        st $= (im,Pixel r c,z, not ok)
         postRedisplay Nothing
     mouse _ st (Char 'q') Down _ _ = do
         Just w <- get currentWindow
         destroyWindow w
     mouse def _ a b c d = def a b c d
 
-    clip (im,Pixel r c, z) = (im,Pixel r' c', z') where
+    clip (im,Pixel r c, z, ok) = (im,Pixel r' c', z', ok) where
         z' = max 1 $ min (min h w`div`2) $ z
         r' = max z' $ min (h-z'-1) $ r
         c' = max z' $ min (w-z'-1) $ c

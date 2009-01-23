@@ -13,8 +13,10 @@ Concurrency utilities.
 -----------------------------------------------------------------------------
 
 module EasyVision.Concurrent (
-    asyncFun
-)where
+    asyncFun,
+    syncFun,
+    mkWatch
+) where
 
 import Control.Concurrent
 import Control.Monad
@@ -23,12 +25,17 @@ import ImagProc.Ipp.Core
 import Features
 import Numeric.LinearAlgebra(Vector, (@>))
 import Storable(Storable)
+import Data.IORef
 
 instance NFData ImageYUV where
     rnf = rwhnf
 
 instance NFData ImageFloat where
     rnf = rnf . (`fval` (Pixel 0 0))
+
+instance NFData ImageGray where
+    rnf = rnf . fi . (`val8u` (Pixel 0 0)) where fi x = fromIntegral x :: Int
+
 
 instance NFData DetailedInterestPoint where
      rnf = rnf . ip
@@ -43,15 +50,38 @@ instance (NFData a, Storable a) => NFData (Vector a) where
 instance NFData Pixel where
      rnf (Pixel r c) = rnf r
 
-concF put get d f n = do
+asyncFun d f n = do
     v <- n >>= newMVar . f
     forkIO $ forever $ do 
         when (d>0) (threadDelay d)
         x <- n
         let y = f x `using` rnf
-        y `seq` put v y
-    return (get v)
+        y `seq` swapMVar v y
+    return (readMVar v)
 
-asyncFun d f n = concF swapMVar readMVar d f n
 
-concFS f n = concF putMVar takeMVar 0 f n
+syncFun f k n = do
+    x <- fmap f n
+    o:vs <- replicateM (k+1) (newMVar x)
+    forkIO $ forever $ do
+        x <- n
+        let y = f x `using` rnf
+            r:rs = vs
+            put z = swapMVar o z >> mapM_ (forkIO . flip putMVar z) rs >> putMVar r z
+        y `seq` put y
+    return (fmap takeMVar vs, readMVar o)
+
+mkWatch :: IO (IO a) -> IO (IO a, IO a)
+mkWatch gencam = do
+    cam <- gencam
+    v <- newEmptyMVar
+    fstTime <- newIORef True
+    let newCam = do
+            x <- cam
+            ft <- readIORef fstTime
+            if ft then putMVar v x 
+                  else swapMVar v x >> return ()
+            writeIORef fstTime False
+            return x
+        watch = readMVar v
+    return (newCam,watch)
