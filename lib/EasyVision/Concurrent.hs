@@ -15,7 +15,9 @@ Concurrency utilities.
 module EasyVision.Concurrent (
     asyncFun,
     syncFun,
-    mkWatch
+    mkWatch,
+    (|***|),
+    pipeline
 ) where
 
 import Control.Concurrent
@@ -26,6 +28,7 @@ import Features
 import Numeric.LinearAlgebra(Vector, (@>))
 import Storable(Storable)
 import Data.IORef
+import Debug.Trace
 
 instance NFData ImageYUV where
     rnf = rwhnf
@@ -38,7 +41,7 @@ instance NFData ImageGray where
 
 
 instance NFData DetailedInterestPoint where
-     rnf = rnf . ip
+    rnf = rnf . ip
 --     rnf = rnf . ipRawPosition
 
 instance NFData InterestPoint where
@@ -49,6 +52,9 @@ instance (NFData a, Storable a) => NFData (Vector a) where
 
 instance NFData Pixel where
      rnf (Pixel r c) = rnf r
+
+instance NFData Point where
+     rnf (Point x y) = rnf x
 
 asyncFun d f n = do
     v <- n >>= newMVar . f
@@ -85,3 +91,13 @@ mkWatch gencam = do
             return x
         watch = readMVar v
     return (newCam,watch)
+
+-----------------------------------------------------
+
+f |***| g = h where
+    h (x,y) = (f x, g y) `using` parPair rnf rnf
+
+-----------------------------------------------------
+
+pipeline f (a:b:rest) = fa : pipeline f (b':rest) where
+    (fa, b') = (f a, b) `using` parPair rnf rnf

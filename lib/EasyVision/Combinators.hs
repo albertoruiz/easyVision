@@ -29,7 +29,8 @@ module EasyVision.Combinators (
   onlyRectangles,
   rectifyQuadrangle,
   monitor,
-  inThread
+  inThread,
+  counter
 )where
 
 import ImagProc.Ipp.Core
@@ -251,6 +252,15 @@ monitor name sz fun cam = do
         thing <- cam'
         inWin w (fun thing)
         return thing
+
+---------------------------------------------------------
+
+counter tot cam = do
+    vn <- newIORef tot
+    return $ do
+        n <- readIORef vn
+        if n==0 then exitWith ExitSuccess else writeIORef vn (n-1)
+        cam
 
 ---------------------------------------------------------
 

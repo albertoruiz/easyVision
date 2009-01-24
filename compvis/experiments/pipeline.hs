@@ -1,13 +1,11 @@
 -- sequential vs pipeline. Compare:
--- time ./pipeline 'video.avi -benchmark' --guifps=100 --sizework=40 --seq
--- time ./pipeline 'video.avi -benchmark' --guifps=100 --sizework=40
+-- time ./pipeline 'video.avi -benchmark' --guifps=100 --sizework=35 --seq  +RTS  -N2
+-- time ./pipeline 'video.avi -benchmark' --guifps=100 --sizework=35        +RTS  -N2
 
 import EasyVision
 import Graphics.UI.GLUT(postRedisplay)
 import Control.Monad(liftM2)
 import Control.Arrow
-import Data.IORef
-import System.Exit
 
 monitor' name sz fun = do
     w <- evWindow () name sz (Just (const fun)) (const kbdQuit)
@@ -22,13 +20,6 @@ camera = findSize >>= getCam 0 ~> channels
 observe winname f = monitor winname (mpSize 20) (drawImage.f)
 run c = prepare >> (c >>= launch . (>> return ()))
 
-counter tot cam = do
-    vn <- newIORef tot
-    return $ do
-        n <- readIORef vn
-        if n==0 then exitWith ExitSuccess else writeIORef vn (n-1)
-        cam
-
 async f = asyncFun 0 id f
 
 syncFun' f n = syncFun (f***id) n
@@ -41,13 +32,18 @@ edges th img = canny (gx,gy) (th*2/3,th) where
     gx = (-1) .* sobelVert img
     gy =         sobelHoriz img
 
-fun1 sigma thres szw = edges thres . gaussS sigma . float. resize (mpSize szw). gray
+--fun1 sigma thres szw = edges thres . gaussS sigma . float. resize (mpSize szw). gray
 
-fun2 = distanceTransform [1,1.4,2.2] . notI
+--fun2 = distanceTransform [1,1.4,2.2] . notI
+
+fun1 _ _ szw = gaussS 20 . float. resize (mpSize szw). gray
+fun2 = gaussS 20 . gaussS 20
 
 ---------------------------------------------------------------------
 
-mainPipe = do
+nf = 100
+
+mainSync = do
     sigma <- getOption "--sigma" 3
     thres <- getOption "--thres" 0.1
     szw   <- getOption "--sizework" 40
@@ -60,9 +56,9 @@ mainPipe = do
 
     getOption "--guifps" 30 >>= flip runGUI
            [ observe' "cam" gray vcam
-           , observe' "eges"    id ve
-           , observe' "disttrans" ((1/60) .*)  dt
-           , counter 500 (return ())
+           , observe' "f1"    id ve
+           , observe' "f2"    id dt
+           , counter nf (return ())
            ]
 
 shFrame n = do
@@ -76,15 +72,32 @@ mainSeq = do
     thres <- getOption "--thres" 0.1
     szw   <- getOption "--sizework" 40
 
-    run    $   camera >>= counter 500
-           >>= observe "original" gray
+    run    $   camera >>= counter nf
+           >>= observe "cam" gray
            ~>  fun1 sigma thres szw
-           >>= observe "edges" id
+           >>= observe "f1" id
            ~>  fun2
-           >>= observe "distTrans" (((1/60) .*))
+           >>= observe "f2" id
+
+----------------------------------------------------------------------------
+
+mainPipe = do
+    sigma <- getOption "--sigma" 3
+    thres <- getOption "--thres" 0.1
+    szw   <- getOption "--sizework" 40
+
+    putStrLn "auto pipeline"
+
+    run    $   camera >>= counter nf
+           >>= observe "cam" gray
+           ~>  fun1 sigma thres szw
+--           >>= observe "f1" id
+           ~~> pipeline fun2
+           >>= observe "f2" id
 
 --------------------------------------------------------------------------------
 
 main = do
-    sq <- getFlag "--seq"
-    if sq then mainSeq else mainPipe
+    sq  <- getFlag "--seq"
+    syn <- getFlag "--sync"
+    if sq then mainSeq else if syn then mainSync else mainPipe

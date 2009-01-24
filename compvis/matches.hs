@@ -178,10 +178,3 @@ mouse _ st (MouseButton LeftButton) Down _ _ = do
 mouse def _ a b c d = def a b c d
 
 distv a b = pnorm PNorm2 (a-b)
-
-
-instance NFData InterestPoint where
-     rnf = rnf . ipPosition
-
-instance NFData Point where
-     rnf (Point x y) = rnf x
