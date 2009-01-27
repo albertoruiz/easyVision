@@ -30,7 +30,7 @@ import Data.IORef
 import System.IO
 import System.Environment
 import System
-import Data.List(isPrefixOf)
+import Data.List(isInfixOf)
 import System.Directory(doesFileExist)
 import Control.Monad(when)
 
@@ -55,8 +55,11 @@ mplayer url (Size h w) = do
     k <- mallocBytes 1
     poke k '\0'         -- essential!!
 
-    let mpcommand = url ++ " -vf scale=" ++ show w ++ ":" ++ show h
-                    ++ " -vo yuv4mpeg:file="++fifo++" -nosound -slave -loop 0"
+    let loop url | "-loop" `isInfixOf` url = ""
+                 | otherwise               = " -loop 0"
+
+        mpcommand = url ++ " -vf scale=" ++ show w ++ ":" ++ show h
+                    ++ " -vo yuv4mpeg:file="++fifo++" -nosound -slave" ++ loop url
 
     --(i,o,e,p) <- runInteractiveProcess "mplayer" (words mpcommand) Nothing Nothing
     --(i,o,e,p) <- runInteractiveCommand ("mplayer " ++mpcommand)
@@ -80,8 +83,9 @@ mplayer url (Size h w) = do
         Y im <- image (Size h w)
         --hGetLine f >>= print
         hGetBuf f (castPtr (ptr im)) 6 -- find?
-        n <- hGetBuf f (castPtr (ptr im)) (w*h*3`div`2)
-        --print n
+        let frameSize = w*h*3`div`2
+        n <- hGetBuf f (castPtr (ptr im)) frameSize
+        when (n < frameSize) (exitWith ExitSuccess)
         return (Y im)
 
     return grab
