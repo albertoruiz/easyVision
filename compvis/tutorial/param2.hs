@@ -1,14 +1,16 @@
 import EasyVision
 import Graphics.UI.GLUT
 import Control.Arrow
+import Control.Monad
 
 camera = findSize >>= getCam 0 ~> (channels >>> gray >>> float)
 observe winname f = monitor winname (mpSize 20) f
 run c = prepare >> (c >>= launch . (>> return ()))
+(.&.) = liftM2 (liftM2 (,))
 
 data Param = Param { sigma :: Float, rad :: Int, thres :: Float }
 
-main = run $ camera >>= userParam
+main = run $ camera .&. userParam
          ~>  fst &&& corners
          >>= observe "corners" sh
 
@@ -29,13 +31,10 @@ sh (im, pts) = do
     pointSize $= 5; setColor 1 0 0
     renderPrimitive Points $ mapM_ vertex pts
 
-userParam cam = do
+userParam = do
     o <- createParameters [("sigma",realParam 3 0 20),
                            ("rad"  ,intParam  4 1 25),
                            ("thres",realParam 0.6 0 1)]
-    return $ do
-        x <- cam
-        s <- getParam o "sigma"
-        r <- getParam o "rad"
-        t <- getParam o "thres"
-        return (x, Param {sigma = s, rad = r, thres = t})
+    return $ return Param `ap` getParam o "sigma"
+                          `ap` getParam o "rad"
+                          `ap` getParam o "thres"
