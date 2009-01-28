@@ -18,8 +18,7 @@ Image acquisition from real cameras and other video sources using MPlayer.
 module ImagProc.Camera (
   -- * MPlayer interface
   -- | This camera works with any kind of video source accepted by MPlayer.
-  mplayer, mpSize, openYUV4Mpeg,
-
+  mplayer, mplayer', mpSize, openYUV4Mpeg
 )where
 
 import ImagProc.Ipp.Core
@@ -33,6 +32,7 @@ import System
 import Data.List(isInfixOf)
 import System.Directory(doesFileExist)
 import Control.Monad(when)
+import Data.Maybe
 
 -- | Computes a 4\/3 \'good\' size for both mplayer and IPP. mpSize 20 = 640x480
 mpSize :: Int -> Size
@@ -43,10 +43,11 @@ mpSize k | k > 0     = Size (k*24) (k*32)
 -- | Interface to mplayer (implemented using a pipe and the format yuv4mpeg).
 -- It admits the url shortcuts webcam1, webcam2, and firewire,
 -- and automatically supplies the required additional parameters.
-mplayer :: String               -- ^ any url admitted by mplayer
-        -> Size                 -- ^ desired image size (see 'mpsize')
-        -> IO (IO ImageYUV)     -- ^ function returning a new frame and camera controller
-mplayer url (Size h w) = do
+-- The grab function returns Nothing if there are no remaining frames to read.
+mplayer' :: String                       -- ^ any url admitted by mplayer
+         -> Size                         -- ^ desired image size (see 'mpsize')
+         -> IO (IO (Maybe ImageYUV))     -- ^ function returning a new frame
+mplayer' url (Size h w) = do
 
     let fifo = "/tmp/mplayer-fifo"
     system $ "rm -f "++fifo
@@ -85,12 +86,21 @@ mplayer url (Size h w) = do
         hGetBuf f (castPtr (ptr im)) 6 -- find?
         let frameSize = w*h*3`div`2
         n <- hGetBuf f (castPtr (ptr im)) frameSize
-        when (n < frameSize) (exitWith ExitSuccess)
-        return (Y im)
+        return $ if (n < frameSize)
+                   then Nothing
+                   else Just (Y im)
 
     return grab
 
 -- deinterlace -vf pp=md
+
+-- | The same as @mplayer'@, but it returns a grab function which exits the program if
+-- there are no remaining frames to read.
+mplayer :: String                       -- ^ any url admitted by mplayer
+        -> Size                         -- ^ desired image size (see 'mpsize')
+        -> IO (IO ImageYUV)             -- ^ function returning a new frame
+mplayer url sz = f `fmap` mplayer' url sz where
+    f mbcam = mbcam >>= (maybe (exitWith ExitSuccess) return)
 
 ------------------------------------------------
 

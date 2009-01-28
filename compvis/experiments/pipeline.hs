@@ -1,6 +1,6 @@
 -- sequential vs pipeline. Compare:
--- time ./pipeline 'video.avi -benchmark' --guifps=100 --sizework=35 --seq  +RTS  -N2
--- time ./pipeline 'video.avi -benchmark' --guifps=100 --sizework=35        +RTS  -N2
+-- time ./pipeline 'video.avi -benchmark -frames 100' --guifps=100 --sizework=35 --seq  +RTS  -N2
+-- time ./pipeline 'video.avi -benchmark -frames 100' --guifps=100 --sizework=35        +RTS  -N2
 
 import EasyVision
 import Graphics.UI.GLUT(postRedisplay)
@@ -41,8 +41,6 @@ fun2 = gaussS 20 . gaussS 20
 
 ---------------------------------------------------------------------
 
-nf = 100
-
 mainSync = do
     sigma <- getOption "--sigma" 3
     thres <- getOption "--thres" 0.1
@@ -58,7 +56,6 @@ mainSync = do
            [ observe' "cam" gray vcam
            , observe' "f1"    id ve
            , observe' "f2"    id dt
-           , counter nf (return ())
            ]
 
 shFrame n = do
@@ -72,7 +69,7 @@ mainSeq = do
     thres <- getOption "--thres" 0.1
     szw   <- getOption "--sizework" 40
 
-    run    $   camera >>= counter nf
+    run    $   camera
            >>= observe "cam" gray
            ~>  fun1 sigma thres szw
            >>= observe "f1" id
@@ -88,7 +85,7 @@ mainPipe = do
 
     putStrLn "auto pipeline"
 
-    run    $   camera >>= counter nf
+    run    $   camera
            >>= observe "cam" gray
            ~>  fun1 sigma thres szw
 --           >>= observe "f1" id

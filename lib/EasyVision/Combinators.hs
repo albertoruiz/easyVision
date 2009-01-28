@@ -255,12 +255,21 @@ monitor name sz fun cam = do
 
 ---------------------------------------------------------
 
-counter tot cam = do
+countDown tot cam = do
     vn <- newIORef tot
     return $ do
         n <- readIORef vn
         if n==0 then exitWith ExitSuccess else writeIORef vn (n-1)
         cam
+
+counter cam = do
+    vn <- newIORef 1
+    return $ do
+        x <- cam
+        n <- readIORef vn
+        putStrLn $ "#" ++ show n
+        writeIORef vn (n+1)
+        return x
 
 ---------------------------------------------------------
 

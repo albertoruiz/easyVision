@@ -18,6 +18,7 @@ module EasyVision.Util(
     getFlag, hasValue, maybeOption,
     -- * Camera selection
     getCam, numCams,
+    readFrames, writeFrames,
     findSize,
     -- * Misc graphics utilities
     optionalSaver,
@@ -40,13 +41,14 @@ import ImagProc.Camera
 import Foreign (touchForeignPtr,castPtr)
 import ImagProc.Images
 import System.IO
+import System.IO.Unsafe(unsafeInterleaveIO)
 import System
 import Data.List(isPrefixOf,foldl',tails,findIndex)
 import Directory(getDirectoryContents,doesFileExist)
 import System.CPUTime
 import Text.Printf
 import Debug.Trace
-import Control.Monad(when)
+import Control.Monad
 import System.Environment(getArgs,getEnvironment)
 import Data.Function(on)
 
@@ -122,7 +124,7 @@ findSize = do
 
 -- | returns a camera from the n-th user argument
 getCam :: Int  -- ^ n-th camera url supplied by the user (or defined in cameras.def)
-       -> Size -- ^ desired size
+       -> Size -- ^ image size
        -> IO (IO ImageYUV)
 getCam n sz = do
     args <- cleanOpts `fmap` getArgs
@@ -131,6 +133,28 @@ getCam n sz = do
                 then args!!n
                 else fst (aliases!!n)
     mplayer (expand aliases url) sz
+
+-- | returns lazily all the frames produced by the given url
+readFrames :: Int  -- ^ n-th camera url supplied by the user (or defined in cameras.def)
+          -> Size -- ^ image size
+          -> IO [ImageYUV]
+readFrames n sz = do
+    args <- cleanOpts `fmap` getArgs
+    aliases <- getAliases
+    let url = if n < length args
+                then args!!n
+                else fst (aliases!!n)
+    mbxs <- mplayer' (expand aliases url) sz >>= replicateM (3*60*60*30) . unsafeInterleaveIO
+    return (mkList mbxs)
+  where
+    mkList (Just a: rest) = a : mkList rest
+    mkList (Nothing:_)    = []
+
+writeFrames :: FilePath -> [ImageYUV] -> IO ()
+writeFrames filename fs@(f0:_) = do
+    let sz = size f0
+    sv <- openYUV4Mpeg sz filename Nothing
+    mapM_ sv fs
 
 -- | extracts an option from the command line. From --alpha=1.5 we get 1.5::Double.
 getOption :: Read a

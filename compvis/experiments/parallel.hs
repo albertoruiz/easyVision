@@ -41,12 +41,12 @@ showFeat p = do
     let Pixel y x = ipRawPosition p
     drawVector x y (10*ipDescriptor (ip p))
 
-main1 = run $   camera 0 >>= counter 30
+main1 = run $   camera 0
            >>= observe "img 0" (drawImage.rgb)
            ~>  g
            >>= observe "feat 0" sh
 
-main2 op = run $ (camera 0 .&. camera 1) >>= counter 30
+main2 op = run $ (camera 0 .&. camera 1)
           >>= observe "img 0" (drawImage.rgb.fst)
           >>= observe "img 1" (drawImage.rgb.snd)
           ~> g `op` g
