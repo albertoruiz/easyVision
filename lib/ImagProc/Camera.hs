@@ -82,13 +82,12 @@ mplayer' url (Size h w) = do
 
     let grab = do
         Y im <- image (Size h w)
-        --hGetLine f >>= print
-        hGetBuf f (castPtr (ptr im)) 6 -- find?
         let frameSize = w*h*3`div`2
-        n <- hGetBuf f (castPtr (ptr im)) frameSize
-        return $ if (n < frameSize)
-                   then Nothing
-                   else Just (Y im)
+        n <- hGetBuf f (castPtr (ptr im)) 6
+        if n < 6
+            then return Nothing
+            else do hGetBuf f (castPtr (ptr im)) frameSize
+                    return (Just (Y im))
 
     return grab
 
