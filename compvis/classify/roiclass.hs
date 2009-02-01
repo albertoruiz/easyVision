@@ -84,7 +84,7 @@ main = do
         inWin t $ when (not.null $ pos) $ do
             drawImage (binarize (gray $ channels img) (fst best))
 
-binarize img roi = binarize8u t True img where
+binarize img roi = binarize8u t img where
     t = otsuThreshold (modifyROI (const roi) img)
 
 readSelectedRois sz file = do

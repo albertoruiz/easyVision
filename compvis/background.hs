@@ -17,7 +17,7 @@ main = do
         when rec $ do
             putW w (False,orig)
         when (not rec) $ inWin w $ do
-            let mask = binarize8u 100 True $ diffRGB bg orig
+            let mask = binarize8u 100 $ diffRGB bg orig
             drawImage $ copyMask32f (float . gray $ orig) mask
 
 

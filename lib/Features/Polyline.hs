@@ -128,7 +128,7 @@ contours :: Int       -- ^ maximum number of contours
          -> ImageGray -- ^ image source
          -> [([Pixel],Int,ROI)]  -- ^ list of contours, with area and ROI
 contours n d th mode im = unsafePerformIO $ do
-    aux <- cloneClear $ binarize8u th mode im
+    aux <- cloneClear $ (if mode then id else notI) (binarize8u th im)
     r <- auxCont n d aux
     return r
 

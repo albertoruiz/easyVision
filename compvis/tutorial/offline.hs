@@ -8,7 +8,7 @@ observe winname f = monitor winname (mpSize 20) (drawImage.f)
 run c = prepare >> (c >>= launch . (>> return ()))
 
 save f cam = do
-    filename <- fmap (maybe "saved.yuv" id) (getRawOption "--save")
+    filename <- optionString "--save" "saved.yuv"
     sz <- findSize
     sv <- openYUV4Mpeg sz filename Nothing
     return $ do

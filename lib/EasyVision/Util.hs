@@ -14,14 +14,16 @@ General utilities.
 
 module EasyVision.Util(
     -- * Command line options
-    getRawOption, getOption,
+    getRawOption, getOption, optionString,
     getFlag, hasValue, maybeOption,
+    findSize,
     -- * Camera selection
     getCam, numCams,
-    readFrames, writeFrames,
-    findSize,
-    -- * Misc graphics utilities
+    readFrames,
+    -- * Video output
+    writeFrames,
     optionalSaver,
+    -- * Misc graphics utilities
     captureGL,
     saveRGB,
     evSize,
@@ -30,7 +32,8 @@ module EasyVision.Util(
     timing,
     debug,
     -- * Other
-    on
+    on,
+    lazyRead
 )where
 
 import Graphics.UI.GLUT hiding (RGB, Matrix, Size, Point)
@@ -134,22 +137,37 @@ getCam n sz = do
                 else fst (aliases!!n)
     mplayer (expand aliases url) sz
 
--- | returns lazily all the frames produced by the given url
+-----------------------------------------------
+
+lazyRead :: IO a -> IO [a]
+lazyRead get = do
+    a  <- get
+    as <- unsafeInterleaveIO (lazyRead get)
+    return (a:as)
+
+-----------------------------------------------
+
+-- | returns a lazy list with all the frames produced by an image source.
 readFrames :: Int  -- ^ n-th camera url supplied by the user (or defined in cameras.def)
-          -> Size -- ^ image size
-          -> IO [ImageYUV]
-readFrames n sz = do
-    args <- cleanOpts `fmap` getArgs
-    aliases <- getAliases
-    let url = if n < length args
-                then args!!n
-                else fst (aliases!!n)
-    mbxs <- mplayer' (expand aliases url) sz >>= replicateM (3*60*60*30) . unsafeInterleaveIO
-    return (mkList mbxs)
-  where
+           -> IO [ImageYUV]
+readFrames n = fmap mkList (readFrames' n) where
     mkList (Just a: rest) = a : mkList rest
     mkList (Nothing:_)    = []
 
+readFrames' n = do
+    args <- cleanOpts `fmap` getArgs
+    aliases <- getAliases
+    sz <- findSize
+    let url = if n < length args
+                then args!!n
+                else fst (aliases!!n)
+    mplayer' (expand aliases url) sz >>= lazyRead
+
+
+-- | writes a list of frames in a file with the yuv4mpeg format understood by mplayer.
+-- If the output filename is /dev/stdout you can pipe the result to mencoder like this:
+--
+-- ./prog | mencoder - -o result.avi -ovc lavc -fps 125 [other options]
 writeFrames :: FilePath -> [ImageYUV] -> IO ()
 writeFrames filename fs@(f0:_) = do
     let sz = size f0
@@ -197,6 +215,13 @@ getFlag :: String -- ^ option name, including the dashes (e.g. \"--opt\").
 getFlag name = do
     args <- getArgs
     return (any (isPrefixOf name) args)
+
+-- | Special version of 'getOption' for strings, without the need of the quotes required by @read@.
+optionString :: String -- ^ option name
+             -> String -- ^ default value
+             -> IO String
+optionString name def = fmap (maybe def id) (getRawOption name)
+
 
 -- | Number of explicit camera arguments supplied (automatic aliases from cameras.def are not taken into account).
 numCams :: IO Int

@@ -19,8 +19,11 @@ module ImagProc.ImageProcessing (
     module ImagProc.Ipp.AdHoc,
     module ImagProc.Ipp.Pure,
     module ImagProc.Generic,
-    binarize8u, localMax,
-    Grads(..),gradients, hessian,
+    binarize8u, binarize32f,
+    localMax,
+    Grads(..),gradients,
+    canny,
+    hessian,
     getCorners,
     filter32f, filter8u,
     gaussS, gaussS',
@@ -37,14 +40,17 @@ import Data.List(transpose)
 import Vision(rot3,scaling,desp,unitary)
 import Numeric.LinearAlgebra hiding ((.*))
 
--- | Binarizes an image.
-binarize8u :: CUChar -- ^ threshold
-           -> Bool   -- ^ True = higher values -> 255, False = higher values -> 0
+-- | Binarizes a gray level image.
+binarize8u :: CUChar    -- ^ threshold
            -> ImageGray -- ^ image source
-           -> ImageGray
-binarize8u th True = thresholdVal8u (th-1) 255 IppCmpGreater . thresholdVal8u th 0 IppCmpLess
-binarize8u th False = notI . binarize8u th True
+           -> ImageGray -- ^ result: higher values -> 255, lower values -> 0
+binarize8u th = thresholdVal8u (th-1) 255 IppCmpGreater . thresholdVal8u th 0 IppCmpLess
 
+-- | Binarizes a float image.
+binarize32f :: Float    -- ^ threshold
+           -> ImageFloat -- ^ image source
+           -> ImageFloat -- ^ result: higher values -> 1, lower values -> 0
+binarize32f th = thresholdVal32f th 1 IppCmpGreater . thresholdVal32f th 0 IppCmpLess
 
 -- | Nonmaximum supression. Given an I32f image returns a copy of the input image with all the pixels which are not local maxima set to 0.0.
 localMax :: Int         -- ^ radius of the 'filterMax'
@@ -132,6 +138,14 @@ gaussS' ext s = filter32f mask . filter32f (transpose mask)
 gaussS :: Float -> ImageFloat -> ImageFloat
 gaussS s | s > 0     = gaussS' 3 s
          | otherwise = id
+
+--------------------------------------------------------------------
+
+-- | Canny's edge detector.
+canny :: (Float,Float) -- ^ low and high threshold
+      -> Grads         -- ^ image gradient
+      -> ImageGray     -- ^ resulting image
+canny th g = canny32f ((-1) .* gx g, gy g) th
 
 --------------------------------------------------------------------
 

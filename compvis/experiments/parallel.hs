@@ -19,9 +19,7 @@ fun img = (img, fullHessian (surf 2 2) sigmas 50 0.2 img)
 
 g = gaussS 20 . gaussS 20 . gaussS 20 . float. resize (mpSize 40). gray
 
-edges th img = canny (gx,gy) (th*2/3,th) where
-    gx = (-1) .* sobelVert img
-    gy =         sobelHoriz img
+edges th = canny (th*2/3,th) . gradients
 
 fun1 sigma thres szw = edges thres . gaussS sigma . float. resize (mpSize szw). gray
 

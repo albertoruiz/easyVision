@@ -18,11 +18,12 @@ main = run $   cameraG .&. userParam
            ~~> comb                           .***. id
            ~>  ((id &&& gradients) *** id)     ***  id
            ~>  (restrict &&& snd)              ***  id
-           ~>  smooth                          &&& snd
+ --          ~>  smooth                          &&& snd
            >>= monitor "flow0" (mpSize 20) shFlow
 
 dist (x,p) =   gaussS (sigma p)
-           >>> edges (thresH p) (thresL p)
+           >>> gradients
+           >>> canny (thresL p, thresH p)
            >>> sat (satur p) . distanceTransform [1,1.4,2.2] . notI &&& float
             $  x
 
@@ -31,10 +32,6 @@ smooth (x,p) = ((box *** box) *** id) x
                 (sigma .*) . gaussS sigma
           sigma = fromIntegral $ extent p
 
-edges thH thL img = canny (gx,gy) (thL,thH) where
-    gx = (-1) .* sobelVert img
-    gy =         sobelHoriz img
-
 comb ((d1,e1):r@((d2,e2):_)) = (d1,e2) : comb r
 
 sat h = thresholdVal32f h 0 IppCmpGreater
@@ -42,7 +39,7 @@ sat h = thresholdVal32f h 0 IppCmpGreater
 sc = scale32f8u (-20) 20
 
 restrict ((d,g),e) = (gx  g|*|e', gy g|*|e')
-    where e' = e|*|d
+    where e' = (1/8) .* e|*|d
 
 shFlow (((gx,gy),e0), p) = do
     let s = step p
@@ -93,9 +90,9 @@ userParam = do
                           ,("thresH"   ,realParam 0.2 0 1)
                           ,("thresL"   ,realParam 0.1 0 1)
                           ,("satur"    ,realParam 10 0 50)
-                          ,("step"     ,intParam 10 1 50)
-                          ,("extent"  ,intParam 20 1 50)
-                          ,("scaleFlow",realParam 2 0 5)]
+                          ,("step"     ,intParam 2 1 50)
+                          ,("extent"  ,intParam 1 0 50)
+                          ,("scaleFlow",realParam 1 0 5)]
     return $ return Param `ap` getParam o "sigma"
                           `ap` getParam o "thresH"
                           `ap` getParam o "thresL"

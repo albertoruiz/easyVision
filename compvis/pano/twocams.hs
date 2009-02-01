@@ -36,8 +36,7 @@ edgedist img = (r, float edges) where
     th = 0.5
     smooth = 2
     gsmooth = smooth `times` gauss Mask5x5 $ float $ resize (mpSize 10) $ gray $ img
-    edges = canny (gx,gy) (th/3,th) where gx = (-1) .* sobelVert gsmooth
-                                          gy = sobelHoriz gsmooth
+    edges = canny (th/3,th) . gradients $ gsmooth
     r = distanceTransform [1,1.4,2.2] (notI $ edges)
 
 

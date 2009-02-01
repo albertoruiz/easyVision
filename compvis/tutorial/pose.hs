@@ -43,7 +43,7 @@ pl (Point x y) = [x,y]
 alter pts = map (rotateList pts) [0 .. length ref -1]
 rotateList list n = take (length list) $ drop n $ cycle list
 drawSeg s = (vertex $ extreme1 s) >> (vertex $ extreme2 s)
-autoBin img = binarize8u (otsuThreshold img) True img
+autoBin img = binarize8u (otsuThreshold img) img
 renderAs prim = renderPrimitive prim . (mapM_ vertex)
 renderSegments segs = renderPrimitive Lines $ mapM_ drawSeg segs
 

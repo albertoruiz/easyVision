@@ -17,7 +17,7 @@ module ImagProc.Generic (
   GImg(..)
 , blockImage
 , warp, warpOn
-, constImage, cloneClear
+, constImage, cloneClear, clean
 , Channels(..), channels,
   channelsFromRGB
 )
@@ -50,7 +50,7 @@ instance GImg CUChar ImageGray where
     clone = ioCopy_8u_C1R id
     warpOnG = warpOn8u
     fromYUV = yuvToGray
-    toYUV = grayToYUV
+    toYUV = grayToYUV . clean
 
 instance GImg Float ImageFloat where
     zeroP = 0
@@ -60,7 +60,7 @@ instance GImg Float ImageFloat where
     clone = ioCopy_32f_C1R id
     warpOnG = warpOn32f
     fromYUV = float . yuvToGray
-    toYUV = grayToYUV . toGray
+    toYUV = grayToYUV . clean . toGray
 
 instance GImg (CUChar,CUChar,CUChar) ImageRGB where
     zeroP = (0,0,0)
@@ -70,7 +70,7 @@ instance GImg (CUChar,CUChar,CUChar) ImageRGB where
     clone = ioCopy_8u_C3R id
     warpOnG = warpOn8u3
     fromYUV = yuvToRGB
-    toYUV = rgbToYUV
+    toYUV = rgbToYUV . clean
 
 
 
@@ -84,6 +84,11 @@ cloneClear im = do
     clearNoROI (set zeroP) r
     return r
 
+-- | creates a new image with the region outside the roi set to zerop
+clean :: (GImg pixel a) => a -> a
+clean im | (roiArea . theROI) im == (height.size) im * (width.size) im = im
+         | otherwise = unsafePerformIO (cloneClear im)
+
 --------------------------------------------------------------------------
 
 -- | joins images
@@ -96,10 +101,11 @@ rowImage l = unsafePerformIO $ do
         c = maximum (map (width.size) l)
         n = length l
     res <- image (Size r (c*n))
-    let roi0 = theROI (head l)
-        rois = take n $ iterate (shift (0,c)) roi0
-        f r i = copy i roi0 res r
-    sequence_ $ zipWith f rois l
+    let f i k = do copy i r res (m r)
+                   mapM_ (flip (set zeroP) res) (map m (invalidROIs i))
+            where m = shift (0,k*c)
+                  r = theROI i
+    sequence_ $ zipWith f l [0..]
     return res
 
 --columnImage :: [ImageGray] -> ImageGray
@@ -108,10 +114,11 @@ columnImage l = unsafePerformIO $ do
         c = maximum (map (width.size) l)
         n = length l
     res <- image (Size (r*n) c)
-    let roi0 = theROI (head l)
-        rois = take n $ iterate (shift (r,0)) roi0
-        f r i = copy i roi0 res r
-    sequence_ $ zipWith f rois l
+    let f i k = do copy i r res (m r)
+                   mapM_ (flip (set zeroP) res) (map m (invalidROIs i))
+            where m = shift (0,k*c)
+                  r = theROI i
+    sequence_ $ zipWith f l [0..]
     return res
 
 

@@ -28,9 +28,7 @@ infixl 1 -<
 (f,d) -< n = asyncFun d f n
 --(.&.) = liftM2 (,)
 
-edges th img = canny (gx,gy) (th*2/3,th) where
-    gx = (-1) .* sobelVert img
-    gy =         sobelHoriz img
+edges th = canny (th*2/3,th) . gradients
 
 --fun1 sigma thres szw = edges thres . gaussS sigma . float. resize (mpSize szw). gray
 

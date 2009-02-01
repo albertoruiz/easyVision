@@ -104,9 +104,6 @@ autoscale im = f im
     where (mn,mx) = minmax im
           f = if mn == mx then scale32f8u 0 1 else scale32f8u mn mx
 
-
-binarize32f th = thresholdVal32f th 1 IppCmpGreater . thresholdVal32f th 0 IppCmpLess
-
 mouse _ st (MouseButton LeftButton) Down _ _ = do
     return()
 mouse def _ a b c d = def a b c d

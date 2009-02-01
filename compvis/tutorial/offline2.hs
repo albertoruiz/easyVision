@@ -4,9 +4,11 @@
 import EasyVision
 
 process f = do
-    filename <- fmap (maybe "saved.yuv" id) (getRawOption "--save")
-    findSize >>= readFrames 0 >>= writeFrames filename . f
+    outfile <- optionString "--save" "saved.yuv"
+    xs <- readFrames 0
+    let ys = map toYUV . f . map channels $ xs
+    writeFrames outfile ys
 
-g = toYUV . notI . resize (mpSize 10) . gray . channels
+g = notI . canny (0.1,0.3) . gradients . gaussS 2 . float . resize (mpSize 10) . gray
 
 main = process (map g)

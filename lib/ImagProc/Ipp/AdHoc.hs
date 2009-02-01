@@ -457,10 +457,10 @@ genDistanceTransform f metrics (G im) = unsafePerformIO $ do
 -------------------------------------------------------------------------
 
 -- | Canny's edge detector.
-canny :: (ImageFloat,ImageFloat) -- ^ image gradient (dx,dy)
+canny32f :: (ImageFloat,ImageFloat) -- ^ image gradient (dx,dy)
       -> (Float,Float)           -- ^ low and high threshold
       -> ImageGray               -- ^ resulting image
-canny (F dx, F dy) (l,h) = unsafePerformIO $ do
+canny32f (F dx, F dy) (l,h) = unsafePerformIO $ do
     r <- img Gray (isize dx)
     ps <- malloc
     let roi = intersection (vroi dx) (vroi dy)

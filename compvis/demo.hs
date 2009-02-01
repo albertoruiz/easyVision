@@ -76,8 +76,7 @@ worker wDemo cam param fft = do
 
         gsmooth = smooth `times` gauss Mask5x5 $ float $ chan gray
 
-        edges = canny (gx,gy) (th/3,th) where gx = (-1) .* sobelVert gsmooth
-                                              gy = sobelHoriz gsmooth
+        edges = canny (th/3,th) . gradients $ gsmooth
 
     inWin wDemo $ do
         drawImage (rgb orig)
@@ -95,8 +94,8 @@ worker wDemo cam param fft = do
             "Median"   -> drawImage $ smooth `times` median Mask5x5 $ chan gray
             "HighPass" -> drawImage $ highPass8u Mask5x5 $ smooth `times` median Mask5x5 $ chan gray
 
-            "Threshold" -> drawImage $ binarize8u th2 True $ chan gray
-            "OtsuThres" -> drawImage $ binarize8u (otsuThreshold $ chan gray) True $ chan gray
+            "Threshold" -> drawImage $ binarize8u th2 $ chan gray
+            "OtsuThres" -> drawImage $ binarize8u (otsuThreshold $ chan gray) $ chan gray
 
             "Laplacian"-> drawImage $ scale32f8u (-1) 1
                                     . laplace Mask5x5
@@ -195,7 +194,7 @@ worker wDemo cam param fft = do
 
             "FloodFill" -> do im <- cloneClear
                                  $ modifyROI (shrink (1,1))
-                                 $ binarize8u th2 True 
+                                 $ binarize8u th2
                                  $ smooth `times` median Mask5x5 
                                  $ chan gray
                               let (Size h w) = size im

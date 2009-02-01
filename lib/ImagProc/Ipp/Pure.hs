@@ -55,42 +55,63 @@ mkIdIPInt32f f a b = unsafePerformIO $ do
 (.*) :: Float -> ImageFloat -> ImageFloat
 v .* im = unsafePerformIO $ ioMulC_32f_C1R v id im
 
--- | image arithmetic, pixel by pixel
-(|+|), (|-|), (|*|), absDiff :: ImageFloat -> ImageFloat -> ImageFloat
+-- | image sum, pixel by pixel
+(|+|) :: ImageFloat -> ImageFloat -> ImageFloat
 (|+|) = mkInt ioAdd_32f_C1R
+
+-- | image difference, pixel by pixel
+(|-|) :: ImageFloat -> ImageFloat -> ImageFloat
 (|-|) = flip (mkInt ioSub_32f_C1R)
+
+-- | image product, pixel by pixel
+(|*|) :: ImageFloat -> ImageFloat -> ImageFloat
 (|*|) = mkInt ioMul_32f_C1R
+
+-- | absolute difference of images, pixel by pixel
+absDiff :: ImageFloat -> ImageFloat -> ImageFloat
 absDiff = mkInt ioAbsDiff_32f_C1R
 
--- | image logic, pixel by pixel
-andI, orI :: ImageGray -> ImageGray -> ImageGray
+-- | image AND, pixel by pixel
+andI :: ImageGray -> ImageGray -> ImageGray
 andI = mkInt ioAnd_8u_C1R
+
+-- | image OR, pixel by pixel
+orI :: ImageGray -> ImageGray -> ImageGray
 orI  = mkInt ioOr_8u_C1R
 
+-- | image NOT, pixel by pixel
 notI :: ImageGray -> ImageGray
 notI = mkId ioNot_8u_C1R
 
+-- | absolute difference of images, pixel by pixel
 absDiff8u:: ImageGray -> ImageGray -> ImageGray
 absDiff8u = mkInt ioAbsDiff_8u_C1R
 
+-- | image difference
 sub8u :: Int -> ImageGray -> ImageGray -> ImageGray
 sub8u k = flip (mkInt (ioSub_8u_C1RSfs k))
 
+-- | conversion from discrete gray level images (0-255) to floating point (0->0, 255->)
 float :: ImageGray -> ImageFloat
 float = mkId (ioScale_8u32f_C1R 0 1)
 
+-- | the inverse of 'float'
 toGray :: ImageFloat -> ImageGray
 toGray = scale32f8u 0 1
 
+-- | similar to 'toGray' with desired conversion range
 scale32f8u :: Float -> Float -> ImageFloat -> ImageGray
 scale32f8u mn mx = mkId (ioScale_32f8u_C1R mn mx)
 
+-- | similar to 'float' with desired conversion range
 scale8u32f :: Float -> Float -> ImageGray -> ImageFloat
 scale8u32f mn mx = mkId (ioScale_8u32f_C1R mn mx)
 
+-- | conversion from RGB to HSV color representation
 rgbToHSV :: ImageRGB -> ImageRGB
 rgbToHSV = mkId ioRGBToHSV_8u_C3R
 
+-- | the inverse of 'rgbToHSV'
 hsvToRGB :: ImageRGB -> ImageRGB
 hsvToRGB = mkId ioHSVToRGB_8u_C3R
 
