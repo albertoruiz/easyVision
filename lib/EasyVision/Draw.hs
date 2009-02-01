@@ -45,7 +45,7 @@ import Vision
 import EasyVision.Trackball
 import EasyVision.Util
 import qualified Data.Colour.RGBSpace as Col
-import Data.Colour.SRGB
+import Data.Colour.SRGB hiding (RGB)
 import Data.Colour
 
 

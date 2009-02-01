@@ -26,7 +26,7 @@ CONTRIB = $(CONTRIBPATH)/Simple/simple.o        \
           $(CONTRIBPATH)/Burns/burns.o
 
 LIBS = -i$(EVLIB)  -I$(IPP)/include \
-       $(CDIR)/auxIpp.o $(CDIR)/adapt.o \
+       $(CDIR)/auxIpp.o $(CDIR)/ptr_adapt.o \
        $(CONTRIBPATH)/Simple/simple.o \
        $(CONTRIBPATH)/Segments/libsegments.a \
        $(CONTRIBPATH)/Burns/burns.o \
@@ -38,7 +38,7 @@ all: $(ALL)
 %: %.hs auxc
 	@ghc -O2 -threaded --make $< -o $@ $(LIBS)
 
-auxc: $(CDIR)/auxIpp.o $(CDIR)/adapt.o $(CDIR)/Structs.hs \
+auxc: $(CDIR)/auxIpp.o $(CDIR)/ptr_adapt.o $(CDIR)/Structs.hs \
       $(CONTRIB)
 
 $(CDIR)/Structs.hs: $(CDIR)/Structs.hsc
@@ -47,10 +47,10 @@ $(CDIR)/Structs.hs: $(CDIR)/Structs.hsc
 $(CDIR)/auxIpp.o: $(CDIR)/auxIpp.c $(CDIR)/auxIpp.h
 	gcc -O4 -c -I$(IPP)/include $(CDIR)/auxIpp.c -o $(CDIR)/auxIpp.o
 
-$(CDIR)/adapt.o: $(CDIR)/adapt.c $(CDIR)/adapt.h
-	gcc -O4 -c -I$(IPP)/include $(CDIR)/adapt.c -o $(CDIR)/adapt.o
+$(CDIR)/ptr_adapt.o: $(CDIR)/ptr_adapt.c $(CDIR)/ptr_adapt.h
+	gcc -O4 -c -I$(IPP)/include $(CDIR)/ptr_adapt.c -o $(CDIR)/ptr_adapt.o
 
-$(CDIR)/adapt.c: $(CDIR)/adapter.hs $(CDIR)/Parser.hs $(CDIR)/functions.txt
+$(CDIR)/ptr_adapt.c: $(CDIR)/adapter.hs $(CDIR)/Parser.hs $(CDIR)/functions.txt
 	cd $(CDIR); ghc -O --make adapter; ./adapter;
 
 
@@ -76,5 +76,5 @@ clean:
 cleanall: clean
 	cd $(CONTRIBPATH)/Segments/; make clean
 	rm -f $(CONTRIBPATH)/Burns.hs
-	cd $(CDIR); rm -f Structs.hs adapt.c adapt.h Adapt.hs Auto.hs adapter
+	cd $(CDIR); rm -f Structs.hs ptr_adapt.c ptr_adapt.h Adapt.hs Auto.hs adapter
 	rm `find $(EVLIB) -name "*.o" -o -name "*.hi"`

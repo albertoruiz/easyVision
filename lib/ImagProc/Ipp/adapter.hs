@@ -30,8 +30,8 @@ main = do
     mapM_ (print.name) hs
 
     let hds = map toTuple hs
-    writeFile "adapt.h" (chead ++ (unlines $ map mkh hds))
-    writeFile "adapt.c" (cdef ++ (unlines $ map mkd hds))
+    writeFile "ptr_adapt.h" (chead ++ (unlines $ map mkh hds))
+    writeFile "ptr_adapt.c" (cdef ++ (unlines $ map mkd hds))
     writeFile "Adapt.hs" (wmod ++ (unlines $ map mkw hds))
     writeFile "Auto.hs" (autodefs hs)
 
