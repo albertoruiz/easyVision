@@ -101,10 +101,10 @@ rowImage l = unsafePerformIO $ do
         c = maximum (map (width.size) l)
         n = length l
     res <- image (Size r (c*n))
-    let f i k = do copy i r res (m r)
+    let f i k = do copy i roi res (m roi)
                    mapM_ (flip (set zeroP) res) (map m (invalidROIs i))
             where m = shift (0,k*c)
-                  r = theROI i
+                  roi = theROI i
     sequence_ $ zipWith f l [0..]
     return res
 
@@ -114,10 +114,10 @@ columnImage l = unsafePerformIO $ do
         c = maximum (map (width.size) l)
         n = length l
     res <- image (Size (r*n) c)
-    let f i k = do copy i r res (m r)
+    let f i k = do copy i roi res (m roi)
                    mapM_ (flip (set zeroP) res) (map m (invalidROIs i))
-            where m = shift (0,k*c)
-                  r = theROI i
+            where m = shift (k*r,0)
+                  roi = theROI i
     sequence_ $ zipWith f l [0..]
     return res
 

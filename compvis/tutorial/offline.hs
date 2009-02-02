@@ -1,5 +1,5 @@
 {- ./offline 'sourcevideo -benchmark -loop 1' --save=/dev/stdout
-   | mencoder - -o result.avi -ovc lavc -fps 15 -}
+   | mencoder - -o result.avi -ovc lavc -fps 25 -}
 
 import EasyVision
 
@@ -16,8 +16,14 @@ save f cam = do
         sv (f x)
         return x
 
+g = notI . canny (0.1,0.3) . gradients . gaussS 2 . float . gray
+
+grid n = map (blockImage . partit n) . partit (n*n) . map (resize (mpSize 10))
+    where partit _ [] = []
+          partit k l = take k l : partit k (drop k l)
+
 main = run $   camera
            >>= observe "original" rgb
-           ~>  notI . gray
-           >>= observe "filter" id
+           ~~> grid 2 . map g
+           >>= observe "result" id
            >>= save toYUV
