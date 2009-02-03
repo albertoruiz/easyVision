@@ -17,7 +17,7 @@ module ImagProc.Ipp.Pure (
     (.*),
     (|+|),(|-|),absDiff,(|*|),
     andI,orI,notI,
-    absDiff8u, sub8u,
+    add8u, absDiff8u, sub8u,
     float, toGray, scale32f8u, scale8u32f,
     rgbToHSV, hsvToRGB,
     thresholdVal32f, thresholdVal8u,
@@ -82,6 +82,10 @@ orI  = mkInt ioOr_8u_C1R
 -- | image NOT, pixel by pixel
 notI :: ImageGray -> ImageGray
 notI = mkId ioNot_8u_C1R
+
+-- | image sum, pixel by pixel
+add8u :: Int -> ImageGray -> ImageGray -> ImageGray
+add8u k = flip (mkInt (ioAdd_8u_C1RSfs k))
 
 -- | absolute difference of images, pixel by pixel
 absDiff8u:: ImageGray -> ImageGray -> ImageGray

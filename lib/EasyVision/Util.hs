@@ -47,6 +47,7 @@ import System.IO
 import System.IO.Unsafe(unsafeInterleaveIO)
 import System
 import Data.List(isPrefixOf,foldl',tails,findIndex)
+import Data.Maybe
 import Directory(getDirectoryContents,doesFileExist)
 import System.CPUTime
 import Text.Printf
@@ -150,9 +151,7 @@ lazyRead get = do
 -- | returns a lazy list with all the frames produced by an image source.
 readFrames :: Int  -- ^ n-th camera url supplied by the user (or defined in cameras.def)
            -> IO [ImageYUV]
-readFrames n = fmap mkList (readFrames' n) where
-    mkList (Just a: rest) = a : mkList rest
-    mkList (Nothing:_)    = []
+readFrames n = fmap (map fromJust . takeWhile isJust) (readFrames' n)
 
 readFrames' n = do
     args <- cleanOpts `fmap` getArgs
