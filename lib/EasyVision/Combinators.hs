@@ -30,7 +30,7 @@ module EasyVision.Combinators (
   rectifyQuadrangle,
   monitor,
   inThread,
-  counter
+  counter, countDown
 )where
 
 import ImagProc.Ipp.Core
@@ -255,6 +255,7 @@ monitor name sz fun cam = do
 
 ---------------------------------------------------------
 
+countDown :: Int -> IO a -> IO (IO a)
 countDown tot cam = do
     vn <- newIORef tot
     return $ do
@@ -262,6 +263,7 @@ countDown tot cam = do
         if n==0 then exitWith ExitSuccess else writeIORef vn (n-1)
         cam
 
+counter :: IO a -> IO (IO a)
 counter cam = do
     vn <- newIORef 1
     return $ do

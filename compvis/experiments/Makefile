@@ -3,7 +3,6 @@ ALL = brush foldimage \
       salience salience2 \
       tracks hotpoints segments \
       capturepoly trazo \
-      pipeline parallel \
       tdflow
 
 EASYVISION = ../..

@@ -20,6 +20,7 @@ save f cam = do
 g = canny (0.1,0.3) . gradients . gaussS 2 . float . gray
 
 h k = map (notI . foldl1' orI . reverse . take k) . tail . tails
+
 main = run $   camera
            >>= observe "original" rgb
            ~~> h 5 . map g
