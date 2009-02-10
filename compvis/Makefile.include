@@ -30,7 +30,7 @@ LIBS = -i$(EVLIB)  -I$(IPP)/include \
        $(CONTRIBPATH)/Simple/simple.o \
        $(CONTRIBPATH)/Segments/libsegments.a \
        $(CONTRIBPATH)/Burns/burns.o \
-       -L$(IPP)/sharedlib -lguide -lippcore$(IPPS) -lippi$(IPPS)\
+       -L$(LD_LIBRARY_PATH) -lguide -lippcore$(IPPS) -lippi$(IPPS)\
        -lipps$(IPPS) -lippcc$(IPPS) -lippvc$(IPPS) -lippcv$(IPPS)
 
 all: $(ALL) 

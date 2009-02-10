@@ -1,8 +1,7 @@
 import EasyVision
+import Tutorial(run, camera)
 
-camera = findSize >>= getCam 0 ~> float . gray . channels
 observe winname = monitor' winname (mpSize 20) drawImage
-run = (>>= launch . (>> return ()))
 
 drift r (a:b:xs) = a : drift r ((r .* a |+| (1-r).* b):xs)
 interpolate (a:b:xs) = a: (0.5.*a |+| 0.5.*b) :interpolate (b:xs)
@@ -10,7 +9,7 @@ interpolate (a:b:xs) = a: (0.5.*a |+| 0.5.*b) :interpolate (b:xs)
 main = do
     prepare
     alpha <- getOption "--alpha" 0.9
-    run $ camera
+    run $ camera ~> float . gray
       ~~> drift alpha
       >>= observe "drift"
       ~~> interpolate

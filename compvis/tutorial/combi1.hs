@@ -1,16 +1,9 @@
 import EasyVision
+import Tutorial(camera, observe, run, grid)
 
-camera = findSize >>= getCam 0 ~> rgb . channels
-observe winname = monitor winname (mpSize 20) drawImage
-run c = prepare >> (c >>= launch . (>> return ()))
-
-grid n = map (blockImage . partit n) . partit (n*n) . map (resize (mpSize 4))
-    where partit _ [] = []
-          partit k l = take k l : partit k (drop k l)
-
-main = run $   camera
-           >>= observe "original"
+main = run $   camera ~> rgb
+           >>= observe "original" id
            ~~> grid 2
-           >>= observe "first grid"
+           >>= observe "first grid" id
            ~~> grid 3
-           >>= observe "second grid"
+           >>= observe "second grid" id

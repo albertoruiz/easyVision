@@ -3,10 +3,10 @@ import Control.Arrow
 import Control.Monad
 import Debug.Trace
 import Numeric.LinearAlgebra hiding ((.*))
+import Tutorial(run)
 
 camera k = findSize >>= getCam k ~> channels
 observe winname f = monitor winname (mpSize 20) f
-run c = prepare >> (c >>= launch . (>> return ()))
 (.&.) = liftM2 (liftM2 (,))
 
 sigmas = (take 15 $ getSigmas 1 3)

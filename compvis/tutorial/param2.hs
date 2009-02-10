@@ -2,17 +2,17 @@ import EasyVision
 import Graphics.UI.GLUT
 import Control.Arrow
 import Control.Monad
+import Tutorial(run, camera)
 
-camera = findSize >>= getCam 0 ~> (channels >>> gray >>> float)
-observe winname f = monitor winname (mpSize 20) f
-run c = prepare >> (c >>= launch . (>> return ()))
 (.&.) = liftM2 (liftM2 (,))
+
+camera' = camera ~> (gray >>> float)
 
 data Param = Param { sigma :: Float, rad :: Int, thres :: Float }
 
-main = run $ camera .&. userParam
+main = run $ camera' .&. userParam
          ~>  fst &&& corners
-         >>= observe "corners" sh
+         >>= monitor "corners" (mpSize 20) sh
 
 corners (x,p) =  gaussS (sigma p)
              >>> gradients

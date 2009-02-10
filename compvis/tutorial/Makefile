@@ -1,11 +1,15 @@
-ALL = play play0 play1 play2 play3 \
-      combi0 combi1 combi2 combi3 combi4 \
+ALL = play play2 canny play3 \
+      combi0 combi1 combi2 combi3 \
+      offline0 offline points \
+      playll \
+      combi4 \
       state state2 \
-      param1 param2 param3 \
-      simple pose \
-      roisel roibrowse roiclass \
-      conc0 conc1 parallel pipeline conc-par \
-      offline offline2 offline3 points
+      param1 param3 param2 \
+      simple offline3 \
+      parallel pipeline conc0 conc1 conc-par \
+      pose \
+      roisel roibrowse roiclass
+
 EASYVISION = ../..
 
 include ../Makefile.include

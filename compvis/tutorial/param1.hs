@@ -1,8 +1,5 @@
 import EasyVision
-
-camera = findSize >>= getCam 0 ~> float . gray . channels
-observe winname = monitor winname (mpSize 20) drawImage
-run c = prepare >> (c >>= launch . (>> return ()))
+import Tutorial(run, camera, observe)
 
 smooth cam = do
     o <- createParameters [("sigma",realParam 3 0 20)]
@@ -11,4 +8,4 @@ smooth cam = do
         sigma <- getParam o "sigma"
         return (gaussS sigma x)
 
-main = run $ camera >>= smooth >>= observe "gauss"
+main = run $ camera ~> float . gray >>= smooth >>= observe "gauss" id
