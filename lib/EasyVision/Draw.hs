@@ -18,7 +18,7 @@ HOpenGL drawing utilities.
 module EasyVision.Draw
 ( pointCoordinates
 , pixelCoordinates
-, Drawable(..)
+, Drawable(..), drawImage'
 , drawTexture
 , setColor, setColor'
 , text2D
@@ -47,6 +47,7 @@ import EasyVision.Util
 import qualified Data.Colour.RGBSpace as Col
 import Data.Colour.SRGB hiding (RGB)
 import Data.Colour
+import Control.Monad(when)
 
 
 -- | Types of images that can be shown in a window
@@ -66,6 +67,13 @@ instance Drawable ImageFloat where
 instance Drawable ImageYUV where
     drawImage = drawImageYUV
 
+-- | The same as 'drawImage', but adapting window size to that of the image
+drawImage' :: (Drawable a, Image a) => a -> IO ()
+drawImage' im = do
+    szW <- get windowSize
+    let szI = glSize (size im)
+    when (szW /= szI) $ windowSize $= szI
+    drawImage im
 
 pstart im = starting im (vroi im)
 
@@ -91,8 +99,8 @@ myDrawPixels m@Img{itype=YUV} = error "myDrawPixels undefined for YUV"
 
 
 -- | Draws an image in the current window.
-drawImage' :: Img -> IO ()
-drawImage' m = do
+drawImageAux :: Img -> IO ()
+drawImageAux m = do
     matrixMode $= Projection
     loadIdentity
     let w = width $ isize m
@@ -114,10 +122,10 @@ drawImage' m = do
     lineWidth $= 1
     drawROI r
 
-drawImageFloat (F im) = drawImageGray $ toGray (F im) -- drawImage' im
-drawImageGray (G im) = drawImage' im
-drawImageRGB (C im) = drawImage' im
-drawImageYUV (Y im) = drawImageRGB $ yuvToRGB (Y im)  -- drawImage' im
+drawImageFloat (F im) = drawImageGray $ toGray (F im) -- drawImageAux im
+drawImageGray (G im) = drawImageAux im
+drawImageRGB (C im) = drawImageAux im
+drawImageYUV (Y im) = drawImageRGB $ yuvToRGB (Y im)  -- drawImageAux im
 
 drawROI r = renderPrimitive LineLoop $ mapM_ vertex
     [ Pixel (r1 r) (c1 r), Pixel (1+r2 r) (c1 r),

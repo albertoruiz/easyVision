@@ -16,6 +16,7 @@ module ImagProc.ROI
 ( roiSize,
   shrink,
   shift,
+  getShift,
   intersection,
   union,
   roiArea,
@@ -49,6 +50,10 @@ shift (r,c) roi =
          r2=(r2 roi) +r,
          c1=(c1 roi) +c,
          c2=(c2 roi) +c}
+
+-- | Computes the displacement between the top left corners of two rois 
+getShift :: ROI -> ROI -> (Int,Int)
+getShift roi1 roi2 = (r1 roi2 - r1 roi1, c1 roi2 - c1 roi1)
 
 -- | Creates a new roi as the intersection of two given roi's.
 intersection :: ROI -> ROI -> ROI

@@ -16,7 +16,7 @@ fun img = (img, fullHessian (surf 2 2) sigmas 50 0.2 img)
 g = fun.float.gray
 
 sh  (img, feats) = do
-    drawImage img
+    drawImage' img
     setColor 1 1 0
     text2D 20 20 (show $ length $ feats)
     mapM_ showFeat feats
@@ -28,8 +28,8 @@ showFeat p = do
 
 
 main' op = run $ (camera 0 .&. camera 1)
-          >>= observe "img 0" (drawImage.rgb.fst)
-          >>= observe "img 1" (drawImage.rgb.snd)
+          >>= observe "img 0" (drawImage'.rgb.fst)
+          >>= observe "img 1" (drawImage'.rgb.snd)
           ~> g `op` g
           >>= observe "feats 0" (sh.fst)
           >>= observe "feats 1" (sh.snd)

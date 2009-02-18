@@ -17,7 +17,6 @@ import ImagProc.ImageFold
 import Features.Descriptors
 import Vision(unitary,rot3)
 
-
 main = do
     sz <- findSize
     (cam,ctrl) <- getCam 0 sz >>= withPause
@@ -41,9 +40,10 @@ main = do
             putStrLn "------- "
             timing $ print $ sum $ map (fst.minmax) ims
             timing $ print $ (fst.minmax) (gm g)
-            timing $ printf "%.1f\n" $ sum $ map sum32f ims
-            timing $ printf "%.1f\n" $ sum $ map csum32f ims
-            timing $ printf "%.1f\n" $ sum $ map (foldImage hsum 0) ims
+            timing $ printf "sum32f = %.1f\n" $ sum $ map sum32f ims
+            timing $ printf "csum   = %.1f\n" $ sum $ map csum32f ims
+            timing $ printf "hzero   = %d\n" $ sum $ map (foldImage zero 0) ims
+            timing $ printf "hsum   = %.1f\n" $ sum $ map (foldImage hsum 0) ims
             timing $ printf "pixNum = %.1d\n" $ sum $ map (foldImage hcount (0::Int)) ims
             let hd = histodir (gm g) (gx g) (gy g)
 --             timing $ print hd
@@ -61,4 +61,6 @@ hsum !p !k !s = s + float2Double (uval p k)
 hcount !p !k !s = s+1
 {-# INLINE hcount #-}
 
-sumv v = v <.> constant 1 (dim v)
+zero !p !k !s = 0::Int
+{-# INLINE zero #-}
+

@@ -17,7 +17,7 @@ module ImagProc.Ipp.Pure (
     (.*),
     (|+|),(|-|),absDiff,(|*|),
     andI,orI,notI,
-    add8u, absDiff8u, sub8u,
+    add8u, absDiff8u, sub8u, sub8uRel,
     float, toGray, scale32f8u, scale8u32f,
     rgbToHSV, hsvToRGB,
     thresholdVal32f, thresholdVal8u,
@@ -33,15 +33,24 @@ where
 
 import ImagProc.Ipp.Core
 import ImagProc.Ipp.Auto
-import Foreign
+import Foreign hiding (shift)
+import Debug.Trace
+
+debug x = trace (show x) x
 
 infixl 7  |*|, .*
 infixl 6  |+|, |-|
 
-
 mkId f = unsafePerformIO . f id
-mkInt f a b = unsafePerformIO (f intersection a b)
+
+mkInt f a b = unsafePerformIO (f intersection intersection intersection a b)
+
 mkShrink s f = unsafePerformIO . f (shrink s)
+
+mkRel f a b = unsafePerformIO (f g (flip g) g a b) where
+    g a b = intersection a b' where
+        d = getShift b a
+        b' = shift d b
 
 -- should be generic using clone (must break cycle of import)
 mkIdIPInt32f f a b = unsafePerformIO $ do
@@ -94,6 +103,12 @@ absDiff8u = mkInt ioAbsDiff_8u_C1R
 -- | image difference
 sub8u :: Int -> ImageGray -> ImageGray -> ImageGray
 sub8u k = flip (mkInt (ioSub_8u_C1RSfs k))
+
+-- | image difference of ROIS
+sub8uRel :: Int -> ImageGray -> ImageGray -> ImageGray
+sub8uRel k = flip (mkRel (ioSub_8u_C1RSfs k))
+
+
 
 -- | conversion from discrete gray level images (0-255) to floating point (0->0, 255->)
 float :: ImageGray -> ImageFloat

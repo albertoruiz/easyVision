@@ -130,12 +130,12 @@ gencam ~> f = gencam >>= return . fmap f
 
 -- | composition version of @~>@
 (>~>) :: (t -> IO (IO a)) -> (a -> b) -> t -> IO (IO b)
-infixl 1 >~>
+infixr 2 >~>
 f >~> g = \x -> f x ~> g
 
 -- | composition version of @~~>@
 (>~~>) :: (t -> IO (IO a)) -> ([a] -> [b]) -> t -> IO (IO b)
-infixl 1 >~~>
+infixr 2 >~~>
 f >~~> g = \x -> f x ~~> g
 
 

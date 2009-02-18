@@ -25,8 +25,8 @@ main = do
 
     feats <- g |***| g -< cams
 
-    run 20 [ observe "cam1" (drawImage.fst) cams
-           , observe "cam2" (drawImage.snd) cams
+    run 20 [ observe "cam1" (drawImage'.fst) cams
+           , observe "cam2" (drawImage'.snd) cams
            , observe "f1" (sh.fst) feats
            , observe "f2" (sh.snd) feats
            ]
@@ -36,7 +36,7 @@ fun img = (img, fullHessian (surf 2 2) sigmas 50 0.2 img)
 g = fun
 
 sh (img, feats) = do
-    drawImage img
+    drawImage' img
     setColor 1 1 0
     text2D 20 20 (show $ length $ feats)
     mapM_ showFeat feats

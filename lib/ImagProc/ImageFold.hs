@@ -25,6 +25,7 @@ import ImagProc.Ipp.Core
 import Numeric.LinearAlgebra hiding ((.*))
 import Foreign
 import Control.Monad(when)
+import GHC.Prim
 
 import GHC.Base
 import GHC.IOBase
@@ -47,9 +48,11 @@ foldImage f x (F img) =
           d = jump - c
           tot = (r2 - r1) * jump + c2-c1
 
-          go 0 s = f p (0::Int) s
-          go !j !s = if j `rem` jump < c then go (j-1) (f p j s)
-                                         else go (j-d) s
+          go 0 !s = f p (0::Int) s
+          go !j !s = if ok then go (j-1) (f p j s)
+                           else go (j-d) s
+            where ok = {-# SCC "rem" #-} remInt j jump < c
+{-# INLINE foldImage #-}
 
 foldImage2 f x (F img1) (F img2) =
     unsafePerformIO $ withForeignPtr (fptr img1) $ const
@@ -66,6 +69,7 @@ foldImage2 f x (F img1) (F img2) =
           go 0 s = f p1 p2 (0::Int) s
           go !j !s = if j `rem` jump < c then go (j-1) (f p1 p2 j s)
                                          else go (j-d) s
+{-# INLINE foldImage2 #-}
 
 foldImage3 f x (F img1) (F img2) (F img3 ) =
     unsafePerformIO $ withForeignPtr (fptr img1) $ const
@@ -84,6 +88,7 @@ foldImage3 f x (F img1) (F img2) (F img3 ) =
           go 0 s = f p1 p2 p3 (0::Int) s
           go !j !s = if j `rem` jump < c then go (j-1) (f p1 p2 p3 j s)
                                          else go (j-d) s
+{-# INLINE foldImage3 #-}
 
 traverseImage3 f (F img1) (F img2) (F img3 ) =
     unsafePerformIO $ withForeignPtr (fptr img1) $ const
@@ -103,3 +108,4 @@ traverseImage3 f (F img1) (F img2) (F img3 ) =
           go !j = if j `rem` jump < c
                     then f p1 p2 p3 j >> go (j-1)
                     else go (j-d)
+{-# INLINE traverseImage3 #-}

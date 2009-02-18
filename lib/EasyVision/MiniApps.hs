@@ -22,7 +22,9 @@ module EasyVision.MiniApps (
     regionDetector, regionTracker,
     panoramic,
     zoomer, zoomWindow,
-    module EasyVision.PoseTracker
+    module EasyVision.PoseTracker,
+    module EasyVision.MiniApps.Corners,
+    module EasyVision.MiniApps.CornerTracker
 )where
 
 import Graphics.UI.GLUT as GL hiding (Size,Point,Matrix,matrix)
@@ -48,6 +50,8 @@ import Util.Kalman
 import Text.Printf
 import EasyVision.PoseTracker
 import Data.Function(on)
+import EasyVision.MiniApps.Corners
+import EasyVision.MiniApps.CornerTracker
 
 -- | reads a labeled video
 readCatalog :: String -> Size -> String -> Maybe Int -> (ImageYUV-> a) -> IO [(a,String)]

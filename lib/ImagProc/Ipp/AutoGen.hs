@@ -127,16 +127,20 @@ imgAsR2 roifun im1 im2 = do
     r <- imgAs im1
     return r {vroi = roifun (vroi im1) (vroi im2)}
 
-cr2 f msg im1 im2 r = f // src im1 (vroi r) // src im2 (vroi r)// dst r (vroi r) // checkIPP msg [im1,im2]
+cr2 f msg im1 im2 r = f // src im1 (vroi im1) // src im2 (vroi im2)// dst r (vroi r) // checkIPP msg [im1,im2]
 
-auto_2_8u_C1R f msg roifun (G im1) (G im2) = do
-    r <- imgAsR2 roifun im1 im2
-    cr2 f msg im1 im2 r
+auto_2_8u_C1R f msg rf rf1 rf2 (G im1) (G im2) = do
+    r <- imgAsR2 rf im1 im2
+    let im1' = im1 {vroi = rf1 (vroi im1) (vroi im2)}
+        im2' = im2 {vroi = rf2 (vroi im1) (vroi im2)}
+    cr2 f msg im1' im2' r
     return (G r)
 
-auto_2_32f_C1R f msg roifun (F im1) (F im2) = do
-    r <- imgAsR2 roifun im1 im2
-    cr2 f msg im1 im2 r
+auto_2_32f_C1R f msg rf rf1 rf2 (F im1) (F im2) = do
+    r <- imgAsR2 rf im1 im2
+    let im1' = im1 {vroi = rf1 (vroi im1) (vroi im2)}
+        im2' = im2 {vroi = rf2 (vroi im1) (vroi im2)}
+    cr2 f msg im1' im2' r
     return (F r)
 
 auto_2_8u_C1RSfs = auto_2_8u_C1R

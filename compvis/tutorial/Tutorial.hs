@@ -1,6 +1,8 @@
 module Tutorial where
 
 import EasyVision
+import Graphics.UI.GLUT
+import Control.Monad(when)
 
 process f = do
     outfile <- optionString "--save" "saved.yuv"
@@ -9,7 +11,7 @@ process f = do
     writeFrames outfile ys
 
 camera = findSize >>= getCam 0 ~> channels
-observe winname f = monitor winname (mpSize 20) (drawImage.f)
+observe winname f = monitor winname (mpSize 20) (drawImage'.f)
 run c = prepare >> (c >>= launch . (>> return ()))
 
 saveFrame f cam = do
