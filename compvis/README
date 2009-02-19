@@ -23,6 +23,8 @@ simple examples
 
 - contours: affine invariant silhouette recognition
 
+- corners: corner detector and tracker for static planar scenes
+
 - background: detection of something different from a background image
 
 - zoom: demo of zoom window, useful to observe pixel values

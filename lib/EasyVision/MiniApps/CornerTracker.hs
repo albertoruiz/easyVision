@@ -49,7 +49,7 @@ cornerTracker cam = do
             add   = map f1 matches ++ map f2 b2
             new = if ok then add else reset
             hnew = if ok && length matches > 4
-                then estimateHomographyRaw (map pl g2) (map (pl.head) g1)
+                then fst $ estimateHomographyRansac 0.6 0.01 (map pl g2) (map (pl.head) g1)
                 else ident 3
 
         putW w (new,hnew)
