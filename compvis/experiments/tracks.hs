@@ -32,7 +32,7 @@ align sc cam = return $ do
         as = map head okt
         bs = map last okt
         h = estimateHomographyRaw (map pl bs) (map pl as)
-    return $ warp 1 (Size 600 600) (scaling sc <> h) img
+    return $ hp $ warp 1 (Size 600 600) (scaling sc <> h) img
 
 pl (Point x y) = [x,y]
 
@@ -40,6 +40,10 @@ drift alpha = virtualCamera drifter
     where drifter (a:b:rest) = a : drifter ((alpha .* a |+| (1-alpha).* b):rest)
 
 --------------------------------------------------------------------------
+
+hp img = float $ scale32f8u a b img where
+    (a,b) = EasyVision.minmax img
+
 
 board cam = return $ do
     (img, tracks) <- cam
