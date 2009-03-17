@@ -16,7 +16,7 @@ Portability :  hmm...
 module ImagProc.Generic (
   GImg(..)
 , blockImage
-, warp, warpOn
+, warp, warpOn, warpOn'
 , constImage, cloneClear, clean
 , Channels(..), channels,
   channelsFromRGB
@@ -136,17 +136,27 @@ warp :: (GImg pixel img)
 warp out s h im = unsafePerformIO $ do
     r <- image s
     set out (theROI r) r
-    warpOn h r im
+    warpOn' h r im
     return r
 
--- The same as 'warp', but the result is written over a preexisting image.
-{-
-warpOn :: Matrix Double   -- ^ homography
-       -> ImageFloat      -- ^ destination image
-       -> ImageFloat      -- ^ source image
-       -> IO ()
--}
-warpOn h r im = warpOnG (adapt r h im) r im
+-- | Destructive version of 'warpOn'
+warpOn' :: (GImg pixel img)
+        => Matrix Double     -- ^ homography
+        -> img               -- ^ destination image
+        -> img               -- ^ source image
+        -> IO ()
+warpOn' h r im = warpOnG (adapt r h im) r im
+
+-- | The same as 'warp', but the source image is warped onto a copy of the destination image.
+warpOn :: (GImg pixel img)
+     => img               -- ^ destination image
+     -> Matrix Double     -- ^ homography
+     -> img               -- ^ source image
+     -> img               -- ^ result
+warpOn base h im = unsafePerformIO $ do
+    dest <- clone base
+    warpOn' h dest im
+    return dest
 
 ---------------------------------------------------------------------------------
 

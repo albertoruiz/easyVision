@@ -3,10 +3,10 @@ swebcam1        tv:// -tv driver=v4l2:device=/dev/video1:fps=25
 swebcam2        tv:// -tv driver=v4l2:device=/dev/video2:fps=25
 swebcam3        tv:// -tv driver=v4l2:device=/dev/video3:fps=25
 
-webcam0        tv:// -tv driver=v4l:device=/dev/video0
-webcam1        tv:// -tv driver=v4l:device=/dev/video1
-webcam2        tv:// -tv driver=v4l:device=/dev/video2
-webcam3        tv:// -tv driver=v4l:device=/dev/video3
+webcam0        tv:// -tv driver=v4l:device=/dev/video0:height=480:width=640
+webcam1        tv:// -tv driver=v4l:device=/dev/video1:height=480:width=640
+webcam2        tv:// -tv driver=v4l:device=/dev/video2:height=480:width=640
+webcam3        tv:// -tv driver=v4l:device=/dev/video3:height=480:width=640
 
 firewire       /dev/dv1394 -demuxer rawdv -cache 400
 s-video-di     tv:// -tv driver=v4l2:device=/dev/video0 -vf pp=md

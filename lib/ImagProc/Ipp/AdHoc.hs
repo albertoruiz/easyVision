@@ -127,7 +127,7 @@ resize32f' itp s (F im) = unsafePerformIO $ do
 
 ----------------------------------------------------------------------------------------
 
-warpOn' h r im f met s = do
+warpOnAux h r im f met s = do
     coefs <- newArray (concat h)
     let Size h w = isize im
     f (ptr im) (step im) h w
@@ -137,9 +137,9 @@ warpOn' h r im f met s = do
                            coefs met //warningIPP s [im]
     free coefs
 
-warpOn8u  h (G r) (G im) = warpOn' h r im warpPerspectiveGray (interCode InterpLinear) "warpOn8u"
-warpOn32f h (F r) (F im) = warpOn' h r im warpPerspective32f (interCode InterpLinear) "warpOn32f"
-warpOn8u3 h (C r) (C im) = warpOn' h r im warpPerspectiveRGB (interCode InterpLinear) "warpOn8u3"
+warpOn8u  h (G r) (G im) = warpOnAux h r im warpPerspectiveGray (interCode InterpLinear) "warpOn8u"
+warpOn32f h (F r) (F im) = warpOnAux h r im warpPerspective32f (interCode InterpLinear) "warpOn32f"
+warpOn8u3 h (C r) (C im) = warpOnAux h r im warpPerspectiveRGB (interCode InterpLinear) "warpOn8u3"
 
 -------------------------------------------------------------------
 

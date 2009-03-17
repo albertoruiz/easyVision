@@ -35,6 +35,9 @@ main = do
 --      >>= monitor "profiles" (mpSize 5) sh
       ~~> map (onlylong . prudir) . history 2
       >>= monitor "align" (mpSize 5) shal
+      ~> id *** (sum . map (\(_,_,_,x,_)->x))
+      ~~> id .***. scanl1 (+)
+      >>= monitor "acum" (mpSize 5) shacum
 
 profiles rois img = (img, zip rois profs) where
     profs = map (profile int) rois
@@ -142,6 +145,9 @@ shal (img, alis) = do
     drawImage' img
     mapM_ drawAlig alis
 
+shacum (img,vac) = do
+    drawImage' img
+    text2D 30 30 (show $ round $ ( fromIntegral vac / 5600*180 :: Double) )
 --------------------------------------------------------------
 
 bestAlign d u v = k-d where
@@ -171,3 +177,9 @@ history k = map (reverse . take k) . tails
 
 drift alpha = virtualCamera drifter
     where drifter (a:b:rest) = a : drifter ((alpha I..* a |+| (1-alpha)I..* b):rest)
+
+--------------------------------------------------------------
+
+-- acum xs = zip ims acs
+--     (ims, ys) = unzip xs
+--     z = map (\()->v)

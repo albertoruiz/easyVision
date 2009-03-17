@@ -398,7 +398,7 @@ panoramic sz fi1 fi2 fo camBase camAdj sel fa fb simil = do
             h = conjugateRotation pan tilt roll fi2 fi1
         putW wMon (opt,[pan,tilt,roll])
         let base = warp 0 (size img0) (hi<>kgen (fo/fi1)) img0
-        warpOn (hi<>kgen (fo/fi1)<>h) base img1
+        warpOn' (hi<>kgen (fo/fi1)<>h) base img1 -- FIXME
         inWin wMon $ drawImage base
         inWin wDeb $ drawImage (fb img1raw)
         return base
@@ -473,7 +473,7 @@ zoomer title szz img0 = do
                   title isz (Just disp) (mouse kbdQuit)
     let f im = do
             (_,p,z,ok) <- getW w
-            when ok $ do
+            when ok $ do                 -- inWin w, disp (evSt w) hmm
                 putW w (im,p,z,ok)
                 postRedisplay (Just (evW w))
     return f

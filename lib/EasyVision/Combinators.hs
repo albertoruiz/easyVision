@@ -398,9 +398,10 @@ rectifyQuadrangle sz pts imf = (r,h) where
     r = warp' sz h imf
 
 -- initialization not required
+-- FIXME
 warp' s h im = unsafePerformIO $ do
     r <- image s
-    warpOn h r im
+    warpOn' h r im
     return r
 
 ------------------------------------------------------------------------

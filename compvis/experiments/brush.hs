@@ -117,7 +117,7 @@ worker3 param inWindow (pl,im) st = do
                      text2D 0.9 (-0.2) (show $ length inliers)
                      renderPrimitive Points (mapM_ (vertex.fst) inliers)
 
-                 warpOn (scaling 0.5 <> inv h) (world st) im
+                 warpOn' (scaling 0.5 <> inv h) (world st) im -- FIXME
                  let new = warp 0 (Size 400 400) (scaling 0.5 <> h <> scaling 2) (world st)
 
                  inWindow "warp" $ do

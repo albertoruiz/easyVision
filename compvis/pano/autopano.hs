@@ -7,7 +7,6 @@ import Graphics.UI.GLUT hiding (Matrix, Size, Point)
 import Control.Monad(foldM)
 import Vision
 import ImagProc.Ipp.Core(intersection, shrink, validArea)
-import Foreign
 import Numeric.GSL.Minimization
 import Numeric.LinearAlgebra
 
@@ -17,13 +16,8 @@ simil0 a b roi = k * sum32f (abs32f (f a |-| f b))
     where f = modifyROI (const roi)
           k = recip $ fromIntegral $ validArea (f a)
 
-pasteOn base h im = unsafePerformIO $ do
-    dest <- clone base
-    warpOn h dest im
-    return dest
-
 simil a h b = if ok roi then simil0 a p roi else 10
-    where p = pasteOn a h b
+    where p = warpOn a h b
           roi = effectiveROI (size a) h
           ok r = r1 r >= 0 && r2 r > 50 + r1 r && c1 r >= 0 && c2 r > 50 + c1 r 
 
@@ -65,7 +59,7 @@ worker cam0 cam1 wImg1 w sv = do
             h = conjugateRotation pan tilt roll 2.8 1
         putW wImg1 (opt,[pan,tilt,roll])
         let base = warp 0 (size img0) hi img0
-        warpOn (hi<>h) base img1
+        warpOn' (hi<>h) base img1 -- FIXME
         drawImage base
         sv $ grayToYUV $ scale32f8u 0 1 base
 

@@ -159,7 +159,7 @@ worker cam w3D inWindow st = do
         let r = scaling (zoom st) <> inv (cam0 st) -- hmm
         w@(F i) <- image (Size floorSize floorSize)
         set32f 0.25 (fullroi i) w
-        let g im h = warpOn (r <> h) w im
+        let g im h = warpOn' (r <> h) w im -- FIXME
         sequence_ $ reverse $ rotateList sv $ zipWith g (imgs st) (hs st)
 
         inWindow "world" $ do         -- automatically rectified plane
