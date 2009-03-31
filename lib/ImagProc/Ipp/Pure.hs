@@ -27,7 +27,10 @@ module ImagProc.Ipp.Pure (
     gauss, laplace, median, highPass8u,
     magnitudePack,
     abs32f, sqrt32f, mirror8u,
-    dilate3x3, erode3x3
+    dilate3x3, erode3x3,
+    undistortRadial8u,
+    undistortRadialRGB,
+    undistortRadial32f
 )
 where
 
@@ -244,3 +247,7 @@ minEvery :: ImageFloat -> ImageFloat -> ImageFloat
 minEvery = mkIdIPInt32f ioMinEvery_32f_C1IR
 
 ------------------------------------------------------
+
+undistortRadial8u fx fy cx cy k1 k2 = mkId (ioUndistortRadial_8u_C1R fx fy cx cy k1 k2 nullPtr)
+undistortRadialRGB fx fy cx cy k1 k2 = mkId (ioUndistortRadial_8u_C3R fx fy cx cy k1 k2 nullPtr)
+undistortRadial32f fx fy cx cy k1 k2 = mkId (ioUndistortRadial_32f_C1R fx fy cx cy k1 k2 nullPtr)

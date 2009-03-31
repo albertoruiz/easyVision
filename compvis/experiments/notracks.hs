@@ -16,13 +16,18 @@ history n = map (take n) . tails
 
 
 main = do
+    sz <- findSize
     corners <- getCornerDetector
     sc <- getOption "--scale" 0.5
     alpha <- getOption "--alpha" 0.95
     dkey <- getOption "--dkey" 0.3
     mxd <- getOption "--mxd" 0.01
+    urad <- getOption "--urad" (-0.28)
+    flagurad <- getFlag "--urad"
+    undistort <- if not flagurad then return id else remap `fmap` undistortMap sz 2 urad
 
-    run $   camera ~> float . gray ~~> drop 3
+
+    run $   camera ~> float . undistort . gray ~~> drop 3
         >>= corners -- >>= cornerMonitor "corners" 
         ~>  toPoints ~~> basicLinks mxd (ident 3,undefined)
         ~~> history 2

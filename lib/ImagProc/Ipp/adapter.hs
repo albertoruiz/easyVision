@@ -197,7 +197,7 @@ autofun k hds = unlines [ver k (toTuple h) (doc h) | h <- hds, arity k (map snd 
 
 autodefs hds = (automod++) $ rep ("srcDstXStep","srcDstStep")
                            $ rep ("DstStep","dstStep") $ rep ("srcDstStep","srcDstXStep")
-                           $ rep ("[3]","") $ rep ("(f )","f") $
+                           $ rep ("[3]","") $ rep ("[]","") $ rep ("(f )","f") $
     "\n-------- arity 0 -------------\n\n" ++
     autofun 0 hds
     ++ "-------- arity 1 -------------\n\n" ++

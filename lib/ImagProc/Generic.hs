@@ -18,8 +18,8 @@ module ImagProc.Generic (
 , blockImage
 , warp, warpOn, warpOn'
 , constImage, cloneClear, clean
-, Channels(..), channels,
-  channelsFromRGB
+, Channels(..), channels
+, channelsFromRGB
 )
 where
 
@@ -39,6 +39,12 @@ class Image image => GImg pixel image | pixel -> image, image -> pixel where
     warpOnG :: [[Double]] -> image -> image -> IO ()
     fromYUV :: ImageYUV -> image
     toYUV :: image -> ImageYUV
+    -- | transform an image according to a lookup table (see 'undistortMap')
+    remap :: LookupMap -> InterpolationMode -> image -> image
+    -- | convencience wrapper of undistortRadial for diag f f 1 cameras
+    uradial :: Float -- ^ f parameter in normalized coordinates (e.g. 2.0)
+            -> Float -- ^ k radial distortion (quadratic) parameter
+            -> image -> image
 
 ----------------------------------
 
@@ -51,6 +57,8 @@ instance GImg CUChar ImageGray where
     warpOnG = warpOn8u
     fromYUV = yuvToGray
     toYUV = grayToYUV . clean
+    remap (LookupMap m) = remap8u m
+    uradial = uradialG undistortRadial8u
 
 instance GImg Float ImageFloat where
     zeroP = 0
@@ -61,6 +69,8 @@ instance GImg Float ImageFloat where
     warpOnG = warpOn32f
     fromYUV = float . yuvToGray
     toYUV = grayToYUV . clean . toGray
+    remap (LookupMap m) = remap32f m
+    uradial = uradialG undistortRadial32f
 
 instance GImg (CUChar,CUChar,CUChar) ImageRGB where
     zeroP = (0,0,0)
@@ -71,7 +81,8 @@ instance GImg (CUChar,CUChar,CUChar) ImageRGB where
     warpOnG = warpOn8u3
     fromYUV = yuvToRGB
     toYUV = rgbToYUV . clean
-
+    remap (LookupMap m) = remapRGB m
+    uradial = uradialG undistortRadialRGB
 
 
 -- modifies the undefined region of an image.
@@ -209,3 +220,9 @@ channelsFromRGB img = CHIm
     }
     where yuvAux = toYUV img
           hsvAux = rgbToHSV img
+
+------------------------------------------------
+
+uradialG gen f k im = gen fp fp (fromIntegral w / 2) (fromIntegral h / 2) k 0 im
+        where Size h w = size im
+              fp = f * fromIntegral w / 2

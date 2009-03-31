@@ -80,3 +80,11 @@ ippcv.h ippiSampleLine_8u_C1R
 ippcv.h ippiSegmentWatershedGetBufferSize_8u_C1R
 ippcv.h ippiSegmentWatershed_8u_C1IR
 ippi.h  ippiComputeThreshold_Otsu_8u_C1R
+ippcv.h ippiUndistortRadial_8u_C1R
+ippcv.h ippiUndistortRadial_8u_C3R
+ippcv.h ippiUndistortRadial_32f_C1R
+ippcv.h ippiUndistortGetSize
+ippcv.h ippiCreateMapCameraUndistort_32f_C1R
+ippi.h  ippiRemap_8u_C1R
+ippi.h  ippiRemap_8u_C3R
+ippi.h  ippiRemap_32f_C1R

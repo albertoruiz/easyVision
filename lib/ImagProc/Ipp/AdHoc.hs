@@ -647,3 +647,68 @@ watershed im seeds = unsafePerformIO $ do
     mapM_ put seeds
     watershed8u im (G s)
     return $ G (s {vroi = theROI im})
+
+-----------------------
+
+newtype LookupMap = LookupMap (ImageFloat, ImageFloat, Ptr CUChar)
+
+-- | Creates a lookup map to correct radial distortion (parameters in pixel coordinates)
+undistortMapRaw :: Size  -- ^ image size
+                -> Float -- ^ fx
+                -> Float -- ^ fy
+                -> Float -- ^ cx
+                -> Float -- ^ cy
+                -> Float -- ^ k1
+                -> Float -- ^ k2
+                -> Float -- ^ p1
+                -> Float -- ^ p2
+                -> IO LookupMap
+undistortMapRaw sz fx fy cx cy k1 k2 p1 p2 = do
+    ps <- malloc
+    let r = fi (height sz)
+    let c = fi (width sz)
+        isz = IppiSize r c
+    ippiUndistortGetSize isz ps // checkIPP "ippiUndistortGetSize" []
+    s <- peek ps
+    buffer <- mallocBytes (fromIntegral s)
+    F xmap <- image sz
+    F ymap <- image sz
+    with isz $ \pisz ->
+        (ippiCreateMapCameraUndistort_32f_C1Rx // src xmap (vroi xmap) // src ymap (vroi ymap)) pisz fx fy cx cy k1 k2 p1 p2 buffer // checkIPP "ippiCreateMapCameraUndistort_32f_C1Rx" [xmap, ymap]
+    return $ LookupMap (F xmap, F ymap, buffer)
+
+-- | Creates a lookup map to correct radial distortion (for diag f f 1 cameras)
+undistortMap :: Size    -- ^ image size
+             -> Float   -- ^ f camera parameter in normalized coordinates (e.g. 2.0)
+             -> Float   -- ^ k parameter for distortion radial (quadratic).
+             -> IO LookupMap  -- ^ result expected by 'remap'
+undistortMap sz f k = undistortMapRaw sz fp fp (fromIntegral w / 2) (fromIntegral h / 2) k 0 0 0
+        where Size h w = sz
+              fp = f * fromIntegral w / 2
+
+remap8u (F xmap, F ymap, buffer) mode (G im) = unsafePerformIO $ do
+    let sz = isize im
+        Size h w = sz
+        rect = IppiRect 0 0 (fi w) (fi h)
+    G r <- image sz
+    with rect $ \prect ->
+        (ippiRemap_8u_C1R (castPtr $ ptr im) (roiSZ $ vroi im) (step im) prect (castPtr $ ptr xmap) (step xmap) (castPtr $ ptr ymap) (step ymap) // dst r (vroi r)) (interCode mode) // checkIPP "ippiRemap_8u_C1R" [im,xmap,ymap]
+    return (G r)
+
+remapRGB (F xmap, F ymap, buffer) mode (C im) = unsafePerformIO $ do
+    let sz = isize im
+        Size h w = sz
+        rect = IppiRect 0 0 (fi w) (fi h)
+    C r <- image sz
+    with rect $ \prect ->
+        (ippiRemap_8u_C3R (castPtr $ ptr im) (roiSZ $ vroi im) (step im) prect (castPtr $ ptr xmap) (step xmap) (castPtr $ ptr ymap) (step ymap) // dst r (vroi r)) (interCode mode) // checkIPP "ippiRemap_8u_C1R" [im,xmap,ymap]
+    return (C r)
+
+remap32f (F xmap, F ymap, buffer) mode (F im) = unsafePerformIO $ do
+    let sz = isize im
+        Size h w = sz
+        rect = IppiRect 0 0 (fi w) (fi h)
+    F r <- image sz
+    with rect $ \prect ->
+        (ippiRemap_32f_C1R (castPtr $ ptr im) (roiSZ $ vroi im) (step im) prect (castPtr $ ptr xmap) (step xmap) (castPtr $ ptr ymap) (step ymap) // dst r (vroi r)) (interCode mode) // checkIPP "ippiRemap_8u_C1R" [im,xmap,ymap]
+    return (F r)
