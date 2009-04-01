@@ -15,8 +15,8 @@ Common definitions and functions for pattern classification and machine learning
 
 module Classifier.Base (
 -- * Basic definitions
-     Attributes, Label, Example', Example, Sample', Sample,
-     Classifier', Classifier, Estimator', Estimator, Learner', Learner,
+     Attributes, Label, Example, Sample,
+     Classifier, Estimator, Learner,
      Feature, TwoGroups, Dicotomizer, multiclass,
      Weights, WeightedDicotomizer, unweight, weight,
 -- * Utilities
@@ -49,22 +49,17 @@ vector = fromList ::  [Double] -> Vector Double
 ------------------- General definitions ----------------------------
 
 type Label = String
-type Example' a = (a, Label)
+type Example a = (a, Label)
 type Attributes = Vector Double
-type Example = Example' Attributes
-type Sample' a = [Example' a]
-type Sample = [Example]
+type Sample a = [Example a]
 
-type Classifier' a = a -> Label
-type Classifier = Classifier' Attributes   -- crisp decision
+type Classifier a = a -> Label    -- crisp decision
 
--- | More informative 'Classifier', which obtains the relative \"confidence\" of each class (related to an approximation to the posterior probabilities)
-type Estimator' a = a -> [Double] -- hmm
-type Estimator = Estimator' Attributes
+-- | More informative 'Classifier, which obtains the relative \"confidence\" of each class (related to an approximation to the posterior probabilities)
+type Estimator a = a -> [Double] -- hmm
 
 -- | A generic learning machine
-type Learner' a = Sample' a -> (Classifier' a, Estimator' a)
-type Learner = Learner' Attributes
+type Learner a = Sample a -> (Classifier a, Estimator a)
 
 -- | A function that tries to discriminate between two classes of objects (positive means the first class)
 type Feature = Attributes -> Double       -- +/-
@@ -87,7 +82,7 @@ data InfoLabels = InfoLabels {
 }
 
 -- | extracts the labels of a sample
-extractLabels :: Sample' a -> InfoLabels
+extractLabels :: Sample a -> InfoLabels
 extractLabels l = InfoLabels ls lti itl where
     ls = sort $ nub $ map snd l
     itl = (ls!!)
@@ -115,7 +110,7 @@ scramble seed l = map fst $ sortBy (compare `on` snd) randomTuples where
     randomTuples = zip l (randomRs (0, 1::Double) (mkStdGen seed))
 
 -- | add noise to the attributes
-addNoise :: Int -> Double -> Sample -> Sample
+addNoise :: Int -> Double -> Sample (Vector Double) -> Sample (Vector Double)
 addNoise seed sz l = zip rvs lbs where
     (vs,lbs) = unzip l
     n = dim (head vs)
@@ -126,8 +121,8 @@ addNoise seed sz l = zip rvs lbs where
 splitProportion :: Double -> [a] -> ([a],[a])
 splitProportion r l = splitAt n l where n = round (r * fromIntegral (length l))
 
--- | creates a 'Classifier' from an 'Estimator' and the particular class labels of a problem.
-createClassifier :: InfoLabels -> Estimator -> Classifier
+-- | creates a 'Classifier from an 'Estimator and the particular class labels of a problem.
+createClassifier :: InfoLabels -> Estimator a -> Classifier a
 createClassifier ilbs f = getLabel ilbs . posMax . f
 
 -- | returns the position of the maximum element in a list. TODO: remove irrefutable pattern
@@ -140,13 +135,13 @@ posMin l = p where
 
 
 -- | groups the attribute vectors of each class
-group :: Sample' a -> ([[a]], InfoLabels)
+group :: Sample a -> ([[a]], InfoLabels)
 group l = (gs, lbs) where
     lbs = extractLabels l
     gs = map proto (labels lbs) where proto lb = [v | (v,s)<-l , s==lb]
 
--- | converts a list of groups of objects into a 'Sample' with labels \"1\",\"2\",...
-ungroup :: [[a]] -> Sample' a
+-- | converts a list of groups of objects into a 'Sample with labels \"1\",\"2\",...
+ungroup :: [[a]] -> Sample a
 ungroup gs = s where
     n = length gs
     lbs = map (show) [1 .. n]
@@ -154,12 +149,12 @@ ungroup gs = s where
     f g lb = zip g (repeat lb)
 
 -- | Estimates the success rate of a classifier on a sample
-errorRate :: Sample' a -> Classifier' a -> Double
+errorRate :: Sample a -> Classifier a -> Double
 errorRate exs c  = fromIntegral ok / fromIntegral (length exs) where
     ok = length [1 | (v,l)<-exs, l /= c v]
 
 -- | Computes the confusion matrix of a classifier on a sample
-confusion ::Sample' a -> Classifier' a -> Matrix Double
+confusion ::Sample a -> Classifier a -> Matrix Double
 confusion exs c = confusionMatrix where
     lbs = extractLabels exs
     l = getIndex lbs
@@ -179,8 +174,8 @@ auxgroup l = map (\(x:xs) -> (x, concat xs)) (rots l)
 -- auxgroup x = zip x (map (concat . flip delete x) x)
 
 
--- | Constructs a (multiclass) 'Learner' given any 'Dicotomizer' (by creating n features to discriminate each class against the rest)
-multiclass :: Dicotomizer -> Learner
+-- | Constructs a (multiclass) 'Learner given any 'Dicotomizer' (by creating n features to discriminate each class against the rest)
+multiclass :: Dicotomizer -> Learner (Vector Double)
 multiclass bin exs = (createClassifier lbs f, f) where
     (gs,lbs) = group exs
     f = multiclass' bin gs
@@ -194,7 +189,7 @@ multiclass' bin l = f where
 
 
 -- | selects the examples with the given labels
-selectClasses :: [Label] -> Sample -> Sample
+selectClasses :: [Label] -> Sample a -> Sample a
 selectClasses validset exs = filter ( (`elem` validset) .snd) exs
 
 
@@ -225,16 +220,16 @@ Composition of feature extractors is similar to ordinary function composition, b
 -}
 
 -- | A function which depends on a sample
-type Property a b = Sample' a -> (a -> b)
+type Property a b = Sample a -> (a -> b)
 
 -- | Applies some transformation to the objects in a Sample (it is just a map on the first element of the tuple).
-preprocess :: (a -> b) -> Sample' a -> Sample' b
+preprocess :: (a -> b) -> Sample a -> Sample b
 preprocess f exs = [(f v, l) | (v,l) <- exs]
 
 
 -- | combines a learner with a given preprocessing stage
 withPreprocess :: Property a b
-               -> Learner' b -> Learner' a
+               -> Learner b -> Learner a
 withPreprocess method learner prob = (c,f) where
     t = method prob
     prob' = preprocess t prob
@@ -243,7 +238,7 @@ withPreprocess method learner prob = (c,f) where
     f = f' . t
 
 -- | flip withPreprocess
-onP :: Learner' a -> Property b a -> Learner' b
+onP :: Learner a -> Property b a -> Learner b
 onP = flip withPreprocess
 
 -- | combines several properties into a single vector (currently too restrictive)
@@ -258,7 +253,7 @@ ofP prop other prob = prop prob' . other prob where
     prob' = preprocess (other prob) prob
 
 -- creates a property from the outputs of the estimator created by learning machine
-outputOf :: Learner' a -> Property a Attributes
+outputOf :: Learner a -> Property a Attributes
 outputOf machine prob = g where
     g v = vector $ f v
     (_,f) = machine prob

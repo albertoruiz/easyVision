@@ -44,40 +44,41 @@ mse (g1,g2) = f where
 --------------------------------------------------------------------------------
 
 -- | A measure of the disimilarity or distance from an attribute vector to a sample of vectors of a certain class
-type Distance =  [Attributes] -> Attributes -> Double
+type Distance a =  [a] -> a -> Double
+
 
 -- | Mahalanobis's distance to a population.
-mahalanobis :: Distance
+mahalanobis :: Distance (Vector Double)
 mahalanobis vs = f where
     Stat {meanVector = m, invCov = ic} = stat (fromRows vs)
     f x = (x-m) <> ic <.> (x-m)
 
 -- | gaussian -log likelihood (mahalanobis + 1\/2 log sqrt det cov)
-gaussian :: Distance
+gaussian :: Distance  (Vector Double)
 gaussian vs = f where
     Stat {meanVector = m, invCov = ic} = stat (fromRows vs)
     k = -log (sqrt (abs( det ic)))
     f x = k + 0.5*((x-m) <> ic <.> (x-m))
 
 -- | Distance to the mean value of the population.
-ordinary :: Distance
+ordinary :: Distance  (Vector Double)
 ordinary vs = f where
     Stat {meanVector = m} = stat (fromRows vs)
     f x = norm (x-m)
 
 -- | distance to the nearest neighbour
-nearestNeighbour :: Distance
+nearestNeighbour :: Distance (Vector Double)
 nearestNeighbour vs v = minimum (map (dist v) vs)
     where dist x y = norm (x-y)
 
 -- | distance to the pca subspace of each class
-subspace :: PCARequest -> Distance
+subspace :: PCARequest -> Distance (Vector Double)
 subspace rq vs = f where
     Codec {encodeVector = e, decodeVector = d} = pca rq (stat (fromRows vs))
     f v = norm (v - (d.e) v)
 
 -- | distance to the robust location (with proportion prop)
-robustLoc :: Double -> Distance
+robustLoc :: Double -> Distance (Vector Double)
 robustLoc prop l = f where
     dist x y = norm (x-y)
     f = dist m
@@ -86,7 +87,7 @@ robustLoc prop l = f where
     k = round (prop*fromIntegral(length l)) -- wrong
 
 -- | A generic distance-based learning machine.
-distance :: Distance -> Learner
+distance :: Distance a -> Learner a
 distance d exs = (c,f) where
     (gs,lbs) = group exs
     distfuns = map d gs

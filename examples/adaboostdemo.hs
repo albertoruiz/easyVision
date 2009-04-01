@@ -21,7 +21,7 @@ withPCA rq = withPreprocess (mef rq)
 
 
 -- | a learner which adaboosts the stumps weak learner
-classstumps :: Int -> Learner
+classstumps :: Int -> Learner (Vector Double)
 classstumps n = multiclass (adaboost n stumps)
 
 
@@ -61,7 +61,7 @@ main' = do
 
 
 -- 6 levels of function combinators!
-tremen :: Learner
+tremen :: Learner (Vector Double)
 tremen = multiclass $ adaboost 50 $ weight 117 $ treeOf (branch 20) (unweight stumps)
 
 
@@ -80,7 +80,7 @@ pru = do
 shErr d c = putStrLn $ (show $ 100 * errorRate d c) ++ " %"
 shConf d c = putStrLn $ format " " (show.round) (confusion d c)
 
-study :: Sample -> Learner -> IO ()
+study :: Sample (Vector Double) -> Learner (Vector Double) -> IO ()
 study prob meth = do
     seed <- randomIO
     let (train,test) = splitProportion 0.5 $ scramble seed prob
@@ -270,7 +270,7 @@ prunaive 2 = do
 
 
 
-adaboostCurves :: Int -> WeightedDicotomizer -> (Sample,Sample) -> IO ()
+adaboostCurves :: Int -> WeightedDicotomizer -> (Sample (Vector Double), Sample (Vector Double)) -> IO ()
 adaboostCurves n method (train, test)= do
     let ([g1,g2],lbs) = group (train)
     let st = adaboostST n stumps (g1,g2)

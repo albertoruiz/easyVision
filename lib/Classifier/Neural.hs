@@ -81,7 +81,7 @@ neural     :: Double -- ^ alpha (e.g. 0.1)
            -> Double -- ^ maxerr (e.g. 0.05)
            -> Int    -- ^ maxepochs (100-1000) 
            -> [Int]  -- ^ hidden units
-           -> Learner
+           -> Learner (Vector Double)
 neural alpha eps maxep hidden prob = (c,f) where
     (result, err) = neural' alpha eps maxep hidden prob
     c = createClassifier (snd$ group prob) f

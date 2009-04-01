@@ -38,15 +38,6 @@ main = do
         >>= id .&&&. warpAll sc
         >>= zoomWindow "zoom" 600 (toGray.snd)
 
-        ~>  compDesp . fst
---        >>= monitor "desp" (mpSize 5) shDesp
-        ~> fst
-
-        ~~> markKeyFrames dkey
-        >>= watchRight
---        ~~> groupkey
---        >>= monitor "test" (mpSize 5) (sh . findClosest)
-
 
 -----------------------------------------------------
 
@@ -126,44 +117,6 @@ markKeyFrames d (x:xs) = Right x : skip d xs where
                   | otherwise    = markKeyFrames d (a:as)
 
 ----------------------------------------------------
-
-drift alpha = virtualCamera drifter
-    where drifter (a:b:rest) = a : drifter ((alpha .* a |+| (1-alpha).* b):rest)
-
------------------------------------------------------
-
-watch = do
-    w <- evWindow (0,[]) "keyframes" (Size 600 600) (Just disp) (mouse kbdQuit)
-    return $ \x -> do
-        (k,l) <- getW w
-        putW w (k, x:l)
-        postRedisplay (Just $ evW w)
-  where
-    disp st = do
-        (k,l) <- get st
-        when (not $ null l) $ drawImage' (fst3 $ l!!k)
-        windowTitle $= ("keyframe #"++ show (length l - k))
---        when (not $ null l) $ drawImage $ last $ warpAll 0.5 l
-
-    mouse _ st (MouseButton WheelUp) Down _ _ = do
-        st $~ \(k,l) -> (min (length l-1) (k+1),l)
-        postRedisplay Nothing
-    mouse _ st (MouseButton WheelDown) Down _ _ = do
-        st $~ \(k,l)-> (max 0 . subtract 1 $ k, l)
-        postRedisplay Nothing
-    mouse def _ a b c d = def a b c d
-
-
-watchRight cam = do
-    add <- watch
-    return $ do
-        x <- cam
-        case x of
-            Right y -> add y
-            _       -> return ()
-        return x
-
-
 
 shBasicLinks = monitor "basicLinks" (mpSize 20) sh where
     sh [(im0, pts0, _),(im1,pts1,(h1,(g1,g2)))] = do

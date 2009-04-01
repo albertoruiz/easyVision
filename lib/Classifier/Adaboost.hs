@@ -39,7 +39,7 @@ posMin l = p where
 compareBy f = (\a b-> compare (f a) (f b))
 
 -- | an extremely simple learning machine
-singlestump :: Learner
+singlestump :: Learner (Vector Double)
 singlestump = multiclass (unweight stumps)
 
 

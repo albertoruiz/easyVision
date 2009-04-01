@@ -74,7 +74,7 @@ study prob meth = do
           (multiclass (treeOf (branch 0) (unweight stumps)))@
 
 -}
-combined :: String -> Int -> Double -> (Vector Double ->Double) -> Sample -> IO ()
+combined :: String -> Int -> Double -> (Vector Double ->Double) -> Sample (Vector Double) -> IO ()
 combined title n r f exs = act where
     (gs,_) = group exs
     l1 = toList $ linspace n (-r,r)
@@ -98,7 +98,7 @@ combined title n r f exs = act where
 ---------------------------- some toy classification problems ---------------------------
 
 -- | interlaced S-shapes
-sshape :: Int -> Sample
+sshape :: Int -> Sample (Vector Double)
 sshape n = dat1 ++ dat2 where
     m = n `quot` 2
     ts k = tail $ toList $ linspace (k+1) (0,4/5*2*pi)
@@ -107,7 +107,7 @@ sshape n = dat1 ++ dat2 where
 
 
 -- | concentric semicircles
-moon :: Int -> Sample
+moon :: Int -> Sample  (Vector Double)
 moon n = dat1 ++ dat2 where
     m = n `quot` 2
     ts k = tail $ toList $ linspace (k+1) (0,pi)
@@ -115,7 +115,7 @@ moon n = dat1 ++ dat2 where
     dat2 = [ (vector [cos t, sin t -1],         "b") | t <- ts m]
 
 -- | 3 concentric rings (nonconvex solution)
-rings :: Int -> Sample
+rings :: Int -> Sample (Vector Double)
 rings n = dat1 ++ dat2 ++ dat3 where
     m = n `quot` 4
     ts k = tail $ toList $ linspace (k+1) (0,2*pi)
@@ -124,7 +124,7 @@ rings n = dat1 ++ dat2 ++ dat3 where
     dat3 = [ (vector [0.3*cos t, 0.3*sin t], "a") | t <- ts m ]
 
 -- | concentric rings
-ring :: Int -> Sample
+ring :: Int -> Sample (Vector Double)
 ring n = dat1 ++ dat2 where
     m = n `quot` 2
     ts k = tail $ toList $ linspace (k+1) (0,2*pi)
@@ -132,7 +132,7 @@ ring n = dat1 ++ dat2 where
     dat2 = [ (vector [cos t, sin t],         "b") | t <- ts m]
 
 --  | very simple problem
-linsep :: Int -> Sample
+linsep :: Int -> Sample (Vector Double)
 linsep n = dat1 ++ dat2 where
     m = n `quot` 2
     ts = tail $ toList $ linspace (m+1) (0,2*pi)
@@ -140,7 +140,7 @@ linsep n = dat1 ++ dat2 where
     dat2 = [ (vector [-1+cos t, 1-sin t], "b") | t <- ts ]
 
 --  | simple multiclass problem 
-linsepmulti :: Int -> Sample
+linsepmulti :: Int -> Sample (Vector Double)
 linsepmulti n = dat1 ++ dat2 ++ dat3 where
     m = n `quot` 2
     ts = tail $ toList $ linspace (m+1) (0,2*pi)
@@ -150,7 +150,7 @@ linsepmulti n = dat1 ++ dat2 ++ dat3 where
     dat3 = [ (vector [1+k*cos t, 1-k*sin t], "c") | t <- ts ]
 
 --  | simple nonlinearly separable problem 
-nosep :: Int -> Sample
+nosep :: Int -> Sample (Vector Double)
 nosep n = dat1 ++ dat2 ++ dat3 where
     m = n `quot` 4
     ts m = tail $ toList $ linspace (m+1) (0,2*pi)
@@ -160,7 +160,7 @@ nosep n = dat1 ++ dat2 ++ dat3 where
     dat3 = [ (vector [1+k*cos t, 1-k*sin t], "b") | t <- ts (2*m)]
 
 -- | handwritten digits, partitioned and with desired number of pca dimensions
-mnist :: Int -> Int -> IO (Sample, Sample)
+mnist :: Int -> Int -> IO (Sample (Vector Double), Sample (Vector Double))
 
 mnist dim n = do
     m <- fromFile "../data/mnist.txt" (5000,785)
@@ -176,7 +176,7 @@ mnist dim n = do
             preprocess f test)
 
 -- | the mnist raw data
-mnistraw :: Int -> IO (Sample,Sample)
+mnistraw :: Int -> IO (Sample (Vector Double), Sample (Vector Double))
 mnistraw n = do
     m <- fromFile "../data/mnist.txt" (5000,785)
     let vs = toRows (takeColumns 784 m)
@@ -186,7 +186,7 @@ mnistraw n = do
 
 -----------------------------------------------------------
 
-testProb :: Sample
+testProb :: Sample (Vector Double)
 testProb = [ (v[1,1],"1")
            , (v[2,1],"1")
            , (v[1,2],"1")

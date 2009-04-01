@@ -10,7 +10,7 @@ import Debug.Trace
 shErr d c = (show $ (/100) $ fromIntegral $ round $ 10000 * errorRate d c) ++ " %"
 shConf d c = putStrLn $ format " " (show.round) (confusion d c)
 
-study :: Sample -> (Learner, String) -> IO ()
+study :: Sample (Vector Double) -> (Learner (Vector Double), String) -> IO ()
 study prob (meth, title) = do
     seed <- randomIO
     let (train,test) = splitProportion 0.5 $ scramble seed prob
@@ -29,7 +29,7 @@ study prob (meth, title) = do
 (r,err) = learnNetwork 0.1 0.05 100 (createNet 100 2 [10,20,10] 1)  (adaptNet xor)
 
 
-xor :: Sample
+xor :: Sample (Vector Double)
 xor = [
  (vector [-1,-1], "b"),
  (vector [-1,1], "a"),
