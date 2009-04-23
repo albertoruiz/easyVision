@@ -57,10 +57,14 @@ main = do
 l2c [x,y] = (x:+y)
 
 invFou n w fou = Closed r where
-    f = fromList $ map (fou!!) [w..2*w] ++ replicate (n-7) 0 ++ map (fou!!) [0..w-1]
+    f = fromList $ map (fou!!) [w..2*w] ++ replicate (n- 2*w - 1) 0 ++ map (fou!!) [0..w-1]
     r = map c2p $ toList $ ifft (fromIntegral n *f)
     c2p (x:+y) = Point x y
 
+-- invFou n w fou = Closed r where
+--     f = fromList $ map (fou!!) [0..w] ++ replicate (n- 2*w - 1) 0 ++ map (fou!!) [-w,-w+1.. (-1)]
+--     r = map c2p $ toList $ ifft (fromIntegral n *f)
+--     c2p (x:+y) = Point x y
 
 shcont (Closed c) = do
     renderPrimitive LineLoop $ mapM_ vertex c

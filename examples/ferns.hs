@@ -4,11 +4,11 @@ import Numeric.LinearAlgebra
 import Classifier as C
 import System.Random
 import Debug.Trace
-import System.Random
 import Data.List as L
 import qualified Data.Map as M
 import Data.Maybe(fromMaybe)
 import Control.Arrow((&&&))
+import System (getArgs)
 
 --matrix m = fromLists m :: Matrix Double
 --vector v = fromList v :: Vector Double
@@ -34,12 +34,17 @@ study' prob meth = do
 
 main = do
     m <- fromFile "../data/mnist.txt" (5000,785)
+    args <- map read `fmap` getArgs
+    let [n,s] = case args of
+            [] -> error "usage: ./ferns <ferns number (e.g. 100)> <ferns size (e.g. 10) >"
+            [n,s]->[n,s]
     let vs = toRows (takeColumns 784 m)
     let ls = map (show.round) $ toList $ flatten $ dropColumns 784 m
-    let mnist = scramble 100 $ zip vs ls
+    seed <- randomIO
+    let mnist = scramble seed $ zip vs ls
     let (train,test) = splitAt 4000 mnist
 
-    randfeats <- take 600 `fmap` genRandFeats (0,783::Int)
+    randfeats <- take (n*s) `fmap` genRandFeats (0,783::Int)
     let train' = preprocess (randBinFeat randfeats) train
         test'  = preprocess (randBinFeat randfeats) test
 
@@ -51,8 +56,8 @@ main = do
     putStr "fastferns-1 "
     study' (train',test') (distance naiveBayes)
 
-    let train'' = preprocess (binbool 3 randfeats) train
-        test''  = preprocess (binbool 3 randfeats) test
+    let train'' = preprocess (binbool s randfeats) train
+        test''  = preprocess (binbool s randfeats) test
 
     putStr "ferns-3 "
     study' (train'',test'') (distance ferns)
@@ -79,4 +84,4 @@ ferns vs = f where
         where lr l = fromIntegral (length l) / t :: Double
     t = fromIntegral (length vs)
     f x = negate $ sum $ map log $ zipWith get hs x
-        where get m v = fromMaybe (1/t) (M.lookup v m)
+        where get m v = fromMaybe (0.1/t) (M.lookup v m)

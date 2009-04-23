@@ -125,7 +125,7 @@ withSegments world = (measure,post,cz,restart) where
 
 withRegion w world = (measure,post,cz,restart) where
     measure img zprev =  map (vector.post.map pl). givemecont zprev $ img
-    post = concat . map c2l . flip map [-w..w] . memo . normalizeStart . fourierPL . Closed . map lp
+    post = concat . map c2l . flip map [-w..w] . memo w. normalizeStart . fourierPL . Closed . map lp
     --cz = 1E-5 .* diagl [1,1,1,1,10,10,50,50,10,10,1,1,1,1]
     cz = 1E-5 .* ident ((2*w+1)*2)
     restart = givemeconts
@@ -257,6 +257,6 @@ shPose (CamPar f p t r (cx,cy,cz)) = printf "f=%.2f  pan=%.1f  tilt=%.1f  roll=%
     where degree = 180/pi
           cm = 10
 
-memo f = g where
-    m = listArray (-8,8::Int) [f k | k <- [-8..8]]
+memo t f = g where
+    m = listArray (-t,t::Int) [f k | k <- [-t..t]]
     g w = m ! w

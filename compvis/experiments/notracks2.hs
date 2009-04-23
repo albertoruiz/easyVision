@@ -7,6 +7,7 @@ import Vision
 import Numeric.LinearAlgebra hiding ((.*))
 import Graphics.UI.GLUT hiding (Size,Point)
 import Debug.Trace
+import Text.Printf
 
 camera = findSize >>= getCam 0 ~> channels
 run c = prepare >> (c >>= launch . (>> return ()))
@@ -52,7 +53,8 @@ estimateIt mxd (h,_) p1s p2s = (hnew,(g1,g2)) where
     (g1,g2',_,_,_) = basicMatches' (p1s, predicted) dist mxd
     g2 = map snd g2'
     hnew = if length g1 > 4
-                then estimateHomographyRaw (map pl g1) (map pl g2)
+                then --fst $ estimateHomographyRansac 0.4 0.005 (map pl g1) (map pl g2)
+                     estimateHomographyRaw (map pl g1) (map pl g2)
                 else ident 3
 
 ----------------------------------------------------
@@ -116,6 +118,8 @@ markKeyFrames d (x:xs) = Right x : skip d xs where
     skip d (a:as) | close d ih0 a = Left a : skip d as
                   | otherwise    = markKeyFrames d (a:as)
 
+mean l = sum l / fromIntegral (length l)
+
 ----------------------------------------------------
 
 shBasicLinks = monitor "basicLinks" (mpSize 20) sh where
@@ -132,8 +136,9 @@ shBasicLinks = monitor "basicLinks" (mpSize 20) sh where
         pointSize $= 1; setColor 0 0 0
         renderPrimitive Points $ mapM_ vertex (htp h1 g2)
 
---        print $ last $ zipWith distPoints g1 g2
-
+        setColor 1 0.5 0.5
+        text2D 0.9 0.7 $ printf "%.1f" $ 320 * mean (zipWith distPoints g1 (htp h1 g2))
+        text2D 0.9 0.6 $ printf "%.1f" $ 320 * mean (zipWith distPoints g1 g2)
 
 --------------------------------------------------------
 
