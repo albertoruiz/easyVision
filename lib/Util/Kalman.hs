@@ -29,7 +29,7 @@ import Debug.Trace
 import Text.Printf
 
 debug x = trace (show x) x
-debugM x = trace (format " " (printf "%.2g") x) x
+debugM x = trace (format " " (printf "%2.0f") (100*abs x)) x
 debugLV k x = trace (show (fromRows x)) x
 debugS s x = trace (s++" = "++show x) x
 

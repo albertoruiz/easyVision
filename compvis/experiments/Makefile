@@ -3,7 +3,8 @@ ALL = brush foldimage \
       salience salience2 \
       tracks hotpoints segments \
       capturepoly trazo \
-      notracks notracks2
+      notracks notracks2 \
+      multiposenew
 
 EASYVISION = ../..
 

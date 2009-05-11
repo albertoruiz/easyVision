@@ -51,7 +51,7 @@ poseTracker :: String -> Maybe Double -> [[Double]] -> IO Channels
             -> IO (IO(Channels, CameraParameters, (Vector Double, Matrix Double), Maybe (Vector Double, Double)))
 
 poseTracker "" mbf ref cam = do
-    tracker <- poseTrackerGen (withRegion 4 ref) mbf ref
+    tracker <- poseTrackerGen (withRegion 2 ref) mbf ref
     return $ do
         img <- cam
         ((pose,st,cov),obs) <- tracker (gray img)
@@ -62,13 +62,13 @@ poseTracker winname mbf ref cam = poseTrackerMonitor poseTracker winname mbf ref
 
 ---------------------------------------------------------------------------------
 
-systemNoise = map (/1000) [0,0,0,0,0,0,0.1,0.1,0.1,0.01,0.01,0.01]
+systemNoise = map (/1000) [0,0,0,0,0,0,0.01,0.01,0.01,0.1,0.1,0.1]
 
 poseTrackerGen (measure,post,cz,restart) Nothing world = generalTracker st0 cov0 restart' measure f f2 cs h cz user
     where st0 = vector $ (cam2list $ easyCamera 40 (0,0,5) (0,0,0) 0) ++ [0,0,0,0,0,0]
           cov0 = diagl [3,1,1,1,10,10,10,10,10,10,5,5,5]
-          f [foc,p,t,r,cx,cy,cz,vx,vy,vz,vp,vt,vr] = [foc,p+vp,t+vt,r+vr,cx+vx,cy+vy,cz+vz,vx,vy,vz,vp,vt,vr]
-          f2 [foc,p,t,r,cx,cy,cz,vx,vy,vz,vp,vt,vr] = [foc,p,t,r,cx,cy,cz,0,0,0,0,0,0]
+          f [foc,p,t,r,cx,cy,cz,vp,vt,vr,vx,vy,vz] = [foc,p+vp,t+vt,r+vr,cx+vx,cy+vy,cz+vz,vp,vt,vr,vx,vy,vz]
+          f2 [foc,p,t,r,cx,cy,cz,vp,vt,vr,vx,vy,vz] = [foc,p,t,r,cx,cy,cz,0,0,0,0,0,0]
           cs = diagl (0.0001: systemNoise)
           h pars = post $ ht (syntheticCamera ( list2cam . take 7 $  pars)) (map (++[0]) world)
           restart' = map (vector . (++ [0,0,0,0,0,0]) .cam2list . snd) . restart Nothing world
@@ -77,8 +77,8 @@ poseTrackerGen (measure,post,cz,restart) Nothing world = generalTracker st0 cov0
 poseTrackerGen (measure,post,cz,restart) (Just foc) world = generalTracker st0 cov0 restart' measure f f2 cs h cz user
     where st0 = vector $ (drop 1 $ cam2list $ easyCamera 40 (0,0,5) (0,0,0) 0) ++ [0,0,0,0,0,0]
           cov0 = diagl [1,1,1,10,10,10,10,10,10,5,5,5]
-          f [p,t,r,cx,cy,cz,vx,vy,vz,vp,vt,vr] = [p+vp,t+vt,r+vr,cx+vx,cy+vy,cz+vz,vx,vy,vz,vp,vt,vr]
-          f2 [p,t,r,cx,cy,cz,vx,vy,vz,vp,vt,vr] = [p,t,r,cx,cy,cz,0,0,0,0,0,0]
+          f [p,t,r,cx,cy,cz,vp,vt,vr,vx,vy,vz] = [p+vp,t+vt,r+vr,cx+vx,cy+vy,cz+vz,vp,vt,vr,vx,vy,vz]
+          f2 [p,t,r,cx,cy,cz,vp,vt,vr,vx,vy,vz] = [p,t,r,cx,cy,cz,0,0,0,0,0,0]
           cs = diagl systemNoise
           h pars = post $ ht (syntheticCamera ( list2cam . (foc:) .take 6 $  pars)) (map (++[0]) world)
           restart' = map (vector . (++ [0,0,0,0,0,0]) . tail . cam2list . snd) . restart (Just foc) world
@@ -104,8 +104,8 @@ improve img zprev = if ok then [imp] else []
 withImproved world = (measure,post,cz,restart) where
     measure img zprev = impr
                         --if zprev@>0 > 0 then segs else impr
-        where segs = map (vector. concat . map pl . fst) . getPolygons Nothing world $ img
-              impr = map (vector. concat . map pl. fst) $ polyconsis Nothing 0.2 world $ improve img zprev
+        where --segs = map (vector. concat . map pl . fst) . getPolygons Nothing world $ img
+              impr = map (vector. concat . map pl. fst) $ polyconsis Nothing 0.6 world $ improve img zprev
     post = concat
     cz = 1E-5 .* ident (2*length world)
     restart = givemeconts
