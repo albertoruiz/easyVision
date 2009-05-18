@@ -11,7 +11,7 @@
 ##                                                             ##
 #################################################################
 
-# required in ghc-6.10.1 for hsc2hs
+# required in ghc-6.10 for hsc2hs
 GHCINC = $(HOME)/apps/ghc/lib/ghc-6.10.1/include
 
 EVLIB = $(EASYVISION)/lib/
@@ -23,14 +23,18 @@ CONTRIB = $(CONTRIBPATH)/Simple/simple.o        \
           $(CONTRIBPATH)/Segments/Structs.hs    \
           $(CONTRIBPATH)/Segments/libsegments.a \
           $(CONTRIBPATH)/Burns.hs               \
-          $(CONTRIBPATH)/Burns/burns.o
+          $(CONTRIBPATH)/Burns/burns.o          \
+          $(CONTRIBPATH)/siftGPU/wrapper.o
 
 LIBS = -i$(EVLIB)  -I$(IPP)/include \
        $(CDIR)/auxIpp.o $(CDIR)/ptr_adapt.o \
        $(CONTRIBPATH)/Simple/simple.o \
        $(CONTRIBPATH)/Segments/libsegments.a \
        $(CONTRIBPATH)/Burns/burns.o \
-       -L$(LD_LIBRARY_PATH) -lguide -lippcore$(IPPS) -lippi$(IPPS)\
+       $(CONTRIBPATH)/siftGPU/wrapper.o \
+       -L$(LD_LIBRARY_PATH) \
+       -lCg -lCgGL -lGLEW -lIL -lsiftgpu -lcudart\
+       -lguide -lippcore$(IPPS) -lippi$(IPPS)\
        -lipps$(IPPS) -lippcc$(IPPS) -lippvc$(IPPS) -lippcv$(IPPS)
 
 all: $(ALL) 
@@ -69,6 +73,8 @@ $(CONTRIBPATH)/Burns.hs: $(CONTRIBPATH)/Burns.hsc
 $(CONTRIBPATH)/Burns/burns.o: $(CONTRIBPATH)/Burns/burns.c $(CONTRIBPATH)/Burns/burns.h
 	gcc -O0 -c -I$(IPP)/include $(CONTRIBPATH)/Burns/burns.c -o $(CONTRIBPATH)/Burns/burns.o
 
+$(CONTRIBPATH)/siftGPU/wrapper.o: $(CONTRIBPATH)/siftGPU/wrapper.cpp
+	g++ -O4 -c $(CONTRIBPATH)/siftGPU/wrapper.cpp -o $(CONTRIBPATH)/siftGPU/wrapper.o
 
 clean:
 	rm -f $(ALL) *.o *.hi

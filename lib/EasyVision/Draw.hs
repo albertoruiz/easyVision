@@ -244,8 +244,10 @@ extractSquare sz (F im) = resize (Size sz sz) (F im {vroi = roi}) where
     dm = d `quot` 2
     roi = (vroi im) {c1=dm-1,c2= dm+h}
 
-drawInterestPoints :: Size -> [InterestPoint] -> IO ()
-drawInterestPoints sz ipts = do
+---------------------------------------------------------
+-- deprecated
+drawInterestPoints' :: Size -> [InterestPoint] -> IO ()
+drawInterestPoints' sz ipts = do
     pointCoordinates sz
     renderPrimitive Points (mapM_ drawPts ipts)
     renderPrimitive Lines  (mapM_ drawOris ipts)
@@ -260,6 +262,34 @@ drawInterestPoints sz ipts = do
 
 circle x y n rad = [Point (x+rad*cos ang) (y+rad*sin ang) | ang <- [0, d .. 2*pi-d]]
     where d = 2*pi/fromIntegral n
+------------------------------------------------------------
+
+drawInterestPoints :: [InterestPoint] -> IO ()
+drawInterestPoints ps = mapM_ shIP ps
+
+shIP (IP (Point x y) s o _) = do
+    renderPrimitive LineLoop box
+  where
+    m = desp (x,y) <> rot3 o <> desp (-x,-y)
+    ps = ht m [[x-s,y-s],[x-s,y+s],[x+s,y+s],[x+s,y-s]]
+    box = mapM_ vertex ps
+
+shIP' (IP (Point x y) s o _) = do
+    renderPrimitive LineLoop box
+    renderPrimitive Lines dir
+  where
+    box =  vertex (Vertex2 (x-s) (y-s))
+        >> vertex (Vertex2 (x-s) (y+s))
+        >> vertex (Vertex2 (x+s) (y+s))
+        >> vertex (Vertex2 (x+s) (y-s))
+    dir = vertex (Vertex2 (x) (y))
+        >> vertex (Vertex2 (x-s*cos o) (y+s*sin o))
+
+-----------------------------------------------------
+
+
+
+------------------------------------------------------------
 
 -- | sets the opengl view of a given camera matrix
 cameraView :: Matrix Double -- ^ 3x4 camera matrix (with K=diag f f 1)
