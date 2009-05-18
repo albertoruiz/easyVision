@@ -11,6 +11,7 @@ import Text.Printf(printf)
 import Control.Parallel.Strategies
 import Vision
 import ImagProc.C.SIFT
+import EasyVision.MiniApps.SiftParams
 import Control.Applicative
 
 -----------------------------------------------------------
@@ -85,7 +86,7 @@ main1 = do
     prepare
 
     sift <- getSift
-    os <- userSIFTParam
+    os <- userSIFTParams
 
     o <- createParameters [("sigma",realParam 1.0 0 3)
                           ,("steps",intParam 3 1 10)
@@ -192,24 +193,3 @@ mouse _ st (MouseButton LeftButton) Down _ _ = do
 mouse def _ a b c d = def a b c d
 
 distv a b = pnorm PNorm2 (a-b)
-
--------------------------------------------------------
-
-userSIFTParam = do
-    SIFTParam{..} <- getSIFTParam
-
-    o <- createParameters' "SIFT Parameters"
-        [ ("oct1" , intParam    oct1   0 3)
-        , ("thres", realParam   thres  0 0.01)
-        , ("nmax",  intParam    nmax   0 2000)
-        ]
-
-    return $ SIFTParam <$> getParam o "oct1"
-                       <*> getParam o "thres"
-                       <*> getParam o "nmax"
-
-getSIFTParam = SIFTParam <$> getOption "--oct1"  oct1
-                         <*> getOption "--thres" thres
-                         <*> getOption "--nmax"  nmax
-
-    where SIFTParam{..} = defaultSIFTParam

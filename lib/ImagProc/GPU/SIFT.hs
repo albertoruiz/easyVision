@@ -17,7 +17,7 @@ Interface to the SiftGPU library by Changchang Wu, <http://www.cs.unc.edu/~ccwu>
 
 module ImagProc.C.SIFT(
     getSift, 
-    SIFTParam(..), defaultSIFTParam
+    SIFTParams(..), defaultSIFTParams
 ) where
 
 import ImagProc.Ipp.Core
@@ -32,19 +32,19 @@ import Graphics.UI.GLUT hiding (Point)
 
 -----------------------------------------------------------------
 
-data SIFTParam = SIFTParam
+data SIFTParams = SIFTParams
     { oct1   :: Int
     , thres  :: Double
     , nmax   :: Int
     }
 
-defaultSIFTParam = SIFTParam
+defaultSIFTParams = SIFTParams
     { oct1  = 0
     , thres = 0.00666
     , nmax  = 1000
     }
 
-getSift :: IO (SIFTParam -> ImageGray -> [InterestPoint])
+getSift :: IO (SIFTParams -> ImageGray -> [InterestPoint])
 
 inContext cxt f = do
     saved <- get currentWindow
@@ -91,7 +91,7 @@ foreign import ccall "Simple/simple.h c_siftGPU"
                -> Ptr CUChar -> Int -> Int -> Int -> Int -> Int
                -> Ptr CInt -> CInt -> Ptr Double -> IO CInt
 
-parsToStrings SIFTParam {..} = do
+parsToStrings SIFTParams {..} = do
     let sp = [ "-fo", show oct1
              , "-t" , show thres
              , "-cuda"
