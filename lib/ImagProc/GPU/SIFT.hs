@@ -15,9 +15,10 @@ Interface to the SiftGPU library by Changchang Wu, <http://www.cs.unc.edu/~ccwu>
 -----------------------------------------------------------------------------
 
 
-module ImagProc.C.SIFT(
+module ImagProc.GPU.SIFT(
     getSift, 
-    SIFTParams(..), defaultSIFTParams
+    SIFTParams(..), defaultSIFTParams,
+    getMatchGPU
 ) where
 
 import ImagProc.Ipp.Core
@@ -29,6 +30,7 @@ import Foreign.C.String
 import Numeric.LinearAlgebra
 import Data.Packed.Development
 import Graphics.UI.GLUT hiding (Point)
+import Control.Monad(when)
 
 -----------------------------------------------------------------
 
@@ -60,6 +62,9 @@ getSift = do
 
 
 sift pars (G im) = do
+    let ok = vroi im == fullroi im
+           && step im == width (isize im)
+    when (not ok) $ error "FIXME: Sift GPU on image with ROI or step"
     r <- createVector ((128+4)*nmax pars)
     ptot <- malloc
     (argc,argv) <- parsToStrings pars
@@ -86,7 +91,7 @@ toIP v = IP { ipPosition    = Point (v@>0) (v@>1)
             , ipDescriptor  = subVector 4 128 v
             }
 
-foreign import ccall "Simple/simple.h c_siftGPU"
+foreign import ccall "c_siftGPU"
     c_SIFT_GPU :: CInt -> Ptr (CString)
                -> Ptr CUChar -> Int -> Int -> Int -> Int -> Int
                -> Ptr CInt -> CInt -> Ptr Double -> IO CInt
@@ -104,3 +109,31 @@ parsToStrings SIFTParams {..} = do
              ]
     argv <- newArray =<< mapM newCString sp
     return (length sp,argv)
+
+---------------------------------------------------------
+
+matchGPU err ip1 ip2 = do
+    let des1 = join (map ipDescriptor ip1)
+        des2 = join (map ipDescriptor ip2)
+    ptot <- malloc
+    res <- createVector (2 * min (dim des1) (dim des2) `div` 128)
+    app3 (c_matchGPU ptot err) vec des1 vec des2 vec res "c_matchGPU"
+    tot <- fromIntegral `fmap` peek ptot
+    let mres = map (map round) $ toLists $ reshape 2 (subVector 0 (tot*2) res)
+    free ptot
+    if tot > 0 then return (mres :: [[Int]])
+               else return []
+
+foreign import ccall "c_matchGPU"
+    c_matchGPU :: Ptr CInt -> Double  -- tot and err
+               -> CInt -> Ptr Double  -- v1
+               -> CInt -> Ptr Double  -- v2
+               -> CInt -> Ptr Double  -- res
+               -> IO CInt
+
+getMatchGPU = do
+    w <- createWindow "aux MATCHGPU"
+    windowStatus $= Hidden
+    return $ \e v1 v2 -> if null v1 || null v2
+        then []
+        else unsafePerformIO $ inContext w (matchGPU e v1 v2)

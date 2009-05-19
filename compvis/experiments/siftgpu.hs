@@ -7,10 +7,9 @@ import EasyVision
 import Graphics.UI.GLUT hiding (Size,Point)
 import Control.Monad(when)
 import Numeric.LinearAlgebra
-import ImagProc.C.SIFT
+import ImagProc.GPU.SIFT
 import EasyVision.MiniApps.SiftParams
 import Vision
-import Control.Applicative
 
 main = do
     sz <- findSize

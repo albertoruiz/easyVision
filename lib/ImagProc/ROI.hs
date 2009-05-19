@@ -20,7 +20,7 @@ module ImagProc.ROI
   intersection,
   union,
   roiArea,
-  inROI,
+  inROI, inROI',
   roiGrid, roiGridStep,
   overlap,
   roiFromPixel,
@@ -80,6 +80,13 @@ roiArea (ROI r1 r2 c1 c2) = w*h where
 -- | checks that a pixel is in a ROI
 inROI :: ROI -> Pixel -> Bool
 inROI (ROI r1 r2 c1 c2) (Pixel r c) = r1 <= r && r <= r2 && c1 <= c && c <= c2
+
+-- | checks that a pixel is in a ROI
+inROI' :: Size -> ROI -> Point -> Bool
+inROI' sz (ROI r1 r2 c1 c2) = g where
+    g (Point x y) = x1 <= x && x <= x2 && y1 <= y && y <= y2
+    [Point x1 y1, Point x2 y2] = pixelsToPoints sz [Pixel r2 c2, Pixel r1 c1]
+
 
 -- TO DO: fix roiGrid
 

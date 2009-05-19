@@ -1,10 +1,12 @@
+#include <GL/gl.h>
+
 #include "SiftGPU.h"
 
 #include <locale.h>
 #include <vector>
 #include <cstdio>
 #include <cstdlib>
-#include <GL/gl.h>
+
 
 
 extern "C" {
@@ -18,22 +20,16 @@ int c_siftGPU(int argc, char ** argv,
 //     }
 
     static SiftGPU sift;
-    static bool firstTime = true;
 
     // Needed for correct interpretation of dot (.) in numeric strings: (!)
     setlocale(LC_NUMERIC,"C");
 
     sift.ParseParam(argc, argv);
 
-    // OpenGL context creation:
-    if(firstTime) {
-        //sift.CreateContextGL();
 
-        if( sift.VerifyContextGL() != SiftGPU::SIFTGPU_FULL_SUPPORTED) {
-            printf("ContextGL initialization failure\n");
-            exit(0);
-        }
-        firstTime = false;
+    if( sift.VerifyContextGL() != SiftGPU::SIFTGPU_FULL_SUPPORTED) {
+        printf("ContextGL initialization failure\n");
+        exit(0);
     }
 
     // Run of GPU SIFT method:
@@ -65,6 +61,48 @@ int c_siftGPU(int argc, char ** argv,
             res[k++] = descriptors[128*i+j];
         }
     }
+
+    return 0;
+}
+
+//////////////////////////////////////////////////////////
+
+int c_matchGPU(int* tot, double err,
+               int n1, double* v1, int n2, double* v2,
+               int nres, double*res) {
+
+    static SiftMatchGPU matcher(nres);
+    if(not matcher.VerifyContextGL()) {
+        printf("ContextGL initialization failure\n");
+        exit(0);
+    }
+
+    // printf("%d %d\n",n1/128,n2/128);
+
+    float * des1 = (float*)malloc(n1*sizeof(float));
+    float * des2 = (float*)malloc(n2*sizeof(float));
+    int (*match_buf)[2] = new int[nres/2][2];
+
+    for (int k=0; k<n1; k++) des1[k] = v1[k];
+    for (int k=0; k<n2; k++) des2[k] = v2[k];
+
+    matcher.SetDescriptors(0, n1/128, des1);
+    matcher.SetDescriptors(1, n2/128, des2);
+
+    *tot = matcher.GetSiftMatch(nres/2, match_buf);
+
+    //printf("matches = %d\n",*tot);
+
+    int j = 0;
+    for (int k=0; k<*tot; k++) {
+        res[j++] = match_buf[k][0];
+        res[j++] = match_buf[k][1];
+        //printf("%d %d\n",match_buf[k][0],match_buf[k][1]);
+    }
+
+    delete [] match_buf;
+    free(des1);
+    free(des2);
 
     return 0;
 }

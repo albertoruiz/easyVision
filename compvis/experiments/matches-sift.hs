@@ -10,9 +10,8 @@ import Data.List(minimumBy)
 import Text.Printf(printf)
 import Control.Parallel.Strategies
 import Vision
-import ImagProc.C.SIFT
+import ImagProc.GPU.SIFT
 import EasyVision.MiniApps.SiftParams
-import Control.Applicative
 
 -----------------------------------------------------------
 
@@ -81,20 +80,16 @@ main2 = do
 main1 = do
     sz@(Size r c) <- findSize
 
-    (cam,ctrl) <- getCam 0 sz ~> channels >>= withPause
+    (cam,ctrl) <- getCam 0 sz >>= inThread ~> channels >>= withPause
 
     prepare
 
     sift <- getSift
     os <- userSIFTParams
+    matchGPU <- getMatchGPU
 
-    o <- createParameters [("sigma",realParam 1.0 0 3)
-                          ,("steps",intParam 3 1 10)
-                          ,("n",intParam 13  0 20)
-                          ,("tot",intParam 200 1 500)
-                          ,("h",realParam 0.2 0 2)
-                          ,("mode",intParam 0 0 1)
-                          ,("err",realParam 0.3 0 1)
+    o <- createParameters [
+                          ("err",realParam 0.3 0 1)
                           ]
 
 
@@ -109,40 +104,36 @@ main1 = do
 
     launch $ do
 
-        --PAR(n)
-        PAR(steps) :: IO Int
---        PAR(sigma)
-        PAR(mode)  :: IO Int
-        --PAR(h)
---        PAR(tot)
         PAR(err)
 
         roi <- getROI w
 
         orig <- cam
         sp <- os
-        let feats = --interestPoints n h orig
-                    sift sp (gray orig)
-            sel = feats -- map ip $ filter (inROI roi . ipRawPosition) feats
+        let feats = sift sp (gray orig)
+            sel = filter (inROI' sz roi . ipPosition) feats
 
-
+        --putStrLn ("detected: " ++ show (length feats))
 
         (vs, prev) <- getW w
         when (null vs && not (null sel)) $ do
             putW w (sel,gray orig)
 
-        let matches = basicMatches (vs, feats) distFeat err
+        let matches' = -- basicMatches (vs, feats) distFeat err
+                      matchGPU err vs feats
+            matches = map (\[a,b]->(vs!! a, feats!! b)) matches'
 
             ok = not (null vs) && not (null feats)
 
         inWin w $ do
             drawImage (rgb orig)
             lineWidth $= 1
+            setColor 0 0 0
+            drawROI roi
             setColor 0.5 0.5 0.5
             pointCoordinates sz
             drawInterestPoints feats
-            setColor 0 0 0
-            drawROI roi
+
             when ok $ do
                 setColor 1 1 1
                 text2D 0.9 0.7 $ printf "%d matches" (length matches)

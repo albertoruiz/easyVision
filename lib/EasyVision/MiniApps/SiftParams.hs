@@ -14,7 +14,7 @@ module EasyVision.MiniApps.SiftParams (
     userSIFTParams
 ) where
 
-import ImagProc.C.SIFT(SIFTParams(..), defaultSIFTParams)
+import ImagProc.GPU.SIFT(SIFTParams(..), defaultSIFTParams)
 import Control.Applicative
 import EasyVision.Util
 import EasyVision.Parameters

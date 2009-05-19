@@ -34,7 +34,7 @@ data ROI = ROI { r1 :: Int  -- ^ upper row
                , r2 :: Int  -- ^ lower row
                , c1 :: Int  -- ^ leftmost column
                , c2 :: Int  -- ^ rightmost column
-               } deriving (Show,Read)
+               } deriving (Show,Read,Eq)
 
 -- | Normalized image coordinates, with x from +1 to -1 (for a right handed 3D reference system with z pointing forward)
 data Point = Point { px    :: !Double, py :: !Double} deriving (Eq, Show)

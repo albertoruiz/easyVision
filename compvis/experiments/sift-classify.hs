@@ -1,4 +1,3 @@
-{-# LANGUAGE RecordWildCards #-}
 -- image classification using interest points
 
 import EasyVision
@@ -7,55 +6,55 @@ import Graphics.UI.GLUT hiding (Point, Size)
 import Data.List(minimumBy)
 import Numeric.LinearAlgebra
 import Vision
-import ImagProc.C.SIFT
-import Control.Applicative
+import ImagProc.GPU.SIFT
+import EasyVision.MiniApps.SiftParams
 
-
-interestPoints n h orig = feats where
-    sigmas = take (n+2) $ getSigmas 1 3
-    imr = float $ gray $ orig
-    feats = take 200 $ fullHessian (surf 2 3) sigmas 100 h imr
-    sel = filter (inROI roi . ipRawPosition) feats
-    Size he wi = size imr
-    roi = shrink (he`div`4 ,wi`div`4) (theROI imr)
 
 main = do
     sz <- findSize
 
-    (cam,ctrl) <- getCam 0 sz >>= inThread ~> channels >>= withPause
+    (cam,ctrl) <- getCam 0 sz ~> channels >>= withPause
 
     prepare
 
     sift <- getSift
-    os <- userSIFTParam
+    os <- userSIFTParams
+    matchGPU <- getMatchGPU
+
 
     w <- evWindow (False,[]) "video" sz Nothing  (mouse (kbdcam ctrl))
+    let d = height sz `div` 10
+    evROI w $= ROI d (height sz-d) d (width sz-d)
 
     r <- evWindow () "category" (mpSize 10)  Nothing  (const (kbdcam ctrl))
 
-    launch (worker cam w r sift os)
+    launch (worker cam w r sift os matchGPU)
 
 -----------------------------------------------------------------
 
-worker cam w r sift os = do
+worker cam w r sift os matcher = do
 
     orig <- cam
     sp <- os
+    roi <- getROI w
+
 
     let Size he wi = size (gray $ orig)
-    --    roi = shrink (he`div`4 ,wi`div`4) (theROI $ gray orig)
-
         v   = sift sp (gray orig)
         img = (orig, v)
+        inr = inROI' (size (gray orig)) roi . ipPosition
 
     (click,pats) <- getW w
-    when click $ putW w (False, img : pats)
+    when click $ putW w (False, (orig, filter inr v) : pats)
+
+    let dist (_,u) (_,v) = - (fromIntegral . length) (matcher 0.2 u v)
+
 
     inWin w $ do
         drawImage (gray orig)
         setColor 0 0 0
-        --drawROI roi
-        setColor 1 0 0
+        drawROI roi
+        setColor 1 1 0
         pointCoordinates (size (gray orig))
         drawInterestPoints v
 
@@ -93,25 +92,3 @@ mouse _ st (MouseButton LeftButton) Down _ _ = do
     st $= (True,ps)
 
 mouse def _ a b c d = def a b c d
-
-------------------------------------------------------
-
-
-userSIFTParam = do
-    SIFTParam{..} <- getSIFTParam
-
-    o <- createParameters' "SIFT Parameters"
-        [ ("oct1" , intParam    oct1   0 3)
-        , ("thres", realParam   thres  0 0.01)
-        , ("nmax",  intParam    nmax   0 2000)
-        ]
-
-    return $ SIFTParam <$> getParam o "oct1"
-                       <*> getParam o "thres"
-                       <*> getParam o "nmax"
-
-getSIFTParam = SIFTParam <$> getOption "--oct1"  oct1
-                         <*> getOption "--thres" thres
-                         <*> getOption "--nmax"  nmax
-
-    where SIFTParam{..} = defaultSIFTParam
