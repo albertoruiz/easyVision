@@ -181,7 +181,8 @@ worker o cam w wd = do
         when (what == 2) $ drawImage (rgb orig)
         when (what == 1) $ drawImage (stResponse $ pyr!!n)
         lineWidth $= 1
-        drawInterestPoints (size imr) (map ip feats)
+        pointCoordinates (size imr)
+        drawInterestPoints (map ip feats)
         let w = width (size imr)
         mapM_ (boxFeat w) feats
         --text2D 20 20 (show $ map (size.stResponse) pyr)

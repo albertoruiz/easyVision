@@ -112,12 +112,12 @@ parsToStrings SIFTParams {..} = do
 
 ---------------------------------------------------------
 
-matchGPU err ip1 ip2 = do
+matchGPU err ratio ip1 ip2 = do
     let des1 = join (map ipDescriptor ip1)
         des2 = join (map ipDescriptor ip2)
     ptot <- malloc
     res <- createVector (2 * min (dim des1) (dim des2) `div` 128)
-    app3 (c_matchGPU ptot err) vec des1 vec des2 vec res "c_matchGPU"
+    app3 (c_matchGPU ptot err ratio) vec des1 vec des2 vec res "c_matchGPU"
     tot <- fromIntegral `fmap` peek ptot
     let mres = map (map round) $ toLists $ reshape 2 (subVector 0 (tot*2) res)
     free ptot
@@ -125,15 +125,15 @@ matchGPU err ip1 ip2 = do
                else return []
 
 foreign import ccall "c_matchGPU"
-    c_matchGPU :: Ptr CInt -> Double  -- tot and err
-               -> CInt -> Ptr Double  -- v1
-               -> CInt -> Ptr Double  -- v2
-               -> CInt -> Ptr Double  -- res
+    c_matchGPU :: Ptr CInt -> Double -> Double -- tot, err, ratio
+               -> CInt -> Ptr Double           -- v1
+               -> CInt -> Ptr Double           -- v2
+               -> CInt -> Ptr Double           -- res
                -> IO CInt
 
 getMatchGPU = do
     w <- createWindow "aux MATCHGPU"
     windowStatus $= Hidden
-    return $ \e v1 v2 -> if null v1 || null v2
+    return $ \e r v1 v2 -> if null v1 || null v2
         then []
-        else unsafePerformIO $ inContext w (matchGPU e v1 v2)
+        else unsafePerformIO $ inContext w (matchGPU e r v1 v2)

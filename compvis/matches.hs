@@ -132,7 +132,7 @@ main1 = do
                 setColor 1 1 1
                 text2D 20 20 $ printf "%d matches" (length matches)
                 pointCoordinates sz
-                drawInterestPoints sz (map snd matches)
+                drawInterestPoints (map snd matches)
 
         when ok $ inWin wm $ do
             let pair = blockImage [[prev,gray orig]]

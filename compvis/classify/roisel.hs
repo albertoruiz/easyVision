@@ -67,7 +67,7 @@ main2 = do
         nframes = length rois
     print nframes
 
-    cam <- mplayer (file++" -benchmark") sz
+    cam <- mplayer (file++" -benchmark -loop 1") sz
     imgs <- sequence (replicate nframes cam)
     putStrLn $ show (length imgs) ++ " cases"
 

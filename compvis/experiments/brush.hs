@@ -43,8 +43,7 @@ main = do
                             ("alpha",realParam 0.9 0 1),
                             ("see",realParam 1 0 10),
                             ("umb",realParam 0.05 0 0.1),
-                            ("ranUmb", realParam 0.005 0 0.01),
-                            ("ranProb", realParam 0.99 0.5 1)]
+                            ("ranUmb", realParam 0.005 0 0.01)]
 
     addWindow "camera" sz Nothing (const (kbdcam ctrl)) state
     addWindow "track" sz Nothing (const (kbdcam ctrl)) state
@@ -90,7 +89,6 @@ worker3 param inWindow (pl,im) st = do
     --see    <- getParam param "see"
     umb    <- getParam param "umb"
     ranumb <- getParam param "ranUmb"
-    prob   <- getParam param "ranProb"
 
     let (pnew, pold, _,_,_) = basicMatches' (pl, points st) (distComb alpha) umb
                                             --(Just $ \c ->
@@ -100,7 +98,7 @@ worker3 param inWindow (pl,im) st = do
 
     if(length pnew < 10)
          then do return st
-         else do let (h,inliers) = estimateHomographyRansac prob ranumb  (prep pnew) (prep pold)
+         else do let (h,inliers) = estimateHomographyRansac ranumb  (prep pnew) (prep pold)
                  inWindow "track" $ do
                      drawImage im
                      pointCoordinates (size im)

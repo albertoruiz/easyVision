@@ -86,7 +86,7 @@ worker cam1 cam2 opts inWindow _ = do
         setColor 1 0 0
         pointSize $= 3
         text2D 0.9 0 (show $ length ips1)
-        drawInterestPoints (size im1) good1
+        drawInterestPoints good1
 
     inWindow "right" $ do
         drawImage im2
@@ -97,7 +97,7 @@ worker cam1 cam2 opts inWindow _ = do
         setColor 1 0 0
         pointSize $= 3
         text2D 0.9 0 (show $ length ips2)
-        drawInterestPoints (size im2) good2
+        drawInterestPoints good2
 
     when (length good1 <= 10 || length good1 >=50) $ inWindow "both" $ combine ipPosition (im1,good1) (im2,good2)
 

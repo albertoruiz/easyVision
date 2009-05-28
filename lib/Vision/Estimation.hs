@@ -139,7 +139,7 @@ position fun l = k where Just k = elemIndex (fun l) l
 ransac :: ([a]->t)         -- ^ estimator (from a sample obtains a model)
        -> (t -> a -> Bool) -- ^ inlier test
        -> Int              -- ^ minimum number of samples required by the estimator to compute a model
-       -> Double           -- ^ probability to get a sample free from outliers
+       -> Double           -- ^ desired probability to get a sample free from outliers. Recommended = 0.99
        -> ([a] -> (t,[a])) -- ^ resulting ransac estimator, from a sample obtains a model and the inliers
 ransac estimator isInlier n prob dat = (bestModel,inliers) where 
     models = map estimator (samples n dat)
@@ -158,14 +158,13 @@ isInlierTrans t h (dst,src) = norm (vd - vde) < t
           vde = inHomog $ h <> homog (vector src)
 
 estimateHomographyRansac
-    :: Double  -- ^ probability to get a sample free from outliers
-    -> Double  -- ^ distance threshold for inliers
+    :: Double  -- ^ distance threshold for inliers
     -> ([[Double]]
     -> [[Double]]
     -> (Matrix Double, [([Double], [Double])]))  -- ^ adaptive ransac estimator, obtains the homography and the inliers
-estimateHomographyRansac prob dist dst orig = (h,inliers) where 
+estimateHomographyRansac dist dst orig = (h,inliers) where
     h = estimateHomography a b where (a,b) = unzip inliers
-    (_,inliers) = ransac estimator (isInlierTrans dist) 4 prob (zip dst orig)
+    (_,inliers) = ransac estimator (isInlierTrans dist) 4 0.99 (zip dst orig)
     estimator l = estimateHomographyRaw a b where (a,b) = unzip l
 
 --------------------------

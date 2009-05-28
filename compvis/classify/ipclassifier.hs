@@ -50,7 +50,8 @@ worker cam w r = do
         setColor 0 0 0
         drawROI roi
         setColor 1 0 0
-        drawInterestPoints (size $ gray orig) $ map ip v
+        pointCoordinates (size $ gray orig)
+        drawInterestPoints $ map ip v
 
     when (not (null pats) && not (null v)) $ inWin r $ do
         let x = minimumBy (compare `on` dist img) pats

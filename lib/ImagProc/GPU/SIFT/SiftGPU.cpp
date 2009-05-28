@@ -67,7 +67,7 @@ int c_siftGPU(int argc, char ** argv,
 
 //////////////////////////////////////////////////////////
 
-int c_matchGPU(int* tot, double err,
+int c_matchGPU(int* tot, double err, double ratio,
                int n1, double* v1, int n2, double* v2,
                int nres, double*res) {
 
@@ -89,7 +89,7 @@ int c_matchGPU(int* tot, double err,
     matcher.SetDescriptors(0, n1/128, des1);
     matcher.SetDescriptors(1, n2/128, des2);
 
-    *tot = matcher.GetSiftMatch(nres/2, match_buf);
+    *tot = matcher.GetSiftMatch(nres/2, match_buf, err, ratio);
 
     //printf("matches = %d\n",*tot);
 

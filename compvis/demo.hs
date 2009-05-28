@@ -157,7 +157,7 @@ worker wDemo cam param fft = do
                              setColor 1 0 0
                              pointSize $= 3
                              text2D 0.9 0 (show $ length ips)
-                             drawInterestPoints (size $ chan gray) ips
+                             drawInterestPoints ips
 
             "InterestPts" -> do let imr = float (chan gray)
                                     feats = fullHessian (usurf 2 4) (take (13+2) $ getSigmas 1.0 3) 100 0.3 imr

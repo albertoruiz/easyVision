@@ -88,9 +88,8 @@ main1 = do
     os <- userSIFTParams
     matchGPU <- getMatchGPU
 
-    o <- createParameters [
-                          ("err",realParam 0.3 0 1)
-                          ]
+    o <- createParameters [ ("err", realParam 0.7 0 1)
+                          , ("rat", realParam 0.8 0 1) ]
 
 
 
@@ -105,6 +104,7 @@ main1 = do
     launch $ do
 
         PAR(err)
+        PAR(rat)
 
         roi <- getROI w
 
@@ -119,8 +119,7 @@ main1 = do
         when (null vs && not (null sel)) $ do
             putW w (sel,gray orig)
 
-        let matches' = -- basicMatches (vs, feats) distFeat err
-                      matchGPU err vs feats
+        let matches' = matchGPU err rat vs feats
             matches = map (\[a,b]->(vs!! a, feats!! b)) matches'
 
             ok = not (null vs) && not (null feats)
@@ -136,7 +135,7 @@ main1 = do
 
             when ok $ do
                 setColor 1 1 1
-                text2D 0.9 0.7 $ printf "%d matches" (length matches)
+                text2D 0.9 0.7 $ printf "%d/%d matches / points" (length matches) (length feats)
                 pointCoordinates sz
                 drawInterestPoints (map snd matches)
 
