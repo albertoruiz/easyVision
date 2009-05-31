@@ -86,7 +86,7 @@ main = do
              systemNoise = map (/1000) [0.01,0.01,0.01,0.1,0.1,0.1]
              cs = diagl $ replicate 6 0 ++ concat (replicate (n-1) (map(/1000) systemNoise)) ++ systemNoise
              sys = System fFun (toList.h.fromList) cs cz
-             s' = ukf sys s (Just $ fromList $ concat $ map pl $ catMaybes $ concat zobs)
+             s' = ukf ukfDefaultParam sys s (Just $ fromList $ concat $ map pl $ catMaybes $ concat zobs)
              --s' = s
          --print (dim $ h st, dim st)
          --print $ concat zobs

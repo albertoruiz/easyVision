@@ -1,3 +1,4 @@
+{-# LANGUAGE RecordWildCards #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Util.Kalman
@@ -20,7 +21,7 @@ module Util.Kalman (
     ekf,
     unscentedSamples,
     unscentedTransform,
-    ukf,
+    ukf, UKFParam(..), ukfDefaultParam
 ) where
 
 import Numeric.LinearAlgebra
@@ -115,41 +116,46 @@ ekf sys st Nothing  = blindEKF sys st
 
 ---------------------------------------------------------------------
 
-alpha = 0.01 -- parameter??
-beta = 2
-k = 0
+data UKFParam = UKFParam { ukfAlpha :: Double
+                         , ukfBeta  :: Double
+                         , ukfKappa :: Int -> Double }
 
-unscentedSamples (med,cov) = (med : concat [pos,neg], (wm,wc)) where
+ukfDefaultParam  = UKFParam { ukfAlpha = 0.5
+                            , ukfBeta  = 2
+                            , ukfKappa = \n -> 3 - fromIntegral n }
+
+unscentedSamples UKFParam {..} (med,cov) = (med : concat [pos,neg], (wm,wc)) where
     pos = f (+)
     neg = f (-)
     f op = map (op med) ds
-    ds = toColumns $ mr ( (fromIntegral n + lambda) .* cov :: Matrix Double)
-    wm = fromList $ lambda/(fromIntegral n+lambda) : ws
-    wc = (lambda/(fromIntegral n+lambda) + 1-alpha^2+beta) : ws
-    ws = replicate (2*n) (1/2/(fromIntegral n+lambda))
-    lambda = alpha^2 * (fromIntegral n + k) - fromIntegral n
-    n = dim med
-    --mr m = v <> diag (sqrt l) where (l,v) = eigSH m
-    mr = trans . cholSH                       -- no symmetry check
+    ds = toRows $ mr ( (fromIntegral n + lambda) .* cov :: Matrix Double)
+    wm = lambda/(nr+lambda) : ws
+    wc = (lambda/(nr+lambda) + 1-ukfAlpha^2+ukfBeta) : ws
+    ws = replicate (2*n) (1/2/(nr+lambda))
+    lambda = ukfAlpha^2 * (nr + ukfKappa n) - nr
+    n  = dim med
+    nr = fromIntegral n
+    --mr m = trans $ v <> diag (sqrt l) where (l,v) = eigSH m
+    mr = cholSH -- no symmetry check
 
 
-unscentedTransform f = fst. unscentedTransformWithSamples f
+unscentedTransform param f = fst. unscentedTransformWithSamples param f
 
-unscentedTransformWithSamples f g = ((m',c'),(s',w)) where
-    (s, w@(wm,wc)) = unscentedSamples g
+unscentedTransformWithSamples param f g = ((m',c'),(s',w)) where
+    (s, w@(wm,wc)) = unscentedSamples param g
     s' = map f s
-    m' = wm <> fromRows s'
+    m' = fromList wm <> fromRows s'
     c' = sum (zipWith f wc s') where f w v = w .* outer vm vm where vm = v - m'
 
 
-ukf' :: System -> State -> Measurement -> State
-ukf' (System f h q r) (State vx p _) z = State x' p' mz where
+ukf' :: UKFParam -> System -> State -> Measurement -> State
+ukf' param (System f h q r) (State vx p _) z = State x' p' mz where
     f' = fromList . f . toList
     h' = fromList . h . toList
-    ((px,pc),(sx,(_,wc))) = unscentedTransformWithSamples f' (vx,p)  -- prediction
+    ((px,pc),(sx,(_,wc))) = unscentedTransformWithSamples param f' (vx,p)  -- prediction
     pq = pc + q                            -- its covariance
 
-    ((mz,cz),(sz,_)) = unscentedTransformWithSamples h' (px,pq) --predicted measurement
+    ((mz,cz),(sz,_)) = unscentedTransformWithSamples param h' (px,pq) --predicted measurement
     y  = z - mz                            -- residue
     cy = cz + r                            -- its covariance
 
@@ -161,14 +167,14 @@ ukf' (System f h q r) (State vx p _) z = State x' p' mz where
     p' = pq - k <> cy <> trans k           -- its covariance
 
 
-blindUKF :: System -> State -> State
-blindUKF (System f h q r) (State vx p _) = State px pq (h' px) where
+blindUKF :: UKFParam -> System -> State -> State
+blindUKF param (System f h q r) (State vx p _) = State px pq (h' px) where
     f' = fromList . f . toList
     h' = fromList . h . toList
-    (px,pc) = unscentedTransform f' (vx,p)  -- prediction
-    pq = pc + q                             -- its covariance
+    (px,pc) = unscentedTransform param f' (vx,p)  -- prediction
+    pq = pc + q                                   -- its covariance
 
 -- | Unscented Kalman Filter update step
-ukf :: System -> State -> Maybe Measurement -> State
-ukf sys st (Just m) = ukf'     sys st m
-ukf sys st Nothing  = blindUKF sys st
+ukf :: UKFParam -> System -> State -> Maybe Measurement -> State
+ukf param sys st (Just m) = ukf'     param sys st m
+ukf param sys st Nothing  = blindUKF param sys st

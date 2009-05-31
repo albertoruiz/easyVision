@@ -43,6 +43,7 @@ diagl = diag . vector
 disp x = putStrLn . format " " (printf "%.0f") $ x
 log10 x = log x / log 10
 
+ukfDef = ukf ukfDefaultParam
 
 --------------------------------------- pose tracker ---------------------------------
 
@@ -197,8 +198,8 @@ generalTracker st0 cov0 restart measure f f2 cs h cz user = do
                         True  -> --trace "R" $ ukf sys initstate {sX = head nsts} (wl h (head nsts))
                                  initstate {sX = head nsts, nZ = wl h (head nsts)}
                 else case hasObs of
-                        False -> ukf sys st Nothing
-                        True  -> ukf sys st (Just z)
+                        False -> ukfDef sys st Nothing
+                        True  -> ukfDef sys st (Just z)
 
             obs' = if hasObs && reco < 0 then Just (z, err) else Nothing
         r $= st'
