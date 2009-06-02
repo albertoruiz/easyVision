@@ -4,7 +4,7 @@ ALL = brush foldimage \
       tracks hotpoints segments \
       capturepoly trazo \
       notracks notracks2 \
-      multiposenew \
+      multiposenew multisave \
       siftgpu matches-sift sift-classify
 
 EASYVISION = ../..

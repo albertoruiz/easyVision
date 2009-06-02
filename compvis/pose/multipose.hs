@@ -31,7 +31,7 @@ main = do
     print (take n focs)
 
     let ref = cornerRef
-        vc c mbf = c ~> channels >>= inThread >>= poseTracker "" mbf ref -- >>= inThread
+        vc c mbf = c ~> channels >>= poseTracker "" mbf ref -- >>= inThread
     cams <- sequence $ zipWith vc (map (flip getCam sz) [0..n-1]) focs
 
 
@@ -46,7 +46,7 @@ main = do
     lineSmooth $= Enabled
     wm <- evWindow () "views" (Size 150 (200*n)) Nothing (const $ kbdQuit)
 
-    launchFreq 30 $ do
+    launch $ do
         (imgs,eps,sts,mbobs) <- unzip4 `fmap` sequence cams
         let fig v = toLists $ reshape 2 v
             rects = map (map (fig.fst).maybeToList) mbobs

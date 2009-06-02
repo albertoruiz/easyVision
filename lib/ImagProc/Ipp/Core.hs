@@ -37,6 +37,8 @@ module ImagProc.Ipp.Core
           , ImageYUV (Y)
           -- * Image coordinates
           , val8u, fval
+          -- * Misc
+          , saveRGB
           -- * Reexported modules
           , module ImagProc.Ipp.Structs, CInt, CUChar, fi, ti
           , module ImagProc.Base, module ImagProc.ROI
@@ -51,6 +53,10 @@ import ImagProc.Ipp.Wrappers
 import Foreign.C.String(peekCString)
 import Foreign.C.Types
 import Foreign.Marshal.Utils(copyBytes)
+import System.IO
+import System
+import Directory(getDirectoryContents,doesFileExist)
+import Data.List(isPrefixOf)
 
 import GHC.Base
 import GHC.IOBase
@@ -320,3 +326,29 @@ setValue :: (Storable b) => Img -> b -> Int -> Int -> IO ()
 setValue Img {fptr = fp, ptr = p, jump = j} v r c = do
     poke (advancePtr (castPtr p) (r*j+c)) v
     touchForeignPtr fp
+
+-------------------------------------------------------------------
+
+-- | Writes to a file (with automatic name if Nothing) a RGB image in png format.
+-- (uses imagemagick' convert.)
+saveRGB :: Maybe FilePath -> ImageRGB -> IO ()
+saveRGB (Just filename) (C im) = do
+    handle <- openFile (filename++".rgb") WriteMode
+    let Size h w = isize im
+    when (w`rem` 32 /= 0) $ putStrLn "Warning, saveRGB with wrong padding"
+    hPutBuf handle (castPtr (ptr im)) (w*h*3)
+    hClose handle
+    touchForeignPtr (fptr im)
+    system $ "convert -flip -size "++show w++"x"++show h++" -depth 8 rgb:"
+             ++(filename++".rgb ")++(filename++".png")
+    system $ "rm "++(filename++".rgb")
+    return ()
+
+saveRGB Nothing im = do
+    let name = "screenshot"
+    fs <- getDirectoryContents "."
+    let n = 1+ length (filter (name `isPrefixOf`) fs)
+        sn = show n
+        k = 3 - length sn
+        shj = replicate k '0' ++ sn
+    saveRGB (Just (name ++"-"++ shj)) im

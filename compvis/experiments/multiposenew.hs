@@ -38,7 +38,7 @@ main = do
     let ref = cornerRef
         vc c mbf = c >>= poseTracker "" mbf ref -- >>= inThread
 
-    rawcams <- mapM (flip getCam sz >~> channels >=> inThread) [0..n-1]
+    rawcams <- mapM (flip getCam sz >~> channels) [0..n-1]
     cams <- sequence $ zipWith vc (map return rawcams) focs
 
 
@@ -46,9 +46,7 @@ main = do
 
     auxWin <- evWindow 0 "repro" sz Nothing (chView $ kbdQuit)
 
-    hv <- historyVals "Reconstruction Error" 100 (Size 100 400) (printf "%.2f mm") (*10)
-    hv2 <- historyVals "Distance C0-C1" 100 (Size 100 400) (printf "%.2f cm" . (*cm)) (\d->((d*cm-20)*30))
-
+    hv <- signalMonitor "Reconstruction Error" 50 100 (printf "%.2f mm") (0,10)
 
     w3D <- evWindow3D () "World Reference" 400 (const $ kbdQuit)
     clearColor $= Color4 1 1 1 1
@@ -105,7 +103,7 @@ main = do
              axs = inv $ fst $ toCameraSystem c0
              st' = kgen (head fs) <> cameraAtOrigin : map (<> tfixed) cs
 
-         inWin w3DSt (showRec ref st' imgs axs hv hv2)
+         inWin w3DSt (showRec ref st' imgs axs hv)
 
 
        else do
@@ -145,12 +143,12 @@ main = do
         pfs $= fs
 
         let axs = inv $ fst $ toCameraSystem (syntheticCamera (eps!!0))
-        inWin w3DSt (showRec ref st (map gray imgs) axs hv hv2)
+        inWin w3DSt (showRec ref st (map gray imgs) axs hv)
 
 
 -----------------------------------------------------------
 
-showRec ref st imgs axs hv hv2 = do -- camera reference
+showRec ref st imgs axs hv = do -- camera reference
     setColor 0 0 0
     lineWidth $= 2
     let g c im = drawCamera 0.5 c (Just $ extractSquare 128 $ float im)
@@ -183,8 +181,7 @@ showRec ref st imgs axs hv hv2 = do -- camera reference
         let c k = pnorm PNorm2 $ inHomog $ nullVector (st!!k)
         let d k = printf "%.1f  " (c k*cm)
         text2D 20 80 $ "Distance between cameras (cm) =" ++ concatMap d [1..length st -1]
-        hv2 (c 1)
-        hv mxerr
+        hv [mxerr]
 
 
 

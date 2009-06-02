@@ -65,7 +65,7 @@ hsrespPBox k = sqrt32f
 main = do
     sz <- findSize
 
-    (cam,ctrl) <- getCam 0 sz ~> channels >>= inThread >>= withPause
+    (cam,ctrl) <- getCam 0 sz ~> channels >>= withPause
 
     prepare
 
@@ -89,7 +89,7 @@ main = do
 --     wdebug <- evWindow () "debug" sz Nothing  (const (kbdcam ctrl))
 
     let wd = 1
-    launchFreq 10 (worker o cam w wd)
+    launch (worker o cam w wd)
 
 -----------------------------------------------------------------
 

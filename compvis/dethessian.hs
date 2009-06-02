@@ -13,7 +13,7 @@ import Text.Printf(printf)
 main = do
     sz <- findSize
 
-    (cam,ctrl) <- getCam 0 sz ~> channels >>= inThread >>= withPause
+    (cam,ctrl) <- getCam 0 sz ~> channels >>= withPause
 
     prepare
 
@@ -31,7 +31,7 @@ main = do
     roi <- getROI w
     evROI w $= roiFromPixel (roiRadius roi `div`2) (roiCenter roi)
 
-    launchFreq 15 $ do
+    launch $ do
 
 #define PAR(S) S <- getParam o "S"
 

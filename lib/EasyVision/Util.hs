@@ -19,15 +19,12 @@ module EasyVision.Util(
     findSize,
     -- * Camera selection
     getCam, numCams,
+    getMulticam,
     readFrames,
     -- * Video output
     writeFrames,
     optionalSaver,
-    -- * Misc graphics utilities
-    captureGL,
     saveRGB,
-    evSize,
-    glSize,
     -- * Debug
     timing,
     debug,
@@ -39,14 +36,14 @@ module EasyVision.Util(
 import Graphics.UI.GLUT hiding (RGB, Matrix, Size, Point)
 import qualified Graphics.UI.GLUT as GL
 import ImagProc.Ipp.Core
-import ImagProc.ImageProcessing(resize32f,yuvToRGB)
+import ImagProc.ImageProcessing(resize32f,yuvToRGB,Channels,channels)
 import ImagProc.Camera
 import Foreign (touchForeignPtr,castPtr)
 import ImagProc.Images
 import System.IO
 import System.IO.Unsafe(unsafeInterleaveIO)
 import System
-import Data.List(isPrefixOf,foldl',tails,findIndex)
+import Data.List(isPrefixOf,foldl',tails,findIndex,isInfixOf)
 import Data.Maybe
 import Directory(getDirectoryContents,doesFileExist)
 import System.CPUTime
@@ -55,6 +52,7 @@ import Debug.Trace
 import Control.Monad
 import System.Environment(getArgs,getEnvironment)
 import Data.Function(on)
+import EasyVision.Combinators(live,(>~>))
 
 timing :: IO a -> IO a
 timing act = do
@@ -66,50 +64,6 @@ timing act = do
 
 debug :: Show x => x -> x
 debug x = trace (show x) x
-
--- | captures the contents of the current opengl window (very slow)
-captureGL :: IO ImageRGB
-captureGL = do
-    sz <- get windowSize
-    img <- image (evSize sz)
-    let C (Img {ptr = p, fptr = f}) = img
-    when (width (size img) `rem` 32 /= 0) $ putStrLn "Warning, captureGL with wrong padding"
-    readPixels (Position 0 0) sz (PixelData GL.RGB UnsignedByte p)
-    touchForeignPtr f
-    return img
-
--- we should use only one size type
--- | converts an OpenGL Size into a 'Size'
-evSize :: GL.Size -> Size
-evSize (GL.Size w h) = Size    (t h) (t w) where t = fromIntegral.toInteger
-
--- | converts a 'Size' into an OpenGL Size.
-glSize :: Size -> GL.Size
-glSize (Size    h w) = GL.Size (t w) (t h) where t = fromIntegral.toInteger
-
--- | Writes to a file (with automatic name if Nothing) a RGB image in png format.
--- (uses imagemagick' convert.)
-saveRGB :: Maybe FilePath -> ImageRGB -> IO ()
-saveRGB (Just filename) (C im) = do
-    handle <- openFile (filename++".rgb") WriteMode
-    let Size h w = isize im
-    when (w`rem` 32 /= 0) $ putStrLn "Warning, saveRGB with wrong padding"
-    hPutBuf handle (castPtr (ptr im)) (w*h*3)
-    hClose handle
-    touchForeignPtr (fptr im)
-    system $ "convert -flip -size "++show w++"x"++show h++" -depth 8 rgb:"
-             ++(filename++".rgb ")++(filename++".png")
-    system $ "rm "++(filename++".rgb")
-    return ()
-
-saveRGB Nothing im = do
-    let name = "screenshot"
-    fs <- getDirectoryContents "."
-    let n = 1+ length (filter (name `isPrefixOf`) fs)
-        sn = show n
-        k = 3 - length sn
-        shj = replicate k '0' ++ sn
-    saveRGB (Just (name ++"-"++ shj)) im
 
 -----------------------------------------------------------------------------------
 
@@ -136,7 +90,20 @@ getCam n sz = do
     let url = if n < length args
                 then args!!n
                 else fst (aliases!!n)
-    mplayer (expand aliases url) sz
+        fullUrl = expand aliases url
+        isLive = "--live" `isInfixOf` fullUrl
+    if isLive
+        then putStrLn "(Live) " >> mplayer (clean ["--live"] fullUrl) sz >>= live
+        else mplayer fullUrl sz
+
+clean ws = unwords . filter (not . (`elem` ws)). words
+
+----------------------------------------------
+
+getMulticam :: Size -> Int -> IO (IO [Channels])
+getMulticam sz n = do
+    cams <- mapM (flip getCam sz >~> channels) [0..n-1]
+    return (sequence cams)
 
 -----------------------------------------------
 

@@ -29,7 +29,7 @@ module EasyVision.Combinators (
   onlyRectangles,
   rectifyQuadrangle,
   monitor,
-  inThread,
+  live,
   counter, countDown
 )where
 
@@ -54,7 +54,7 @@ import Numeric.LinearAlgebra
 import ImagProc.Generic
 import Debug.Trace
 import Data.List(tails)
-import Control.Monad(when,(>=>))
+import Control.Monad(when,(>=>),forever)
 import ImagProc.Camera(mpSize)
 
 debug x = trace (show x) x
@@ -275,18 +275,20 @@ counter cam = do
 
 ---------------------------------------------------------
 
--- | Creates a virtual camera which always supplies the most recent frame.
-inThread :: IO a -> IO (IO a)
-inThread cam = do
-    c <- newEmptyMVar
-    cam >>= putMVar c
-    let loop = do img <- cam
-                  swapMVar c img
-                  threadDelay (10^6 `div` 50)
-                  --putStr "."
-                  loop
-    forkIO loop
-    return ({- putStrLn "*" >> -} readMVar c)
+-- | Creates a virtual camera which always supplies the most recent object.
+-- When an object is consumed the caller will be blocked until a new object is available 
+-- (the same object is not returned multiple times).
+-- This is useful for live cameras when processing is slow.
+--
+-- This virtual camera is automatically added by getCam if the url contains --live
+-- (it can be added in cameras.def). Therefore, programs do not need to worry about
+-- the difference between live and offline cameras.
+
+live :: IO a -> IO (IO a)
+live cam = do
+    c <- newEmptySampleVar
+    forkIO $ forever $ cam >>= writeSampleVar c
+    return $ readSampleVar c
 
 -----------------------------------------------------------
 

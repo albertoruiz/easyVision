@@ -26,8 +26,8 @@ interestPoints n h orig = feats where
 main2 = do
     sz@(Size r c) <- findSize
 
-    cam0 <- getCam 0 sz >>= inThread ~> channels
-    cam1 <- getCam 1 sz >>= inThread ~> channels
+    cam0 <- getCam 0 sz ~> channels
+    cam1 <- getCam 1 sz ~> channels
 
     prepare
 
@@ -44,7 +44,7 @@ main2 = do
 
     wm <- evWindow () "Matches" (Size r (2*c)) Nothing  (const (kbdQuit))
 
-    launchFreq 15 $ do
+    launch $ do
 
         PAR(err) :: IO Double
         PAR(n)
@@ -78,7 +78,7 @@ main2 = do
 main1 = do
     sz@(Size r c) <- findSize
 
-    (cam,ctrl) <- getCam 0 sz ~> channels >>= inThread >>= withPause
+    (cam,ctrl) <- getCam 0 sz ~> channels >>= withPause
 
     prepare
 

@@ -1,9 +1,9 @@
-webcam0        tv:// -tv driver=v4l2:device=/dev/video0:fps=25
-webcam1        tv:// -tv driver=v4l2:device=/dev/video1:fps=25
-webcam2        tv:// -tv driver=v4l2:device=/dev/video2:fps=25
-webcam3        tv:// -tv driver=v4l2:device=/dev/video3:fps=25
-webcam4        tv:// -tv driver=v4l2:device=/dev/video4:fps=25
-webcam5        tv:// -tv driver=v4l2:device=/dev/video5:fps=25
+webcam0        tv:// -tv driver=v4l2:device=/dev/video0:fps=25 --live
+webcam1        tv:// -tv driver=v4l2:device=/dev/video1:fps=25 --live
+webcam2        tv:// -tv driver=v4l2:device=/dev/video2:fps=25 --live
+webcam3        tv:// -tv driver=v4l2:device=/dev/video3:fps=25 --live
+webcam4        tv:// -tv driver=v4l2:device=/dev/video4:fps=25 --live
+webcam5        tv:// -tv driver=v4l2:device=/dev/video5:fps=25 --live
 
 swebcam        tv:// -tv driver=v4l:device=/dev/video0:height=480:width=640
 

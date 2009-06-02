@@ -31,6 +31,7 @@ module EasyVision.Draw
 , drawVector
 , extractSquare
 , newTrackball
+, captureGL
 ) where
 
 import Graphics.UI.GLUT hiding (RGB, Matrix, Size, Point)
@@ -43,7 +44,7 @@ import Foreign (touchForeignPtr,castPtr)
 import Numeric.LinearAlgebra
 import Vision
 import EasyVision.Trackball
-import EasyVision.Util
+--import EasyVision.Util
 import qualified Data.Colour.RGBSpace as Col
 import Data.Colour.SRGB hiding (RGB)
 import Data.Colour
@@ -338,3 +339,16 @@ drawVector x y v = do
     renderPrimitive Lines $ do
         mapM_ f [0..dim v -1]
         vertex (Pixel y x) >> vertex (Pixel y (x+dim v -1))
+
+--------------------------------------------------------------------------------
+
+-- | captures the contents of the current opengl window (very slow)
+captureGL :: IO ImageRGB
+captureGL = do
+    sz <- get windowSize
+    img <- image (evSize sz)
+    let C (Img {ptr = p, fptr = f}) = img
+    when (width (size img) `rem` 32 /= 0) $ putStrLn "Warning, captureGL with wrong padding"
+    readPixels (Position 0 0) sz (PixelData GL.RGB UnsignedByte p)
+    touchForeignPtr f
+    return img
