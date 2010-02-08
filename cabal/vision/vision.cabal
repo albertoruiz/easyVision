@@ -1,0 +1,41 @@
+Name:               vision
+Version:            0.1.0
+License:            GPL
+License-file:       LICENSE
+Author:             Alberto Ruiz
+Maintainer:         Alberto Ruiz <aruiz@um.es>
+Stability:          experimental
+Homepage:           http://www.easyvision.googlepages.com/
+Synopsis:           Simple pattern recognition algorithms
+Description:
+ Simple geometric vision algorithms.
+
+Category:           Math
+tested-with:        GHC ==6.10.4, GHC ==6.12.1
+
+cabal-version:      >=1.2
+build-type:         Simple
+
+extra-source-files:
+
+library
+    Build-Depends:      base >= 3 && < 5, random, 
+                        hmatrix >= 0.8.3, patrec >= 0.1
+
+    hs-source-dirs:     lib
+
+    Exposed-modules:    Vision
+                        Vision.Geometry
+                        Vision.Camera
+                        Vision.Estimation
+                        Vision.Stereo
+                        Vision.Autofrontal
+                        Util.Quaternion
+                        Util.Ellipses
+
+    other-modules:
+
+    ghc-prof-options:   -auto-all
+
+    ghc-options:        -Wall
+

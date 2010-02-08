@@ -8,10 +8,11 @@ Stability:          experimental
 Homepage:           http://www.easyvision.googlepages.com/
 Synopsis:           Simple pattern recognition algorithms
 Description:
- Simple pattern recognition algorithms and feature extraction combinators.
+ Simple pattern recognition algorithms and 
+ feature extraction combinators.
 
 Category:           Math
-tested-with:        GHC ==6.20.4, GHC ==6.12.1
+tested-with:        GHC ==6.10.4, GHC ==6.12.1
 
 cabal-version:      >=1.2
 build-type:         Simple
@@ -19,7 +20,8 @@ build-type:         Simple
 extra-source-files:
 
 library
-    Build-Depends:      base >= 3 && < 5, hmatrix >= 0.8.3, array, random, containers, haskell98
+    Build-Depends:      base >= 3 && < 5, hmatrix >= 0.8.3, array,
+                        random, containers, haskell98
 
     hs-source-dirs:     lib
     
