@@ -25,7 +25,7 @@ module Util.Stat
 , robustLocation
 ) where
 
-import Numeric.LinearAlgebra
+import Numeric.LinearAlgebra hiding (eigenvalues)
 import Data.List(transpose,sortBy,minimumBy)
 import Data.Function(on)
 
@@ -55,7 +55,7 @@ stat x = s where
     w = diag (1/sqrt l) <> v
     n = rows x
     n' = fromIntegral n / fromIntegral (n-1)
-    vars = n' .* mean (xc^2)
+    vars = scalar n' * mean (xc^2)
     s = Stat { meanVector = m
              , covarianceMatrix = c
              , eigenvalues = l

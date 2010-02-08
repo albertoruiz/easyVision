@@ -452,8 +452,7 @@ conjugateRotation pan tilt rho fi fo =
 cost simil a fa b fb [pan, tilt, roll] = simil a h b
     where h = conjugateRotation pan tilt roll fb fa
 
-findRot simil a fa b fb pi ti ri = fst $ minimizeNMSimplex (cost simil a fa b fb) [pi,ti,ri] [0.1*degree, 0.1*degree,0.1*degree] 1E-3 30
-
+findRot simil a fa b fb pi ti ri = fst $ minimize NMSimplex2 1E-3 30 [0.1*degree, 0.1*degree,0.1*degree] (cost simil a fa b fb) [pi,ti,ri]
 
 -----------------------------------------------------------------------
 

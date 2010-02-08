@@ -86,8 +86,8 @@ conjugateRotation pan tilt rho foc sca =
 cost a b [pan, tilt, roll] = simil a h b
     where h = conjugateRotation pan tilt roll 2.8 1
 
-findRot a b pi ti ri = fst $ minimizeNMSimplex (cost a b) [pi,ti,ri] [0.1*degree, 0.1*degree,0.1*degree] 1E-3 10
-
+findRot a b pi ti ri = fst $ minimize NMSimplex2 1E-3 10 [0.1*degree, 0.1*degree,0.1*degree]
+                             (cost a b) [pi,ti,ri]
 
 -- click to adjust
 mouse _ st (MouseButton LeftButton) Down _ _ = do

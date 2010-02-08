@@ -301,7 +301,7 @@ whitener (Closed ps) = t where
 -- | Exact Fourier series of a piecewise-linear closed curve
 fourierPL :: Polyline -> (Int -> Complex Double)
 fourierPL (Closed ps) = g where
-    (zs,ts,cs,ds,hs) = prepareFourierPL ps
+    (zs,ts,aAs,hs) = prepareFourierPL ps
     g0 = 0.5 * sum (zipWith4 gamma zs ts (tail zs) (tail ts))
         where gamma z1 t1 z2 t2 = (z2+z1)*(t2-t1)
     -- g w = k*r
@@ -310,14 +310,13 @@ fourierPL (Closed ps) = g where
     --           w' = fromIntegral w
     --           f h c d = (h ^^ w)*(w'*c+d)
     g 0 = g0
-    g w = k* ((vhs**w') <.> (w'*vcs+vds))
-        where k = recip (-2*pi*i* (fromIntegral w)^2)
+    g w = k* ((vhs**w') <.> vas)
+        where k = recip (-2*pi*i* (fromIntegral w)^2) * recip (2*pi*i)
               w' = fromIntegral w
     vhs = fromList hs
-    vcs = fromList $ take (length hs) cs
-    vds = fromList $ take (length hs)ds
+    vas = fromList $ take (length hs) aAs
 
-prepareFourierPL c = (zs,ts,cs,ds,hs) where
+prepareFourierPL c = (zs,ts,aAs,hs) where
     zs = map p2c (c++[head c])
         where p2c (Point x y) = x:+y
     ts = map (/last acclen) acclen
@@ -327,13 +326,11 @@ prepareFourierPL c = (zs,ts,cs,ds,hs) where
         where exp' t = exp (-2*pi*i*t)
     as = cycle $ zipWith4 alpha zs ts (tail zs) (tail ts)
         where alpha z1 t1 z2 t2 = (z2-z1)/(t2-t1)
-    bs = cycle $ zipWith3 beta zs as ts
-        where beta z alpha t = z-alpha*t
+    -- bs = cycle $ zipWith3 beta zs as ts
+    --     where beta z alpha t = z-alpha*t
     aAs = zipWith (-) as (tail as)
-    bBs = zipWith (-) bs (tail bs)
-    ds = map (* recip (2*pi*i)) aAs
-    cs = zipWith3 f bBs (tail (cycle ts)) aAs
-        where f b t a = b + t*a
+    -- bBs = zipWith (-) bs (tail bs)
+    -- ds = {-map (* recip (2*pi*i)) -} aAs
 
 --------------------------------------------------------------------------------
 -- | The average squared distance to the origin, assuming a parameterization between 0 and 1.

@@ -64,6 +64,10 @@ worker wIm wRec cam op = do
 
         let drwclosed4 = map (scp scale) closed4
 
+        print "--------------------------------------"
+        print closed4
+        print $ (map debugconstruct drwclosed4)
+
         setColor 1 0 0
         lineWidth $= 1
         mapM_ (renderPrimitive LineLoop . (mapM_ vertex)) drwclosed4
@@ -107,6 +111,21 @@ norm x = pnorm PNorm2 x
 p2l (Point x y) = [x,y]
 p2hp (Point x y) = vector [x,y,1]
 hp2p v = Point x y where [x,y] = toList (inHomog v)
+
+debugconstruct [a,b,c,d] = [lab,lcd,lad,lbc,ph,qh,h,nh]
+    where lab = cross (p2hp a) (p2hp b)
+          lcd = cross (p2hp c) (p2hp d)
+          lad = cross (p2hp a) (p2hp d)
+          lbc = cross (p2hp b) (p2hp c)
+          ph = cross lad lbc
+          p = hp2p ph
+          qh = cross lab lcd
+          q = hp2p qh
+          h = cross ph qh
+          dn = mS <> h
+          l0n = cross dn (vector [0,0,1])
+          nh = cross h l0n
+          n = hp2p nh
 
 construct [a,b,c,d] = [Segment p a, Segment p b, 
                        Segment q b, Segment q c,

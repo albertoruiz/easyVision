@@ -91,7 +91,7 @@ worker w wr cam param = do
                 renderPrimitive Points $ mapM (vertex.map realPart.t2l) [ij,other]
                 setColor' Col.green
                 mapM_ shLine $ map (map realPart) $ tangentEllipses (ellipMat!!0) (ellipMat!!1)
-                let recraw = diagl [1,-1,1] <> rectifierFromCircularPoint ij
+                let recraw = rectifierFromCircularPoint ij
                     (mx,my,_,_,_) = ellipses!!0
                     (mx2,my2,_,_,_) = ellipses!!1
                     [[mx',my'],[mx'2,my'2]] = ht recraw [[mx,my],[mx2,my2]]
@@ -107,7 +107,7 @@ worker w wr cam param = do
 
 norm x = pnorm PNorm2 x
 mt m = trans (inv m)
-diagl = diag . fromList
+--diagl = diag . fromList
 
 fst3 (a,_,_) = a
 t2l (a,b) = [a,b]
@@ -158,7 +158,7 @@ selectSol (x1,y1,_,_,_) (x2,y2,_,_,_) pts = (ij,other) where
 
 -- hmm, this must be studied in more depth
 improveCirc (rx:+ix,ry:+iy) ells = (rx':+ix',ry':+iy') where
-    [rx',ix',ry',iy'] = fst $ minimizeNMSimplex cost [rx,ix,ry,iy] (replicate 4 0.1) 1e-5 300
+    [rx',ix',ry',iy'] = fst $ minimize NMSimplex2 1e-5 300 (replicate 4 0.1) cost [rx,ix,ry,iy]
     cost [rx,ix,ry,iy] = sum $ map (eccentricity.rectif) $ ells
         where rectif e = mt t <> e <> inv t
               t = rectifierFromCircularPoint (rx:+ix,ry:+iy)

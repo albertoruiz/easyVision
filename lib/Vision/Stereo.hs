@@ -85,9 +85,9 @@ estimateEssential :: Double  -- ^ initial estimate of common focal dist
                   -> Matrix Double -- ^ fundamental matrix
                   -> (Matrix Double, Double, Double) -- ^ (essential matrix, focal dist, error)
 estimateEssential f0 fund = (esen,f,err) where
-    minimize fun xi = minimizeNMSimplex fun xi (replicate (length xi) 1) 1e-2 100
+    minimizeS fun xi = minimize NMSimplex2  1e-2 100 (replicate (length xi) 1) fun xi
     cost [x] = qualityOfEssential (kgen x <> fund <> kgen x)
-    ([f],_) = minimize cost [f0]
+    ([f],_) = minimizeS cost [f0]
     err = cost [f]
     esen' = kgen f <> fund <> kgen f
     (u,s,v) = svd esen'
@@ -97,9 +97,9 @@ estimateEssential' :: (Double, Double)  -- ^ initial estimates of focal and foca
                    -> Matrix Double     -- ^ fundamental matrix
                    -> (Matrix Double, (Double, Double), Double) -- ^ (essential matrix, (focal, focal'), error)
 estimateEssential' (f0,f0') fund = (esen,(f,f'),err) where
-    minimize fun xi = minimizeNMSimplex fun xi (replicate (length xi) 1) 1e-2 100
+    minimizeS fun xi = minimize NMSimplex2 1e-2 100 (replicate (length xi) 1) fun xi
     cost [x,x'] = qualityOfEssential (kgen x' <> fund <> kgen x)
-    ([f,f'],_) = minimize cost [f0,f0']
+    ([f,f'],_) = minimizeS cost [f0,f0']
     err = cost [f,f']
     esen' = kgen f' <> fund <> kgen f
     (u,s,v) = svd esen'
@@ -170,7 +170,7 @@ triangulate mps = xs where
 
 
 cameraDirection :: Matrix Double -> Vector Double
-cameraDirection m = unitary (det a .* m3) where
+cameraDirection m = unitary (scalar (det a) * m3) where
     a = takeColumns 3 m
     [_,_,m3] = toRows a
 

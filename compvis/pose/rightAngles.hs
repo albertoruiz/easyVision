@@ -52,21 +52,20 @@ rightAngles img = do
 
 --------------------------------------------------------------
 
-rectifier ps | length ps >= 15 && ok = relocate (diagl [-1,1,1] <> rectifierFromAbsoluteDualConic omega)
-             | otherwise             = ident 3
-    where
-    omega = estimateAbsoluteDualConic pairlines
+rectifier ps = rec where
+    rec = case estimateAbsoluteDualConic pairlines of
+        Nothing -> ident 3
+        Just omega -> relocate (rectifierFromAbsoluteDualConic omega)
     pairlines = map p3l $ filter ((==3).length) $ partit 3 $ reverse ps
     p3l ps = (toList (cross p1 p2), toList (cross p2 p3))
         where [p1,p2,p3] = map p2vh ps
-    ok = posdef omega
-    p2vh (Point x y) = fromList [x,y,1]
-    posdef mat = minimum (toList s) >= 0 where (s,_) = eigSH mat
+              p2vh (Point x y) = fromList [x,y,1]
+
     relocate h = r <> h where
         r = similarFrom2Points a b [0,1] [0,-1]
         [a,b] = ht h [[0,0.75],[0,-0.75]]
 
-diagl = diag . fromList
+--diagl = diag . fromList
 htp h = ht h . map p2l
 p2l (Point x y) = [x,y]
 --l2p [x,y] = Point x y

@@ -44,11 +44,12 @@ import qualified Numeric.GSL as G
 import Vision.Geometry
 import Vision.Estimation(homogSystem, withNormalization, estimateHomography)
 import Util.Stat
-import Data.List(transpose,nub,maximumBy,genericLength,elemIndex, genericTake)
+import Data.List(transpose,nub,maximumBy,genericLength,elemIndex, genericTake, sort)
 import System.Random 
 import Debug.Trace(trace)
 
-debug x = trace (show x) x
+debug' f x = trace (show $ f x) x
+debug x = debug' id x
 
 type Matrix = LA.Matrix Double
 type Vector = LA.Vector Double
@@ -201,7 +202,7 @@ cameraFromHomogZ0 mbf c = res where
     s = kgen (1/f) <> c
     [s1,s2,s3] = toColumns s
     sc = norm s1
-    t = s3 */ sc
+    t = s3 / scalar sc
     r1 = unitary s1
     r3 = unitary (cross s1 s2)
     r2 = cross r3 r1
@@ -251,19 +252,19 @@ doublePerp (a,b) (c,d) = (e,f) where
     coef = fromColumns [b'-a', v, c'-d']
     term = c'-a'
     [lam,mu,ep] = toList (inv coef <> term)
-    e = toList $ a' + lam .* (b'-a')
-    f = toList $ a' + lam .* (b'-a') + mu .* v
+    e = toList $ a' + scalar lam * (b'-a')
+    f = toList $ a' + scalar lam * (b'-a') + scalar mu * v
 
 ------------------------------------------------------            
 
--- | The RQ decomposition, written in terms of the QR. 
-rq :: Matrix -> (Matrix,Matrix) 
-rq m = (r,q) where
-    (q',r') = qr $ trans $ rev1 m
-    r = rev2 (trans r')
-    q = rev2 (trans q')
-    rev1 = flipud . fliprl
-    rev2 = fliprl . flipud
+-- -- | The RQ decomposition, written in terms of the QR. 
+-- rq :: Matrix -> (Matrix,Matrix) 
+-- rq m = (r,q) where
+--     (q',r') = qr $ trans $ rev1 m
+--     r = rev2 (trans r')
+--     q = rev2 (trans q')
+--     rev1 = flipud . fliprl
+--     rev2 = fliprl . flipud
 
 
 -- | Given a camera matrix m it returns (K, R, C)
@@ -340,7 +341,7 @@ refineCamera1 prec nmax cam mview mworld = (betterCam,path) where
     betterCam = syntheticCamera $ list2par betterpar
     cost view world lpar = pnorm PNorm2 $ flatten (view - htm c world)
         where c = syntheticCamera $ list2par lpar
-    minimize f xi = G.minimizeNMSimplex f xi [0.01,5*degree,5*degree,5*degree,0.1,0.1,0.1] prec nmax
+    minimize f xi = G.minimize G.NMSimplex2 prec nmax  [0.01,5*degree,5*degree,5*degree,0.1,0.1,0.1] f xi
 
 refineCamera2 prec nmax cam mview mworld = (betterCam,path) where
     f:initsol = par2list $ poseFromCamera cam
@@ -348,7 +349,7 @@ refineCamera2 prec nmax cam mview mworld = (betterCam,path) where
     betterCam = syntheticCamera $ list2par (f:betterpar)
     cost view world lpar = {-# SCC "cost2" #-} pnorm PNorm2 $ flatten (view - htm c world)
         where c = syntheticCamera $ list2par (f:lpar)
-    minimize f xi = G.minimizeNMSimplex f xi [5*degree,5*degree,5*degree,0.1,0.1,0.1] prec nmax
+    minimize f xi = G.minimize G.NMSimplex2 prec nmax [5*degree,5*degree,5*degree,0.1,0.1,0.1] f xi
 
 list2par [f,p,t,r,cx,cy,cz] = CamPar f p t r (cx,cy,cz)
 par2list (CamPar f p t r (cx,cy,cz)) = [f,p,t,r,cx,cy,cz]
@@ -364,20 +365,27 @@ rectifierFromCircularPoint (x,y) = rectifierFromAbsoluteDualConic omega where
 
 rectifierFromAbsoluteDualConic :: Matrix -> Matrix
 rectifierFromAbsoluteDualConic omega = inv t where
-    (s,u) = eigSH omega -- positive semidefinite by construction
-    [a,b,_] = toList s
-    t = trans $ diagl [sqrt a, sqrt b, 1] <> trans u
+    (_,s,u) = svd omega
+    [s1,s2,_] = toList s
+    s' = fromList [s1,s2,1]
+    t = u <> diag (sqrt s')
     -- 0 =~= norm $ (normat3 $ t <> diagl [1,1,0] <> trans t) - (normat3 omega)
 
 -- | from pairs of images of orthogonal lines
-estimateAbsoluteDualConic ::  [([Double],[Double])] -> Matrix
-estimateAbsoluteDualConic pls = signum (det con) .* con where
+estimateAbsoluteDualConic ::  [([Double],[Double])] -> Maybe Matrix
+estimateAbsoluteDualConic pls = clean where
     con = (3><3) [a,c,d
                  ,c,b,e
                  ,d,e,f]
     [a,b,c,d,e,f] = toList $ fst $ homogSystem $ eqs
     eqs = map eq pls
     eq ([a,b,c],[a',b',c']) = [a*a', b*b', a*b'+a'*b, c*a'+a*c', c*b'+c'*b, c*c']
+    (l,v) = eigSH' con
+    ls@[l1,l2,l3] = toList l
+    ok = length pls >= 5 && (l1>0 && l2>0 || l2<0 && l3<0)
+    di = if l2>0 then diagl [l1,l2,0] else diagl [0,-l2,-l3]
+    clean | ok        = Just $ v <> di <> trans v
+          | otherwise = Nothing
 
 focalFromCircularPoint :: (Complex Double,Complex Double) -> Double
 focalFromCircularPoint (cx,cy) = x * sqrt (1-(y/x)^2) where
@@ -396,3 +404,4 @@ circularConsistency (x,y) = innerLines n0 h where
 
 innerLines l m = (l.*.m)/ sqrt (l.*.l) / sqrt(m.*.m)
     where a.*.b = a <> mS <.> b
+

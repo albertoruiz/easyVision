@@ -111,7 +111,7 @@ structure t = (rank t - n, n) where
     isCov d = idxType d == Covariant
 
 -- | creates a rank-zero tensor from a scalar
-scalar :: Storable t => t -> Tensor t
+--scalar :: Storable t => t -> Tensor t
 scalar x = T [] (fromList [x])
 
 -- | Creates a tensor from a signed list of dimensions (positive = contravariant, negative = covariant) and a Vector containing the coordinates in row major order.

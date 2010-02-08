@@ -82,7 +82,7 @@ quality ihs mbOmgs c = sum qs / fromIntegral (length ihs) where
 similarityDegree h = pnorm PNorm1 (m'-v) where
     v = vector [1,0,0,0,1,0,0,0,0]
     m = flatten (h <> mS <> trans h)
-    m' = m */ m@>0
+    m' = m / scalar (m@>0)
 
 -- hmm! premature optimization...
 omegaGen f = kgen (recip (f*f))
@@ -91,7 +91,7 @@ omegaGen f = kgen (recip (f*f))
 orthogonality omega c = pnorm PNorm1 (m'-v) where
     v = vector [1,0,0,1]
     m = flatten $ subMatrix (0,0) (2,2) q
-    m' = m */ m@>0
+    m' = m / scalar (m@>0)
     q = trans c <> omega <> c
 
 -- si das un f (omega) la usa, si no intenta estimarla y si no puede ve si es similar
@@ -179,18 +179,6 @@ estimatorF mbfs = mbMedian fs where
 
 mkfun f = g where
     g [a,b] = f (a,b)
-    
-findSol fun (rinit,hinit) = minimizeNMSimplex (mkfun fun) [rinit,hinit] [0.1*degree,0.01] 1e-6 500
-    
--- Numerical estimation of the gradient
-gradient f v = [partialDerivative k f v | k <- [0 .. length v -1]]
 
-partialDerivative n f v = fst (derivCentral 0.01 g (v!!n)) where
-    g x = f (concat [a,x:b])
-    (a,_:b) = splitAt n v    
-
--- the conjugate gradient method
-minimizeCG f df xi = minimizeConjugateGradient 1E-2 1E-4 1E-3 30
-
-findSol' fun (rinit,hinit) = minimizeCG (mkfun fun) (gradient (mkfun fun)) [rinit,hinit] 
+findSol fun (rinit,hinit) = minimize NMSimplex2 1e-6 500 [0.1*degree,0.01] (mkfun fun) [rinit,hinit]
 

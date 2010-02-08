@@ -89,7 +89,7 @@ getRotationHL Quat {qs = w, qv = v} =
 rotToAxis rot = (angle,axis) where
     (l,v) = eig rot
     r = zip (toList l) (toColumns v)
-    axis = liftVector realPart $ snd $ minimumBy (compare `on` (abs.imagPart.fst)) r
+    axis = mapVector realPart $ snd $ minimumBy (compare `on` (abs.imagPart.fst)) r
     angleraw = phase $ maximumBy (compare `on` imagPart) (toList l)
     mx = maximum $ map abs $ toList $ flatten $ rot
     rec = getRotation $ axisToQuat angleraw axis

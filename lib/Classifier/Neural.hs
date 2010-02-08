@@ -48,7 +48,7 @@ deltas n xs o = zipWith outer (tail ds) (init xs) where
     dl = (last xs - o) * gp (last xs)
     ds = scanr f dl (zip xs (weights n))
     f (x,m) d = gp x * (trans m <> d)
-    gp = liftVector $ \x -> (1+x)*(1-x)
+    gp = mapVector $ \x -> (1+x)*(1-x)
 
 updateNetwork alpha n (v,o) = n {weights = zipWith (+) (weights n) corr}
     where xs = forward n v

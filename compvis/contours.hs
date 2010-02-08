@@ -11,7 +11,7 @@ import qualified Data.Map as Map
 import Foreign.C.Types
 import Foreign
 import Numeric.LinearAlgebra
-import Numeric.GSL
+import Numeric.GSL hiding (cos)
 import Vision
 import Data.List(minimumBy, maximumBy)
 import Control.Monad(guard)
@@ -20,7 +20,7 @@ import Data.Array
 import ImagProc.Ipp.Core
 import Debug.Trace
 
-debug x = trace (show x) x
+--debug x = trace (show x) x
 
 ------------------------------------------------------------
 
@@ -42,7 +42,7 @@ bestRotation w f g = (a, disc [a])
           c r w = m2 (f' r w - g w)
           m2 z = magnitude z ^ 2
           disc [r] = sum (map (c r) [-w..w])
-          ([a], p) = minimizeNMSimplex disc [0] [10*degree] prec nmax
+          ([a], p) = minimize NMSimplex2 prec nmax [10*degree] disc [0]
 
 alignedTo w (f,hp,p) (g,hc,c) = htp h p
     where (a,_) = bestRotation w f g
@@ -58,10 +58,26 @@ feat c = (f,h,c) where
 htp h (Closed c) = Closed . map l2p . ht h . map p2l $ c
 p2l (Point x y) = [x,y]
 l2p [x,y] = Point x y
+p2c (Point x y) = x :+ y
 
 times n f = (!!n) . iterate f
 
 ------------------------------------------------------------
+
+pru = [Point 0 0, Point 0 (0.5), Point (-0.5) (0.75), Point 0 1, Point (0.5) (0.5), Point 1 0, Point (0.5) 0]
+
+pru' = map (\x-> Point x 0) [10 * cos(2 * pi * 3 * x - pi/4)| x <- [0,delta .. 2-delta]] where delta = 2/200
+
+fpl = fourierPL (Closed pru)
+
+main' = do
+    print pru
+    print (fft (fromList $ map p2c pru) */ fromIntegral (length pru))
+    putStrLn "------------------------"
+    print (fpl 1)
+    putStrLn "------------------------"
+    mapM_ print (map fpl [-10 .. 10])
+
 
 main = do
     sz <- findSize
@@ -110,7 +126,7 @@ worker cam param inWindow (prots',mbp) = do
         rawconts = contours 100 pixarea th2 (toEnum white) im
         proc = Closed . pixelsToPoints (size orig).douglasPeuckerClosed fracpix.fst3
         cs = map proc $ rawconts
-        --wcs = map whitenContour cs
+        wcs = map whitenContour cs
 
         --fcs = map (filterSpectral comps 100) cs
         --selc = map (Closed . map c2p . spectralComponent comps 100) wcs
@@ -132,7 +148,7 @@ worker cam param inWindow (prots',mbp) = do
              pointCoordinates (size im)
              lineWidth $= 2
              setColor 1 1 0
-             --mapM_ shcont wcs
+             mapM_ shcont wcs
              lineWidth $= 4
              setColor 1 0 0
              --mapM_ (shcont. invFou 50 comps) detected
@@ -227,7 +243,7 @@ goodDir f = a where
 
 
 normalizeRotation f = g where
-    a = goodDir f
+    a = debug $ goodDir f
     aux = normalizeStart ( (* cis (-a) ).f)
     p0 = aux 1 + aux (-1) + aux 2 + aux (-2)
     pm = -aux 1 + aux (-1) + aux 2 + aux (-2)
