@@ -6,7 +6,7 @@ Author:             Alberto Ruiz
 Maintainer:         Alberto Ruiz <aruiz@um.es>
 Stability:          experimental
 Homepage:           http://www.easyvision.googlepages.com/
-Synopsis:           Simple pattern recognition algorithms
+Synopsis:           Simple geometric vision algorithms
 Description:
  Simple geometric vision algorithms.
 
@@ -20,7 +20,8 @@ extra-source-files:
 
 library
     Build-Depends:      base >= 3 && < 5, random, 
-                        hmatrix >= 0.8.3, patrec >= 0.1
+                        hmatrix >= 0.8.3, patrec >= 0.1,
+                        hTensor >= 0.5
 
     hs-source-dirs:     lib
 
@@ -29,6 +30,7 @@ library
                         Vision.Camera
                         Vision.Estimation
                         Vision.Stereo
+                        Vision.Multiview
                         Vision.Autofrontal
                         Util.Quaternion
                         Util.Ellipses

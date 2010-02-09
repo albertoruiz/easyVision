@@ -102,42 +102,6 @@ withPause grab = do
 
 -----------------------------------------------
 
-createGrab l = do
-    pl <- newIORef l
-    return $ do
-        h:t <- readIORef pl
-        writeIORef pl t
-        return h
-
-grabAll grab = do
-    im <- grab
-    rest <- unsafeInterleaveIO (grabAll grab)
-    return (im:rest)
-
--- | Creates a virtual camera by some desired processing of the infinite list of images produced by another camera.
-virtualCamera :: ([a]-> [b]) -> IO a -> IO (IO b)
-virtualCamera filt grab = filt `fmap` grabAll grab >>= createGrab
-
--- | shortcut for @>>= virtualCamera f@
-(~~>) :: IO (IO a) -> ([a]-> [b]) -> IO (IO b)
-infixl 1 ~~>
-gencam ~~> f = (gencam >>= virtualCamera f)
-
--- | shortcut for @>>= virtualCamera (map f)@, or equivalently, @>>= return . fmap f@.
-(~>) :: IO (IO a) -> (a-> b) -> IO (IO b)
-infixl 1 ~>
-gencam ~> f = gencam >>= return . fmap f
-
--- | composition version of @~>@
-(>~>) :: (t -> IO (IO a)) -> (a -> b) -> t -> IO (IO b)
-infixr 2 >~>
-f >~> g = \x -> f x ~> g
-
--- | composition version of @~~>@
-(>~~>) :: (t -> IO (IO a)) -> ([a] -> [b]) -> t -> IO (IO b)
-infixr 2 >~~>
-f >~~> g = \x -> f x ~~> g
-
 
 --------------------------------------------------------------------------
 
@@ -274,21 +238,6 @@ counter cam = do
         return x
 
 ---------------------------------------------------------
-
--- | Creates a virtual camera which always supplies the most recent object.
--- When an object is consumed the caller will be blocked until a new object is available 
--- (the same object is not returned multiple times).
--- This is useful for live cameras when processing is slow.
---
--- This virtual camera is automatically added by getCam if the url contains --live
--- (it can be added in cameras.def). Therefore, programs do not need to worry about
--- the difference between live and offline cameras.
-
-live :: IO a -> IO (IO a)
-live cam = do
-    c <- newEmptySampleVar
-    forkIO $ forever $ cam >>= writeSampleVar c
-    return $ readSampleVar c
 
 -----------------------------------------------------------
 
