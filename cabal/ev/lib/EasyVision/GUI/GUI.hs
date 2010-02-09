@@ -1,6 +1,6 @@
 -----------------------------------------------------------------------------
 {- |
-Module      :  EasyVision.GUI
+Module      :  EasyVision.GUI.GUI
 Copyright   :  (c) Alberto Ruiz 2006
 License     :  GPL-style
 
@@ -14,7 +14,7 @@ The GUI of EasyVision, based on HOpenGL.
 -}
 -----------------------------------------------------------------------------
 
-module EasyVision.GUI (
+module EasyVision.GUI.GUI (
 -- * Application interface
   State(..)
 , prepare, prepare'
@@ -23,11 +23,11 @@ module EasyVision.GUI (
 , InWindow, inWin, getW, putW, getROI
 , kbdcam, kbdQuit
 -- * Drawing utilities
-, module EasyVision.Draw
-, module EasyVision.Objects
+, module EasyVision.GUI.Draw
+, module EasyVision.MiniApps.Objects
 ) where
 
-import EasyVision.Draw
+import EasyVision.GUI.Draw
 import ImagProc.Base
 import ImagProc.Ipp(Size(..),ippSetNumThreads,ROI(..),saveRGB)
 import Graphics.UI.GLUT hiding (RGB, Matrix, Size)
@@ -38,7 +38,7 @@ import Control.Monad(when)
 import System.Environment(getArgs)
 import qualified Data.Map as Map
 import Data.Map
-import EasyVision.Objects
+import EasyVision.MiniApps.Objects
 
 --import qualified Data.Map as Map
 --import Data.Map((!))

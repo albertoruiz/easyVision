@@ -2,7 +2,7 @@
 
 -----------------------------------------------------------------------------
 {- |
-Module      :  EasyVision.Draw
+Module      :  EasyVision.GUI.Draw
 Copyright   :  (c) Alberto Ruiz 2006
 License     :  GPL-style
 
@@ -15,7 +15,7 @@ HOpenGL drawing utilities.
 -}
 -----------------------------------------------------------------------------
 
-module EasyVision.Draw
+module EasyVision.GUI.Draw
 ( pointCoordinates
 , pixelCoordinates
 , Drawable(..), drawImage'
@@ -32,18 +32,19 @@ module EasyVision.Draw
 , extractSquare
 , newTrackball
 , captureGL
+, evSize, glSize
 ) where
 
 import Graphics.UI.GLUT hiding (RGB, Matrix, Size, Point)
 import qualified Graphics.UI.GLUT as GL
 import ImagProc.Ipp.Core
 import Features.Matching
-import ImagProc.ImageProcessing(resize,yuvToRGB,toGray)
+import ImagProc(resize,yuvToRGB,toGray)
 import Data.IORef
 import Foreign (touchForeignPtr,castPtr)
 import Numeric.LinearAlgebra
 import Vision
-import EasyVision.Trackball
+import EasyVision.GUI.Trackball
 --import EasyVision.Util
 import qualified Data.Colour.RGBSpace as Col
 import Data.Colour.SRGB hiding (RGB)
@@ -352,3 +353,14 @@ captureGL = do
     readPixels (Position 0 0) sz (PixelData GL.RGB UnsignedByte p)
     touchForeignPtr f
     return img
+
+----------------------------------------------------------------
+
+-- we should use only one size type
+-- | converts an OpenGL Size into a 'Size'
+evSize :: GL.Size -> Size
+evSize (GL.Size w h) = Size    (t h) (t w) where t = fromIntegral.toInteger
+
+-- | converts a 'Size' into an OpenGL Size.
+glSize :: Size -> GL.Size
+glSize (Size    h w) = GL.Size (t w) (t h) where t = fromIntegral.toInteger

@@ -22,15 +22,16 @@ module EasyVision.MiniApps (
     regionDetector, regionTracker,
     panoramic,
     zoomer, zoomWindow,
-    module EasyVision.PoseTracker,
+    module EasyVision.MiniApps.PoseTracker,
     module EasyVision.MiniApps.Corners,
     module EasyVision.MiniApps.CornerTracker,
-    module EasyVision.MiniApps.SignalMonitor
+    module EasyVision.MiniApps.SignalMonitor,
+    module EasyVision.MiniApps.Combinators
 )where
 
 import Graphics.UI.GLUT as GL hiding (Size,Point,Matrix,matrix)
 import EasyVision.GUI hiding (State)
-import EasyVision.Parameters
+import EasyVision.GUI.Parameters
 import ImagProc hiding ((.*))
 import Features
 import Data.List(transpose)
@@ -40,16 +41,15 @@ import Foreign.C.Types(CUChar)
 import Foreign
 import qualified Data.Map as Map
 import Data.List(sort,nub,sortBy,minimumBy)
-import EasyVision.Util
 import Numeric.LinearAlgebra
 import Classifier.Base(group)
 import Data.IORef
 import Vision
 import Numeric.GSL.Minimization
-import EasyVision.Combinators(warper)
+import EasyVision.MiniApps.Combinators
 import Util.Kalman
 import Text.Printf
-import EasyVision.PoseTracker
+import EasyVision.MiniApps.PoseTracker
 import Data.Function(on)
 import EasyVision.MiniApps.Corners
 import EasyVision.MiniApps.CornerTracker

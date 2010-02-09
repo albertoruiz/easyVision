@@ -13,7 +13,7 @@ General types.
 -----------------------------------------------------------------------------
 
 module ImagProc.Base
-( Size(..), -- evSize, glSize,
+( Size(..),
   ROI (..),
   Point(..), distPoints,
   Pixel(..),
@@ -25,20 +25,10 @@ module ImagProc.Base
 
 import qualified Numeric.LinearAlgebra as LA
 import Vision
---import qualified Graphics.UI.GLUT as GL
-
-
 
 data Size  = Size  {height :: !Int, width :: !Int} deriving (Show, Eq)
 
--- we should use only one size type
--- | converts an OpenGL Size into a 'Size'
---evSize :: GL.Size -> Size
---evSize (GL.Size w h) = Size    (t h) (t w) where t = fromIntegral.toInteger
 
--- | converts a 'Size' into an OpenGL Size.
---glSize :: Size -> GL.Size
---glSize (Size    h w) = GL.Size (t w) (t h) where t = fromIntegral.toInteger
 
 data ROI = ROI { r1 :: Int  -- ^ upper row
                , r2 :: Int  -- ^ lower row

@@ -1,6 +1,6 @@
 -- #hide
 
-module EasyVision.Trackball (newTrackball) where
+module EasyVision.GUI.Trackball (newTrackball) where
 
 import Util.Quaternion
 import Vision.Geometry(cross)

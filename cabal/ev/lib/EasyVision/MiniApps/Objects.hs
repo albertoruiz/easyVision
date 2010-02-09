@@ -13,12 +13,12 @@ True coordinates of several calibration objects and 3D models
 -}
 -----------------------------------------------------------------------------
 
-module EasyVision.Objects (
+module EasyVision.MiniApps.Objects (
     a4Ref, asymRef, cornerRef, houseModel
 ) where
 
 import Graphics.UI.GLUT
-import EasyVision.Draw(setColor)
+import EasyVision.GUI.Draw(setColor)
 
 
 asymRef = map (map (*0.54))

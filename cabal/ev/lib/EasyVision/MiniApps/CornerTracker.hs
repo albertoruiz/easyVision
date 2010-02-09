@@ -15,12 +15,9 @@ module EasyVision.MiniApps.CornerTracker (
 
 import ImagProc
 import Features.Matching
-import EasyVision.Combinators
-import EasyVision.Util
-import EasyVision.Draw
+import EasyVision.MiniApps.Combinators
 import EasyVision.GUI
-import EasyVision.Parameters
-import EasyVision.Concurrent
+import EasyVision.MiniApps.Concurrent
 import Graphics.UI.GLUT hiding (Point)
 import Control.Monad(when)
 import Control.Arrow((&&&))
@@ -29,7 +26,7 @@ import Numeric.LinearAlgebra
 import Data.List
 import Data.IORef
 --import HUBIGraph as G
-import Control.Monad.Reader (runReaderT)
+--import Control.Monad.Reader (runReaderT)
 
 
 accept = 100

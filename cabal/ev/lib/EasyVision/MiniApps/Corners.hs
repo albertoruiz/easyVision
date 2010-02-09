@@ -15,12 +15,9 @@ module EasyVision.MiniApps.Corners (
     cornerDetectorP, getCornerParam, getCornerDetector
 ) where
 
-import EasyVision.Combinators
-import EasyVision.Util
-import EasyVision.Draw
+import EasyVision.MiniApps.Combinators
 import EasyVision.GUI
-import EasyVision.Parameters
-import EasyVision.Concurrent
+import EasyVision.MiniApps.Concurrent
 import ImagProc
 import Graphics.UI.GLUT
 import Control.Monad((>=>))

@@ -1,7 +1,7 @@
 {-# LANGUAGE TypeSynonymInstances #-}
 -----------------------------------------------------------------------------
 {- |
-Module      :  EasyVision.Parameters
+Module      :  EasyVision.GUI.Parameters
 Copyright   :  (c) Alberto Ruiz 2006
 License     :  GPL-style
 
@@ -14,7 +14,7 @@ A \'global\' parameter list with its own control window. See the example warp.hs
 -}
 -----------------------------------------------------------------------------
 
-module EasyVision.Parameters (
+module EasyVision.GUI.Parameters (
    Parameters,
    createParameters, createParameters',
    listParam, realParam, floatParam, percent, intParam, stringParam,
@@ -22,7 +22,7 @@ module EasyVision.Parameters (
 ) where
 
 import ImagProc.Ipp.Core
-import EasyVision.GUI
+import EasyVision.GUI.GUI
 import Graphics.UI.GLUT hiding (RGB, Matrix, Size)
 import qualified Graphics.UI.GLUT as GL
 import Data.IORef

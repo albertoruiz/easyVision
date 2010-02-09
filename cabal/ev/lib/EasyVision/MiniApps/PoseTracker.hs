@@ -13,7 +13,7 @@ Some variations of UKF pose tracker.
 -}
 -----------------------------------------------------------------------------
 
-module EasyVision.PoseTracker (
+module EasyVision.MiniApps.PoseTracker (
     poseTracker
 )where
 
@@ -25,11 +25,10 @@ import Features
 import qualified ImagProc as IP
 import Control.Monad(when)
 import Data.List(sort,nub,sortBy,minimumBy)
-import EasyVision.Util
 import Numeric.LinearAlgebra
 import Data.IORef
 import Vision
-import EasyVision.Combinators(findPolygons,getPolygons,polyconsis)
+import EasyVision.MiniApps.Combinators(findPolygons,getPolygons,polyconsis)
 import Util.Kalman
 import Text.Printf
 import Util.Stat

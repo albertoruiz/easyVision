@@ -12,7 +12,7 @@ Concurrency utilities.
 -}
 -----------------------------------------------------------------------------
 
-module EasyVision.Concurrent (
+module EasyVision.MiniApps.Concurrent (
     asyncFun,
     syncFun,
     mkWatch,
@@ -55,6 +55,7 @@ instance NFData Pixel where
 
 instance NFData Point where
      rnf (Point x y) = rnf x
+
 
 asyncFun d f n = do
     v <- n >>= newMVar . f
@@ -101,3 +102,4 @@ f |***| g = h where
 
 pipeline f (a:b:rest) = fa : pipeline f (b':rest) where
     (fa, b') = (f a, b) `using` parPair rnf rnf
+

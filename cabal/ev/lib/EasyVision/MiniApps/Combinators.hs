@@ -13,9 +13,7 @@ Camera combinators: higher order functions which make virtual cameras from other
 -}
 -----------------------------------------------------------------------------
 
-module EasyVision.Combinators (
-  -- * Virtual camera generator
-  virtualCamera, (~~>), (>~~>), (~>), (>~>),
+module EasyVision.MiniApps.Combinators (
   -- * Camera combinators
   -- | A few useful combinators
   withPause,
@@ -29,13 +27,12 @@ module EasyVision.Combinators (
   onlyRectangles,
   rectifyQuadrangle,
   monitor,
-  live,
   counter, countDown
 )where
 
 import ImagProc.Ipp.Core
-import ImagProc.ImageProcessing
-import ImagProc.C.Segments
+import ImagProc
+--import ImagProc.C.Segments
 import Features.Polyline
 import Foreign
 import Foreign.C.Types (CChar,CUChar)
@@ -45,8 +42,6 @@ import System.IO
 import System
 import System.IO.Unsafe(unsafeInterleaveIO)
 import EasyVision.GUI
-import EasyVision.Draw
-import EasyVision.Parameters
 import Graphics.UI.GLUT hiding (Size,Point)
 import Control.Concurrent
 import Vision hiding (consistency)
@@ -56,6 +51,8 @@ import Debug.Trace
 import Data.List(tails)
 import Control.Monad(when,(>=>),forever)
 import ImagProc.Camera(mpSize)
+import Features.Segments
+import ImagProc.C.Segments
 
 debug x = trace (show x) x
 

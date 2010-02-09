@@ -18,20 +18,13 @@ A few example programs can be found in the compvis folder.
 
 module EasyVision (
     module EasyVision.GUI,
-    module EasyVision.Parameters,
-    module EasyVision.Combinators,
-    module EasyVision.Util,
     module EasyVision.MiniApps,
-    module EasyVision.Concurrent,
     module ImagProc,
     module Features
 ) where
 
 import EasyVision.GUI
-import EasyVision.Parameters
-import EasyVision.Combinators
-import EasyVision.Util
 import EasyVision.MiniApps
 import ImagProc
 import Features
-import EasyVision.Concurrent
+
