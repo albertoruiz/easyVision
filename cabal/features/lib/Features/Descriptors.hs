@@ -25,9 +25,9 @@ where
 import ImagProc.Ipp.Core
 import ImagProc.ImageFold
 import Numeric.LinearAlgebra
-import Graphics.UI.GLUT hiding (Size,Point)
+--import Graphics.UI.GLUT hiding (Size,Point)
 import Data.Packed.ST
-import ImagProc.ImageProcessing hiding ((.*))
+import ImagProc hiding ((.*))
 import Vision(unitary)
 import GHC.Float(float2Double,double2Float)
 import ImagProc.C.Simple(histoDir)

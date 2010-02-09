@@ -22,7 +22,7 @@ where
 
 import ImagProc.Ipp.Core
 import ImagProc.Ipp.Pure
-import ImagProc.ImageProcessing
+import ImagProc
 import ImagProc.C.Simple(localMaxScale3Simplified)
 import Numeric.LinearAlgebra hiding ((.*))
 

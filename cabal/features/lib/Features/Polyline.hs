@@ -35,7 +35,7 @@ module Features.Polyline (
 where
 
 import ImagProc.Images
-import ImagProc.ImageProcessing(cloneClear,maxIndx8u,floodFill8u, floodFill8uGrad, binarize8u, median, notI)
+import ImagProc(cloneClear,maxIndx8u,floodFill8u, floodFill8uGrad, binarize8u, median, notI)
 import ImagProc.Ipp.Core
 import Foreign.C.Types(CUChar)
 import Foreign

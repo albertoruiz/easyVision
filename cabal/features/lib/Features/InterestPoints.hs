@@ -26,7 +26,7 @@ where
 
 import ImagProc.Images
 import ImagProc.Ipp.Pure
-import ImagProc.ImageProcessing
+import ImagProc
 import Numeric.LinearAlgebra hiding ((.*))
 import Features.ScaleSpace
 import Features.Descriptors

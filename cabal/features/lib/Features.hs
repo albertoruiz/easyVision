@@ -15,12 +15,12 @@ Several kind of geometric primitives
 
 module Features (
     module Features.Polyline,
-    module ImagProc.C.Segments,
+    module Features.Segments,
     module Features.InterestPoints,
     module Features.Matching
 ) where
 
 import Features.Matching
-import ImagProc.C.Segments
+import Features.Segments
 import Features.Polyline
 import Features.InterestPoints
