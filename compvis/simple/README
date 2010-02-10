@@ -28,3 +28,6 @@ simple examples
 - background: detection of something different from a background image
 
 - zoom: demo of zoom window, useful to observe pixel values
+
+- capture: extract drawing from a sheet of paper
+

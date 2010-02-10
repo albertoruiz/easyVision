@@ -8,6 +8,7 @@ import EasyVision
 import Graphics.UI.GLUT hiding (RGB,Size,minmax,histogram,Point,set)
 import GHC.Float(float2Double)
 import qualified Data.Colour.Names as Col
+import ImagProc.C.Segments
 
 ------------------------------------------------------------
 

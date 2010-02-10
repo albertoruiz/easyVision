@@ -7,6 +7,7 @@
 #include <cstdio>
 #include <cstdlib>
 
+void* __dso_handle;
 
 
 extern "C" {

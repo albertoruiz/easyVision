@@ -55,7 +55,7 @@ library
 
     ghc-options:        -Wall
     
-    extra-libraries:    Cg CgGL GLEW IL siftgpu cudart
+    extra-libraries:    siftgpu cudart Cg CgGL GLEW IL glut
     extra-lib-dirs:     /home/brutus/apps/CUDA
     include-dirs:       lib/ImagProc/C/Segments
     
