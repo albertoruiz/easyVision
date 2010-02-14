@@ -1,6 +1,6 @@
 -----------------------------------------------------------------------------
 {- |
-Module      :  EasyVision.PoseTracker
+Module      :  EasyVision.MiniApps.PoseTracker
 Copyright   :  (c) Alberto Ruiz 2007
 License     :  GPL-style
 
@@ -32,7 +32,7 @@ import EasyVision.MiniApps.Combinators(findPolygons,getPolygons,polyconsis)
 import Util.Kalman
 import Text.Printf
 import Util.Stat
-import Data.Array
+--import Data.Array
 import Debug.Trace
 import ImagProc.Ipp.Core(intersection,inROI,union)
 import Data.Function(on)
@@ -113,8 +113,8 @@ withImproved world = (measure,post,cz,restart) where
 
 -----------------------------------------------------------------------------------
 
-withSegments world = (measure,post,cz,restart) where
-    measure img zprev = map (vector. concat . map pl . fst) . getPolygons Nothing world $ img -- modifyROI (intersection search) img
+withSegments segments world = (measure,post,cz,restart) where
+    measure img zprev = map (vector. concat . map pl . fst) . getPolygons segments Nothing world $ img -- modifyROI (intersection search) img
         where search = foldl1 union (map (roiFromPoint 20) pixs)
               pixs = pointsToPixels (size img) . map lp . toLists . reshape 2 $ zprev
     post = concat
@@ -125,7 +125,7 @@ withSegments world = (measure,post,cz,restart) where
 
 withRegion w world = (measure,post,cz,restart) where
     measure img zprev =  map (vector.post.map pl). givemecont zprev $ img
-    post = concat . map c2l . flip map [-w..w] . memo w. normalizeStart . fourierPL . Closed . map lp
+    post = concat . map c2l . flip map [-w..w] . normalizeStart . fourierPL . Closed . map lp
     --cz = 1E-5 .* diagl [1,1,1,1,10,10,50,50,10,10,1,1,1,1]
     cz = 1E-5 .* ident ((2*w+1)*2)
     restart = givemeconts
@@ -257,6 +257,6 @@ shPose (CamPar f p t r (cx,cy,cz)) = printf "f=%.2f  pan=%.1f  tilt=%.1f  roll=%
     where degree = 180/pi
           cm = 10
 
-memo t f = g where
-    m = listArray (-t,t::Int) [f k | k <- [-t..t]]
-    g w = m ! w
+-- memo t f = g where
+--     m = listArray (-t,t::Int) [f k | k <- [-t..t]]
+--     g w = m ! w

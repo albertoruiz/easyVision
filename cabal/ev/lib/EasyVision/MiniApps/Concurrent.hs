@@ -25,8 +25,8 @@ import Control.Monad
 import Control.Parallel.Strategies
 import ImagProc.Ipp.Core
 import Features
-import Numeric.LinearAlgebra(Vector, (@>))
-import Storable(Storable)
+--import Numeric.LinearAlgebra(Vector, (@>))
+--import Storable(Storable)
 import Data.IORef
 import Debug.Trace
 
@@ -41,14 +41,14 @@ instance NFData ImageGray where
 
 
 instance NFData DetailedInterestPoint where
-    rnf = rnf . ip
---     rnf = rnf . ipRawPosition
+    rnf = rwhnf . ip
+--    rnf = rnf . ipRawPosition
 
 instance NFData InterestPoint where
-     rnf = rnf . ipDescriptor
+     rnf = rwhnf . ipDescriptor
 
-instance (NFData a, Storable a) => NFData (Vector a) where
-     rnf = rnf . (@>0)
+--instance (NFData a, Storable a) => NFData (Vector a) where
+--     rnf = rnf . (@>0)
 
 instance NFData Pixel where
      rnf (Pixel r c) = rnf r

@@ -13,7 +13,7 @@ True coordinates of several calibration objects and 3D models
 -}
 -----------------------------------------------------------------------------
 
-module EasyVision.MiniApps.Objects (
+module EasyVision.GUI.Objects (
     a4Ref, asymRef, cornerRef, houseModel
 ) where
 

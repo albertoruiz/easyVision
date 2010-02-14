@@ -19,23 +19,23 @@ build-type:         Simple
 extra-source-files:
 
 library
-    Build-Depends:      base >= 3 && < 5, containers, array,
+    Build-Depends:      base >= 3 && < 5,
+                        containers, array,
                         hmatrix >= 0.8.3, vision >= 0.1,
                         imagproc >= 0.1
 
     hs-source-dirs:     lib
-    
+
     Exposed-modules:    Features
                         Features.Polyline
                         Features.Descriptors
                         Features.InterestPoints
                         Features.Matching
                         Features.ScaleSpace
-                        Features.Segments                 
-                        
-    other-modules:      
+                        Features.Segments
+
+    other-modules:
 
     ghc-prof-options:   -auto-all
 
     ghc-options:        -Wall
-

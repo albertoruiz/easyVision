@@ -16,34 +16,27 @@ tested-with:        GHC ==6.10.4, GHC ==6.12.1
 cabal-version:      >=1.2
 build-type:         Simple
 
-extra-source-files:     lib/ImagProc/GPU/SIFT/SiftGPU.h
-
-                        lib/ImagProc/C/Segments/mycv.h
+extra-source-files:     lib/ImagProc/C/Segments/mycv.h
                         lib/ImagProc/C/Segments/mycvRunnings.h
                         lib/ImagProc/C/Segments/mycvSegments.h
                         lib/ImagProc/C/Segments/mycvTablesEdgels.h
                         lib/ImagProc/C/Segments/mycvUtils.h
                         lib/ImagProc/C/Segments/mycvUtilsSegs.h
                         lib/ImagProc/C/Segments/segments.h
-                     
-extra-tmp-files:    
+
+extra-tmp-files:
 
 library
-    Build-Depends:      base >= 3 && < 5,
-                        hmatrix >= 0.8.3, imagproc >= 0.1,
-                        GLUT
+    Build-Depends:      base >= 3 && < 5, imagproc >= 0.1
 
     hs-source-dirs:     lib
 
-    Exposed-modules:    ImagProc.GPU.SIFT
-                        ImagProc.C.Segments
+    Exposed-modules:    ImagProc.C.Segments
                         ImagProc.C.Segments.Structs
 
     other-modules:
 
-    c-sources:          lib/ImagProc/GPU/SIFT/SiftGPU.cpp
-    
-                        lib/ImagProc/C/Segments/mycvRunnings.c
+    c-sources:          lib/ImagProc/C/Segments/mycvRunnings.c
                         lib/ImagProc/C/Segments/mycvSegments.c
                         lib/ImagProc/C/Segments/mycvTablesEdgels.c
                         lib/ImagProc/C/Segments/mycvUtils.c
@@ -54,8 +47,3 @@ library
     ghc-prof-options:   -auto-all
 
     ghc-options:        -Wall
-    
-    extra-libraries:    siftgpu cudart Cg CgGL GLEW IL glut
-    extra-lib-dirs:     /home/brutus/apps/CUDA
-    include-dirs:       lib/ImagProc/C/Segments
-    

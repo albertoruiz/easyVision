@@ -1,0 +1,17 @@
+cd patrec
+cabal install
+cd ../vision
+cabal install
+cd ../imagproc
+cabal install
+cd ../contrib
+cabal install
+cd ../features
+cabal install
+cd ../gui
+cabal install
+cd ../ev
+cabal install
+cd ../gpu
+cabal install
+cd ..

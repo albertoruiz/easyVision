@@ -8,7 +8,6 @@ import Graphics.UI.GLUT hiding (Size,Point)
 import Control.Monad(when)
 import Numeric.LinearAlgebra
 import ImagProc.GPU.SIFT
-import EasyVision.MiniApps.SiftParams
 import Vision
 
 main = do

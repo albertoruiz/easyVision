@@ -1,0 +1,42 @@
+Name:               ev-gui
+Version:            0.1.0
+License:            GPL
+License-file:       LICENSE
+Author:             Alberto Ruiz
+Maintainer:         Alberto Ruiz <aruiz@um.es>
+Stability:          experimental
+Homepage:           http://www.easyvision.googlepages.com/
+Synopsis:           simple gui for image processing and computer vision
+Description:
+ simple gui for image processing and and computer vision
+
+Category:           Math
+tested-with:        GHC ==6.10.4, GHC ==6.12.1
+
+cabal-version:      >=1.2
+build-type:         Simple
+
+extra-source-files:
+
+library
+    Build-Depends:      imagproc >= 0.1,
+                        vision >= 0.1,
+                        hmatrix >= 0.8.3,
+                        base >= 3 && < 5, colour >= 2.2,
+                        GLUT, containers
+
+    hs-source-dirs:     lib
+
+    Exposed-modules:    EasyVision.GUI
+                        EasyVision.GUI.Draw
+                        EasyVision.GUI.GUI
+                        EasyVision.GUI.Objects
+                        EasyVision.GUI.Parameters
+                        EasyVision.GUI.Trackball
+
+    other-modules:
+
+    ghc-prof-options:   -auto-all
+
+    ghc-options:        -Wall
+

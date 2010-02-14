@@ -1,7 +1,8 @@
 import EasyVision
 import Control.Monad((>=>))
+import ImagProc.C.Segments
 
-onlyCards sz = onlyRectangles sz (sqrt 2) rgb
+onlyCards sz = onlyRectangles segments sz (sqrt 2) rgb
                >=> virtualCamera (map channelsFromRGB . concat)
 
 main = do

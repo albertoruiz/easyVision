@@ -43,7 +43,7 @@ import System
 import System.IO.Unsafe(unsafeInterleaveIO)
 import EasyVision.GUI
 import Graphics.UI.GLUT hiding (Size,Point)
-import Control.Concurrent
+--import Control.Concurrent
 import Vision hiding (consistency)
 import Numeric.LinearAlgebra
 import ImagProc.Generic
@@ -52,7 +52,17 @@ import Data.List(tails)
 import Control.Monad(when,(>=>),forever)
 import ImagProc.Camera(mpSize)
 import Features.Segments
-import ImagProc.C.Segments
+--import ImagProc.C.Segments
+
+type SegmentExtractor = Int
+         -> Float
+         -> Int
+         -> CUChar
+         -> CUChar
+         -> Bool
+         -> ImageGray
+         -> [Segment]
+
 
 debug x = trace (show x) x
 
@@ -278,7 +288,7 @@ warper sz name = do
 
 -- A virtual camera which finds rectangles with a given aspect ratio
 
-findRectangles ratio cam = do
+findRectangles segments ratio cam = do
     op <- createParameters [ ("radius",intParam 4 0 10),
                              ("width",realParam 1.5 0 5),
                              ("median",intParam 5 3 5),
@@ -308,7 +318,7 @@ findRectangles ratio cam = do
         let
             alter pts = map (rotateList pts) [0 .. 3]
             mbf = Nothing
-            segs = filter ((>minlen).segmentLength) $ segments radius width median high low pp img
+            segs = filter ((>minlen).segmentLength) $ (segments::SegmentExtractor) radius width median high low pp img
             polis = segmentsToPolylines maxdis segs
             closed4 = [p | Closed p <- polis, length p == 4]
             a4s = filter (isA4 mbf orthotol a4) (concatMap alter closed4)
@@ -325,8 +335,8 @@ isA4 mbf tol a4 pts = ao < tol && cy < 0
 
 ----------------------------------------------------------------
 
-onlyRectangles sz ratio sel cam = do
-    fr <- findRectangles ratio cam
+onlyRectangles segments sz ratio sel cam = do
+    fr <- findRectangles segments ratio cam
     return $ do
         (orig,a4s) <- fr
         let f pts = fst . rectifyQuadrangle sz pts . sel $ orig
@@ -355,8 +365,8 @@ warp' s h im = unsafePerformIO $ do
 ------------------------------------------------------------------------
 
 -- A camera combinator which finds a given polygon and gives its pose
-findPolygons :: Maybe Double -> [[Double]] -> IO (Channels) -> IO (IO(Channels,[([Point],CameraParameters)]))
-findPolygons mbf ref cam = do
+findPolygons :: SegmentExtractor -> Maybe Double -> [[Double]] -> IO (Channels) -> IO (IO(Channels,[([Point],CameraParameters)]))
+findPolygons segments mbf ref cam = do
     op <- createParameters [ ("radius",intParam 4 0 10),
                              ("width",realParam 1.5 0 5),
                              ("median",intParam 5 3 5),
@@ -379,7 +389,7 @@ findPolygons mbf ref cam = do
         minlen <- getParam op "minlength"
         maxdis <- getParam op "maxdis"
         orthotol  <- getParam op "orthotol"
-        let oks = getPolygons' radius width median high low pp minlen maxdis orthotol mbf ref img
+        let oks = getPolygons' segments radius width median high low pp minlen maxdis orthotol mbf ref img
         return (orig,oks)
 
 pl (Point x y) = [x,y]
@@ -404,10 +414,10 @@ costHomog view world c = pnorm PNorm1 $ flatten (fromLists (map pl view) -
                                         htm  (syntheticCamera c) (fromLists $ map (++[0]) world))
 
 -- the essential function used by findPolygons. TO DO: move to a more appropriate module
-getPolygons :: Maybe Double -> [[Double]] -> ImageGray -> [([Point],CameraParameters)]
-getPolygons = getPolygons' 4 1.5 5 40 20 True 0.05 0.06 0.4
+getPolygons :: SegmentExtractor -> Maybe Double -> [[Double]] -> ImageGray -> [([Point],CameraParameters)]
+getPolygons segments = getPolygons' segments 4 1.5 5 40 20 True 0.05 0.06 0.4
 
-getPolygons' radius width median high low pp minlen maxdis orthotol mbf ref img = oks where
+getPolygons' segments radius width median high low pp minlen maxdis orthotol mbf ref img = oks where
     l = length ref
     alter pts = map (rotateList pts) [0 .. l-1]
     segs = filter ((>minlen).segmentLength) $ segments radius width median high low pp img

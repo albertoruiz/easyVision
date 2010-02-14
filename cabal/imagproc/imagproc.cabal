@@ -1,0 +1,71 @@
+Name:               imagproc
+Version:            0.1.0
+License:            LGPL
+License-file:       LICENSE
+Author:             Alberto Ruiz
+Maintainer:         Alberto Ruiz <aruiz@um.es>
+Stability:          experimental
+Homepage:           http://www.easyvision.googlepages.com/
+Synopsis:           Simple pattern recognition algorithms
+Description:
+ Image processing using Intel's IPP
+
+Category:           Math
+tested-with:        GHC ==6.10.4, GHC ==6.12.1
+
+cabal-version:      >=1.2
+build-type:         Custom
+
+extra-source-files: configure configure.hs
+                    lib/ImagProc/Ipp/adapter.hs
+                    lib/ImagProc/Ipp/Parser.hs
+                    lib/ImagProc/Ipp/functions.txt
+                    lib/ImagProc/Ipp/auxIpp.h
+                    lib/ImagProc/C/Simple/simple.h
+
+extra-tmp-files:    imagproc.buildinfo
+                    lib/ImagProc/Ipp/ptr_adapt.h
+                    lib/ImagProc/Ipp/ptr_adapt.c
+
+library
+    Build-Depends:      base >= 3 && < 5, haskell98,
+                        hmatrix >= 0.8.3, vision >= 0.1,
+                        directory, ghc-prim
+
+    hs-source-dirs:     lib
+
+    Exposed-modules:
+                        ImagProc
+                        ImagProc.Util
+                        ImagProc.Base
+                        ImagProc.Images
+                        ImagProc.ROI
+                        ImagProc.Camera
+                        ImagProc.Generic
+                        ImagProc.ImageFold
+                        ImagProc.C.Simple
+                        ImagProc.Ipp
+                        ImagProc.Ipp.Auto
+                        ImagProc.Ipp.Adapt
+                        ImagProc.Ipp.AdHoc
+                        ImagProc.Ipp.AutoGen
+                        ImagProc.Ipp.Core
+                        ImagProc.Ipp.Pure
+                        ImagProc.Ipp.Wrappers
+                        ImagProc.Ipp.Structs
+
+    other-modules:
+
+    c-sources:          lib/ImagProc/Ipp/ptr_adapt.c
+                        lib/ImagProc/Ipp/auxIpp.c
+                        lib/ImagProc/C/Simple/simple.c
+
+    ghc-prof-options:   -auto-all
+
+    ghc-options:        -Wall
+                        -fno-warn-missing-signatures
+
+    if arch(x86_64)
+        extra-libraries: guide ippcoreem64t ippiem64t ippsem64t ippccem64t ippvcem64t ippcvem64t
+    else
+        extra-libraries: guide ippcore ippi ipps ippcc ippvc ippcv

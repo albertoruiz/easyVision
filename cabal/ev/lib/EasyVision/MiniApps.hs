@@ -1,6 +1,6 @@
 -----------------------------------------------------------------------------
 {- |
-Module      :  EasyVision.MiniApss
+Module      :  EasyVision.MiniApps
 Copyright   :  (c) Alberto Ruiz 2007
 License     :  GPL-style
 
@@ -22,11 +22,11 @@ module EasyVision.MiniApps (
     regionDetector, regionTracker,
     panoramic,
     zoomer, zoomWindow,
-    module EasyVision.MiniApps.PoseTracker,
     module EasyVision.MiniApps.Corners,
     module EasyVision.MiniApps.CornerTracker,
     module EasyVision.MiniApps.SignalMonitor,
-    module EasyVision.MiniApps.Combinators
+    module EasyVision.MiniApps.Combinators,
+    module EasyVision.MiniApps.PoseTracker
 )where
 
 import Graphics.UI.GLUT as GL hiding (Size,Point,Matrix,matrix)
@@ -49,11 +49,11 @@ import Numeric.GSL.Minimization
 import EasyVision.MiniApps.Combinators
 import Util.Kalman
 import Text.Printf
-import EasyVision.MiniApps.PoseTracker
 import Data.Function(on)
 import EasyVision.MiniApps.Corners
 import EasyVision.MiniApps.CornerTracker
 import EasyVision.MiniApps.SignalMonitor
+import EasyVision.MiniApps.PoseTracker
 
 -- | reads a labeled video
 readCatalog :: String -> Size -> String -> Maybe Int -> (ImageYUV-> a) -> IO [(a,String)]

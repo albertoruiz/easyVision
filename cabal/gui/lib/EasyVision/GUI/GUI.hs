@@ -21,10 +21,10 @@ module EasyVision.GUI.GUI (
 , addWindow, evWindow, evWindow3D, EVWindow(..)
 , launch, launch', launchFreq
 , InWindow, inWin, getW, putW, getROI
-, kbdcam, kbdQuit
+, kbdcam, kbdQuit, mouseGen, modif
 -- * Drawing utilities
 , module EasyVision.GUI.Draw
-, module EasyVision.MiniApps.Objects
+, module EasyVision.GUI.Objects
 ) where
 
 import EasyVision.GUI.Draw
@@ -38,7 +38,7 @@ import Control.Monad(when)
 import System.Environment(getArgs)
 import qualified Data.Map as Map
 import Data.Map
-import EasyVision.MiniApps.Objects
+import EasyVision.GUI.Objects
 
 --import qualified Data.Map as Map
 --import Data.Map((!))
@@ -125,10 +125,18 @@ kbdcam ctrl = kbd where
 -- | keyboard callback for exiting the application with ESC or q, useful as default callback.
 -- Also, pressing i saves a screenshot of the full opengl window contents.
 kbdQuit :: KeyboardMouseCallback
-kbdQuit (Char   'q') Down _ _ = exitWith ExitSuccess
-kbdQuit (Char '\27') Down _ _ = exitWith ExitSuccess
+--kbdQuit (Char   'q') Down _ _ = leaveMainLoop
+kbdQuit (Char '\27') Down _ _ = leaveMainLoop
 kbdQuit (Char   'i') Down _ _ = captureGL >>= saveRGB Nothing
 kbdQuit _ _ _ _               = return ()
+
+mouseGen acts def st a b c d = do
+    v <- get st
+    case Prelude.lookup (a,b,c) acts of
+        Just op -> st $= op v >> postRedisplay Nothing
+        Nothing -> def a b c d
+
+modif = Modifiers {ctrl = Up, shift = Up, alt = Up }
 
 -----------------------------------------------------------------
 -- simpler interface, with state in each window
@@ -176,6 +184,8 @@ evWindow st0 name size mdisp kbd = do
                 fun st
                 swapBuffers
     displayCallback $= draw
+
+    actionOnWindowClose $= MainLoopReturns
 
     let Size h w = size
         initROI = ROI {r1=0, r2=h-1, c1=0, c2=w-1}

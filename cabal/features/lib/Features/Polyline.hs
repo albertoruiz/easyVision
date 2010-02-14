@@ -300,7 +300,15 @@ whitener (Closed ps) = t where
 
 -- | Exact Fourier series of a piecewise-linear closed curve
 fourierPL :: Polyline -> (Int -> Complex Double)
-fourierPL (Closed ps) = g where
+
+fourierPL c w | w >= 0    = p !! w
+              | otherwise = n !! (-w)
+    where
+        g = fourierPL' c
+        p = map g [0..]
+        n = map g [0,-1 .. ]
+
+fourierPL' (Closed ps) = g where
     (zs,ts,aAs,hs) = prepareFourierPL ps
     g0 = 0.5 * sum (zipWith4 gamma zs ts (tail zs) (tail ts))
         where gamma z1 t1 z2 t2 = (z2+z1)*(t2-t1)

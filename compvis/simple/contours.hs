@@ -72,7 +72,7 @@ fpl = fourierPL (Closed pru)
 
 main' = do
     print pru
-    print (fft (fromList $ map p2c pru) */ fromIntegral (length pru))
+    print (fft (fromList $ map p2c pru) / scalar (fromIntegral (length pru)))
     putStrLn "------------------------"
     print (fpl 1)
     putStrLn "------------------------"
