@@ -5,6 +5,7 @@
 module Main where
 
 import EasyVision
+import ImagProc.C.Segments
 import Graphics.UI.GLUT hiding (Matrix, Size, Point)
 import Vision
 import Control.Monad(when)

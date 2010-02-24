@@ -42,6 +42,8 @@ library
                         lib/ImagProc/C/Segments/mycvUtils.c
                         lib/ImagProc/C/Segments/mycvUtilsSegs.c
 
+    include-dirs:       lib/ImagProc/C/Segments
+
     cc-options:         -O4
 
     ghc-prof-options:   -auto-all

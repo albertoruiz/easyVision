@@ -2,6 +2,7 @@
 -- (e.g., an A4 sheet of paper)
 
 import EasyVision
+import ImagProc.C.Segments
 import Graphics.UI.GLUT hiding (Matrix, Size, Point)
 import Vision
 import Control.Monad(when)
@@ -15,7 +16,7 @@ main = do
         nm = "ratio " ++ printf "%.2f" ratio
     prepare
 
-    (cam,ctrl) <- getCam 0 sz ~> channels >>= findRectangles ratio >>= withPause
+    (cam,ctrl) <- getCam 0 sz ~> channels >>= findRectangles segments ratio >>= withPause
 
     wimg <- evWindow () "original" sz Nothing (const $ kbdcam ctrl)
     wa4  <- evWindow (ident 3) nm szA4 Nothing (mouse (kbdcam ctrl))

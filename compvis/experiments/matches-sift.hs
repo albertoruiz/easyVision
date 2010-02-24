@@ -11,7 +11,7 @@ import Text.Printf(printf)
 import Control.Parallel.Strategies
 import Vision
 import ImagProc.GPU.SIFT
-import EasyVision.MiniApps.SiftParams
+
 
 -----------------------------------------------------------
 

@@ -1,0 +1,17 @@
+cd patrec
+cabal clean
+cd ../vision
+cabal clean
+cd ../imagproc
+cabal clean
+cd ../contrib
+cabal clean
+cd ../features
+cabal clean
+cd ../gui
+cabal clean
+cd ../ev
+cabal clean
+cd ../gpu
+cabal clean
+cd ..

@@ -11,7 +11,8 @@ import qualified Data.Map as Map
 import Foreign.C.Types
 import Foreign
 import Numeric.LinearAlgebra
-import Numeric.GSL hiding (cos)
+import Numeric.GSL.Minimization
+import Numeric.GSL.Fourier
 import Vision
 import Data.List(minimumBy, maximumBy)
 import Control.Monad(guard)

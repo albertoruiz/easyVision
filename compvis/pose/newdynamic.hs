@@ -4,7 +4,6 @@
 module Main where
 
 import EasyVision as EV
-import ImagProc.C.Segments
 import System.Environment(getArgs)
 import qualified Data.Map as Map
 import Graphics.UI.GLUT hiding (Matrix, Size, Point)
@@ -56,11 +55,11 @@ initstate = ST { rfloor = cameraAtOrigin,
                  reset = True }
 
 main = do
-    sz <- findSize
-
-    (cam,ctrl) <- getCam 0 sz >>= withPause
-
     app <- prepare' initstate
+    sz <- findSize
+    let ref = a4
+    mbf <- maybeOption "--focal"
+    (cam,ctrl) <- getCam 0 sz ~> channels >>= poseTracker "" mbf ref >>= withPause
 
     o <- createParameters     [("radius",intParam 4 0 10),
                                ("width",realParam 1.5 0 5),
@@ -83,7 +82,6 @@ main = do
 
     depthFunc $= Just Less
 
-    mbf <- maybeOption "--focal"
 
     partic <- createParticle
 
@@ -93,7 +91,7 @@ main = do
 
 
 worker cam op mbf (getPos,setAccel) inWindow st = do
-
+{-
     method <- getParam op "method" :: IO Int
     radius <- getParam op "radius"
     width  <- getParam op "width"
@@ -105,6 +103,7 @@ worker cam op mbf (getPos,setAccel) inWindow st = do
     minlen <- getParam op "minlength"
     maxdis <- getParam op "maxdis"
     orthotol  <- getParam op "orthotol"
+-}
 {-
     th2' <- getParam op "umbral2" ::IO Int
     let th2 = fromIntegral th2'
@@ -114,33 +113,11 @@ worker cam op mbf (getPos,setAccel) inWindow st = do
     white <- getParam op "white"
     eps <- getParam op "eps" ::IO Double
 -}
-    orig <- cam >>= return . yuvToGray
+    --orig <- cam >>= return . yuvToGray
+    (img,pose,_,_) <- cam
 
-    let segs = filter ((>minlen).segmentLength) $ segments radius width median' high low pp orig
-        polis = segmentsToPolylines maxdis segs
-        closed4s = [p | Closed p <- polis, length p == 4]
-
-{-
-    im <-(smooth2 `times` median Mask3x3) orig
-
-    let (Size h w) = size im
-        pixarea = h*w*area`div`1000
-        rawconts = contours 100 pixarea th2 (toEnum white) im
-        proc = Closed . pixelsToPoints (size orig).douglasPeuckerClosed fracpix.fst3
-        nice p@(Closed l) = perimeter p / fromIntegral (length l) > eps
-        cs = map proc $ rawconts
-        closed4c = map (\(Closed l) -> l) $ selectPolygons 0.05 4 $ filter nice cs
--}
-        closed4 = case 1 {-method-} of
-            0 -> []
-            1 -> closed4s 
-            --2 -> closed4c
-
-        pts = mbh $ filter (isA4 mbf orthotol) (concatMap alter closed4)
-
-        tryCam pts = fmap fst $ cameraFromPlane 1E-3 500 mbf (map pl pts) a4
-
-        camObs = tryCam =<< pts
+    let camObs = Just (syntheticCamera pose)
+        orig = gray img
 
         camera = fromMaybe (rprev st) $ camObs
 
@@ -161,7 +138,7 @@ worker cam op mbf (getPos,setAccel) inWindow st = do
         -}
         setColor 1 0 0
         lineWidth $= 3
-        mapM_ (renderPrimitive LineLoop . (mapM_ vertex)) closed4
+        --mapM_ (renderPrimitive LineLoop . (mapM_ vertex)) closed4
 
         when (isJust camObs) $ do
             let p = camera
@@ -198,6 +175,7 @@ a4 = [[   0,    0]
      ,[   0, 2.97]
      ,[2.10, 2.97]
      ,[2.10,    0]]
+
 
 pl (Point x y) = [x,y]
 
@@ -282,6 +260,7 @@ field = preservingMatrix $ do
         v ((w-2*t)/2) (h/2) 0
         v ((w-2*t)/2+2*t) (h/2) 0
         v (2*t) 0 0
+
 
 mouse _ rst (Char 'b') Down _ _ = do
     modifyIORef rst $ \s -> s {ust = (ust s) {reset = True}}

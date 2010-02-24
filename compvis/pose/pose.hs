@@ -6,6 +6,7 @@
 module Main where
 
 import EasyVision
+import ImagProc.C.Segments
 import System.Environment(getArgs)
 import qualified Data.Map as Map
 import Graphics.UI.GLUT hiding (Matrix, Size, Point)

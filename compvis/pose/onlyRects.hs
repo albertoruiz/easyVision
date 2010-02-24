@@ -1,6 +1,7 @@
 -- average of all rectangles found
 
 import EasyVision
+import ImagProc.C.Segments
 import Text.Printf(printf)
 
 drift alpha = virtualCamera drifter
@@ -18,7 +19,7 @@ main = do
     cam <- getCam 0 (mpSize 20)
            >>= monitor "video" (mpSize 5) drawImage
            ~>  channels
-           >>= onlyRectangles szR ratio gray
+           >>= onlyRectangles segments szR ratio gray
            ~~> map float . concat
            >>= drift alpha
 
