@@ -22,8 +22,6 @@ module ImagProc.GPU.SIFT(
 ) where
 
 import ImagProc.Ipp.Core
-import ImagProc.Generic(clone)
-import ImagProc.Ipp.AdHoc(set8u)
 import Foreign
 import Foreign.C.Types
 import Foreign.C.String
@@ -100,9 +98,9 @@ foreign import ccall "c_siftGPU"
                -> Ptr CUChar -> Int -> Int -> Int -> Int -> Int
                -> Ptr CInt -> CInt -> Ptr Double -> IO CInt
 
-parsToStrings SIFTParams {..} = do
-    let sp = [ "-fo", show oct1
-             , "-t" , show thres
+parsToStrings SIFTParams {oct1 = o, thres = t} = do
+    let sp = [ "-fo", show o
+             , "-t" , show t
              , "-cuda"
              , "-f", "4.0"
              , "-w", "2.0"

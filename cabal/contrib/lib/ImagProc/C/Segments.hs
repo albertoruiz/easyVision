@@ -19,9 +19,9 @@ module ImagProc.C.Segments (
 )
 where
 
+import Prelude hiding (pi)
 import Foreign
-import Foreign.C.Types
-import ImagProc.Ipp
+import ImagProc.Ipp hiding (r1,c1,r2,c2)
 import GHC.Float(float2Double)
 import Control.Monad (when)
 import ImagProc.C.Segments.Structs
@@ -53,7 +53,7 @@ segments :: Int   -- ^ user radius (eg., 4)
 segments rad we medsz th tl pp (G im) = unsafePerformIO $ do
     pi <- malloc
     pn <- malloc
-    let r@(ROI r1 r2 c1 c2) = shrink (1,1) $ vroi im `intersection` (shrink (15,15) (fullroi im))
+    let r@(ROI r1 _r2 c1 _c2) = shrink (1,1) $ vroi im `intersection` (shrink (15,15) (fullroi im))
         start = plusPtr (ptr im) (r1* step im + c1)
     pr <- malloc 
     poke pr (roiSZ r)
@@ -64,15 +64,16 @@ segments rad we medsz th tl pp (G im) = unsafePerformIO $ do
     let Size h' w' = isize im
         h = fromIntegral h'
         w = fromIntegral w'
-        r = (h+1)/(w+1)
+        rat = (h+1)/(w+1)
     csegs <- peekArray (fromIntegral n-1) ps
     touchForeignPtr (fptr im)
     free ps
     free pi
     free pn
     free pr
-    return $ map (segment h w r) csegs
+    return $ map (segment h w rat) csegs
 
+segment :: Double -> Double -> Double -> CSegment -> Segment
 segment h w r (CSegment {seg_x1=x1, seg_y1=y1, seg_x2=x2, seg_y2=y2}) =
     Segment { extreme1 = Point (1-2*float2Double x1/w) (r-2*float2Double y1*r/h)
             , extreme2 = Point (1-2*float2Double x2/w) (r-2*float2Double y2*r/h)

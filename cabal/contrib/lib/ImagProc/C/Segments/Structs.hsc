@@ -27,7 +27,7 @@ import Foreign.C.Types(CInt,CUChar)
 data CSegment = CSegment {
     seg_x1, seg_y1, seg_x2, seg_y2 :: !Float,
     seg_gray_izq, seg_gray_der :: !CUChar,
-    seg_r_izq, seg_r_der, seg_g_izq, seg_g_der, seg_b_izq,b_der :: !CUChar,
+    seg_r_izq, seg_r_der, seg_g_izq, seg_g_der, seg_b_izq, seg_b_der :: !CUChar,
     seg_num_points :: !CInt,
     seg_cx, seg_cy, seg_angle, seg_length :: !Float,
     seg_desv_perp :: !Float
@@ -56,7 +56,7 @@ instance Storable CSegment where
         len <- (#peek TSegment, length) ptr
         dp <- (#peek TSegment, desv_perp) ptr
         return $ CSegment x1 y1 x2 y2 gray_izq gray_der r_izq r_der g_izq g_der b_izq b_der np cx cy ang len dp
-    poke ptr _ = error $ "TSegment poke not implemented"
+    poke _ _ = error $ "TSegment poke not implemented"
 
 {-
 typedef struct {
