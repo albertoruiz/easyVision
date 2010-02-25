@@ -26,6 +26,7 @@ module EasyVision.MiniApps (
     module EasyVision.MiniApps.CornerTracker,
     module EasyVision.MiniApps.SignalMonitor,
     module EasyVision.MiniApps.Combinators,
+    module EasyVision.MiniApps.Concurrent,
     module EasyVision.MiniApps.PoseTracker
 )where
 
@@ -47,6 +48,7 @@ import Data.IORef
 import Vision
 import Numeric.GSL.Minimization
 import EasyVision.MiniApps.Combinators
+import EasyVision.MiniApps.Concurrent
 import Util.Kalman
 import Text.Printf
 import Data.Function(on)

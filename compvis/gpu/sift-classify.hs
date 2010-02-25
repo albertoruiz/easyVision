@@ -7,7 +7,6 @@ import Data.List(minimumBy)
 import Numeric.LinearAlgebra
 import Vision
 import ImagProc.GPU.SIFT
-import EasyVision.MiniApps.SiftParams
 
 
 main = do

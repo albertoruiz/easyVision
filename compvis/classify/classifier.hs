@@ -1,4 +1,5 @@
 import EasyVision
+import ImagProc.C.Segments
 import Control.Monad(when,(>=>))
 import Graphics.UI.GLUT hiding (Size,histogram)
 import Classifier
@@ -30,7 +31,7 @@ feat2 = vector . dw . histogramN [0..10] . hsvCode 80 85 175 . hsv
 
 dw (g:b:w:cs) = b:cs -- remove white
 
-onlyCards sz = onlyRectangles sz (sqrt 2) rgb
+onlyCards sz = onlyRectangles segments sz (sqrt 2) rgb
                >=> virtualCamera (map channelsFromRGB . concat)
 
 main = do

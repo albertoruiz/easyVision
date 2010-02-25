@@ -1,4 +1,5 @@
 import EasyVision
+import ImagProc.C.Segments
 import Vision
 import Numeric.LinearAlgebra
 import System.Environment(getArgs)
