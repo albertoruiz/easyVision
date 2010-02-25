@@ -1,9 +1,0 @@
-easyVision is a system for fast prototyping of computer vision and image processing applications.
-
-It requires hmatrix, HOpenGL, MPlayer and IPP (Intel's Integrated Performance Primitives).
-
-TODO: more complete description
-
-TODO: manual.pdf in the project's web page
-
-This is a work in progress.

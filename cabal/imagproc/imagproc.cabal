@@ -22,10 +22,9 @@ extra-source-files: configure configure.hs
                     lib/ImagProc/Ipp/functions.txt
                     lib/ImagProc/Ipp/auxIpp.h
                     lib/ImagProc/C/Simple/simple.h
+                    lib/ImagProc/Ipp/ptr_adapt.h
 
 extra-tmp-files:    imagproc.buildinfo
-                    lib/ImagProc/Ipp/ptr_adapt.h
-                    lib/ImagProc/Ipp/ptr_adapt.c
 
 library
     Build-Depends:      base >= 3 && < 5, haskell98,
@@ -56,9 +55,9 @@ library
 
     other-modules:
 
-    c-sources:          lib/ImagProc/Ipp/ptr_adapt.c
-                        lib/ImagProc/Ipp/auxIpp.c
+    c-sources:          lib/ImagProc/Ipp/auxIpp.c
                         lib/ImagProc/C/Simple/simple.c
+                        lib/ImagProc/Ipp/ptr_adapt.c
 
     ghc-prof-options:   -auto-all
 
