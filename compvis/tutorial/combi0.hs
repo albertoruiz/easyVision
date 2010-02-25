@@ -1,5 +1,4 @@
 import EasyVision
-import Tutorial(camera, observe, run)
 
 grid n = map (blockImage . splitEvery n) . splitEvery (n*n) . map (resize (mpSize 4))
     where splitEvery _ [] = []

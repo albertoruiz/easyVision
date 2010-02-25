@@ -1,6 +1,5 @@
 import EasyVision
 import Data.List(foldl1',tails)
-import Tutorial(run, camera, observe, saveFrame)
 
 edges = canny (0.05,0.2) . gradients . gaussS 2 . float . gray
 

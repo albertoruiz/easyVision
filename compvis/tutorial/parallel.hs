@@ -1,9 +1,8 @@
-import EasyVision
+import EasyVision hiding (camera, observe)
 import Control.Arrow
 import Control.Monad
 import Debug.Trace
 import Numeric.LinearAlgebra hiding ((.*))
-import Tutorial(run)
 
 camera k = findSize >>= getCam k ~> channels
 observe winname f = monitor winname (mpSize 20) f

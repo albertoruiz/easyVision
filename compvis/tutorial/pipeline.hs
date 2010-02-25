@@ -1,7 +1,6 @@
 -- time ./pipeline 'video.avi -benchmark -loop 1 -frames 100' +RTS -N2
 -- time ./pipeline 'video.avi -benchmark -loop 1 -frames 100' '--levels=(1,20)' +RTS -N2
 import EasyVision
-import Tutorial(run, camera, observe)
 
 compose = foldr (.) id
 

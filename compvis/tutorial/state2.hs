@@ -1,7 +1,6 @@
 import EasyVision
 import Graphics.UI.GLUT
 import Control.Monad(when)
-import Tutorial(run, camera)
 
 main = run (camera ~> gray >>= bgDiff)
 

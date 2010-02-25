@@ -26,7 +26,7 @@ module EasyVision.MiniApps.Combinators (
   findRectangles,
   onlyRectangles,
   rectifyQuadrangle,
-  monitor,
+  monitor, observe, run,
   counter, countDown
 )where
 
@@ -245,6 +245,12 @@ counter cam = do
         return x
 
 ---------------------------------------------------------
+
+observe :: (Drawable b, Image b) => String -> (a -> b) -> IO a -> IO (IO a)
+observe winname f = monitor winname (mpSize 20) (drawImage'.f)
+
+run :: IO (IO a) -> IO ()
+run c = prepare >> (c >>= launch . (>> return ()))
 
 -----------------------------------------------------------
 

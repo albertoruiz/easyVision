@@ -1,5 +1,4 @@
 import EasyVision
-import Tutorial(process)
 
 edges = notI . canny (0.05,0.2) . gradients . gaussS 2 . float . gray
 

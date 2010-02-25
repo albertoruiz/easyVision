@@ -1,5 +1,4 @@
 import EasyVision
-import Tutorial(camera, observe, run)
 
 drift r (a:b:xs) = a : drift r ((r .* a |+| (1-r).* b):xs)
 

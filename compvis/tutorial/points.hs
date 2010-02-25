@@ -1,7 +1,6 @@
 import EasyVision
 import Graphics.UI.GLUT
 import Control.Arrow
-import Tutorial(run, camera)
 
 save filename f cam = do
     writeFile filename ""

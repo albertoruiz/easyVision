@@ -2,7 +2,6 @@ import EasyVision
 import Graphics.UI.GLUT
 import Control.Arrow
 import Control.Monad
-import Tutorial(run, camera)
 
 (.&.) = liftM2 (liftM2 (,))
 

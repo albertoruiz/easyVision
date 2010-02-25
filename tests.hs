@@ -7,7 +7,7 @@ import System.Random(randomRs,mkStdGen)
 import System.Directory(doesFileExist)
 import System(system)
 import Control.Monad(when)
-import Util.Tensor
+--import Util.Tensor
 
 import Debug.Trace
 debug x = trace (show x) x
@@ -115,6 +115,7 @@ a :~n~: b = dist a b < 10^^(-n)
 
 ---------------
 
+{-
 tTrans m = tensor [rows m, -cols m] (flatten m)
 
 eps3 = leviCivita 3
@@ -132,6 +133,7 @@ f = fundamentalFromCameras c1 c2
 tf = tFundamental ct1 ct2
 
 tensorTest = normat f |~| normat (reshape 3 (coords tf))
+-}
 
 -------------------------------------------------------------------
 
@@ -151,7 +153,7 @@ tests = TestList
     , test "stat"        statTest
     , test "ransac"      ransacTest
     , TestCase        $  classifyTest 500 500 129 -- 4000 1000 63
-    , test "tensor"      tensorTest
+--    , test "tensor"      tensorTest
     ]
 
 main = runTestTT tests

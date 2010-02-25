@@ -1,5 +1,4 @@
-import EasyVision
-import Tutorial(run, camera)
+import EasyVision hiding (observe)
 
 observe winname = monitor' winname (mpSize 20) drawImage
 

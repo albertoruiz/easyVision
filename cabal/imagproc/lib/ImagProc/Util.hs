@@ -20,6 +20,7 @@ module ImagProc.Util(
     getFlag, hasValue, maybeOption,
     findSize,
     -- * Camera selection
+    camera,
     getCam, numCams,
     getMulticam,
     readFrames,
@@ -27,6 +28,8 @@ module ImagProc.Util(
     writeFrames,
     optionalSaver,
     saveRGB,
+    process,
+    saveFrame,
     -- * Debug
     timing,
     debug,
@@ -36,7 +39,7 @@ module ImagProc.Util(
 )where
 
 import ImagProc.Ipp.Core
-import ImagProc.Generic(Channels,channels)
+import ImagProc.Generic(Channels,channels,GImg,toYUV)
 import ImagProc.Camera
 import Foreign (touchForeignPtr,castPtr)
 import ImagProc.Images
@@ -283,4 +286,29 @@ f >~> g = \x -> f x ~> g
 infixr 2 >~~>
 f >~~> g = \x -> f x ~~> g
 
+-----------------------------------------------------------
+
+-- | offline video processing. The input is the camera 0 and the output
+--   is given by --save=[saved.yuv]
+process :: (GImg pixel a) => ([Channels] -> [a]) -> IO ()
+process f = do
+    outfile <- optionString "--save" "saved.yuv"
+    xs <- readFrames 0
+    let ys = map toYUV . f . map channels $ xs
+    writeFrames outfile ys
+
+-- | creates a function which saves frames 
+saveFrame :: (b -> ImageYUV) -> IO b -> IO (IO b)
+saveFrame f cam = do
+    filename <- optionString "--save" "saved.yuv"
+    sz <- findSize
+    sv <- openYUV4Mpeg sz filename Nothing
+    return $ do
+        x <- cam
+        sv (f x)
+        return x
+
+-- | returns the camera 0
+camera :: IO (IO Channels)
+camera = findSize >>= getCam 0 ~> channels
 

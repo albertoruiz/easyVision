@@ -1,5 +1,4 @@
 import EasyVision
-import Tutorial(run, camera, observe)
 
 smooth cam = do
     o <- createParameters [("sigma",realParam 3 0 20)]

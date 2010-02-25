@@ -1,4 +1,4 @@
-import EasyVision
+import EasyVision hiding (observe,run,camera)
 import Graphics.UI.GLUT(postRedisplay)
 
 monitor' name sz fun = do
