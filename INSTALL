@@ -1,5 +1,9 @@
-Tested with IPP 5.3 on x86
---------------------------
+Tested with IPP 5.3 on Ubuntu 9.10 x86
+--------------------------------------
+
+Install ghc and cabal-install following the instructions at:
+
+http://code.haskell.org/hmatrix/ghc.html
 
 Add to .bahsrc
 
@@ -14,9 +18,11 @@ export CUDA=/path/to/CUDA
 
 In a new terminal:
 
-$ sudo apt-get install libgsl0-dev liblapack-dev freeglut3-dev
+$ sudo apt-get install libgsl0-dev liblapack-dev
+$ sudo apt-get install libghc6-glut-dev
 $ sudo apt-get install nvidia-cg-toolkit libglew1.5-dev libdevil-dev g++
 $ sudo apt-get install mplayer
+$ sudo apt-get install darcs
 
 $ cabal update
 $ cd workdir
@@ -24,3 +30,6 @@ $ darcs get http://perception.inf.um.es/~aruiz/darcs/easyVision
 $ cd easyVision/cabal
 $ sh reinstall.sh
 
+We can add to .bashrc the path to the working directory which contains cameras.def
+
+export EASYVISION=/path/to/workdir/
