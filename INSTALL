@@ -1,0 +1,26 @@
+Tested with IPP 5.3 on x86
+--------------------------
+
+Add to .bahsrc
+
+export IPP=/path/to/your/ipp/path/ia32/
+export LD_LIBRARY_PATH=$IPP/sharedlib
+
+$ wget http://perception.inf.um.es/~aruiz/CUDA.tar.gz
+
+extract it to /path/to/CUDA and add to .bashrc
+
+export CUDA=/path/to/CUDA
+
+In a new terminal:
+
+$ sudo apt-get install libgsl0-dev liblapack-dev freeglut3-dev
+$ sudo apt-get install nvidia-cg-toolkit libglew1.5-dev libdevil-dev g++
+$ sudo apt-get install mplayer
+
+$ cabal update
+$ cd workdir
+$ darcs get http://perception.inf.um.es/~aruiz/darcs/easyVision
+$ cd easyVision/cabal
+$ sh reinstall.sh
+
