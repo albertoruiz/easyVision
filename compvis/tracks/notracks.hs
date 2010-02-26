@@ -7,10 +7,7 @@ import Vision
 import Numeric.LinearAlgebra hiding ((.*))
 import Graphics.UI.GLUT hiding (Size,Point)
 import Debug.Trace
-import Text.Printf
 
-camera = findSize >>= getCam 0 ~> channels
-run c = prepare >> (c >>= launch . (>> return ()))
 f .***. g = uncurry zip . (f *** g) . unzip
 f .&&&. g = virtualCamera (map (id &&& id)) >=> virtualCamera (f .***. g)
 history n = map (take n) . tails
@@ -39,6 +36,15 @@ main = do
         >>= id .&&&. warpAll sc
         >>= zoomWindow "zoom" 600 (toGray.snd)
 
+        ~>  compDesp . fst
+--        >>= monitor "desp" (mpSize 5) shDesp
+        ~> fst
+
+        ~~> markKeyFrames dkey
+        >>= watchRight
+--        ~~> groupkey
+--        >>= monitor "test" (mpSize 5) (sh . findClosest)
+
 
 -----------------------------------------------------
 
@@ -53,8 +59,7 @@ estimateIt mxd (h,_) p1s p2s = (hnew,(g1,g2)) where
     (g1,g2',_,_,_) = basicMatches' (p1s, predicted) dist mxd
     g2 = map snd g2'
     hnew = if length g1 > 4
-                then --fst $ estimateHomographyRansac 0.4 0.005 (map pl g1) (map pl g2)
-                     estimateHomographyRaw (map pl g1) (map pl g2)
+                then estimateHomographyRaw (map pl g1) (map pl g2)
                 else ident 3
 
 ----------------------------------------------------
@@ -118,9 +123,45 @@ markKeyFrames d (x:xs) = Right x : skip d xs where
     skip d (a:as) | close d ih0 a = Left a : skip d as
                   | otherwise    = markKeyFrames d (a:as)
 
-mean l = sum l / fromIntegral (length l)
-
 ----------------------------------------------------
+
+drift alpha = virtualCamera drifter
+    where drifter (a:b:rest) = a : drifter ((alpha .* a |+| (1-alpha).* b):rest)
+
+-----------------------------------------------------
+
+watch = do
+    w <- evWindow (0,[]) "keyframes" (Size 600 600) (Just disp) (mouse kbdQuit)
+    return $ \x -> do
+        (k,l) <- getW w
+        putW w (k, x:l)
+        postRedisplay (Just $ evW w)
+  where
+    disp st = do
+        (k,l) <- get st
+        when (not $ null l) $ drawImage' (fst3 $ l!!k)
+        windowTitle $= ("keyframe #"++ show (length l - k))
+--        when (not $ null l) $ drawImage $ last $ warpAll 0.5 l
+
+    mouse _ st (MouseButton WheelUp) Down _ _ = do
+        st $~ \(k,l) -> (min (length l-1) (k+1),l)
+        postRedisplay Nothing
+    mouse _ st (MouseButton WheelDown) Down _ _ = do
+        st $~ \(k,l)-> (max 0 . subtract 1 $ k, l)
+        postRedisplay Nothing
+    mouse def _ a b c d = def a b c d
+
+
+watchRight cam = do
+    add <- watch
+    return $ do
+        x <- cam
+        case x of
+            Right y -> add y
+            _       -> return ()
+        return x
+
+
 
 shBasicLinks = monitor "basicLinks" (mpSize 20) sh where
     sh [(im0, pts0, _),(im1,pts1,(h1,(g1,g2)))] = do
@@ -136,9 +177,8 @@ shBasicLinks = monitor "basicLinks" (mpSize 20) sh where
         pointSize $= 1; setColor 0 0 0
         renderPrimitive Points $ mapM_ vertex (htp h1 g2)
 
-        setColor 1 0.5 0.5
-        text2D 0.9 0.7 $ printf "%.1f" $ 320 * mean (zipWith distPoints g1 (htp h1 g2))
-        text2D 0.9 0.6 $ printf "%.1f" $ 320 * mean (zipWith distPoints g1 g2)
+--        print $ last $ zipWith distPoints g1 g2
+
 
 --------------------------------------------------------
 

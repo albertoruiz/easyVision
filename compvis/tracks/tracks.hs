@@ -6,8 +6,7 @@ import Vision
 import Numeric.LinearAlgebra hiding ((.*))
 import qualified Data.Map as M
 
-camera = findSize >>= getCam 0 ~> channels
-run c = prepare >> (c >>= launch . (>> return ()))
+
 f .***. g = uncurry zip . (f *** g) . unzip
 
 main = do

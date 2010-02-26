@@ -33,6 +33,7 @@ import ImagProc.Ipp(Size(..),ippSetNumThreads,ROI(..),saveRGB)
 import Graphics.UI.GLUT hiding (RGB, Matrix, Size)
 import qualified Graphics.UI.GLUT as GL
 import Data.IORef
+import System(system)
 import System.Exit
 import Control.Monad(when)
 import System.Environment(getArgs)
@@ -125,7 +126,7 @@ kbdcam ctrl = kbd where
 -- | keyboard callback for exiting the application with ESC or q, useful as default callback.
 -- Also, pressing i saves a screenshot of the full opengl window contents.
 kbdQuit :: KeyboardMouseCallback
---kbdQuit (Char   'q') Down _ _ = leaveMainLoop
+kbdQuit (Char '\27') Down Modifiers {shift=Down} _ = leaveMainLoop >> system "killall mplayer" >> return ()
 kbdQuit (Char '\27') Down _ _ = leaveMainLoop
 kbdQuit (Char   'i') Down _ _ = captureGL >>= saveRGB Nothing
 kbdQuit _ _ _ _               = return ()

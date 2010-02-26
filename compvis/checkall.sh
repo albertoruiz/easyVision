@@ -23,6 +23,9 @@ make ghci
 cd ../synth
 make ghci
 
+cd ../tracks
+make ghci
+
 cd ../tutorial
 make ghci
 
