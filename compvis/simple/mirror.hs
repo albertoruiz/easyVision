@@ -1,4 +1,4 @@
-import EasyVision
+import EasyVision hiding (run,camera,observe)
 
 camera = findSize >>= getCam 0 ~> (gray . channels)
 

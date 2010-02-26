@@ -107,7 +107,7 @@ createExamples commonproc candirois feat (img,roi) = ps ++ ns
 shErr d c = putStrLn $ (printf "error %.3f" $ 100 * errorRate d c) ++ " %"
 shConf d c = putStrLn $ format " " (show.round) (confusion d c)
 
-unitary v = v */ pnorm PNorm2 v
+unitary v = v / scalar (pnorm PNorm2 v)
 
 overROI (feat, sel) (r, obj) = feat (modifyROI (const r) (sel obj))
 

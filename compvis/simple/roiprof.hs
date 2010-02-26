@@ -4,13 +4,11 @@ import Data.List
 import Data.Function
 import Control.Arrow
 import Vision
-import Numeric.LinearAlgebra 
+import Numeric.LinearAlgebra
 import GHC.Float
 import ImagProc.Ipp.Core
-import Graphics.UI.GLUT hiding (Size)
+import Graphics.UI.GLUT hiding (Size,scale)
 
-camera = findSize >>= getCam 0 ~> channels
-run c = prepare >> (c >>= launch . (>> return ()))
 f .***. g = uncurry zip . (f *** g) . unzip
 
 -- rois = [ ROI 100 380 100 540]
@@ -88,8 +86,8 @@ pruprof roi img = (act,res) where
 drawProfile roi (v,h) = do
     let ROI r1 r2 c1 c2 = roi
     drawROI roi
-    drawVectorH (Pixel r2 (c1+1)) (fromIntegral (c2-c1)/255/fromIntegral (dim v) .* v)
-    drawVectorV (Pixel (r1+1) c1) (fromIntegral (r2-r1)/255/fromIntegral (dim h) .* h)
+    drawVectorH (Pixel r2 (c1+1)) (fromIntegral (c2-c1)/255/fromIntegral (dim v) `scale` v)
+    drawVectorV (Pixel (r1+1) c1) (fromIntegral (r2-r1)/255/fromIntegral (dim h) `scale` h)
 
 
 drawAlig (roi,vp,hp, v,h) = do

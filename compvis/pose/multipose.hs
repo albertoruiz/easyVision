@@ -3,9 +3,9 @@
 
 import EasyVision hiding ((.*))
 import qualified EasyVision as EV
-import Graphics.UI.GLUT hiding (Matrix, Size, Point,set,triangulate)
+import Graphics.UI.GLUT hiding (Matrix, Size, Point,set,triangulate,scale)
 import Vision
-import Numeric.LinearAlgebra
+import Numeric.LinearAlgebra hiding((.*),(<|>))
 import Control.Monad(when)
 import Util.Quaternion
 import Data.List((\\),sortBy,unzip4)
@@ -153,12 +153,12 @@ betterRep = withQuat . factorizeCamera
     where withQuat (k,r,c) = (k@@>(0,0), toQuat r, c)
           toQuat = uncurry axisToQuat . rotToAxis
 
-asMatrix (f,q,c) = (kgen f) <> (r <|> -r <> c)
+asMatrix (f,q,c) = (kgen f) <> (r & asColumn (-r <> c))
     where r = getRotation $ q
 
 weighted alpha (f1,r1,c1) (f2,r2,c2) = (alpha*f1+(1-alpha)*f2,
                                         slerp r2 r1 alpha,
-                                        alpha.*c1+(1-alpha).*c2)
+                                        alpha`scale`c1+(1-alpha)`scale`c2)
 
 ------------------------------------------------
 
@@ -183,6 +183,8 @@ distMat pol = fromList [ dis p1 p2 | p1 <- pol, p2 <- pol]
 dis l1 l2 = (*cm).  sqrt . sum . map (^2) $ zipWith (-) l1 l2
 
 cm = 10
+
+a & b = fromBlocks[[a,b]]
 
 -------------------------------------------------
 

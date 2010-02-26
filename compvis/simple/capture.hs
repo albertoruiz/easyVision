@@ -5,10 +5,6 @@ import Control.Monad
 import Vision
 import Numeric.LinearAlgebra hiding ((.*))
 
-camera = findSize >>= getCam 0 ~> channels
-observe winname f = monitor winname (mpSize 20) (drawImage'.f)
-run c = prepare >> (c >>= launch . (>> return ()))
-
 main = run $ camera .&. userParam
       ---     >>= observe "Video" (rgb.fst)
            ~>  g &&& snd
