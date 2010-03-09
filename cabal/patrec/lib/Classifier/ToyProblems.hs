@@ -26,10 +26,10 @@ module Classifier.ToyProblems (
 ) where
 
 import Numeric.LinearAlgebra
-import Data.List(intersperse)
+import Data.List (intersperse)
 --import qualified Data.Map as Map
 
-import System
+import System.Process (system)
 import Classifier.Base
 import Util.Stat
 

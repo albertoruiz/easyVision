@@ -20,8 +20,8 @@ module Classifier.SVM (
 import Numeric.LinearAlgebra
 import Classifier.Base
 import Classifier.Kernel(gaussK)
-import System
-import Foreign(unsafePerformIO)
+import System.Process (system)
+import System.IO.Unsafe (unsafePerformIO)
 
 -- | Creates a support vector machine with gaussian kernel of given width.
 svmLight :: Double -> Dicotomizer
