@@ -33,7 +33,7 @@ import ImagProc.Ipp(Size(..),ippSetNumThreads,ROI(..),saveRGB)
 import Graphics.UI.GLUT hiding (RGB, Matrix, Size)
 import qualified Graphics.UI.GLUT as GL
 import Data.IORef
-import System(system)
+import System.Process(system)
 import System.Exit
 import Control.Monad(when)
 import System.Environment(getArgs)

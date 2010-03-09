@@ -19,7 +19,7 @@ build-type:         Simple
 extra-source-files:
 
 library
-    Build-Depends:      base >= 3 && < 5, random,
+    Build-Depends:      base >= 3 && < 5, random, directory,
                         hmatrix >= 0.8.3, patrec >= 0.1,
                         hTensor >= 0.5
 

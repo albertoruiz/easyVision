@@ -28,7 +28,8 @@ import Foreign.C.String(newCString)
 import Data.IORef
 import System.IO
 import System.Environment
-import System
+import System.Process
+import System.Exit
 import Data.List(isInfixOf)
 import System.Directory(doesFileExist)
 import Control.Monad(when)

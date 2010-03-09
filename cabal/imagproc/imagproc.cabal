@@ -27,7 +27,7 @@ extra-source-files: configure configure.hs
 extra-tmp-files:    imagproc.buildinfo
 
 library
-    Build-Depends:      base >= 3 && < 5, haskell98,
+    Build-Depends:      base >= 3 && < 5, directory, process,
                         hmatrix >= 0.8.3, vision >= 0.1,
                         directory, ghc-prim
 

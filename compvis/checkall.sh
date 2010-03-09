@@ -5,9 +5,6 @@ make ghci
 cd ../contours
 make ghci
 
-cd ../gpu
-make ghci
-
 cd ../pano
 make ghci
 
@@ -27,6 +24,9 @@ cd ../tracks
 make ghci
 
 cd ../tutorial
+make ghci
+
+cd ../gpu
 make ghci
 
 # cd ../experiments

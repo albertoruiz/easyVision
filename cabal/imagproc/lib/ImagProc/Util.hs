@@ -45,10 +45,10 @@ import Foreign (touchForeignPtr,castPtr)
 import ImagProc.Images
 import System.IO
 import System.IO.Unsafe(unsafeInterleaveIO)
-import System
+import System.Process
 import Data.List(isPrefixOf,foldl',tails,findIndex,isInfixOf)
 import Data.Maybe
-import Directory(getDirectoryContents,doesFileExist)
+import System.Directory(getDirectoryContents,doesFileExist)
 import System.CPUTime
 import Text.Printf
 import Debug.Trace
@@ -200,7 +200,8 @@ numCams = (length . cleanOpts) `fmap` getArgs
 getAliases = do
     env <- getEnvironment
     let ev = lookup "EASYVISION" env
-        Just path = ev
+        Just path' = ev
+        path = path' ++ "/"
     okHere <- doesFileExist "cameras.def"
     okThere <- case ev of
         Nothing   -> return False

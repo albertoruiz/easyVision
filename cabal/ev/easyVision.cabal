@@ -23,8 +23,8 @@ library
                         features >= 0.1, imagproc >= 0.1,
                         vision >= 0.1, hmatrix >= 0.8.3,
                         patrec >= 0.1, ev-gui >= 0.1,
-                        GLUT, containers,
-                        haskell98, parallel <2
+                        GLUT, containers, process,
+                        parallel <2
 
     hs-source-dirs:     lib
 

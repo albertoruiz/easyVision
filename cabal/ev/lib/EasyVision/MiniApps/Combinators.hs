@@ -39,7 +39,8 @@ import Foreign.C.Types (CChar,CUChar)
 import Foreign.C.String(newCString)
 import Data.IORef
 import System.IO
-import System
+import System.Process
+import System.Exit
 import System.IO.Unsafe(unsafeInterleaveIO)
 import EasyVision.GUI
 import Graphics.UI.GLUT hiding (Size,Point)

@@ -390,3 +390,87 @@ The end.
 >    newcams = subindex "c" $ zipWith (*) iks cs
 >    newp2d  = subindex "c" $ zipWith (*) iks ps
 
+> ------------------------------------------------------------------------
+
+>
+> generateFiles filename p = do
+>     let fmt = tail . snd . break (=='\n') . dispf 5
+>         matcams = fromBlocks . map return . map asMatrix . flip parts "c" . cam $ p
+>         matviews = fromBlocks . return . map asMatrix . flip parts "c" . inhomogT "v" .  p2d $ p
+>         matpts = asMatrix . inhomogT "x" .  p3d $ p
+>         matkal = fromBlocks . map (return . asMatrix) . flip parts "c" . kal . cam $ p
+>     writeFile (filename++".cam.txt") (fmt matcams)
+>     writeFile (filename++".img.txt") (fmt matviews)
+>     writeFile (filename++".p3d.txt") (fmt matpts)
+>     writeFile (filename++".kal.txt") (fmt matkal)
+
+> vprobFromFiles filename = do
+>     matcams  <- loadMatrix (filename++".cam.txt")
+>     matviews <- loadMatrix (filename++".img.txt")
+>     matpts   <- loadMatrix (filename++".p3d.txt")
+>  -- matkal   <- loadMatrix (filename++".kal.txt")
+>     let cs = subindex "c" . map ((!>"1v 2x") . fromMatrix Contra Co . fromRows) . splitEvery 3 . toRows $ matcams
+>      -- ks = subindex "c" . map ((!>"1v 2w") . fromMatrix Contra Co . fromRows) . splitEvery 3 . toRows $ matkal
+>         vw = homogT "v" . subindex "c" . map ((!>"1n 2v") . fromMatrix Co Contra . fromColumns) . splitEvery 2 . toColumns $ matviews
+>         ps = homogT "x" . (!>"1n 2x") . fromMatrix Contra Co $ matpts
+>     return VProb { cam = cs, p2d = vw, p3d = ps, l2d = undefined, l3d = undefined }
+
+> -----------------------------------------------------------------------
+
+
+
+> multiView k param seed vs =
+>    VProb { cam = allcams, p3d = allp3d, p2d = vs,
+>            l3d= undefined, l2d= undefined } where
+>    vs2 = (take k `onIndex` "c") vs
+>    views = renameParts "c" vs2 "v" ""
+>    dat = outers views
+>
+>    sol = extractCams param seed dat
+>
+>    cs = subindex "c" (map (!"vx") sol)
+>    ps = solveP cs vs2 "v"
+>    allcams = solveP ps vs "v"
+>    allp3d  = solveP allcams vs "v"
+    
+
+> extractCams param seed dat | order dat -1 == 2 = [f1,f2]
+>                            | order dat -1 == 3 = [t1,t2,t3]
+>                            | order dat -1 == 4 = [q1,q2,q3,q4]
+>                            | otherwise = error $ "extractCams requires 2, 3, or 4 views"
+>    where solve = mlSolve param [eps4!"pqrs"] (init4Cams seed)
+>          fun = solveH dat "12"
+>          ([f1,_,f2,_],errf) = solve (fun !>"1y 2x" * contrav eps3!"12y" * contrav eps3!"34x")
+>          tri = solveH (dat * eps3!"1pq" * eps3!"2rs") "pr3" !> "p1 r2 3x"
+>          ([t1,t2,t3,_],errt) = solve (tri* contrav eps3!"34x")
+>          qua = solveH (dat * eps3!"1ab" * eps3!"2fg" * eps3!"3pq" * eps3!"4uv") "afpu"
+>          ([q1,q2,q3,q4],errq) = solve (qua!"1234")
+
+> init4Cams seed = [ic1!"1p",ic2!"2q",ic3!"3r",ic4!"4s"]
+>     where [ic1,ic2,ic3,ic4] = parts (randomTensor seed [-4,3,-4]) "1"
+
+
+> splitEvery _ [] = []
+> splitEvery k l = take k l : splitEvery k (drop k l)
+
+
+> randomTensor seed dims = listTensor dims cs where
+>    g = mkStdGen seed
+>    cs = randomRs (-1,1) g
+
+> sixPoints n r p = do
+>   -- kkpro <- calibrate <$> randomProb 6 2 0
+>   let opt@[optP,optQ] = truePars p --bestParams r 10 kkpro
+>       xs = toList (linspace n (-r,r))
+>       surf = fromLists [[essenCost.paramEssen p $ [optP+a,optQ+b] | a <- xs] | b <- xs]
+>   print $ essenCost.paramEssen p $ [optP,optQ]
+>   imshow (-surf)
+>   print (vectorMin (flatten surf))
+>   print (vectorMax (flatten surf))
+>   print (maximum (map abs opt))
+
+> test6 = do
+>   p <- calibrate <$> randomProb 6 2 0
+>   sixPoints 30 5 p
+>   sixPoints 30 1 p
+

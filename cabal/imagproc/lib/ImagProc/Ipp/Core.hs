@@ -54,8 +54,8 @@ import Foreign.C.String(peekCString)
 import Foreign.C.Types
 import Foreign.Marshal.Utils(copyBytes)
 import System.IO
-import System
-import Directory(getDirectoryContents,doesFileExist)
+import System.Process
+import System.Directory(getDirectoryContents,doesFileExist)
 import Data.List(isPrefixOf)
 
 import GHC.Base

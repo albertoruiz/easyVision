@@ -30,6 +30,7 @@ $ darcs get http://perception.inf.um.es/~aruiz/darcs/easyVision
 $ cd easyVision/cabal
 $ sh reinstall.sh
 
-We can add to .bashrc the path to the working directory which contains cameras.def
+Add to .bashrc the path to the working directory which contains
+the system-wide default mplayer command shortcuts "cameras.def"
 
 export EASYVISION=/path/to/workdir/
