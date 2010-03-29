@@ -29,10 +29,10 @@ module Vision.Geometry
 , htc
 , htm
 -- * Typical transformations
-, rot1
-, rot2
-, rot3
-, desp
+, rot1, rot1d
+, rot2, rot2d
+, rot3, rot3d
+, desp, desp34
 , scaling
 , mS
 , mA
@@ -82,6 +82,31 @@ rot3 a = matrix [[ c,s,0],
     where c = cos a
           s = sin a
 
+-- | derivative of 3x3 rotation around the X-axis
+rot1d :: Double -> Matrix Double
+rot1d a = (3><3) [0, 0,0,
+                  0, c,s,
+                  0,-s,c]
+    where c = -sin a
+          s =  cos a
+
+-- | derivative of 3x3 rotation around the Y-axis
+rot2d :: Double -> Matrix Double
+rot2d a = (3><3) [ c,0,s,
+                   0,0,0,
+                  -s,0,c]
+    where c = -sin a
+          s =  cos a
+
+-- | derivative of 3x3 rotation around the Z-axis
+rot3d :: Double -> Matrix Double
+rot3d a = (3><3) [ c,s,0,
+                  -s,c,0,
+                   0,0,0]
+    where c = -sin a
+          s =  cos a
+
+
 -- | Homogeneous 3x3 matrix of a 2D displacement
 desp :: (Double,Double) -- ^ (dx,dy)
       -> Matrix Double
@@ -98,6 +123,15 @@ scaling :: Double -> Matrix Double
 scaling s = matrix [[s,0,0],
                     [0,s,0],
                     [0,0,1]]
+
+-- | Translation and projection
+-- @ 1 0 0 -x
+-- 0 1 0 -y
+-- 0 0 1 -z@
+desp34 :: Double -> Double -> Double -> Matrix Double
+desp34 x y z = (3><4) [1,0,0,-x,
+                       0,1,0,-y,
+                       0,0,1,-z]
 
 -- |@  0 1 0
 -- -1 0 0

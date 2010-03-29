@@ -196,8 +196,9 @@ drawCameras tit ms pts = do
       f c = (c,"notitle 'c1' with lines 1")
 
   gnuplotpdf tit
-         (  "set size square; set view 72,200; "
+         (  "set view 72,200; "
          ++ "set xlabel '$x$'; set ylabel '$y$'; set zlabel '$z$';"
+         ++ "set size ratio 1;"
          ++ "set notics;"
          ++ "splot ")
          (cmd ++ [(pts,"notitle 'v' with points 3")])

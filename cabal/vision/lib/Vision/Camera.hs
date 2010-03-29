@@ -36,6 +36,9 @@ module Vision.Camera
 , estimateAbsoluteDualConic
 , focalFromCircularPoint
 , circularConsistency
+, cameraModelOrigin
+, projectionAt, projectionAtF
+, projectionDerivAt, projectionDerivAtF
 ) where
 
 import Numeric.LinearAlgebra hiding (Matrix, Vector)
@@ -405,3 +408,75 @@ circularConsistency (x,y) = innerLines n0 h where
 innerLines l m = (l.*.m)/ sqrt (l.*.l) / sqrt(m.*.m)
     where a.*.b = a <> mS <.> b
 
+--------------------------------------------------------------------------------
+-- camera parameterization and Jacobian
+
+cameraModelOrigin (Just k0) m = (k0,r0,cx0,cy0,cz0) where
+    (_,r0,c) = factorizeCamera m
+    [cx0,cy0,cz0] = toList c
+
+cameraModelOrigin Nothing m = (k0,r0,cx0,cy0,cz0) where
+    (k,r0,c) = factorizeCamera m
+    [f1,f2,_] = toList (takeDiag k)
+    k0 = kgen ((f1+f2)/2)
+    [cx0,cy0,cz0] = toList c
+
+projectionAt m f = \[p,t,r,cx,cy,cz] -> k0 <> rot1 p  <> rot2 t  <> rot3 r  <> r0 <> desp34 (cx0+cx) (cy0+cy) (cz0+cz)
+    where (k0,r0,cx0,cy0,cz0) = cameraModelOrigin f m
+
+projectionAtF m f = \[g,p,t,r,cx,cy,cz] -> kgen g <> k0 <> rot1 p  <> rot2 t  <> rot3 r  <> r0 <> desp34 (cx0+cx) (cy0+cy) (cz0+cz)
+    where (k0,r0,cx0,cy0,cz0) = cameraModelOrigin f m
+
+projectionDerivAt k0 r0 cx0 cy0 cz0 p t r cx cy cz x y z = ms where
+    r1 = rot1 p
+    r2 = rot2 t
+    r3 = rot3 r
+    a = k0 <> r1
+    b =  a <> r2
+    c =  b <> r3
+    d =  c <> r0
+    e = vector [x-cx0-cx, y-cy0-cy, z-cz0-cz]
+    m0 = d <> e
+    m4 = d <> vector [-1,0,0]
+    m5 = d <> vector [0,-1,0]
+    m6 = d <> vector [0,0,-1]
+    m7 = -m4
+    m8 = -m5
+    m9 = -m6
+    f = r0 <> e
+    m3 = b <> rot3d r <> f
+    g = r3 <> f
+    m2 = a <> rot2d t <> g
+    m1 = k0 <> rot1d p <> r2 <> g
+    m0l = toList m0
+    ms = iH m0l : map (derIH m0l . toList) [m1,m2,m3,m4,m5,m6,m7,m8,m9]
+
+projectionDerivAtF k0 r0 cx0 cy0 cz0 f' p t r cx cy cz x y z = ms where
+    r1 = rot1 p
+    r2 = rot2 t
+    r3 = rot3 r
+    u = kgen f' <> k0
+    a =  u <> r1
+    b =  a <> r2
+    c =  b <> r3
+    d =  c <> r0
+    e = vector [x-cx0-cx, y-cy0-cy, z-cz0-cz]
+    m0 = d <> e
+    m4 = d <> vector [-1,0,0]
+    m5 = d <> vector [0,-1,0]
+    m6 = d <> vector [0,0,-1]
+    m7 = -m4
+    m8 = -m5
+    m9 = -m6
+    f = r0 <> e
+    m3 = b <> rot3d r <> f
+    g = r3 <> f
+    m2 = a <> rot2d t <> g
+    h = r2 <> g
+    m1 = u <> rot1d p <> h
+    mf = diagl[1,1,0] <> k0 <> r1 <> h
+    m0l = toList m0
+    ms = iH m0l : map (derIH m0l . toList) [mf,m1,m2,m3,m4,m5,m6,m7,m8,m9]
+
+derIH [x,y,w] [xd,yd,wd] = [ (xd*w-x*wd)/w^2 , (yd*w-y*wd)/w^2 ]
+iH [x,y,w] = [x/w,y/w]
