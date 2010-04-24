@@ -1,3 +1,5 @@
+{-# LANGUAGE ViewPatterns #-}
+
 -----------------------------------------------------------------------------
 {- |
 Module      :  Vision.Camera
@@ -39,6 +41,10 @@ module Vision.Camera
 , cameraModelOrigin
 , projectionAt, projectionAtF
 , projectionDerivAt, projectionDerivAtF
+, epipolarMiniJac
+, projectionDerivAt'
+, auxCamJac, auxCamJacK
+, projectionAt'', projectionAt'
 ) where
 
 import Numeric.LinearAlgebra hiding (Matrix, Vector)
@@ -48,7 +54,7 @@ import Vision.Geometry
 import Vision.Estimation(homogSystem, withNormalization, estimateHomography)
 import Util.Stat
 import Data.List(transpose,nub,maximumBy,genericLength,elemIndex, genericTake, sort)
-import System.Random 
+import System.Random
 import Debug.Trace(trace)
 
 debug' f x = trace (show $ f x) x
@@ -480,3 +486,100 @@ projectionDerivAtF k0 r0 cx0 cy0 cz0 f' p t r cx cy cz x y z = ms where
 
 derIH [x,y,w] [xd,yd,wd] = [ (xd*w-x*wd)/w^2 , (yd*w-y*wd)/w^2 ]
 iH [x,y,w] = [x/w,y/w]
+
+---------------------------------------------------------------
+
+projectionAt'' (_,r0,cx0,cy0,cz0) = f where
+    f (toList -> [p,t,r,cx,cy,cz]) = rot1 p  <> rot2 t  <> rot3 r  <> r0 <> desp34 (cx0+cx) (cy0+cy) (cz0+cz)
+
+
+projectionAt' (k0,r0,cx0,cy0,cz0) = f where
+    f (toList -> [p,t,r,cx,cy,cz]) = k0 <> rot1 p  <> rot2 t  <> rot3 r  <> r0 <> desp34 (cx0+cx) (cy0+cy) (cz0+cz)
+
+
+auxCamJacK (k0,r0,cx0,cy0,cz0) (toList -> [p,t,r,cx,cy,cz]) = (rt,rt1,rt2,rt3,m4,m5,m6,cx+cx0,cy+cy0,cz+cz0) where
+    r1 = rot1 p
+    r2 = rot2 t
+    r3 = rot3 r
+    a = k0 <> r1
+    b =  a <> r2
+    c =  b <> r3
+    d =  c <> r0
+    rt = d
+    [m4,m5,m6] = toColumns (-d)
+    rt3 = b <> rot3d r <> r0
+    g = r3 <> r0
+    rt2 = a <> rot2d t <> g
+    rt1 = k0 <> rot1d p <> r2 <> g
+
+
+auxCamJac (_,r0,cx0,cy0,cz0) (toList -> [p,t,r,cx,cy,cz]) = (rt,rt1,rt2,rt3,m4,m5,m6,cx+cx0,cy+cy0,cz+cz0) where
+    r1 = rot1 p
+    r2 = rot2 t
+    r3 = rot3 r
+    b =  r1 <> r2
+    c =  b <> r3
+    d =  c <> r0
+    rt = d
+    [m4,m5,m6] = toColumns (-d)
+    rt3 = b <> rot3d r <> r0
+    g = r3 <> r0
+    rt2 = r1 <> rot2d t <> g
+    rt1 = rot1d p <> r2 <> g
+
+
+projectionDerivAt' (rt,rt1,rt2,rt3,m4,m5,m6,cx,cy,cz) (toList -> [x',y',z']) = result where
+    e = fromList [x'-cx, y'-cy, z'-cz]
+    m0 = rt <> e
+    m1 = rt1 <> e
+    m2 = rt2 <> e
+    m3 = rt3 <> e
+    m7 = -m4
+    m8 = -m5
+    m9 = -m6
+    [x,y,w] = toList m0
+    d1 = recip w
+    d2 = -x/w^2
+    d3 = -y/w^2
+    deriv = (2><3) [d1, 0,  d2,
+                    0 , d1, d3 ]
+    result = (fromList [x/w,y/w],
+              deriv <> fromColumns [m1,m2,m3,m4,m5,m6],
+              deriv <> fromColumns [m7,m8,m9])
+
+
+epipolarMiniJac (r,r1,r2,r3,_,_,_,cx,cy,cz) (q,q1,q2,q3,_,_,_,dx,dy,dz) = result where
+    c21 = fromList [dx-cx,dy-cy,dz-cz]
+    t = unitary c21
+    t1 = derNor c21 (fromList [1,0,0])
+    t2 = derNor c21 (fromList [0,1,0])
+    t3 = derNor c21 (fromList [0,0,1])
+
+    a = q <> asMat t
+
+    f = a <> trans r
+
+    f1 = a <> trans r1
+    f2 = a <> trans r2
+    f3 = a <> trans r3
+
+    f10 = q <> asMat t1 <> trans r
+    f11 = q <> asMat t2 <> trans r
+    f12 = q <> asMat t3 <> trans r
+    f4 = -f10
+    f5 = -f11
+    f6 = -f12
+
+    b = asMat t <> trans r
+
+    f7 = q1 <> b
+    f8 = q2 <> b
+    f9 = q3 <> b
+
+    g = fromColumns . map (flatten . trans)
+
+    result =  (g [f], g [f1,f2,f3,f4,f5,f6], g [f7,f8,f9,f10,f11,f12])
+
+derNor v w = scale nv w + scale (-(w<.>v)*vv*nv) v
+    where vv = recip (v <.> v)
+          nv = sqrt vv

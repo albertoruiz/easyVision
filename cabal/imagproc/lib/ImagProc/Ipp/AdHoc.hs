@@ -712,3 +712,25 @@ remap32f (F xmap, F ymap, buffer) mode (F im) = unsafePerformIO $ do
     with rect $ \prect ->
         (ippiRemap_32f_C1R (castPtr $ ptr im) (roiSZ $ vroi im) (step im) prect (castPtr $ ptr xmap) (step xmap) (castPtr $ ptr ymap) (step ymap) // dst r (vroi r)) (interCode mode) // checkIPP "ippiRemap_8u_C1R" [im,xmap,ymap]
     return (F r)
+
+
+---------------------------------------------------------------
+
+-- | Extracts the data in a I32f image into a list of lists.
+toListsF :: ImageFloat -> [[Float]]
+toListsF im = unsafePerformIO $ do
+    let sz = roiSize (theROI im)
+    r <- image sz
+    copyROI32f im (theROI im) r (theROI r)
+    getData32f r
+
+-- | Creates a new image from a list of lists of pixel values
+fromListsF :: [[Float]] -> ImageFloat
+fromListsF fs = unsafePerformIO $ do
+    let r = length fs
+        c = length (head fs)
+    im <- image (Size r c)
+    setData32f im fs
+    return im
+
+-----------------------------------------------------------

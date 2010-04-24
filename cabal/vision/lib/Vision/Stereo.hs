@@ -31,8 +31,10 @@ module Vision.Stereo
 , camerasFromEssential
 , selectCamera
   -- * 3D reconstruction
-, triangulate
+, triangulate, triangulate1
 , stereoRectifiers
+  -- * Misc
+, depthOfPoint
 ) where
 
 import Numeric.LinearAlgebra

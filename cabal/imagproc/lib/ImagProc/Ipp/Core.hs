@@ -116,7 +116,7 @@ img I32f = img' I32f 4 1
 img I64f = img' I64f 8 1
 img YUV  = img' YUV  1 2 -- img' YUV ? ? -- hmm.. is 4:2:0
 
--- | Extracts the data in a I32f image into a list of lists.
+-- | to be deprecated
 getData32f :: ImageFloat -> IO [[Float]]
 getData32f (F Img {fptr = fp, ptr = p, datasize = d, step = s, isize = Size r c }) = do
     let jump = s `quot` d

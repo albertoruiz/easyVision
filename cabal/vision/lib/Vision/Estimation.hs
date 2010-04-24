@@ -19,6 +19,7 @@ module Vision.Estimation
 , ransac
 , ransac'
 , withNormalization
+, optimize
   -- * 2D Homography estimation
 , estimateHomographyRaw
 , estimateHomography
@@ -50,7 +51,7 @@ homogSystem coeffs = (sol,err) where
     mat | r >= c   = matrix coeffs
         | r == c-1 = matrix (head coeffs : coeffs)
         | otherwise = error "homogSystem with rows<cols-1"
-    (_,s,v) = svd mat
+    (s,v) = rightSV mat
     sol = flatten $ dropColumns (c-1) v
     err = s @> (c-1)
 
@@ -170,3 +171,24 @@ estimateHomographyRansac dist dst orig = (h,inliers) where
 --------------------------
 
 -- TODO: estimateHomographyMinimal (from 4 points, using linearSolve instead of homogSystem)
+
+----------------------------------------------------------------
+
+optimize :: Double        -- ^ absolute tolerance
+         -> Double        -- ^ relative tolerance
+         -> Int           -- ^ maximum number of interations
+         -> (x -> x)      -- ^ method
+         -> (x -> Double) -- ^ error function
+         -> x             -- ^ starting point
+         -> (x, [Double]) -- ^ solution and error history
+optimize epsabs epsrel maxit method errfun s0 = (sol,e) where
+    sols = take (max 1 (1+maxit)) $ iterate method s0
+    errs = map errfun sols
+    deltas = 100 : zipWith f errs (tail errs) where f e1 e2 = abs (100*(e1 - e2)/e1)
+    (sol,e) = convergence (zip3 sols errs deltas) []
+    convergence [] _  = error "impossible"
+    convergence [(s,e,d)] prev = (s,e:prev)
+    convergence ((s,e,d):ss) prev
+        | e < epsabs = (s, e:prev)
+        | d < epsrel = (s, e:prev)
+        | otherwise = convergence ss (e:prev)

@@ -20,15 +20,16 @@ import Numeric.LinearAlgebra.Array.Util as Array
 import Numeric.LinearAlgebra.Array.Solve
 import Graphics.Plot(gnuplotpdf)
 import System.Random
-import Vision
+import Vision.Geometry
+import Vision.Camera
 import Data.List
 import Control.Applicative
 import Control.Monad hiding (join)
 import System.Directory(doesFileExist)
 
--- import Debug.Trace
--- debugOK = True
--- debug m f x = if debugOK then trace (m ++ show (f x)) x else x
+import Debug.Trace
+debugOK = True
+debug m f x = if debugOK then trace (m ++ show (f x)) x else x
 
 type Seed = Int
 
@@ -406,7 +407,7 @@ autoCalibrateAux t p = p { p3d = (p3d p * hi)!>"yx", cam = cs' !> "yx"}
 psqrt :: Matrix Double -> Matrix Double
 psqrt m | defpos = v <> diag (sqrt s')
         | defneg = psqrt (-m)
-        | otherwise = --debug "NODEFPOS eig = " (const s') $ 
+        | otherwise = debug "NODEFPOS eig = " (const s') $ 
                       ident 4
 
        where (s,v) = eigSH' m

@@ -13,14 +13,23 @@ import Vision
 import Vision.Multiview
 import System
 import Data.List
+--import qualified Data.Map as Map
 import Data.Function(on)
 import Control.Monad hiding (join)
 import Control.Applicative hiding ((<|>))
 import Text.Printf
-import Numeric.GSL.Minimization
-import Numeric.GSL.Differentiation
+--import Numeric.GSL.Minimization
+--import Numeric.GSL.Differentiation
+--import Numeric.GSL.Fitting
+--import Bundle hiding (alter)
+--import Epipolar
+import System.CPUTime
+--import System.IO
+--import Util.Sparse
+--import Data.Maybe
 import Foreign(unsafePerformIO)
-import System.IO--(openTempFile,hClose)
+import System.IO
+
 
 import Debug.Trace
 
@@ -28,16 +37,25 @@ debug msg f x = trace (msg ++ show (f x)) x
 
 debugT t = trace (formatFixed 5 t) t
 
+time act = do
+    --putStr (msg++" ")
+    t0 <- getCPUTime
+    act -- `seq` putStr " "
+    t1 <- getCPUTime
+    printf "%6.2f s CPU\n" $ (fromIntegral (t1 - t0) / (10^12 :: Double)) :: IO ()
+    return ()
+
+
 sh = putStr . shN
 shN t = formatFixed 2 $ t  -- for use at this document
 shp t = putStrLn . formatFixed 5 $ t
 
 -- We generate a pseudorandom testing configuration with EVAL(n) points, EVAL(m) cameras, and a very small amount of gaussian image noise with standard deviation EVAL(inPix 2 sigma). We assume that the image resolution is 640 pixels, although we use normalized image coordinates from $-1$ to $+1$ to improve numerical stability.
 
-n = 10
+n = 15
 m = 6
 
-pixNoise = 0.1
+pixNoise = 1
 pixFactor = 640/2
 sigma = pixNoise / pixFactor
 inPix d v = printf ("%."++show (d::Int)++"f pixels") (v * pixFactor)
@@ -100,11 +118,9 @@ twoViews = multiView 2 param
 -- from kal . cam
 getFs = map ((/2) . sum . toList . subVector 0 2 . takeDiag . asMatrix) . flip parts "c"
 
-
+bundleE p = bundleT (fixCal . kal . cam $ p) p
 
 fixCal = subindex "c" . map ((!>"1v 2w") . fromMatrix Contra Co . kgen) . getFs
-
-
 
 autoMetric p = frobT (k - fixCal k) / fromIntegral (5 * size "c" k)
      where k = kal . cam $ p
@@ -121,19 +137,6 @@ shl l = concat $ intersperse ", " $ map (printf "%.1g") $ l
 disp = putStr . dispf 5
 
 -----------------------------------------------------------------
-
-bundleT k p = unsafePerformIO $ do
-   (name,h) <- openTempFile "/tmp" "bundle"
-   let names@[fc,fi,fp,fk,rc,rp] = map (name++) $ words ".cam .img .pts .kal .ref.cam .ref.pts"
-   --print names
-   vprobToFiles fc fi fp fk k p
-   system $ "demo-sba "++unwords [fc,fp,fi,fk,rc,rp]++" /dev/null 2/dev/null"
-   r <- vprobFromFiles rc fi rp
-   hClose h
-   system $ "rm "++unwords (name:names)
-   return r
-
-bundleE p = bundleT (fixCal . kal . cam $ p) p
 
 experB n c noise = do
    -- p <- randomProb n c (noise/pixFactor)
@@ -288,12 +291,7 @@ randomPermutation seed xs = map snd $ sortBy (compare `on` fst) $ flip zip xs $ 
 
 okRangeCoord ((x1,x2),(y1,y2)) = maximum (map abs [x1,x2,y1,y2]) < 1
 
-main = do
-   args <- getArgs
-   case args of
-       [t,n,c,sigma] -> experimentQMOnly (read t) (read n) (read c) (read sigma)
-       [szx,szy,filename] -> analyzeFile [] (read szx, read szy) filename
-       [szx,szy,filename,v1,v2,v3,v4] -> analyzeFile (nub[read v1,read v2, read v3, read v4]) (read szx, read szy) filename
+
 
 experimentR file t n c noise = do
      let h = printf "# points = %d, cameras = %d, sigma = %.2f\n" n c noise
@@ -321,6 +319,7 @@ experMultilinOnly n c noise = do
    when (not . okRangeCoord . rangecoord $ p) $ putStrLn "Warning: some image points are out of FOV !!!"
    seed <- randomIO
    let k  = kal . cam $ p
+       k0s = map (Just . kgen) . getFs . kal . cam $ p
        f  = median . getFs . kal . cam $ p
        r  = refine p
        t0 = fourViews seed . p2d $ p
@@ -331,8 +330,13 @@ experMultilinOnly n c noise = do
        mf  = autoCalibrate (Just f) t
        ran = randomSol seed p
        nai = autoCalibrate (Just f) . refine $ ran
+--       gslbun = gsllevmar mf0 k0s 20
+--       mybun = mylevmar mf0 k0s 20
+--       mysbun = mySparseLevmar mf0 k0s 20
+       sba = bundleT (kal (cam p)) mf0
    let x = concatMap (infosection2 p) $ 
-            [nai, m, mf, p]
+            [nai, m, mf, --mysbun, mybun, gslbun, 
+                        sba, p]
        g x = printf "%.2f " x
    putStr $ (++"\r") $ concatMap g x
    --hFlush stdout
@@ -342,8 +346,10 @@ infosection2 p s = map ((100*).($s)) [signalNoise, simil3D' p, poseQuality p]
 
 
 par2 k = pl!!(k-1) where
-  pl = [param ++ "  " ++ meth | meth <-  ["ALS naive, known K  ", "multilin, autocal", "multilin, known K", "true solution"] 
-                              ,  param <- ["Noise/Signal ", "ObjectQuality","PoseQuality  "]]
+  pl = [param ++ "  " ++ meth | meth <-  ["ALS naive, known K  ", "multilin, autocal", "multilin, known K",
+  --"mysbun", "mybun", "gslbun",
+   "sba", "true solution"]
+                          ,  param <- ["Noise/Signal ", "ObjectQuality","PoseQuality  "]]
 
 spe k = concat . intersperse [[]]. splitEvery 3
 
@@ -362,11 +368,10 @@ relocate p = p { p3d = (p3d p * hi)!>"yx", cam = (cam p * h) !> "yx"} where
 
 gnuplotWin :: String -> String -> [([[Double]], String)] -> IO ()
 gnuplotWin title command ds = gnuplot (command ++" "++ draw) where
-    -- prelude = "set terminal epslatex color; set output '"++title++".tex';"
     (dats,defs) = unzip ds
     draw = concat (intersperse ", " (map ("\"-\" "++) defs)) ++ "\n" ++
            concatMap pr dats
-    
+
     pr = (++"e\n") . unlines . map (unwords . (map show))
 
     gnuplot cmd = do
@@ -402,27 +407,7 @@ shProb' tit p = drawCameras tit
     (map asMatrix $ parts (cam p) "c")
     (toLists $ asMatrix $ inhomogT "x" $ p3d p)
 
-cameraOutline' f =
-    [
-    [0::Double,0,0],
---    [1,0,0],
---    [0,0,0],
---    [0,0.75,0],
---    [0,0,0],
-    [-1,1,f],
-    [1,1,f],
-    [1,-1,f],
-    [-1,-1,f],
-    [-1,1,f],
-    [0,0,0],
-    [1,1,f],
-    [0,0,0],
-    [-1,-1,f],
-    [0,0,0],
-    [1,-1,f],
-    [0,0,0]
-    --,[0,0,3*f]
-    ]
+cameraOutline' f =  [0::Double,0,0] : drop 5 (cameraOutline f)
 
 flipDir p = {- debug "dir=" (const d) -} p { p3d = (p3d p * hi)!>"yx", cam = (cam p * h) !> "yx"} where
     hi = applyAsMatrix inv h !"yx"
@@ -432,14 +417,25 @@ flipDir p = {- debug "dir=" (const d) -} p { p3d = (p3d p * hi)!>"yx", cam = (ca
                            0,0,0,d] !"xy"
     c1 = asMatrix $ head $ parts (cam p) "c"
     p1 = head $ ihPoints3D p
-    d = signum $ depthOfPoint p1 c1
+    d = signum $ depthOfPoint (toList p1) c1
 
--- export from Vision
-depthOfPoint :: Vector Double -> Matrix Double -> Double
-depthOfPoint p m = (signum (det a) / norm m3) * w3 where
-    a = takeColumns 3 m
-    [_,_,m3] = toRows a
-    w = m <> homog p
-    [_,_,w3] = toList w
-    norm = pnorm PNorm2
 
+main = do
+   args <- getArgs
+   case args of
+       [t,n,c,sigma] -> experimentQMOnly (read t) (read n) (read c) (read sigma)
+       [szx,szy,filename] -> analyzeFile [] (read szx, read szy) filename
+       [szx,szy,filename,v1,v2,v3,v4] -> analyzeFile (nub[read v1,read v2, read v3, read v4]) (read szx, read szy) filename
+
+------------------------------------------------------------------------------------
+
+bundleT k p = unsafePerformIO $ do
+   (name,h) <- openTempFile "/tmp" "bundle"
+   let names@[fc,fi,fp,fk,rc,rp] = map (name++) $ words ".cam .img .pts .kal .ref.cam .ref.pts"
+   --print names
+   vprobToFiles fc fi fp fk k p
+   system $ "demo-sba "++unwords [fc,fp,fi,fk,rc,rp]++"> /dev/null 2> /dev/null"
+   r <- vprobFromFiles rc fi rp
+   hClose h
+   system $ "rm "++unwords (name:names)
+   return r

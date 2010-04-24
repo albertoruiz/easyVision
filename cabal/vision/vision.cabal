@@ -20,6 +20,7 @@ extra-source-files:
 
 library
     Build-Depends:      base >= 3 && < 5, random, directory,
+                        array, containers,
                         hmatrix >= 0.8.3, patrec >= 0.1,
                         hTensor >= 0.5
 
@@ -31,9 +32,11 @@ library
                         Vision.Estimation
                         Vision.Stereo
                         Vision.Multiview
+                        Vision.Bundle
                         Vision.Autofrontal
                         Util.Quaternion
                         Util.Ellipses
+                        Util.Sparse
 
     other-modules:
 
