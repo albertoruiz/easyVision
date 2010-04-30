@@ -4,13 +4,17 @@ module Vision.Multiview(
     VProb(..), VPParam(..), stdprob, mkVProb, randomVProb,
     genProb, randomProb,
     fundamental, trifocal, quadrifocal,
-    multiView,
-    kal, autoCalibrate, calibrate, quality,
+    multiView, fourViews, threeViews, twoViews, extractFirst,
+    flipDir, refine, relocate,
+    kal, autoCalibrate, calibrate,
+    quality, signalLevel, signalNoise, objectQuality, poseQuality, autoMetric,
     homogT, inhomogT, eps3, eps4, unitT, frobT, normInfT,
     camerasFromTrifocalHZ, correctFundamental,
     splitEvery, pairsWith, randomTensor, addNoise,
+    mean, median, getFK, getFs, fixCal, metricConsis,
     Seed,
-    vprobFromFiles, vprobToFiles, shProb, drawPoints
+    vprobFromFiles, vprobToFiles, shProb, drawPoints,
+    rangecoord, normalizeCoords, knor
 )where
 
 import Numeric.LinearAlgebra.Exterior
@@ -22,14 +26,16 @@ import Graphics.Plot(gnuplotpdf)
 import System.Random
 import Vision.Geometry
 import Vision.Camera
+import Vision.Stereo(depthOfPoint)
 import Data.List
+import Data.Function(on)
 import Control.Applicative
 import Control.Monad hiding (join)
 import System.Directory(doesFileExist)
-
 import Debug.Trace
-debugOK = True
-debug m f x = if debugOK then trace (m ++ show (f x)) x else x
+
+debug :: (Show b) => String -> (a -> b) -> a -> a
+debug m f x = trace (m ++ show (f x)) x
 
 type Seed = Int
 
@@ -184,25 +190,6 @@ addNoise :: Seed -> Double -> Tensor Double -> Tensor Double
 addNoise seed sigma t = t + Array.scalar sigma .* noise
     where noise = mapArray (const $ randomVector seed Gaussian (dim $ coords t)) t
 
-
-
-shcam :: Matrix Double -> [[Double]]
-shcam p = c where
-   (h,f) = toCameraSystem p
-   c = ht (h <> diag (fromList [1,1,1,5])) (cameraOutline f)
-
-drawCameras :: String -> [Matrix Double] -> [[Double]] -> IO ()
-drawCameras tit ms pts = do
-  let cmd = map (f.shcam) ms
-      f c = (c,"notitle 'c1' with lines 1")
-
-  gnuplotpdf tit
-         (  "set view 72,200; "
-         ++ "set xlabel '$x$'; set ylabel '$y$'; set zlabel '$z$';"
-         ++ "set size ratio 1;"
-         ++ "set notics;"
-         ++ "splot ")
-         (cmd ++ [(pts,"notitle 'v' with points 3")])
 
 shProb :: String -> VProb -> IO ()
 shProb tit p = drawCameras tit
@@ -407,7 +394,7 @@ autoCalibrateAux t p = p { p3d = (p3d p * hi)!>"yx", cam = cs' !> "yx"}
 psqrt :: Matrix Double -> Matrix Double
 psqrt m | defpos = v <> diag (sqrt s')
         | defneg = psqrt (-m)
-        | otherwise = debug "NODEFPOS eig = " (const s') $ 
+        | otherwise = debug "Warning: NODEFPOS eig = " (const s') $ 
                       ident 4
 
        where (s,v) = eigSH' m
@@ -432,3 +419,144 @@ sel = (!"ruv") . cov . mkAssoc [7,3,3] . (dg++) . map (flip (,) 1) $
 
 -------------------------------------------------------------------------
 
+-- | From the views of a 'VProb' (with 3 ór 4 views), solve for the
+-- first camera given the other 
+extractFirst
+    :: Tensor Double -- ^ views c v n
+    -> [Matrix Double] -- ^ previous known cams (2 or 3)
+    -> Matrix Double   -- ^ the first camera
+extractFirst vs pcams = newcam where
+    vs2 = (take 4 `onIndex` "c") vs
+    views = renameParts "c" vs2 "v" ""
+    dat = outers views
+    newcam = extract1 pcams dat
+
+
+extract1
+    :: [Matrix Double]
+    -> Tensor Double -- ^ outer products of the views
+    -> Matrix Double
+
+extract1 [c2,c3] dat = normat $ asMatrix sol where
+    tri = solveH (dat * eps3!"1pq" * eps3!"2rs") "pr3" !> "p1 r2 3x"
+    tc2 = fromMatrix Contra Co c2 !"2q"
+    tc3 = fromMatrix Contra Co c3 !"3r"
+    tc4 = fromMatrix Contra Co c3 !"4s"
+    sol = solve (eps4!"pqrs"*tc2*tc3*tc4) (tri* contrav eps3!"34x")
+
+extract1 [c2,c3,c4] dat = normat $ asMatrix sol where
+    qua = solveH (dat * eps3!"1ab" * eps3!"2fg" * eps3!"3pq" * eps3!"4uv") "afpu"
+    tc2 = fromMatrix Contra Co c2 !"2q"
+    tc3 = fromMatrix Contra Co c3 !"3r"
+    tc4 = fromMatrix Contra Co c4 !"4s"
+    sol = solve (eps4!"pqrs"*tc2*tc3*tc4) (qua!"1234")
+
+extract1 _ _ = error "extractFirst requires 3 or 4 views"
+
+---------------------------------------------------------------------------
+
+-- | Make sure that the cameras look at the points
+flipDir :: VProb -> VProb
+flipDir p = p { p3d = (p3d p * hi)!>"yx", cam = (cam p * h) !> "yx"} where
+    hi = applyAsMatrix inv h !"yx"
+    h = listTensor [4,-4] [1,0,0,0,
+                           0,1,0,0,
+                           0,0,1,0,
+                           0,0,0,d] !"xy"
+    c1 = asMatrix $ head $ parts (cam p) "c"
+    p1 = head $ ihPoints3D p
+    d = signum $ depthOfPoint (toList p1) c1
+
+------------------------------------------------------------------
+
+relocate :: VProb -> VProb
+relocate p = p { p3d = (p3d p * hi)!>"yx", cam = (cam p * h) !> "yx"} where
+    hi = applyAsMatrix inv h !"yx"
+    h = listTensor [4,-4] [s,0,0,x,
+                           0,s,0,y,
+                           0,0,s,z,
+                           0,0,0, 1] !"xy"
+    cens = cameraCenters p
+    pts = ihPoints3D p
+    (m,c) = meanCov . fromRows $ (concat $ replicate (length cens) pts) ++ (concat $ replicate (length pts) cens)
+    [x,y,z] = toList m
+    s = sqrt $ vectorMax $ eigenvaluesSH' c 
+
+
+ihPoints3D :: VProb -> [Vector Double]
+ihPoints3D = map coords . flip parts "n" . inhomogT "x" . p3d
+
+mean :: (Fractional a) => [a] -> a
+mean l = sum l / fromIntegral (length l)
+
+median :: (Ord a) => [a] -> a
+median l = sort l !! (div (length l) 2)
+
+dstmat :: (Normed b, Num b) => [b] -> [Double]
+dstmat pts = pairsWith dist pts where
+  dist u v = pnorm PNorm2 (u-v)
+
+metricConsis :: (Normed b, Num b) => (a -> [b]) -> a -> a -> Double
+metricConsis f = on dist (nor. dstmat .f) where
+  nor x = fromList x / LA.scalar (mean x)
+  dist u v = pnorm Infinity (u-v)
+
+objectQuality :: VProb -> VProb -> Double
+objectQuality = metricConsis ihPoints3D
+
+cameraCenters :: VProb -> [Vector Double]
+cameraCenters = map (coords . inhomogT "x" . flip solveH "x") . flip parts "c" . cam
+
+poseQuality :: VProb -> VProb -> Double
+poseQuality = metricConsis cameraCenters
+
+paramEq :: ALSParam Variant Double
+paramEq = defaultParameters {post = eqnorm}
+
+refine :: VProb -> VProb
+refine p = p { p3d = newpoints, cam = newcams }
+    where ([newcams,newpoints], _err) = mlSolveP paramEq [1] [cam p, p3d p] (p2d p) "v"
+
+fourViews :: Seed -> Tensor Double -> VProb
+fourViews  = multiView 4 paramEq
+
+threeViews :: Seed -> Tensor Double -> VProb
+threeViews = multiView 3 paramEq
+
+twoViews :: Seed -> Tensor Double -> VProb
+twoViews   = multiView 2 paramEq
+
+-- from kal . cam
+getFs :: Tensor Double -> [Double]
+getFs = map (getFK . asMatrix) . flip parts "c"
+
+getFK :: Matrix Double -> Double
+getFK = (/2) . sum . toList . subVector 0 2 . takeDiag
+
+fixCal :: Tensor Double -> Tensor Double
+fixCal = subindex "c" . map ((!>"1v 2w") . fromMatrix Contra Co . kgen) . getFs
+
+autoMetric :: VProb -> Double
+autoMetric p = frobT (k - fixCal k) / fromIntegral (5 * size "c" k)
+     where k = kal . cam $ p
+
+rangecoord :: VProb -> ((Double, Double), (Double, Double))
+rangecoord p = ((vectorMin x, vectorMax x),(vectorMin y, vectorMax y)) where
+    [x,y] = toRows $  fibers "v" (inhomogT "v" $ p2d p)
+
+
+knor :: (Int,Int) -> Matrix Double
+knor (szx,szy) = (3><3) [-a, 0, a,
+                          0,-a, b,
+                          0, 0, 1]
+    where a = fromIntegral szx/2
+          b = fromIntegral szy/2
+
+normalizeCoords :: (Int, Int) -> VProb -> VProb
+normalizeCoords sz p = p {p2d = p2d p!>"vw" * fromMatrix Contra Co (inv $ knor sz) !"vw"}
+
+signalLevel :: VProb -> Double
+signalLevel = mean . map (sqrt . vectorMin . eigenvaluesSH' . snd . meanCov . asMatrix . (~>"nv")) .  flip parts "c" . inhomogT "v" . p2d
+
+signalNoise :: VProb -> Double
+signalNoise p = (quality p / signalLevel p)

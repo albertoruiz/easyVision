@@ -13,12 +13,14 @@ import Vision.Estimation
 import Util.Quaternion
 import Vision.Multiview
 import Util.Sparse
+import Data.Function(on)
+import Data.Maybe(fromJust)
 
 
 import Debug.Trace
 debug msg f x = trace (msg ++ show (f x)) x
 
-aug m = m + 0.001 * ident (rows m)
+aug lambda m = m + diag (constant lambda (rows m))
 
 -- A sparse visual problem
 data SparseVP = SVP { v_of_p :: Int -> [Int] -- visible views of each point
@@ -41,7 +43,7 @@ loadRawTracks filepts = do
         obsp = zipWith (map . g) [0..] $ map (splitEvery 3 . drop 4) s
     return (pts, obsp)
 
-goSparse obsp = SVP { v_of_p = (v_p A.!),
+goSparse obsp = SVP { v_of_p = v_p,
                       p_of_v = (p_v A.!),
                       lObs = obs,
                       aObs = ao,
@@ -50,7 +52,7 @@ goSparse obsp = SVP { v_of_p = (v_p A.!),
                       sPts = undefined,
                       sCam = undefined,
                       sKal = undefined } where
-    v_p = A.listArray (0, nP-1) $ map (map (snd.fst)) obsp
+    v_p = arrayOf $ map (map (snd.fst)) obsp
     obs = concat obsp
     nC = maximum (map (snd.fst) obs) + 1
     nP = maximum (map (fst.fst) obs) + 1
@@ -104,43 +106,67 @@ sGError :: SparseVP -> (Double,Double)
 sGError s = (2*e2, sqrt e2) where
     obs = lObs s
     n = fromIntegral (length obs)
-    c = (A.listArray (0, snC s -1) (zipWith (<>) (sKal s) (sCam s)) A.!)
-    p = (A.listArray (0, snP s -1) (sPts s) A.!)
+    c = arrayOf (zipWith (<>) (sKal s) (sCam s))
+    p = arrayOf (sPts s)
     g s ((i,j), [x,y]) = s + (x-a/w)^ 2 + (y-b/w)^2
         where [a,b,w] = toList $ c j <> p i
     e2 = foldl' g 0 obs / (2*n)
 
+
+objectQualityS :: SparseVP -> SparseVP -> Double
+objectQualityS = metricConsis (map inHomog . sPts)
+
+poseQualityS :: SparseVP -> SparseVP -> Double
+poseQualityS = metricConsis (map (inHomog.nullVector) . sCam)
+
+
 -- | Tensor version of a sparse problem.
 -- (Since it will probably be not dense, the geometric error cannot be naively computed.)
 -- | The views are calibrated, and the cameras have K=id.
-tensorProblem :: SparseVP -> VProb
-tensorProblem s = prob where
+tensorProblem :: [Int] -> [Int] ->  SparseVP -> VProb
+tensorProblem selpts selcams s = prob where
     cs = zipWith (<>) (sKal s) (sCam s)
 
-    sView = (subindex "n" . map (subindex "c" . map vector) . splitEvery (snC s) . A.elems $  aObs s) !> "1v"
+    sView = (subindex "n" . map (subindex "c" . map vector) . splitEvery (length selcams) $ selected) !> "1v"
+
+    selected = [aObs s A.! (p,v) | p <- selpts, v <- selcams]
 
     prob = VProb { p2d = sView,
-                   cam = (subindex "c" $ map (fromMatrix Contra Co) $ cs) !> "1v 2x",
-                   p3d = (subindex "n" $ map (fromVector Contra) $ sPts s) !> "1x",
+                   cam = (subindex "c" $ map (fromMatrix Contra Co) $ selectPos selcams $ cs) !> "1v 2x",
+                   p3d = (subindex "n" $ map (fromVector Contra) $ selectPos selpts $ sPts s) !> "1x",
                    l2d = undefined,
                    l3d = undefined  }
 
 -- | Tensor version of a sparse problem.
 -- (Since it will probably be not dense, the geometric error cannot be naively computed.)
 -- | The views are calibrated, and the cameras have K=id.
-tensorProblemK :: SparseVP -> VProb
-tensorProblemK s = prob where
+tensorProblemK :: [Int] -> [Int] -> SparseVP -> VProb
+tensorProblemK selpts selcams s = prob where
     ikt = fromMatrix Contra Co (inv (head (sKal s))) !"wv"  -- BAD!! (use all)
 
-    sView = (subindex "n" . map (subindex "c" . map vector) . splitEvery (snC s) . A.elems $  aObs s) !> "1v"
+    sView = (subindex "n" . map (subindex "c" . map vector) . splitEvery (length selcams) $ selected) !> "1v"
+
+    selected = [aObs s A.! (p,v) | p <- selpts, v <- selcams]
 
     prob = VProb { p2d = (ikt * sView) !> "wv",
-                   cam = (subindex "c" $ map (fromMatrix Contra Co) $ sCam s) !> "1v 2x",
-                   p3d = (subindex "n" $ map (fromVector Contra) $ sPts s) !> "1x",
+                   cam = (subindex "c" $ map (fromMatrix Contra Co) $ selectPos selcams $ sCam s) !> "1v 2x",
+                   p3d = (subindex "n" $ map (fromVector Contra) $ selectPos selpts $ sPts s) !> "1x",
                    l2d = undefined,
                    l3d = undefined  }
 
 
+tensorSelect :: (Int,Int) -> [Int] -> SparseVP -> VProb
+tensorSelect sz selcams s = t where
+    selpts = commonPointsL s selcams
+    t = normalizeCoords sz $ tensorProblem selpts selcams s
+
+tensorSelectK :: [Int] -> SparseVP -> VProb
+tensorSelectK selcams s = t where
+    selpts = commonPointsL s selcams
+    t = tensorProblemK selpts selcams s
+
+
+commonPointsL s = foldl1' (\a b -> reverse (myintersect a b)) . map (p_of_v s)
 
 
 -- | extract the elements of a dense problem in sparse format:
@@ -179,7 +205,7 @@ recalibrate ks s = ako where
 getPairs s ako i j | null com = Nothing
                    | otherwise = Just $ compact $ outf (fromRows p) (fromRows q)
     where com = commonPoints s i j
-          f k = (ako (k,i), ako (k, j))
+          f k = (unitary $ ako (k,i), unitary $ ako (k, j))
           (p,q) = unzip $ map f com
 
           outf a b = fromColumns [ u*v |  u<-us, v<-vs ]
@@ -200,9 +226,11 @@ epiObs s = [ (ij, p) | (ij,Just p) <- obs]
 select [] = id
 select lks = filter (flip elem lks . fst)
 
+selectPos is = map snd . filter (flip elem is . fst) . zip [0 ..]
 
-prepareEpipolar lks s = (getBlocks, vsol, newSol, fcost) where
-    obs = debug "dim f " (sum.map (rows.snd)) $ debug "links " length $ select lks $ epiObs s
+
+prepareEpipolar s = (getBlocks, vsol, newSol, fcost) where
+    obs = debug "dim f " (sum.map (rows.snd)) $ debug "links " length $ epiObs s
     mbk0s = replicate (snC s) (Just (kgen 1))
     origins = zipWith cameraModelOrigin mbk0s (sCam s)
     newSol sol = recompPts $ s {sCam = zipWith ($) (map projectionAt'' origins) (takesV (replicate (snC s) 6) sol) }
@@ -249,31 +277,76 @@ rangeCoords s = (rg xs, rg ys) where
 
 --------------------------------------------------------------
 
-myepi3 s lks k = newSol . fst . debug "epipolar errors: " (map round. snd) . 
+myepi3 s k = newSol . fst . debug "epipolar errors: " (map round. snd) . 
                       -- snd .
             optimize 0 1 k
             update
             fcost
             $ vsol
-    where update = naiveLevmarS mods
-          (mods,vsol,newSol,fcost) = prepareEpipolar lks s
+    where update = naiveLevmarS 0.001 mods
+          (mods,vsol,newSol,fcost) = prepareEpipolar s
 
 
-naiveLevmarS m sol = sol' where
+naiveLevmarS lambda m sol = sol' where
     fun = fst (m sol)
     jac = snd (m sol)
     hes = toDense $ bMul (bTrans jac) jac
     grad = toDense $ bMul (bTrans jac) fun
-    sol' = sol + (flatten $ linearSolve (aug hes) (-grad))
+    sol' = sol - (flatten $ linearSolve (aug lambda hes) grad)
+
+-- at the current solution!! (just to test, it recomputes a lot of things...)
+epiHessian s = hes where
+    jac = snd (m vsol)
+    hes = toDense $ bMul (bTrans jac) jac
+    (m,vsol,_,_) = prepareEpipolar s
 
 ---------------------------------------------------------------
+
+prepareEpipolarSelect used free s = (getBlocks, vsol, newSol, fcost) where
+    info = "links = " ++ show (length obs)
+    obs = epiObs s
+    mbk0s = replicate (snC s) (Just (kgen 1))
+    origins = zipWith cameraModelOrigin mbk0s (sCam s)
+    newSol sol = recompPts $ s {sCam = zipWith ($) (map projectionAt'' origins) (fill sol) }
+    vsol = constant (0::Double) (6* length free)
+
+    fill minisol = map snd $ sortBy (compare `on` fst) $ zip free (takesV (replicate (length free) 6) minisol) ++ zip ([0..snC s -1] \\ free) (repeat (constant 0 6))
+
+    preJaco vs = zipWith auxCamJac origins (fill vs)
+    fromSel = fromJust . flip lookup (zip free [0..])
+
+    getBlocks vs =  (f,j) where
+        x = filter (not . null) $ map g (zip [0.. ] obs)
+        f = mkSparse $ map head x
+        j = mkSparse $ concatMap tail x
+        jaq = preJaco vs
+
+        g (k, ((i,j), d))
+                | i `elem` free && j `elem` free = [a,b,c]
+                | i `elem` free && j `elem` used = [a,b]
+                | i `elem` used && j `elem` free = [a,c]
+                | otherwise                      = []
+            where (f,f1,f2) = epipolarMiniJac (jaq!!i) (jaq!!j)
+                  a = ((k,0), Dense (d <>f))
+                  b = ((k,fromSel i), Dense (d <>f1))
+                  c = ((k,fromSel j), Dense (d <>f2))
+
+    fcost sol = 1E4 * sqrt (pnorm PNorm2 v ^ 2 / fromIntegral (dim v))
+        where v = flatten $ toDense $ fst $ getBlocks sol
+
+geaG delta maxIt lambda used free s = (newSol sol, info) where
+    (sol, errs) = optimize 0 delta maxIt update fcost vsol
+    update = naiveLevmarS lambda mods
+    (mods,vsol,newSol,fcost) = prepareEpipolarSelect used free s
+    info = "epipolar errors: " ++ show (map round errs)
+
 ---------------------------------------------------------------
 
-mySparseBundle = mySparseBundleG sparseSolve
+mySparseBundle lambda = mySparseBundleG (sparseSolve lambda)
 
-onlyPoints s = mySparseBundleG (solvePoints (snC s)) s
+onlyPoints lambda s = mySparseBundleG (solvePoints lambda (snC s)) s
 
-onlyCams s = mySparseBundleG (solveCams (snP s)) s
+onlyCams lambda s = mySparseBundleG (solveCams lambda (snP s)) s
 
 
 mySparseBundleG met s k = newSol . fst . debug "bundle errors: " (map (round.(1E2*)) . snd) . 
@@ -282,9 +355,10 @@ mySparseBundleG met s k = newSol . fst . debug "bundle errors: " (map (round.(1E
             update
             fcost
             $ vsol
-    where (update,vsol,newSol,fcost) = prepareBundle met s
+    where (mods,vsol,newSol,fcost) = prepareBundle s
+          update s = s - (met . mods) s
 
-prepareBundle met s = (update, vsol, newSol, fcost) where
+prepareBundle s = (mods, vsol, newSol, fcost) where
     mbk0s = map Just (sKal s)
     origins = zipWith cameraModelOrigin mbk0s (sCam s)
     newSol sol = s { sCam = newcams, sPts = newpts }
@@ -323,7 +397,7 @@ prepareBundle met s = (update, vsol, newSol, fcost) where
         g_c = join [ sum [ (bf p v) <> (bc p v) | p <- pOf v] | v <- vs]
         g_p = join [ sum [ (bf p v) <> (bp p v) | v <- vOf p] | p <- ps]
 
-    update s = s - (met . getSpSys . genArrays . getBlocks) s
+    mods = getSpSys . genArrays . getBlocks
 
     fcost = g . join . map snd . (\(x,_,_)->x) . getBlocks
         where g v = sqrt (norm v ^ 2  / fromIntegral (dim v))
@@ -332,22 +406,30 @@ norm v = pnorm PNorm2 (v :: Vector Double)
 
 arrayOf xs = (A.listArray (0, length xs -1) xs A.!)
 
-sparseSolve (h_cc',h_pp',h_cp,g_c,g_p) = join (map flatten [solc,solp]) where
-    h_cc =  map aug h_cc'
-    lu_h_pp =  map (luPacked.aug) h_pp'
+sparseSolve lambda (h_cc',h_pp',h_cp,g_c,g_p) = join (map flatten [solc,solp]) where
+    h_cc =  map (aug lambda) h_cc'
+    lu_h_pp =  map (luPacked.aug lambda) h_pp'
     [f,g] = map ( (h_cp <>) .  blockDiagSolveLU lu_h_pp) [trans h_cp, asColumn g_p]
     sysc =  blockDiag h_cc - f
     rhc  = asColumn g_c - g
     solc = linearSolve sysc rhc
     solp = blockDiagSolveLU lu_h_pp (asColumn g_p - trans h_cp <> solc)
 
-solvePoints nc (_,h_pp',_,_,g_p) = join [solc,flatten solp] where
-    lu_h_pp =  map (luPacked.aug) h_pp'
+solvePoints lambda nc (_,h_pp',_,_,g_p) = join [solc,flatten solp] where
+    lu_h_pp =  map (luPacked.aug lambda) h_pp'
     solc = constant 0 (6*nc)
     solp = blockDiagSolveLU lu_h_pp (asColumn g_p)
 
-solveCams np (h_cc',_,_,g_c,_) = join [flatten solc, solp] where
-    lu_h_cc =  map (luPacked.aug) h_cc'
+solveCams lambda np (h_cc',_,_,g_c,_) = join [flatten solc, solp] where
+    lu_h_cc =  map (luPacked.aug lambda) h_cc'
     solp = constant 0 (3*np)
     solc = blockDiagSolveLU lu_h_cc (asColumn g_c)
 
+-- at the current solution!! (just to test, it recomputes a lot of things...)
+hessianCamsBundle lambda s = sysc where
+    (m,vsol,_,_) = prepareBundle s
+    (h_cc',h_pp',h_cp,_,_) = m vsol
+    h_cc =  map (aug lambda) h_cc'
+    lu_h_pp =  map (luPacked.aug lambda) h_pp'
+    f = h_cp <> blockDiagSolveLU lu_h_pp (trans h_cp)
+    sysc =  blockDiag h_cc - f

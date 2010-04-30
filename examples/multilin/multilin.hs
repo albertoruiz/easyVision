@@ -67,24 +67,9 @@ prob = genProb n m sigma seeds
 
 -- \perform{drawPoints [] (toLists $ asMatrix $ head $ flip parts "c" $ inhomogT "v" $ p2d prob)}
 
+signal = signalLevel
 
-mean l = sum l / fromIntegral (length l)
-median l = sort l !! (div (length l) 2)
-
-dstmat pts = pairsWith dist pts where
-  dist u v = pnorm PNorm2 (u-v)
-
-metricConsis f = on dist (nor. dstmat .f) where
-  nor x = fromList x / LA.scalar (mean x)
-  dist u v = pnorm Infinity (u-v)
-
-ihPoints3D = map coords . flip parts "n" . inhomogT "x" . p3d
-
-simil3D' = metricConsis ihPoints3D
-
-cameraCenters = map (coords . inhomogT "x" . flip solveH "x") . flip parts "c" . cam
-
-poseQuality = metricConsis cameraCenters
+simil3D' = objectQuality
 
 simil3D a b = printf "%.1f%%\n" $ 100 * simil3D' a b
 
@@ -107,29 +92,12 @@ checksR n mg pg = do
 rep t meth n c noise =  checksR t (meth <$> randomIO) (randomProb n c (noise/pixFactor))
 
 
-refine p = p { p3d = newpoints, cam = newcams }
-    where ([newcams,newpoints], err) = mlSolveP param [1] [cam p, p3d p] (p2d p) "v"
-
-
-fourViews = multiView 4 param
-threeViews = multiView 3 param
-twoViews = multiView 2 param
-
--- from kal . cam
-getFs = map ((/2) . sum . toList . subVector 0 2 . takeDiag . asMatrix) . flip parts "c"
-
 bundleE p = bundleT (fixCal . kal . cam $ p) p
-
-fixCal = subindex "c" . map ((!>"1v 2w") . fromMatrix Contra Co . kgen) . getFs
-
-autoMetric p = frobT (k - fixCal k) / fromIntegral (5 * size "c" k)
-     where k = kal . cam $ p
 
 
 
 co = fromMatrix Contra Co cameraAtOrigin
 
-param = defaultParameters {post = eqnorm}
 
 shl l = concat $ intersperse ", " $ map (printf "%.1g") $ l
 
@@ -203,12 +171,6 @@ infosol p msg s = printf (msg ++ "%10.2f pix %8.1f %8.1f %10.1f %10.1f%%  %10.1f
 
 
 
-rangecoord p = ((vectorMin x, vectorMax x),(vectorMin y, vectorMax y)) where
-    [x,y] = toRows $  fibers "v" (inhomogT "v" $ p2d p)
-
-normalizeCoords (szx,szy) p = p {p2d = p2d p!>"vw" * listTensor [3,-3] [-a,0,1,0,a,b,0,0,1] !"vw"}
-    where a = 2/szx
-          b = -szy/szx
 
 
 analyzeFile ps sz filename = do
@@ -232,7 +194,7 @@ analyzeFile ps sz filename = do
    --print $ getFs . kal . cam $ m0
    --print $ getFs . kal . cam $ m
    --when ok $ shProb filename m
-   when ok $ shProb' filename m
+   when ok $ shProb filename m
    let names@[fc,fi,fp,fk] = map ((filename++"-result")++) $ words ".cam .img .pts .kal"
    --print names
    when ok $ vprobToFiles fc fi fp fk (kal $ cam m) m
@@ -244,14 +206,11 @@ analyzeFile ps sz filename = do
                     let ok = sn<2 && am<1
                     when (not ok) $ putStrLn "warning: poor convergence, please run again."
                     return ok
-        where q = quality s * (fst sz/2)
-              sg = signal s * (fst sz/2)
+        where q = quality s * (fromIntegral (fst sz)/2)
+              sg = signal s * (fromIntegral (fst sz)/2)
               sn = 100* signalNoise s
               am = 100* autoMetric s
 
-signal = mean . map (sqrt . vectorMin . eigenvaluesSH' . snd . meanCov . asMatrix . (~>"nv")) .  flip parts "c" . inhomogT "v" . p2d
-
-signalNoise p = (quality p / signal p)
 
 
 randomSol seed p = p {p3d = p3d q, cam = cam q} where
@@ -353,71 +312,8 @@ par2 k = pl!!(k-1) where
 
 spe k = concat . intersperse [[]]. splitEvery 3
 
-relocate p = p { p3d = (p3d p * hi)!>"yx", cam = (cam p * h) !> "yx"} where
-    hi = applyAsMatrix inv h !"yx"
-    h = listTensor [4,-4] [s,0,0,x,
-                           0,s,0,y,
-                           0,0,s,z,
-                           0,0,0, 1] !"xy"
-    cens = cameraCenters p
-    pts = ihPoints3D p
-    (m,c) = meanCov . fromRows $ (concat $ replicate (length cens) pts) ++ (concat $ replicate (length pts) cens)
-    [x,y,z] = toList m
-    s = sqrt $ vectorMax $ eigenvaluesSH' c 
 
 
-gnuplotWin :: String -> String -> [([[Double]], String)] -> IO ()
-gnuplotWin title command ds = gnuplot (command ++" "++ draw) where
-    (dats,defs) = unzip ds
-    draw = concat (intersperse ", " (map ("\"-\" "++) defs)) ++ "\n" ++
-           concatMap pr dats
-
-    pr = (++"e\n") . unlines . map (unwords . (map show))
-
-    gnuplot cmd = do
-        writeFile "gnuplotcommand" cmd
-        _ <- system "gnuplot -persist gnuplotcommand"
-        _ <- system "rm gnuplotcommand"
-        return ()
-
-
-shcam :: Matrix Double -> [[Double]]
-shcam p = c where
-   (h,f) = toCameraSystem p
-   c = ht (h <> diag (fromList [1,1,1,15])) (cameraOutline' f)
-
-drawCameras :: String -> [Matrix Double] -> [[Double]] -> IO ()
-drawCameras tit ms pts = do
-  let cmd = map (f.shcam) ms
-      f c = (c,"notitle 'c1' with lines 1")
-
-  gnuplotWin tit
-         (  "set view 72,200; "
-         ++ "set pointsize 0.1;"
-         ++ "set xlabel 'x'; set ylabel 'y'; set zlabel 'z';"
-         ++ "set xrange [-2:2]; set yrange [-2:2]; set zrange [-2:2];"
-         ++ "set size ratio 1;"
-         ++ "set ticslevel 0;"
-         ++ "set notics;"
-         ++ "splot ")
-         (cmd ++ [(pts,"notitle 'v' with points 7")])
-
-shProb' :: String -> VProb -> IO ()
-shProb' tit p = drawCameras tit
-    (map asMatrix $ parts (cam p) "c")
-    (toLists $ asMatrix $ inhomogT "x" $ p3d p)
-
-cameraOutline' f =  [0::Double,0,0] : drop 5 (cameraOutline f)
-
-flipDir p = {- debug "dir=" (const d) -} p { p3d = (p3d p * hi)!>"yx", cam = (cam p * h) !> "yx"} where
-    hi = applyAsMatrix inv h !"yx"
-    h = listTensor [4,-4] [1,0,0,0,
-                           0,1,0,0,
-                           0,0,1,0,
-                           0,0,0,d] !"xy"
-    c1 = asMatrix $ head $ parts (cam p) "c"
-    p1 = head $ ihPoints3D p
-    d = signum $ depthOfPoint (toList p1) c1
 
 
 main = do

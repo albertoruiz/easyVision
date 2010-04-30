@@ -30,6 +30,7 @@ module Vision.Camera
 , cameraFromPlane
 , kgen
 , cameraOutline
+, drawCameras
 , toCameraSystem
 , estimateCamera
 , estimateCameraRaw
@@ -56,6 +57,7 @@ import Util.Stat
 import Data.List(transpose,nub,maximumBy,genericLength,elemIndex, genericTake, sort)
 import System.Random
 import Debug.Trace(trace)
+import Graphics.Plot(gnuplotWin)
 
 debug' f x = trace (show $ f x) x
 debug x = debug' id x
@@ -583,3 +585,47 @@ epipolarMiniJac (r,r1,r2,r3,_,_,_,cx,cy,cz) (q,q1,q2,q3,_,_,_,dx,dy,dz) = result
 derNor v w = scale nv w + scale (-(w<.>v)*vv*nv) v
     where vv = recip (v <.> v)
           nv = sqrt vv
+
+--------------------------------------------------
+
+-- shcam :: Matrix Double -> [[Double]]
+-- shcam p = c where
+--    (h,f) = toCameraSystem p
+--    c = ht (h <> diag (fromList [1,1,1,5])) (cameraOutline f)
+-- 
+-- drawCameras :: String -> [Matrix Double] -> [[Double]] -> IO ()
+-- drawCameras tit ms pts = do
+--   let cmd = map (f.shcam) ms
+--       f c = (c,"notitle 'c1' with lines 1")
+-- 
+--   gnuplotpdf tit
+--          (  "set view 72,200; "
+--          ++ "set xlabel '$x$'; set ylabel '$y$'; set zlabel '$z$';"
+--          ++ "set size ratio 1;"
+--          ++ "set notics;"
+--          ++ "splot ")
+--          (cmd ++ [(pts,"notitle 'v' with points 3")])
+
+shcam :: Matrix -> [[Double]]
+shcam p = c where
+   (h,f) = toCameraSystem p
+   c = ht (h <> diag (fromList [1,1,1,15])) (cameraOutline' f)
+
+drawCameras :: String -> [Matrix] -> [[Double]] -> IO ()
+drawCameras tit ms pts = do
+  let cmd = map (f.shcam) ms
+      f c = (c,"notitle 'c1' with lines 1")
+
+  gnuplotWin tit
+         (  "set view 72,200; "
+         ++ "set pointsize 0.1;"
+         ++ "set xlabel 'x'; set ylabel 'y'; set zlabel 'z';"
+         ++ "set xrange [-2:2]; set yrange [-2:2]; set zrange [-2:2];"
+         ++ "set size ratio 1;"
+         ++ "set ticslevel 0;"
+         ++ "set notics;"
+         ++ "splot ")
+         (cmd ++ [(pts,"notitle 'v' with points 7")])
+
+cameraOutline' f =  [0::Double,0,0] : drop 5 (cameraOutline f)
+
