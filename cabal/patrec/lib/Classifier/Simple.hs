@@ -27,11 +27,7 @@ import qualified Data.Map as Map
 import System.Random
 import Data.Array
 import Util.Stat
-import Debug.Trace
-
-debug x = trace (show x) x
-
-norm x = pnorm PNorm2 x
+import Util.Misc(norm)
 
 -- | mse linear discriminant using the pseudoinverse
 mse :: Dicotomizer

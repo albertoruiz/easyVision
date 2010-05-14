@@ -3,7 +3,7 @@ import Data.List
 import Data.Function
 import Control.Arrow
 import Control.Monad
-import Vision
+import Vision hiding (norm)
 import Numeric.LinearAlgebra hiding ((.*))
 import Graphics.UI.GLUT hiding (Size,Point)
 import Debug.Trace

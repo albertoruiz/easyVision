@@ -7,13 +7,14 @@ import Data.List(inits, sort, partition)
 import Control.Monad(when)
 import Graphics.Plot
 import Text.Printf(printf)
+import Util.Misc(randomPermutation)
 
 matrix m = fromLists m :: Matrix Double
 --vector v = fromList v :: Vector Double
-vmap = liftVector
+vmap = mapVector
 
-debug x = trace (show x) x
-debug' msg x = trace (msg ++ show x) x
+--debug x = trace (show x) x
+--debug' msg x = trace (msg ++ show x) x
 
 disp = putStrLn . format "  " (printf "%.2f")
 
@@ -83,7 +84,7 @@ shConf d c = putStrLn $ format " " (show.round) (confusion d c)
 study :: Sample (Vector Double) -> Learner (Vector Double) -> IO ()
 study prob meth = do
     seed <- randomIO
-    let (train,test) = splitProportion 0.5 $ scramble seed prob
+    let (train,test) = splitProportion 0.5 $ randomPermutation seed prob
     let (c,f) = meth train
     putStr "Test error: "
     shErr test c
@@ -193,7 +194,7 @@ adamnistraw = do
 -- to show the learning curve of adaboost
 pruada n = do
     seed <- randomIO
-    let (train,test) = splitProportion 0.5 $ scramble seed $ sshape 2000
+    let (train,test) = splitProportion 0.5 $ randomPermutation seed $ sshape 2000
     let ([g1,g2],lbs) = group train
     --let st = adaboostST n mseBinaryWeighted (g1,g2)
     --let st = adaboostST n distWeighted (g1,g2)
@@ -228,7 +229,7 @@ prucurves 1 = do
 
 prucurves 2 = do
     seed <- randomIO
-    let prob = splitProportion 0.5 $ scramble seed $ sshape 2000
+    let prob = splitProportion 0.5 $ randomPermutation seed $ sshape 2000
     adaboostCurves 30 stumps prob
 
 prunaive 1 = do

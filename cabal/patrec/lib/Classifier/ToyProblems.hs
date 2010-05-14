@@ -32,6 +32,7 @@ import Data.List (intersperse)
 import System.Process (system)
 import Classifier.Base
 import Util.Stat
+import Util.Misc(splitEvery)
 
 ------------------------- drawing utilities --------------------------
 
@@ -80,7 +81,7 @@ combined title n r f exs = act where
     l1 = toList $ linspace n (-r,r)
     l2 = toList $ linspace n (-r,r)
     z = [[x,y, f (fromList [x,y])] | x <- l1, y <- l2]
-    z' = concat $ map (++[[]]) $ partit n z
+    z' = concat $ map (++[[]]) $ splitEvery n z
     g m = toList m ++ [0]
     preps = concat (map p gs) where p gi = prep (map g gi)
     hs' = map ("\"-\" with points " ++) (map (show.code) [1 .. length gs])

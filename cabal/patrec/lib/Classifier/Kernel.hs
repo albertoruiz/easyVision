@@ -22,8 +22,7 @@ module Classifier.Kernel (
 
 import Numeric.LinearAlgebra
 import Classifier.Base
-
-norm x = pnorm PNorm2 x
+import Util.Misc(norm)
 
 -- | Generalized inner product, corresponding to the ordinary dot product in an implicit feature space.
 type Kernel = (Vector Double -> Vector Double -> Double)

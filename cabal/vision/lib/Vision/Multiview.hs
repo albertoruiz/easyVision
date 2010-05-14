@@ -1,8 +1,8 @@
 {-# LANGUAGE RecordWildCards #-}
 
 module Vision.Multiview(
-    VProb(..), VPParam(..), stdprob, mkVProb, randomVProb,
-    genProb, randomProb,
+    VProb(..), VPParam(..), stdprob, mkVProb, randomVProb, mkHelix,
+    genProb, randomProb, getCams, getP3d,
     fundamental, trifocal, quadrifocal,
     multiView, fourViews, threeViews, twoViews, extractFirst,
     flipDir, refine, relocate,
@@ -10,11 +10,11 @@ module Vision.Multiview(
     quality, signalLevel, signalNoise, objectQuality, poseQuality, autoMetric,
     homogT, inhomogT, eps3, eps4, unitT, frobT, normInfT,
     camerasFromTrifocalHZ, correctFundamental,
-    splitEvery, pairsWith, randomTensor, addNoise,
-    mean, median, getFK, getFs, fixCal, metricConsis,
+    randomTensor, addNoise,
+    getFK, getFs, fixCal, metricConsis,
     Seed,
     vprobFromFiles, vprobToFiles, shProb, drawPoints,
-    rangecoord, normalizeCoords, knor
+    rangecoord, normalizeCoords
 )where
 
 import Numeric.LinearAlgebra.Exterior
@@ -32,10 +32,8 @@ import Data.Function(on)
 import Control.Applicative
 import Control.Monad hiding (join)
 import System.Directory(doesFileExist)
-import Debug.Trace
+import Util.Misc(splitEvery,pairsWith,mean,debug)
 
-debug :: (Show b) => String -> (a -> b) -> a -> a
-debug m f x = trace (m ++ show (f x)) x
 
 type Seed = Int
 
@@ -137,6 +135,41 @@ tcam c p = syntheticCamera $ easyCamera (60*degree) (f c) (f p) (20*degree)
 
 randomProb :: Int -> Int -> Double -> IO VProb
 randomProb n m noise = genProb n m noise <$> replicateM 4 randomIO
+
+------------------------------------------------------------
+
+mkHelix :: VPParam -> Seed -> VProb
+mkHelix VPParam{..} seed = r where
+    [seedP, seedC1, seedC2, seedD, seedN, _seedL] = take 6 (randoms (mkStdGen seed))
+
+    mpoints3D = uniformSample seedP numPoints [(-0.5,0.5),(-0.5,0.5),(-0.5,0.5)]
+    points3D = homogT "x" $ fromMatrix Co Contra mpoints3D !"nx"
+
+    targets  = toRows $ uniformSample seedD numCams [(-0.1,0.1),(-0.1,0.1),(-0.1,0.1)]
+--    cenDirs = map unitary $ toRows $ uniformSample seedC1 numCams [(-1,1),(-1,1),(-1,1)]
+--    cenDist = toList $ randomVector seedC2 Uniform numCams
+    centers = [fromList [x t,y t,z t] | t <- (id $ toList $ linspace numCams (0,2*pi))]
+        where x t = minDist * cos t
+              y t = minDist * sin t
+              z t = 0
+    mcams = zipWith mkCam centers targets
+        where mkCam c p = syntheticCamera $ easyCamera fov (f c) (f p) (20*degree)
+                 where f v = (x,y,z) where [x,y,z] = toList v
+
+    cams = subindex "c" $ map ((!"vx") . fromMatrix Contra Co) mcams
+
+    views = f (cams * points3D)
+        where f = homogT "v" . addNoise seedN sigma . inhomogT "v"
+
+    r = VProb { p3d = points3D
+              , p2d = views
+              , cam = cams
+              , l3d = undefined
+              , l2d = undefined }
+
+    pixFactor = fromIntegral imageSize/2
+    sigma = pixelNoise / pixFactor
+
 
 -- Homogeneous and inhomogenous versions of a tensor in a given index:
 
@@ -355,17 +388,6 @@ init4Cams seed = [ic1!"1p",ic2!"2q",ic3!"3r",ic4!"4s"]
      where [ic1,ic2,ic3,ic4] = parts (randomTensor seed [-4,3,-4]) "1"
 
 
-pairsWith :: (b -> b -> a) -> [b] -> [a]
-pairsWith _ [] = []
-pairsWith _ [_] = []
-pairsWith f (x:xs) = map (f x) xs ++ pairsWith f xs
-
-
-splitEvery :: Int -> [t] -> [[t]]
-splitEvery _ [] = []
-splitEvery k l = take k l : splitEvery k (drop k l)
-
-
 randomTensor :: Seed -> [Int] -> Tensor Double
 randomTensor seed dms = listTensor dms cs where
    g = mkStdGen seed
@@ -486,12 +508,6 @@ relocate p = p { p3d = (p3d p * hi)!>"yx", cam = (cam p * h) !> "yx"} where
 ihPoints3D :: VProb -> [Vector Double]
 ihPoints3D = map coords . flip parts "n" . inhomogT "x" . p3d
 
-mean :: (Fractional a) => [a] -> a
-mean l = sum l / fromIntegral (length l)
-
-median :: (Ord a) => [a] -> a
-median l = sort l !! (div (length l) 2)
-
 dstmat :: (Normed b, Num b) => [b] -> [Double]
 dstmat pts = pairsWith dist pts where
   dist u v = pnorm PNorm2 (u-v)
@@ -531,7 +547,7 @@ getFs :: Tensor Double -> [Double]
 getFs = map (getFK . asMatrix) . flip parts "c"
 
 getFK :: Matrix Double -> Double
-getFK = (/2) . sum . toList . subVector 0 2 . takeDiag
+getFK = (/2) . sum . toList . abs . subVector 0 2 . takeDiag
 
 fixCal :: Tensor Double -> Tensor Double
 fixCal = subindex "c" . map ((!>"1v 2w") . fromMatrix Contra Co . kgen) . getFs
@@ -545,12 +561,6 @@ rangecoord p = ((vectorMin x, vectorMax x),(vectorMin y, vectorMax y)) where
     [x,y] = toRows $  fibers "v" (inhomogT "v" $ p2d p)
 
 
-knor :: (Int,Int) -> Matrix Double
-knor (szx,szy) = (3><3) [-a, 0, a,
-                          0,-a, b,
-                          0, 0, 1]
-    where a = fromIntegral szx/2
-          b = fromIntegral szy/2
 
 normalizeCoords :: (Int, Int) -> VProb -> VProb
 normalizeCoords sz p = p {p2d = p2d p!>"vw" * fromMatrix Contra Co (inv $ knor sz) !"vw"}
@@ -560,3 +570,7 @@ signalLevel = mean . map (sqrt . vectorMin . eigenvaluesSH' . snd . meanCov . as
 
 signalNoise :: VProb -> Double
 signalNoise p = (quality p / signalLevel p)
+
+getCams p = map asMatrix $ parts (cam p) "c"
+
+getP3d p = toRows $ asMatrix $ p3d p

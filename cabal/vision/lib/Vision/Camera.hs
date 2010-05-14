@@ -21,6 +21,7 @@ module Vision.Camera
 , easyCamera
 , cameraAtOrigin
 , factorizeCamera
+, sepCam
 , poseFromFactorization
 , poseFromCamera
 , homogZ0
@@ -29,6 +30,7 @@ module Vision.Camera
 , poseFromHomogZ0
 , cameraFromPlane
 , kgen
+, knor
 , cameraOutline
 , drawCameras
 , toCameraSystem
@@ -290,6 +292,22 @@ factorizeCamera m = (normat3 k, signum (det r) `scale` r ,c) where
     k = k'<>s
     r = s<>r'
     c = inHomog $ flatten $ dropColumns 3 v'
+
+
+-- | Factorize a camera matrix as (K, [R|t])
+sepCam :: Matrix -> (Matrix, Matrix)
+sepCam m = (k,p) where
+    (k,r,c) = factorizeCamera m
+    p = fromBlocks [[r,-r <> asColumn c]]
+
+-- | Scaling of pixel coordinates to get values of order of 1
+knor :: (Int,Int) -> Matrix
+knor (szx,szy) = (3><3) [-a, 0, a,
+                          0,-a, b,
+                          0, 0, 1]
+    where a = fromIntegral szx/2
+          b = fromIntegral szy/2
+
 
 estimateCameraRaw image world = h where
     eqs = concat (zipWith eq image world)

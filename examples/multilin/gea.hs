@@ -1,4 +1,4 @@
--- {-# LANGUAGE NoMonomorphismRestriction, FlexibleInstances #-}
+{-# LANGUAGE RecordWildCards #-}
 
 import Numeric.LinearAlgebra.Exterior
 import qualified Numeric.LinearAlgebra as LA
@@ -9,7 +9,7 @@ import Numeric.LinearAlgebra.Array.Solve
 import Graphics.Plot
 import System.Random
 -- import Debug.Trace
-import Vision hiding (debug)
+import Vision
 import Vision.Multiview
 import System
 import Data.List
@@ -26,9 +26,10 @@ import Text.Printf
 import System.CPUTime
 -- import System.IO
 -- import Util.Sparse
--- import Data.Maybe
+import Data.Maybe
+import Util.Misc(mean,median)
 
---import qualified Data.Array as A
+import qualified Data.Array as A
 --import qualified Data.Vector as V
 
 
@@ -54,10 +55,10 @@ shp t = putStrLn . formatFixed 5 $ t
 
 -- We generate a pseudorandom testing configuration with EVAL(n) points, EVAL(m) cameras, and a very small amount of gaussian image noise with standard deviation EVAL(inPix 2 sigma). We assume that the image resolution is 640 pixels, although we use normalized image coordinates from $-1$ to $+1$ to improve numerical stability.
 
-n = 200
-m = 10
+n = 100
+m = 20
 
-pixNoise = 2
+pixNoise = 1
 pixFactor = 640/2
 sigma = pixNoise / pixFactor
 inPix d v = printf ("%."++show (d::Int)++"f pixels") (v * pixFactor)
@@ -137,151 +138,6 @@ shSG (a,b) = printf "E2 = %.8f, sigma = %.8f\n" a b
 
 
 
--- fixCam s = s' { sCam = map (snd.sepCam) (sCam s') }
---     where s' = recompCams s
-
-{-
--- breaking tracks
-main2 = do
-    args <- getArgs
-    case args of
-        [fp,fc,fk] -> do
-            s <- loadSVP fp fc fk
-            putStr "Initial solution: "
-            time $  shSG (sGError s)
-            putStr "\nFull graph: "
-            let sgea =  myepi3 s 10
-            time $ shSG $ sGError sgea
-            sm <- loadSVP2 (breakTrack 5) fp fc fk
-            putStr "Initial solution Break: "
-            time $  shSG (sGError sm)
-            putStr "\nFull graph Break: "
-            time $ shSG $ sGError $ myepi3 sm 10
-            print $ (snP s, snP sm)
-            -- print $ analyze s
-            print $ longis s
-            print $ longis sm
---            putStr "\nZero iterations: "
---            time $ shSG $ sGError $ myepi3 s [] 0
---            putStr "\nOnly Points: "
---            time $ shSG $ sGError $ onlyPoints s 5
---            putStr "\nOnly Cams: "
---            time $ shSG $ sGError $ onlyCams s 5
---            putStr "\nAlternation: "
---            time $ shSG $ sGError $ alter 8 s
---            putStr "\nFull graph: "
---            time $ shSG $ sGError $ myepi3 s [] 10
---            putStr "\nFull graph: "
---            time $ shSG $ sGError $ myepi4 s 10
-
-
---            putStr "\nFull graph + nonlin pts: "
---            time $ shSG $ sGError $ onlyPoints (myepi3 s [] 10) 5
-            putStr "\nmy SBA: "
-            let sbun = mySparseBundle 0.001 s 10
-            time $ shSG $ sGError $ sbun
-            let ss1 = singularValues (epiHessian sgea)
-                ss2 = singularValues (hessianCamsBundle 0 sbun)
-                ss0 = linspace (dim ss1) (1, fromIntegral (dim ss1))
-            mplot [ss0, logBase 10 (1E-10 + ss1/LA.scalar (ss1@>0)), logBase 10 (1E-10 + ss2/LA.scalar (ss2@>0))]
-            putStr "\nmy SBA Break: "
-            time $ shSG $ sGError $ mySparseBundle 0 sm 10
-
---         [fp,fc,fk,fl] -> do
---             links <- loadLinks fl
---             s <- loadSVP fp fc fk
---             putStr "Initial solution: "
---             time $  shSG (sGError s)
---             putStr "Selected links: "
---             time $ shSG $ sGError $ myepi3 s links 10
-
--}
-
-
-checkNewEpi selcams = do
-    -- writeFile "matrixlog.hs" "import Numeric.LinearAlgebra\n\n"
-    ---s <- loadSVP "9pts.txt" "9cams.txt" "calib.txt"
-    --links <- loadLinks "initiallinks.txt"
-    --print links
-    seed <- randomIO
-    --s <- loadSVP "54pts.txt" "54cams.txt" "calib.txt"
-    s <- loadSVP "9pts.txt" "9cams.txt" "calib.txt"
-    print (rangeCoords s)
-    shSG $ sGError $ s
-    let icams = initCams4 seed (640,480) Nothing s
-    print $ map rank icams
-    drawCameras "kk" icams []
---    drawCameras "qq" (sCam s) []
-    let fs = map (getFK.fst.sepCam) icams
-    print fs
-    let f = median (take 5 fs)
-        k' = knor (640,480) <> kgen f
-        estKs = replicate (snC s) k'
-        estCs = map (snd . sepCam . (k' <>) . snd . sepCam) icams
-        sa = recompPts s { sKal = estKs, sCam = estCs }
-    disp k'
-    shSG $ sGError $ sa
---    error "ok"
-    shSG (sGError $ myepi3 s 10)
-    shSG (sGError $ myepi3 sa 20)
-    shSG (sGError $ mySparseBundle 0.01 s 10)
-    shSG (sGError $ mySparseBundle 0.01 sa 10)
-
-    error "ok"
-    let tr = tensorSelect (640,480) selcams s
-
---    print (length selpts)
-    let r = relocate $ flipDir $ autoCalibrate Nothing $ fourViews seed $ p2d tr
-    shProb "kk" r
-    sh $ dummyAt 1 $ cam r ~> "cvx"
-    mapM_ (disp.normat) (getCams r)
---    let tr3 = p2d $ tensorSelect (640,480) (init selcams) s
-    disp $ extractFirst (p2d tr) (tail $ getCams r)
-    error "ok"
-    sh $ kal $ cam $ r
-    let k' = knor (640,480) <> diag (3|>[3,3,1])
-    disp k'
-    let estKs = replicate (snC s) k'
-        estCs = map (snd . sepCam . (k' <>)) (sCam s)
-        sa = s { sKal = estKs, sCam = estCs }
-    shSG (sGError $ myepi3 s 10)
-    shSG (sGError $ myepi3 sa 10)
-    shSG (sGError $ mySparseBundle 0.010 sa 10)
-    return r
-
---param = defaultParameters {post = eqnorm}
---threeViews = multiView 3 param
-
- --   print $ quality $ mySparseLevmar prob probk0s 10
-
- --   shSG $ sGError $ mySparseBundle sprob 10
-
-
-{-    error "ok"
-    shSG $ sGError $ recompPts s
-    shSG $ sGError $ recompCams $ s
-    shSG $ sGError $ recompCams . recompPts $ s
-    shSG $ sGError $ recompCams . recompPts . recompCams . recompPts $ s
-    --let tp = tensorProblem s
-    --shProb' "orig" (relocate . tensorProblemK $ s)
-    shSG $ sGError $ myepi3 s 10-}
---    print $ sGError (myepi3 s [] 0)
---    print $ sGError (myepi3 s links 10)
---    let tq = myepi2 
---     let (model, vsol, newSol, fcost, obs) = prepareEpipolar k s cams
---     print $ fcost vsol
---     print $ sGError (lObs s) k pts cams
---     let sol = myepi3 k s cams 2
--- 
---     print $ sGError (lObs s) k pts sol
---     error "kk"
---     let tp = tensorProblem (pts,cams,k,s)
---         (prejaco, vsol2,_,_) = studyEpipolar2 (repeat (Just k)) tp
---     print $ pnorm PNorm2 $ (toDense $ fst $ prejaco vsol2) - (toDense $ fst $ model vsol2)
---     let sol' = myepi2 tp (repeat (Just k))  1
---     print $ sGError (lObs s) k pts (getCams  sol')
---     print $ head obs
-
 
 -- optimization of a problem from the given intialization
 main3 = do
@@ -291,16 +147,25 @@ main3 = do
             let [fp,fc,fk] = map f ["pts.txt","cams.txt","calib.txt"]
                     where f n = "../../data/tracks/"++pname++"/"++n
             s <- loadSVP fp fc fk
+            infoSProb s
             putStr "Initial solution: "
             time $ shSG (sGError s)
             shProbS "initial" s
             putStr "\nFull graph: "
-            let sgea =  myepi3 s 10
-                sel = [0..snC s-1]
-                sgea2 = gea sel sel s
-            time $ shSG $ sGError sgea
-            time $ shSG $ sGError sgea2
-            shProbS "GEA refinement" sgea
+            --let sbun = mySparseBundle 1 s 10
+            --printf "SBA %.3f\n" $ (snd $ sGError sbun)
+            let sbun = mySparseBundle s 10
+            time $ printf "SBA %.3f\n" $ (snd $ sGError sbun)
+            let sgea = geaFull s
+            time $ printf "GEA %.3f\n" $ (snd $ sGError sgea)
+--            shProbS "GEA refinement" sgea
+--            let sgea = geaFull $ mySparseBundle 100 (geaFull s) 10
+
+--            let sig = snd $ sGError sgea
+--            printf "euc %.3f\n" $ sig
+--            printf "epi %.3f (%0.3f)\n" (snd $ sEError sgea) (sig*0.7)
+--            printf "emp %.3f\n" $ snd $ sEEError sgea
+--            printf "alg %.3f\n" $ snd $ sEAError sgea
 
 
 
@@ -308,62 +173,34 @@ main3 = do
 main = do
     args <- getArgs
     case args of
-        [pname] -> do
+        [pname, used, free] -> do
             let [fp,fc,fk] = map f ["pts.txt","cams.txt","calib.txt"]
                     where f n = "../../data/tracks/"++pname++"/"++n
-            seed <- randomIO
+--            seed <- randomIO
             s <- loadSVP fp fc fk
-            putStr "Initial solution: "
-            time $ shSG (sGError s)
+            --let s = someHelix
+            putStrLn $ "Problem: "++pname
+            infoSProb s
+            printf "Initial sigma = %.2f\n" (snd $ sGError s)
             --print (rangeCoords s)
-            let t = initStart seed [0..3] s
+            let t = bootstrapEssential (read used) (read free) s
+            printf "sigma boot = %.2f\n" (snd $ sGError t)
             shProbS "bootstrap" t
-            shSG $ sGError t
-{-            shProb' "" t
-            print $ quality t
-            print $ autoMetric t
-            let fs = map (getFK.fst.sepCam) (getCams t)
-            print fs
-            let sl = sliceProblem [0,1,2,3] s
-            print (snC sl, snP sl)
-            putStr "slice     " ; shSG (sGError sl)
-            putStr "slice opt " ; shSG (sGError $ myepi3 sl 10)
-            let sr = recompPts sl { sCam = map (snd.sepCam) (getCams t) }
-            putStr "slice init " ; shSG (sGError sr)
-            putStr "slice iopt "; shSG (sGError $ myepi3 sr 10)-}
-            error "ok"
---             let (icams,ipts) = initCams43 seed sz mbf s
---             print $ map rank icams
---             drawCameras "kk" (take 4 icams) ipts
---             let fs = map (getFK.fst.sepCam) icams
---             print fs
---             let f = median fs
---                 k' = knor sz <> kgen f
---                 estKs = replicate (snC s) k'
---                 estCs = map (snd . sepCam . (k' <>) . snd . sepCam) icams
---                 sa = recompPts s { sKal = estKs, sCam = estCs }
---             disp k'
---             shSG $ sGError $ sa
---             shProbS sa
---             let sgea = myepi3 sa 10
---             shSG (sGError $ sgea)
---             shProbS sgea
---    error "ok"
---    shSG (sGError $ myepi3 s 10)
---    shSG (sGError $ myepi3 sa 20)
-            
-            
---             shProbS s
---             putStr "\nFull graph: "
---             let sa =  myepi3 s 10
---             time $ shSG $ sGError sgea
---             shProbS sa
+            let r = geaFull t
+            printf "sigma auto = %.2f\n" (snd $ sGError r)
+            shProbS "GEA" r
+            let sgea = geaFull s
+            printf "sigma ini = %.2f\n" (snd $ sGError sgea)
+--             let sbun = mySparseBundle 0.001 s 10
+--             printf "sigma bun = %.4f\n" (snd $ sGError sbun)
+--             let sgeabun = geaFull sbun
+--             printf "sigma bun = %.4f\n" (snd $ sGError sgeabun)
 
 
 checkit = do
     p <- sparseFromTensor `fmap` randomVProb stdprob {numPoints = 100, numCams = 20, pixelNoise = 1, fov = 50*degree, minDist = 2, maxDist = 3}
     let sgea = myepi3 p 10
-        sbun = mySparseBundle 0.001 p 10
+        sbun = mySparseBundle p 10
         sgeabun = onlyPoints 0.001 sgea 10
     print $ sGError sgea
     print $ sGError sgeabun
@@ -374,17 +211,26 @@ checkit = do
 
 
 gea used free = fst . debug "" snd . geaG 1 10 0.001 used free
+geaFull s = recompPts $ gea sel sel s where sel = [0.. snC s -1]
 
 
 checkSelect = do
     let sg = myepi3 sprob 10
-        ss = gea [0..9] [2..9] sprob
+        ss = recompPts $ gea [0..9] [2..9] sprob
     print $ sGError sg
     print $ sGError ss
 
 
-alter k = (!!k) . iterate f
-    where f s = onlyCams 0.001 (onlyPoints 0.001 s 1) 1
+checkBoot used free = do
+    p <- sparseFromTensor `fmap` randomVProb stdprob {numPoints = 100, numCams = 20, pixelNoise = 1, fov = 50*degree, minDist = 2, maxDist = 3}
+    let ini = bootstrapTrifocal used free p
+        sol = geaFull ini
+    print $ sGError p
+    print $ sGError ini
+    print $ sGError sol
+
+
+
 
 -------------------
 
@@ -393,61 +239,39 @@ alter k = (!!k) . iterate f
 
 --longipairs s = sort (map (rows.snd) $ epiObs2 s)
 
-longis s = take 100 . reverse . sort . map (length . v_of_p s) $  [0 .. snP s -1]
+longis s = map (length . v_of_p s) $  [0 .. snP s -1]
+
+viewed s = map (length . p_of_v s) $  [0 .. snC s -1]
 
 shProbS tit s = shProb tit $ relocate $ (tensorProblemK [0..snP s -1] [0..snC s -1] s)
 
+-- in raw coordinates
+signalLevelS s = mean . map (sqrt . vectorMin . eigenvaluesSH' . snd . meanCov . fromLists . visible s) $ [0..snC s -1]
+
+visible s v = map (init . (flip $ curry (aObs s A.!)) v) (p_of_v s v)
+
+epiQuality m = s 8 / s 9 -- (s 8 - s 9) / (s 7 - s 8)
+    where s = (singularValues m @>) . pred
+
+epiRank r m = s r ^ 2 / s (r-1) / s (r+1) 
+    where s = (singularValues m @>) . pred
+
+epiCond r m = s 8 / s 1
+    where s = (singularValues m @>) . pred
+
+-- must reuse m
+homographicQ s i j = if length com < 9 then 0 else err where
+    h = estimateHomography pjs pis
+    com = commonPoints s i j
+    ako' s = toList . inHomog . ako s
+    f k = (ako' s (k,i), ako' s (k, j))
+    (pis,pjs) = unzip $ map f com
+    pjs' = ht h pis
+    err = sqrt $ (norm $ flatten (fromLists pjs' - fromLists pjs)) ^ 2 / fromIntegral (length com)
+
 -------------------------------------------------------------
 
-initCams3 seed sz mbf s = cs where
-    cs = map f [0 .. snC s -1]
-    t = p2d $ tensorSelect sz [0,1,2] s
-    [c0,c1,c2] = getCams $ debug "QT = " quality $ relocate $ flipDir $ autoCalibrate mbf $ fourViews seed $ t
-    f 0 = c0
-    f 1 = c1
-    f 2 = c2
-    f k = extractFirst (p2d $ tensorSelect sz [k,k-2,k-1] s) [cs!!(k-2), cs!!(k-1)]
 
-initCams4 seed sz mbf s = cs where
-    cs = map f [0 .. snC s -1]
-    t = p2d $ tensorSelect sz [0,1,2,3] s
-    [c0,c1,c2,c3] = getCams $ debug "QQ = " quality $ relocate $ flipDir $ autoCalibrate mbf $ fourViews seed $ t
-    f 0 = c0
-    f 1 = c1
-    f 2 = c2
-    f 3 = c3
-    f k = extractFirst (p2d $ tensorSelect sz [k,k-3,k-2,k-1] s) [cs!!(k-3),cs!!(k-2), cs!!(k-1)]
-
-initCams43 seed sz mbf s = (cs,ipts) where
-    cs = map f [0 .. snC s -1]
-    t = p2d $ tensorSelect sz [0,1,2,3] s
-    r = relocate $ flipDir $ autoCalibrate mbf $ fourViews seed $ t
-    ipts = map (toList.inHomog) (getP3d r)
-    [c0,c1,c2,c3] = getCams $ debug "QQ = " quality $ r
-    f 0 = c0
-    f 1 = c1
-    f 2 = c2
-    f 3 = c3
-    f k = extractFirst (p2d $ tensorSelect sz [k,k-2,k-1] s) [cs!!(k-2), cs!!(k-1)]
-
-initStart seed selcams s = so where
-    t = p2d $ tensorSelectK selcams s
-    r = relocate $ flipDir $ autoCalibrate (Just 1) $ fourViews seed $ t
-    sl = sliceProblem selcams s
-    sr = recompPts sl { sCam = map (snd.sepCam) (getCams r) }
-    sel = [0.. length selcams -1]
-    so = gea sel sel sr
-
--- hmm, it is better to select variables and observations
--- points change indices, must rename cameras...
-sliceProblem selcams s = r where
-    obs1 = [ o | o@((_,v),_) <- lObs s, v `elem` selcams ]
-    selpts = map (fst.fst) obs1
-    obs2 = zipWith (map . g) [0..] $ groupBy ((==) `on` fst.fst) obs1
-        where g n ((_,v),x) = ((n,v),x)
-    r = (goSparse obs2) { sPts = selectPos selpts  $ sPts s,
-                          sCam = selectPos selcams $ sCam s,
-                          sKal = selectPos selcams $ sKal s }
 
 -- | replace elements of xs at given positions by ys
 replaceAt pos ys xs = zipWith f [0..] xs where
@@ -455,3 +279,224 @@ replaceAt pos ys xs = zipWith f [0..] xs where
     f k x = case g k of
         Just y -> y
         Nothing -> x
+
+---------------------------------------------------------------------------------------
+
+initStart seed selcams s = (result,r) where
+    t = p2d $ tensorSelectK selcams s
+    r = relocate $ flipDir $ autoCalibrate (Just 1) $ fourViews seed $ t
+    so = s {sCam = replaceAt selcams (getCams r) (sCam s)}
+    result = gea selcams selcams so
+
+improveStep s k = sr where
+ --   guess = extractFirst (p2d $ tensorSelectK [k,k-2,k-1] s) [sCam s!!(k-2), sCam s!!(k-1)]
+    guess = extractFirst (p2d $ tensorSelectK [k,k-3,k-2,k-1] s) [sCam s!! (k-3), sCam s!!(k-2), sCam s!!(k-1)]
+ --   guess = unifmov (sCam s!!(k-2)) (sCam s!!(k-1))
+    st = s {sCam = replaceAt [k] [guess] (sCam s)}
+    r = gea [0.. k-1] [k] st
+    sr = gea [0..k] [0..k] r
+
+bootstrap s = foldl' improveStep so [4 .. snC s -1]
+    where so = fst $ initStart 777 [0..3] s
+
+----------------------------------------------------------------------------------------
+
+unifmov m1 m2 = c3 where
+    (_,r1,c1) = factorizeCamera m1
+    (_,r2,c2) = factorizeCamera m2
+    r3 = r2 <> trans r1 <> r2
+    c3 = fromBlocks [[r3 , asColumn (-r3 <> (c2-c1))]]
+
+----------------------------------------------------------------------------------------
+
+checkVisibPts = do
+    args <- getArgs
+    case args of
+        [pname] -> do
+            let [fp,fc,fk] = map f ["pts.txt","cams.txt","calib.txt"]
+                    where f n = "../../data/tracks/"++pname++"/"++n
+--            seed <- randomIO
+            s <- loadSVP fp fc fk
+            putStrLn $ "Problem: "++pname
+            infoSProb s
+            let r = recompCamsSel s [0..4] [5]
+            print $ sGError r
+
+
+ptsVisibleBy s sel = reverse $ map head . filter ((>1).length) $ group $ sort $ concatMap (p_of_v s) sel
+
+
+recompPtsSel s sel = s { sPts = replaceAt vis newps (sPts s) } where
+    c = arrayOf (sCam s)
+    ako' = init . toList . ako s
+    vis = ptsVisibleBy s sel
+    newps = map (fromList.(++[1]).f) vis
+    f p = triangulate1 cs ps where
+        (cs,ps) = unzip $ map g (reverse (v_of_p s p) `myintersect` (reverse (sort sel)))
+            where g k = (c k, ako' (p,k))
+
+recompCamsSel s sel desi = s { sCam = replaceAt desi newcs (sCam s') } where
+    s' = recompPtsSel s sel
+    p = arrayOf (sPts s')
+    ako' = init . toList . ako s'
+    selpts = ptsVisibleBy s' sel
+    newcs = map f desi
+    f v = snd $ sepCam $ estimateCamera img world where
+        (world,img) = unzip $ map g (p_of_v s' v `myintersect` selpts)
+            where g k = ((init.toList) (p k), ako' (k,v))
+
+empiricRcond = 1/0.65
+
+infoSProb = infoSProb' 1
+
+infoSProb' pixFact s = do
+    printf "cameras      = %d\n" (snC s)
+    printf "tracks       = %d\n" (snP s)
+    printf "views        = %d\n" (length (lObs s))
+    shDisI "track length = " (quart . longis $ s)
+    shDisI "points/view  = " (quart . viewed $ s)
+    let obs = epiObs s
+        fullobs = filter ((>8).rows.snd) obs
+    printf "pairs        = %d tot, %d ok\n" (length obs) (length fullobs )
+    let (noib,noise,noia) = quart $ map (rcond.snd) fullobs
+        sl  = signalLevelS s
+        f = median $ map getFK (sKal s)
+    shDist "rcond        = " (-logBase 10 noib,-logBase 10 noise,-logBase 10 noia)
+    printf "signal       = %.1f\n" sl
+    printf "typ f        = %.1f\n" f
+    printf "est sigma    = %.1f\n" (noise*f*empiricRcond*pixFact)
+    printf "est N/R      = %.1f %%\n" (100*noise*f*empiricRcond/sl)
+    putStrLn "------------------------"
+--    printf "geom dist    = %.1f\n" (snd (sGError s)*pixFact)
+
+infoCosts' pixFact s = do
+    printf "geom dist    = %.1f\n" (snd (sGError s)*pixFact)
+    printf "epi dist     = %.1f\n" (snd (sEError s)*pixFact)
+    printf "empiric epi  = %.1f\n" (snd (sEEError s)*pixFact)
+    printf "algeb epi    = %.1f\n" (snd (sEAError s)*pixFact)
+
+
+
+--    putStr. dispf 1 . (1000*) $ buildMatrix (snC s) (snC s) (uncurry $ flip $ homographicQ s)
+--    let chainH = [((j-1,j), (1000 * homographicQ s (j-1) j , length (commonPoints s (j-1) j)))| j <- [1 .. snC s -1]]
+--    mapM_ shQLink chainH
+--     putStrLn "------------------------"
+--     let chain9c = filter (\((i,j),_) -> i+1 == j) $ map (\((i,j),m) -> ((i,j), (recip $ epiCond 9 m, length (commonPoints s i j)))) fullobs
+--     mapM_ shQLink chain9c
+--     putStrLn "------------------------"
+--     let chain8c = filter (\((i,j),_) -> i+1 == j) $ map (\((i,j),m) -> ((i,j), (recip $ epiCond 8 m, length (commonPoints s i j)))) fullobs
+--     mapM_ shQLink chain8c
+--     putStrLn "------------------------"
+--     let chain8 = filter (\((i,j),_) -> i+1 == j) $ map (\((i,j),m) -> ((i,j), (recip $ epiCond 7 m, length (commonPoints s i j)))) fullobs
+--     mapM_ shQLink chain8
+--     putStrLn "------------------------"
+--     let chain6 = filter (\((i,j),_) -> i+1 == j) $ map (\((i,j),m) -> ((i,j), (recip $ epiCond 6 m, length (commonPoints s i j)))) fullobs
+--     mapM_ shQLink chain6
+--     putStrLn "------------------------"
+
+
+--    let goodobs = filter g fullobs where g((i,j),_) = length (commonPoints s i j) >= (lQ . quart . viewed $ s) `div` 2
+--        eQq@(eQb,eQ,eQh) = quart $ map (epiQuality.snd) goodobs
+--    printf "good links   = %d\n" (length goodobs)
+--    shDist "epipolar Q   = " eQq
+--    
+--    let prechain = map (\((i,j),m) -> ((i,j), (round $ epiQuality m, length (commonPoints s i j)))) goodobs
+--    print $ sortBy (compare `on` (negate.fst.snd)) prechain
+--    mapM_ print $ sortLinks s
+
+shDist name (a,b,c) = printf (name ++ "%.1f (%.1f, %.1f)\n") b a c
+shDisI name (a,b,c) = printf (name ++ "%d (%d, %d)\n") b a c
+
+shQLink ((i,j),(q,n)) = printf "c %3d: %.1f (%d)\n" j q n
+
+checkInfo = do
+    s <- sparseFromTensor `fmap` randomVProb stdprob {numPoints = 200, numCams = 20, pixelNoise = 1, fov = 50*degree, minDist = 2, maxDist = 3}
+    infoSProb' pixFactor s
+
+lQ (a,b,c) = a
+hQ (a,b,c) = c
+mQ (a,b,c) = b
+
+sortLinks s = map f [0..snC s -1] where
+    f k = sortBy (compare `on` (negate . length . commonPoints s k)) ([0..snC s -1] \\ [0..k])
+
+-------------------------------------------------------------
+
+distCen s i j = norm (c j - c i) where
+    c = inHomog . nullVector . (sCam s !!)
+
+------------------------------------------------------------
+
+-- xjT E xi
+relativeE s i j = (r,c) where
+    esen = trans . reshape 3 . last . toColumns . snd . rightSV . fromJust . lookup (i,j) $ epiObs s
+    k  = head (commonPoints s i j)
+    p  = toList $ inHomog $ ako s (k,i)
+    p' = toList $ inHomog $ ako s (k,j)
+    ms = camerasFromEssential esen
+    m' = selectCamera p p' cameraAtOrigin ms
+    (_,r,c) = factorizeCamera m'
+
+extrapolate s i j d = fromBlocks [[r2, -asColumn (r2 <> c2)]] where
+    (r,c) = relativeE s i j
+    (_,r1,c1) = factorizeCamera (sCam s !! i)
+    r2 = r <> r1
+    c2 = c1 + trans r1 <> (LA.scalar d * c)
+
+extrapolateEpi s k = extrapolate s (k-1) k 1
+
+
+initStart2 s = s { sCam = replaceAt [0] [cameraAtOrigin] (sCam s) }
+
+
+-- bootstrapEpi used free s = recompPts $ boot s (snC s -1) where
+--     boot s 0 = initStart2 s
+--     boot s k = step  (boot s (k-1)) k
+-- 
+--     step s k = result where
+--         ck = extrapolate s (k-1) k 1
+--         so = s {sCam = replaceAt [k] [ck] (sCam s)}
+--         --so' = gea [(max 0 (k-2)) .. k][k] so
+--         result = gea [(max 0 (k-used+1)) .. k][(max 1 (k-free+1)) .. k] so
+
+initStart3 s = s { sCam = replaceAt [0,1] [cameraAtOrigin,c1] (sCam s) } where
+    s' = initStart2 s
+    c1 = extrapolate s' 0 1 1
+
+-- bootstrapTri used free s = recompPts $ boot s (snC s -1) where
+--     boot s 1 = initStart3 s
+--     boot s k = step  (boot s (k-1)) k
+-- 
+--     step s k = result where
+--         ck = extrapolateTri s k
+--         so = s {sCam = replaceAt [k] [ck] (sCam s)}
+-- --        so' = gea [(max 0 (k-2)) .. k][k] so
+--         result = gea [(max 0 (k-used+1)) .. k][(max 1 (k-free+1)) .. k] so
+
+extrapolateTri s k = extractFirst (p2d $ tensorSelectK [k,k-2,k-1] s) [sCam s !!(k-2), sCam s!!(k-1)]
+
+extrapolateResect s k = sCam (recompCamsSel s [0..k-1] [k]) !! k
+
+extrapolateUnif s k = unifmov (sCam s!!(k-2)) (sCam s!!(k-1))
+
+bootStrapGen guess refine s = recompPts $ boot s (snC s -1) where
+    boot s 1 = initStart3 s
+    boot s k = step  (boot s (k-1)) k
+
+    step s k = refine k so where
+        ck = guess s k
+        so = s {sCam = replaceAt [k] [ck] (sCam s)}
+
+refine1 used free k =  gea [(max 0 (k-used+1)) .. k] [(max 1 (k-free+1)) .. k] . gea [0..k] [k]
+
+bootstrapResect used free = bootStrapGen extrapolateResect (refine1 used free)
+bootstrapTrifocal used free = bootStrapGen extrapolateTri (refine1 used free)
+bootstrapEssential used free = bootStrapGen extrapolateEpi (refine1 used free)
+bootstrapUnif used free = bootStrapGen extrapolateUnif (refine1 used free)
+
+----------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------
+
+
+someHelix = sparseFromTensor $ mkHelix stdprob {numPoints = 100, numCams = 30, pixelNoise = 0.5, fov = 50*degree, minDist = 1, maxDist = 3} 777
+

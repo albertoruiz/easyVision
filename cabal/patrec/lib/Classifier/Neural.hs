@@ -20,6 +20,7 @@ module Classifier.Neural (
 import Numeric.LinearAlgebra
 import Classifier.Base
 import System.Random
+import Util.Misc(norm, randomPermutation)
 
 -------------------------- Multilayer perceptron -----------------------
 
@@ -97,7 +98,7 @@ neural' alpha eps mxep hidden prob = (network, err) where
 
 
 mseerror r p = sum (map f p) / fromIntegral ( (dim$ snd$ head$ p) * length p)
-    where f (x,y) = pnorm PNorm2 (last (forward r x) - y)
+    where f (x,y) = norm (last (forward r x) - y)
 
 -- | useful for metaalgorithms (treeOf, adaboost)
 perceptron :: Double -- ^ alpha (e.g. 0.1)
@@ -107,7 +108,7 @@ perceptron :: Double -- ^ alpha (e.g. 0.1)
            -> Dicotomizer
 perceptron alpha eps maxep hidden (g1,g2) = f where
     b = (replicate (length g1) 1 ++ replicate (length g2) (-1))
-    exs = scramble 1001 (zip (g1++g2) (replicate (length g1) 1 ++ replicate (length g2) (-1)))
+    exs = randomPermutation 1001 (zip (g1++g2) (replicate (length g1) 1 ++ replicate (length g2) (-1)))
     initial = createNet 100 (dim$ head$ g1) hidden 1
     (result, err) = learnNetwork alpha eps maxep initial exs
     f = (@>0) . last . forward result

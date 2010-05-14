@@ -20,7 +20,7 @@ module Classifier.Base (
      Feature, TwoGroups, Dicotomizer, multiclass,
      Weights, WeightedDicotomizer, unweight, weight,
 -- * Utilities
-     errorRate, confusion, InfoLabels(..), group, ungroup, createClassifier, scramble, addNoise, selectClasses, splitProportion, posMax, partit, vector, detailed,
+     errorRate, confusion, InfoLabels(..), group, ungroup, createClassifier, addNoise, selectClasses, splitProportion, posMax, vector, detailed,
      module Util.Stat,
 -- * Feature extraction combinators
 -- $FEATCOMB
@@ -37,14 +37,11 @@ import qualified Data.Map as Map
 import System.Random
 import Data.Array
 import Util.Stat
-import Debug.Trace
-
-debug x = trace (show x) x
-debug' msg x = trace (msg ++ show x) x
+import Util.Misc(debug,splitEvery,posMax,randomPermutation)
+import Data.Function(on)
 
 matrix = fromLists :: [[Double]] -> Matrix Double
 vector = fromList ::  [Double] -> Vector Double
-
 
 ------------------- General definitions ----------------------------
 
@@ -92,29 +89,15 @@ extractLabels l = InfoLabels ls lti itl where
     createMap :: [String] -> Map.Map String Int
     createMap ls = Map.fromList (zip ls [0..])
 
-
-
-
-
-
 -------------------------------------------------------------------
 
-on f g = \x y -> f (g x) (g y)
-
-partit _ [] = []
-partit n l  = take n l : partit n (drop n l)
-
--- | pseudorandom permutation of a list
-scramble :: Int -> [a] -> [a]
-scramble seed l = map fst $ sortBy (compare `on` snd) randomTuples where
-    randomTuples = zip l (randomRs (0, 1::Double) (mkStdGen seed))
 
 -- | add noise to the attributes
 addNoise :: Int -> Double -> Sample (Vector Double) -> Sample (Vector Double)
 addNoise seed sz l = zip rvs lbs where
     (vs,lbs) = unzip l
     n = dim (head vs)
-    randomVectors = map vector $ partit n $ randomRs (-sz, sz::Double) (mkStdGen seed)
+    randomVectors = map vector $ splitEvery n $ randomRs (-sz, sz::Double) (mkStdGen seed)
     rvs = zipWith (+) vs randomVectors
 
 -- | obtains training and testing subsamples given the required proportion of training instances. You may need to scramble the original sample.
@@ -124,14 +107,6 @@ splitProportion r l = splitAt n l where n = round (r * fromIntegral (length l))
 -- | creates a 'Classifier from an 'Estimator and the particular class labels of a problem.
 createClassifier :: InfoLabels -> Estimator a -> Classifier a
 createClassifier ilbs f = getLabel ilbs . posMax . f
-
--- | returns the position of the maximum element in a list. TODO: remove irrefutable pattern
-posMax :: Ord a => [a] -> Int
-posMax l = p where
-    Just p = elemIndex (maximum l) l
-
-posMin l = p where
-    Just p = elemIndex (minimum l) l
 
 
 -- | groups the attribute vectors of each class

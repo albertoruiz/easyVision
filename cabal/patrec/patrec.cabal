@@ -33,12 +33,13 @@ library
                         Classifier.SVM
                         Classifier.Adaboost
                         Classifier.ToyProblems
+                        Util.Misc
                         Util.Stat
                         Util.Kalman
                         
     other-modules:      
 
-    ghc-prof-options:   -auto-all
+--    ghc-prof-options:   -auto-all
 
     ghc-options:        -Wall
 

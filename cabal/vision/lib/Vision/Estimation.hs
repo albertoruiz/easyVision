@@ -19,7 +19,7 @@ module Vision.Estimation
 , ransac
 , ransac'
 , withNormalization
-, optimize
+, optimize, optimizeLM
   -- * 2D Homography estimation
 , estimateHomographyRaw
 , estimateHomography
@@ -29,16 +29,12 @@ module Vision.Estimation
 import Numeric.LinearAlgebra
 import Util.Stat
 import Vision.Geometry
-import Data.List(transpose,nub,maximumBy,genericLength,elemIndex)
-import System.Random 
-import Debug.Trace(trace)
-
-debug x = trace (show x) x
+import Data.List(transpose,nub,maximumBy,genericLength,elemIndex,sort)
+import System.Random
+import Util.Misc(norm)
 
 matrix = fromLists :: [[Double]] -> Matrix Double
 vector = fromList ::  [Double] -> Vector Double
-
-norm x = pnorm PNorm2 x
 
 -- FIXME: use Matrix Double for the coefficients
 -- | Minimum squares solution of a (possibly overconstrained) homogeneous linear system.
@@ -174,6 +170,14 @@ estimateHomographyRansac dist dst orig = (h,inliers) where
 
 ----------------------------------------------------------------
 
+convergence _ _ [] _  = error "impossible"
+convergence _ _ [(s,e,d)] prev = (s,e:prev)
+convergence epsabs epsrel ((s,e,d):ss) prev
+    | e < epsabs = (s, e:prev)
+    | d < epsrel = (s, e:prev)
+    | otherwise = convergence epsabs epsrel ss (e:prev)
+
+
 optimize :: Double        -- ^ absolute tolerance
          -> Double        -- ^ relative tolerance
          -> Int           -- ^ maximum number of interations
@@ -185,10 +189,32 @@ optimize epsabs epsrel maxit method errfun s0 = (sol,e) where
     sols = take (max 1 (1+maxit)) $ iterate method s0
     errs = map errfun sols
     deltas = 100 : zipWith f errs (tail errs) where f e1 e2 = abs (100*(e1 - e2)/e1)
-    (sol,e) = convergence (zip3 sols errs deltas) []
-    convergence [] _  = error "impossible"
-    convergence [(s,e,d)] prev = (s,e:prev)
-    convergence ((s,e,d):ss) prev
-        | e < epsabs = (s, e:prev)
-        | d < epsrel = (s, e:prev)
-        | otherwise = convergence ss (e:prev)
+    (sol,e) = convergence epsabs epsrel (zip3 sols errs deltas) []
+
+
+optimizeLM :: Double        -- ^ absolute tolerance
+           -> Double        -- ^ relative tolerance
+           -> Int           -- ^ maximum number of interations
+           -> (t -> x -> x) -- ^ method, depends on parameter
+           -> (x -> Double) -- ^ error function
+           -> x             -- ^ starting point
+           -> t             -- ^ initial parameter (e.g. 0.001)
+           -> (t->t)  -- ^ parameter update strategy if cost decreases (eg. (/2))
+           -> (t->t)  -- ^ parameter update strategy if cost increases (eg. (10*))
+           -> (x, [Double]) -- ^ solution and error history
+optimizeLM epsabs epsrel maxit method errfun s0 lambda0 decf incf = (sol,e) where
+    w0 = (lambda0, (s0, errfun s0, 100))
+
+    ws = take (max 1 (1+maxit)) $ map snd $ iterate next w0
+
+    next (l,(s,e,d)) = result where
+        s' = method l s
+        e' = errfun s'
+        d' = abs (100*(e - e')/e)
+        l' = updateLM decf incf l e e'
+        result | e' < e  =   (l', (s',e',d'))
+               | otherwise = next (l', (s,e,d))
+
+    (sol,e) = convergence epsabs epsrel ws []
+
+    updateLM df uf l e e' = if e' > e then uf l else df l

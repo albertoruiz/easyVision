@@ -5,9 +5,9 @@ import Util.Kalman
 import Vision
 import Text.Printf
 
-import Debug.Trace
+--import Debug.Trace
 
-debug x = trace (show x) x
+--debug x = trace (show x) x
 
 disp = putStrLn . format " " (printf "%.3f")
 dispv = putStrLn . ("|> "++) . concatMap (printf "%.3f ") . toList
@@ -59,8 +59,8 @@ main = do
                            (Just $ vector [7.1,-0.2,7.8])
     printmc (s',p')
 
-unscent f d v = unscentedTransform ukfDefaultParam (fromList . f . toList) (fromList v :: Vector Double, d^2 .* ident (length v))
-checksamp d v = unscentedSamples ukfDefaultParam (fromList v :: Vector Double, d^2 .* ident (length v))
+unscent f d v = unscentedTransform ukfDefaultParam (fromList . f . toList) (fromList v :: Vector Double, (d^2) `scale` ident (length v))
+checksamp d v = unscentedSamples ukfDefaultParam (fromList v :: Vector Double, (d^2) `scale` ident (length v))
 
 --f [x,y,z] = [x*y, x^2-z^2 , y*sin z]
 f [x,y] = [x*y,x^2-y^2]

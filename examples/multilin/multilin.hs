@@ -29,13 +29,9 @@ import System.CPUTime
 --import Data.Maybe
 import Foreign(unsafePerformIO)
 import System.IO
+import Util.Misc(splitEvery,median)
 
 
-import Debug.Trace
-
-debug msg f x = trace (msg ++ show (f x)) x
-
-debugT t = trace (formatFixed 5 t) t
 
 time act = do
     --putStr (msg++" ")

@@ -7,11 +7,11 @@
 import Numeric.LinearAlgebra
 import Classifier
 import Classifier.ToyProblems(mnistraw)
-import Debug.Trace
 import Graphics.Plot
+import Util.Misc(splitEvery)
 
-debug x = trace (show x) x
-debug' msg x = trace (msg ++ show x) x
+--debug x = trace (show x) x
+--debug' msg x = trace (msg ++ show x) x
 
 shErr d c = putStrLn $ (show $ 100 * errorRate d c) ++ " %"
 shConf d c = putStrLn $ format " " (show.round) (confusion d c)
@@ -130,9 +130,9 @@ showeig k = do
     let gs = fst $ group train
     let g = gs!!k
     let images = map (reshape 28) g
-    imshow $ fromBlocks $ partit 4 $ take 16 images
+    imshow $ fromBlocks $ splitEvery 4 $ take 16 images
     let Stat {meanVector = m, eigenvectors = v'} = stat (fromRows g)
     let v = toRows v'
-    imshow $ fromBlocks $ map (map (reshape 28)) $ partit 4 $ take 16 v
+    imshow $ fromBlocks $ map (map (reshape 28)) $ splitEvery 4 $ take 16 v
     imshow $ fromBlocks $ map (map (reshape 28)) $  
         [[ m + 1000*v!!k, m - 1000*v!!k] | k <- [0..5]]

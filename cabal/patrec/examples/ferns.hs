@@ -9,6 +9,7 @@ import qualified Data.Map as M
 import Data.Maybe(fromMaybe)
 import Control.Arrow((&&&))
 import System (getArgs)
+import Util.Misc(splitEvery, randomPermutation)
 
 --matrix m = fromLists m :: Matrix Double
 --vector v = fromList v :: Vector Double
@@ -41,7 +42,7 @@ main = do
     let vs = toRows (takeColumns 784 m)
     let ls = map (show.round) $ toList $ flatten $ dropColumns 784 m
     seed <- randomIO
-    let mnist = scramble seed $ zip vs ls
+    let mnist = randomPermutation seed $ zip vs ls
     let (train,test) = splitAt 4000 mnist
 
     randfeats <- take (n*s) `fmap` genRandFeats (0,783::Int)
@@ -74,7 +75,7 @@ naiveBayes vs = f where
     Stat {meanVector = p} = stat (fromRows vs)
     f x = - (vsum $ log $ x*p + (1-x)*(1-p))
 
-binbool k coordPairs v = partit k $ map g coordPairs
+binbool k coordPairs v = splitEvery k $ map g coordPairs
     where g (a,b) = v@>a > v@>b
 
 ferns :: Distance [[Bool]]

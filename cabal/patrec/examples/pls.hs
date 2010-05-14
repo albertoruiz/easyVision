@@ -1,13 +1,13 @@
 import Numeric.LinearAlgebra
 import Util.Stat
-import Debug.Trace
+--import Debug.Trace
 import Text.Printf
 import Numeric.LinearAlgebra.LAPACK
 import System.Random
 import Data.List(sortBy)
 import Data.Function(on)
 
-debug x = trace (show x) x
+--debug x = trace (show x) x
 
 disp m = putStrLn . format " " (printf "%.3f") $ m
 
@@ -33,7 +33,7 @@ scramble seed l = map fst $ sortBy (compare `on` snd) randomTuples where
 
 prob = scramble 17 $ zip (map toList $ toRows x) (map toList $ toRows y)
 
-unitary v = recip (norm v) .* v
+unitary v = recip (norm v) `scale` v
 
 norm :: Vector Double -> Double
 norm = pnorm PNorm2

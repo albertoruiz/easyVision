@@ -27,16 +27,9 @@ module Classifier.Adaboost (
 
 import Numeric.LinearAlgebra
 import Classifier.Base
-import Data.List(sortBy, transpose, elemIndex, partition)
-import Debug.Trace
-
-debug x = trace (show x) x
-
-posMin l = p where
-    Just p = elemIndex (minimum l) l
-
-
-compareBy f = (\a b-> compare (f a) (f b))
+import Data.List(sortBy, transpose,partition)
+import Util.Misc(posMin)
+import Data.Function(on)
 
 -- | an extremely simple learning machine
 singlestump :: Learner (Vector Double)
@@ -52,7 +45,7 @@ prepro (g1,g2) = ((g1,g2),lbs,xs,oxs,is) where
     lbs = join [constant 1 (length g1), constant (-1) (length g2)]
     xs = transpose $ map toList (g1 ++ g2)
     s = map f xs
-    f l = sortBy (compareBy fst) (zip l [0..])
+    f l = sortBy (compare `on` fst) (zip l [0..])
     oxs = map (map fst) s
     is  = map (map snd) s
 

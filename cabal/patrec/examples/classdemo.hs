@@ -5,7 +5,7 @@ import Numeric.LinearAlgebra
 import Classifier
 import Classifier.ToyProblems
 import System.Random
-import Debug.Trace
+import Util.Misc(randomPermutation)
 
 shErr d c = (show $ (/100) $ fromIntegral $ round $ 10000 * errorRate d c) ++ " %"
 shConf d c = putStrLn $ format " " (show.round) (confusion d c)
@@ -13,7 +13,7 @@ shConf d c = putStrLn $ format " " (show.round) (confusion d c)
 study :: Sample (Vector Double) -> (Learner (Vector Double), String) -> IO ()
 study prob (meth, title) = do
     seed <- randomIO
-    let (train,test) = splitProportion 0.5 $ scramble seed prob
+    let (train,test) = splitProportion 0.5 $ randomPermutation seed prob
     let (c,f) = meth train
     putStrLn title
     let e = shErr test c
