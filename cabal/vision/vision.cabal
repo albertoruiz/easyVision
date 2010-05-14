@@ -31,7 +31,9 @@ library
                         Vision.Camera
                         Vision.Estimation
                         Vision.Stereo
+                        Vision.TensorRep
                         Vision.Multiview
+                        Vision.SparseRep
                         Vision.Bundle
                         Vision.Autofrontal
                         Util.Quaternion

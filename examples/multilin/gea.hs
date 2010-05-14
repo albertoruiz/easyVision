@@ -27,18 +27,18 @@ import System.CPUTime
 -- import System.IO
 -- import Util.Sparse
 import Data.Maybe
-import Util.Misc(mean,median)
+import Util.Misc(mean,median,debug,arrayOf,myintersect,norm)
 
 import qualified Data.Array as A
 --import qualified Data.Vector as V
 
 
 
-import Debug.Trace
-
-debug msg f x = trace (msg ++ show (f x)) x
-
-debugT t = trace (formatFixed 5 t) t
+-- import Debug.Trace
+-- 
+-- debug msg f x = trace (msg ++ show (f x)) x
+-- 
+-- debugT t = trace (formatFixed 5 t) t
 
 time act = do
     --putStr (msg++" ")
@@ -199,7 +199,7 @@ main = do
 
 checkit = do
     p <- sparseFromTensor `fmap` randomVProb stdprob {numPoints = 100, numCams = 20, pixelNoise = 1, fov = 50*degree, minDist = 2, maxDist = 3}
-    let sgea = myepi3 p 10
+    let sgea = geaFull p
         sbun = mySparseBundle p 10
         sgeabun = onlyPoints 0.001 sgea 10
     print $ sGError sgea
@@ -214,11 +214,11 @@ gea used free = fst . debug "" snd . geaG 1 10 0.001 used free
 geaFull s = recompPts $ gea sel sel s where sel = [0.. snC s -1]
 
 
-checkSelect = do
-    let sg = myepi3 sprob 10
-        ss = recompPts $ gea [0..9] [2..9] sprob
-    print $ sGError sg
-    print $ sGError ss
+-- checkSelect = do
+--     let sg = myepi3 sprob 10
+--         ss = recompPts $ gea [0..9] [2..9] sprob
+--     print $ sGError sg
+--     print $ sGError ss
 
 
 checkBoot used free = do

@@ -7,6 +7,7 @@ import Debug.Trace
 import Data.Function(on)
 import Data.List(elemIndex, sortBy, sort)
 import System.Random
+import qualified Data.Array as A
 
 splitEvery :: Int -> [t] -> [[t]]
 splitEvery _ [] = []
@@ -44,3 +45,25 @@ mean l = sum l / fromIntegral (length l)
 
 median :: (Ord a) => [a] -> a
 median l = sort l !! (div (length l) 2)
+
+arrayOf :: [a] -> (Int -> a)
+arrayOf xs = (A.listArray (0, length xs -1) xs A.!)
+
+myintersect :: (Ord a) => [a] -> [a] -> [a]
+myintersect as bs = go as bs [] where
+    go [] _ x = x
+    go _ [] x = x
+    go (a:as) (b:bs) x
+        | a < b = go (a:as) bs x
+        | a > b = go as (b:bs) x
+        | otherwise = go as bs (a:x)
+
+intersectSorted :: (Ord a) => [a] -> [a] -> [a]
+intersectSorted as bs = reverse (go as bs []) where
+    go [] _ x = x
+    go _ [] x = x
+    go (a:as) (b:bs) x
+        | a > b = go (a:as) bs x
+        | a < b = go as (b:bs) x
+        | otherwise = go as bs (a:x)
+
