@@ -47,6 +47,7 @@ worker w wr cam param = do
     tol <- getParam param "tolerance"
     sc  <- getParam param "scale"
     method  <- getParam param "method" :: IO Int
+    alpha <- getParam param "alpha" :: IO Double
 
     orig <- cam
 
@@ -91,6 +92,18 @@ worker w wr cam param = do
                 renderPrimitive Points $ mapM (vertex.map realPart.t2l) [ij,other]
                 setColor' Col.green
                 mapM_ shLine $ map (map realPart) $ tangentEllipses (ellipMat!!0) (ellipMat!!1)
+                
+                let cc = inv (ellipMat!!0) <> (ellipMat!!1)
+                    vs = map (fst . fromComplex) . toColumns . snd . eig $ cc
+                setColor' Col.white
+                renderPrimitive Points (mapM (vertex . toList. inHomog) vs)
+
+                let ccl = (ellipMat!!0) <> inv (ellipMat!!1)
+                    vsl = map (fst . fromComplex) . toColumns . snd . eig $ ccl
+                mapM_ (shLine.toList) vsl
+
+
+
                 let recraw = rectifierFromCircularPoint ij
                     (mx,my,_,_,_) = ellipses!!0
                     (mx2,my2,_,_,_) = ellipses!!1

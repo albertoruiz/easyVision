@@ -2,7 +2,7 @@ import EasyVision
 import Data.List
 import Data.Function
 import Control.Arrow
-import Vision hiding (debug)
+import Vision
 import Numeric.LinearAlgebra hiding ((.*))
 import qualified Data.Map as M
 

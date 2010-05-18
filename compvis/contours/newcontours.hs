@@ -20,7 +20,7 @@ import Data.Fixed(mod')
 import Text.Printf(printf)
 import ImagProc.Ipp.Core
 import Debug.Trace
-import Vision.Multiview(pairs)
+import Util.Misc(pairsWith)
 import GHC.Float(double2Float)
 
 ----------------------------------------------------------
@@ -31,7 +31,7 @@ assert msg f x = if f x then x else error (msg ++ " failed!!!")
 
 -----------------------------------------------------------
 
-normalize g = map autoRot $ concat (return $ head $ pairs (autoStart g) (candis g))
+normalize g = map autoRot $ concat (return $ head $ pairsWith (autoStart g) (candis g))
 
 autoRot h = rot (-phase (h 1)) h
 

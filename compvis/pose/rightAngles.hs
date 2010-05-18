@@ -5,7 +5,7 @@ import Graphics.UI.GLUT hiding (Size, Point)
 import System(getArgs)
 import Control.Monad(when)
 import Numeric.LinearAlgebra
-import Classifier.Base(partit)
+import Util.Misc(splitEvery)
 import Vision
 
 main = do
@@ -30,11 +30,11 @@ rightAngles img = do
         (ps,rec) <- get st
         drawImage $ warp (0,0,0) (Size 600 600) rec img
         pointCoordinates (Size 600 600)
-        mapM_ (renderPrimitive LineStrip . mapM_ vertex) (partit 3 $ reverse ps)
+        mapM_ (renderPrimitive LineStrip . mapM_ vertex) (splitEvery 3 $ reverse ps)
     disp st = do
         drawImage img
         ps <- get st
-        mapM_ (renderPrimitive LineStrip . mapM_ vertex) (partit 3 $ reverse ps)
+        mapM_ (renderPrimitive LineStrip . mapM_ vertex) (splitEvery 3 $ reverse ps)
         pointSize $= 3
         renderPrimitive Points $ mapM_ vertex ps
     mouse wrect _ st (MouseButton LeftButton) Down _ (Position x y) = do
@@ -56,7 +56,7 @@ rectifier ps = rec where
     rec = case estimateAbsoluteDualConic pairlines of
         Nothing -> ident 3
         Just omega -> relocate (rectifierFromAbsoluteDualConic omega)
-    pairlines = map p3l $ filter ((==3).length) $ partit 3 $ reverse ps
+    pairlines = map p3l $ filter ((==3).length) $ splitEvery 3 $ reverse ps
     p3l ps = (toList (cross p1 p2), toList (cross p2 p3))
         where [p1,p2,p3] = map p2vh ps
               p2vh (Point x y) = fromList [x,y,1]

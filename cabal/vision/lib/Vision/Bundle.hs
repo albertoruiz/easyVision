@@ -1,7 +1,8 @@
 module Vision.Bundle(
     sGError, sEError, sEEError, sEAError, objectQualityS, poseQualityS,
-    geaG, recompPts,
-    mySparseBundle, onlyPoints, onlyCams, alter,
+    geaG, recompPts, recompCamsSel,
+    mySparseBundle, onlyPoints, onlyCams, alterPointsCams,
+    sbaG,
     module Vision.SparseRep) where
 
 import Numeric.LinearAlgebra as LA
@@ -21,7 +22,7 @@ import Vision.SparseRep
 import Util.Sparse
 import Data.Function(on)
 import Data.Maybe(fromJust)
-import Util.Misc(splitEvery,mean,debug,norm,arrayOf)
+import Util.Misc(splitEvery,mean,debug,norm,arrayOf,replaceAt,myintersect)
 
 aug lambda m = m + diag (constant lambda (rows m))
 
@@ -142,6 +143,28 @@ recompCams s = s { sCam = newcs } where
             where g k = ((init.toList) (p k), ako' (k,v))
 
 
+ptsVisibleBy s sel = reverse $ map head . filter ((>1).length) $ group $ sort $ concatMap (p_of_v s) sel
+
+
+recompPtsSel s sel = s { sPts = replaceAt vis newps (sPts s) } where
+    c = arrayOf (sCam s)
+    ako' = init . toList . ako s
+    vis = ptsVisibleBy s sel
+    newps = map (fromList.(++[1]).f) vis
+    f p = triangulate1 cs ps where
+        (cs,ps) = unzip $ map g (reverse (v_of_p s p) `myintersect` (reverse (sort sel)))
+            where g k = (c k, ako' (p,k))
+
+recompCamsSel s sel desi = s { sCam = replaceAt desi newcs (sCam s') } where
+    s' = recompPtsSel s sel
+    p = arrayOf (sPts s')
+    ako' = init . toList . ako s'
+    selpts = ptsVisibleBy s' sel
+    newcs = map f desi
+    f v = snd $ sepCam $ estimateCamera img world where
+        (world,img) = unzip $ map g (p_of_v s' v `myintersect` selpts)
+            where g k = ((init.toList) (p k), ako' (k,v))
+
 --------------------------------------------------------------
 
 myepi3 s k = newSol . fst . debug "epipolar errors: " (map round. snd) . 
@@ -198,7 +221,7 @@ prepareEpipolarSelect used free s = (getBlocks, vsol, newSol, fcost) where
                   b = ((k,fromSel i), Dense (d <>f1))
                   c = ((k,fromSel j), Dense (d <>f2))
 
-    fcost sol = 1E4 * sqrt (pnorm PNorm2 v ^ 2 / fromIntegral (dim v))
+    fcost sol = 1E4 * sqrt (norm v ^ 2 / fromIntegral (dim v))
         where v = flatten $ toDense $ fst $ getBlocks sol
 
 geaG delta maxIt lambda used free s = (newSol sol, info) where
@@ -227,7 +250,7 @@ onlyPoints lambda s = mySparseBundleG (solvePoints lambda (snC s)) s
 
 onlyCams lambda s = mySparseBundleG (solveCams lambda (snP s)) s
 
-alter k = (!!k) . iterate f
+alterPointsCams k = (!!k) . iterate f
     where f s = onlyCams 0.001 (onlyPoints 0.001 s 1) 1
 
 
@@ -315,3 +338,80 @@ hessianCamsBundle lambda s = sysc where
     lu_h_pp =  map (luPacked.aug lambda) h_pp'
     f = h_cp <> blockDiagSolveLU lu_h_pp (trans h_cp)
     sysc =  blockDiag h_cc - f
+
+----------------------------------------------------------------
+----------------------------------------------------------------
+
+sbaG = mySparseBundleLMSelectG sparseSolve 1 (/10) (*10)
+
+mySparseBundleLMSelectG met l0 df uf used free s k = newSol $ fst $ debug "bundle errors: " (map (round.(1E2*)) . snd) $
+            optimizeLM 0 1 k
+            update
+            fcost
+            vsol
+            l0 df uf
+    where (mods,vsol,newSol,fcost) = prepareBundleSelect used free s
+          update l s = s - (met l . mods) s
+
+---------------------------------------------------------
+
+prepareBundleSelect used free s = (mods, vsol, newSol, fcost) where
+    mbk0s = map Just (sKal s)
+    origins = zipWith cameraModelOrigin mbk0s (sCam s)
+
+-------
+
+    newSol sol = s { sCam = newcams, sPts = newpts }
+        where solc = takesV (replicate (snC s) 6) sol
+              newcams = zipWith ($) (map projectionAt'' origins) solc
+              solp = takesV (replicate (snP s) 3) (subVector (snC s *6) (snP s *3) sol)
+              newpts = map homog solp
+
+    vsol = join (constant (0::Double) (6*snC s) : (map inHomog (sPts s)))
+
+    preJaco vs = zipWith auxCamJacK origins (takesV (replicate (snC s) 6) vs)
+
+------
+
+--     newSol sol = s {sCam = zipWith ($) (map projectionAt'' origins) (fill sol) }
+--     vsol = constant (0::Double) (6* length free)
+-- 
+--     fill minisol = map snd $ sortBy (compare `on` fst) $ zip free (takesV (replicate (length free) 6) minisol) ++ zip ([0..snC s -1] \\ free) (repeat (constant 0 6))
+-- 
+--     preJaco vs = zipWith auxCamJac origins (fill vs)
+--     fromSel = fromJust . flip lookup (zip free [0..])
+
+-------
+
+
+    getBlocks vs = (lf,ljc,ljp) where
+        jaq = arrayOf (preJaco vs)
+        pt = arrayOf $ takesV (replicate (snP s) 3) (subVector (snC s *6) (snP s *3) vs)
+
+        (lf,ljc,ljp) = unzip3 (map g (lObs s))
+        g (a@(p,v),x) = ((a, f - fromList x),(a,jc),(a,jp))
+            where (f,jc,jp) = projectionDerivAt' (jaq v) (pt p)
+
+    genArrays (lf,ljc,ljp) = (bf, bc, bp) where
+        dms = ((0,0),(snP s-1,snC s-1))
+        bf = curry (A.accumArray (flip const) 0 dms lf   A.!)
+        bc = curry (A.accumArray (flip const) ((2><6)[0..]) dms ljc  A.!)
+        bp = curry (A.accumArray (flip const) ((2><3)[0..]) dms ljp  A.!)
+
+    getSpSys (bf, bc, bp) = (h_cc,h_pp,h_cp,g_c,g_p) where
+        vs = [0 .. snC s -1]
+        vOf = v_of_p s
+        ps = [0 .. snP s -1]
+        pOf = p_of_v s
+
+        h_cp = fromBlocks $ [[trans (bc p v) <> (bp p v) | p <- ps ] | v <- vs ]
+        h_cc = [ sum [ trans (bc p v) <> (bc p v) | p <- pOf v] | v <- vs]
+        h_pp = [ sum [ trans (bp p v) <> (bp p v) | v <- vOf p] | p <- ps]
+        g_c = join [ sum [ (bf p v) <> (bc p v) | p <- pOf v] | v <- vs]
+        g_p = join [ sum [ (bf p v) <> (bp p v) | v <- vOf p] | p <- ps]
+
+    mods = getSpSys . genArrays . getBlocks
+
+    fcost = g . join . map snd . (\(x,_,_)->x) . getBlocks
+        where g v = sqrt (norm v ^ 2  / fromIntegral (dim v))
+

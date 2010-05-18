@@ -5,6 +5,7 @@ import Numeric.LinearAlgebra.Array.Util
 import Numeric.LinearAlgebra
 import Vision
 import Data.List(transpose)
+import Util.Misc(pairsWith)
 
 disp = putStr . dispf 2
 
@@ -39,7 +40,7 @@ proc = do
 triang [p,t,r] (p1,p2') = [a,b,c] where
     rot = rot3 r <> rot2 p <> rot1 t
     p2 = ht rot p2'
-    ints = pairs inter (take 5 $ transpose [p1,p2])   
+    ints = pairsWith inter (take 5 $ transpose [p1,p2])   
     a = last $ head ints
     b = last $ last ints
     c = last $ head (tail ints)
@@ -48,8 +49,8 @@ dispfun st = do
     (p1,p2',rot) <- get st
     let p2 = ht rot p2'
         p12 = transpose [p1,p2]
-        allint = pairs inter p12
-        ints = pairs inter (take 5 p12)
+        allint = pairsWith inter p12
+        ints = pairsWith inter (take 5 p12)
         a = last $ head ints
         b = last $ last ints
         c = last $ head (tail ints)

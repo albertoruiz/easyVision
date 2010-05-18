@@ -12,7 +12,7 @@ import Text.Printf(printf)
 
 matrix m = fromLists m :: Matrix Double
 vector v = fromList v :: Vector Double
-vmap = liftVector
+vmap = mapVector
 
 disp n = putStrLn . format "  " (printf $ "%."++ show n++"f")
 

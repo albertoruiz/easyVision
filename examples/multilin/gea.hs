@@ -27,7 +27,7 @@ import System.CPUTime
 -- import System.IO
 -- import Util.Sparse
 import Data.Maybe
-import Util.Misc(mean,median,debug,arrayOf,myintersect,norm)
+import Util.Misc(mean,median,debug,arrayOf,myintersect,norm, replaceAt)
 
 import qualified Data.Array as A
 --import qualified Data.Vector as V
@@ -154,11 +154,11 @@ main3 = do
             putStr "\nFull graph: "
             --let sbun = mySparseBundle 1 s 10
             --printf "SBA %.3f\n" $ (snd $ sGError sbun)
-            let sbun = mySparseBundle s 10
-            time $ printf "SBA %.3f\n" $ (snd $ sGError sbun)
+--            let sbun = mySparseBundle s 10
+--            time $ printf "SBA %.3f\n" $ (snd $ sGError sbun)
             let sgea = geaFull s
             time $ printf "GEA %.3f\n" $ (snd $ sGError sgea)
---            shProbS "GEA refinement" sgea
+            shProbS "GEA refinement" sgea
 --            let sgea = geaFull $ mySparseBundle 100 (geaFull s) 10
 
 --            let sig = snd $ sGError sgea
@@ -178,7 +178,7 @@ main = do
                     where f n = "../../data/tracks/"++pname++"/"++n
 --            seed <- randomIO
             s <- loadSVP fp fc fk
-            --let s = someHelix
+            let s = someHelix
             putStrLn $ "Problem: "++pname
             infoSProb s
             printf "Initial sigma = %.2f\n" (snd $ sGError s)
@@ -191,8 +191,8 @@ main = do
             shProbS "GEA" r
             let sgea = geaFull s
             printf "sigma ini = %.2f\n" (snd $ sGError sgea)
---             let sbun = mySparseBundle 0.001 s 10
---             printf "sigma bun = %.4f\n" (snd $ sGError sbun)
+            let sbun = mySparseBundle s 10
+            printf "sigma bun = %.4f\n" (snd $ sGError sbun)
 --             let sgeabun = geaFull sbun
 --             printf "sigma bun = %.4f\n" (snd $ sGError sgeabun)
 
@@ -271,15 +271,6 @@ homographicQ s i j = if length com < 9 then 0 else err where
 
 -------------------------------------------------------------
 
-
-
--- | replace elements of xs at given positions by ys
-replaceAt pos ys xs = zipWith f [0..] xs where
-    g = flip lookup (zip pos ys)
-    f k x = case g k of
-        Just y -> y
-        Nothing -> x
-
 ---------------------------------------------------------------------------------------
 
 initStart seed selcams s = (result,r) where
@@ -323,27 +314,7 @@ checkVisibPts = do
             print $ sGError r
 
 
-ptsVisibleBy s sel = reverse $ map head . filter ((>1).length) $ group $ sort $ concatMap (p_of_v s) sel
 
-
-recompPtsSel s sel = s { sPts = replaceAt vis newps (sPts s) } where
-    c = arrayOf (sCam s)
-    ako' = init . toList . ako s
-    vis = ptsVisibleBy s sel
-    newps = map (fromList.(++[1]).f) vis
-    f p = triangulate1 cs ps where
-        (cs,ps) = unzip $ map g (reverse (v_of_p s p) `myintersect` (reverse (sort sel)))
-            where g k = (c k, ako' (p,k))
-
-recompCamsSel s sel desi = s { sCam = replaceAt desi newcs (sCam s') } where
-    s' = recompPtsSel s sel
-    p = arrayOf (sPts s')
-    ako' = init . toList . ako s'
-    selpts = ptsVisibleBy s' sel
-    newcs = map f desi
-    f v = snd $ sepCam $ estimateCamera img world where
-        (world,img) = unzip $ map g (p_of_v s' v `myintersect` selpts)
-            where g k = ((init.toList) (p k), ako' (k,v))
 
 empiricRcond = 1/0.65
 

@@ -67,3 +67,11 @@ intersectSorted as bs = reverse (go as bs []) where
         | a < b = go as (b:bs) x
         | otherwise = go as bs (a:x)
 
+
+-- | replace elements of xs at given positions by ys
+replaceAt :: [Int] -> [a] -> [a] -> [a]
+replaceAt pos ys xs = zipWith f [0..] xs where
+    g = flip lookup (zip pos ys)
+    f k x = case g k of
+        Just y -> y
+        Nothing -> x
