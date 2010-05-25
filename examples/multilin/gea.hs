@@ -147,18 +147,47 @@ main3 = do
             let [fp,fc,fk] = map f ["pts.txt","cams.txt","calib.txt"]
                     where f n = "../../data/tracks/"++pname++"/"++n
             s <- loadSVP fp fc fk
+--            let s = someHelix
             infoSProb s
             putStr "Initial solution: "
             time $ shSG (sGError s)
-            shProbS "initial" s
+--            shProbS "initial" s
             putStr "\nFull graph: "
             --let sbun = mySparseBundle 1 s 10
             --printf "SBA %.3f\n" $ (snd $ sGError sbun)
---            let sbun = mySparseBundle s 10
---            time $ printf "SBA %.3f\n" $ (snd $ sGError sbun)
+            let sbun = mySparseBundle s 10
+            time $ printf "SBA %.3f\n" $ (snd $ sGError sbun)
             let sgea = geaFull s
             time $ printf "GEA %.3f\n" $ (snd $ sGError sgea)
-            shProbS "GEA refinement" sgea
+--            shProbS "GEA refinement" sgea
+
+--            let sbalter = alterPointsCams s
+--            time $ printf "bunalter %.3f\n" $ (snd $ sGError sbalter)
+
+            let mlin = multilinAlter $ s
+            time $ printf "Multilin %.3f\n" $ (snd $ sGError mlin)
+            
+--            disp (fromRows $ sPts mlin)
+
+            print $ autoMetricS $ map (fst . sepCam) $ sCam mlin
+
+            let aulin =  autoCalS mlin
+
+            printf "Multilin auto %.3f\n" $ (snd $ sGError aulin)
+            shProbS "Multilin" aulin
+
+            let refilin = -- onlyPoints 0.001 (onlyCams 0.001 aulin 1) 1
+                          geaFull aulin { sCam = map (snd.sepCam) (sCam aulin) }
+
+            printf "Multilin auto %.3f\n" $ (snd $ sGError refilin)
+
+--            print $ sKal refilin
+
+--            mapM_ disp $ sKal $ aulin
+--            let sgeapar =  recompPts $ gea [0.. (snC s -1)] [3..(snC s -1)] s
+--            time $ printf "GEA partial %.3f\n" $ (snd $ sGError sgeapar)
+--            shProbS "GEA refinement" sgeapar
+
 --            let sgea = geaFull $ mySparseBundle 100 (geaFull s) 10
 
 --            let sig = snd $ sGError sgea
@@ -178,12 +207,12 @@ main = do
                     where f n = "../../data/tracks/"++pname++"/"++n
 --            seed <- randomIO
             s <- loadSVP fp fc fk
-            let s = someHelix
+--            let s = someHelix
             putStrLn $ "Problem: "++pname
             infoSProb s
             printf "Initial sigma = %.2f\n" (snd $ sGError s)
             --print (rangeCoords s)
-            let t = bootstrapEssential (read used) (read free) s
+            let t = bootstrapResect (read used) (read free) s
             printf "sigma boot = %.2f\n" (snd $ sGError t)
             shProbS "bootstrap" t
             let r = geaFull t
@@ -469,5 +498,45 @@ bootstrapUnif used free = bootStrapGen extrapolateUnif (refine1 used free)
 ----------------------------------------------------------------------------------------------
 
 
-someHelix = sparseFromTensor $ mkHelix stdprob {numPoints = 100, numCams = 30, pixelNoise = 0.5, fov = 50*degree, minDist = 1, maxDist = 3} 777
+someHelix = sparseFromTensor $ mkHelix stdprob {numPoints = 100, numCams = 30, pixelNoise = 1, fov = 50*degree, minDist = 1, maxDist = 3} 777
+
+thelix = tensorProblemK [0..99] [0..29] someHelix
+
+autohelix = sparseFromTensor . autoCalibrate (Just 1) . refine . randomSol 55 $ thelix
+
+autoHelix2 k = autoCalS . alterLin 55 k $ someHelix
+
+--------------------------------------------------------------------------
+
+-- prepares random points and cameras 
+initRandS :: Seed -> SparseVP -> SparseVP
+initRandS seed s = s { sCam = newcams, sPts = newpts } where
+    newcams = map head $ toBlocksEvery 3 4 (uniformSample seed (3*snC s) (replicate 4 (-1,1)))
+    newpts = toRows (uniformSample (seed^2) (snP s) (replicate 4 (-1,1)))
+
+autoCalS' s = sparseFromTensor . autoCalibrate (Just 1) . tensorProblemK [0 .. snP s -1] [0 .. snC s -1] $ s
+    where ks = sKal s
+
+autoCalS s = recalibrate ks' s { sPts = getP3d tp, sCam = nc} where
+    tp = autoCalibrate (Just 1) . tensorProblemK [0 .. snP s -1] [0 .. snC s -1] $ s
+    (ks,nc) = unzip (map sepCam (getCams tp))
+    ks' = zipWith (<>) (sKal s) (debug "kres: " autoMetricS ks)
+
+refineLinS k = (!!k) . iterate (recompPts . recompCams)
+
+alterLin seed k = refineLinS k . initRandS seed
+
+multilinAlter s = fst . debug "multinAlter: " (map (round.(1E2*)) . snd) .
+            optimize 0 1 20
+            (recompPts . recompCams)
+            (snd.sGError)
+            $ s
+
+autoMetricS ks = mean $ map (norm.flatten) $ zipWith (-) ks (repeat (ident 3))
+
+correctCams s = s { sCam = map f (sCam s) }
+    where f c = k <> p
+                where (k,p) = sepCam c
+                      k' = (3*k + diag (3|>[1,1,1])/4)
+
 

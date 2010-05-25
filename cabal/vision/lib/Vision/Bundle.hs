@@ -1,6 +1,6 @@
 module Vision.Bundle(
     sGError, sEError, sEEError, sEAError, objectQualityS, poseQualityS,
-    geaG, recompPts, recompCamsSel,
+    geaG, recompPts, recompPtsSel, recompCams, recompCamsSel,
     mySparseBundle, onlyPoints, onlyCams, alterPointsCams,
     sbaG,
     module Vision.SparseRep) where
@@ -128,17 +128,28 @@ prepareEpipolar s = (getBlocks, vsol, newSol, fcost) where
 recompPts s = s { sPts = newps } where
     c = arrayOf (sCam s)
     ako' = init . toList . ako s
-    newps = map (fromList.(++[1]).f) [0.. snP s -1]
+    newps = map (fromList.(++[1]).f)  [0.. snP s -1]
     f p = triangulate1 cs ps where
         (cs,ps) = unzip $ map g (v_of_p s p)
             where g k = (c k, ako' (p,k))
+
+triangulate1' ms ps = x3d where
+    eq [[m11, m12, m13, m14],
+        [m21, m22, m23, m24],
+        [m31, m32, m33, m34]] [x,y] = [[ m21-y*m31,   m22-y*m32,    m23-y*m33,   m24-y*m34],
+                                       [-m11+x*m31,  -m12+x*m32,   -m13+x*m33,  -m14+x*m34],
+                                       [y*m11-x*m21, y*m12-x*m22, y*m13-x*m23, y*m14-x*m24]]
+    eqs = concat $ zipWith eq (map toLists ms) ps
+    x3d = fst $ homogSystem eqs
+
+
 
 -- obtains imperfect rotations
 recompCams s = s { sCam = newcs } where
     p = arrayOf (sPts s)
     ako' = init . toList . ako s
     newcs = map f [0.. snC s -1]
-    f v = estimateCamera img world where
+    f v = estimateCameraRaw img world where
         (world,img) = unzip $ map g (p_of_v s v)
             where g k = ((init.toList) (p k), ako' (k,v))
 
@@ -250,8 +261,11 @@ onlyPoints lambda s = mySparseBundleG (solvePoints lambda (snC s)) s
 
 onlyCams lambda s = mySparseBundleG (solveCams lambda (snP s)) s
 
-alterPointsCams k = (!!k) . iterate f
-    where f s = onlyCams 0.001 (onlyPoints 0.001 s 1) 1
+alterPointsCams = fst . debug "BundelAlter: " (map (round.(1E2*)) . snd) .
+            optimize 0 1 20
+            (\s -> onlyPoints 0.001 (onlyCams 0.001 s 1) 1)
+            (snd.sGError)
+
 
 
 mySparseBundleG met s k = newSol . fst . debug "bundle errors: " (map (round.(1E2*)) . snd) . 

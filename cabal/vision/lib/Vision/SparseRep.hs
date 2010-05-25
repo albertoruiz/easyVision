@@ -1,6 +1,6 @@
 module Vision.SparseRep(
     SparseVP(..), loadSVP,
-    sparseFromTensor, tensorSelectK, tensorProblemK,
+    sparseFromTensor, tensorSelectK, tensorProblemK, recalibrate,
     commonPoints
 ) where
 
@@ -164,13 +164,13 @@ commonPointsL s = foldl1' (\a b -> reverse (myintersect a b)) . map (p_of_v s)
 -- | extract the elements of a dense problem in sparse format:
 sparseFromTensor :: VProb -> SparseVP
 sparseFromTensor p = recalibrate ks r where
-    r = (goSparse obsp) {
+    r = (goSparse (map remo obsp)) {
             sPts = pts,
             sCam = cs }
     (ks,cs) = unzip $ map sepCam $ getCams p
     pts = getP3d p
-    obsp = zipWith (map . (\n (v,l)->((n,v),l))) [0.. ] $ map (zip [0..] . map (toList.asVector) . flip parts "c")  . flip parts "n" . inhomogT "v" . p2d $ p
-
+    obsp = zipWith (map . (\n (v,l)->((n,v),l))) [0.. ] $ map (zip [0..] . map (toList.asVector) . flip parts "c")  . flip parts "n" . p2d $ p
+    remo zs = [(loc, [x/w,y/w]) | (loc,[x,y,w]) <- zs, w/= 0.0]
 
 
 commonPoints s i j = myintersect (p_of_v s i) (p_of_v s j)
