@@ -19,6 +19,8 @@ import EasyVision.MiniApps.Combinators
 import EasyVision.GUI
 import EasyVision.MiniApps.Concurrent
 import ImagProc
+import ImagProc.Util
+import ImagProc.Camera
 import Graphics.UI.GLUT
 import Control.Monad((>=>))
 import Control.Applicative

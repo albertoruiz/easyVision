@@ -14,6 +14,7 @@ module EasyVision.MiniApps.CornerTracker (
 ) where
 
 import ImagProc
+import ImagProc.Camera
 import Features.Matching
 import EasyVision.MiniApps.Combinators
 import EasyVision.GUI
@@ -25,6 +26,7 @@ import Vision
 import Numeric.LinearAlgebra
 import Data.List
 import Data.IORef
+import Data.Function(on)
 --import HUBIGraph as G
 --import Control.Monad.Reader (runReaderT)
 

@@ -236,10 +236,11 @@ prepareEpipolarSelect used free s = (getBlocks, vsol, newSol, fcost) where
         where v = flatten $ toDense $ fst $ getBlocks sol
 
 geaG delta maxIt lambda used free s = (newSol sol, info) where
-    (sol, errs) = optimize 0 delta maxIt update fcost vsol
+    (sol, errs) = optimize 0 delta maxIt update fcost' vsol
     update = naiveLevmarS lambda mods
     (mods,vsol,newSol,fcost) = prepareEpipolarSelect used free s
     info = "epipolar errors: " ++ show (map round errs)
+    fcost' sol = 1E2 * (snd $ sGError (recompPts $ newSol sol))
 
 ---------------------------------------------------------------
 

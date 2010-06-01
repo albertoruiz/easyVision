@@ -19,9 +19,7 @@ module ImagProc (
     module ImagProc.Ipp.AdHoc,
     module ImagProc.Ipp.Pure,
     module ImagProc.Generic,
-    module ImagProc.Util,
     module ImagProc.Images,
-    module ImagProc.Camera,
     module ImagProc.C.Simple,
     binarize8u, binarize32f,
     localMax,
@@ -43,9 +41,7 @@ import ImagProc.C.Simple
 import Data.List(transpose)
 import Vision(rot3,scaling,desp,unitary)
 import Numeric.LinearAlgebra hiding ((.*))
-import ImagProc.Util
 import ImagProc.Images
-import ImagProc.Camera
 
 -- | Binarizes a gray level image.
 binarize8u :: CUChar    -- ^ threshold

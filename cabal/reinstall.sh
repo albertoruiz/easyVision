@@ -4,6 +4,8 @@ cd ../vision
 cabal install
 cd ../imagproc
 cabal install
+cd ../camera
+cabal install
 cd ../contrib
 cabal install
 cd ../features

@@ -4,6 +4,8 @@ cd ../vision
 cabal clean
 cd ../imagproc
 cabal clean
+cd ../camera
+cabal clean
 cd ../contrib
 cabal clean
 cd ../features

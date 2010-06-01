@@ -146,7 +146,7 @@ main3 = do
         pname:_ -> do
             let [fp,fc,fk] = map f ["pts.txt","cams.txt","calib.txt"]
                     where f n = "../../data/tracks/"++pname++"/"++n
-            s <- loadSVP fp fc fk
+            s <- recompPts `fmap` loadSVP fp fc fk
 --            let s = someHelix
             infoSProb s
             putStr "Initial solution: "

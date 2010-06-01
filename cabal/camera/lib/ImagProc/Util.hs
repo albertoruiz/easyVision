@@ -57,6 +57,7 @@ import System.Environment(getArgs,getEnvironment)
 import Data.Function(on)
 import Control.Concurrent
 import Data.IORef
+import ImagProc.C.UVC
 
 timing :: IO a -> IO a
 timing act = do
@@ -96,9 +97,12 @@ getCam n sz = do
                 else fst (aliases!!n)
         fullUrl = expand aliases url
         isLive = "--live" `isInfixOf` fullUrl
-    if isLive
-        then putStrLn "(Live) " >> mplayer (clean ["--live"] fullUrl) sz >>= live
-        else mplayer fullUrl sz
+    if "uvc" `isPrefixOf` fullUrl
+        then uvcCamera ("/dev/video" ++ drop 3 fullUrl) sz 30 >>= live
+        else
+            if isLive
+                then putStrLn "(Live) " >> mplayer (clean ["--live"] fullUrl) sz >>= live
+                else mplayer fullUrl sz
 
 clean ws = unwords . filter (not . (`elem` ws)). words
 

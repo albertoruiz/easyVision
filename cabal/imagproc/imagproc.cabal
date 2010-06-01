@@ -29,17 +29,15 @@ extra-tmp-files:    imagproc.buildinfo
 library
     Build-Depends:      base >= 3 && < 5, directory, process,
                         hmatrix >= 0.8.3, vision >= 0.1,
-                        directory, ghc-prim
+                        ghc-prim
 
     hs-source-dirs:     lib
 
     Exposed-modules:
                         ImagProc
-                        ImagProc.Util
                         ImagProc.Base
                         ImagProc.Images
                         ImagProc.ROI
-                        ImagProc.Camera
                         ImagProc.Generic
                         ImagProc.ImageFold
                         ImagProc.C.Simple

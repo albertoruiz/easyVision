@@ -34,6 +34,8 @@ import Graphics.UI.GLUT as GL hiding (Size,Point,Matrix,matrix)
 import EasyVision.GUI hiding (State)
 import EasyVision.GUI.Parameters
 import ImagProc hiding ((.*))
+import ImagProc.Camera
+import ImagProc.Util
 import Features
 import Data.List(transpose)
 import Control.Monad(when)

@@ -32,6 +32,7 @@ module EasyVision.MiniApps.Combinators (
 
 import ImagProc.Ipp.Core
 import ImagProc
+import ImagProc.Util
 --import ImagProc.C.Segments
 import Features.Polyline
 import Foreign

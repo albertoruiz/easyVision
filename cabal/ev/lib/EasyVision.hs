@@ -20,11 +20,14 @@ module EasyVision (
     module EasyVision.GUI,
     module EasyVision.MiniApps,
     module ImagProc,
-    module Features
+    module Features,
+    module ImagProc.Camera,
+    module ImagProc.Util
 ) where
 
 import EasyVision.GUI
 import EasyVision.MiniApps
 import ImagProc
 import Features
-
+import ImagProc.Camera
+import ImagProc.Util
