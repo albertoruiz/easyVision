@@ -26,7 +26,7 @@ foreign import ccall "openUVC"
     c_openUVC :: Ptr CChar -> CInt -> CInt -> CInt -> IO (Ptr ())
 
 foreign import ccall "grabUVC"
-    c_grabUVC :: Ptr () -> Ptr () -> CInt -> CInt -> IO ()
+    c_grabUVC :: Ptr () -> Ptr () -> IO ()
 
 uvcCamera :: String -> Size -> Int -> IO (IO ImageYUV)
 uvcCamera d (Size h w) fps = do
@@ -34,5 +34,5 @@ uvcCamera d (Size h w) fps = do
     han <- c_openUVC dev (fromIntegral w) (fromIntegral h) (fromIntegral fps)
     return $ do
         Y im <- image (Size h w)
-        c_grabUVC han (ptr im) (fromIntegral w) (fromIntegral h)
+        c_grabUVC han (ptr im)
         return (Y im)
