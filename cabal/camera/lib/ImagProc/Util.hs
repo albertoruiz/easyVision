@@ -90,19 +90,21 @@ getCam :: Int  -- ^ n-th camera url supplied by the user (or defined in cameras.
        -> Size -- ^ image size
        -> IO (IO ImageYUV)
 getCam n sz = do
-    args <- cleanOpts `fmap` getArgs
+    rawargs <- getArgs
     aliases <- getAliases
-    let url = if n < length args
+    let args = cleanOpts rawargs
+        url = if n < length args
                 then args!!n
                 else fst (aliases!!n)
         fullUrl = dropWhile (== ' ') $ expand aliases url
-        isLive = "--live" `isInfixOf` fullUrl
-    if "uvc" `isPrefixOf` fullUrl
-        then uvcCamera ("/dev/video" ++ drop 3 fullUrl) sz 30 >>= live
-        else
-            if isLive
-                then putStrLn "(Live) " >> mplayer (clean ["--live"] fullUrl) sz >>= live
-                else mplayer fullUrl sz
+        isLive = "--live" `isInfixOf` fullUrl || "--live" `elem` rawargs
+        cleanUrl = clean ["--live"] fullUrl
+        cam = if "uvc" `isPrefixOf` cleanUrl
+                then uvcCamera ("/dev/video" ++ drop 3 cleanUrl) sz 30
+                else mplayer cleanUrl sz
+    if isLive
+        then putStrLn "(Live) " >> cam >>= live
+        else cam
 
 clean ws = unwords . filter (not . (`elem` ws)). words
 
@@ -252,8 +254,8 @@ optionalSaver sz = do
 live :: IO a -> IO (IO a)
 live cam = do
     c <- newEmptySampleVar
-    forkIO $ forever $ cam >>= writeSampleVar c
-    return $ readSampleVar c
+    forkIO $ forever $ cam >>= writeSampleVar c {- >> putStr "." -}
+    return $ {- putStrLn "" >> -} readSampleVar c 
 
 createGrab l = do
     pl <- newIORef l
