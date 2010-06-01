@@ -23,7 +23,7 @@ extra-tmp-files:        imagproc-gpu.buildinfo
 library
     Build-Depends:      base >= 3 && < 5,
                         hmatrix >= 0.8.3, imagproc >= 0.1,
-                        ev-gui, GLUT
+                        ev-gui, GLUT, camera
 
     hs-source-dirs:     lib
 

@@ -95,7 +95,7 @@ getCam n sz = do
     let url = if n < length args
                 then args!!n
                 else fst (aliases!!n)
-        fullUrl = expand aliases url
+        fullUrl = dropWhile (== ' ') $ expand aliases url
         isLive = "--live" `isInfixOf` fullUrl
     if "uvc" `isPrefixOf` fullUrl
         then uvcCamera ("/dev/video" ++ drop 3 fullUrl) sz 30 >>= live
