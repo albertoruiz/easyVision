@@ -55,5 +55,3 @@ library
 
     ghc-options:        -Wall
 
-    extra-libraries:    SDL
-

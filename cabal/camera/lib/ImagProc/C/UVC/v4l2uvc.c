@@ -200,7 +200,7 @@ int enum_controls(int vd) //struct vdIn *vd)
          querymenu.index++) {
       if (0 == ioctl (vd, VIDIOC_QUERYMENU, &querymenu)) {
         printf ("  index:%d name:%s\n", querymenu.index, querymenu.name);
-	SDL_Delay(10);
+	usleep(10000);
       } else {
         printf ("error getting control menu");
         break;
@@ -219,7 +219,7 @@ int enum_controls(int vd) //struct vdIn *vd)
         continue;
       control_s.id=queryctrl.id;
       ioctl(vd, VIDIOC_G_CTRL, &control_s);
-      SDL_Delay(10);
+      usleep(10000);
       printf (" index:%-10d name:%-32s type:%d min:%-5d max:%-5d step:%-5d def:%-5d now:%d\n",
               queryctrl.id, queryctrl.name, queryctrl.type, queryctrl.minimum,
               queryctrl.maximum, queryctrl.step, queryctrl.default_value, control_s.value);
@@ -242,7 +242,7 @@ int enum_controls(int vd) //struct vdIn *vd)
         continue;
       control_s.id=queryctrl.id;
       ioctl(vd, VIDIOC_G_CTRL, &control_s);
-      SDL_Delay(20);
+      usleep(20000);
       printf (" index:%-10d name:%-32s type:%d min:%-5d max:%-5d step:%-5d def:%-5d now:%d\n",
               queryctrl.id, queryctrl.name, queryctrl.type, queryctrl.minimum,
               queryctrl.maximum, queryctrl.step, queryctrl.default_value, control_s.value);
@@ -280,14 +280,14 @@ int save_controls(int vd)
           continue;
         control_s.id=queryctrl.id;
         ioctl(vd, VIDIOC_G_CTRL, &control_s);
-        SDL_Delay(10);
+        usleep(10000);
         fprintf (configfile, "%-10d %-10d # name:%-32s type:%d min:%-5d max:%-5d step:%-5d def:%d\n",
                  queryctrl.id, control_s.value, queryctrl.name, queryctrl.type, queryctrl.minimum,
                  queryctrl.maximum, queryctrl.step, queryctrl.default_value);
         printf ("%-10d %-10d # name:%-32s type:%d min:%-5d max:%-5d step:%-5d def:%d\n",
                 queryctrl.id, control_s.value, queryctrl.name, queryctrl.type, queryctrl.minimum,
                 queryctrl.maximum, queryctrl.step, queryctrl.default_value);
-        SDL_Delay(10);
+        usleep(10000);
       }
     }
     for (queryctrl.id = V4L2_CID_PRIVATE_BASE;;
@@ -299,7 +299,7 @@ int save_controls(int vd)
           continue;
         control_s.id=queryctrl.id;
         ioctl(vd, VIDIOC_G_CTRL, &control_s);
-        SDL_Delay(10);
+        usleep(10000);
         fprintf (configfile, "%-10d %-10d # name:%-32s type:%d min:%-5d max:%-5d step:%-5d def:%d\n",
                  queryctrl.id, control_s.value, queryctrl.name, queryctrl.type, queryctrl.minimum,
                  queryctrl.maximum, queryctrl.step, queryctrl.default_value);
@@ -313,7 +313,7 @@ int save_controls(int vd)
     }
     fflush(configfile);
     fclose(configfile);
-    SDL_Delay(100);
+    usleep(100000);
   }
 }
 
@@ -330,7 +330,7 @@ int load_controls(int vd) //struct vdIn *vd)
   else {
     printf("loading controls from luvcview.cfg\n");
     char buffer[512]; 
-    fgets(buffer, sizeof(buffer), configfile);
+//    fgets(buffer, sizeof(buffer), configfile);
     while (NULL !=fgets(buffer, sizeof(buffer), configfile) )
       {
         sscanf(buffer, "%i%i", &control.id, &control.value);
@@ -338,7 +338,7 @@ int load_controls(int vd) //struct vdIn *vd)
           printf("ERROR id:%d val:%d\n", control.id, control.value);
         else
           printf("OK    id:%d val:%d\n", control.id, control.value);
-        SDL_Delay(20);
+        usleep(20000);
       }   
     fclose(configfile);
   }
