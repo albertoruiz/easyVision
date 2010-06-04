@@ -27,7 +27,8 @@ module EasyVision.MiniApps.Combinators (
   onlyRectangles,
   rectifyQuadrangle,
   monitor, observe, run,
-  counter, countDown
+  counter, countDown,
+  frameRate, compCost, timeMonitor,
 )where
 
 import ImagProc.Ipp.Core
@@ -54,6 +55,9 @@ import Data.List(tails)
 import Control.Monad(when,(>=>),forever)
 import ImagProc.Camera(mpSize)
 import Features.Segments
+import System.CPUTime
+import System.Time
+import Text.Printf
 --import ImagProc.C.Segments
 
 type SegmentExtractor = Int
@@ -255,6 +259,41 @@ run :: IO (IO a) -> IO ()
 run c = prepare >> (c >>= launch . (>> return ()))
 
 -----------------------------------------------------------
+
+frameRate cam = do
+    t0 <- getClockTime
+    t <- newIORef (t0,40)
+    return $ do
+            (t0,av) <- readIORef t
+            r <- cam
+            t1 <- getClockTime
+            let dt = diffClockTimes t1 t0
+            let delta = (fromIntegral (tdSec dt) * 10^12 + tdPicosec dt) `div` 10^9
+                av' = av *0.99 + 0.01* fromIntegral delta
+            writeIORef t (t1,av')
+            return (r,av')
+
+
+compCost cam = do
+    t <- newIORef 40
+    return $ do
+            av <- readIORef t
+            t0 <- getCPUTime
+            r <- cam
+            t1 <- getCPUTime
+            let delta = fromIntegral (t1 - t0) / (10^9 :: Double)
+                av' = av *0.99 + 0.01* delta
+            writeIORef t av'
+            return (r,av')
+
+
+timeMonitor = compCost >=> frameRate >=> monitor "Timing"  (Size 50 230) f >~> (fst.fst) where
+    f ((_,t1),t2) = do
+        pixelCoordinates (Size 50 230)
+        text2D 15 30 $ printf " %3.0f ms CPU  / %4.0f Hz   /   %3.0f%%" (t1::Double) (1000/t2::Double) (100*t1/t2)
+
+
+------------------------------------------------------------
 
 conjugateRotation pan tilt rho foc sca =
         scaling sca

@@ -24,7 +24,7 @@ library
                         camera >= 0.1,
                         vision >= 0.1, hmatrix >= 0.8.3,
                         patrec >= 0.1, ev-gui >= 0.1,
-                        GLUT, containers, process,
+                        GLUT, containers, process, old-time,
                         parallel <2
 
     hs-source-dirs:     lib
