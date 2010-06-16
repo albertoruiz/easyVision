@@ -16,4 +16,6 @@ cd ../ev
 cabal clean
 cd ../gpu
 cabal clean
+cd ../opencv
+cabal clean
 cd ..

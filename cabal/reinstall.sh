@@ -16,4 +16,6 @@ cd ../ev
 cabal install
 cd ../gpu
 cabal install
+cd ../opencv
+cabal install
 cd ..

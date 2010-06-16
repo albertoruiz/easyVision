@@ -1,3 +1,5 @@
+ghc-pkg unregister opencv
+
 ghc-pkg unregister imagproc-gpu
 
 ghc-pkg unregister easyVision
