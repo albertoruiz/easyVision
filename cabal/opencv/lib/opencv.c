@@ -1,27 +1,8 @@
-//#define CV_NO_BACKWARD_COMPATIBILITY
-
-//#include "cv.h"
-//#include "highgui.h"
-
+#define CV_NO_BACKWARD_COMPATIBILITY
 
 #include <cv.h>
-#include <highgui.h>
 #include <stdio.h>
-
-void opencv_test() {
-    printf("Hello from opencv in C!\n");
-    
-    IplImage* img = cvLoadImage("/home/brutus/Desktop/projects/opencvkk/lena.jpg",0);
-
-//    IplImage* img = cvCreateImage(cvGetSize(img1),IPL_DEPTH_8U,1);
-
-//    cvSmooth( img1, img, CV_GAUSSIAN, 5, 0,0,0);
-    cvNamedWindow( "Example1", CV_WINDOW_AUTOSIZE );
-    cvShowImage( "Example1", img );
-    cvWaitKey(0);
-    cvReleaseImage( &img );
-    cvDestroyWindow( "Example1" );   
-}
+#include <ipp.h>
 
 void testImage8u(void * pSrc,
             int height, int width, int sstep, 
@@ -31,7 +12,7 @@ void testImage8u(void * pSrc,
 
     printf("%d\n",(sr2-sr1+1)*(sc2-sc1+1));
 
-    IplImage * img = cvCreateImageHeader(cvSize(640,480), 8, 1 );
+    IplImage * img = cvCreateImageHeader(cvSize(width,height), 8, 1 );
     img->imageData = pSrc;
 
     cvSmooth( img, img, CV_GAUSSIAN, 5, 0,0,0);
@@ -42,63 +23,45 @@ void testImage8u(void * pSrc,
 //////////////////////////////////////////////////////////////////////////
 
 
-void houghTest(void * pSrc,
-            int height, int width, int sstep, 
-            int sr1, int sr2, int sc1, int sc2) {
+void hough(void * pSrc,
+           int height, int width, int sstep,
+           int sr1, int sr2, int sc1, int sc2,
+           int fmax, int* fn, IppiRect* res) {
 
-    IplImage * src = cvCreateImageHeader(cvSize(640,480), 8, 1 );
+    IplImage * src = cvCreateImageHeader(cvSize(width,height), 8, 1 );
     src->imageData = pSrc;
+    cvSetImageROI(src,cvRect(sc1,sr1,sc2-sc1+1,sr2-sr1+1));
 
-    IplImage* dst;
-    IplImage* color_dst;
+
     CvMemStorage* storage = cvCreateMemStorage(0);
     CvSeq* lines = 0;
-    int i;
 
-    if( !src )
-        return; // -1;
+    //cvSmooth( src, src, CV_GAUSSIAN, 5, 0,0,0);
+    //cvCanny( src, src, 50, 200, 3 );
 
-    //dst = cvCreateImage( cvGetSize(src), 8, 1 );
-    //color_dst = cvCreateImage( cvGetSize(src), 8, 3 );
-
-    cvCanny( src, src, 50, 200, 3 );
-    //cvCvtColor( dst, color_dst, CV_GRAY2BGR );
-#if 0
-    lines = cvHoughLines2( dst, storage, CV_HOUGH_STANDARD, 1, CV_PI/180, 100, 0, 0 );
-
-    for( i = 0; i < MIN(lines->total,100); i++ )
-    {
-        float* line = (float*)cvGetSeqElem(lines,i);
-        float rho = line[0];
-        float theta = line[1];
-        CvPoint pt1, pt2;
-        double a = cos(theta), b = sin(theta);
-        double x0 = a*rho, y0 = b*rho;
-        pt1.x = cvRound(x0 + 1000*(-b));
-        pt1.y = cvRound(y0 + 1000*(a));
-        pt2.x = cvRound(x0 - 1000*(-b));
-        pt2.y = cvRound(y0 - 1000*(a));
-        cvLine( color_dst, pt1, pt2, CV_RGB(255,0,0), 3, CV_AA, 0 );
-    }
-#else
     lines = cvHoughLines2( src, storage, CV_HOUGH_PROBABILISTIC, 1, CV_PI/180, 50, 50, 10 );
-    for( i = 0; i < lines->total; i++ )
-    {
-        CvPoint* line = (CvPoint*)cvGetSeqElem(lines,i);
-        cvLine( src, line[0], line[1], CV_RGB(128,128,128), 3, CV_AA, 0 );
-    } 
-#endif
 
-    //cvCvtColor( color_dst, src, CV_BGR2GRAY );
+    int i = 0;
 
-    //cvNamedWindow( "Source", 1 );
-    //cvShowImage( "Source", src );
+//    for( i = 0; i < lines->total; i++ )
+//    {
+//        CvPoint* line = (CvPoint*)cvGetSeqElem(lines,i);
+//        cvLine( src, line[0], line[1], CV_RGB(128,128,128), 3, CV_AA, 0 );
+//    }
 
-    //cvNamedWindow( "Hough", 1 );
-    //cvShowImage( "Hough", color_dst );
+    *fn = MIN(fmax,lines->total);
 
-    //cvWaitKey(0);
+    //printf("%d\n",*fn);
 
-    //return 0;
+    for(i=0; i< *fn; i++)
+    { CvPoint* line = (CvPoint*)cvGetSeqElem(lines,i);
+      res[i].x =line[0].x;
+      res[i].y =line[0].y;
+      res[i].width =line[1].x;
+      res[i].height =line[1].y;
+    }
+
+    cvReleaseImageHeader(&src);
+    cvReleaseMemStorage(&storage);
 }
 

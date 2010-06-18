@@ -11,8 +11,6 @@ using namespace cv;
 
 extern "C" {
 
-//CascadeClassifier cascade, nested;
-
 void * initCascade(char * path) {
 
         CascadeClassifier * cascade = new CascadeClassifier;
@@ -31,6 +29,7 @@ void cascadeDetect(CascadeClassifier * cascade,
 
     IplImage * src = cvCreateImageHeader(cvSize(width,height), 8, 1 );
     src->imageData = (char*)pSrc;
+    cvSetImageROI(src,cvRect(sc1,sr1,sc2-sc1+1,sr2-sr1+1));
 
     //printf("%d\n", src->widthStep);
 
@@ -43,7 +42,7 @@ void cascadeDetect(CascadeClassifier * cascade,
 
     cascade->detectMultiScale( frame, faces,
     1.1, 2, 0
-    |CV_HAAR_FIND_BIGGEST_OBJECT
+    |fmax>1?0:CV_HAAR_FIND_BIGGEST_OBJECT
     //|CV_HAAR_DO_ROUGH_SEARCH
     //|CV_HAAR_SCALE_IMAGE
     ,
@@ -59,6 +58,8 @@ void cascadeDetect(CascadeClassifier * cascade,
       res[i].width =faces[i].width;
       res[i].height =faces[i].height;
     }
+
+    cvReleaseImageHeader(&src);
 }
 
 }
