@@ -27,12 +27,14 @@ extra-source-files:     lib/ImagProc/C/Segments/mycv.h
 extra-tmp-files:
 
 library
-    Build-Depends:      base >= 3 && < 5, imagproc >= 0.1
+    Build-Depends:      base >= 3 && < 5, imagproc >= 0.1, patrec >= 0.1
 
     hs-source-dirs:     lib
 
     Exposed-modules:    ImagProc.C.Segments
                         ImagProc.C.Segments.Structs
+
+                        ImagProc.C.Corners
 
     other-modules:
 
@@ -41,6 +43,8 @@ library
                         lib/ImagProc/C/Segments/mycvTablesEdgels.c
                         lib/ImagProc/C/Segments/mycvUtils.c
                         lib/ImagProc/C/Segments/mycvUtilsSegs.c
+
+                        lib/ImagProc/C/Corners/corners.c
 
     include-dirs:       lib/ImagProc/C/Segments
 

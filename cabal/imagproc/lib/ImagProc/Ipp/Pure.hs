@@ -24,7 +24,7 @@ module ImagProc.Ipp.Pure (
     filterMax, filterBox,
     maxEvery, minEvery,
     sobelVert, sobelHoriz,
-    gauss, laplace, median, highPass8u,
+    gauss, gauss8u, laplace, median, highPass8u,
     magnitudePack,
     abs32f, sqrt32f, mirror8u,
     dilate3x3, erode3x3,
@@ -184,6 +184,12 @@ sobelHoriz = mkShrink (1,1) ioFilterSobelHoriz_32f_C1R
 gauss :: Mask -> ImageFloat -> ImageFloat
 gauss Mask5x5 = mkShrink (2,2) (ioFilterGauss_32f_C1R (codeMask Mask5x5))
 gauss Mask3x3 = mkShrink (1,1) (ioFilterGauss_32f_C1R (codeMask Mask3x3))
+
+-- | Convolution with a gaussian mask of the desired size.
+gauss8u :: Mask -> ImageGray -> ImageGray
+gauss8u Mask5x5 = mkShrink (2,2) (ioFilterGauss_8u_C1R (codeMask Mask5x5))
+gauss8u Mask3x3 = mkShrink (1,1) (ioFilterGauss_8u_C1R (codeMask Mask3x3))
+
 
 -- | Convolution with a laplacian mask of the desired size.
 laplace :: Mask -> ImageFloat -> ImageFloat

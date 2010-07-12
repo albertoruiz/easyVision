@@ -1,4 +1,4 @@
-{-# LANGUAGE RecursiveDo #-} -- amazing!!
+{-# LANGUAGE DoRec #-} -- amazing!!
 
 -- capture a polyline with the mouse and work with it
 

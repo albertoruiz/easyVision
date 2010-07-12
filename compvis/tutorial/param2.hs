@@ -1,4 +1,4 @@
-import EasyVision
+import EasyVision hiding ((.&.))
 import Graphics.UI.GLUT
 import Control.Arrow
 import Control.Monad

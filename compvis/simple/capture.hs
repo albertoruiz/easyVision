@@ -5,7 +5,7 @@ import Control.Monad
 import Vision
 import Numeric.LinearAlgebra hiding ((.*))
 
-main = run $ camera .&. userParam
+main = run $ (camera .&. userParam)
       ---     >>= observe "Video" (rgb.fst)
            ~>  g &&& snd
            >>= monitor "Channel S" (mpSize 20) (drawcont.fst)
@@ -35,7 +35,6 @@ shcont c = do
     setColor 1 1 1
     renderPrimitive Points $ mapM_ vertex c
 
-(.&.) = liftM2 (liftM2 (,))
 
 data Param = Param { peuck :: Double,
                      thres :: Int,

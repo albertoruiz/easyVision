@@ -95,6 +95,10 @@ ioFilterLaplace_32f_C1R mask = {-# SCC "ippiFilterLaplace_32f_C1R" #-} auto_1_32
     where f mask pSrc srcStep pDst dstStep roiSize = ippiFilterLaplace_32f_C1R pSrc srcStep pDst dstStep roiSize mask
 
 {- |    Perform linear filtering of an image using one of -}
+ioFilterGauss_8u_C1R mask = {-# SCC "ippiFilterGauss_8u_C1R" #-} auto_1_8u_C1R (f mask) "ippiFilterGauss_8u_C1R"
+    where f mask pSrc srcStep pDst dstStep roiSize = ippiFilterGauss_8u_C1R pSrc srcStep pDst dstStep roiSize mask
+
+{- |    Perform linear filtering of an image using one of -}
 ioFilterGauss_32f_C1R mask = {-# SCC "ippiFilterGauss_32f_C1R" #-} auto_1_32f_C1R (f mask) "ippiFilterGauss_32f_C1R"
     where f mask pSrc srcStep pDst dstStep roiSize = ippiFilterGauss_32f_C1R pSrc srcStep pDst dstStep roiSize mask
 

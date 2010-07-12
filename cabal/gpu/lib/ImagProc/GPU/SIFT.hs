@@ -23,7 +23,6 @@ module ImagProc.GPU.SIFT(
 
 import ImagProc.Ipp.Core
 import Foreign
-import Foreign.C.Types
 import Foreign.C.String
 import Numeric.LinearAlgebra
 import Data.Packed.Development

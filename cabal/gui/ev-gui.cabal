@@ -25,7 +25,8 @@ library
                         base >= 3 && < 5,
                         colour >= 2.2,
                         OpenGL < 2.2.4, GLUT < 2.1.2,
-                        containers, process
+                        containers, process,
+                        template-haskell, ghc-prim
 
     hs-source-dirs:     lib
 

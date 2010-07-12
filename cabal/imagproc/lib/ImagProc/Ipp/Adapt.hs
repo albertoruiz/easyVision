@@ -233,6 +233,14 @@ ippiFilterLaplace_32f_C1R pSrc srcStep pDst dstStep roiSize mask = do
     free proiSize
     return r
 
+foreign import ccall "adapt.h ippiFilterGauss_8u_C1Rx"
+    ippiFilterGauss_8u_C1Rx :: Ptr CUChar -> Int -> Ptr CUChar -> Int -> Ptr IppiSize -> CInt -> IO Int
+ippiFilterGauss_8u_C1R pSrc srcStep pDst dstStep roiSize mask = do
+    proiSize <- new roiSize
+    r <- ippiFilterGauss_8u_C1Rx pSrc srcStep pDst dstStep proiSize mask
+    free proiSize
+    return r
+
 foreign import ccall "adapt.h ippiFilterGauss_32f_C1Rx"
     ippiFilterGauss_32f_C1Rx :: Ptr Float -> Int -> Ptr Float -> Int -> Ptr IppiSize -> CInt -> IO Int
 ippiFilterGauss_32f_C1R pSrc srcStep pDst dstStep roiSize mask = do

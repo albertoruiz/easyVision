@@ -106,6 +106,10 @@ int ippiFilterLaplace_32f_C1Rx(Ipp32f* pSrc, int srcStep, Ipp32f* pDst, int dstS
     return ippiFilterLaplace_32f_C1R(pSrc, srcStep, pDst, dstStep, *roiSize, mask);
 }
 
+int ippiFilterGauss_8u_C1Rx(Ipp8u* pSrc, int srcStep, Ipp8u* pDst, int dstStep, IppiSize* roiSize, IppiMaskSize mask) {
+    return ippiFilterGauss_8u_C1R(pSrc, srcStep, pDst, dstStep, *roiSize, mask);
+}
+
 int ippiFilterGauss_32f_C1Rx(Ipp32f* pSrc, int srcStep, Ipp32f* pDst, int dstStep, IppiSize* roiSize, IppiMaskSize mask) {
     return ippiFilterGauss_32f_C1R(pSrc, srcStep, pDst, dstStep, *roiSize, mask);
 }

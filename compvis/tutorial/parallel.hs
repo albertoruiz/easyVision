@@ -1,4 +1,4 @@
-import EasyVision hiding (camera, observe)
+import EasyVision hiding (camera, observe, (.&.))
 import Control.Arrow
 import Control.Monad
 import Debug.Trace

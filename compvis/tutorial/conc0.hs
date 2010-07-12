@@ -1,4 +1,4 @@
-import EasyVision hiding (run,observe)
+import EasyVision hiding (run,observe,(.&.))
 import Graphics.UI.GLUT(postRedisplay)
 import Control.Monad(liftM2)
 

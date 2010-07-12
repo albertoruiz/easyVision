@@ -26,7 +26,7 @@ virtual cam = do
         inWin v $ do
             p <- getW v
             cameraView p 1 0.1 100
-            
+
             translate (Vector3 (-0.5) (-0.5) (-0.5::Float))
             scale 4 0.5 (0.5::Float)
             --setColor 1 1 1
@@ -80,9 +80,9 @@ face cam = do
 
 face' cam = do
     detect <- cascadeClassifier "/usr/local/share/opencv/haarcascades/haarcascade_frontalface_alt.xml"
-    nested <- cascadeClassifier "/usr/local/share/opencv/haarcascades/haarcascade_eye_tree_eyeglasses.xml"
+    nested <- cascadeClassifier "/usr/local/share/opencv/haarcascades/haarcascade_mcs_nose.xml"
     return $ do
          x <- cam
          let r = detect x 1
-         let r2 = if null r then [] else nested (modifyROI (const $ head r) x) 2
+         let r2 = if null r then [] else nested (modifyROI (const $ head r) x) 1
          return (x,r++r2)

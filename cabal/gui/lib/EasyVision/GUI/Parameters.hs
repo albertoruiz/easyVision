@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE TypeSynonymInstances, TemplateHaskell #-}
 -----------------------------------------------------------------------------
 {- |
 Module      :  EasyVision.GUI.Parameters
@@ -16,7 +16,7 @@ A \'global\' parameter list with its own control window. See the example warp.hs
 
 module EasyVision.GUI.Parameters (
    Parameters,
-   createParameters, createParameters',
+   createParameters, createParameters', autoParam,
    listParam, realParam, floatParam, percent, intParam, stringParam,
    getParam, info, posi, incre, decre, setpo
 ) where
@@ -27,10 +27,15 @@ import Graphics.UI.GLUT hiding (RGB, Matrix, Size)
 import qualified Graphics.UI.GLUT as GL
 import Data.IORef
 import qualified Data.Map as Map
-import Data.Map
+import Data.Map hiding (map)
 import GHC.Float
 import Numeric
-import Data.List(elemIndex)
+import Data.List(elemIndex,foldl')
+import Control.Monad(ap)
+
+import Language.Haskell.TH
+import Language.Haskell.TH.Syntax
+import GHC.Types(Double)
 
 sizePar = 35
 
@@ -213,3 +218,44 @@ instance Param Float where
 instance Param String where
     param (StringParam {sVal = s}) = s
     param v = error $ "wrong param conversion from "++ show v ++ " to String"
+
+
+-------------------------------------------------------
+
+instance Lift Double where
+    lift = liftD
+
+liftD x = sigE a (conT ''GHC.Types.Double)
+    where a = appE (varE 'read) (litE (stringL (show x)))
+
+instance Lift Parameter where
+    lift (Percent x) = conE 'Percent `appE` lift x
+    lift (RealParam v a b) = conE 'RealParam `appE` liftD v `appE` liftD a `appE` liftD b
+    lift (FlagParam x) = conE 'FlagParam `appE` lift x
+    lift (IntParam v x y) = conE 'IntParam `appE` lift v `appE` lift x `appE` lift y
+    lift (StringParam p v l) = conE 'StringParam `appE` lift p `appE` lift v `appE` lift l
+    lift (RLParam v p mn mx l n) = conE 'RLParam
+                                    `appE` liftD v `appE` lift p `appE` liftD mn `appE` liftD mx
+                                    `appE` lift l `appE` lift n 
+
+---------------------------------------------------------
+
+
+mkField (n,t) = varStrictType (mkName n) $ strictType notStrict (conT (mkName t))
+
+createRec name fields = dataD (cxt[]) (mkName name) [] [recC (mkName name) (map mkField fields)] []
+
+autoParam name funname defpar = sequence [createRec name fields,
+                                  valD (varP (mkName funname))
+                                       (normalB (doE [ bindS (varP (mkName "o")) (appE (varE 'createParameters) (lift x))
+                                                     , noBindS (appE (varE 'return) f)])) [] ]
+    where f = foldl' appp (appE (varE 'return) (conE p)) args
+          args = map (g.lift.fst) x
+          g = appE (appE (varE 'getParam) (varE (mkName "o")))
+          x = map s13 defpar
+          fields = map s12 defpar
+          p = mkName name 
+          s12 (a,b,c) = (a,b)
+          s13 (a,b,c) = (a,c)
+
+appp f x = appE (appE (varE 'ap) f) x

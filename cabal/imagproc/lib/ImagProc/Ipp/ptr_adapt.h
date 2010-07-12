@@ -26,6 +26,7 @@ int ippiFilterBox_32f_C1Rx(float*, int, float*, int, void*, void*, void*);
 int ippiFilterSobelVert_32f_C1Rx(float*, int, float*, int, void*);
 int ippiFilterSobelHoriz_32f_C1Rx(float*, int, float*, int, void*);
 int ippiFilterLaplace_32f_C1Rx(float*, int, float*, int, void*, int);
+int ippiFilterGauss_8u_C1Rx(unsigned char*, int, unsigned char*, int, void*, int);
 int ippiFilterGauss_32f_C1Rx(float*, int, float*, int, void*, int);
 int ippiFilterHipass_8u_C1Rx(unsigned char*, int, unsigned char*, int, void*, int);
 int ippiFilter_8u_C1Rx(unsigned char*, int, unsigned char*, int, void*, int*, void*, void*, int);

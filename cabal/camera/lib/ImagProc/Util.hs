@@ -14,7 +14,7 @@ General utilities.
 
 module ImagProc.Util(
     -- * Combinators
-    virtualCamera, (~~>), (~>), (>~~>), (>~>),
+    virtualCamera, (~~>), (~>), (>~~>), (>~>), (.&.),
     -- * Command line options
     getRawOption, getOption, optionString,
     getFlag, hasValue, maybeOption,
@@ -292,6 +292,11 @@ f >~> g = \x -> f x ~> g
 (>~~>) :: (t -> IO (IO a)) -> ([a] -> [b]) -> t -> IO (IO b)
 infixr 2 >~~>
 f >~~> g = \x -> f x ~~> g
+
+-- | \"union\" of virtual cameras
+(.&.) :: IO (IO a) -> IO (IO b) -> IO (IO (a, b))
+infixl 0 .&.
+(.&.) = liftM2 (liftM2 (,))
 
 -----------------------------------------------------------
 
