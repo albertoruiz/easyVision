@@ -2,7 +2,7 @@
 
 import EasyVision
 
-$(autoParam "Param" "param"
+$(autoParam "Param" "param" "WParam" ""
     [("sigma","Float",realParam 3 0 20)]
  )
 

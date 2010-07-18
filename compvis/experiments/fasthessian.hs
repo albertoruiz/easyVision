@@ -3,12 +3,13 @@ import ImagProc.C.Corners
 import EasyVision
 import Graphics.UI.GLUT hiding (Size,minmax)
 
-$(autoParam "Param" "param"
+$(autoParam "Param" "param" "WParam" ""
     [("th1","Int",intParam 200 0 255),
-     ("th2","Int",intParam 50 0 255)]
+     ("th2","Int",intParam 20 0 255),
+     ("oct","Int",intParam 1 0 6)]
  )
 
-main = run $ (camera ~> gray ~> ((!!0) . pyr) .&. param) ~> pru
+main = run $ (camera ~> gray .&. param) ~> pru
              >>= monitor "Image" (mpSize 20) f
              >>= zoomWindow "Zoom" 600 (autoscale.float.fst.snd)
              >>= timeMonitor
@@ -17,8 +18,9 @@ main = run $ (camera ~> gray ~> ((!!0) . pyr) .&. param) ~> pru
 guess x = dilate3x3 $ highPass8u Mask5x5 x `orI` highPass8u Mask5x5 (notI x)
 smooth = gauss8u Mask5x5
 
-pru (x,Param{..}) = (x,(h,pts))
+pru (y,Param{..}) = (x,(h,pts))
     where (h,pts) = prucor th1 th2 1000 (guess x) (smooth x)
+          x = pyramid y !! oct
 
 
 f (x,(h,pts)) = do
@@ -28,11 +30,6 @@ f (x,(h,pts)) = do
     setColor 1 0 0
     renderPrimitive Points $ mapM_ (vertex.snd) pts
 
-
-pyr = iterate dec
-
-dec x = modifyROI (shrink (2,2))$ resize8u InterpNN (Size (h `div` 2) (w `div` 2)) (modifyROI (const $ theROI x) $ gauss8u Mask5x5 x)
-    where (Size h w) = size x
 
 autoscale im = f im
     where (mn,mx) = minmax im

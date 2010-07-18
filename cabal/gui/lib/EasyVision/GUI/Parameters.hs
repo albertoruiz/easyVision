@@ -21,10 +21,9 @@ module EasyVision.GUI.Parameters (
    getParam, info, posi, incre, decre, setpo
 ) where
 
-import ImagProc.Ipp.Core
+import ImagProc.Ipp.Core hiding (r1,c1,r2,c2)
 import EasyVision.GUI.GUI
 import Graphics.UI.GLUT hiding (RGB, Matrix, Size)
-import qualified Graphics.UI.GLUT as GL
 import Data.IORef
 import qualified Data.Map as Map
 import Data.Map hiding (map)
@@ -32,26 +31,35 @@ import GHC.Float
 import Numeric
 import Data.List(elemIndex,foldl')
 import Control.Monad(ap)
+import Control.Applicative((<$>),(<*>))
+import ImagProc.Util(getOption)
 
 import Language.Haskell.TH
 import Language.Haskell.TH.Syntax
 import GHC.Types(Double)
 
+sizePar :: Int
 sizePar = 35
 
 -- | Given an assoc list of names and initial values of some \'global\' application parameters, it creates a window for controlling them and returns a function to get the current value of the desired parameter. There are several types of parameters.
 createParameters :: [(String, Parameter)]
                  -> IO (EVWindow (Map String Parameter))
-createParameters = createParameters' "Parameters"
+createParameters = createParameters' "Parameters" ""
 
-createParameters' winname ops = do
-    evWindow (Map.fromList ops) 
+createParameters' :: String -- ^ window name
+                  -> String -- ^ prefix for command line options (e.g. \"\", or \"-corners-1\"
+                  -> [(String, Parameter)] -- ^ names and types
+                  -> IO (EVWindow (Map String Parameter))
+createParameters' winname pref ops = do
+    ops' <- zip (map fst ops) `fmap` mapM (uncurry (defcomlin pref)) ops
+    evWindow (Map.fromList ops') 
              winname 
              (Size (2+length ops * sizePar) 200)
              (Just f)
              (kbdopts kbdQuit)
 
   where
+
     f o = do
         m <- readIORef o
         let els = Map.elems m
@@ -63,9 +71,9 @@ createParameters' winname ops = do
     bar p (s,e) = do
         setColor 0 0 0.5
         renderPrimitive Polygon (mapM_ vertex [Pixel r1 c1,
-                                                        Pixel r1 c2,
-                                                        Pixel r2 c2,
-                                                        Pixel r2 c1])
+                                               Pixel r1 c2,
+                                               Pixel r2 c2,
+                                               Pixel r2 c1])
         setColor 1 1 1
         rasterPos (Vertex2 (5::GLfloat) (4+fromIntegral r1/2+fromIntegral r2/2))
         renderString Helvetica12 (s++" = "++info e)
@@ -76,7 +84,7 @@ createParameters' winname ops = do
             k = posi e
 
     kbdopts def opts = kbd where
-        kbd (MouseButton WheelUp) Down _ pos@(Position x y) = do
+        kbd (MouseButton WheelUp) Down _ (Position _x y) = do
             m <- readIORef opts
             let s' = keys m
             let s = (s' !! (fromIntegral y `div` sizePar))
@@ -84,7 +92,7 @@ createParameters' winname ops = do
             let m' = insert s (incre v) m
             writeIORef opts m'
             postRedisplay Nothing
-        kbd (MouseButton WheelDown) Down _ pos@(Position x y) = do
+        kbd (MouseButton WheelDown) Down _ (Position _x y) = do
             m <- readIORef opts
             let s' = keys m
             let s = (s' !! (fromIntegral y `div` sizePar))
@@ -92,7 +100,7 @@ createParameters' winname ops = do
             let m' = insert s (decre v) m
             writeIORef opts m'
             postRedisplay Nothing
-        kbd (MouseButton LeftButton) Down _ pos@(Position x y) = do
+        kbd (MouseButton LeftButton) Down _ (Position x y) = do
             m <- readIORef opts
             let s' = keys m
             let s = (s' !! (fromIntegral y `div` sizePar))
@@ -107,7 +115,7 @@ type Parameters = IORef (Map String Parameter)
 
 data Parameter = Percent Int
                | RealParam Double Double Double
-               | FlagParam Bool
+--               | FlagParam Bool
                | IntParam Int Int Int
                | StringParam { sPos :: Int, sVal :: String, sList :: [String] }
                | RLParam { rVal:: Double,
@@ -152,6 +160,7 @@ floatParam a b c = realParam (float2Double a) (float2Double b) (float2Double c)
 intParam :: Int -> Int -> Int -> Parameter
 intParam = IntParam
 
+incre :: Parameter -> Parameter
 incre (Percent v)   = Percent (min 100 (v+1))
 incre (RealParam v a b)   = RealParam (min b (v+(b-a)/100)) a b
 incre (IntParam v a b) = IntParam (min b (v+1)) a b
@@ -160,6 +169,7 @@ incre (x@RLParam {}) = x {rVal = rList x !! k, rPos = k}
 incre (x@StringParam {}) = x {sVal = sList x !! k, sPos = k}
     where k = (sPos x + 1) `rem` length (sList x)
 
+decre :: Parameter -> Parameter
 decre (Percent v)   = Percent (max 0 (v-1))
 decre (RealParam v a b)   = RealParam (max a (v-(b-a)/100)) a b
 decre (IntParam v a b) = IntParam (max a (v-1)) a b
@@ -168,22 +178,24 @@ decre (x@RLParam {}) = x {rVal = rList x !! k, rPos = k}
 decre (x@StringParam {}) = x {sVal = sList x !! k, sPos = k}
     where k = max 0 (sPos x - 1)
 
+setpo :: GLint -> Parameter -> Parameter
 setpo p (Percent _) = Percent (fromIntegral p `div` 2)
-setpo p (RealParam v a b) = RealParam (a+(b-a)/100*fromIntegral p / 2) a b
-setpo p (IntParam v a b) = IntParam (a+ round (fromIntegral (b-a)*fromIntegral p / 200)) a b
+setpo p (RealParam _v a b) = RealParam (a+(b-a)/100*fromIntegral p / 2) a b
+setpo p (IntParam _v a b) = IntParam (a+ round (fromIntegral (b-a)*fromIntegral p / (200::Double))) a b
 setpo p (x@RLParam {}) = x {rVal = rList x !! k, rPos = k}
-    where k = round $ (fromIntegral $ rLength x) * fromIntegral p / 200
+    where k = round $ (fromIntegral $ rLength x) * fromIntegral p / (200::Double)
 setpo p (x@StringParam {}) = x {sVal = sList x !! k, sPos = k}
-    where k = round $ (fromIntegral $ length $ sList x) * fromIntegral p / 200
+    where k = round $ (fromIntegral $ length $ sList x) * fromIntegral p / (200::Double)
 
-
+posi :: Parameter -> Int
 posi (Percent v)    = v
 posi (RealParam v a b)    = round $ 100*(v-a)/(b-a)
-posi (IntParam v a b)   = round $ 100*fromIntegral (v-a)/fromIntegral(b-a)
+posi (IntParam v a b)   = round $ 100*fromIntegral (v-a)/(fromIntegral(b-a) :: Double)
 posi (RLParam {rPos = i, rLength = l}) = (200*i) `div` (2*(l-1))
 posi (StringParam {sPos = i, sList = list}) = (200*i) `div` (2*(l-1))
     where l = length list
 
+info :: Parameter -> String
 info (Percent v) = show v ++ "%"
 info (RealParam v _ _) = showFFloat (Just 2) v ""
 info (RLParam {rVal = v}) = showFFloat (Just 2) v ""
@@ -219,19 +231,42 @@ instance Param String where
     param (StringParam {sVal = s}) = s
     param v = error $ "wrong param conversion from "++ show v ++ " to String"
 
+-------------------------------------------------------
+
+defcomlin :: String -> String -> Parameter -> IO Parameter
+
+defcomlin pref name (Percent x) = Percent <$> getOption ("--"++pref++name) x
+defcomlin pref name (RealParam x a b) = RealParam <$> getOption ("--"++pref++name) x <*> return a <*> return b
+--defcomlin pref name (FlagParam b) = FlagParam <$> getOption ("--"++pref++name) b
+defcomlin pref name (IntParam x a b) = IntParam <$> getOption ("--"++pref++name) x <*> return a <*> return b
+
+defcomlin pref name (RLParam v _p mn mx l n) = do
+    v' <- getOption ("--"++pref++name) v
+    let k = length $ fst $ span (< v') l
+    return $ RLParam (l!!k) k mn mx l n
+
+defcomlin pref name (StringParam _p s list) = do
+    s' <- getOption ("--"++pref++name) s
+    let k = case elemIndex s' list of
+                Nothing -> error $ "option "++s'++" is not in the list "++ show list
+                Just q -> q
+    return $ StringParam k s' list
+
+-- Warning: check RLParam and StrinParam
 
 -------------------------------------------------------
 
 instance Lift Double where
     lift = liftD
 
+liftD :: Double -> ExpQ
 liftD x = sigE a (conT ''GHC.Types.Double)
     where a = appE (varE 'read) (litE (stringL (show x)))
 
 instance Lift Parameter where
     lift (Percent x) = conE 'Percent `appE` lift x
     lift (RealParam v a b) = conE 'RealParam `appE` liftD v `appE` liftD a `appE` liftD b
-    lift (FlagParam x) = conE 'FlagParam `appE` lift x
+--    lift (FlagParam x) = conE 'FlagParam `appE` lift x
     lift (IntParam v x y) = conE 'IntParam `appE` lift v `appE` lift x `appE` lift y
     lift (StringParam p v l) = conE 'StringParam `appE` lift p `appE` lift v `appE` lift l
     lift (RLParam v p mn mx l n) = conE 'RLParam
@@ -240,22 +275,29 @@ instance Lift Parameter where
 
 ---------------------------------------------------------
 
-
+mkField :: (String, String) -> VarStrictTypeQ
 mkField (n,t) = varStrictType (mkName n) $ strictType notStrict (conT (mkName t))
 
+createRec :: String -> [(String, String)] -> DecQ
 createRec name fields = dataD (cxt[]) (mkName name) [] [recC (mkName name) (map mkField fields)] []
 
-autoParam name funname defpar = sequence [createRec name fields,
-                                  valD (varP (mkName funname))
-                                       (normalB (doE [ bindS (varP (mkName "o")) (appE (varE 'createParameters) (lift x))
-                                                     , noBindS (appE (varE 'return) f)])) [] ]
+autoParam ::(Lift b) => String -> String -> String -> String -> [(String, String, b)] -> Q [Dec]
+autoParam name funname winname pref defpar = sequence [
+        createRec name fields,
+        valD (varP (mkName funname))
+             (normalB (doE [ bindS (varP (mkName "o")) (appE crea (lift x)) 
+                           , noBindS (appE (varE 'return) f)
+                           ])) [] 
+      ]
     where f = foldl' appp (appE (varE 'return) (conE p)) args
           args = map (g.lift.fst) x
           g = appE (appE (varE 'getParam) (varE (mkName "o")))
           x = map s13 defpar
           fields = map s12 defpar
           p = mkName name 
-          s12 (a,b,c) = (a,b)
-          s13 (a,b,c) = (a,c)
+          s12 (a,b,_c) = (a,b)
+          s13 (a,_b,c) = (a,c)
+          crea = (varE 'createParameters') `appE` (lift winname) `appE` (lift pref)
 
+appp :: ExpQ -> ExpQ -> ExpQ
 appp f x = appE (appE (varE 'ap) f) x

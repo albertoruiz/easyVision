@@ -29,7 +29,8 @@ module ImagProc (
     getCorners,
     filter32f, filter8u,
     gaussS, gaussS',
-    rotateROI
+    rotateROI,
+    pyramid
 ) where
 
 import ImagProc.Ipp.Core
@@ -170,3 +171,14 @@ rotateROI angle roi im = im' where
     f1 = modifyROI (const roi)
     r  = desp (x,y) <> rot3 (-angle) <> desp (-x,-y)
     im' = f1 $ warp zeroP sz r (f2 im)
+
+--------------------------------------------------------------------
+
+pyramid x = zipWith g (iterate dec x) [0..]
+    where g x k = modifyROI (shrink (k,k)) x
+
+dec x = resize8u InterpLinear sz2 . f . gauss8u Mask3x3 $  x
+    where (Size h w) = size x
+          sz2 = (Size (h `div` 2) (w `div` 2))
+          f = forceROI (theROI x)
+          forceROI r (G im) = G im { vroi = r }

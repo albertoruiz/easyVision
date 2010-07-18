@@ -40,7 +40,7 @@ accept = 100
 
 cornerTracker mintrk cam = do
     w<- evWindow ([],[],ident 3) "Tracker" (mpSize 20) Nothing  (const kbdQuit) -- (mouse (kbdcam ctrl))
-    o <- createParameters' "Tracker" [("err",realParam 0.01 0 0.1)
+    o <- createParameters' "Tracker" "" [("err",realParam 0.01 0 0.1)
                            ]
 --     s <- initHUBIGraph "http://127.0.0.1:20738/RPC2"
 --     let ubiadd f = runReaderT f s

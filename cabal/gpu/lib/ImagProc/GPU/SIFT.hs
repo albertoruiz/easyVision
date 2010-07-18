@@ -144,7 +144,7 @@ getMatchGPU = do
 userSIFTParams = do
     SIFTParams{..} <- getSIFTParams
 
-    o <- createParameters' "SIFT Parameters"
+    o <- createParameters' "SIFT Parameters" ""
         [ ("oct1" , intParam    oct1   0 3)
         , ("thres", realParam   thres  0 0.01)
         , ("nmax",  intParam    nmax   0 2000)

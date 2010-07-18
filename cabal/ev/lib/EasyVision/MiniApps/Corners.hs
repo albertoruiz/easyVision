@@ -117,7 +117,7 @@ data Param = Param { sigma1 :: Float
 userParam = do
     Param{..} <- getCornerParam
 
-    o <- createParameters' "Corners"
+    o <- createParameters' "Corners" ""
         [("sigma1",floatParam  sigma1 0 20),
          ("sigma2",floatParam  sigma2 0 20),
          ("smask", floatParam  smask  0 5),

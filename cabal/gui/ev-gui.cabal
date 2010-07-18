@@ -20,6 +20,7 @@ extra-source-files:
 
 library
     Build-Depends:      imagproc >= 0.1,
+                        camera >= 0.1,
                         vision >= 0.1,
                         hmatrix >= 0.8.3,
                         base >= 3 && < 5,
