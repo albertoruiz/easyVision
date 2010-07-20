@@ -2,8 +2,8 @@
 
 import EasyVision
 
-$(autoParam "Param" "param" "WParam" ""
+$(autoParam "Param" ""
     [("sigma","Float",realParam 3 0 20)]
  )
 
-main = run $ (param ~> sigma .&. camera ~> float . gray) >>= observe "gauss" (uncurry gaussS)
+main = run $ (winParam ~> sigma .&. camera ~> float . gray) >>= observe "gauss" (uncurry gaussS)

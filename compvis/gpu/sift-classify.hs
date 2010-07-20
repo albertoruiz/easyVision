@@ -19,7 +19,7 @@ main = do
     prepare
 
     sift <- getSift
-    os <- userSIFTParams
+    os <- winSIFTParams
     matchGPU <- getMatchGPU
 
     o <- createParameters [("inlier_thres", intParam 3 0 20) ]

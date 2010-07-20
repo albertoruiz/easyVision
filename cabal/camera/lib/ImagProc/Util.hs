@@ -14,7 +14,7 @@ General utilities.
 
 module ImagProc.Util(
     -- * Combinators
-    virtualCamera, (~~>), (~>), (>~~>), (>~>), (.&.),
+    virtualCamera, (~~>), (~>), (>~~>), (>~>), (.&.), (.@.),
     -- * Command line options
     getRawOption, getOption, optionString,
     getFlag, hasValue, maybeOption,
@@ -41,18 +41,15 @@ module ImagProc.Util(
 import ImagProc.Ipp.Core
 import ImagProc.Generic(Channels,channels,GImg,toYUV)
 import ImagProc.Camera
-import Foreign (touchForeignPtr,castPtr)
-import ImagProc.Images
-import System.IO
 import System.IO.Unsafe(unsafeInterleaveIO)
-import System.Process
 import Data.List(isPrefixOf,foldl',tails,findIndex,isInfixOf)
 import Data.Maybe
-import System.Directory(getDirectoryContents,doesFileExist)
+import System.Directory(doesFileExist)
 import System.CPUTime
 import Text.Printf
 import Debug.Trace
 import Control.Monad
+import Control.Arrow((&&&))
 import System.Environment(getArgs,getEnvironment)
 import Data.Function(on)
 import Control.Concurrent
@@ -64,7 +61,7 @@ timing act = do
     t0 <- getCPUTime
     r <- act
     t1 <- getCPUTime
-    printf "%4.0f ms CPU\n" $ (fromIntegral (t1 - t0) / (10^9 :: Double))
+    _ <- printf "%4.0f ms CPU\n" $ (fromIntegral (t1 - t0) / (10^9 :: Double))
     return r
 
 debug :: Show x => x -> x
@@ -254,9 +251,10 @@ optionalSaver sz = do
 live :: IO a -> IO (IO a)
 live cam = do
     c <- newEmptySampleVar
-    forkIO $ forever $ cam >>= writeSampleVar c {- >> putStr "." -}
+    _ <- forkIO $ forever $ cam >>= writeSampleVar c {- >> putStr "." -}
     return $ {- putStrLn "" >> -} readSampleVar c 
 
+createGrab :: [b] -> IO (IO b)
 createGrab l = do
     pl <- newIORef l
     return $ do
@@ -264,6 +262,7 @@ createGrab l = do
         writeIORef pl t
         return h
 
+grabAll :: IO t -> IO [t]
 grabAll grab = do
     im <- grab
     rest <- unsafeInterleaveIO (grabAll grab)
@@ -297,6 +296,12 @@ f >~~> g = \x -> f x ~~> g
 (.&.) :: IO (IO a) -> IO (IO b) -> IO (IO (a, b))
 infixl 0 .&.
 (.&.) = liftM2 (liftM2 (,))
+
+
+-- | a combinator which is useful to compute a pure function on the input stream, 
+--     with parameters taken from an interactive window.
+(.@.) :: (a -> b -> c) -> IO (IO a) -> IO b -> IO (IO (b, c))
+f .@. wp = (wp .&. ) . return >~> snd &&& uncurry f
 
 -----------------------------------------------------------
 

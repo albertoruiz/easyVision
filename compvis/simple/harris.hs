@@ -3,12 +3,12 @@
 import EasyVision
 import Graphics.UI.GLUT hiding (Size)
 
-$(autoParam "Param" "param" "Param" ""
+$(autoParam "Param" ""
    [("level","Int",   intParam 1 0 6),
     ("thres","Float", realParam 0.01 0 0.1)]
  )
 
-main = run $ (camera ~> gray ~> pyramid .&. param )
+main = run $ (camera ~> gray ~> pyramid .&. winParam )
            >>= disp
            >>= timeMonitor
 

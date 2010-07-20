@@ -1,14 +1,7 @@
-{-# LANGUAGE RecordWildCards #-}
-
 -- demo of siftgpu
 
-
 import EasyVision
-import Graphics.UI.GLUT hiding (Size,Point)
-import Control.Monad(when)
-import Numeric.LinearAlgebra
 import ImagProc.GPU.SIFT
-import Vision
 
 main = do
     sz <- findSize
@@ -19,7 +12,7 @@ main = do
     sift <- getSift
 
     w <- evWindow () "SIFT GPU" sz Nothing (const (kbdcam ctrl))
-    o <- userSIFTParams
+    o <- winSIFTParams
     launch $ do
         x <- cam
         pars <- o

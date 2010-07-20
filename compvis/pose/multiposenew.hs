@@ -66,7 +66,7 @@ main = do
        then do
          nv <- getW auxWin
          imgs <- fmap (map gray) (sequence rawcams)
-        
+
          --print $ env3x3 (imgs!!0) (Pixel 100 100)
          --print $ subPixMean (imgs!!0) (Pixel 100 100)
 
@@ -80,7 +80,7 @@ main = do
              h = hFun itf fs st imgs
              ns = dim st
              nz = dim (h st)
-             cz = 1E-5 .* ident nz
+             cz = 1E-5 * ident nz
              systemNoise = map (/1000) [0.01,0.01,0.01,0.1,0.1,0.1]
              cs = diagl $ replicate 6 0 ++ concat (replicate (n-1) (map(/1000) systemNoise)) ++ systemNoise
              sys = System fFun (toList.h.fromList) cs cz
@@ -216,12 +216,12 @@ betterRep = withQuat . factorizeCamera
     where withQuat (k,r,c) = (k@@>(0,0), toQuat r, c)
           toQuat = uncurry axisToQuat . rotToAxis
 
-asMatrix (f,q,c) = (kgen f) <> (r <|> -r <> c)
+asMatrix (f,q,c) = kgen f <> fromBlocks [[r, asColumn (-r <> c)]]
     where r = getRotation $ q
 
 weighted alpha (f1,r1,c1) (f2,r2,c2) = (alpha*f1+(1-alpha)*f2,
                                         slerp r2 r1 alpha,
-                                        alpha.*c1+(1-alpha).*c2)
+                                        scalar alpha*c1 + scalar (1-alpha) *c2)
 
 ------------------------------------------------
 
@@ -386,7 +386,7 @@ subPixMean img pix@(Pixel r c) = Point x' y' where
     env = env3x3 img pix
     sumV x = x <.> constant 1 (dim x)
     sumM = sumV . flatten
-    w = env */ (sumM env)
+    w = env / scalar (sumM env)
     dr = sumM (rs * w)
     dc = sumM (cs * w)
     sc = 2 / fromIntegral (width (size img))

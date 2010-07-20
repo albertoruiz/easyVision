@@ -3,7 +3,7 @@ import ImagProc.C.Corners
 import EasyVision
 import Graphics.UI.GLUT hiding (Size,minmax)
 
-$(autoParam "Param" "param" "WParam" "x-"
+$(autoParam "Param" "x-"
     [("thprev","Int",intParam 200 0 255),
      ("th0","Int",intParam 14 0 255),
      ("th1","Int",intParam 12 0 255),
@@ -11,7 +11,7 @@ $(autoParam "Param" "param" "WParam" "x-"
      ("level","Int",intParam 1 0 6)]
  )
 
-main = run $ (camera ~> gray ~> pyramid .&. param )
+main = run $ (camera ~> gray ~> pyramid .&. winParam )
            >>= disp
            >>= timeMonitor
 

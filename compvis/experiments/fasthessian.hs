@@ -3,13 +3,13 @@ import ImagProc.C.Corners
 import EasyVision
 import Graphics.UI.GLUT hiding (Size,minmax)
 
-$(autoParam "Param" "param" "WParam" ""
+$(autoParam "Param" ""
     [("th1","Int",intParam 200 0 255),
      ("th2","Int",intParam 20 0 255),
      ("oct","Int",intParam 1 0 6)]
  )
 
-main = run $ (camera ~> gray .&. param) ~> pru
+main = run $ (camera ~> gray .&. winParam) ~> pru
              >>= monitor "Image" (mpSize 20) f
              >>= zoomWindow "Zoom" 600 (autoscale.float.fst.snd)
              >>= timeMonitor

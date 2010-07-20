@@ -85,7 +85,7 @@ main1 = do
     prepare
 
     sift <- getSift
-    os <- userSIFTParams
+    os <- winSIFTParams
     matchGPU <- getMatchGPU
 
     o <- createParameters [ ("err", realParam 0.7 0 1)

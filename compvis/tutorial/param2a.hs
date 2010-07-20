@@ -5,12 +5,12 @@ import Graphics.UI.GLUT
 import Control.Arrow
 import Control.Monad
 
-$(autoParam "Param" "userParam" "WParam" ""
+$(autoParam "Param" ""
     [("sigma","Float", realParam 3 0 20),
     ("rad"  ,"Int",    intParam  4 1 25),
     ("thres","Float",  realParam 0.6 0 1)])
 
-main = run $ (camera ~> gray ~> float .&. userParam)
+main = run $ (camera ~> gray ~> float .&. winParam)
          ~>  fst &&& corners
          >>= monitor "corners" (mpSize 20) sh
 

@@ -8,13 +8,13 @@ import Control.Monad(when)
 import Numeric.LinearAlgebra
 import Numeric.GSL.Fourier
 
-main = mdo
-    prepare
-    sz <- findSize
-    c <- capturePolyline "Poly" sz a
-    a <- analyze "Fourier" sz (\n -> smooth n . feat . redu sz 3) 10 c
---     a <- analyze "Douglas-Peucker" sz (redu sz) 3 c
-    mainLoop
+main = do rec
+            prepare
+            sz <- findSize
+            c <- capturePolyline "Poly" sz a
+            a <- analyze "Fourier" sz (\n -> smooth n . feat . redu sz 3) 10 c
+            --     a <- analyze "Douglas-Peucker" sz (redu sz) 3 c
+          mainLoop
 
 --------------------------------------------------------------
 

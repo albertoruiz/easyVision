@@ -1,4 +1,4 @@
-{-# LANGUAGE ForeignFunctionInterface, RecordWildCards #-}
+{-# LANGUAGE ForeignFunctionInterface, RecordWildCards, TemplateHaskell #-}
 
 -----------------------------------------------------------------------------
 {- |
@@ -16,8 +16,8 @@ Interface to the SiftGPU library by Changchang Wu, <http://www.cs.unc.edu/~ccwu>
 
 
 module ImagProc.GPU.SIFT(
-    getSift, 
-    SIFTParams(..), defaultSIFTParams, userSIFTParams,
+    getSift,
+    SIFTParams(..), defSIFTParams, winSIFTParams, argSIFTParams,
     getMatchGPU
 ) where
 
@@ -28,24 +28,17 @@ import Numeric.LinearAlgebra
 import Data.Packed.Development
 import Graphics.UI.GLUT hiding (Point)
 import Control.Monad(when)
-
-import Control.Applicative
 import EasyVision.GUI.Parameters
-import ImagProc.Util
 
 -----------------------------------------------------------------
 
-data SIFTParams = SIFTParams
-    { oct1   :: Int
-    , thres  :: Double
-    , nmax   :: Int
-    }
+$(autoParam "SIFTParams" ""
+        [ ("oct1" , "Int",    intParam    0        0 3)
+        , ("thres", "Double", realParam   0.00666  0 0.01)
+        , ("nmax",  "Int",    intParam    1000     0 2000)
+        ]
+ )
 
-defaultSIFTParams = SIFTParams
-    { oct1  = 0
-    , thres = 0.00666
-    , nmax  = 1000
-    }
 
 getSift :: IO (SIFTParams -> ImageGray -> [InterestPoint])
 
@@ -138,24 +131,3 @@ getMatchGPU = do
     return $ \e r v1 v2 -> if null v1 || null v2
         then []
         else unsafePerformIO $ inContext w (matchGPU e r v1 v2)
-
-----------------------------------------------------------
-
-userSIFTParams = do
-    SIFTParams{..} <- getSIFTParams
-
-    o <- createParameters' "SIFT Parameters" ""
-        [ ("oct1" , intParam    oct1   0 3)
-        , ("thres", realParam   thres  0 0.01)
-        , ("nmax",  intParam    nmax   0 2000)
-        ]
-
-    return $ SIFTParams <$> getParam o "oct1"
-                        <*> getParam o "thres"
-                        <*> getParam o "nmax"
-
-getSIFTParams = SIFTParams <$> getOption "--oct1"  oct1
-                           <*> getOption "--thres" thres
-                           <*> getOption "--nmax"  nmax
-
-    where SIFTParams{..} = defaultSIFTParams

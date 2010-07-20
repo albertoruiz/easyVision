@@ -32,11 +32,10 @@ import Numeric
 import Data.List(elemIndex,foldl')
 import Control.Monad(ap)
 import Control.Applicative((<$>),(<*>))
-import ImagProc.Util(getOption)
+import ImagProc.Util(getOption,optionString)
 
 import Language.Haskell.TH
 import Language.Haskell.TH.Syntax
-import GHC.Types(Double)
 
 sizePar :: Int
 sizePar = 35
@@ -246,7 +245,7 @@ defcomlin pref name (RLParam v _p mn mx l n) = do
     return $ RLParam (l!!k) k mn mx l n
 
 defcomlin pref name (StringParam _p s list) = do
-    s' <- getOption ("--"++pref++name) s
+    s' <- optionString ("--"++pref++name) s
     let k = case elemIndex s' list of
                 Nothing -> error $ "option "++s'++" is not in the list "++ show list
                 Just q -> q
@@ -260,18 +259,34 @@ instance Lift Double where
     lift = liftD
 
 liftD :: Double -> ExpQ
-liftD x = sigE a (conT ''GHC.Types.Double)
-    where a = appE (varE 'read) (litE (stringL (show x)))
+liftD = litE . rationalL . toRational
 
 instance Lift Parameter where
     lift (Percent x) = conE 'Percent `appE` lift x
-    lift (RealParam v a b) = conE 'RealParam `appE` liftD v `appE` liftD a `appE` liftD b
+    lift (RealParam v a b) = conE 'RealParam `appE` lift v `appE` lift a `appE` lift b
 --    lift (FlagParam x) = conE 'FlagParam `appE` lift x
     lift (IntParam v x y) = conE 'IntParam `appE` lift v `appE` lift x `appE` lift y
     lift (StringParam p v l) = conE 'StringParam `appE` lift p `appE` lift v `appE` lift l
     lift (RLParam v p mn mx l n) = conE 'RLParam
-                                    `appE` liftD v `appE` lift p `appE` liftD mn `appE` liftD mx
+                                    `appE` lift v `appE` lift p `appE` lift mn `appE` lift mx
                                     `appE` lift l `appE` lift n 
+
+val :: Parameter -> ExpQ
+val (Percent x) = lift x
+val (RealParam x _a _b) = lift x
+val (IntParam x _a _b) = lift x
+val (RLParam v _p _mn _mx _l _n) = lift v
+val (StringParam _p s _list) = lift s
+
+optfun :: String -> String -> Parameter -> ExpQ
+optfun pref name (Percent x) = varE 'getOption `appE` lp pref name `appE` lift x
+optfun pref name (RealParam x _a _b) = varE 'getOption `appE` lp pref name `appE` lift x
+optfun pref name (IntParam x _a _b) = varE 'getOption `appE` lp pref name `appE` lift x
+optfun pref name (RLParam v _p _mn _mx _l _n) = varE 'getOption `appE` lp pref name `appE` lift v
+optfun pref name (StringParam _p s _list) = varE 'optionString `appE` lp pref name `appE` lift s
+
+lp :: String -> String -> ExpQ
+lp pref name = litE (stringL ("--"++pref++name))
 
 ---------------------------------------------------------
 
@@ -279,25 +294,45 @@ mkField :: (String, String) -> VarStrictTypeQ
 mkField (n,t) = varStrictType (mkName n) $ strictType notStrict (conT (mkName t))
 
 createRec :: String -> [(String, String)] -> DecQ
-createRec name fields = dataD (cxt[]) (mkName name) [] [recC (mkName name) (map mkField fields)] []
+createRec name fields = dataD (cxt[]) (mkName name) [] [recC (mkName name) (map mkField fields)] [mkName "Show"]
 
-autoParam ::(Lift b) => String -> String -> String -> String -> [(String, String, b)] -> Q [Dec]
-autoParam name funname winname pref defpar = sequence [
+
+{- | automatically create a data type intended to hold parameters for a certain computation.
+     from a list of field names, field types and parameter type with initial value, max , min, etc.
+     We create the data type, a default value, and functions to get the default values modified
+     by command line arguments and using a graphical window.
+-} 
+autoParam :: String -> String -> [(String, String, Parameter)] -> Q [Dec]
+autoParam name pref defpar = sequence [
         createRec name fields,
-        valD (varP (mkName funname))
+
+        valD (varP funname)
              (normalB (doE [ bindS (varP (mkName "o")) (appE crea (lift x)) 
                            , noBindS (appE (varE 'return) f)
-                           ])) [] 
+                           ])) [],
+
+        valD (varP defname) (normalB defval) [],
+
+        valD (varP argname) (normalB argval) []
       ]
-    where f = foldl' appp (appE (varE 'return) (conE p)) args
+    where p = mkName name 
+          funname = mkName $ "win"++name
+          defname = mkName $ "def"++name
+          argname = mkName $ "arg"++name
+          winname = name
+          retPar = appE (varE 'return) (conE p)
+          f = foldl' appp retPar args
           args = map (g.lift.fst) x
           g = appE (appE (varE 'getParam) (varE (mkName "o")))
           x = map s13 defpar
           fields = map s12 defpar
-          p = mkName name 
           s12 (a,b,_c) = (a,b)
           s13 (a,_b,c) = (a,c)
+          s3 (_a,_b,c) = c
+          s1 (a,_b,_c) = a
           crea = (varE 'createParameters') `appE` (lift winname) `appE` (lift pref)
+          defval = foldl' appE (conE p) (map (val.s3) defpar)
+          argval = foldl' appp retPar (zipWith (optfun pref) (map s1 defpar) (map s3 defpar))
 
 appp :: ExpQ -> ExpQ -> ExpQ
 appp f x = appE (appE (varE 'ap) f) x
