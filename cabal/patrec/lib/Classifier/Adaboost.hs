@@ -31,9 +31,9 @@ import Data.List(sortBy, transpose,partition)
 import Util.Misc(posMin)
 import Data.Function(on)
 
--- -- | an extremely simple learning machine
--- singlestump :: Learner (Vector Double)
--- singlestump = multiclass (unweight stumps)
+-- | an extremely simple learning machine
+singlestump :: Learner (Vector Double)
+singlestump = multiclass (unweight stumps)
 
 
 -- | weak learner which finds a good threshold on a single attribute
@@ -41,8 +41,6 @@ stumps :: WeightedDicotomizer
 stumps p = stumpsOk (prepro p)
 
 -- useful precomputation: indices of the sorted features.
-prepro :: (Ord a, Num b, Enum b, Element t, Element a)
-       => ([Vector a], [Vector a]) -> (([Vector a], [Vector a]), Vector t, [[a]], [[a]], [[b]])
 prepro (g1,g2) = ((g1,g2),lbs,xs,oxs,is) where
     lbs = join [constant 1 (length g1), constant (-1) (length g2)]
     xs = transpose $ map toList (g1 ++ g2)
@@ -52,10 +50,7 @@ prepro (g1,g2) = ((g1,g2),lbs,xs,oxs,is) where
     is  = map (map snd) s
 
 
-stumpsOk :: (Ord a2, Num t1, Element a2)
-         => (([a1], [a]), Vector Double, t, [[a2]], [[Int]])
-         -> Vector Double -> Vector a2 -> t1
-stumpsOk ((g1,g2),lbs,_xs,oxs,is) d = f where
+stumpsOk ((g1,g2),lbs,xs,oxs,is) d = f where
     wl = lbs*d
     n1 = length g1
     n2 = length g2
@@ -64,15 +59,15 @@ stumpsOk ((g1,g2),lbs,_xs,oxs,is) d = f where
 
     owls = map (map (wl@>)) is
     cs = map (sel .dt . scanl (+) 0 . init) owls
-    dt x = ((k',v'),(q,w)) where
-        k' = posMin x
-        v' = (x!!k) + d2
+    dt x = ((k,v),(q,w)) where
+        k = posMin x
+        v = (x!!k) + d2
         q = posMax x
         w = d1 - (x!!q)
-    sel ((k',v'),(q,w)) = if v' < w then (k',v',1) else (q,w,-1)
+    sel ((k,v),(q,w)) = if v < w then (k,v,1) else (q,w,-1)
     r = map g $ zip oxs cs
-    g (l,(k',v',s')) = (v',(h l k', s'))
-    h l k' = 0.5*(l'!!k' + l'!!(k'+1)) where
+    g (l,(k,v,s)) = (v,(h l k, s))
+    h l k = 0.5*(l'!!(k) + l'!!(k+1)) where
         l' = (l!!0 - (l!!1-l!!0)) : l -- ++ [l!!n + (l!!n - l!!(n-1))]
         -- n = length l - 1
     k = {- debug $ -} posMin (map (abs.fst) r)
@@ -102,18 +97,18 @@ adaboostStep method (g1,g2) d = (f,d',e,a) where
     d1 = map f1 g1
     d2 = map f2 g2
     dr = d * join [vector d1, vector d2]
-    d' = dr / scalar (dr <.> constant 1 (dim dr))
+    d' = dr */ (dr <.> constant 1 (dim dr))
 
 -- | creates a list of weak learners and associated information to build a strong learner using adaboost
 adaboostST :: Int -> WeightedDicotomizer -> TwoGroups -> [ADBST]
 adaboostST n m p = r where
-    (f,st@(g,_d,e,_a)) = initAdaboost m p
+    (f,st@(g,d,e,a)) = initAdaboost m p
     work = takeok n (iterate (adaboost' f p) st)
     easy = [(g,1,e,1)]
     r = if e > 0.001 then work else easy
-    adaboost' fun q (_,d,_,_) = adaboostStep fun q d
-    takeok k = take k . fst . span pos
-    pos (_,_,err,_) = err < 0.499
+    adaboost' f p (_,d,_,_) = adaboostStep f p d
+    takeok n = take n . fst . span pos
+    pos (_,_,e,_) = e < 0.499
 
 
 initAdaboost :: WeightedDicotomizer -> TwoGroups -> (Weights -> Feature, ADBST)

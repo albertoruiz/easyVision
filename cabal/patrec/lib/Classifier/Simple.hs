@@ -21,14 +21,18 @@ module Classifier.Simple (
 
 import Numeric.LinearAlgebra
 import Classifier.Base
+
+import Data.List(sortBy, sort, nub, elemIndex, intersperse, transpose, partition, delete)
+import qualified Data.Map as Map
+import System.Random
+import Data.Array
 import Util.Stat
 import Util.Misc(norm)
-import Util.Real(col,(&),(//))
 
 -- | mse linear discriminant using the pseudoinverse
 mse :: Dicotomizer
 mse (g1,g2) = f where
-    m = (fromRows g1 // fromRows g2) & col (constant 1 (dim b))
+    m = (fromRows g1 <-> fromRows g2) <|> constant 1 (dim b)
     b = join [constant 1 (length g1), constant (-1) (length g2)]
     w = m <\> b
     f v = tanh (join [v,1] <.> w)
@@ -65,8 +69,8 @@ nearestNeighbour vs v = minimum (map (dist v) vs)
 
 -- | distance to the pca subspace of each class
 subspace :: PCARequest -> Distance (Vector Double)
-subspace req vs = f where
-    Codec {encodeVector = e, decodeVector = d} = pca req (stat (fromRows vs))
+subspace rq vs = f where
+    Codec {encodeVector = e, decodeVector = d} = pca rq (stat (fromRows vs))
     f v = norm (v - (d.e) v)
 
 -- | distance to the robust location (with proportion prop)
@@ -93,7 +97,7 @@ distance d exs = (c,f) where
 -- | mse with weighted examples
 mseWeighted :: WeightedDicotomizer
 mseWeighted (g1,g2) d = f where
-    m = (fromRows g1 // fromRows g2) & col (constant 1 (dim b))
+    m = (fromRows g1 <-> fromRows g2) <|> constant 1 (dim b)
     b = join [constant 1 (length g1), constant (-1) (length g2)]
     rd  = sqrt d
     rd' = outer rd (constant 1 (cols m))
@@ -113,8 +117,8 @@ distWeighted (g1,g2) d = f where
     ones = constant 1 (dim (head g1))
     a1 = outer d1 ones * fromRows g1
     a2 = outer d2 ones * fromRows g2
-    m1 = sumColumns a1 / scalar (pnorm PNorm1 d1)
-    m2 = sumColumns a2 / scalar (pnorm PNorm1 d2)
+    m1 = sumColumns a1 */ (pnorm PNorm1 d1)
+    m2 = sumColumns a2 */ (pnorm PNorm1 d2)
     f x = norm (x-m2) - norm (x-m1)
     sumColumns m = constant 1 (rows m) <> m
 

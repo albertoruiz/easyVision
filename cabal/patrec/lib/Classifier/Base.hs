@@ -32,17 +32,16 @@ module Classifier.Base (
 ) where
 
 import Numeric.LinearAlgebra
-import Data.List(sortBy, sort, nub, partition)
+import Data.List(sortBy, sort, nub, elemIndex, intersperse, transpose, partition, delete)
 import qualified Data.Map as Map
 import System.Random
 import Data.Array
 import Util.Stat
-import Util.Misc(splitEvery,posMax)
+import Util.Misc(debug,splitEvery,posMax,randomPermutation)
 import Data.Function(on)
 
-
-vector :: [Double] -> Vector Double
-vector = fromList 
+matrix = fromLists :: [[Double]] -> Matrix Double
+vector = fromList ::  [Double] -> Vector Double
 
 ------------------- General definitions ----------------------------
 
@@ -88,7 +87,7 @@ extractLabels l = InfoLabels ls lti itl where
     lti = (Map.!) m
     -- | given a list of labels creates a map from them to their class index
     createMap :: [String] -> Map.Map String Int
-    createMap xs = Map.fromList (zip xs [0..])
+    createMap ls = Map.fromList (zip ls [0..])
 
 -------------------------------------------------------------------
 
@@ -127,7 +126,7 @@ ungroup gs = s where
 -- | Estimates the success rate of a classifier on a sample
 errorRate :: Sample a -> Classifier a -> Double
 errorRate exs c  = fromIntegral ok / fromIntegral (length exs) where
-    ok = length [1::Int | (v,l)<-exs, l /= c v]
+    ok = length [1 | (v,l)<-exs, l /= c v]
 
 -- | Computes the confusion matrix of a classifier on a sample
 confusion ::Sample a -> Classifier a -> Matrix Double
@@ -142,12 +141,10 @@ confusion exs c = confusionMatrix where
 
 
 
-auxgroup :: [[a]] -> [([a], [a])]
+rot 0 xs = xs
+rot k (x:xs) = rot (k-1) (xs++[x])
+rots l = map ((flip rot) l) [0 .. length l - 1]
 auxgroup l = map (\(x:xs) -> (x, concat xs)) (rots l)
-    where rot 0 xs = xs
-          rot k (x:xs) = rot (k-1) (xs++[x])
-          rot _ [] = []
-          rots xs = map ((flip rot) xs) [0 .. length xs - 1]
 
 -- auxgroup x = zip x (map (concat . flip delete x) x)
 
@@ -158,8 +155,6 @@ multiclass bin exs = (createClassifier lbs f, f) where
     (gs,lbs) = group exs
     f = multiclass' bin gs
 
-multiclass' :: (Num b)
-            => (([a1], [a1]) -> a -> b) -> [[a1]] -> a -> [b]
 multiclass' _ [] = error "multiclass applied to 0 classes"
 multiclass' _ [_] = error "multiclass applied to 1 class"
 multiclass' bin [g1,g2] = (\x -> [x,-x]) . bin (g1,g2)
@@ -174,15 +169,13 @@ selectClasses validset exs = filter ( (`elem` validset) .snd) exs
 
 
 -- | to do
-detailed :: (Fractional a1, Ord a1)
-         => (Sample a -> (t, t1 -> [a1]))
-         -> Sample a -> t1 -> [(String, a1)]
 detailed machine prob = classify where
     (_,f) = machine prob
     info = snd (group prob)
     classify v = sortBy (compare `on` snd) (zip (labels info) nordsts)
         where dsts = map negate $ f v
               nordsts = map (/minimum (map abs dsts)) dsts
+              on f g = \x y -> f (g x) (g y)
 
 ------------- feature combinators ------------
 
@@ -242,13 +235,8 @@ outputOf machine prob = g where
 
 -------------------------------------
 
-mean :: Matrix Double -> Vector Double
 mean = meanVector . stat
-
-cov :: Matrix Double -> Matrix Double
 cov  = covarianceMatrix . stat
-
-meancov :: Matrix Double -> (Vector Double, Matrix Double)
 meancov x = (m,c) where
     m = meanVector st
     c = covarianceMatrix st
@@ -262,13 +250,13 @@ mdf exs = f where
     n = length gs - 1
     gs = fst$ group exs
     (v',_) = fromComplex$ takeColumns n v
-    (_l,v) = eig (inv c <> cm)
+    (l,v) = eig (inv c <> cm)
     (m,c) = meancov$ fromRows$ map fst exs
     cm = cov$ fromRows$ map (mean.fromRows) $ gs
 
 -- | Most expressive linear features (pca)
 mef :: PCARequest -> Property Attributes Attributes
-mef req exs = encodeVector . pca req . stat . fromRows . map fst $ exs
+mef rq exs = encodeVector . pca rq . stat . fromRows . map fst $ exs
 
 -----------------------------
 
@@ -290,7 +278,7 @@ normalizeMinMax (mn,mx) exs = f where
     mins = vector $ map vectorMin xs
     dxs = maxs - mins
     dy = mx - mn
-    r = scalar dy * recip dxs   -- FIXME: protect the division...
+    r = dy .* recip dxs   -- FIXME: protect the division...
     b = vector [mn] - r*mins
 
 -- | Whitening transformation

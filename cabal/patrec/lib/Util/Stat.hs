@@ -28,7 +28,6 @@ module Util.Stat
 import Numeric.LinearAlgebra hiding (eigenvalues)
 import Data.List(transpose,sortBy,minimumBy)
 import Data.Function(on)
-import Util.Real(row,col,(&),(//))
 
 -- | 1st and 2nd order statistics and other useful information extracted from a multivariate sample, where observations are given as rows of a matrix.
 
@@ -48,32 +47,44 @@ data Stat = Stat { meanVector              :: Vector Double
 stat :: Matrix Double -> Stat
 stat x = s where
     m = mean x
-    xc = x - row m
+    xc = x |-| m
     c = (trans xc <> xc) / fromIntegral (rows x -1)
     (l,v') = eigSH' c
     v = trans v'
-    lastrow = row $ fromList $ replicate (cols x) 0 ++ [1.0::Double]
+    lastrow = fromList $ replicate (cols x) 0 ++[1.0::Double]
     w = diag (1/sqrt l) <> v
     n = rows x
     n' = fromIntegral n / fromIntegral (n-1)
-    vars = scalar n' * mean (xc^(2::Int))
+    vars = scalar n' * mean (xc^2)
     s = Stat { meanVector = m
              , covarianceMatrix = c
              , eigenvalues = l
              , eigenvectors = v
              , invCov = inv c
              , whitener = w
-             , whiteningTransformation = w &  col (-w <> m) //
+             , whiteningTransformation = w <|> -w <> m
+                                           <->
                                          lastrow
              , whitenedData = xc <> trans w
              , varianceVector = vars
-             , normalizedData = (x - row m) / row (sqrt vars)
+             , normalizedData = (x |-| m) |/| sqrt vars
              }
 
+sumColumns m = constant 1 (rows m) <> m
+
+byRows op mat vec = mat `op` (ones `outer` vec)
+    where ones = constant 1 (rows mat)
+
+infixl 5 |-|, |+|
+infixl 7 |/| -- : |*|
+
+(|-|) = byRows (-)
+(|+|) = byRows (+)
+--(|*|) = byRows (*)
+(|/|) = byRows (/)
 
 ----------------------------------------------------------------------
 
-mean :: (Field t) => Matrix t -> Vector t
 mean m = ones <> m
     where r = rows m
           k = 1 / fromIntegral r
@@ -102,8 +113,8 @@ pca :: PCARequest -> Stat -> Codec
 pca (NewDimension n) st =
     Codec { encodeVector = encv
           , decodeVector = decv
-          , encodeMatrix = \x -> (x - row m) <> trans vp
-          , decodeMatrix = \y -> (y <> vp) + row m
+          , encodeMatrix = \x -> (x |-| m) <> trans vp
+          , decodeMatrix = \y -> (y <> vp) |+| m
           , encodeList = toList . encv . fromList
           , decodeList = toList . decv . fromList
 } where
