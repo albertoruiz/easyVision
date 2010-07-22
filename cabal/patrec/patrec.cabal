@@ -36,8 +36,9 @@ library
                         Util.Misc
                         Util.Stat
                         Util.Kalman
-                        
-    other-modules:      
+                        Util.Real
+
+    other-modules:
 
 --    ghc-prof-options:   -auto-all
 

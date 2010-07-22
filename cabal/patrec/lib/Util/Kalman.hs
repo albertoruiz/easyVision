@@ -26,19 +26,24 @@ module Util.Kalman (
 
 import Numeric.LinearAlgebra
 import Numeric.GSL.Differentiation
-import Debug.Trace
-import Text.Printf
+-- import Debug.Trace
+-- import Text.Printf
 
-debug x = trace (show x) x
-debugM x = trace (format " " (printf "%2.0f") (100*abs x)) x
-debugLV k x = trace (show (fromRows x)) x
-debugS s x = trace (s++" = "++show x) x
+-- debug x = trace (show x) x
+-- debugM x = trace (format " " (printf "%2.0f") (100*abs x)) x
+-- debugLV k x = trace (show (fromRows x)) x
+-- debugS s x = trace (s++" = "++show x) x
 
 --------------------------------------------------------------------
 
-vector l = fromList l :: Vector Double
-matrix ls = fromLists ls :: Matrix Double
-diagl = diag . vector
+vector :: [Double] -> Vector Double
+vector = fromList
+
+matrix :: [[Double]] -> Matrix Double
+matrix = fromLists
+
+-- diagl :: [Double] -> Matrix Double
+-- diagl = diag . vector
 
 -------------- Ordinary Kalman Filter -------------------------------
 
@@ -59,7 +64,7 @@ kalman' (LinearSystem f h q r) (State x p _) z = State x' p' zp where
 
 
 blindKalman :: LinearSystem -> State -> State
-blindKalman (LinearSystem f h q r) (State x p _) = State x' p' (h <> x') where
+blindKalman (LinearSystem f h q _r) (State x p _) = State x' p' (h <> x') where
     x' = f <> x
     p' = f <> p <> trans f + q
 
@@ -70,12 +75,15 @@ kalman sys st Nothing  = blindKalman sys st
 
 -------------- Extended Kalman Filter -------------------------------
 
+partialDerivative :: Int -> ([Double] -> Double)
+                  -> [Double] -> Double
 partialDerivative n f v = fst (derivCentral 0.01 g (v!!n)) where
     g x = f (concat [a,x:b])
     (a,_:b) = splitAt n v
 
-gradient f v = [partialDerivative k f v | k <- [0 .. length v -1]]
+-- gradient f v = [partialDerivative k f v | k <- [0 .. length v -1]]
 
+jacobian :: ([Double] -> [Double]) -> [Double] -> [[Double]]
 jacobian f v = [[partialDerivative k ((!!s).f) v | k <- [0 .. length v -1]] | s <- [0..length (f v) -1]]
 
 --------------------------------------------------------------------
@@ -103,7 +111,7 @@ ekf' (System f h q r) (State vx p _) z = State x' p' zp where
 
 
 blindEKF :: System -> State -> State
-blindEKF (System f h q r) (State vx p _) = State (vector x') p' (vector (h x')) where
+blindEKF (System f h q _r) (State vx p _) = State (vector x') p' (vector (h x')) where
     x = toList vx
     x' = f x
     p' = jf <> p <> trans jf + q
@@ -120,32 +128,42 @@ data UKFParam = UKFParam { ukfAlpha :: Double
                          , ukfBeta  :: Double
                          , ukfKappa :: Int -> Double }
 
+ukfDefaultParam :: UKFParam
 ukfDefaultParam  = UKFParam { ukfAlpha = 0.5
                             , ukfBeta  = 2
                             , ukfKappa = \n -> 3 - fromIntegral n }
 
+unscentedSamples :: UKFParam -> (Vector Double, Matrix Double)
+                 -> ([Vector Double], ([Double], [Double]))
 unscentedSamples UKFParam {..} (med,cov) = (med : concat [pos,neg], (wm,wc)) where
     pos = f (+)
     neg = f (-)
     f op = map (op med) ds
-    ds = toRows $ mr ( (fromIntegral n + lambda) .* cov :: Matrix Double)
+    ds = toRows $ mr ( scalar (fromIntegral n + lambda) * cov :: Matrix Double)
     wm = lambda/(nr+lambda) : ws
-    wc = (lambda/(nr+lambda) + 1-ukfAlpha^2+ukfBeta) : ws
+    wc = (lambda/(nr+lambda) + 1-ukfAlpha^(2::Int)+ukfBeta) : ws
     ws = replicate (2*n) (1/2/(nr+lambda))
-    lambda = ukfAlpha^2 * (nr + ukfKappa n) - nr
+    lambda = ukfAlpha^(2::Int) * (nr + ukfKappa n) - nr
     n  = dim med
     nr = fromIntegral n
     --mr m = trans $ v <> diag (sqrt l) where (l,v) = eigSH m
     mr = cholSH -- no symmetry check
 
 
+unscentedTransform :: UKFParam -> (Vector Double -> Vector Double)
+                   -> (Vector Double, Matrix Double)
+                   -> (Vector Double, Matrix Double)
 unscentedTransform param f = fst. unscentedTransformWithSamples param f
 
+unscentedTransformWithSamples
+    :: UKFParam -> (Vector Double -> Vector Double)
+    -> (Vector Double, Matrix Double)
+    -> ((Vector Double, Matrix Double), ([Vector Double],([Double], [Double])))
 unscentedTransformWithSamples param f g = ((m',c'),(s',w)) where
     (s, w@(wm,wc)) = unscentedSamples param g
     s' = map f s
     m' = fromList wm <> fromRows s'
-    c' = sum (zipWith f wc s') where f w v = w .* outer vm vm where vm = v - m'
+    c' = sum (zipWith h wc s') where h u v = scalar u * outer vm vm where vm = v - m'
 
 
 ukf' :: UKFParam -> System -> State -> Measurement -> State
@@ -159,8 +177,8 @@ ukf' param (System f h q r) (State vx p _) z = State x' p' mz where
     y  = z - mz                            -- residue
     cy = cz + r                            -- its covariance
 
-    cross = sum (zipWith3 f wc sx sz)    -- !!!
-        where f w x z = w .* outer (x-px) (z-mz)
+    cross = sum (zipWith3 fun wc sx sz)    -- !!!
+        where fun w x z' = scalar w * outer (x-px) (z'-mz)
 
     k  = cross <> inv cy                   -- kalman gain
     x' = px + k <> y                       -- new state
@@ -168,7 +186,7 @@ ukf' param (System f h q r) (State vx p _) z = State x' p' mz where
 
 
 blindUKF :: UKFParam -> System -> State -> State
-blindUKF param (System f h q r) (State vx p _) = State px pq (h' px) where
+blindUKF param (System f h q _r) (State vx p _) = State px pq (h' px) where
     f' = fromList . f . toList
     h' = fromList . h . toList
     (px,pc) = unscentedTransform param f' (vx,p)  -- prediction

@@ -50,7 +50,7 @@ arrayOf :: [a] -> (Int -> a)
 arrayOf xs = (A.listArray (0, length xs -1) xs A.!)
 
 myintersect :: (Ord a) => [a] -> [a] -> [a]
-myintersect as bs = go as bs [] where
+myintersect as' bs' = go as' bs' [] where
     go [] _ x = x
     go _ [] x = x
     go (a:as) (b:bs) x
@@ -59,7 +59,7 @@ myintersect as bs = go as bs [] where
         | otherwise = go as bs (a:x)
 
 intersectSorted :: (Ord a) => [a] -> [a] -> [a]
-intersectSorted as bs = reverse (go as bs []) where
+intersectSorted as' bs' = reverse (go as' bs' []) where
     go [] _ x = x
     go _ [] x = x
     go (a:as) (b:bs) x

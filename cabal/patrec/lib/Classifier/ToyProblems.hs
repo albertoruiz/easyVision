@@ -31,16 +31,18 @@ import Data.List (intersperse)
 
 import System.Process (system)
 import Classifier.Base
-import Util.Stat
 import Util.Misc(splitEvery)
 
 ------------------------- drawing utilities --------------------------
 
+gnuplot :: String -> IO ()
 gnuplot command = do
     writeFile "gnuplotcommand" $ command
-    system "gnuplot -persist gnuplotcommand" 
-    system "rm gnuplotcommand"
+    _ <- system "gnuplot -persist gnuplotcommand" 
+    _ <- system "rm gnuplotcommand"
+    return ()
 
+prep :: Show a => [[a]] -> String
 prep = (++"e\n") . unlines . map (unwords . (map show))
 
 {-
@@ -94,7 +96,7 @@ combined title n r f exs = act where
                   ++ prep z'
                   ++ preps
         return ()
-    code = ((38:57:83:18:30:[1..])!!)
+    code = ((38:57:83:18:30:[1::Int ..])!!)
 
 ---------------------------- some toy classification problems ---------------------------
 
@@ -154,7 +156,7 @@ linsepmulti n = dat1 ++ dat2 ++ dat3 where
 nosep :: Int -> Sample (Vector Double)
 nosep n = dat1 ++ dat2 ++ dat3 where
     m = n `quot` 4
-    ts m = tail $ toList $ linspace (m+1) (0,2*pi)
+    ts p = tail $ toList $ linspace (p+1) (0,2*pi)
     k = 0.8
     dat1 = [ (vector [1+2*k*cos t, -1+k*sin t],   "a") | t <- ts m ]
     dat2 = [ (vector [-1+k*cos t, 1-2*k*sin t], "a") | t <- ts m ]
@@ -163,15 +165,16 @@ nosep n = dat1 ++ dat2 ++ dat3 where
 -- | handwritten digits, partitioned and with desired number of pca dimensions
 mnist :: Int -> Int -> IO (Sample (Vector Double), Sample (Vector Double))
 
-mnist dim n = do
+mnist dimen n = do
     m <- fromFile "../data/mnist.txt" (5000,785)
     let vs = toRows (takeColumns 784 m)
-    let ls = map (show.round) $ toList $ flatten $ dropColumns 784 m
-    let mnist = zip vs ls
-    let (train, test) = splitAt n mnist
+    let ls = map (show.round') $ toList $ flatten $ dropColumns 784 m
+            where round' x = round x :: Int
+    let mnist' = zip vs ls
+    let (train, test) = splitAt n mnist'
 
     let st = stat (fromRows $ map fst train)
-    let f = encodeVector $ pca (NewDimension dim) st
+    let f = encodeVector $ pca (NewDimension dimen) st
 
     return (preprocess f train,
             preprocess f test)
@@ -181,9 +184,10 @@ mnistraw :: Int -> IO (Sample (Vector Double), Sample (Vector Double))
 mnistraw n = do
     m <- fromFile "../data/mnist.txt" (5000,785)
     let vs = toRows (takeColumns 784 m)
-    let ls = map (show.round) $ toList $ flatten $ dropColumns 784 m
-    let mnist = zip vs ls
-    return $ splitAt n mnist
+    let ls = map (show.round') $ toList $ flatten $ dropColumns 784 m
+            where round' x = round x :: Int
+    let mnist' = zip vs ls
+    return $ splitAt n mnist'
 
 -----------------------------------------------------------
 

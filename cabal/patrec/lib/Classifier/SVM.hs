@@ -21,20 +21,24 @@ import Numeric.LinearAlgebra
 import Classifier.Base
 import Classifier.Kernel(gaussK)
 import System.Process (system)
+import System.Exit(ExitCode)
 import System.IO.Unsafe (unsafePerformIO)
 
 -- | Creates a support vector machine with gaussian kernel of given width.
 svmLight :: Double -> Dicotomizer
-svmLight w gs = unsafePerformIO $ do
+svmLight wd gs = unsafePerformIO $ do
     -- FIXME: use unique filenames
-    svmLearn w gs "prob-svm.txt" "model.txt"
+    _ <- svmLearn wd gs "prob-svm.txt" "model.txt"
     (b,w,yvecs) <- svmReadModel "model.txt"
     let n = fromIntegral (length yvecs)
         f v = (b + sum (map q yvecs)) / n where q (y,x) = y * gaussK w x v
-    system "rm model.txt"
-    system "rm prob-svm.txt"
+    _ <- system "rm model.txt"
+    _ <- system "rm prob-svm.txt"
     return f
 
+svmLearn :: (Show a, Element b, Element b1)
+         => a -> ([Vector b], [Vector b1]) -> FilePath
+         -> String -> IO ExitCode
 svmLearn w (pos,negs) fileprob filemodel = do
     writeFile fileprob cad
     system $ "svm_learn -t 2 -g "++ show w ++" "++fileprob++" "++ filemodel++" > /dev/null"
@@ -42,9 +46,10 @@ svmLearn w (pos,negs) fileprob filemodel = do
   where cad = unlines $ header ++ map (feat "+1") pos ++ map (feat "-1") negs
         header = ["# automatically generated file","#"]
         feat c ex = c ++ ve ex
-        ve v = concat $ zipWith shAtt [1 ..] (toList v)
-        shAtt i x  = ' ':(show i)++':':(show x)
+        ve v = concat $ zipWith shAtt [1::Int ..] (toList v)
+        shAtt j x  = ' ':(show j)++':':(show x)
 
+svmReadModel :: FilePath -> IO (Double, Double, [(Double, Vector Double)])
 svmReadModel file = do
     ss <- lines `fmap` readFile file
     let spars = take 11 ss
