@@ -59,7 +59,7 @@ library
 
     ghc-prof-options:   -auto-all
 
-    ghc-options:        -Wall
+    --ghc-options:        -Wall
                         -fno-warn-missing-signatures
 
     if arch(x86_64)

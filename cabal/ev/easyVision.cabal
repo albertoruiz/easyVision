@@ -37,6 +37,7 @@ library
                         EasyVision.MiniApps.CornerTracker
                         EasyVision.MiniApps.SignalMonitor
                         EasyVision.MiniApps.PoseTracker
+                        EasyVision.MiniApps.Contours
     other-modules:
 
     ghc-prof-options:   -auto-all

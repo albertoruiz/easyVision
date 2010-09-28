@@ -24,6 +24,7 @@ module EasyVision.MiniApps (
     zoomer, zoomWindow,
     --module EasyVision.MiniApps.Corners,
     getCornerDetector, cornerMonitor,
+    ContourInfo(..), wcontours, contourMonitor,
     module EasyVision.MiniApps.CornerTracker,
     module EasyVision.MiniApps.SignalMonitor,
     module EasyVision.MiniApps.Combinators,
@@ -59,6 +60,7 @@ import EasyVision.MiniApps.Corners
 import EasyVision.MiniApps.CornerTracker
 import EasyVision.MiniApps.SignalMonitor
 import EasyVision.MiniApps.PoseTracker
+import EasyVision.MiniApps.Contours
 
 -- | reads a labeled video
 readCatalog :: String -> Size -> String -> Maybe Int -> (ImageYUV-> a) -> IO [(a,String)]

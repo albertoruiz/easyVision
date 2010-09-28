@@ -76,7 +76,7 @@ pointsToPixels sz ps = fix ps where
 data Segment = Segment {
     extreme1 :: !Point,
     extreme2 :: !Point
-}
+} deriving (Show)
 
 -- | The length of a segment.
 segmentLength :: Segment -> Double

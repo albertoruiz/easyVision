@@ -46,8 +46,8 @@ import Vision.Geometry
 
 debug x = trace (show x) x
 
-data Polyline = Closed [Point]
-              | Open   [Point]
+data Polyline = Closed { polyPts :: [Point] }
+              | Open   { polyPts :: [Point] }
 
 -- | (for an open polyline is the length)
 perimeter :: Polyline -> Double

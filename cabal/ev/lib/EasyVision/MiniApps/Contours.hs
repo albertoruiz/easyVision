@@ -1,0 +1,94 @@
+{-# LANGUAGE RecordWildCards, TemplateHaskell #-}
+-----------------------------------------------------------------------------
+{- |
+Module      :  EasyVision.MiniApss.Contours
+Copyright   :  (c) Alberto Ruiz 2010
+License     :  GPL-style
+
+Maintainer  :  Alberto Ruiz (aruiz at um dot es)
+
+-}
+-----------------------------------------------------------------------------
+
+module EasyVision.MiniApps.Contours (
+    ContourParam(..), winContourParam, argContourParam, defContourParam,
+    ContourInfo(..), smartContours, contourMonitor, wcontours
+) where
+
+import EasyVision.MiniApps.Combinators
+import EasyVision.GUI
+import ImagProc
+import ImagProc.Util
+import ImagProc.Camera
+import Graphics.UI.GLUT hiding (Size)
+import Features
+-- import Control.Monad((>=>))
+-- import Control.Applicative
+-- import Control.Arrow((&&&),(***))
+
+
+
+
+$(autoParam "ContourParam" "contour-" [
+    ("thres",  "Int",    intParam 128 1 255),
+    ("area",   "Int",    percent 1),
+    ("fracpix","Double", realParam (1.5) 0 10),
+    ("mode",   "String", stringParam "white" ["white", "black", "both"]),
+    ("smooth", "Int",    intParam 1 0 10)] )
+
+defContourParam :: ContourParam
+argContourParam :: IO ContourParam
+winContourParam :: IO (IO ContourParam)
+
+wcontours :: IO ImageGray -> IO (IO (ImageGray, ContourInfo))
+wcontours = smartContours .@. winContourParam
+
+smartContours :: ContourParam -> ImageGray -> ContourInfo
+smartContours ContourParam{..} x = r
+    where pre = smooth `times` median Mask3x3
+          z = pre x
+          rawg b y = map fst3 $ contours 100 pixarea (fromIntegral thres) b y
+               where (Size h w) = size y
+                     pixarea = h*w*area`div`1000
+          cw = post $ rawg True z
+          cb = post $ rawg False z
+          cwb = cw ++ cb
+          cs = case mode of
+                    "white" -> cw
+                    "black" -> cb
+                    "both"  -> cwb
+                    _ -> error "smartContours unknown mode"
+          redu = douglasPeuckerClosed fracpix
+          clo  = Closed . pixelsToPoints (size x)
+          times n f = (!!n) . iterate f
+          fst3 (a,_,_) = a
+          post = map (clo . redu)
+          r = ContourInfo { contWhite = cw
+                          , contBlack = cb
+                          , contBoth  = cwb
+                          , contSel   = cs }
+
+data ContourInfo = ContourInfo {
+    contWhite :: [Polyline],
+    contBlack :: [Polyline],
+    contBoth  :: [Polyline],
+    contSel   :: [Polyline]
+    }
+
+-----------------------------------------------------
+
+contourMonitor :: (Image t, Drawable t) 
+               => String
+               -> IO ()
+               -> IO (t, ContourInfo)
+               -> IO (IO (t, ContourInfo))
+contourMonitor winname f = monitor winname (mpSize 20) sh where
+    sh (im, cs) = do
+        drawImage' im
+        pointCoordinates (size im)
+        f
+        mapM_ shcont (contSel cs)
+    shcont (Closed c) = do
+        renderPrimitive LineLoop $ mapM_ vertex c
+    shcont (Open c) = do
+        renderPrimitive LineStrip $ mapM_ vertex c

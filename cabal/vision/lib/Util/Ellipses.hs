@@ -141,5 +141,5 @@ intersectionEllipses c1 c2 = map (\[x,y]->(x,y)) sol where
     f = c2'@@>(2,2)
     d = c2'@@>(0,2)
     sol = if abs(d/a) > 1E-6
-        then htc (comp $ inv w) $ intersectionReduced (getCoeffs c2')
-        else htc (comp $ inv w) $ intersectionCommonCenter ((a/f):+0,(b/f):+0)
+        then htc (complex $ inv w) $ intersectionReduced (getCoeffs c2')
+        else htc (complex $ inv w) $ intersectionCommonCenter ((a/f):+0,(b/f):+0)

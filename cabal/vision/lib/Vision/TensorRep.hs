@@ -499,11 +499,11 @@ relocate p = p { p3d = (p3d p * hi)!>"yx", cam = (cam p * h) !> "yx"} where
 ihPoints3D :: VProb -> [Vector Double]
 ihPoints3D = map coords . flip parts "n" . inhomogT "x" . p3d
 
-dstmat :: (Normed b, Num b) => [b] -> [Double]
+--dstmat :: (Normed c t, Num (c t)) => [c t] -> [RealOf t]
 dstmat pts = pairsWith dist pts where
   dist u v = pnorm PNorm2 (u-v)
 
-metricConsis :: (Normed b, Num b) => (a -> [b]) -> a -> a -> Double
+--metricConsis :: (Normed c Double, Num (c Double)) => (a -> [c t]) -> a -> a -> Double
 metricConsis f = on dist (nor. dstmat .f) where
   nor x = fromList x / LA.scalar (mean x)
   dist u v = pnorm Infinity (u-v)
