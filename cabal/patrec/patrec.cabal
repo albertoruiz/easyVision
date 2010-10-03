@@ -24,7 +24,7 @@ library
                         random, containers, process
 
     hs-source-dirs:     lib
-    
+
     Exposed-modules:    Classifier
                         Classifier.Base
                         Classifier.Simple
@@ -36,8 +36,8 @@ library
                         Util.Misc
                         Util.Stat
                         Util.Kalman
-                        
-    other-modules:      
+
+    other-modules:
 
 --    ghc-prof-options:   -auto-all
 

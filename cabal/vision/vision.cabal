@@ -35,6 +35,7 @@ library
                         Vision.Multiview
                         Vision.SparseRep
                         Vision.Bundle
+                        Vision.Gea
                         Vision.Autofrontal
                         Util.Quaternion
                         Util.Ellipses
@@ -44,5 +45,5 @@ library
 
     ghc-prof-options:   -auto-all
 
---    ghc-options:        -Wall
+    ghc-options:        -Wall
 

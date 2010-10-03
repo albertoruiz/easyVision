@@ -15,6 +15,8 @@ data SparseMatrix t = SparseMatrix {
     scols :: Int,
     sat   :: (Int,Int) -> MatrixBlock t }
 
+type SMat = SparseMatrix Double
+
 mkSparse :: [((Int,Int), MatrixBlock t)] -> SparseMatrix t
 mkSparse asc = SparseMatrix {srows = r, scols = c, sat = at }
     where at = (A.accumArray (flip const) Zero ((0,0),(r-1,c-1)) asc A.!)
