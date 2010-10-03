@@ -28,30 +28,32 @@ module Util.Stat
 import Numeric.LinearAlgebra hiding (eigenvalues)
 import Data.List(transpose,sortBy,minimumBy)
 import Data.Function(on)
+import Util.Misc(Vec,Mat,(//),(&))
 
 -- | 1st and 2nd order statistics and other useful information extracted from a multivariate sample, where observations are given as rows of a matrix.
 
-data Stat = Stat { meanVector              :: Vector Double
-                 , covarianceMatrix        :: Matrix Double
-                 , eigenvalues             :: Vector Double
-                 , eigenvectors            :: Matrix Double
-                 , invCov                  :: Matrix Double
-                 , whitenedData            :: Matrix Double
-                 , whiteningTransformation :: Matrix Double -- ^ homogeneous transformation which includes centering
-                 , whitener                :: Matrix Double
-                 , varianceVector          :: Vector Double
-                 , normalizedData          :: Matrix Double
-                 }
+data Stat = Stat
+    { meanVector              :: Vec
+    , covarianceMatrix        :: Mat
+    , eigenvalues             :: Vec
+    , eigenvectors            :: Mat
+    , invCov                  :: Mat
+    , whitenedData            :: Mat
+    , whiteningTransformation :: Mat -- ^ homogeneous transformation which includes centering
+    , whitener                :: Mat
+    , varianceVector          :: Vec
+    , normalizedData          :: Mat
+    }
 
 -- | Creates a 'Stat' structure from a matrix. Of course, due to laziness, only the fields required by the particular application will be actually computed.
-stat :: Matrix Double -> Stat
+stat :: Mat -> Stat
 stat x = s where
     m = mean x
     xc = x |-| m
     c = (trans xc <> xc) / fromIntegral (rows x -1)
     (l,v') = eigSH' c
     v = trans v'
-    lastrow = fromList $ replicate (cols x) 0 ++[1.0::Double]
+    lastrow = asRow $ fromList $ replicate (cols x) 0 ++[1.0::Double]
     w = diag (1/sqrt l) <> v
     n = rows x
     n' = fromIntegral n / fromIntegral (n-1)
@@ -62,8 +64,7 @@ stat x = s where
              , eigenvectors = v
              , invCov = inv c
              , whitener = w
-             , whiteningTransformation = w <|> -w <> m
-                                           <->
+             , whiteningTransformation = w & asColumn (-w <> m) //
                                          lastrow
              , whitenedData = xc <> trans w
              , varianceVector = vars
@@ -95,10 +96,10 @@ mean m = ones <> m
 -- | This structure contains functions to encode and decode individual vectors (or collection of vectors packed into a matrix) obtained by some suitable criterion (e.g. 'pca').
 
 data Codec = 
-    Codec { encodeVector :: Vector Double -> Vector Double
-          , decodeVector :: Vector Double -> Vector Double
-          , encodeMatrix :: Matrix Double -> Matrix Double
-          , decodeMatrix :: Matrix Double -> Matrix Double
+    Codec { encodeVector :: Vec -> Vec
+          , decodeVector :: Vec -> Vec
+          , encodeMatrix :: Mat -> Mat
+          , decodeMatrix :: Mat -> Mat
           , encodeList   :: [Double] -> [Double]
           , decodeList   :: [Double] -> [Double]
 }

@@ -28,6 +28,7 @@ import Numeric.LinearAlgebra
 import Numeric.GSL.Differentiation
 import Debug.Trace
 import Text.Printf
+import Util.Misc(Vec,Mat)
 
 debug x = trace (show x) x
 debugM x = trace (format " " (printf "%2.0f") (100*abs x)) x
@@ -36,15 +37,15 @@ debugS s x = trace (s++" = "++show x) x
 
 --------------------------------------------------------------------
 
-vector l = fromList l :: Vector Double
-matrix ls = fromLists ls :: Matrix Double
+vector l = fromList l :: Vec
+matrix ls = fromLists ls :: Mat
 diagl = diag . vector
 
 -------------- Ordinary Kalman Filter -------------------------------
 
-data LinearSystem = LinearSystem {kF, kH, kQ, kR :: Matrix Double}
-data State = State {sX :: Vector Double , sP :: Matrix Double, nZ :: Vector Double } deriving Show
-type Measurement = Vector Double
+data LinearSystem = LinearSystem {kF, kH, kQ, kR :: Mat}
+data State = State {sX :: Vec , sP :: Mat, nZ :: Vec } deriving Show
+type Measurement = Vec
 
 kalman' :: LinearSystem -> State -> Measurement -> State
 kalman' (LinearSystem f h q r) (State x p _) z = State x' p' zp where
@@ -81,7 +82,7 @@ jacobian f v = [[partialDerivative k ((!!s).f) v | k <- [0 .. length v -1]] | s 
 --------------------------------------------------------------------
 
 data System = System {ekF, ekH :: [Double] -> [Double],
-                      ekQ, ekR :: Matrix Double}
+                      ekQ, ekR :: Mat}
 
 --data State = State {sX :: [Double] , sP :: Matrix Double} deriving Show
 --type Measurement = Vector Double
@@ -128,7 +129,7 @@ unscentedSamples UKFParam {..} (med,cov) = (med : concat [pos,neg], (wm,wc)) whe
     pos = f (+)
     neg = f (-)
     f op = map (op med) ds
-    ds = toRows $ mr ( (fromIntegral n + lambda) .* cov :: Matrix Double)
+    ds = toRows $ mr ( (fromIntegral n + lambda) `scale` cov :: Matrix Double)
     wm = lambda/(nr+lambda) : ws
     wc = (lambda/(nr+lambda) + 1-ukfAlpha^2+ukfBeta) : ws
     ws = replicate (2*n) (1/2/(nr+lambda))
@@ -145,7 +146,7 @@ unscentedTransformWithSamples param f g = ((m',c'),(s',w)) where
     (s, w@(wm,wc)) = unscentedSamples param g
     s' = map f s
     m' = fromList wm <> fromRows s'
-    c' = sum (zipWith f wc s') where f w v = w .* outer vm vm where vm = v - m'
+    c' = sum (zipWith f wc s') where f w v = w `scale` outer vm vm where vm = v - m'
 
 
 ukf' :: UKFParam -> System -> State -> Measurement -> State
@@ -160,7 +161,7 @@ ukf' param (System f h q r) (State vx p _) z = State x' p' mz where
     cy = cz + r                            -- its covariance
 
     cross = sum (zipWith3 f wc sx sz)    -- !!!
-        where f w x z = w .* outer (x-px) (z-mz)
+        where f w x z = w `scale` outer (x-px) (z-mz)
 
     k  = cross <> inv cy                   -- kalman gain
     x' = px + k <> y                       -- new state

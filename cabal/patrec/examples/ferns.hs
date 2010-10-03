@@ -9,18 +9,7 @@ import qualified Data.Map as M
 import Data.Maybe(fromMaybe)
 import Control.Arrow((&&&))
 import System (getArgs)
-import Util.Misc(splitEvery, randomPermutation)
-
---matrix m = fromLists m :: Matrix Double
---vector v = fromList v :: Vector Double
-
-shErr d c = putStrLn $ (show $ 100 * errorRate d c) ++ " %"
-shConf d c = putStrLn $ format " " (show.round) (confusion d c)
-
-genRandFeats ran = do
-    seed <- randomIO
-    return $ partit $ randomRs ran (mkStdGen seed)
- where partit (a:b:rest) = (a,b):partit rest
+import Util.Misc(splitEvery, randomPermutation, Vec, Seed)
 
 
 study' prob meth = do
@@ -28,13 +17,16 @@ study' prob meth = do
     let (c,f) = meth train
     putStr "Training error: "
     shErr train c
-    --shConf train c
     putStr "Test error: "
     shErr test c
     shConf test c
 
+shErr d c = putStrLn $ (show $ 100 * errorRate d c) ++ " %"
+shConf d c = putStrLn $ format " " (show.round) (confusion d c)
+
+
 main = do
-    m <- fromFile "../data/mnist.txt" (5000,785)
+    m <- fromFile "../../../data/mnist.txt" (5000,785)
     args <- map read `fmap` getArgs
     let [n,s] = case args of
             [] -> error "usage: ./ferns <ferns number (e.g. 100)> <ferns size (e.g. 10) >"
@@ -45,7 +37,7 @@ main = do
     let mnist = randomPermutation seed $ zip vs ls
     let (train,test) = splitAt 4000 mnist
 
-    randfeats <- take (n*s) `fmap` genRandFeats (0,783::Int)
+    randfeats <- (take (n*s) . randomPairs (0,783::Int)) `fmap` randomIO
     let train' = preprocess (randBinFeat randfeats) train
         test'  = preprocess (randBinFeat randfeats) test
 
@@ -65,19 +57,33 @@ main = do
 
 ---------------------------------------------------------
 
+-- | generate random pairs of objects in a given range
+randomPairs :: (Random t) => (t, t) -> Seed -> [(t, t)]
+randomPairs ran seed = partit $ randomRs ran (mkStdGen seed)
+    where partit (a:b:rest) = (a,b):partit rest
+
+-- | extract 0-1 properties from a list of pairs of indexes
+-- by simple comparison of values
+randBinFeat :: [(Int, Int)] -> Vec -> Vec
 randBinFeat coordPairs v = fromList $ map g coordPairs
     where g (a,b) = if v@>a > v@>b then 1.0 else 0.0 :: Double
 
-vsum v = v <.> constant 1 (dim v)
 
-naiveBayes :: Distance (Vector Double)
+-- | a bayesian classifier based on the estimated probabilities
+-- of assumed independent binary features
+naiveBayes :: Distance Vec
 naiveBayes vs = f where
     Stat {meanVector = p} = stat (fromRows vs)
-    f x = - (vsum $ log $ x*p + (1-x)*(1-p))
+    f x = - (sumElements $ log $ x*p + (1-x)*(1-p))
 
+-- | extract boolean features from simple comparison of values
+-- from a list of pairs on indexes, grouping them into \"ferns\" of given size.
+binbool :: Int -> [(Int, Int)] -> Vec -> [[Bool]]
 binbool k coordPairs v = splitEvery k $ map g coordPairs
     where g (a,b) = v@>a > v@>b
 
+-- | A bayesian classifier based on estimated probabilities of assumed
+-- independent groups of dependendent binary features
 ferns :: Distance [[Bool]]
 ferns vs = f where
     hs = map histog (transpose vs)

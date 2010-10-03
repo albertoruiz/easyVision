@@ -274,11 +274,11 @@ normalizeMinMax :: (Double,Double) -> Property Attributes Attributes
 normalizeMinMax (mn,mx) exs = f where
     f x = b + r*x
     xs = toColumns $ fromRows $ map fst exs
-    maxs = vector $ map vectorMax xs
-    mins = vector $ map vectorMin xs
+    maxs = vector $ map maxElement xs
+    mins = vector $ map minElement xs
     dxs = maxs - mins
     dy = mx - mn
-    r = dy .* recip dxs   -- FIXME: protect the division...
+    r = dy `scale` recip dxs   -- FIXME: protect the division...
     b = vector [mn] - r*mins
 
 -- | Whitening transformation

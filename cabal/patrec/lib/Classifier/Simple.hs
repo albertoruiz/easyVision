@@ -25,17 +25,17 @@ import Classifier.Base
 import Data.List(sortBy, sort, nub, elemIndex, intersperse, transpose, partition, delete)
 import qualified Data.Map as Map
 import System.Random
-import Data.Array
+import Data.Array hiding((//))
 import Util.Stat
-import Util.Misc(norm)
+import Util.Misc(norm,(&),(//),(#))
 
 -- | mse linear discriminant using the pseudoinverse
 mse :: Dicotomizer
 mse (g1,g2) = f where
-    m = (fromRows g1 <-> fromRows g2) <|> constant 1 (dim b)
-    b = join [constant 1 (length g1), constant (-1) (length g2)]
+    m = (fromRows g1 // fromRows g2) & konst 1 (dim b,1)
+    b = constant 1 (length g1) # constant (-1) (length g2)
     w = m <\> b
-    f v = tanh (join [v,1] <.> w)
+    f v = tanh (v # 1 <.> w)
 
 --------------------------------------------------------------------------------
 
@@ -97,12 +97,12 @@ distance d exs = (c,f) where
 -- | mse with weighted examples
 mseWeighted :: WeightedDicotomizer
 mseWeighted (g1,g2) d = f where
-    m = (fromRows g1 <-> fromRows g2) <|> constant 1 (dim b)
-    b = join [constant 1 (length g1), constant (-1) (length g2)]
+    m = (fromRows g1 // fromRows g2) & konst 1 (dim b,1)
+    b = constant 1 (length g1) # constant (-1) (length g2)
     rd  = sqrt d
     rd' = outer rd (constant 1 (cols m))
     w = (m*rd') <\> (b*rd)
-    f v = tanh (join [v,1] <.> w)
+    f v = tanh (v # 1 <.> w)
 
 
 
@@ -117,8 +117,8 @@ distWeighted (g1,g2) d = f where
     ones = constant 1 (dim (head g1))
     a1 = outer d1 ones * fromRows g1
     a2 = outer d2 ones * fromRows g2
-    m1 = sumColumns a1 */ (pnorm PNorm1 d1)
-    m2 = sumColumns a2 */ (pnorm PNorm1 d2)
+    m1 = sumColumns a1 / scalar (pnorm PNorm1 d1)
+    m2 = sumColumns a2 / scalar (pnorm PNorm1 d2)
     f x = norm (x-m2) - norm (x-m1)
     sumColumns m = constant 1 (rows m) <> m
 

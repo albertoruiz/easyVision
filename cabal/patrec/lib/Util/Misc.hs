@@ -12,6 +12,8 @@ import qualified Data.Array as A
 type Mat = Matrix Double
 type Vec = Vector Double
 
+type Seed = Int
+
 splitEvery :: Int -> [t] -> [[t]]
 splitEvery _ [] = []
 splitEvery k l = take k l : splitEvery k (drop k l)
@@ -86,11 +88,29 @@ replaceAt pos ys xs = zipWith f [0..] xs where
         Just y -> y
         Nothing -> x
 
+-- | used to avoid incomplete patterns
 impossible :: String -> a
 impossible msg = error ("impossible input in "++ msg)
 
+-- | specialized @(^2)@
 sqr :: Num a => a -> a
 sqr x = x^(2::Int)
 
+-- | specialized 'round'
 round' :: RealFrac a => a -> Int
 round' = round
+
+-- | Concatenation of real vectors.
+infixl 9 #
+(#) :: Vec -> Vec -> Vec
+a # b = join [a,b]
+
+-- | Horizontal concatenation of real matrices.
+infixl 8 &
+(&) :: Mat -> Mat -> Mat
+a & b = fromBlocks [[a,b]]
+
+-- | Vertical concatenation of real matrices.
+infixl 7 //
+(//) :: Mat -> Mat-> Mat
+a // b = fromBlocks [[a],[b]]

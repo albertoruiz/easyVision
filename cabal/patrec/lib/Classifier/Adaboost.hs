@@ -97,7 +97,7 @@ adaboostStep method (g1,g2) d = (f,d',e,a) where
     d1 = map f1 g1
     d2 = map f2 g2
     dr = d * join [vector d1, vector d2]
-    d' = dr */ (dr <.> constant 1 (dim dr))
+    d' = dr / scalar (dr <.> constant 1 (dim dr))
 
 -- | creates a list of weak learners and associated information to build a strong learner using adaboost
 adaboostST :: Int -> WeightedDicotomizer -> TwoGroups -> [ADBST]
