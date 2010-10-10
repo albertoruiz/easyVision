@@ -28,7 +28,7 @@ module Util.Stat
 import Numeric.LinearAlgebra hiding (eigenvalues)
 import Data.List(transpose,sortBy,minimumBy)
 import Data.Function(on)
-import Util.Misc(Vec,Mat,(//),(&))
+import Util.Misc(Vec,Mat,(//),(&),debug)
 
 -- | 1st and 2nd order statistics and other useful information extracted from a multivariate sample, where observations are given as rows of a matrix.
 
@@ -105,7 +105,8 @@ data Codec =
 }
 
 -- | Two ways to specify the amount of 'pca' compression.
-data PCARequest = ReconstructionQuality Double -- ^ ratio of spectral power
+data PCARequest = ReconstructionQuality Double -- ^ ratio of variance
+                | SigmaPercent Double          -- ^ ratio of standard deviation
                 | NewDimension Int             -- ^ number of desired components
 
 -- | Given the desired compression criterion, from the 'Stat'istics of a dataset it creates a linear 'Codec' based on principal component analysis  (which maximizes mean squared reconstruction error).
@@ -124,13 +125,14 @@ pca (NewDimension n) st =
     vp = takeRows n (eigenvectors st)
     m = meanVector st
 
-pca (ReconstructionQuality prec) st = pca (NewDimension n) st where    
+pca (ReconstructionQuality prec) st = pca (NewDimension n) st where
     s = toList (eigenvalues st)
     n = 1 + (length $ fst $ span (< (prec'*sum s)) $ cumSum s)
     cumSum = tail . scanl (+) 0.0
     prec' = if prec <=0.0 || prec >= 1.0
                 then error "the reconstruction quality must be 0<prec<1"
                 else prec
+
 
 {- | PedroE's algorithm. For example, with @dist x y = abs (x-y)@ we have:
 

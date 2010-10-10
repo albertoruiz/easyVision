@@ -18,7 +18,6 @@ module EasyVision.MiniApps (
     getCatalog,
     catalogBrowser,
     hsvPalette,
-    scatterWindow,
     regionDetector, regionTracker,
     panoramic,
     zoomer, zoomWindow,
@@ -29,7 +28,8 @@ module EasyVision.MiniApps (
     module EasyVision.MiniApps.SignalMonitor,
     module EasyVision.MiniApps.Combinators,
     module EasyVision.MiniApps.Concurrent,
-    module EasyVision.MiniApps.PoseTracker
+    module EasyVision.MiniApps.PoseTracker,
+    module EasyVision.MiniApps.ScatterPlot
 )where
 
 import Graphics.UI.GLUT as GL hiding (Size,Point,Matrix,matrix)
@@ -61,6 +61,7 @@ import EasyVision.MiniApps.CornerTracker
 import EasyVision.MiniApps.SignalMonitor
 import EasyVision.MiniApps.PoseTracker
 import EasyVision.MiniApps.Contours
+import EasyVision.MiniApps.ScatterPlot
 
 -- | reads a labeled video
 readCatalog :: String -> Size -> String -> Maybe Int -> (ImageYUV-> a) -> IO [(a,String)]
@@ -170,71 +171,6 @@ palette k = hsvToRGB $ putChannels (fromLists ramp ,
             r <- image (Size 256 256)
             setData8u r ls
             return r
-
----------------------------------------------------------------------------
-
-scatter examples (i,j) = do
-    let (gs,lbs) = group examples
-        plot = map (\v-> Point (v@>i) (v@>j))
-        xs = map ((@>i).fst) examples
-        ys = map ((@>j).fst) examples
-        a1 = minimum xs
-        a2 = maximum xs
-        b1 = minimum ys
-        b2 = maximum ys
-        da = 0.05*(a2-a1)
-        db = 0.05*(b2-b1)
-        colors = [setColor 1 0 0, setColor 0 0 1, setColor 0 1 0] ++
-                 [setColor 1 1 0, setColor 0 1 1, setColor 1 0 1] ++
-                 [setColor 1 0.5 0.5, setColor 0.5 0.5 1, setColor 0.5 1 0.5] ++
-                 repeat (setColor 1 1 1)
-    clear [ColorBuffer]
-    matrixMode $= Projection
-    loadIdentity
-    ortho2D (a1-da) (a2+da) (b1-db) (b2+db)
-    matrixMode $= Modelview 0
-    loadIdentity
-    let f pts col = do
-            col
-            GL.renderPrimitive GL.Points . mapM_ GL.vertex . plot $ pts
-
-    pointSize $= 3
-    sequence_ $ zipWith f gs colors
-
-    let text2D x y s = do
-        rasterPos (Vertex2 x (y::GLdouble))
-        renderString Helvetica12 s
-
-    setColor 0.5 0.5 0.5
-    text2D a2 b1 (show i)
-    text2D a1 b2 (show j)
-
-
-scatterWindow name sz exs coor  = do
-    w <- evWindow coor name sz (Just disp) kbd
-    return w
-  where n = dim . fst . head $ exs
-        disp rdesi = do
-            coord <- get rdesi
-            scatter exs coord
-
-        kbd rdesi (SpecialKey KeyUp) Down _ _ = do
-            (i,j) <- get rdesi
-            rdesi $= (i,(j+1) `mod` n)
-            postRedisplay Nothing
-        kbd rdesi (SpecialKey KeyDown) Down _ _ = do
-            (i,j) <- get rdesi
-            rdesi $= (i, (j-1) `mod`n)
-            postRedisplay Nothing
-        kbd rdesi (SpecialKey KeyRight) Down _ _ = do
-            (i,j) <- get rdesi
-            rdesi $= ((i+1)`mod`n,j)
-            postRedisplay Nothing
-        kbd rdesi (SpecialKey KeyLeft) Down _ _ = do
-            (i,j) <- get rdesi
-            rdesi $= ((i-1) `mod` n,j)
-            postRedisplay Nothing
-        kbd _ a b c d = kbdQuit a b c d
 
 -----------------------------------------------------------------------
 

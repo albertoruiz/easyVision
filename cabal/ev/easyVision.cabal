@@ -24,7 +24,7 @@ library
                         camera >= 0.1,
                         vision >= 0.1, hmatrix >= 0.8.3,
                         patrec >= 0.1, ev-gui >= 0.1,
-                        GLUT, containers, process, old-time,
+                        GLUT, containers, process, old-time, colour,
                         parallel <2
 
     hs-source-dirs:     lib
@@ -38,6 +38,7 @@ library
                         EasyVision.MiniApps.SignalMonitor
                         EasyVision.MiniApps.PoseTracker
                         EasyVision.MiniApps.Contours
+                        EasyVision.MiniApps.ScatterPlot
     other-modules:
 
     ghc-prof-options:   -auto-all

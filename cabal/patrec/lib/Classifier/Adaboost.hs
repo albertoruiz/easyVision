@@ -14,15 +14,16 @@ The adaboost metalearner.
 -----------------------------------------------------------------------------
 
 module Classifier.Adaboost (
+-- * Working with weighted examples
+    Weights, WeightedDicotomizer, unweight, weight,
 -- * stumps
 -- | an extremely simple learner
      stumps,
+-- * other simple learners with weighted examples
+     mseWeighted, distWeighted,
 -- * Meta algorithms
 -- ** Adaboost
-     adaboost, adaboostST, adaFun,
--- ** Decision tree
-     treeOf, branch
-
+     adaboost, adaboostST, adaFun
 ) where
 
 import Numeric.LinearAlgebra
@@ -30,6 +31,13 @@ import Classifier.Base
 import Data.List(sortBy, transpose,partition)
 import Util.Misc(posMin)
 import Data.Function(on)
+import Util.Misc(norm,(&),(//),(#))
+import System.Random
+
+type Weights = Vector Double
+-- | An improved 'Dicotomizer' which admits a distribution on the given examples.
+type WeightedDicotomizer = TwoGroups -> Weights -> Feature
+
 
 -- | an extremely simple learning machine
 singlestump :: Learner (Vector Double)
@@ -126,24 +134,60 @@ adaFun st = comb where
 adaboost:: Int -> WeightedDicotomizer -> Dicotomizer
 adaboost n m = adaFun . adaboostST n m
 
-------------------------------------------------------------------------
 
--- | Creates a decision tree
-treeOf :: (TwoGroups -> Bool) -> Dicotomizer -> Dicotomizer
+----------------------------------------------------------
 
-treeOf stopQ method gs@(g1,g2) = if stopQ gs || not improved then leaf else node where
+-- | Converts a 'WeightedDicotomizer' into an ordinary 'Dicotomizer' (using an uniform distribution).
+unweight :: WeightedDicotomizer -> Dicotomizer
+unweight dic (g1,g2) = dic (g1,g2) w where
+    m = length g1 + length g2
+    w = constant (1/fromIntegral m) m
+
+-- | Converts a 'Dicotomizer' into a 'WeightedDicotomizer' (by resampling).
+weight :: Int -- ^ seed of the random sequence
+          -> Dicotomizer -> WeightedDicotomizer
+weight seed dic (g1,g2) w = dic (g1',g2') where
+    s = ungroup [g1,g2]
+    ac = scanl1 (+) (toList w)
+    rs = take (length ac) $ randomRs (0, 1::Double) (mkStdGen seed)
+    rul = zip ac s
+    elm pos = snd $ head $ fst $ partition ((>pos).fst) rul
+    [g1',g2'] = fst (group (addNoise seed 0.0001 $ map elm rs))
+
+
+------------------------------------------------------------------------------------
+
+-- more complex weak learners, rather bad
+
+-- | mse with weighted examples
+mseWeighted :: WeightedDicotomizer
+mseWeighted (g1,g2) d = f where
+    m = (fromRows g1 // fromRows g2) & konst 1 (dim b,1)
+    b = constant 1 (length g1) # constant (-1) (length g2)
+    rd  = sqrt d
+    rd' = outer rd (constant 1 (cols m))
+    w = (m*rd') <\> (b*rd)
+    f v = tanh (v # 1 <.> w)
+
+
+-- | a minimum distance dicotomizer using weighted examples
+distWeighted :: WeightedDicotomizer
+distWeighted (g1,g2) d = f where
     n1 = length g1
     n2 = length g2
-    leaf = if n1>n2 then const 1 else const (-1)
-    node v = if d v > 0 then d1 v else d2 v
-    d = method gs
-    (g11,g12) = partition ((>0).d) g1
-    (g21,g22) = partition ((>0).d) g2
-    d1 = treeOf stopQ method (g11,g21)
-    d2 = treeOf stopQ method (g12,g22)
-    improved = (length g11, length g21) /= (n1,n2) &&
-               (length g12, length g22) /= (n1,n2)
+    d1 = subVector  0 n1 d
+    d2 = subVector n1 n2 d
+    ones = constant 1 (dim (head g1))
+    a1 = outer d1 ones * fromRows g1
+    a2 = outer d2 ones * fromRows g2
+    m1 = sumColumns a1 / scalar (pnorm PNorm1 d1)
+    m2 = sumColumns a2 / scalar (pnorm PNorm1 d2)
+    f x = norm (x-m2) - norm (x-m1)
+    sumColumns m = constant 1 (rows m) <> m
 
--- | stopping criterium for 'treeOf'. A new decision node is created if the minoritary class has more than n samples
-branch :: Int -> (TwoGroups -> Bool)
-branch n (g1,g2) = min (length g1) (length g2) <= n
+-- just to check that they are not completely wrong
+
+--mse' = multiclass (unweight mseWeighted)
+
+--dist' = multiclass (unweight distWeighted)
+

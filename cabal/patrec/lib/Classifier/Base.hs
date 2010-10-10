@@ -18,7 +18,6 @@ module Classifier.Base (
      Attributes, Label, Example, Sample,
      Classifier, Estimator, Learner,
      Feature, TwoGroups, Dicotomizer, multiclass,
-     Weights, WeightedDicotomizer, unweight, weight,
 -- * Utilities
      errorRate, confusion, InfoLabels(..), group, ungroup, createClassifier, addNoise, selectClasses, splitProportion, posMax, vector, detailed,
      module Util.Stat,
@@ -65,11 +64,6 @@ type TwoGroups = ([Attributes],[Attributes]) -- +/-
 
 -- | A learning machine for binary classification problems. See 'multiclass'.
 type Dicotomizer = TwoGroups -> Feature
-
-type Weights = Vector Double
--- | An improved 'Dicotomizer' which admits a distribution on the given examples.
-type WeightedDicotomizer = TwoGroups -> Weights -> Feature
-
 
 -- | Class labels info with helper functions
 data InfoLabels = InfoLabels {
@@ -288,20 +282,3 @@ whitenAttr exs = f where
     w = whitener st
     m = meanVector st
     st = stat $ fromRows $ map fst exs
-
--- | Converts a 'WeightedDicotomizer' into an ordinary 'Dicotomizer' (using an uniform distribution).
-unweight :: WeightedDicotomizer -> Dicotomizer
-unweight dic (g1,g2) = dic (g1,g2) w where
-    m = length g1 + length g2
-    w = constant (1/fromIntegral m) m
-
--- | Converts a 'Dicotomizer' into a 'WeightedDicotomizer' (by resampling).
-weight :: Int -- ^ seed of the random sequence
-          -> Dicotomizer -> WeightedDicotomizer
-weight seed dic (g1,g2) w = dic (g1',g2') where
-    s = ungroup [g1,g2]
-    ac = scanl1 (+) (toList w)
-    rs = take (length ac) $ randomRs (0, 1::Double) (mkStdGen seed)
-    rul = zip ac s
-    elm pos = snd $ head $ fst $ partition ((>pos).fst) rul
-    [g1',g2'] = fst (group (addNoise seed 0.0001 $ map elm rs))

@@ -56,13 +56,13 @@ quartiles l = (f a, f b, f c) where
     f = (s!!)
     s = sort l
     n = fromIntegral (length l)
-    [a,b,c] = map (round . (*(n-1))) [0.25,0.5,0.75]
+    [a,b,c] = map (round' . (*(n-1))) [0.25,0.5,0.75::Double]
 
 arrayOf :: [a] -> (Int -> a)
 arrayOf xs = (A.listArray (0, length xs -1) xs A.!)
 
 myintersect :: (Ord a) => [a] -> [a] -> [a]
-myintersect as bs = go as bs [] where
+myintersect xs ys = go xs ys [] where
     go [] _ x = x
     go _ [] x = x
     go (a:as) (b:bs) x
@@ -71,7 +71,7 @@ myintersect as bs = go as bs [] where
         | otherwise = go as bs (a:x)
 
 intersectSorted :: (Ord a) => [a] -> [a] -> [a]
-intersectSorted as bs = reverse (go as bs []) where
+intersectSorted xs ys = reverse (go xs ys []) where
     go [] _ x = x
     go _ [] x = x
     go (a:as) (b:bs) x

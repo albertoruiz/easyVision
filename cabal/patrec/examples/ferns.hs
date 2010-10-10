@@ -9,6 +9,7 @@ import qualified Data.Map as M
 import Data.Maybe(fromMaybe)
 import Control.Arrow((&&&))
 import System (getArgs)
+import Text.Printf(printf)
 import Util.Misc(splitEvery, randomPermutation, Vec, Seed)
 
 
@@ -21,7 +22,7 @@ study' prob meth = do
     shErr test c
     shConf test c
 
-shErr d c = putStrLn $ (show $ 100 * errorRate d c) ++ " %"
+shErr d c = printf "%.2f%%\n" (100 * errorRate d c)
 shConf d c = putStrLn $ format " " (show.round) (confusion d c)
 
 
@@ -47,7 +48,7 @@ main = do
 --    putStr "mselin "
 --    study' rawproblem (multiclass mse)
     putStr "fastferns-1 "
-    study' (train',test') (distance naiveBayes)
+    study' (train',test') (distance naive01)
 
     let train'' = preprocess (binbool s randfeats) train
         test''  = preprocess (binbool s randfeats) test
@@ -68,27 +69,8 @@ randBinFeat :: [(Int, Int)] -> Vec -> Vec
 randBinFeat coordPairs v = fromList $ map g coordPairs
     where g (a,b) = if v@>a > v@>b then 1.0 else 0.0 :: Double
 
-
--- | a bayesian classifier based on the estimated probabilities
--- of assumed independent binary features
-naiveBayes :: Distance Vec
-naiveBayes vs = f where
-    Stat {meanVector = p} = stat (fromRows vs)
-    f x = - (sumElements $ log $ x*p + (1-x)*(1-p))
-
 -- | extract boolean features from simple comparison of values
 -- from a list of pairs on indexes, grouping them into \"ferns\" of given size.
 binbool :: Int -> [(Int, Int)] -> Vec -> [[Bool]]
 binbool k coordPairs v = splitEvery k $ map g coordPairs
     where g (a,b) = v@>a > v@>b
-
--- | A bayesian classifier based on estimated probabilities of assumed
--- independent groups of dependendent binary features
-ferns :: Distance [[Bool]]
-ferns vs = f where
-    hs = map histog (transpose vs)
-    histog = M.fromList .map (head &&& lr) . L.group . sort
-        where lr l = fromIntegral (length l) / t :: Double
-    t = fromIntegral (length vs)
-    f x = negate $ sum $ map log $ zipWith get hs x
-        where get m v = fromMaybe (0.1/t) (M.lookup v m)

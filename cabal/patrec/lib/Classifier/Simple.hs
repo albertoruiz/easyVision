@@ -15,8 +15,12 @@ Very simple methods.
 
 
 module Classifier.Simple (
-     Distance, distance, ordinary, mahalanobis, gaussian, nearestNeighbour, subspace, robustLoc,
-     mse, mseWeighted, distWeighted,
+     Distance, distance,
+     ordinary, mahalanobis, gaussian,
+     naiveGaussian, naive01, ferns,
+     nearestNeighbour, subspace,
+     robustLoc,
+     mse,
 ) where
 
 import Numeric.LinearAlgebra
@@ -28,6 +32,10 @@ import System.Random
 import Data.Array hiding((//))
 import Util.Stat
 import Util.Misc(norm,(&),(//),(#))
+import qualified Data.Map as M
+import Data.Maybe(fromMaybe)
+import qualified Data.List as L
+import Control.Arrow((&&&))
 
 -- | mse linear discriminant using the pseudoinverse
 mse :: Dicotomizer
@@ -90,42 +98,43 @@ distance d exs = (c,f) where
     f x = map (negate.($x)) distfuns
     c = createClassifier lbs f
 
-------------------------------------------------------------------------------------
 
--- more complex weak learners, rather bad
+-- | Naive Bayes with gaussian pdf
+naiveGaussian :: Distance (Vector Double)
+naiveGaussian vs = f where
+    x = fromRows vs
+    m = meanVector (stat x)
+    m2 = meanVector (stat (x*x))
+    s = sqrt (m2 - m*m)
+    k = sumElements (log s)
+    norm x = pnorm PNorm2 x
+    f v = k + 0.5*norm ((v-m)/s) ^2
 
--- | mse with weighted examples
-mseWeighted :: WeightedDicotomizer
-mseWeighted (g1,g2) d = f where
-    m = (fromRows g1 // fromRows g2) & konst 1 (dim b,1)
-    b = constant 1 (length g1) # constant (-1) (length g2)
-    rd  = sqrt d
-    rd' = outer rd (constant 1 (cols m))
-    w = (m*rd') <\> (b*rd)
-    f v = tanh (v # 1 <.> w)
+--     maxv = maximum (toList s)
+--     tol = eps * maxv
+--     s' = cmap pr s
+--     d = cmap pr' s
+--     pr x = if x < tol then maxv else x
+--     pr' x = if x < tol then 0 else 1::Double
+--     k = sum (map log (toList s'))
+--     f v = k + 0.5*(norm (d*(v-m)/s'))^2
+--     norm x = pnorm PNorm2 x
 
-
-
-
--- | a minimum distance dicotomizer using weighted examples
-distWeighted :: WeightedDicotomizer
-distWeighted (g1,g2) d = f where
-    n1 = length g1
-    n2 = length g2
-    d1 = subVector  0 n1 d
-    d2 = subVector n1 n2 d
-    ones = constant 1 (dim (head g1))
-    a1 = outer d1 ones * fromRows g1
-    a2 = outer d2 ones * fromRows g2
-    m1 = sumColumns a1 / scalar (pnorm PNorm1 d1)
-    m2 = sumColumns a2 / scalar (pnorm PNorm1 d2)
-    f x = norm (x-m2) - norm (x-m1)
-    sumColumns m = constant 1 (rows m) <> m
+-- | a bayesian classifier based on the estimated probabilities
+-- of assumed independent binary (0/1) features in a Vector Double
+naive01 :: Distance (Vector Double)
+naive01 vs = f where
+    Stat {meanVector = p} = stat (fromRows vs)
+    f x = - (sumElements $ log $ x*p + (1-x)*(1-p))
 
 
--- just to check that they are not completely wrong
-
---mse' = multiclass (unweight mseWeighted)
-
---dist' = multiclass (unweight distWeighted)
-
+-- | A bayesian classifier based on estimated probabilities of assumed
+-- independent groups of dependendent binary features
+ferns :: Distance [[Bool]]
+ferns vs = f where
+    hs = map histog (transpose vs)
+    histog = M.fromList .map (head &&& lr) . L.group . sort
+        where lr l = fromIntegral (length l) / t :: Double
+    t = fromIntegral (length vs)
+    f x = negate $ sum $ map log $ zipWith get hs x
+        where get m v = fromMaybe (0.1/t) (M.lookup v m)
