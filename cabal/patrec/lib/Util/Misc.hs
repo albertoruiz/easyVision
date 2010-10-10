@@ -12,6 +12,9 @@ import qualified Data.Array as A
 type Mat = Matrix Double
 type Vec = Vector Double
 
+vec :: [Double] -> Vec
+vec = fromList
+
 type Seed = Int
 
 splitEvery :: Int -> [t] -> [[t]]
@@ -41,7 +44,7 @@ randomPermutation :: Int -> [a] -> [a]
 randomPermutation seed l = map fst $ sortBy (compare `on` snd) randomTuples where
     randomTuples = zip l (randomRs (0, 1::Double) (mkStdGen seed))
 
--- Euclidean vector norm.
+-- | Euclidean vector norm.
 norm :: Vector Double -> Double
 norm x = pnorm PNorm2 x
 

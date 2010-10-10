@@ -102,12 +102,12 @@ dicodist d (g1,g2) = f where
 ---------------------------------------------------------
 
 checkpca = do
-    x <- map (toList.fst) `fmap` rawmnist
-    let xm = fromLists x
+    x <- map (fst) `fmap` rawmnist
+    let xm = fromRows x
         st = stat xm
         xx = zip x x
         x0 = meanVector st
-        codec = pca (ReconstructionQuality 0.1) st
+        codec = pca (SigmaPercent 90) st
 --        codec = pca (NewDimension 10) st
         f = decodeVector codec . encodeVector codec
         e0 = msError (const x0) xx
@@ -116,5 +116,5 @@ checkpca = do
     print $ sqrt $ (sumElements $ takeDiag cov) / fromIntegral (cols xm)
     print e0
     print e
-    printf "%.2f %% sigma - " $ 100*e/e0
-    printf "%.2f %% var\n" $ 100*(e/e0)^2
+    printf "%.2f %% sigma - " $ 100 - 100*e/e0
+    printf "%.2f %% var\n" $ 100 - 100*(e/e0)^2

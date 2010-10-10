@@ -14,55 +14,61 @@ Experimental methods for multivariate linear regression.
 
 
 module Classifier.Regression (
-    normalizer, withNormalized, latent,
+    Regressor, DataPairs, RegressionMethod,
+    withNormalized,
     mlr, mlrReduced, pls, pcr,
+    latent,
     msError
 ) where
 
-
 import Numeric.LinearAlgebra
 import Util.Stat
-import Numeric.LinearAlgebra.LAPACK
-import Util.Misc(Mat,Vec,randomPermutation,Seed,mean)
+import Util.Misc(Mat,Vec,mean,sqr,norm)
 
-vec x = Numeric.LinearAlgebra.fromList x :: Vec
+-- working with variables with zero mean and unit deviation
 
----------------------------------------------
+type Regressor = Vec -> Vec
+type DataPairs = [(Vec, Vec)] -- ?
+type RegressionMethod = Mat -> Mat -> Regressor
 
--- to work with variables with zero mean and unit deviation
+withNormalized :: RegressionMethod
+               -> DataPairs
+               -> Regressor
+withNormalized method prob = gy . method nx ny . fx where
+    (xs,ys) = unzip prob
+    (nx,fx,_) = normalizer xs
+    (ny,_,gy) = normalizer ys
 
 normalizer :: [Vec] -> (Mat, Vec -> Vec, Vec -> Vec)
-normalizer vs = (x,f,g) where
-    s = stat (fromRows vs)
-    m = meanVector s
-    d = sqrt (varianceVector s)
-    f x = (x-m)/d
-    g x = m + x*d
-    x = normalizedData s
-
-withNormalized method prob = gy . method nx ny . fx
-    where
-    (xs,ys) = unzip prob
-    (nx,fx,_) = normalizer (map vec xs)
-    (ny,_,gy) = normalizer (map vec ys)
+normalizer dat = (nz,f,g) where
+        st = stat (fromRows dat)
+        nz = normalizedData st
+        f =   normalize st
+        g = unnormalize st
 
 --------------------------------------------------
 
 -- | naive multivariate linear regression
+mlr :: RegressionMethod
 mlr xc yc = (<>m)
     where m = linearSolveSVD xc yc
 
--- | naive multivariate linear regression
+--------------------------------------------------
+
+-- | singular values of the linear regression function, the
+-- decrease rate suggests number of latent components
+latent :: DataPairs -> Vec
 latent p = g $ singularValues m
     where (xs,ys) = unzip p
-          (xc,_,_) = normalizer (map vec xs)
-          (yc,_,_) = normalizer (map vec ys)
+          (xc,_,_) = normalizer xs
+          (yc,_,_) = normalizer ys
           m = linearSolveSVD xc yc
           g x = x / scalar (sumElements x)
 
 ---------------------------------------------
 
 -- | multivariate linear regression through a reduced subspace
+mlrReduced :: Int -> RegressionMethod
 mlrReduced n xc yc = (<>q) . (<>w)
     where m = linearSolveSVD xc yc
           (u,_,_) = svd m
@@ -72,6 +78,8 @@ mlrReduced n xc yc = (<>q) . (<>w)
 
 ----------------------------------------------
 
+-- | a simple form of partial least squares
+pls :: Int -> RegressionMethod
 pls n xc yc = (<>q) . (<>w)
     where
     (_,_,v) = svd (trans yc <> xc)
@@ -79,9 +87,10 @@ pls n xc yc = (<>q) . (<>w)
     t = xc <> w
     q = linearSolveSVD t yc
 
-
 ----------------------------------------------
 
+-- | regression from the principal components of the input vector
+pcr :: Int -> RegressionMethod
 pcr n xc yc = (<>q) . (<>w) where
     w = takeColumns n v
     (_,v) = eigSH (trans xc <> xc)
@@ -90,10 +99,8 @@ pcr n xc yc = (<>q) . (<>w) where
 
 ----------------------------------------------
 
-mse f prob = mean [ norm (vec y - f (vec x) ) ^ 2 | (x,y) <- prob ]
-
-msError f prob = sqrt (k * mse f prob)
-    where k = recip $ fromIntegral $ length (snd (head prob))
-
-norm :: Vector Double -> Double
-norm = pnorm PNorm2
+-- | in sigma per component
+msError :: Regressor -> DataPairs -> Double
+msError f prob = sqrt (k * mse)
+    where k = recip $ fromIntegral $ dim (snd (head prob))
+          mse = mean [ sqr $ norm (y - f x ) | (x,y) <- prob ]

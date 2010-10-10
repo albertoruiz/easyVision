@@ -1,7 +1,7 @@
 import Classifier.Regression
 import Numeric.LinearAlgebra
 import Text.Printf
-import Util.Misc(Mat,Vec,randomPermutation,Seed, mean)
+import Util.Misc(Mat,Vec,randomPermutation,Seed, mean, vec)
 import Control.Monad(forM_)
 
 disp = putStrLn . dispf 3
@@ -20,7 +20,7 @@ noise seed (r,c) = reshape c $ randomVector seed Gaussian (r*c)
 addNoise :: Seed -> Double -> Matrix Double -> Matrix Double
 addNoise seed sigma m = m + scalar sigma * noise seed (rows m, cols m)
 
-prob = randomPermutation 17 $ zip (map toList $ toRows x) (map toList $ toRows y)
+prob = randomPermutation 17 $ zip (toRows x) (toRows y)
 
 ----------------------------------------------
 

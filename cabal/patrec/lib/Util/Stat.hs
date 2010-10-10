@@ -1,12 +1,11 @@
 -----------------------------------------------------------------------------
 {- |
 Module      :  Util.Stat
-Copyright   :  (c) Alberto Ruiz 2006-7
-License     :  GPL-style
+Copyright   :  (c) Alberto Ruiz 2006-10
+License     :  GPL
 
 Maintainer  :  Alberto Ruiz (aruiz at um dot es)
-Stability   :  very provisional
-Portability :  hmm...
+Stability   :  provisional
 
 Statistical characterization of multivariate samples and Principal Component Analysis.
 
@@ -28,7 +27,13 @@ module Util.Stat
 import Numeric.LinearAlgebra hiding (eigenvalues)
 import Data.List(transpose,sortBy,minimumBy)
 import Data.Function(on)
-import Util.Misc(Vec,Mat,(//),(&),debug)
+import Util.Misc(Vec,Mat,(//),(&))
+
+mean :: Mat -> Vec
+mean m = ones <> m
+    where r = rows m
+          k = 1 / fromIntegral r
+          ones = constant k r
 
 -- | 1st and 2nd order statistics and other useful information extracted from a multivariate sample, where observations are given as rows of a matrix.
 
@@ -42,14 +47,16 @@ data Stat = Stat
     , whiteningTransformation :: Mat -- ^ homogeneous transformation which includes centering
     , whitener                :: Mat
     , varianceVector          :: Vec
-    , normalizedData          :: Mat
+    , normalizedData          :: Mat  -- ^ 0 mean and 1 std each var
+    , normalize               :: Vec -> Vec 
+    , unnormalize             :: Vec -> Vec
     }
 
 -- | Creates a 'Stat' structure from a matrix. Of course, due to laziness, only the fields required by the particular application will be actually computed.
 stat :: Mat -> Stat
 stat x = s where
     m = mean x
-    xc = x |-| m
+    xc = x - asRow m
     c = (trans xc <> xc) / fromIntegral (rows x -1)
     (l,v') = eigSH' c
     v = trans v'
@@ -57,7 +64,10 @@ stat x = s where
     w = diag (1/sqrt l) <> v
     n = rows x
     n' = fromIntegral n / fromIntegral (n-1)
-    vars = scalar n' * mean (xc^2)
+    vars = scalar n' * mean (xc*xc)
+    d = sqrt vars
+    f z = (z-m)/d
+    g z = m + z*d
     s = Stat { meanVector = m
              , covarianceMatrix = c
              , eigenvalues = l
@@ -68,34 +78,16 @@ stat x = s where
                                          lastrow
              , whitenedData = xc <> trans w
              , varianceVector = vars
-             , normalizedData = (x |-| m) |/| sqrt vars
+             , normalizedData = (x - asRow m) / asRow (sqrt vars)
+             , normalize = f
+             , unnormalize = g
              }
 
-sumColumns m = constant 1 (rows m) <> m
-
-byRows op mat vec = mat `op` (ones `outer` vec)
-    where ones = constant 1 (rows mat)
-
-infixl 5 |-|, |+|
-infixl 7 |/| -- : |*|
-
-(|-|) = byRows (-)
-(|+|) = byRows (+)
---(|*|) = byRows (*)
-(|/|) = byRows (/)
-
-----------------------------------------------------------------------
-
-mean m = ones <> m
-    where r = rows m
-          k = 1 / fromIntegral r
-          ones = constant k r
 
 ----------------------------------------------------------------------
 
 -- | This structure contains functions to encode and decode individual vectors (or collection of vectors packed into a matrix) obtained by some suitable criterion (e.g. 'pca').
-
-data Codec = 
+data Codec =
     Codec { encodeVector :: Vec -> Vec
           , decodeVector :: Vec -> Vec
           , encodeMatrix :: Mat -> Mat
@@ -115,8 +107,8 @@ pca :: PCARequest -> Stat -> Codec
 pca (NewDimension n) st =
     Codec { encodeVector = encv
           , decodeVector = decv
-          , encodeMatrix = \x -> (x |-| m) <> trans vp
-          , decodeMatrix = \y -> (y <> vp) |+| m
+          , encodeMatrix = \x -> (x - asRow m) <> trans vp
+          , decodeMatrix = \y -> (y <> vp) + asRow m
           , encodeList = toList . encv . fromList
           , decodeList = toList . decv . fromList
 } where
@@ -133,6 +125,7 @@ pca (ReconstructionQuality prec) st = pca (NewDimension n) st where
                 then error "the reconstruction quality must be 0<prec<1"
                 else prec
 
+pca (SigmaPercent p) st = pca (ReconstructionQuality $ 1-(1-p/100)^2) st
 
 {- | PedroE's algorithm. For example, with @dist x y = abs (x-y)@ we have:
 
