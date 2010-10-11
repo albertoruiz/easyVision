@@ -37,6 +37,7 @@ library
                         Classifier.ToyProblems
                         Util.Misc
                         Util.Stat
+                        Util.Probability
                         Util.Kalman
 
     other-modules:
