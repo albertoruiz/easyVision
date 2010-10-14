@@ -18,7 +18,7 @@ module Classifier.Adaboost (
     Weights, WeightedDicotomizer, unweight, weight,
 -- * stumps
 -- | an extremely simple learner
-     stumps,
+     stumps, singlestump,
 -- * other simple learners with weighted examples
      mseWeighted, distWeighted,
 -- * Meta algorithms
@@ -28,10 +28,11 @@ module Classifier.Adaboost (
 
 import Numeric.LinearAlgebra
 import Classifier.Base
+import Classifier.Simple(multiclass)
 import Data.List(sortBy, transpose,partition)
 import Util.Misc(posMin)
 import Data.Function(on)
-import Util.Misc(norm,(&),(//),(#))
+import Util.Misc(norm,(&),(//),(#),Vec,vec,posMax)
 import System.Random
 
 type Weights = Vector Double
@@ -40,7 +41,7 @@ type WeightedDicotomizer = TwoGroups -> Weights -> Feature
 
 
 -- | an extremely simple learning machine
-singlestump :: Learner (Vector Double)
+singlestump :: Learner Vec
 singlestump = multiclass (unweight stumps)
 
 
@@ -49,6 +50,7 @@ stumps :: WeightedDicotomizer
 stumps p = stumpsOk (prepro p)
 
 -- useful precomputation: indices of the sorted features.
+prepro :: TwoGroups -> (([Vec], [Vec]), Vec, [[Double]], [[Double]], [[Int]])
 prepro (g1,g2) = ((g1,g2),lbs,xs,oxs,is) where
     lbs = join [constant 1 (length g1), constant (-1) (length g2)]
     xs = transpose $ map toList (g1 ++ g2)
@@ -57,8 +59,8 @@ prepro (g1,g2) = ((g1,g2),lbs,xs,oxs,is) where
     oxs = map (map fst) s
     is  = map (map snd) s
 
-
-stumpsOk ((g1,g2),lbs,xs,oxs,is) d = f where
+stumpsOk :: (([a], [b]), Vec, t, [[Double]], [[Int]]) -> Vec -> Feature
+stumpsOk ((g1,g2),lbs,_xs,oxs,is) d = f where
     wl = lbs*d
     n1 = length g1
     n2 = length g2
@@ -78,15 +80,15 @@ stumpsOk ((g1,g2),lbs,xs,oxs,is) d = f where
     h l k = 0.5*(l'!!(k) + l'!!(k+1)) where
         l' = (l!!0 - (l!!1-l!!0)) : l -- ++ [l!!n + (l!!n - l!!(n-1))]
         -- n = length l - 1
-    k = {- debug $ -} posMin (map (abs.fst) r)
-    (_,(v,s)) = r!!k
+    j = {- debug $ -} posMin (map (abs.fst) r)
+    (_,(u,sg)) = r!!j
 
-    f x = s * signum' (x @> k - v)
+    f x = sg * signum' (x @> j - u)
     signum' x = if x > 0 then 1 else -1
 
 
 -- | weak learner trained by the adaboost algorithm
-type ADBST = (Feature, Vector Double, Double, Double)
+type ADBST = (Feature, Vec, Double, Double)
 
 
 -- this works with a partially applied WeightedDicotomizer to reuse any
@@ -96,7 +98,7 @@ adaboostStep method (g1,g2) d = (f,d',e,a) where
     f = method d
     e1 = map (signum . max 0 . negate . f) g1
     e2 = map (signum . max 0 . f) g2
-    e = join [vector e1, vector e2] <.> d
+    e = join [vec e1, vec e2] <.> d
     a = 0.5 * log ((1-e)/e) -- it may be Infinity
     kp = exp (-a)
     kn = exp a
@@ -104,19 +106,19 @@ adaboostStep method (g1,g2) d = (f,d',e,a) where
     f2 v = if f v < 0 then kp else kn
     d1 = map f1 g1
     d2 = map f2 g2
-    dr = d * join [vector d1, vector d2]
+    dr = d * join [vec d1, vec d2]
     d' = dr / scalar (dr <.> constant 1 (dim dr))
 
 -- | creates a list of weak learners and associated information to build a strong learner using adaboost
 adaboostST :: Int -> WeightedDicotomizer -> TwoGroups -> [ADBST]
 adaboostST n m p = r where
-    (f,st@(g,d,e,a)) = initAdaboost m p
+    (f,st@(g,_d,e,_a)) = initAdaboost m p
     work = takeok n (iterate (adaboost' f p) st)
     easy = [(g,1,e,1)]
     r = if e > 0.001 then work else easy
-    adaboost' f p (_,d,_,_) = adaboostStep f p d
-    takeok n = take n . fst . span pos
-    pos (_,_,e,_) = e < 0.499
+    adaboost' h q (_,d,_,_) = adaboostStep h q d
+    takeok n' = take n' . fst . span pos
+    pos (_,_,err,_) = err < 0.499
 
 
 initAdaboost :: WeightedDicotomizer -> TwoGroups -> (Weights -> Feature, ADBST)

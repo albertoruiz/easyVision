@@ -26,20 +26,16 @@ module Util.Kalman (
 
 import Numeric.LinearAlgebra
 import Numeric.GSL.Differentiation
-import Debug.Trace
-import Text.Printf
-import Util.Misc(Vec,Mat)
+import Util.Misc(Vec,Mat,vec,mat,sqr)
 
-debug x = trace (show x) x
-debugM x = trace (format " " (printf "%2.0f") (100*abs x)) x
-debugLV k x = trace (show (fromRows x)) x
-debugS s x = trace (s++" = "++show x) x
+--import Debug.Trace
+--import Text.Printf
 
---------------------------------------------------------------------
+-- debug x = trace (show x) x
+-- debugM x = trace (format " " (printf "%2.0f") (100*abs x)) x
+-- debugLV k x = trace (show (fromRows x)) x
+-- debugS s x = trace (s++" = "++show x) x
 
-vector l = fromList l :: Vec
-matrix ls = fromLists ls :: Mat
-diagl = diag . vector
 
 -------------- Ordinary Kalman Filter -------------------------------
 
@@ -60,7 +56,7 @@ kalman' (LinearSystem f h q r) (State x p _) z = State x' p' zp where
 
 
 blindKalman :: LinearSystem -> State -> State
-blindKalman (LinearSystem f h q r) (State x p _) = State x' p' (h <> x') where
+blindKalman (LinearSystem f h q _r) (State x p _) = State x' p' (h <> x') where
     x' = f <> x
     p' = f <> p <> trans f + q
 
@@ -71,12 +67,14 @@ kalman sys st Nothing  = blindKalman sys st
 
 -------------- Extended Kalman Filter -------------------------------
 
+partialDerivative :: Int -> ([Double] -> Double) -> [Double] -> Double
 partialDerivative n f v = fst (derivCentral 0.01 g (v!!n)) where
     g x = f (concat [a,x:b])
     (a,_:b) = splitAt n v
 
-gradient f v = [partialDerivative k f v | k <- [0 .. length v -1]]
+--gradient f v = [partialDerivative k f v | k <- [0 .. length v -1]]
 
+jacobian :: ([Double] -> [Double]) -> [Double] -> [[Double]]
 jacobian f v = [[partialDerivative k ((!!s).f) v | k <- [0 .. length v -1]] | s <- [0..length (f v) -1]]
 
 --------------------------------------------------------------------
@@ -90,25 +88,25 @@ data System = System {ekF, ekH :: [Double] -> [Double],
 ekf' :: System -> State -> Measurement -> State
 ekf' (System f h q r) (State vx p _) z = State x' p' zp where
     x = toList vx
-    jf = matrix (jacobian f x)
-    jh = matrix (jacobian h x)
+    jf = mat (jacobian f x)
+    jh = mat (jacobian h x)
 
     px = f x                               -- prediction
     pq = jf <> p <> trans jf + q           -- its covariance
-    zp = vector (h px)                     -- predicted measurement
+    zp = vec (h px)                     -- predicted measurement
     y  = z - zp                            -- residue
     cy = jh <> pq <> trans jh + r          -- its covariance
     k  = pq <> trans jh <> inv cy          -- kalman gain
-    x' = vector px + k <> y                -- new state
+    x' = vec px + k <> y                -- new state
     p' = (ident (dim x') - k <> jh) <> pq  -- its covariance
 
 
 blindEKF :: System -> State -> State
-blindEKF (System f h q r) (State vx p _) = State (vector x') p' (vector (h x')) where
+blindEKF (System f h q _r) (State vx p _) = State (vec x') p' (vec (h x')) where
     x = toList vx
     x' = f x
     p' = jf <> p <> trans jf + q
-    jf = matrix (jacobian f x)
+    jf = mat (jacobian f x)
 
 -- | Extended Kalman Filter update step
 ekf :: System -> State -> Maybe Measurement -> State
@@ -121,32 +119,38 @@ data UKFParam = UKFParam { ukfAlpha :: Double
                          , ukfBeta  :: Double
                          , ukfKappa :: Int -> Double }
 
+ukfDefaultParam :: UKFParam
 ukfDefaultParam  = UKFParam { ukfAlpha = 0.5
                             , ukfBeta  = 2
                             , ukfKappa = \n -> 3 - fromIntegral n }
 
+unscentedSamples :: UKFParam -> (Vec, Mat) -> ([Vec], ([Double], [Double]))
 unscentedSamples UKFParam {..} (med,cov) = (med : concat [pos,neg], (wm,wc)) where
     pos = f (+)
     neg = f (-)
     f op = map (op med) ds
     ds = toRows $ mr ( (fromIntegral n + lambda) `scale` cov :: Matrix Double)
     wm = lambda/(nr+lambda) : ws
-    wc = (lambda/(nr+lambda) + 1-ukfAlpha^2+ukfBeta) : ws
+    wc = (lambda/(nr+lambda) + 1- sqr ukfAlpha + ukfBeta) : ws
     ws = replicate (2*n) (1/2/(nr+lambda))
-    lambda = ukfAlpha^2 * (nr + ukfKappa n) - nr
+    lambda = sqr ukfAlpha * (nr + ukfKappa n) - nr
     n  = dim med
     nr = fromIntegral n
     --mr m = trans $ v <> diag (sqrt l) where (l,v) = eigSH m
     mr = cholSH -- no symmetry check
 
 
+unscentedTransform :: UKFParam -> (Vec -> Vec) -> (Vec, Mat) -> (Vec, Mat)
 unscentedTransform param f = fst. unscentedTransformWithSamples param f
 
+unscentedTransformWithSamples
+    :: UKFParam -> (Vec -> Vec) -> (Vec, Mat)
+    -> ((Vec, Mat),([Vec],([Double], [Double])))
 unscentedTransformWithSamples param f g = ((m',c'),(s',w)) where
     (s, w@(wm,wc)) = unscentedSamples param g
     s' = map f s
     m' = fromList wm <> fromRows s'
-    c' = sum (zipWith f wc s') where f w v = w `scale` outer vm vm where vm = v - m'
+    c' = sum (zipWith h wc s') where h ww v = ww `scale` outer vm vm where vm = v - m'
 
 
 ukf' :: UKFParam -> System -> State -> Measurement -> State
@@ -160,8 +164,8 @@ ukf' param (System f h q r) (State vx p _) z = State x' p' mz where
     y  = z - mz                            -- residue
     cy = cz + r                            -- its covariance
 
-    cross = sum (zipWith3 f wc sx sz)    -- !!!
-        where f w x z = w `scale` outer (x-px) (z-mz)
+    cross = sum (zipWith3 hh wc sx sz)    -- !!!
+        where hh w x zz = w `scale` outer (x-px) (zz-mz)
 
     k  = cross <> inv cy                   -- kalman gain
     x' = px + k <> y                       -- new state
@@ -169,7 +173,7 @@ ukf' param (System f h q r) (State vx p _) z = State x' p' mz where
 
 
 blindUKF :: UKFParam -> System -> State -> State
-blindUKF param (System f h q r) (State vx p _) = State px pq (h' px) where
+blindUKF param (System f h q _r) (State vx p _) = State px pq (h' px) where
     f' = fromList . f . toList
     h' = fromList . h . toList
     (px,pc) = unscentedTransform param f' (vx,p)  -- prediction

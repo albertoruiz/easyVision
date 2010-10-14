@@ -14,180 +14,78 @@ Some 2D toy problems useful for testing classifiers.
 -----------------------------------------------------------------------------
 
 module Classifier.ToyProblems (
--- * 2D toy problems
--- | You can take a look at them using 'combined'.
-     linsep, linsepmulti, nosep, ring, moon, rings, sshape,
--- * MNIST database
-     mnist, mnistraw,
--- * 2D drawing
-     combined,
--- * Debug
-     testProb
+     linsep, linsepmulti, nosep, ring, moon, rings, sshape, testProb
 ) where
 
 import Numeric.LinearAlgebra
-import Data.List (intersperse)
---import qualified Data.Map as Map
-
-import System.Process (system)
 import Classifier.Base
-import Util.Stat
-import Util.Misc(splitEvery)
+import Util.Misc(vec,Vec)
 
-------------------------- drawing utilities --------------------------
-
-gnuplot command = do
-    writeFile "gnuplotcommand" $ command
-    system "gnuplot -persist gnuplotcommand" 
-    system "rm gnuplotcommand"
-
-prep = (++"e\n") . unlines . map (unwords . (map show))
-
-{-
-show2Dfun :: Int -> Double -> (Vector -> Double) -> IO ()
-show2Dfun n r f = imshow (trans z) where
-    l1 = toList $ linspace n (-r,r)
-    l2 = reverse $ toList $ linspace n (-r,r)
-    z = fromLists $ partit (length l1) $ [ f (fromList [x,y]) | x <- l1, y <- l2]
--}
-
-{- | 2D representation of a 2D feature.
-
-For instance:
-
-@study :: Sample -\> Learner -\> IO ()
-study prob meth = do
-    seed \<- randomIO
-    let (train,test) = splitProportion 0.5 $ scramble seed prob
-    let (c,f) = meth train
-    putStr \"Test error: \"
-    print (errorRate test c)
-    print (confusion test c)
-    combined 100 2.5 (fromIntegral.posMax.f) train@
-
-@\> study (nosep 500) (distance gaussian)@
-
-@\> study (nosep 500) (multiclass mse)@
-
-@\> study (rings 2000) (multiclass (adaboost 100 stumps))@
-
-@\> study (addNoise 100 0.00001 (rings 2000))
-          (multiclass (treeOf (branch 0) (unweight stumps)))@
-
--}
-combined :: String -> Int -> Double -> (Vector Double ->Double) -> Sample (Vector Double) -> IO ()
-combined title n r f exs = act where
-    (gs,_) = group exs
-    l1 = toList $ linspace n (-r,r)
-    l2 = toList $ linspace n (-r,r)
-    z = [[x,y, f (fromList [x,y])] | x <- l1, y <- l2]
-    z' = concat $ map (++[[]]) $ splitEvery n z
-    g m = toList m ++ [0]
-    preps = concat (map p gs) where p gi = prep (map g gi)
-    hs' = map ("\"-\" with points " ++) (map (show.code) [1 .. length gs])
-    hs = concat (intersperse "," hs') ++ "\n"
-    act = do
-        gnuplot $ "set size square; set pm3d map explicit; set style data pm3d; set palette gray; "
-                  ++ "set title " ++ show title ++ ";"
-                  ++ "splot \"-\" with pm3d, "
-                  ++ hs
-                  ++ prep z'
-                  ++ preps
-        return ()
-    code = ((38:57:83:18:30:[1..])!!)
-
----------------------------- some toy classification problems ---------------------------
 
 -- | interlaced S-shapes
-sshape :: Int -> Sample (Vector Double)
+sshape :: Int -> Sample Vec
 sshape n = dat1 ++ dat2 where
     m = n `quot` 2
     ts k = tail $ toList $ linspace (k+1) (0,4/5*2*pi)
-    dat1 = [ (vector [0.5 -  1*cos t, 0.2 -1*sin t],     "a") | t <- ts m ]
-    dat2 = [ (vector [-0.5 + 1*cos t, -0.2 + 1*sin t],   "b") | t <- ts m ]
+    dat1 = [ (vec [0.5 -  1*cos t, 0.2 -1*sin t],     "a") | t <- ts m ]
+    dat2 = [ (vec [-0.5 + 1*cos t, -0.2 + 1*sin t],   "b") | t <- ts m ]
 
 
 -- | concentric semicircles
-moon :: Int -> Sample  (Vector Double)
+moon :: Int -> Sample Vec
 moon n = dat1 ++ dat2 where
     m = n `quot` 2
     ts k = tail $ toList $ linspace (k+1) (0,pi)
-    dat1 = [ (vector [2*cos t, 2*sin t -1],     "a") | t <- ts m ]
-    dat2 = [ (vector [cos t, sin t -1],         "b") | t <- ts m]
+    dat1 = [ (vec [2*cos t, 2*sin t -1],     "a") | t <- ts m ]
+    dat2 = [ (vec [cos t, sin t -1],         "b") | t <- ts m]
 
 -- | 3 concentric rings (nonconvex solution)
-rings :: Int -> Sample (Vector Double)
+rings :: Int -> Sample Vec
 rings n = dat1 ++ dat2 ++ dat3 where
     m = n `quot` 4
     ts k = tail $ toList $ linspace (k+1) (0,2*pi)
-    dat1 = [ (vector [2*cos t, 2*sin t],     "a") | t <- ts m ]
-    dat2 = [ (vector [cos t, sin t],         "b") | t <- ts (2*m)]
-    dat3 = [ (vector [0.3*cos t, 0.3*sin t], "a") | t <- ts m ]
+    dat1 = [ (vec [2*cos t, 2*sin t],     "a") | t <- ts m ]
+    dat2 = [ (vec [cos t, sin t],         "b") | t <- ts (2*m)]
+    dat3 = [ (vec [0.3*cos t, 0.3*sin t], "a") | t <- ts m ]
 
 -- | concentric rings
-ring :: Int -> Sample (Vector Double)
+ring :: Int -> Sample Vec
 ring n = dat1 ++ dat2 where
     m = n `quot` 2
     ts k = tail $ toList $ linspace (k+1) (0,2*pi)
-    dat1 = [ (vector [2*cos t, 2*sin t],     "a") | t <- ts m ]
-    dat2 = [ (vector [cos t, sin t],         "b") | t <- ts m]
+    dat1 = [ (vec [2*cos t, 2*sin t],     "a") | t <- ts m ]
+    dat2 = [ (vec [cos t, sin t],         "b") | t <- ts m]
 
 --  | very simple problem
-linsep :: Int -> Sample (Vector Double)
+linsep :: Int -> Sample Vec
 linsep n = dat1 ++ dat2 where
     m = n `quot` 2
     ts = tail $ toList $ linspace (m+1) (0,2*pi)
-    dat1 = [ (vector [1+0.5*cos t, -1+0.8*sin t],   "a") | t <- ts ]
-    dat2 = [ (vector [-1+cos t, 1-sin t], "b") | t <- ts ]
+    dat1 = [ (vec [1+0.5*cos t, -1+0.8*sin t],   "a") | t <- ts ]
+    dat2 = [ (vec [-1+cos t, 1-sin t], "b") | t <- ts ]
 
---  | simple multiclass problem 
-linsepmulti :: Int -> Sample (Vector Double)
+--  | simple multiclass problem
+linsepmulti :: Int -> Sample Vec
 linsepmulti n = dat1 ++ dat2 ++ dat3 where
     m = n `quot` 2
     ts = tail $ toList $ linspace (m+1) (0,2*pi)
     k = 0.7
-    dat1 = [ (vector [1+k*cos t, -1+k*sin t],   "a") | t <- ts ]
-    dat2 = [ (vector [-1+k*cos t, 1-k*sin t], "b") | t <- ts ]
-    dat3 = [ (vector [1+k*cos t, 1-k*sin t], "c") | t <- ts ]
+    dat1 = [ (vec [1+k*cos t, -1+k*sin t],   "a") | t <- ts ]
+    dat2 = [ (vec [-1+k*cos t, 1-k*sin t], "b") | t <- ts ]
+    dat3 = [ (vec [1+k*cos t, 1-k*sin t], "c") | t <- ts ]
 
 --  | simple nonlinearly separable problem 
-nosep :: Int -> Sample (Vector Double)
+nosep :: Int -> Sample Vec
 nosep n = dat1 ++ dat2 ++ dat3 where
     m = n `quot` 4
-    ts m = tail $ toList $ linspace (m+1) (0,2*pi)
+    ts r = tail $ toList $ linspace (r+1) (0,2*pi)
     k = 0.8
-    dat1 = [ (vector [1+2*k*cos t, -1+k*sin t],   "a") | t <- ts m ]
-    dat2 = [ (vector [-1+k*cos t, 1-2*k*sin t], "a") | t <- ts m ]
-    dat3 = [ (vector [1+k*cos t, 1-k*sin t], "b") | t <- ts (2*m)]
+    dat1 = [ (vec [1+2*k*cos t, -1+k*sin t],   "a") | t <- ts m ]
+    dat2 = [ (vec [-1+k*cos t, 1-2*k*sin t], "a") | t <- ts m ]
+    dat3 = [ (vec [1+k*cos t, 1-k*sin t], "b") | t <- ts (2*m)]
 
--- | handwritten digits, partitioned and with desired number of pca dimensions
-mnist :: Int -> Int -> IO (Sample (Vector Double), Sample (Vector Double))
 
-mnist dim n = do
-    m <- fromFile "../data/mnist.txt" (5000,785)
-    let vs = toRows (takeColumns 784 m)
-    let ls = map (show.round) $ toList $ flatten $ dropColumns 784 m
-    let mnist = zip vs ls
-    let (train, test) = splitAt n mnist
-
-    let st = stat (fromRows $ map fst train)
-    let f = encodeVector $ pca (NewDimension dim) st
-
-    return (preprocess f train,
-            preprocess f test)
-
--- | the mnist raw data
-mnistraw :: Int -> IO (Sample (Vector Double), Sample (Vector Double))
-mnistraw n = do
-    m <- fromFile "../data/mnist.txt" (5000,785)
-    let vs = toRows (takeColumns 784 m)
-    let ls = map (show.round) $ toList $ flatten $ dropColumns 784 m
-    let mnist = zip vs ls
-    return $ splitAt n mnist
-
------------------------------------------------------------
-
-testProb :: Sample (Vector Double)
+testProb :: Sample (Vec)
 testProb = [ (v[1,1],"1")
            , (v[2,1],"1")
            , (v[1,2],"1")
@@ -196,4 +94,4 @@ testProb = [ (v[1,1],"1")
            , (v[5,4],"2")
            , (v[4,5],"2")
            , (v[5,5],"2")]
-    where v = vector
+    where v = vec

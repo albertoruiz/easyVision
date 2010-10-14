@@ -17,34 +17,38 @@ module Classifier.SVM (
     svmLight
 ) where
 
-import Numeric.LinearAlgebra
+import Numeric.LinearAlgebra hiding (i)
 import Classifier.Base
 import Classifier.Kernel(gaussK)
 import System.Process (system)
 import System.IO.Unsafe (unsafePerformIO)
+import Util.Misc(vec,Vec)
 
 -- | Creates a support vector machine with gaussian kernel of given width.
 svmLight :: Double -> Dicotomizer
 svmLight w gs = unsafePerformIO $ do
     -- FIXME: use unique filenames
-    svmLearn w gs "prob-svm.txt" "model.txt"
-    (b,w,yvecs) <- svmReadModel "model.txt"
+    _ <- svmLearn w gs "prob-svm.txt" "model.txt"
+    (b,ws,yvecs) <- svmReadModel "model.txt"
     let n = fromIntegral (length yvecs)
-        f v = (b + sum (map q yvecs)) / n where q (y,x) = y * gaussK w x v
-    system "rm model.txt"
-    system "rm prob-svm.txt"
+        f v = (b + sum (map q yvecs)) / n where q (y,x) = y * gaussK ws x v
+    _ <- system "rm model.txt"
+    _ <- system "rm prob-svm.txt"
     return f
 
+svmLearn :: (Show a) => a -> ([Vec], [Vec]) -> FilePath -> String -> IO ()
 svmLearn w (pos,negs) fileprob filemodel = do
     writeFile fileprob cad
-    system $ "svm_learn -t 2 -g "++ show w ++" "++fileprob++" "++ filemodel++" > /dev/null"
+    _ <- system $ "svm_learn -t 2 -g "++ show w ++" "++fileprob++" "++ filemodel++" > /dev/null"
     -- system $ "svm_learn -t 2 -x 1 -g "++ show w ++" "++fileprob++" "++ filemodel++" >> svm.log"
+    return ()
   where cad = unlines $ header ++ map (feat "+1") pos ++ map (feat "-1") negs
         header = ["# automatically generated file","#"]
         feat c ex = c ++ ve ex
-        ve v = concat $ zipWith shAtt [1 ..] (toList v)
+        ve v = concat $ zipWith shAtt [1::Int ..] (toList v)
         shAtt i x  = ' ':(show i)++':':(show x)
 
+svmReadModel :: FilePath -> IO (Double, Double, [(Double, Vec)])
 svmReadModel file = do
     ss <- lines `fmap` readFile file
     let spars = take 11 ss
@@ -54,7 +58,7 @@ svmReadModel file = do
         b     = param 10 :: Double
         w     = param 3  :: Double
         yvecs  = map feat svecs
-        feat line = (read sy :: Double , vector $ map att sxs)
+        feat line = (read sy :: Double , vec $ map att sxs)
             where (sy:sxs) = take (n+1) $ words line
                   att = read . tail . snd . span (/=':')
     return (b,w,yvecs)

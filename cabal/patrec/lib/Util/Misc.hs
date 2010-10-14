@@ -15,6 +15,9 @@ type Vec = Vector Double
 vec :: [Double] -> Vec
 vec = fromList
 
+mat :: [[Double]] -> Mat
+mat = fromLists
+
 type Seed = Int
 
 splitEvery :: Int -> [t] -> [[t]]
@@ -102,6 +105,10 @@ sqr x = x^(2::Int)
 -- | specialized 'round'
 round' :: RealFrac a => a -> Int
 round' = round
+
+-- | conversion factor from degrees to radians
+degree :: Double
+degree = pi/180
 
 -- | Concatenation of real vectors.
 infixl 9 #

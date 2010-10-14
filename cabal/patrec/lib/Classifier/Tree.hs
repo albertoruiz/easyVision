@@ -18,19 +18,9 @@ module Classifier.Tree (
 
 ) where
 
-import Numeric.LinearAlgebra
-import Classifier.Base
 
-import Data.List(sortBy, sort, nub, elemIndex, intersperse, transpose, partition, delete)
-import qualified Data.Map as Map
-import System.Random
-import Data.Array hiding((//))
-import Util.Stat
-import Util.Misc(norm,(&),(//),(#))
-import qualified Data.Map as M
-import Data.Maybe(fromMaybe)
+import Classifier.Base
 import qualified Data.List as L
-import Control.Arrow((&&&))
 
 ------------------------------------------------------------------------
 
@@ -43,8 +33,8 @@ treeOf stopQ method gs@(g1,g2) = if stopQ gs || not improved then leaf else node
     leaf = if n1>n2 then const 1 else const (-1)
     node v = if d v > 0 then d1 v else d2 v
     d = method gs
-    (g11,g12) = partition ((>0).d) g1
-    (g21,g22) = partition ((>0).d) g2
+    (g11,g12) = L.partition ((>0).d) g1
+    (g21,g22) = L.partition ((>0).d) g2
     d1 = treeOf stopQ method (g11,g21)
     d2 = treeOf stopQ method (g12,g22)
     improved = (length g11, length g21) /= (n1,n2) &&

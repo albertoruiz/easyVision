@@ -17,21 +17,22 @@ module Classifier.Neural (
      learnNetwork, neural, createNet, adaptNet, perceptron, neural',
 ) where
 
-import Numeric.LinearAlgebra
+import Numeric.LinearAlgebra hiding (i,eps)
 import Classifier.Base
-import System.Random
-import Util.Misc(norm, randomPermutation)
+import Util.Misc(norm, randomPermutation, vec, Vec, Mat, Seed)
+import Util.Probability(weighted)
 
 -------------------------- Multilayer perceptron -----------------------
 
-randomMatrix seed (n,m) = reshape m $ vector $ take (n*m) $ randomRs (-w,w) $ mkStdGen seed
+randomMatrix :: Seed -> (Int, Int) -> Matrix Double
+randomMatrix seed (n,m) = reshape m $ scalar w * randomVector seed Gaussian (n*m)
     where w = 2  / sqrt (fromIntegral m)
 
 
-data NeuralNet = NN { weights :: [Matrix Double]
+data NeuralNet = NN { weights :: [Mat]
                     } deriving Show
 
---createNet :: Int -> Int -> [Int] -> Int -> NeuralNet
+createNet :: Seed -> Int -> [Int] -> Int -> NeuralNet
 createNet seed i hs o = NN ws where
     ws = zipWith randomMatrix [seed, seed+1 .. ] dims
     dims = zip (hs++[o]) ((i+1):hs)
@@ -39,76 +40,86 @@ createNet seed i hs o = NN ws where
 -- the bias constant is only required in the input
 
 -- given a network and an input we obtain the activations of all nodes
-forward :: NeuralNet -> Vector Double -> [Vector Double]
+forward :: NeuralNet -> Vec -> [Vec]
 forward n v = scanl f (join [v,1]) (weights n)
-    where f v m = tanh (m <> v)
+    where f w m = tanh (m <> w)
 
 -- given a network, activations and desired output it computes the gradient
-deltas :: NeuralNet -> [Vector Double] -> Vector Double ->  [Matrix Double]
+deltas :: NeuralNet -> [Vec] -> Vec ->  [Mat]
 deltas n xs o = zipWith outer (tail ds) (init xs) where
     dl = (last xs - o) * gp (last xs)
     ds = scanr f dl (zip xs (weights n))
     f (x,m) d = gp x * (trans m <> d)
     gp = mapVector $ \x -> (1+x)*(1-x)
 
+updateNetwork :: Double -> NeuralNet -> (Vec, Vec) -> NeuralNet
 updateNetwork alpha n (v,o) = n {weights = zipWith (+) (weights n) corr}
     where xs = forward n v
           ds = deltas n xs o
           corr = map (scale (-alpha)) ds
 
+epoch :: Double -> NeuralNet -> [(Vec, Vec)] -> NeuralNet
 epoch alpha n prob = foldl (updateNetwork alpha) n prob
 
+backprop :: Double -> NeuralNet -> [(Vec, Vec)] -> [NeuralNet]
 backprop alpha n prob = scanl (epoch alpha) n (repeat prob)
 
+learnNetwork :: Double -> Double -> Int
+             -> NeuralNet -> [(Vec, Vec)]
+             -> (NeuralNet, [Double])
 learnNetwork alpha eps maxepochs n prob = (r,e) where
     nets = backprop alpha n prob
     errs = map ((flip mseerror) prob) nets
     evol = zip nets errs
     step = 1 --  *length prob
     selected = [evol!!(k*step) | k <- [0 .. maxepochs]]
-    conv = takeWhile (\(r,e)-> {-debug-} e >eps) selected
-    r = fst$ last$ conv
+    conv = takeWhile ((>eps).snd) selected
+    r = fst $ last $ conv
     e = map (snd) conv
 
---adaptNet :: Sample -> [(Vector Double, Vector Double)]
+adaptNet :: Sample a -> [(a, Vec)]
 adaptNet s = x where
     lbs = snd (group s)
-    c = length (labels lbs)
-    des k c = vector$ replicate (k-1) (-1) ++ [1] ++ replicate (c-k) (-1)
-    x = [(v, des (1+getIndex lbs l) c) | (v,l) <- s]
+    nc = length (labels lbs)
+    des k c = vec $ replicate (k-1) (-1) ++ [1] ++ replicate (c-k) (-1)
+    x = [(v, des (1+getIndex lbs l) nc) | (v,l) <- s]
 
--- | multilayer perceptron with alpha parameter and desired number of units in the hidden layers
+-- | multilayer perceptron with alpha parameter and desired number of units in the hidden layers (to do: use seed)
 neural     :: Double -- ^ alpha (e.g. 0.1)
            -> Double -- ^ maxerr (e.g. 0.05)
            -> Int    -- ^ maxepochs (100-1000) 
            -> [Int]  -- ^ hidden units
-           -> Learner (Vector Double)
-neural alpha eps maxep hidden prob = (c,f) where
-    (result, err) = neural' alpha eps maxep hidden prob
-    c = createClassifier (snd$ group prob) f
+           -> Learner Vec
+neural alpha eps maxep hidden prob = c where
+    (result, _err) = neural' alpha eps maxep hidden 100 prob
     f = toList . last . forward result
+    (_,lbs) = group prob
+    c x = weighted $ zip (labels lbs) (map exp (f x))
 
 -- | useful for monitorization of convergence
-neural' alpha eps mxep hidden prob = (network, err) where
+neural' :: Double -> Double -> Int
+        -> [Int] -> Seed
+        -> Sample (Vector Double)
+        -> (NeuralNet, [Double])
+neural' alpha eps mxep hidden seed prob = (network, err) where
     prob' = adaptNet prob
-    n = dim$ fst$ head prob'
-    m = dim$ snd$ head prob'
-    initial = createNet 100 n hidden m
+    n = dim $ fst $ head prob'
+    m = dim $ snd $ head prob'
+    initial = createNet seed n hidden m
     (network, err) = learnNetwork alpha eps mxep initial prob'
 
-
+mseerror :: NeuralNet -> [(Vec, Vec)] -> Double
 mseerror r p = sum (map f p) / fromIntegral ( (dim$ snd$ head$ p) * length p)
     where f (x,y) = norm (last (forward r x) - y)
 
--- | useful for metaalgorithms (treeOf, adaboost)
+-- | useful for metaalgorithms (to do: use seed)
 perceptron :: Double -- ^ alpha (e.g. 0.1)
            -> Double -- ^ maxerr (e.g. 0.05)
            -> Int    -- ^ maxepochs (100-1000) 
            -> [Int]  -- ^ hidden units
            -> Dicotomizer
 perceptron alpha eps maxep hidden (g1,g2) = f where
-    b = (replicate (length g1) 1 ++ replicate (length g2) (-1))
     exs = randomPermutation 1001 (zip (g1++g2) (replicate (length g1) 1 ++ replicate (length g2) (-1)))
     initial = createNet 100 (dim$ head$ g1) hidden 1
-    (result, err) = learnNetwork alpha eps maxep initial exs
+    (result, _err) = learnNetwork alpha eps maxep initial exs
     f = (@>0) . last . forward result

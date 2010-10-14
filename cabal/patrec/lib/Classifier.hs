@@ -1,13 +1,11 @@
-{-# OPTIONS  #-}
 -----------------------------------------------------------------------------
 {- |
 Module      :  Classifier
-Copyright   :  (c) Alberto Ruiz 2006-7
-License     :  GPL-style
+Copyright   :  (c) Alberto Ruiz 2006-10
+License     :  GPL
 
 Maintainer  :  Alberto Ruiz (aruiz at um dot es)
-Stability   :  very provisional
-Portability :  hmm...
+Stability   :  provisional
 
 Algorithms for pattern recognition and machine learning.
 
@@ -16,6 +14,7 @@ Algorithms for pattern recognition and machine learning.
 
 module Classifier (
     module Classifier.Base,
+    module Classifier.Prepro,
     module Classifier.Simple,
     module Classifier.Kernel,
     module Classifier.Neural,
@@ -25,6 +24,7 @@ module Classifier (
 ) where
 
 import Classifier.Base
+import Classifier.Prepro
 import Classifier.Simple
 import Classifier.Kernel
 import Classifier.Neural

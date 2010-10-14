@@ -27,7 +27,7 @@ module Util.Stat
 import Numeric.LinearAlgebra hiding (eigenvalues)
 import Data.List(transpose,sortBy,minimumBy)
 import Data.Function(on)
-import Util.Misc(Vec,Mat,(//),(&))
+import Util.Misc(Vec,Mat,(//),(&),sqr)
 
 mean :: Mat -> Vec
 mean m = ones <> m
@@ -125,7 +125,7 @@ pca (ReconstructionQuality prec) st = pca (NewDimension n) st where
                 then error "the reconstruction quality must be 0<prec<1"
                 else prec
 
-pca (SigmaPercent p) st = pca (ReconstructionQuality $ 1-(1-p/100)^2) st
+pca (SigmaPercent p) st = pca (ReconstructionQuality $ 1-sqr(1-p/100)) st
 
 {- | PedroE's algorithm. For example, with @dist x y = abs (x-y)@ we have:
 

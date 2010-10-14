@@ -1,5 +1,5 @@
 Name:               patrec
-Version:            0.1.0
+Version:            0.2.0
 License:            GPL
 License-file:       LICENSE
 Author:             Alberto Ruiz
@@ -27,6 +27,7 @@ library
 
     Exposed-modules:    Classifier
                         Classifier.Base
+                        Classifier.Prepro
                         Classifier.Simple
                         Classifier.Neural
                         Classifier.Kernel

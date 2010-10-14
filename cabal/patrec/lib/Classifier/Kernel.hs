@@ -22,14 +22,14 @@ module Classifier.Kernel (
 
 import Numeric.LinearAlgebra
 import Classifier.Base
-import Util.Misc(norm)
+import Util.Misc(norm,vec,Vec,Mat,sqr)
 
 -- | Generalized inner product, corresponding to the ordinary dot product in an implicit feature space.
-type Kernel = (Vector Double -> Vector Double -> Double)
+type Kernel = (Vec -> Vec -> Double)
 -- (it should be more general)
 
---delta f l1 l2 = matrix $ [[f x y | y <- l2] | x<- l1]
-delta f l1 l2 = reshape (length l1) $ vector [f x y | x <- l1, y <- l2]
+delta ::(a -> t -> Double) -> [a] -> [t] -> Mat
+delta f l1 l2 = reshape (length l1) $ vec [f x y | x <- l1, y <- l2]
 
 -- | Minimum squared error linear machine in the feature space induced by the given kernel.
 kernelMSE :: Double  -- ^ Numeric tolerance for the pseudoinverse (1 = machine precision).
@@ -38,10 +38,10 @@ kernelMSE :: Double  -- ^ Numeric tolerance for the pseudoinverse (1 = machine p
           -> Dicotomizer
 kernelMSE tol kernel (g1,g2) = fun where
     fun z = expan z `dot` a
-    expan z = vector $ map (kernel z) objs
-    a = pinvTol tol (delta kernel objs objs) <> labels
+    expan z = vec $ map (kernel z) objs
+    a = pinvTol tol (delta kernel objs objs) <> vlabels
     objs = g1 ++ g2
-    labels = join [constant 1 (length g1), constant (-1) (length g2)]
+    vlabels = join [constant 1 (length g1), constant (-1) (length g2)]
 
 -- | polynomial 'Kernel' of order n
 polyK :: Int -> Kernel
@@ -49,4 +49,4 @@ polyK n x y = (x `dot` y + 1)^n
 
 -- | gaussian 'Kernel' of with width sigma
 gaussK :: Double -> Kernel
-gaussK s x y = exp (-(norm (x-y) / s)^2)
+gaussK s x y = exp (-sqr (norm (x-y) / s))
