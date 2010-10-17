@@ -12,7 +12,7 @@ import Numeric.LinearAlgebra as LA hiding (i)
 import Data.List
 import Vision.Camera
 import Vision.Stereo(triangulate1)
-import Vision.Estimation(optimize)
+import Util.Optimize(optimize)
 import Vision.SparseRep
 import Util.Sparse
 import Data.Function(on)

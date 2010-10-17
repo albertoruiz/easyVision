@@ -40,6 +40,7 @@ library
                         Util.Stat
                         Util.Probability
                         Util.Kalman
+                        Util.Optimize
 
     other-modules:
 

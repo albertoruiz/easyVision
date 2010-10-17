@@ -15,6 +15,7 @@ Show distribution of labeled vectors in space
 
 module EasyVision.MiniApps.ScatterPlot (
     scatterPlot, drawRegion,
+    scatterPlot3D,
 )where
 
 import EasyVision.GUI
@@ -116,3 +117,52 @@ drawRegion clasif prob colors = f where
         forM_ vals $ \(c,p) -> do
             c
             renderPrimitive Points (vertex p)
+
+----------------------------------------------------------------------
+
+defaultColors = [red, blue, green, orange, brown ] ++ repeat gray
+
+scatter3D examples (i,j,k) colornames prefun = do
+    let (gs,lbs) = group examples
+        plot = mapM_ $ \v-> GL.vertex (GL.Vertex3 (v@>i) (v@>j) (v@>k))
+        colors = take (length gs) $
+                 map setColor' (colornames++defaultColors)
+    let f pts col = do
+            pointSize $= 3
+            col
+            GL.renderPrimitive GL.Points $ plot pts
+    prefun
+
+    pointSize $= 3
+    sequence_ $ zipWith f ( gs) ( colors)
+    setColor' gray
+    GL.renderPrimitive GL.Lines $ mapM_ vertex [
+        Vertex3 0 0 0,
+        Vertex3 1 0 0,
+        Vertex3 0 0 0,
+        Vertex3 0 1 0,
+        Vertex3 0 0 0,
+        Vertex3 0 0 (1::Float)]
+
+
+
+scatterPlot3D name sz exs coor colors prefun = do
+    w3D <- evWin3D coor name sz (Just disp) kbd
+    clearColor $= Color4 1 1 1 1
+  where n = dim . fst . head $ exs
+        disp rdesi = do
+            coord <- get rdesi
+            scatter3D exs coord colors prefun
+        kbd rdesi (SpecialKey KeyUp) Down _ _ = do
+            (i,j,k) <- get rdesi
+            rdesi $= (i,(j+1) `mod` n,k)
+        kbd rdesi (SpecialKey KeyDown) Down _ _ = do
+            (i,j,k) <- get rdesi
+            rdesi $= (i, (j-1) `mod`n,k)
+        kbd rdesi (SpecialKey KeyRight) Down _ _ = do
+            (i,j,k) <- get rdesi
+            rdesi $= ((i+1)`mod`n,j,k)
+        kbd rdesi (SpecialKey KeyLeft) Down _ _ = do
+            (i,j,k) <- get rdesi
+            rdesi $= ((i-1) `mod` n,j,k)
+        kbd _ a b c d = kbdQuit a b c d

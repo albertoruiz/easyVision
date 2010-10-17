@@ -20,7 +20,11 @@ module Classifier.Base (
 -- * Binary discriminants
      Feature, TwoGroups, Dicotomizer, -- multiclass,
 -- * Utilities
-     errorRate, confusion, InfoLabels(..), group, ungroup, addNoise, selectClasses, splitProportion, loadExamples, mode, -- vector, detailed,
+     errorRate, confusion, confusionR, InfoLabels(..),
+     shQuality,
+-- * Utilities
+     group, ungroup, addNoise, selectClasses, splitProportion, loadExamples,
+     mode, reject,
      module Util.Stat,
 -- * Feature extraction combinators
 -- $FEATCOMB
@@ -33,7 +37,8 @@ import qualified Data.Map as Map
 import Data.Array
 import Util.Stat
 import Util.Misc(Vec,Seed,round')
-import Util.Probability(Prob,mode)
+import Util.Probability(Prob,mode,evidence)
+import Text.Printf(printf)
 
 
 ------------------- General definitions ----------------------------
@@ -111,6 +116,21 @@ ungroup gs = s where
     s = concat $ zipWith f gs lbs
     f g lb = zip g (repeat lb)
 
+
+
+-- | read the examples from an ASCII file.
+-- Each example in a row, the last number should be an integer class code.
+loadExamples :: FilePath -> IO (Sample Vec)
+loadExamples filename = do
+    m <- loadMatrix filename
+    let c = cols m
+        vs = toRows (takeColumns (c-1) m)
+        ls = map (show.round') $ toList $ flatten $ dropColumns (c-1) m
+    return (zip vs ls)
+
+
+---------------------------------------------------
+
 -- | Estimates the success rate of a classifier on a sample
 errorRate :: Sample a -> (a -> Label) -> Double
 errorRate exs c = fromIntegral ok / fromIntegral (length exs) where
@@ -127,17 +147,37 @@ confusion exs c = confusionMatrix where
     confusionMatrix = fromArray2D $
         accumArray (+) (0::Double) ((0::Int,0::Int),(nc-1,nc-1)) (zip te [1,1 ..])
 
+-- | Computes the confusion matrix taking into account \"REJECT\" (last column).
+confusionR ::Sample a -> (a -> Label) -> Matrix Double
+confusionR exs c = confusionMatrix where
+    (_,lbs) = group exs
+    l = getIndex lbs
+    estimatedLabels = map (r l.c.fst) exs
+    te = zip (map (l.snd) exs) estimatedLabels
+    nc = length (labels lbs)
+    confusionMatrix = fromArray2D $
+        accumArray (+) (0::Double) ((0::Int,0::Int),(nc-1,nc)) (zip te [1,1 ..])
+    r f x | x == "REJECT" = nc
+          | otherwise     = f x
 
+-- | If the evidence is less than the desired decibels we return \"REJECT\" (TO DO: use Maybe)
+reject :: Double -> Prob String -> String
+reject db p = if evidence m p < db
+                then "REJECT"
+                else m
+    where m = mode p
 
--- | read the examples from an ASCII file.
--- Each example in a row, the last number should be an integer class code.
-loadExamples :: FilePath -> IO (Sample Vec)
-loadExamples filename = do
-    m <- loadMatrix filename
-    let c = cols m
-        vs = toRows (takeColumns (c-1) m)
-        ls = map (show.round') $ toList $ flatten $ dropColumns (c-1) m
-    return (zip vs ls)
+-- | Display the confusion matrix, error and rejection rates.
+shQuality :: Sample a -> (a -> Label) -> IO ()
+shQuality d c = do
+    let m = confusionR d c
+        ac = sumElements (takeDiag m)
+        rj = sumElements (dropColumns (rows m) m)
+        tt = sumElements m
+    print (tt,ac,rj)
+    _ <- printf "Rej: %.2f %%  Err: %.2f\n" (100 * rj / tt) (100 - 100 * ac / (tt-rj))
+    putStrLn $ format " " (show.round') m
+
 
 
 ------------- feature combinators ------------

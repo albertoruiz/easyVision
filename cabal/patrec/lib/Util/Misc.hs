@@ -8,6 +8,7 @@ import Data.Function(on)
 import Data.List(elemIndex, sortBy, sort)
 import System.Random
 import qualified Data.Array as A
+import System.Process(system)
 
 type Mat = Matrix Double
 type Vec = Vector Double
@@ -124,3 +125,19 @@ a & b = fromBlocks [[a,b]]
 infixl 7 //
 (//) :: Mat -> Mat-> Mat
 a // b = fromBlocks [[a],[b]]
+
+-- | load an audio file (currently using sox, TO DO: read sample rate)
+loadAudio :: FilePath -> IO Mat
+loadAudio path = do
+    let f = path ++ ".txt"
+    _ <- system $ "sox "++path ++" -t dat - | sed '/;/d' - > "++f
+    r <- loadMatrix f
+    _ <- system $ "rm " ++ f
+    return r
+
+-- | save a matrix to an audio file and play it (using sox's play)
+savePlayAudio :: Int -> Mat -> FilePath -> IO ()
+savePlayAudio rate m path = do
+    saveMatrix path "%f" m
+    _ <- system $ "play -r "++show rate++" -v 0.5 "++path
+    return ()

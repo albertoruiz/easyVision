@@ -13,6 +13,58 @@ import Classifier.Regression
 import qualified Data.List as L
 import Data.Array
 
+scw3 p = do
+    prepare
+    scw3' p
+    mainLoop
+
+scw3' p = scatterPlot3D "Feature Space" 400 p (0,1,2) colors (return ())
+
+scatter3D = do
+    raw <- rawmnist
+    let redu = (whitenAttr `ofP` mef (NewDimension 10)) raw `preprocess` raw
+    scw3 redu
+
+scatter3D2 = do
+    raw <- rawmnist
+    let redu = mef (NewDimension 40) raw `preprocess` raw
+        sel = filter ((`elem` ["3","8","6","4"]) . snd) redu
+        sep = (whitenAttr `ofP` mdf) sel `preprocess` sel
+    scw3 sep
+
+
+scatter3D3 = do
+    raw <- rawmnist
+    let sel = filter ((`elem` ["3","8","6","4"]) . snd) raw
+        redu = (whitenAttr `ofP` mef (NewDimension 3)) sel `preprocess` sel
+    scw3 redu
+
+scatter3D4 = do
+    raw <- rawmnist
+    let sel = filter ((`elem` ["3","8","6","4"]) . snd) raw
+        redu = (boxAttr `ofP` mef (NewDimension 3)) sel `preprocess` sel
+    scw3 redu
+
+
+scatters = do
+    prepare
+    raw <- rawmnist
+    let sel = filter ((`elem` ["0","1","2","3"]) . snd) raw
+    scw3' $  (boxAttr `ofP` mef (NewDimension 3)) raw `preprocess` raw
+    scw3' $  (boxAttr `ofP` mef (NewDimension 3)) sel `preprocess` sel
+
+    let redu = mef (NewDimension 40) raw `preprocess` raw
+        sel = filter ((`elem` ["3","8","6","4"]) . snd) redu
+        sep = (boxAttr `ofP` mdf) sel `preprocess` sel
+    scw3' sep
+    let dig d = do
+           let they = filter ((`elem` [d]) . snd) raw
+           scw3' $  (whitenAttr `ofP` mef (NewDimension 3)) they `preprocess` they
+
+    --mapM_ dig (map return "0123456789")
+    mainLoop
+
+
 printev prob = printf "%s : %.1f db\n" (show m) evi
     where m = mode prob
           evi = evidence m prob
@@ -89,7 +141,7 @@ main = do
     shQuality redu $ mode . distance (subspace (NewDimension 10)) redu
     mainLoop
 
-colors = [red,blue,lightgreen]++repeat Col.lightgray
+colors = [red,blue,orange,green]++repeat Col.lightgray
 
 scw p = do
     prepare
@@ -111,20 +163,7 @@ scwm' p met = scwc' p (mode . met p)
 
 scwme evi p met = scwc p (reject evi . met p)
 
-reject db p = if evidence m p < db
-                then "REJECT"
-                else m
-    where m = mode p
 
-
-shQuality d c = do
-    let m = confusionR d c
-        ac = sumElements (takeDiag m)
-        rj = sumElements (dropColumns (rows m) m)
-        tt = sumElements m
-    print (tt,ac,rj)
-    printf "Rej: %.2f %%  Err: %.2f\n" (100 * rj / tt) (100 - 100 * ac / (tt-rj))
-    putStrLn $ format " " (show.round) m
 
 study ev prob met = do
     seed <- randomIO
@@ -145,10 +184,6 @@ mnistTest dec met = do
 
 rawmnist = loadExamples "../../data/mnist.txt"
 
-dicodist :: Distance Vec -> Dicotomizer
-dicodist d (g1,g2) = f where
-    [d1,d2] = map d [g1,g2]
-    f x = d2 x - d1 x
 
 
 -- | Constructs a (multiclass) 'Learner given any 'Dicotomizer' (by creating n features to discriminate each class against the rest)
@@ -194,17 +229,4 @@ checkpca = do
     printf "%.2f %% sigma - " $ 100 - 100*e/e0
     printf "%.2f %% var\n" $ 100 - 100*(e/e0)^2
 
-
--- | Computes the confusion matrix of a classifier on a sample
-confusionR ::Sample a -> (a -> Label) -> Matrix Double
-confusionR exs c = confusionMatrix where
-    (_,lbs) = group exs
-    l = getIndex lbs
-    estimatedLabels = map (r l.c.fst) exs
-    te = zip (map (l.snd) exs) estimatedLabels
-    nc = length (labels lbs)
-    confusionMatrix = fromArray2D $
-        accumArray (+) (0::Double) ((0::Int,0::Int),(nc-1,nc)) (zip te [1,1 ..])
-    r f x | x == "REJECT" = nc
-          | otherwise     = f x
 

@@ -18,7 +18,7 @@ module EasyVision.GUI.GUI (
 -- * Application interface
   State(..)
 , prepare, prepare'
-, addWindow, evWindow, evWindow3D, EVWindow(..)
+, addWindow, evWindow, evWindow3D, evWin3D, EVWindow(..)
 , launch, launch', launchFreq
 , InWindow, inWin, getW, putW, getROI
 , kbdcam, kbdQuit, mouseGen, modif
@@ -219,13 +219,39 @@ getROI = get . evROI
 ----------------------------------------------------------------
 
 evWindow3D ist name sz kbd = do
-    (trackball,kc,mc) <- newTrackball
+    (trackball,kc,mc,_) <- newTrackball
     w <- evWindow ist name (Size sz sz) Nothing (kc kbd)
     motionCallback $= Just mc
     depthFunc $= Just Less
     textureFilter Texture2D $= ((Nearest, Nothing), Nearest)
     textureFunction $= Replace
     return w { evInit = clear [ColorBuffer, DepthBuffer] >> trackball}
+
+-- provisional
+evWin3D ist name sz mdisp kbd = do
+    (trackball,kc,mc,auto) <- newTrackball
+    w <- evWindow ist name (Size sz sz) Nothing (redik (kc kbd))
+    motionCallback $= Just (redim mc)
+    depthFunc $= Just Less
+    textureFilter Texture2D $= ((Nearest, Nothing), Nearest)
+    textureFunction $= Replace
+    let draw = case mdisp of
+            Nothing -> return ()
+            Just fun -> do
+                clear [ColorBuffer, DepthBuffer] >> trackball
+                fun (evSt w)
+                swapBuffers
+    displayCallback $= draw
+    let callback = do
+        addTimerCallback 50 callback
+        auto
+        postRedisplay (Just (evW w))
+    addTimerCallback 1000 callback
+    return w { evInit = clear [ColorBuffer, DepthBuffer] >> trackball}
+
+
+redim f p = f p >> postRedisplay Nothing
+redik f a1 a2 a3 a4 a5 = f a1 a2 a3 a4 a5 >> postRedisplay Nothing
 
 ----------------------------------------------------------------
 

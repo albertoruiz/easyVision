@@ -12,7 +12,7 @@ import qualified Data.Array as A
 import Vision.Camera
 import Vision.Geometry
 
-import Vision.Estimation
+import Util.Optimize(optimize,optimizeLM)
 
 import Vision.SparseRep
 import Util.Sparse

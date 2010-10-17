@@ -21,6 +21,8 @@ module Util.Stat
 , PCARequest(..)
 , pca
 
+, icaTrans, ica1, ica2
+
 , robustLocation
 ) where
 
@@ -28,6 +30,7 @@ import Numeric.LinearAlgebra hiding (eigenvalues)
 import Data.List(transpose,sortBy,minimumBy)
 import Data.Function(on)
 import Util.Misc(Vec,Mat,(//),(&),sqr)
+import Util.Optimize(optimize)
 
 mean :: Mat -> Vec
 mean m = ones <> m
@@ -139,3 +142,47 @@ robustLocation dis l = mins where
     dst = transpose ds
     ds = map getdis l
     getdis p = sortBy (compare `on` snd) [(p, dis p y) | y<-l]
+
+------------------------------------------------------------
+
+-- | Independent component analysis (very experimental implementation)
+icaTrans :: (Mat -> Mat -> Mat) -- ^ update method (e.g. ica1 or ica2 0.01
+         -> Mat -- ^ whitened data set
+         -> (Mat, [Double]) -- ^ transformation matrix to independent components and negentropy evolution)
+icaTrans met d = (fromRows . sortBy (compare `on` q) . toRows $ w, errs)
+  where
+    cost w' = negentropy' kurt2 (d <> trans w')
+    update w' = met w' d
+    (w,errs) = optimize 0 0.01 20 update cost (ident (cols d))
+    q wi = - dif kurt2 (d <> wi)
+    negentropy' fun  = sum . map (dif fun) . toColumns
+    dif (f,k) x = sqr(sumElements (f x) / fromIntegral (dim x) - k)
+    kurt2 = ((** 4),3)
+
+covar :: Mat -> Mat -> Mat
+covar a b = flip scale (trans a <> b) (recip $ fromIntegral (rows a))
+
+-- | (taken from Vivian McPhail's fastICA in hstatistics)
+ica1 :: Mat -> Mat -> Mat
+ica1 w d = ortho (w + dw) where
+    g' u  = 8*u**3*(u**4-3)
+    g'' u = 8*u**2*(7*u**4-9)
+    y = d <> trans w
+    gy = g' y
+    mg'y = mean (g'' y)
+    b = -mean (y * gy)
+    a = -1/(b-mg'y)
+    cov = covar gy y
+    dw = diag a <> (diag b + cov) <> w
+    ortho m = let (u,_,v) = svd m in u <> trans v
+
+-- | simple gradient optimization
+ica2 :: Double -> Mat -> Mat -> Mat
+ica2 alpha w d = ortho (w + scalar alpha*dw)
+  where
+    g x = x**4
+    g' x = 4*x**3
+    k = 3
+    y = d <> trans w
+    dw = diag (2*(mean (g y) - k)) <> covar (g' y) d
+    ortho m = let (u,_,v) = svd m in u <> trans v
