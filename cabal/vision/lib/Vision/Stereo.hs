@@ -27,7 +27,7 @@ module Vision.Stereo
 , estimateEssential'
 , bougnoux
 , sturm
-, qualityOfEssential
+, qualityOfEssential, qEssen
 , camerasFromEssential
 , selectCamera
   -- * 3D reconstruction
@@ -44,8 +44,9 @@ import Vision.Estimation
 import Vision.Camera(kgen,cameraAtOrigin)
 import Util.Stat
 import Data.List(transpose,nub,maximumBy,genericLength,elemIndex, genericTake)
-import System.Random 
+import System.Random
 import Debug.Trace(trace)
+import Util.Misc(Mat)
 
 matrix = fromLists :: [[Double]] -> Matrix Double
 vector = fromList ::  [Double] -> Vector Double
@@ -82,6 +83,10 @@ qualityOfEssential :: Matrix Double -> Double
 qualityOfEssential e = (s1-s2)/(s1+s2) where
     s1:s2:_ = toList s
     (_,s,_) = svd e
+
+qEssen :: Mat -> (Double, Double)
+qEssen e = (s2/s1,s3/s1) where
+    [s1,s2,s3] = toList $ singularValues e
 
 estimateEssential :: Double  -- ^ initial estimate of common focal dist
                   -> Matrix Double -- ^ fundamental matrix

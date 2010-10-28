@@ -1,5 +1,6 @@
 import Numeric.LinearAlgebra
 import Util.Stat
+import Util.ICA
 import Util.Misc(vec,Vec,Mat,degree,loadAudio,savePlayAudio,debug)
 import Graphics.Plot(mplot)
 import EasyVision (prepare,scatterPlot,Size(..))
@@ -37,12 +38,13 @@ dif (f,k) x = (sumElements (f x) / fromIntegral (dim x) - k)**2
 study m1 m2 = do
     let m = fromColumns [m1,m2]
         w = whitenedData $ stat m
-    let ica = fst . debug "err: " snd . icaTrans (ica2 0.01) $ w
+    let ica = fst . debug "err: " snd . icaTrans 50 (ica2 0.01) $ w
     print $ ica
     --error "ya"
     prepare
     --mplot [t,s1,s2]
     --mplot [t,m1,m2]
+    --scw "true" s
     scw "whitened" w
     let qua1 = qua kurt2 w
         qua2 = qua expq w
@@ -53,7 +55,7 @@ study m1 m2 = do
 --    mplot [ qua cosq5 w]
 --    mplot [ qua cosq1 w]
     scw ("sol emp " ++ show best) $ sol
---    mplot $ (linspace (dim m1) (0,1)) : toColumns sol
+    mplot $ (linspace (dim m1) (0,1)) : toColumns sol
     let solok = w <> trans ica
     scw ("sol ica ") $ solok
     mapM_ (print . dif kurt2) (toColumns solok)
@@ -90,8 +92,22 @@ audio = do
         o2 = fromColumns [t,s2]
 --    saveMatrix "ica/s1.dat" "%f" o1
 --    saveMatrix "ica/s2.dat" "%f" o2
---    savePlayAudio 8000 o1 "ica/s1.dat"
---    savePlayAudio 8000 o2 "ica/s2.dat"
+    savePlayAudio 8000 o1 "ica/s1.dat"
+    savePlayAudio 8000 o2 "ica/s2.dat"
+    return ()
+
+
+audiostereo = do
+    r <- loadAudio "ica/albertos.wav"
+    let [t,a1,a2] = toColumns r
+    print (dim a1,dim a2)
+    [s1,s2] <- study a1 a2
+    let o1 = fromColumns [t,s1]
+        o2 = fromColumns [t,s2]
+--    saveMatrix "ica/s1.dat" "%f" o1
+--    saveMatrix "ica/s2.dat" "%f" o2
+    savePlayAudio 44100 o1 "ica/s1.dat"
+    savePlayAudio 44100 o2 "ica/s2.dat"
     return ()
 
 -- play -r 8000 ica/s1.dat -v 0.5

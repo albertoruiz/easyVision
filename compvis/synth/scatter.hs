@@ -1,7 +1,9 @@
-import EasyVision hiding (debug)
+import EasyVision hiding (debug, whitener)
 import Classifier
 import Classifier.Base
 import Util.Probability
+import Util.Stat
+import Util.ICA
 import Classifier.ToyProblems
 import Graphics.UI.GLUT(mainLoop)
 import Numeric.LinearAlgebra
@@ -12,6 +14,8 @@ import Data.Colour.Names as Col
 import Classifier.Regression
 import qualified Data.List as L
 import Data.Array
+import Graphics.UI.GLUT hiding (Size)
+import Data.Maybe(maybe)
 
 scw3 p = do
     prepare
@@ -108,7 +112,7 @@ main = do
     scwm p (bayes gaussian)
     scwm p (multiclass $ treeOf (branch 0) (dicodist euclidean ) )
 
-    mnistTest mode (bayes gaussian  `onP` mef (NewDimension 20))
+--    mnistTest mode (bayes gaussian  `onP` mef (NewDimension 20))
 
     mnistTest (reject 20) (bayes gaussian `onP` mef (NewDimension 40))
 
@@ -130,23 +134,26 @@ main = do
 
     scwm' sep (distance euclidean)
 
-    shQuality sep $ mode . bayes euclidean sep
-    shQuality sep $ mode . distance euclidean sep
-    shQuality sep $ mode . distance naiveGaussian sep
+    shQuality sep $ Just . mode . bayes euclidean sep
+    shQuality sep $ Just . mode . distance euclidean sep
+    shQuality sep $ Just . mode . distance naiveGaussian sep
 
-    shQuality redu $ mode . distance euclidean redu
-    shQuality redu $ mode . distance naiveGaussian redu
-    shQuality redu $ mode . distance mahalanobis redu
-    shQuality redu $ mode . bayes gaussian redu
-    shQuality redu $ mode . distance (subspace (NewDimension 10)) redu
+    shQuality redu $ Just . mode . distance euclidean redu
+    shQuality redu $ Just . mode . distance naiveGaussian redu
+    shQuality redu $ Just . mode . distance mahalanobis redu
+    shQuality redu $ Just . mode . bayes gaussian redu
+    shQuality redu $ Just . mode . distance (subspace (NewDimension 10)) redu
     mainLoop
 
 colors = [red,blue,orange,green]++repeat Col.lightgray
 
 scw p = do
     prepare
-    scatterPlot "Feature Space" (Size 400 400) p (0,1) colors (return ())
+    scw' p
     mainLoop
+
+scw' p = scatterPlot "Feature Space" (Size 400 400) p (0,1) colors (return ())
+
 
 scwc p clasif = do
     prepare
@@ -161,7 +168,7 @@ scwc' p clasif = do
 scwm p met = scwc p (mode . met p)
 scwm' p met = scwc' p (mode . met p)
 
-scwme evi p met = scwc p (reject evi . met p)
+scwme evi p met = scwc p (maybe "REJECT" id . reject evi . met p)
 
 
 
@@ -169,7 +176,7 @@ study ev prob met = do
     seed <- randomIO
     let (train,test) = splitProportion (3/4) (randomPermutation seed prob)
         clas = reject ev . met train
-    printf "(%.1f %%) " $ 100 * errorRate train clas
+    --printf "(%.1f %%) " $ 100 * errorRate train clas
     shQuality test clas
 
 
@@ -177,7 +184,7 @@ mnistTest dec met = do
     mnist <- rawmnist
     let (train,test) = splitAt 4000 mnist
         clas = dec . met train
-    printf "(%.1f %%) " $ 100 * errorRate train clas
+    --printf "(%.1f %%) " $ 100 * errorRate train clas
     shQuality test clas
 
 
@@ -211,22 +218,3 @@ auxgroup l = map (\(x:xs) -> (x, concat xs)) (rots l) where
 
 
 ---------------------------------------------------------
-
-checkpca = do
-    x <- map (fst) `fmap` rawmnist
-    let xm = fromRows x
-        st = stat xm
-        xx = zip x x
-        x0 = meanVector st
-        codec = pca (SigmaPercent 90) st
-        f = decodeVector codec . encodeVector codec
-        e0 = msError (const x0) xx
-        e = msError f xx
-        cov = covarianceMatrix st
-    print $ sqrt $ (sumElements $ takeDiag cov) / fromIntegral (cols xm)
-    print e0
-    print e
-    printf "%.2f %% sigma - " $ 100 - 100*e/e0
-    printf "%.2f %% var\n" $ 100 - 100*(e/e0)^2
-
-

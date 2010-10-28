@@ -15,12 +15,12 @@ import Util.Misc(splitEvery, randomPermutation, Vec, Seed)
 
 study' prob meth = do
     let (train,test) = prob
-    let (c,f) = meth train
+    let c = mode . meth train
     putStr "Training error: "
     shErr train c
     putStr "Test error: "
     shErr test c
-    shConf test c
+    shConf test (Just . c)
 
 shErr d c = printf "%.2f%%\n" (100 * errorRate d c)
 shConf d c = putStrLn $ format " " (show.round) (confusion d c)
@@ -44,7 +44,7 @@ main = do
 
     let rawproblem = (train,test)
     putStr "distmed "
-    study' rawproblem (distance ordinary)
+    study' rawproblem (distance euclidean)
 --    putStr "mselin "
 --    study' rawproblem (multiclass mse)
     putStr "fastferns-1 "

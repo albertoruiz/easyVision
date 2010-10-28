@@ -244,8 +244,8 @@ evWin3D ist name sz mdisp kbd = do
     displayCallback $= draw
     let callback = do
         addTimerCallback 50 callback
-        auto
-        postRedisplay (Just (evW w))
+        ok <- auto
+        when ok $ postRedisplay (Just (evW w))
     addTimerCallback 1000 callback
     return w { evInit = clear [ColorBuffer, DepthBuffer] >> trackball}
 

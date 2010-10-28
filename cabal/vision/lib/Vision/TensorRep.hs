@@ -30,7 +30,6 @@ data VProb = VProb
     , p2d :: Tensor Double
     , l3d :: Tensor Double
     , l2d :: Tensor Double
-    , imgRes :: Int         -- image width
     }
 
 data VPParam = VPParam
@@ -80,7 +79,6 @@ mkVProb VPParam{..} seed = r where
     r = VProb { p3d = points3D
               , p2d = views
               , cam = cams
-              , imgRes = imageSize
               , l3d = undefined
               , l2d = undefined }
 
@@ -112,7 +110,6 @@ genProb n m noise [seedP, seedC, seedD, seedN] = r where
     r = VProb { p3d = points3D,
                 p2d = views,
                 cam = cams,
-                imgRes = undefined,
                 l3d = lines3d,
                 l2d = lines2d }
 genProb _ _ _ _ = error $ "genProb requires four seeds"
@@ -155,7 +152,6 @@ mkHelix VPParam{..} seed = r where
     r = VProb { p3d = points3D
               , p2d = views
               , cam = cams
-              , imgRes = imageSize
               , l3d = undefined
               , l2d = undefined }
 
@@ -242,7 +238,7 @@ vprobFromFiles fc fi fp = do
         ps = if okPts
                 then homogT "x" . (!>"1n 2x") . fromMatrix Co Contra $ matpts
                 else error $ fp ++ " not found!"
-    return VProb { cam = cs, p2d = vw, p3d = ps, imgRes = undefined, l2d = undefined, l3d = undefined }
+    return VProb { cam = cs, p2d = vw, p3d = ps, l2d = undefined, l3d = undefined }
 
 -----------------------------------------------------------------------
 

@@ -57,15 +57,17 @@ trackball (x',y') (x,y)
 ----------------------------------------------------------------------
 
 data TrackballState = TBST {tbQuat :: Quaternion, prev :: [Double],
-                            dist ::Double, wsize :: Double, vertAngle:: Double}
+                            dist :: Double, wsize :: Double, vertAngle:: Double,
+                            autoSpeed :: Int }
 
 
 {- | This function creates a virtual trackball to control the viewpoint in a 3D window. It returns an @IO()@ which sets the appropriate rotation in the current window and the keyboard and mouse movement callbacks which controls the trackball. The keyboard callback admits a default callback. See usage examples in @pose.hs@ and @frontal.hs@.
 -}
-newTrackball :: IO ( (IO(), (t -> KeyboardMouseCallback) -> (t -> KeyboardMouseCallback), MotionCallback, IO ()))
+newTrackball :: IO ( (IO(), (t -> KeyboardMouseCallback) -> (t -> KeyboardMouseCallback), MotionCallback, IO Bool))
 newTrackball = do
     st <- newIORef TBST { tbQuat = Quat {qs = 1.0, qv = vector [0,0,0]},
-                          prev = [], dist = 20, wsize = 400, vertAngle = 0 }
+                          prev = [], dist = 20, wsize = 400, vertAngle = 0,
+                          autoSpeed = 0 }
     let trackball = do
             s <- readIORef st
             let rot = getRotationHL (tbQuat s)
@@ -96,6 +98,11 @@ quatkbd str _ _ (MouseButton LeftButton) Down _ pos@(Position x y) = do
 quatkbd str _ _ (Char 'o') Down _ _ = do
     modifyIORef str $ \s -> s { tbQuat = 1 }
 
+quatkbd str _ _ (Char 'm') Down _ _ = do
+    modifyIORef str $ \s -> s { autoSpeed = f (autoSpeed s) }
+  where f 0 = 5
+        f _ = 0
+
 quatkbd st _ _ (MouseButton WheelUp) _ (Modifiers{shift=Down}) _ = do
     modifyIORef st $ \s -> s { vertAngle = vertAngle s + 1 }
 quatkbd st _ _ (MouseButton WheelDown) _ (Modifiers{shift=Down}) _ = do
@@ -121,4 +128,7 @@ quatmot str pos@(Position x y) = do
             let q = trackball (xp,yp) (xc,yc) .*. tbQuat st
             writeIORef str st {tbQuat = q, prev = [xc,yc]}
 
-autoRot st = modifyIORef st $ \s -> s {vertAngle = vertAngle s+0.5}
+autoRot st = do
+    s <- readIORef st
+    writeIORef st $ s {vertAngle = vertAngle s + fromIntegral (autoSpeed s)/10}
+    return (autoSpeed s /= 0)

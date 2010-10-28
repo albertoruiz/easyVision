@@ -38,6 +38,8 @@ library
                         Classifier.ToyProblems
                         Util.Misc
                         Util.Stat
+                        Util.Covariance
+                        Util.ICA
                         Util.Probability
                         Util.Kalman
                         Util.Optimize

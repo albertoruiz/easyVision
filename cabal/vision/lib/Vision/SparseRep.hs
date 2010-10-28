@@ -5,7 +5,7 @@ module Vision.SparseRep(
     sparseFromTensor, tensorSelectK, tensorProblemK, recalibrate,
     commonPoints, ptsVisibleBy, lengthTracks, viewedPoints,
     sGError, sEError, sEEError, sEAError, objectQualityS, poseQualityS,
-    infoSProb,
+    signalLevelS, infoSProb, pixelRange, essentials
 ) where
 
 import Numeric.LinearAlgebra as LA hiding(i)
@@ -20,7 +20,8 @@ import Util.Quaternion
 import Vision.TensorRep
 import Vision.Multiview
 import Text.Printf
-import Util.Misc(splitEvery, arrayOf, myintersect, impossible, mean, sqr, median, quartiles)
+import Util.Misc(splitEvery, arrayOf, myintersect, impossible,
+                 mean, sqr, median, shDist, Mat, correlation)
 
 -- A sparse visual problem
 data SparseVP = SVP { v_of_p :: Int -> [Int] -- visible views of each point
@@ -32,7 +33,6 @@ data SparseVP = SVP { v_of_p :: Int -> [Int] -- visible views of each point
                     , sCam :: [Matrix Double] -- cameras (without K)
                     , sKal :: [Matrix Double] -- calibration matrices
                     , sPts :: [Vector Double] -- homogeneous 3D points
-                    , sRes :: Int -- width of images
                     -- dep of sKal:
                     , epiObs :: [((Int,Int), Matrix Double)] -- reduced measurement matrix for each pair of views
                     , ako :: (Int, Int) -> Vector Double -- fast access to calibrated observations
@@ -56,7 +56,6 @@ goSparse obsp = SVP { v_of_p = v_p,
                       aObs = ao,
                       snP = nP,
                       snC = nC,
-                      sRes = undefined,
                       sPts = undefined,
                       sCam = undefined,
                       sKal = undefined,
@@ -125,7 +124,6 @@ tensorProblemK selpts selcams s = prob where
     prob = VProb { p2d = (ikt * sView) !> "wv",
                    cam = (subindex "c" $ map (fromMatrix Contra Co) $ selectPos selcams $ sCam s) !> "1v 2x",
                    p3d = (subindex "n" $ map (fromVector Contra) $ selectPos selpts $ sPts s) !> "1x",
-                   imgRes = sRes s,
                    l2d = undefined,
                    l3d = undefined  }
 
@@ -145,8 +143,7 @@ sparseFromTensor :: VProb -> SparseVP
 sparseFromTensor p = recalibrate ks r where
     r = (goSparse (map remo obsp)) {
             sPts = pts,
-            sCam = cs,
-            sRes = imgRes p}
+            sCam = cs }
     (ks,cs) = unzip $ map sepCam $ getCams p
     pts = getP3d p
     obsp = zipWith (map . (\n (v,l)->((n,v),l))) [0.. ] $ map (zip [0..] . map (toList.asVector) . flip parts "c")  . flip parts "n" . p2d $ p
@@ -283,30 +280,73 @@ poseQualityS = metricConsis (map (inHomog.nullVector) . sCam)
 
 infoSProb :: SparseVP -> IO ()
 infoSProb s = do
-    let pixFact =fromIntegral (sRes s) / 2
-        empiricRcond = 1/0.65
-    printf "cameras      = %d\n" (snC s)
-    printf "tracks       = %d\n" (snP s)
-    printf "views        = %d\n" (length (lObs s))
-    shDisI "track length = " (quartiles . lengthTracks $ s)
-    shDisI "points/view  = " (quartiles . viewedPoints $ s)
+    let ((x1,x2),(y1,y2)) = pixelRange s
+        f = median $ map getFK (sKal s)
+    printf "Pixel Range: (%.1f, %.1f) (%.1f, %.1f)\n" x1 x2 y1 y2
+    putStr "K0: "; putStr. dispf 2 $ sKal s !! 0
+    printf "effective FOV = %.2f\n" $ 2 * atan2 (min (x2-x1) (y2-y1)/2) f / degree
+    let empiricRcond = 1/0.65
+    printf "cameras       = %d\n" (snC s)
+    printf "tracks        = %d\n" (snP s)
+    printf "views         = %d\n" (length (lObs s))
+    shDist "track length  = " "%.1f" "%.0f" (map fromIntegral $ lengthTracks s)
+    shDist "points/view   = " "%.1f" "%.0f" (map fromIntegral $ viewedPoints s)
+    correl 10 s
     let obs = epiObs s
         fullobs = filter ((>8).rows.snd) obs
-    printf "pairs        = %d tot, %d ok\n" (length obs) (length fullobs )
-    let (noib,noise,noia) = quartiles $ map (rcond.snd) fullobs
+    printf "pairs         = %d tot, %d >8\n" (length obs) (length fullobs )
+    let noisedist = map ((\r -> -logBase 10 r). rcond.snd) fullobs
+        noise = 10**(-median noisedist)
         sl  = signalLevelS s
-        f = median $ map getFK (sKal s)
-    shDist "rcond        = " (-logBase 10 noib,-logBase 10 noise,-logBase 10 noia)
-    printf "signal       = %.1f\n" sl
-    printf "typ f        = %.1f\n" f
-    printf "est sigma    = %.1f\n" (noise*f*empiricRcond*pixFact)
-    printf "est N/R      = %.1f %%\n" (100*noise*f*empiricRcond/sl)
-    printf "geom dist    = %.1f\n" (snd (sGError s)*pixFact)
-  where
-    shDist name (a,b,c) = printf (name ++ "%.1f (%.1f, %.1f)\n") b a c
-    shDisI name (a,b,c) = printf (name ++ "%d (%d, %d)\n") b a c
+    shDist "rcond         = " "%.1f" "%.1f" noisedist
+    printf "signal        = %.1f\n" sl
+    printf "typ f         = %.1f\n" f
+    printf "est sigma     = %.1f\n" (noise*f*empiricRcond)
+    printf "est N/R       = %.1f %%\n" (100*noise*f*empiricRcond/sl)
+    pairQuality 8 s
 
 -- in raw coordinates
 signalLevelS :: SparseVP -> Double
 signalLevelS s = mean . map (sqrt . minElement . eigenvaluesSH' . snd . meanCov . fromLists . visible) $ [0..snC s -1]
     where visible v = map (init . (flip $ curry (aObs s A.!)) v) (p_of_v s v)
+
+pixelRange :: SparseVP -> ((Double, Double), (Double, Double))
+pixelRange p = (rangeL x, rangeL y) where
+    [x,y] = transpose $ map snd (lObs p)
+    rangeL zs = (minimum zs, maximum zs)
+
+
+
+-- compute the essential matrix of the pair
+-- from the reduced measurement matrix M^
+linearEssen :: Mat -> Mat
+linearEssen = trans . reshape 3 . last . toColumns . snd . rightSV
+
+
+
+-- | estimated essential matrix and common points of each pair
+essentials :: SparseVP -> [((Int,Int),(Mat,[Int]))]
+essentials s = map f . epiObs $ s where
+    f ((i,j),m) = ((i,j),(e,ks)) where
+        e = linearEssen m
+        ks = commonPoints s i j
+
+
+pairQuality :: Int -> SparseVP -> IO ()
+pairQuality n p = do
+    let q = unzip $ map (qEssen.fst.snd) $ filter ((>=n).length.snd.snd) $ essentials p
+    shDist "s2:  " "%.3f" "%.3f" $ fst $ q
+    shDist "s3:  " "%.1f" "%.1f" $ map (negate . logBase 10) $ snd $ q
+
+
+correl :: Int -> SparseVP -> IO ()
+correl n p = do
+    putStr . dispf 1 . correlation . snd . meanCov $ q
+    shDist "pairwise n: " "%.1f" "%.0f" ns
+  where
+    q = fromLists $ map (f.snd) $ filter ((>=n).length.snd.snd) $ es
+    ns = map (fromIntegral.length.snd.snd) es
+    es = essentials p where
+    f (e,cs) = [fromIntegral k,s2,s3]
+        where k = length cs
+              (s2,s3) = qEssen e

@@ -16,26 +16,20 @@ Common definitions and functions for pattern classification and machine learning
 module Classifier.Base (
 -- * Probabilistic classification
      Label, Example, Sample,
-      Learner, Classifier, --Predictor,
+     Learner, Classifier, Predictor,
+-- * Quality
+     mode, reject, errorRate, confusion, shQuality,
 -- * Binary discriminants
      Feature, TwoGroups, Dicotomizer, -- multiclass,
 -- * Utilities
-     errorRate, confusion, confusionR, InfoLabels(..),
-     shQuality,
--- * Utilities
      group, ungroup, addNoise, selectClasses, splitProportion, loadExamples,
-     mode, reject,
-     module Util.Stat,
--- * Feature extraction combinators
--- $FEATCOMB
-     Property, withPreprocess, onP, ofP, andP, preprocess -- outputOf
+     InfoLabels(..),
 ) where
 
 import Numeric.LinearAlgebra
 import qualified Data.List as L
 import qualified Data.Map as Map
 import Data.Array
-import Util.Stat
 import Util.Misc(Vec,Seed,round')
 import Util.Probability(Prob,mode,evidence)
 import Text.Printf(printf)
@@ -52,7 +46,7 @@ type Classifier a = a -> Prob Label
 -- | create a classifier from labeled examples
 type Learner a = Sample a -> Classifier a
 
---type Predictor a = Classifier a -> (a -> Label)
+type Predictor a = a -> Maybe Label
 
 -- | A function that tries to discriminate between two classes of objects (positive means the first class)
 type Feature = Vec -> Double       -- +/-
@@ -137,8 +131,8 @@ errorRate exs c = fromIntegral ok / fromIntegral (length exs) where
     ok = length [() | (v,l)<-exs, l /= c v]
 
 -- | Computes the confusion matrix of a classifier on a sample
-confusion ::Sample a -> (a -> Label) -> Matrix Double
-confusion exs c = confusionMatrix where
+confusion' ::Sample a -> (a -> Label) -> Matrix Double
+confusion' exs c = confusionMatrix where
     lbs = extractLabels exs
     l = getIndex lbs
     estimatedLabels = map (l.c.fst) exs
@@ -147,9 +141,10 @@ confusion exs c = confusionMatrix where
     confusionMatrix = fromArray2D $
         accumArray (+) (0::Double) ((0::Int,0::Int),(nc-1,nc-1)) (zip te [1,1 ..])
 
--- | Computes the confusion matrix taking into account \"REJECT\" (last column).
-confusionR ::Sample a -> (a -> Label) -> Matrix Double
-confusionR exs c = confusionMatrix where
+
+-- | Computes the confusion matrix taking into account rejection (last column).
+confusion ::Sample a -> (a -> Maybe Label) -> Matrix Double
+confusion exs c = confusionMatrix where
     (_,lbs) = group exs
     l = getIndex lbs
     estimatedLabels = map (r l.c.fst) exs
@@ -157,80 +152,24 @@ confusionR exs c = confusionMatrix where
     nc = length (labels lbs)
     confusionMatrix = fromArray2D $
         accumArray (+) (0::Double) ((0::Int,0::Int),(nc-1,nc)) (zip te [1,1 ..])
-    r f x | x == "REJECT" = nc
-          | otherwise     = f x
+    r _ Nothing = nc
+    r f (Just x)  = f x
 
--- | If the evidence is less than the desired decibels we return \"REJECT\" (TO DO: use Maybe)
-reject :: Double -> Prob String -> String
+
+-- | If the evidence is less than the desired decibels we return Nothing
+reject :: Double -> Prob String -> Maybe String
 reject db p = if evidence m p < db
-                then "REJECT"
-                else m
+                then Nothing
+                else Just m
     where m = mode p
 
 -- | Display the confusion matrix, error and rejection rates.
-shQuality :: Sample a -> (a -> Label) -> IO ()
+shQuality :: Sample a -> (a -> Maybe Label) -> IO ()
 shQuality d c = do
-    let m = confusionR d c
+    let m = confusion d c
         ac = sumElements (takeDiag m)
         rj = sumElements (dropColumns (rows m) m)
         tt = sumElements m
     print (tt,ac,rj)
     _ <- printf "Rej: %.2f %%  Err: %.2f\n" (100 * rj / tt) (100 - 100 * ac / (tt-rj))
     putStrLn $ format " " (show.round') m
-
-
-
-------------- feature combinators ------------
-
-{- $FEATCOMB
-Using them you can easily define more complex learners by composition of feature extractors (Properties). For instance:
-
-@niceMachine = simpleMachine \`onP\` property1  \`ofP\` andP [property3, property4 `ofP` property5 ]@
-
-Then we train the machine in a problem
-
-@classify = niceMachine problem@
-
-and ask for the answer: the evaluation of @classify object@ returns for example @\"apple\"@.
-
-Composition of feature extractors is similar to ordinary function composition, but each feature is specifically created from a sample of labeled objects.
-
--}
-
--- | A function which depends on a sample
-type Property a b = Sample a -> (a -> b)
-
--- | Applies some transformation to the objects in a Sample (it is just a map on the first element of the tuple).
-preprocess :: (a -> b) -> Sample a -> Sample b
-preprocess f exs = [(f v, l) | (v,l) <- exs]
-
-
--- | combines a learner with a given preprocessing stage
-withPreprocess :: Property a b
-               -> Learner b -> Learner a
-withPreprocess method learner prob = c where
-    t = method prob
-    prob' = preprocess t prob
-    c' = learner prob'
-    c = c' . t
-
--- | flip withPreprocess
-onP :: Learner a -> Property b a -> Learner b
-onP = flip withPreprocess
-
--- | combines several properties into a single vector (currently too restrictive)
-andP :: [Property a Vec] -> Property a Vec
-andP fs prob = f where
-    ps = map ($prob) fs
-    f v = join $ map ($v) ps
-
--- | composition of properties
-ofP :: Property b c -> Property a b -> Property a c
-ofP prop other prob = prop prob' . other prob where
-    prob' = preprocess (other prob) prob
-
--- -- creates a property from the outputs of the estimator created by learning machine
--- outputOf :: Learner a -> Property a Vec
--- outputOf machine prob = g where
---     g v = vector $ f v
---     (_,f) = machine prob

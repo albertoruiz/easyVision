@@ -33,7 +33,7 @@ import Util.Probability(weighted)
 import Data.List(sort, transpose)
 import qualified Data.Map as M
 import Util.Stat
-import Util.Misc(norm,(&),(//),(#),sqr,Vec)
+import Util.Misc(norm,(&),(//),(#),sqr,Vec, robustLocation)
 import Data.Maybe(fromMaybe)
 import qualified Data.List as L
 import Control.Arrow((&&&))
