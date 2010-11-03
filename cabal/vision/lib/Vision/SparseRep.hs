@@ -1,7 +1,7 @@
 {-# OPTIONS -fno-warn-unused-do-bind #-}
 
 module Vision.SparseRep(
-    SparseVP(..), loadSVP,
+    SparseVP(..), loadSVP, Epi(..),
     sparseFromTensor, tensorSelectK, tensorProblemK, recalibrate,
     commonPoints, ptsVisibleBy, lengthTracks, viewedPoints,
     sGError, sEError, sEEError, sEAError, objectQualityS, poseQualityS,
@@ -34,7 +34,7 @@ data SparseVP = SVP { v_of_p :: Int -> [Int] -- visible views of each point
                     , sKal :: [Matrix Double] -- calibration matrices
                     , sPts :: [Vector Double] -- homogeneous 3D points
                     -- dep of sKal:
-                    , epiObs :: [((Int,Int), Matrix Double)] -- reduced measurement matrix for each pair of views
+                    , epiObs :: [((Int,Int), Epi)] -- reduced measurement matrix for each pair of views
                     , ako :: (Int, Int) -> Vector Double -- fast access to calibrated observations
                     }
 
@@ -73,7 +73,7 @@ goSparse obsp = SVP { v_of_p = v_p,
 
 
 -- | updates sKal, ako and epiObs
-recalibrate :: [Matrix Double] -> SparseVP -> SparseVP
+recalibrate :: [Mat] -> SparseVP -> SparseVP
 recalibrate ks s = s' {epiObs = mkEpiObs s'} where
     s' = s { sKal = ks, ako = ako'} 
     ik = arrayOf (map inv ks)
@@ -152,15 +152,17 @@ sparseFromTensor p = recalibrate ks r where
 commonPoints :: SparseVP -> Int -> Int -> [Int]
 commonPoints s i j = myintersect (p_of_v s i) (p_of_v s j)
 
+
+-- compute M^
 getPairs :: SparseVP
     -> Int
     -> Int
-    -> Maybe (Matrix Double)
-getPairs s i j | null com = Nothing
-               | otherwise = Just $ compact $ outf (fromRows p) (fromRows q)
-    where com = commonPoints s i j
+    -> Maybe (Matrix Double,[Int])
+getPairs s i j | null ks = Nothing
+               | otherwise = Just (compact $ outf (fromRows p) (fromRows q), ks)
+    where ks = commonPoints s i j
           f k = (unitary $ ako s (k,i), unitary $ ako s (k, j))
-          (p,q) = unzip $ map f com
+          (p,q) = unzip $ map f ks
 
           outf a b = fromColumns [ u*v |  u<-us, v<-vs ]
             where us = toColumns a
@@ -169,8 +171,29 @@ getPairs s i j | null com = Nothing
           compact x = if rows x < 9 then x else takeRows 9 $ snd $ qr x
                                                     -- compact' 9 x
 
-mkEpiObs :: SparseVP -> [((Int, Int), Matrix Double)]
-mkEpiObs s = [ (ij, p) | (ij,Just p) <- obs]
+
+
+-- more info about a view pair
+data Epi = Epi { m_hat :: Mat,
+                 com  :: [Int], -- index of common points
+                 esen :: Mat,
+                 nEpi :: Int,   -- lenght of com
+                 s2 :: Double }
+
+prepEpi :: SparseVP -> ((Int, Int), (Mat,[Int])) -> ((Int, Int), Epi)
+prepEpi s ((i,j),(m,ks)) = ((i,j), Epi { m_hat = m,
+                                 com = ks,
+                                 esen = e,
+                                 nEpi = length ks,
+                                 s2 = fst (qEssen e) } )
+        where ebad = linearEssen m
+              ps  = map (\k-> toList $ inHomog $ ako s (k,i)) ks
+              ps' = map (\k-> toList $ inHomog $ ako s (k,j)) ks
+              egood = trans $ estimateFundamental ps ps'
+              e = if length ks > 8 then egood else ebad
+
+mkEpiObs :: SparseVP -> [((Int, Int), Epi)]
+mkEpiObs s = [ prepEpi s (ij, p) | (ij,Just p) <- obs]
     where obs = [((i,j), getPairs s i j) | i <- [0 .. snC s -2], j <- [i+1 .. snC s -1]]
 
 
@@ -293,9 +316,9 @@ infoSProb s = do
     shDist "points/view   = " "%.1f" "%.0f" (map fromIntegral $ viewedPoints s)
     correl 10 s
     let obs = epiObs s
-        fullobs = filter ((>8).rows.snd) obs
+        fullobs = filter ((>8).rows.m_hat.snd) obs
     printf "pairs         = %d tot, %d >8\n" (length obs) (length fullobs )
-    let noisedist = map ((\r -> -logBase 10 r). rcond.snd) fullobs
+    let noisedist = map ((\r -> -logBase 10 r). rcond.m_hat.snd) fullobs
         noise = 10**(-median noisedist)
         sl  = signalLevelS s
     shDist "rcond         = " "%.1f" "%.1f" noisedist
@@ -323,14 +346,10 @@ linearEssen :: Mat -> Mat
 linearEssen = trans . reshape 3 . last . toColumns . snd . rightSV
 
 
-
 -- | estimated essential matrix and common points of each pair
 essentials :: SparseVP -> [((Int,Int),(Mat,[Int]))]
 essentials s = map f . epiObs $ s where
-    f ((i,j),m) = ((i,j),(e,ks)) where
-        e = linearEssen m
-        ks = commonPoints s i j
-
+    f ((i,j),m) = ((i,j),(esen m, com m)) where
 
 pairQuality :: Int -> SparseVP -> IO ()
 pairQuality n p = do
@@ -344,9 +363,9 @@ correl n p = do
     putStr . dispf 1 . correlation . snd . meanCov $ q
     shDist "pairwise n: " "%.1f" "%.0f" ns
   where
-    q = fromLists $ map (f.snd) $ filter ((>=n).length.snd.snd) $ es
-    ns = map (fromIntegral.length.snd.snd) es
-    es = essentials p where
-    f (e,cs) = [fromIntegral k,s2,s3]
-        where k = length cs
-              (s2,s3) = qEssen e
+    q = fromLists $ map (f.snd) $ filter ((>=n).nEpi.snd) $ es
+    ns = map (fromIntegral.nEpi.snd) es
+    es = epiObs p where
+    f x = [fromIntegral k,s2',s3]
+        where k = nEpi x
+              (s2',s3) = qEssen (esen x)

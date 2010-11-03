@@ -78,7 +78,7 @@ prepareEpipolarSelect used free s = (getBlocks, vsol, newSol, fcost) where
         jj = mkSparse $ concatMap tail x
         jaq = preJaco vs
 
-        g (k, ((i,j), d))
+        g (k, ((i,j), epi))
                 | i `elem` free && j `elem` free = [a,b,c]
                 | i `elem` free && j `elem` used = [a,b]
                 | i `elem` used && j `elem` free = [a,c]
@@ -87,6 +87,7 @@ prepareEpipolarSelect used free s = (getBlocks, vsol, newSol, fcost) where
                   a = ((k,0), Dense (d <>f))
                   b = ((k,fromSel i), Dense (d <>f1))
                   c = ((k,fromSel j), Dense (d <>f2))
+                  d = m_hat epi
 
     fcost sol = 1E4 * sqrt (sqr (norm v) / fromIntegral (dim v))
         where v = flatten $ toDense $ fst $ getBlocks sol

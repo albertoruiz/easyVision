@@ -35,6 +35,7 @@ module Vision.Stereo
 , stereoRectifiers
   -- * Misc
 , depthOfPoint
+, depthsOfInducedPoint
 ) where
 
 import Numeric.LinearAlgebra
@@ -188,6 +189,7 @@ depthOfPoint p m = (signum (det a) / norm m3) * w3 where
     w = m <> homog (vector p)
     [_,_,w3] = toList w
 
+depthsOfInducedPoint :: [Double] -> [Double] -> Mat -> Mat -> (Double,Double)
 depthsOfInducedPoint p p' m m' = (d,d') where
     d  = depthOfPoint x m
     d' = depthOfPoint x m'

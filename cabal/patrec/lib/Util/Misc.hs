@@ -21,7 +21,21 @@ vec = fromList
 mat :: [[Double]] -> Mat
 mat = fromLists
 
+diagl :: [Double] -> Mat
+diagl = diag . vec
+
 type Seed = Int
+
+debug :: (Show a) => String -> (a1 -> a) -> a1 -> a1
+debug msg f x = trace (msg ++ show (f x)) x
+
+-- | used to avoid incomplete patterns
+impossible :: String -> a
+impossible msg = error ("impossible input in "++ msg)
+
+-- | stop the program if something is wrong
+assert :: Show a => String -> (a -> Bool) -> a -> a
+assert msg cond x = if cond x then x else error $ msg ++ show x
 
 splitEvery :: Int -> [t] -> [[t]]
 splitEvery _ [] = []
@@ -31,9 +45,6 @@ pairsWith :: (b -> b -> a) -> [b] -> [a]
 pairsWith _ [] = []
 pairsWith _ [_] = []
 pairsWith f (x:xs) = map (f x) xs ++ pairsWith f xs
-
-debug :: (Show a) => String -> (a1 -> a) -> a1 -> a1
-debug msg f x = trace (msg ++ show (f x)) x
 
 -- | returns the position of the maximum element.
 posMax :: Ord a => [a] -> Int
@@ -106,9 +117,6 @@ replaceAt pos ys xs = zipWith f [0..] xs where
         Just y -> y
         Nothing -> x
 
--- | used to avoid incomplete patterns
-impossible :: String -> a
-impossible msg = error ("impossible input in "++ msg)
 
 -- | specialized @(^2)@
 sqr :: Num a => a -> a
@@ -176,3 +184,18 @@ robustLocation dis l = mins where
 correlation :: Mat -> Mat
 correlation c = c / outer s s where
     s = sqrt (takeDiag c)
+
+-- | Minimum squared error solution of a (possibly overconstrained) homogeneous linear system.
+--   (We assume that the solution is 1D).
+homogSolve :: Mat            -- ^ coefficient matrix
+           -> (Vec, Double) -- ^ (Solution, error)
+homogSolve coeffs = (sol,err) where
+    r = rows coeffs
+    c = cols coeffs
+    rs@(r1:_) = toRows coeffs
+    m | r >= c   = coeffs
+      | r == c-1 = fromRows (r1 : rs)
+      | otherwise = error "homogSolve with rows<cols-1"
+    (s,v) = rightSV m
+    sol = flatten $ dropColumns (c-1) v
+    err = s @> (c-1)

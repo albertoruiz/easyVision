@@ -1,10 +1,9 @@
 module LieSolve where
 
 import Numeric.LinearAlgebra
-import Util.Misc(Mat,degree)
+import Util.Misc(Mat,degree,debug,vec)
 import Data.Maybe(fromJust)
 
-import Vision()
 
 -- the maximum angle in the axis is very close to the norm of the tangent vector.
 angularTest p t r = do
@@ -22,16 +21,7 @@ angularError x y = maximum $ zipWith aang xs ys
 -------------------------------------------------------------
 -- best fit of rotations in tangent space
 
--- by now contiguous in the sequence
-baseRots sel = g where
-    f 0 = ident 3
-    f k = (fromJust $ lookup (k-1,k) sel) <> f (k-1)
-    fs = map f [0..]
-    g = (fs!!)
 
-residualRots sel = (r, map f sel) where
-    r = baseRots sel
-    f ((i,j),rel) = ((i,j), coordsRot $ trans (r j) <> rel <> r i)
 
 makeEc n (i,j) = replicate i 0 ++ [1] ++ replicate (j-i-1) 0 ++ [-1] ++ replicate (n-j) (0::Double)
 
@@ -40,12 +30,15 @@ makeEcs resi = (fromLists coef, fromLists desi)
           n = maximum $ map (snd.fst) resi
           desi = map snd resi
 
-solveEcs resi = (sol,err)
+solveEcs resi = (sol',err)
   where
-    (c,d) = makeEcs resi
-    sol = c `linearSolveSVD` d
+    (c', d) = makeEcs resi
+    c = dropColumns 1 c'
+    sol' = fromRows $ vec [0,0,0] : toRows sol
+    sol = debug "system: " f c `linearSolveSVD` d
     err = (norm (c <> sol - d), norm d)
-    norm = pnorm Frobenius
+    norm x = sqrt (pnorm Frobenius x ** 2 / fromIntegral (rows x)) / degree
+    f m = (rows m, cols m, rank m)
 
 fixRot r [a,b,c] = r <> trans dr
     where --dr = expm (scalar a * g1 |+| scalar b * g2 |+| scalar c * g3 )
