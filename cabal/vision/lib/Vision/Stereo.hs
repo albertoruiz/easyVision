@@ -29,7 +29,7 @@ module Vision.Stereo
 , sturm
 , qualityOfEssential, qEssen
 , camerasFromEssential
-, selectCamera
+, selectCamera, selectCamera'
   -- * 3D reconstruction
 , triangulate, triangulate1
 , stereoRectifiers
@@ -195,11 +195,21 @@ depthsOfInducedPoint p p' m m' = (d,d') where
     d' = depthOfPoint x m'
     x = triangulate1 [m,m'] [p,p']
 
+{- # DEPRECATED "selectCamera" "use selectCamera" # -}
 selectCamera :: [Double] -> [Double] -> Matrix Double -> [Matrix Double] -> Matrix Double
 selectCamera p p' m ms = m' where
     [m'] = filter f ms 
     f m' = a > 0 && b > 0 where
         (a,b) = depthsOfInducedPoint p p' m m'
+
+
+selectCamera' :: [Double] -> [Double] -> Mat -> [Mat] -> Maybe Mat
+selectCamera' p p' m ms = m' where
+    m's = filter f ms
+    f m' = a>0 && b>0 where (a,b) = depthsOfInducedPoint p p' m m'
+    m' | null m's  = Nothing
+       | otherwise = Just (head m's)
+
 
 epipoles :: Matrix Double -> (Vector Double, Vector Double)
 epipoles f = (nullspace f, nullspace (trans f)) where

@@ -178,19 +178,32 @@ data Epi = Epi { m_hat :: Mat,
                  com  :: [Int], -- index of common points
                  esen :: Mat,
                  nEpi :: Int,   -- lenght of com
-                 s2 :: Double }
+                 s2 :: Double,
+                 s7 :: Double,
+                 rot :: Maybe Mat } -- promising rotation
 
 prepEpi :: SparseVP -> ((Int, Int), (Mat,[Int])) -> ((Int, Int), Epi)
-prepEpi s ((i,j),(m,ks)) = ((i,j), Epi { m_hat = m,
-                                 com = ks,
-                                 esen = e,
-                                 nEpi = length ks,
-                                 s2 = fst (qEssen e) } )
-        where ebad = linearEssen m
-              ps  = map (\k-> toList $ inHomog $ ako s (k,i)) ks
-              ps' = map (\k-> toList $ inHomog $ ako s (k,j)) ks
-              egood = trans $ estimateFundamental ps ps'
-              e = if length ks > 8 then egood else ebad
+prepEpi s ((i,j),(m,ks)) = ((i,j),
+    Epi { m_hat = m,
+          com = ks,
+          esen = e,
+          nEpi = length ks,
+          s2 = fst (qEssen e),
+          s7 = sm@>6 / sm@>0,
+          rot = mbrot } ) where
+    ebad = linearEssen m
+    ps  = map (\k-> toList $ inHomog $ ako s (k,i)) ks
+    ps' = map (\k-> toList $ inHomog $ ako s (k,j)) ks
+    egood = trans $ estimateFundamental ps ps'
+    e = if length ks > 8 then egood else ebad
+    sm = singularValues m
+    mbrot = rotOfCam `fmap` m'
+        where ms = camerasFromEssential e
+              m' = selectCamera' (head ps) (head ps') cameraAtOrigin ms
+
+rotOfCam :: Mat -> Mat
+rotOfCam c = r where (_,r,_) = factorizeCamera c
+
 
 mkEpiObs :: SparseVP -> [((Int, Int), Epi)]
 mkEpiObs s = [ prepEpi s (ij, p) | (ij,Just p) <- obs]
@@ -354,9 +367,10 @@ essentials s = map f . epiObs $ s where
 pairQuality :: Int -> SparseVP -> IO ()
 pairQuality n p = do
     let q = unzip $ map (qEssen.fst.snd) $ filter ((>=n).length.snd.snd) $ essentials p
+        q2 = map (s7.snd) $ filter ((>n).nEpi.snd) $ (epiObs p)
     shDist "s2:  " "%.3f" "%.3f" $ fst $ q
-    shDist "s3:  " "%.1f" "%.1f" $ map (negate . logBase 10) $ snd $ q
-
+--    shDist "s3:  " "%.1f" "%.1f" $ map (negate . logBase 10) $ snd $ q
+    shDist "s7:  " "%.1f" "%.1f" $ map (negate . logBase 10) $ q2
 
 correl :: Int -> SparseVP -> IO ()
 correl n p = do

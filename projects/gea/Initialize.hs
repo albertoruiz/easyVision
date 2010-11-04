@@ -5,7 +5,7 @@ import LieSolve
 import Numeric.LinearAlgebra
 import Util.Misc(Mat,arrayOf,Vec,homogSolve,(&),debug,vec,diagl,replaceAt,intersectSorted,
                  degree)
-import Vision(factorizeCamera,camerasFromEssential,selectCamera,cameraAtOrigin,
+import Vision(factorizeCamera,camerasFromEssential,selectCamera',cameraAtOrigin,
               homog,inHomog, commonPoints, triangulate,
               SparseVP,ako,essentials,qEssen,epiObs,sCam,depthOfPoint,depthsOfInducedPoint,
               v_of_p, sPts, Epi(..))
@@ -16,13 +16,17 @@ import Data.Maybe(isJust,fromJust)
 import Data.List(sortBy,sort,nub,foldl',foldl1',maximumBy)
 import Data.Function(on)
 
+
+---------------------------------------------------------------
+
+
 -- initialization of rotations in a sparse visual problem
 
 rotOfCam :: Mat -> Mat
 rotOfCam c = r where (_,r,_) = factorizeCamera c
 
-linearEssen :: Mat -> Mat
-linearEssen = trans . reshape 3 . last . toColumns . snd . rightSV
+-- linearEssen :: Mat -> Mat
+-- linearEssen = trans . reshape 3 . last . toColumns . snd . rightSV
 
 
 -- devolvemos la que tenga m´as puntos delante, por ruido no
@@ -41,19 +45,19 @@ pairReco s (i,j) = map f sorted where
     f (m',pts) = ([m,m'], map (homog.vec) pts)
 
 
--- returns both possibilities
-extractRotations :: Mat -> (Mat,Mat)
-extractRotations esen = (rotOfCam m0, rotOfCam m2) where
-    [m0,_,m2,_] = camerasFromEssential esen
+-- -- returns both possibilities
+-- extractRotations :: Mat -> (Mat,Mat)
+-- extractRotations esen = (rotOfCam m0, rotOfCam m2) where
+--     [m0,_,m2,_] = camerasFromEssential esen
 
 
 -- returns the good one but may fail
-extractRotation :: Mat -> Vec -> Vec -> Mat
-extractRotation esen p p' = r where
-    ms = camerasFromEssential esen
-    m' = selectCamera (f p) (f p') cameraAtOrigin ms
-    r = rotOfCam m'
-    f = toList . inHomog -- we should also admit triangulation of homog points
+-- extractRotation :: Mat -> Vec -> Vec -> Mat
+-- extractRotation esen p p' = r where
+--     ms = camerasFromEssential esen
+--     m' = selectCamera (f p) (f p') cameraAtOrigin ms
+--     r = rotOfCam m'
+--     f = toList . inHomog -- we should also admit triangulation of homog points
 
 -- returns Maybe rot
 extractRotation' :: Mat -> Vec -> Vec -> Maybe Mat
@@ -62,20 +66,12 @@ extractRotation' esen p p' = rotOfCam `fmap` m' where
     m' = selectCamera' (f p) (f p') cameraAtOrigin ms
     f = toList . inHomog
 
--- returns Maybe camera
-selectCamera' :: [Double] -> [Double] -> Mat -> [Mat] -> Maybe Mat
-selectCamera' p p' m ms = m' where
-    m's = filter f ms
-    f m' = a>0 && b >0 where (a,b) = depthsOfInducedPoint p p' m m'
-    m' | null m's  = Nothing
-       | otherwise = Just (head m's)
-
-relativeRotations :: SparseVP -> [((Int, Int), (Mat, [Int]))] -> [((Int, Int), Mat)]
-relativeRotations s = map f where
-    f ((i,j), (e, k:_)) = ((i,j), r)
-        where r = extractRotation e p p'
-              p  = ako s (k,i)
-              p' = ako s (k,j)
+-- relativeRotations :: SparseVP -> [((Int, Int), (Mat, [Int]))] -> [((Int, Int), Mat)]
+-- relativeRotations s = map f where
+--     f ((i,j), (e, k:_)) = ((i,j), r)
+--         where r = extractRotation e p p'
+--               p  = ako s (k,i)
+--               p' = ako s (k,j)
 
 relativeRotations' :: SparseVP -> [((Int, Int), (Mat, [Int]))] -> [((Int, Int), Mat)]
 relativeRotations' s = g . map f where
@@ -97,7 +93,7 @@ residualRots p sel = (r, d . g . d $ map f sel) where
 
     d = debug "rot residuals: " (map (round.h.snd))
     h = (/degree). pnorm PNorm2 . vec
-    g = filter ((<30).h.snd) . debug "removed: " (map fst . filter ((>=30).h.snd))
+    g = filter ((<40).h.snd) . debug "removed: " (map fst . filter ((>=40).h.snd))
 
 -------------------------------------------------------------
 
@@ -131,7 +127,7 @@ bootstrap s2 p = if looksRight sol1 then sol1 else sol2 where
 
 -------------------------------------------------------
 
-estimateCenters rots = p . homogSolve . debug "system: " f . dropColumns 3 . coeffCent rots . mapSnd m_hat
+estimateCenters rots = p . homogSolve . debug "centers system: " f . dropColumns 3 . coeffCent rots . mapSnd m_hat
     where p (s,err) = ((vec[0,0,0]:) . toRows . reshape 3 $ s, err)
           f m = (rows m, cols m, rank m)
 
