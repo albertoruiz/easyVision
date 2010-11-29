@@ -28,7 +28,7 @@ import Numeric.LinearAlgebra
 --import Graphics.UI.GLUT hiding (Size,Point)
 import Data.Packed.ST
 import ImagProc hiding ((.*))
-import Vision(unitary)
+import Util.Misc(unitary)
 import GHC.Float(float2Double,double2Float)
 import ImagProc.C.Simple(histoDir)
 

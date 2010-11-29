@@ -47,7 +47,10 @@ import System.IO.Unsafe(unsafeInterleaveIO)
 import EasyVision.GUI
 import Graphics.UI.GLUT hiding (Size,Point)
 --import Control.Concurrent
-import Vision hiding (consistency)
+import Vision
+import Util.Rotation
+import Util.Misc(degree)
+import Vision.Autofrontal(autoOrthogonality)
 import Numeric.LinearAlgebra
 import ImagProc.Generic
 import Debug.Trace

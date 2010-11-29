@@ -14,12 +14,12 @@ import Numeric.LinearAlgebra hiding ((.*),(<|>))
 import Numeric.LinearAlgebra.Array.Util as Array
 import Graphics.Plot(gnuplotpdf)
 import System.Random
-import Vision.Geometry
+import Util.Homogeneous
 import Vision.Camera
 import Control.Applicative
 import Control.Monad hiding (join)
 import System.Directory(doesFileExist)
-import Util.Misc(splitEvery)
+import Util.Misc(splitEvery,degree,unitary)
 
 
 type Seed = Int

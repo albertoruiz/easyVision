@@ -1,4 +1,6 @@
-cd patrec
+cd util
+cabal install
+cd ../patrec
 cabal install
 cd ../vision
 cabal install

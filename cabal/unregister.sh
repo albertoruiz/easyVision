@@ -18,3 +18,5 @@ ghc-pkg unregister vision
 
 ghc-pkg unregister patrec
 
+ghc-pkg unregister util
+

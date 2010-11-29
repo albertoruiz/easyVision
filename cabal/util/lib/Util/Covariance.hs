@@ -20,9 +20,11 @@ module Util.Covariance (
 , PCARequest(..)
 , pca
 
-, whitener, whiteningTrans, whiteningHomog
+, whitener, whiteningTransf
 
 , normalizer
+
+, correlation
 
 ) where
 
@@ -74,10 +76,10 @@ data Codec = Codec
     , decodeRows :: Mat -> Mat
     }
 
-encode :: Codec -> Vector Double -> Vector Double
+encode :: Codec -> Vec -> Vec
 encode c = unliftRow (encodeRows c)
 
-decode :: Codec -> Vector Double -> Vector Double
+decode :: Codec -> Vec -> Vec
 decode c = unliftRow (decodeRows c)
 
 autoencode :: Mat -> (Mat -> Codec) -> Mat
@@ -111,18 +113,19 @@ pca (SigmaPercent p) st = pca (ReconstructionQuality $ 1-sqr(1-p/100)) st
 
 --------------------------------------------------------------
 
-whiteningTrans :: CovStr -> Matrix Double
-whiteningTrans st = diag (1/sqrt l) <> v
+whitening :: CovStr -> Mat
+whitening st = diag (1/sqrt l) <> v
   where
     l = eigvalCov st
     v = eigvecCov st
 
-whiteningHomog :: CovStr -> Matrix Double
-whiteningHomog st = fromBlocks [[ w, -wm]
+-- | homogeneous transformation (take subMatrix (0,0) (3,3) for the inhomogeneous part on centered data)
+whiteningTransf :: CovStr -> Mat
+whiteningTransf st = fromBlocks [[ w, -wm]
                                ,[ 0,  1 ]]
   where
     m = meanV st
-    w = whiteningTrans st
+    w = whitening st
     wm = asColumn (w <> m)
 
 whitener :: CovStr -> Codec
@@ -130,7 +133,7 @@ whitener st = Codec { encodeRows = \x -> (x - m) <> trans w
                     , decodeRows = \y -> (y <> w) + m }
   where
     m = asRow $ meanV st
-    w = whiteningTrans st
+    w = whitening st
 
 --------------------------------------------------------------
 
@@ -140,3 +143,11 @@ normalizer st = Codec { encodeRows = \x -> (x - m) / d
   where
     m = asRow $ meanV st
     d = asRow $ sqrt (varV st)
+
+---------------------------------------------------------------
+
+-- correlation coefficients from a covariance matrix
+correlation :: Mat -> Mat
+correlation c = c / outer s s where
+    s = sqrt (takeDiag c)
+

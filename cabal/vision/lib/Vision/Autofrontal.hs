@@ -27,9 +27,11 @@ module Vision.Autofrontal (
 
 import Numeric.LinearAlgebra
 import Numeric.GSL.Minimization
-import Vision.Geometry
+import Util.Homogeneous
 import Vision.Camera
 import Data.List (elemIndex,sort)
+import Util.Misc(unitary,degree)
+import Util.Rotation(rot1,rot3)
 
 matrix = fromLists :: [[Double]] -> Matrix Double
 vector = fromList ::  [Double] -> Vector Double

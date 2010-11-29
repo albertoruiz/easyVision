@@ -1,22 +1,25 @@
 module Initialize where
 
-import LieSolve
+import qualified Vision.Bootstrap as B
 
 import Numeric.LinearAlgebra
-import Util.Misc(Mat,arrayOf,Vec,homogSolve,(&),debug,vec,diagl,replaceAt,intersectSorted,
-                 degree)
+import Numeric.LinearAlgebra.LAPACK(rightSVR)
+import Util.Misc(Mat,arrayOf,Vec,(&),debug,vec,diagl,replaceAt,intersectSorted,
+                 degree,unionSort)
+import Util.Estimation(homogSolve,homogSolveG)
 import Vision(factorizeCamera,camerasFromEssential,selectCamera',cameraAtOrigin,
-              homog,inHomog, commonPoints, triangulate,
-              SparseVP,ako,essentials,qEssen,epiObs,sCam,depthOfPoint,depthsOfInducedPoint,
-              v_of_p, sPts, Epi(..))
+              homog,inHomog, triangulate,
+              depthOfPoint,depthsOfInducedPoint,qEssen)
+import Vision.SparseRep(SparseVP,ako,sKal,lObs,essentials,epiObs,sCam,v_of_p, p_of_v, sPts,commonPoints,  Epi(..))
 import Vision.Gea(recompPts)
 import Numeric.LinearAlgebra.Tensor
 import Numeric.LinearAlgebra.Array.Util
 import Data.Maybe(isJust,fromJust)
-import Data.List(sortBy,sort,nub,foldl',foldl1',maximumBy)
+import Data.List(sortBy,sort,group,foldl',foldl1',maximumBy)
 import Data.Function(on)
 
-
+---------------------------------------------------------------
+-- bootstrap3 0.9 30 p --
 ---------------------------------------------------------------
 
 
@@ -25,9 +28,154 @@ import Data.Function(on)
 rotOfCam :: Mat -> Mat
 rotOfCam c = r where (_,r,_) = factorizeCamera c
 
--- linearEssen :: Mat -> Mat
--- linearEssen = trans . reshape 3 . last . toColumns . snd . rightSV
+graphInit t rots = paths
+  where paths = ident 3 : map (chain . path t 0) [1.. maximum (map snd t)]
+        chain xs = foldl1' (<>) $ map f $ zip xs (tail xs)
+        f (i,j) = case lookup (i,j) rots of
+                     Just r -> r
+                     Nothing -> case lookup (j,i) rots of
+                                   Just r -> trans r
+                                   Nothing -> error $ "graphInit" ++ show (i,j)
 
+
+rotRefine w angMax r0 sel = debug "rotation system error gain: " (const err) rs where
+    r = arrayOf r0
+    f ((i,j),rel) = ((i,j), B.coordsRot $ trans (r j) <> rel <> r i)
+    d = debug "rot residuals: " (map (round.h.snd))
+    h = (/degree). pnorm PNorm2 . vec
+    g = filter ((<angMax).h.snd) . debug "removed: " (map fst . filter ((>=angMax).h.snd))
+    resi = d . g $ map f sel
+    (sol,err) = B.solveEcs w resi
+    rs = zipWith B.fixRot r0 (toLists sol)
+
+
+solveCams rs sel = (cams1, cams2) where
+    cens = fst $ debug "centers system error: " snd $ estimateCenters rs sel
+    cams1 = zipWith f rs cens
+    cams2 = zipWith f rs (map negate cens)
+    f r c = r & asColumn (-r <> c)
+
+selectSol (cams1,cams2) p = if looksRight sol1 then sol1 else sol2 where
+    sol1 = recompPts p { sCam = cams1 }
+    sol2 = recompPts p { sCam = cams2 }
+
+
+-- | general parameterizable method
+bootstrapGen nspans nlie ndesp p = q where
+    nc = length (sCam p)
+    sel = filter (isJust.rot.snd) (epiObs p)         -- selected subgraph
+    rots = mapSnd (fromJust.rot) sel                 -- extract rotations
+    arcs = map fst $ sortBy (compare `on` negate.s2.snd) sel
+
+    spans = take nspans (spanningTrees (nc - 1) arcs)  -- sequence of spanning trees
+    r0 = graphInit (head spans) rots
+    usedrots = mapSnd (fromJust.rot) $ filter ((`elem` concat spans).fst) sel
+
+    rs = (!!nlie) . iterate f $ r0
+        where f r = rotRefine 1 50 r usedrots
+    
+    desps = map fst $ sortBy (compare `on` negate.h_err.snd) (filter ((>10).nEpi.snd) $ epiObs p)
+    spdesp = take ndesp (spanningTrees (nc-1) desps)
+    useddesps = filter ((`elem` concat spdesp).fst) (epiObs p)
+    
+    q = selectSol (solveCams rs useddesps) p
+
+-- | using best two graphs for rots and all pairs for centers
+bootstrap0 p = q where
+    nc = length (sCam p)
+    sel = filter (isJust.rot.snd) (epiObs p)         -- selected subgraph
+    rots = mapSnd (fromJust.rot) sel                 -- extract rotations
+    arcs1 = map fst $ sortBy (compare `on` negate.s2.snd) sel
+    span1 = kruskal (nc - 1) arcs1
+    arcs2 = filter (not . (`elem` span1)) arcs1
+    span2 = kruskal (nc - 1) arcs2
+    r0 = graphInit span1 rots
+    r1 = graphInit span2 rots
+    rots2graphs = mapSnd (fromJust.rot) $ filter ((`elem` (span1 ++ span2)).fst) sel
+    rs = rotRefine 1 50 r0 rots2graphs
+    q = selectSol (solveCams rs (epiObs p)) p
+
+-- | using best pairs and all rows
+bootstrap3 s2' n' p = q where
+    nc = length (sCam p)
+    sel = filter ((>n').nEpi.snd)
+        . filter ((>s2').s2.snd)
+        . filter (isJust.rot.snd) 
+        $ epiObs p
+    rots = mapSnd (fromJust.rot) sel
+    arcs1 = map fst $ sortBy (compare `on` negate.s2.snd) sel
+    span1 = kruskal (nc - 1) arcs1
+    r0 = graphInit span1 rots
+    rotsel = mapSnd (fromJust.rot) sel
+    rs = rotRefine 1 50 (rotRefine 1 50 r0 rotsel) rotsel
+    q = selectSol (solveCams rs (epiObs p)) p
+
+
+-- | using best pairs and all rows
+bootstrapDummy s2' n' p = q where
+    nc = length (sCam p)
+    sel = filter ((>n').nEpi.snd)
+        . filter ((>s2').s2.snd)
+        . filter (isJust.rot.snd) 
+        $ epiObs p
+    rots = mapSnd (fromJust.rot) sel
+    arcs1 = map fst $ sortBy (compare `on` negate.s2.snd) sel
+    span1 = kruskal (nc - 1) arcs1
+    r0 = graphInit span1 rots
+    rotsel = mapSnd (fromJust.rot) sel
+    rs = rotRefine 1 50 (rotRefine 1 50 r0 rotsel) rotsel
+    q = estimatePointsCenters rs p
+
+-- | with selected points
+bootstrapDummy' nsel s2' n' p = q where
+    nc = length (sCam p)
+    sel = filter ((>n').nEpi.snd)
+        . filter ((>s2').s2.snd)
+        . filter (isJust.rot.snd) 
+        $ epiObs p
+    rots = mapSnd (fromJust.rot) sel
+    arcs1 = map fst $ sortBy (compare `on` negate.s2.snd) sel
+    span1 = kruskal (nc - 1) arcs1
+    r0 = graphInit span1 rots
+    rotsel = mapSnd (fromJust.rot) sel
+    rs = rotRefine 1 50 (rotRefine 1 50 r0 rotsel) rotsel
+    q = estimatePointsCenters' nsel rs p
+
+
+-- | using best pairs and all selected for centers
+bootstrap4 s2' n' p = q where
+    nc = length (sCam p)
+    sel = filter ((>n').nEpi.snd)
+        . filter ((>s2').s2.snd)
+        . filter (isJust.rot.snd) 
+        $ epiObs p
+    rots = mapSnd (fromJust.rot) sel
+    arcs1 = map fst $ sortBy (compare `on` negate.s2.snd) sel
+    span1 = kruskal (nc - 1) arcs1
+    r0 = graphInit span1 rots
+    rotsel = mapSnd (fromJust.rot) sel
+    rs = rotRefine 1 50 (rotRefine 1 50 r0 rotsel) rotsel
+    q = selectSol (solveCams rs sel) p
+
+-- | using best pairs and n displacement spans
+bootstrap5 s2' n' ndesp p = q where
+    nc = length (sCam p)
+    sel = filter ((>n').nEpi.snd)
+        . filter ((>s2').s2.snd)
+        . filter (isJust.rot.snd) 
+        $ epiObs p
+    rots = mapSnd (fromJust.rot) sel
+    arcs1 = map fst $ sortBy (compare `on` negate.s2.snd) sel
+    span1 = kruskal (nc - 1) arcs1
+    r0 = graphInit span1 rots
+    rotsel = mapSnd (fromJust.rot) sel
+    rs = rotRefine 1 50 (rotRefine 1 50 r0 rotsel) rotsel
+
+    desps = map fst $ sortBy (compare `on` negate.h_err.snd) (filter ((>10).nEpi.snd) $ epiObs p)
+    spdesp = take ndesp (spanningTrees (nc-1) desps)
+    useddesps = filter ((`elem` concat spdesp).fst) (epiObs p)
+    
+    q = selectSol (solveCams rs useddesps) p
 
 -- devolvemos la que tenga m´as puntos delante, por ruido no
 -- nos podemos fiar solo de uno de ellos
@@ -89,7 +237,7 @@ relativeRotations' s = g . map f where
 residualRots p sel = (r, d . g . d $ map f sel) where
     r = spanInit p sel
     -- r = superSpanInit 30 p sel
-    f ((i,j),rel) = ((i,j), coordsRot $ trans (r j) <> rel <> r i)
+    f ((i,j),rel) = ((i,j), B.coordsRot $ trans (r j) <> rel <> r i)
 
     d = debug "rot residuals: " (map (round.h.snd))
     h = (/degree). pnorm PNorm2 . vec
@@ -97,10 +245,11 @@ residualRots p sel = (r, d . g . d $ map f sel) where
 
 -------------------------------------------------------------
 
+{-
 --initRots :: [((Int, Int), Mat)] -> ([Mat],[Mat])
 initRots p ps = (r0, debug "err rot: " (const err) r)
   where (r0',resi) = residualRots p ps
-        (sol,err) = solveEcs resi
+        (sol,err) = solveEcs 1 resi
         r0 = map r0' [0..maximum (map (snd.fst) ps)]
         r = zipWith fixRot r0 (toLists sol)
 
@@ -113,17 +262,7 @@ prepareRotsGen q p = initRots1I p (diagl [1,1,1]) . relativeRotations' p . filte
 
 -- using only pair with minimum s2
 prep s2 = prepareRotsGen (\(_,(e,ks)) -> fst (qEssen e) > s2)
-
--------------------------------------------------------
-
-bootstrap s2 p = if looksRight sol1 then sol1 else sol2 where
-    rots = snd $ prep s2 p
-    cens = fst $ debug "err cen: " snd $ estimateCenters rots (epiObs p)
-    cams1 = zipWith f rots cens
-    cams2 = zipWith f rots (map negate cens)
-    f r c = r & asColumn (-r <> c)
-    sol1 = recompPts p { sCam = cams1 }
-    sol2 = recompPts p { sCam = cams2 }
+-}
 
 -------------------------------------------------------
 
@@ -147,7 +286,7 @@ coeffCent rots = fromBlocks . map (return . f) . unRotEpi rots
 unRotEpi rots = map f
     where r = arrayOf $ map (listArray[3,3].toList.flatten .trans) rots
           n = length rots - 1
-          f ((i,j),m) = ((i,j), (s.h) (g i j m))
+          f ((i,j),m) = ((i,j), (compact 2 .s.h) (g i j m))
           g i j m = r i!"ai" * t m * r j!"bj"
           t m = (!"kij").listArray[rows m,3,3].toList $ flatten m
           h x = reshape 9 $ coords (x~>"kab")
@@ -155,6 +294,11 @@ unRotEpi rots = map f
           sel = (3><9) [ 0,  0, 0, 0, 0, -1,  0, 1, 0,
                          0,  0, 1, 0, 0,  0, -1, 0, 0,
                          0, -1, 0, 1, 0,  0,  0, 0, 0 ]
+
+-- reduced coefficient matrix for a homogeneous linear system
+compact nr x = takeRows (rows x `min` nr) c
+    where (l,v) = eigSH' (trans x <> x)
+          c = diag (sqrt (abs l)) <> trans v
 
 -----------------------------------------------------------------
 
@@ -221,10 +365,10 @@ superSpanInit nmin p sel = g
 
 -----------------------------------------------------------------
 
-neigh g n = myunion [[ j | (k,j) <- g , k == n ],
-                     [ i | (i,k) <- g , k == n ]]
+neigh g n = unionSort [[ j | (k,j) <- g , k == n ],
+                      [ i | (i,k) <- g , k == n ]]
 
-myunion xs = nub . sort . concat $ xs
+
 
 -- spanning tree, from sorted arcs
 -- nmax is given from outside to keep laziness
@@ -234,7 +378,7 @@ kruskal nmax s = fst $ myfoldl' ((nmax==).length.fst) f ([],r0) s where
     r0 = map return [0..nmax]
     f (g,r) (i,j) = if i `elem` r!!j then (g,r) else ((i,j):g, r')
         where r' = replaceAt z (replicate (length z) z) r
-              z = myunion [r!!i, r!!j]
+              z = unionSort [r!!i, r!!j]
 
 myfoldl' done f z0 xs0 = lgo z0 xs0
     where lgo z _ | done z = z
@@ -251,3 +395,71 @@ path g a b | b `elem` na = [a,b]
     na = neigh g a
     g' = filter noa g where noa (i,j) = i /= a && j /= a
     subs = filter (not.null) [ path g' v b | v <- na ]
+
+-- | sequence of spanning trees from sorted arcs
+spanningTrees nmax arcs = map fst $ tail $ iterate go ([],arcs) where
+    go (_,graph) = (t,rest)
+        where t = kruskal nmax graph
+              rest = filter (not . (`elem` t)) graph
+
+-----------------------------------------------------------
+
+hv = homog . fromList
+
+estimatePointsCenters rots p = q where
+    q = p { sPts = newpts, sCam = newCams }
+    irk = arrayOf $ zipWith f rots (sKal p) where f r k = trans r <> inv k
+    coefs = fromBlocks $ map (return . ec) (lObs p)
+    pmax = maximum (map (fst.fst) (lObs p))
+    cmax = length (sCam p) - 1
+    ec ((i,j),pix) = fromBlocks [ replicate i z
+                               ++ [x]
+                               ++ replicate (pmax-i+j) z
+                               ++ [-x]
+                               ++ replicate (cmax-j) z
+                                ]
+        where [a,b,c] = toList $ irk j <> hv pix
+              x = (3><3) [0,-c,b
+                          ,c,0,-a
+                          ,-b,a,0]
+              z = (3><3) [0,0 .. ] :: Mat
+
+    sol = reshape 3 $ fst $ homogSolveG rightSVR $ debug "systemPC:" inforank $ dropColumns 3 coefs where inforank m = (rows m, cols m)
+    newpts = (vec [0,0,0,1]:) $ map homog $ toRows $ takeRows (pmax) sol
+    newcens = toRows $ dropRows (pmax) sol
+    newCams = zipWith f rots newcens where f r c = r & asColumn (-r <> c)
+
+-----------------------------------------------------------------
+
+-- point selection
+
+selectUsefulPoints n p = obs where
+    obs = [((r i, j),p) | ((i,j),p) <- lObs p, i `elem` pts ]
+    sel = take n . sortBy (compare `on` negate.length.v_of_p p) . p_of_v p   
+    pts = unionSort $ map sel [0..length (sCam p) -1]
+    r i = fromJust $ lookup i assoc
+    assoc = zip pts [0..]
+
+estimatePointsCenters' n rots p = recompPts q where
+    q = p { sCam = newCams }
+    irk = arrayOf $ zipWith f rots (sKal p) where f r k = trans r <> inv k
+    obs = selectUsefulPoints n p
+    coefs = fromBlocks $ map (return . ec) obs
+    pmax = maximum (map (fst.fst) obs)
+    cmax = length (sCam p) - 1
+    ec ((i,j),pix) = fromBlocks [ replicate i z
+                               ++ [x]
+                               ++ replicate (pmax-i+j) z
+                               ++ [-x]
+                               ++ replicate (cmax-j) z
+                                ]
+        where [a,b,c] = toList $ irk j <> hv pix
+              x = (3><3) [0,-c,b
+                          ,c,0,-a
+                          ,-b,a,0]
+              z = (3><3) [0,0 .. ] :: Mat
+
+    sol = reshape 3 $ fst $ homogSolveG rightSVR $ debug "systemPC:" inforank $ dropColumns 3 coefs where inforank m = (rows m, cols m)
+    newcens = toRows $ dropRows (pmax) sol
+    newCams = zipWith f rots newcens where f r c = r & asColumn (-r <> c)
+

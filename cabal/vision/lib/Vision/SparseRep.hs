@@ -4,8 +4,9 @@ module Vision.SparseRep(
     SparseVP(..), loadSVP, Epi(..),
     sparseFromTensor, tensorSelectK, tensorProblemK, recalibrate,
     commonPoints, ptsVisibleBy, lengthTracks, viewedPoints,
-    sGError, sEError, sEEError, sEAError, objectQualityS, poseQualityS,
-    signalLevelS, infoSProb, pixelRange, essentials
+    kError, detailedErrors, sGError, sEError, sEEError, sEAError, objectQualityS, poseQualityS,
+    signalLevelS, infoSProb, pixelRange, essentials,
+    trackMatrix, trackMissing
 ) where
 
 import Numeric.LinearAlgebra as LA hiding(i)
@@ -15,13 +16,15 @@ import Numeric.LinearAlgebra.Array.Util
 import Data.List
 import Vision.Camera
 import Vision.Stereo
-import Vision.Geometry
+import Util.Estimation(estimateHomography)
+import Util.Homogeneous
 import Util.Quaternion
 import Vision.TensorRep
-import Vision.Multiview
+import Vision.Tensorial
 import Text.Printf
-import Util.Misc(splitEvery, arrayOf, myintersect, impossible,
-                 mean, sqr, median, shDist, Mat, correlation)
+import Util.Misc(splitEvery, arrayOf, myintersect', impossible,
+                 mean, sqr, median, shDist, vec, Mat, degree, unitary)
+import Util.Covariance(correlation)
 
 -- A sparse visual problem
 data SparseVP = SVP { v_of_p :: Int -> [Int] -- visible views of each point
@@ -89,13 +92,17 @@ loadTracks filepts = do
     (pts,obsp) <- loadRawTracks filepts
     return (goSparse obsp) { sPts = pts }
 
--- | complete a sparse visual problem with cameras and calibration info from files with SBA format
+-- | load a sparse visual problem with cameras and calibration info from files with SBA format
 loadSVP :: FilePath -> FilePath -> FilePath -> IO SparseVP
 loadSVP filepoints filecams filecalib = do
     s <- loadTracks filepoints
     cams <- loadQCams filecams
     k <- loadMatrix filecalib
-    return $ recalibrate (replicate (snC s) k) s { sCam = cams }
+    let one = rows k == 3
+        ks | one = (replicate (snC s) k)
+           | otherwise = map head (toBlocksEvery 3 3 k)
+    return $ recalibrate ks s { sCam = cams }
+
 
 
 loadQCams :: FilePath -> IO [Matrix Double]
@@ -103,7 +110,7 @@ loadQCams filecams = (map (camFromQuat . map read . words) . lines) `fmap` readF
   where
     camFromQuat [s, a, b, c, x, y, z] = camera
         where q = Quat s (fromList [a,b,c])
-              r = getRotation q
+              r = quatToRot q
               cen = fromList [x,y,z]
               camera = fromBlocks [[r, asColumn cen]]
     camFromQuat _ = impossible "loadQCams"
@@ -135,7 +142,7 @@ tensorSelectK selcams s = t where
     t = tensorProblemK selpts selcams s
 
 commonPointsL :: SparseVP -> [Int] -> [Int]
-commonPointsL s = foldl1' (\a b -> reverse (myintersect a b)) . map (p_of_v s)
+commonPointsL s = foldl1' (\a b -> reverse (myintersect' a b)) . map (p_of_v s)
 
 
 -- | extract the elements of a dense problem in sparse format:
@@ -150,7 +157,7 @@ sparseFromTensor p = recalibrate ks r where
     remo zs = [(loc, [x/w,y/w]) | (loc,[x,y,w]) <- zs, w/= 0.0]
 
 commonPoints :: SparseVP -> Int -> Int -> [Int]
-commonPoints s i j = myintersect (p_of_v s i) (p_of_v s j)
+commonPoints s i j = myintersect' (p_of_v s i) (p_of_v s j)
 
 
 -- compute M^
@@ -159,7 +166,7 @@ getPairs :: SparseVP
     -> Int
     -> Maybe (Matrix Double,[Int])
 getPairs s i j | null ks = Nothing
-               | otherwise = Just (compact $ outf (fromRows p) (fromRows q), ks)
+               | otherwise = Just (compact' $ outf (fromRows p) (fromRows q), ks)
     where ks = commonPoints s i j
           f k = (unitary $ ako s (k,i), unitary $ ako s (k, j))
           (p,q) = unzip $ map f ks
@@ -169,8 +176,9 @@ getPairs s i j | null ks = Nothing
                   vs = toColumns b
 
           compact x = if rows x < 9 then x else takeRows 9 $ snd $ qr x
-                                                    -- compact' 9 x
-
+          compact' x = takeRows (rows x `min` 9) c
+             where (l,v) = eigSH' (trans x <> x)
+                   c = diag (sqrt (abs l)) <> trans v
 
 
 -- more info about a view pair
@@ -180,6 +188,8 @@ data Epi = Epi { m_hat :: Mat,
                  nEpi :: Int,   -- lenght of com
                  s2 :: Double,
                  s7 :: Double,
+                 p_homog :: Mat,    -- planar homography
+                 h_err :: Double,   -- its error
                  rot :: Maybe Mat } -- promising rotation
 
 prepEpi :: SparseVP -> ((Int, Int), (Mat,[Int])) -> ((Int, Int), Epi)
@@ -189,20 +199,21 @@ prepEpi s ((i,j),(m,ks)) = ((i,j),
           esen = e,
           nEpi = length ks,
           s2 = fst (qEssen e),
-          s7 = sm@>6 / sm@>0,
+          s7 = sumElements (subVector 6 3 sm) / sumElements (subVector 0 6 sm),
+          p_homog = h, h_err = he,
           rot = mbrot } ) where
     ebad = linearEssen m
     ps  = map (\k-> toList $ inHomog $ ako s (k,i)) ks
     ps' = map (\k-> toList $ inHomog $ ako s (k,j)) ks
     egood = trans $ estimateFundamental ps ps'
+    h = estimateHomography ps ps'
+    he = sqrt $ pnorm Frobenius (fromLists ps - fromLists (ht h ps')) ** 2 / fromIntegral (length ks)
     e = if length ks > 8 then egood else ebad
     sm = singularValues m
     mbrot = rotOfCam `fmap` m'
         where ms = camerasFromEssential e
               m' = selectCamera' (head ps) (head ps') cameraAtOrigin ms
 
-rotOfCam :: Mat -> Mat
-rotOfCam c = r where (_,r,_) = factorizeCamera c
 
 
 mkEpiObs :: SparseVP -> [((Int, Int), Epi)]
@@ -229,7 +240,39 @@ viewedPoints s = map (length . p_of_v s) $  [0 .. snC s -1]
 
 ---------------------------------------------------------------------
 
+-- | geometric reprojection error for view k, in calibrated units
+kErrorView :: Int -> SparseVP -> (Double,Double)
+kErrorView k s = (2*e2, 1000*sqrt e2) where
+    obs = filter ((==k).snd) $ map fst (lObs s)
+    n = fromIntegral (length obs)
+    c = arrayOf (sCam s)
+    p = arrayOf (sPts s)
+    g ac (i,j) = ac + sqr(x/z-a/w) + sqr(y/z-b/w)
+        where [a,b,w] = toList $ c j <> p i
+              [x,y,z] = toList (ako s (i,j))
+    e2 = foldl' g 0 obs / (2*n)
+
+-- | kError in each view
+detailedErrors :: SparseVP -> [(Int,Double)]
+detailedErrors s = map f [0..length (sCam s)-1] where
+    f k = (k, snd (kErrorView k s))
+
+
 -- | geometric reprojection error of a sparse visual problem
+--   in calibrated units
+kError :: SparseVP -> (Double,Double)
+kError s = (2*e2, 1000*sqrt e2) where
+    obs = map fst (lObs s)
+    n = fromIntegral (length obs)
+    c = arrayOf (sCam s)
+    p = arrayOf (sPts s)
+    g ac (i,j) = ac + sqr(x/z-a/w) + sqr(y/z-b/w)
+        where [a,b,w] = toList $ c j <> p i
+              [x,y,z] = toList (ako s (i,j))
+    e2 = foldl' g 0 obs / (2*n)
+
+
+-- | geometric reprojection error of a sparse visual problem in pixel units
 sGError :: SparseVP -> (Double,Double)
 sGError s = (2*e2, sqrt e2) where
     obs = lObs s
@@ -367,19 +410,32 @@ essentials s = map f . epiObs $ s where
 pairQuality :: Int -> SparseVP -> IO ()
 pairQuality n p = do
     let q = unzip $ map (qEssen.fst.snd) $ filter ((>=n).length.snd.snd) $ essentials p
-        q2 = map (s7.snd) $ filter ((>n).nEpi.snd) $ (epiObs p)
+        q2 = filter ((>n).nEpi.snd) $ (epiObs p)
     shDist "s2:  " "%.3f" "%.3f" $ fst $ q
---    shDist "s3:  " "%.1f" "%.1f" $ map (negate . logBase 10) $ snd $ q
-    shDist "s7:  " "%.1f" "%.1f" $ map (negate . logBase 10) $ q2
+--    shDist "he:  " "%.1f" "%.1f" $ map (negate . logBase 10) $ snd $ q
+    shDist "s7:  " "%.1f" "%.1f" $ map (negate . logBase 10)$ map (s7.snd) $ q2
+    shDist "he:  " "%.1f" "%.1f" $ map (negate . logBase 10)$ map (h_err.snd) $ q2
 
 correl :: Int -> SparseVP -> IO ()
 correl n p = do
+    putStr "correlation n s2 s3 s7 s9 he "
     putStr . dispf 1 . correlation . snd . meanCov $ q
     shDist "pairwise n: " "%.1f" "%.0f" ns
   where
     q = fromLists $ map (f.snd) $ filter ((>=n).nEpi.snd) $ es
     ns = map (fromIntegral.nEpi.snd) es
     es = epiObs p where
-    f x = [fromIntegral k,s2',s3]
+    f x = [fromIntegral k,s2',s3, s7 x, ss@>8/ss@>0, h_err x]
         where k = nEpi x
               (s2',s3) = qEssen (esen x)
+              ss = singularValues (m_hat x)
+
+--------------------------------------------------------------
+
+trackMatrix :: SparseVP -> Mat
+trackMatrix p = fromBlocks [[asColumn (ako p (i,j)) | i<-[0..length (sPts p) -1]]| j <- [0.. length(sCam p)-1]]
+
+trackMissing :: SparseVP -> Mat
+trackMissing p = fromBlocks [[ g (ako p (i,j)) | i<-[0..length (sPts p) -1]]| j <- [0.. length(sCam p)-1]]
+    where g v = if v == z then 0 else 1
+          z = vec [0,0,0]

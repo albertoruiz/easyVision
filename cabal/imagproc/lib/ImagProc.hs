@@ -40,7 +40,9 @@ import ImagProc.Ipp.Structs
 import ImagProc.Generic
 import ImagProc.C.Simple
 import Data.List(transpose)
-import Vision(rot3,scaling,desp,unitary)
+import Util.Rotation(rot3)
+import Util.Misc(unitary)
+import Vision(scaling,desp)
 import Numeric.LinearAlgebra hiding ((.*))
 import ImagProc.Images
 

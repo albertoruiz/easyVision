@@ -1,0 +1,46 @@
+Name:               prcv-util
+Version:            0.1.0
+License:            GPL
+License-file:       LICENSE
+Author:             Alberto Ruiz
+Maintainer:         Alberto Ruiz <aruiz@um.es>
+Stability:          experimental
+Homepage:           http://code.haskel.org/easyVision
+Synopsis:           Utilities for pattern recognition and computer vision
+Description:
+ Utilities for pattern recognition and computer vision.
+
+Category:           Math
+tested-with:        GHC ==6.12.3
+
+cabal-version:      >=1.2
+build-type:         Simple
+
+extra-source-files:
+
+library
+    Build-Depends:      base >= 4 && < 5, hmatrix >= 0.10,
+                        process, array, random, containers
+
+    hs-source-dirs:     lib
+
+    Exposed-modules:    Util.Misc
+                        Util.Rotation
+                        Util.Estimation
+                        Util.Homogeneous
+                        Util.Covariance
+                        Util.Probability
+                        Util.Kalman
+                        Util.Optimize
+                        Util.Ellipses
+                        Util.Quaternion
+                        Util.Sparse
+                        Util.ICA
+                        Util.Stat
+
+    other-modules:
+
+--    ghc-prof-options:   -auto-all
+
+    ghc-options:        -Wall
+

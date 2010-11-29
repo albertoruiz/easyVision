@@ -44,6 +44,8 @@ import Data.IORef
 import Foreign (touchForeignPtr,castPtr)
 import Numeric.LinearAlgebra
 import Vision
+import Util.Rotation
+import Util.Misc(degree)
 import EasyVision.GUI.Trackball
 --import EasyVision.Util
 import qualified Data.Colour.RGBSpace as Col

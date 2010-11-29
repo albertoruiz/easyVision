@@ -1,17 +1,17 @@
 Name:               vision
-Version:            0.1.0
+Version:            0.2.0
 License:            GPL
 License-file:       LICENSE
 Author:             Alberto Ruiz
 Maintainer:         Alberto Ruiz <aruiz@um.es>
 Stability:          experimental
 Homepage:           http://www.easyvision.googlepages.com/
-Synopsis:           Simple geometric vision algorithms
+Synopsis:           geometric vision algorithms
 Description:
- Simple geometric vision algorithms.
+ geometric vision algorithms.
 
 Category:           Math
-tested-with:        GHC ==6.10.4, GHC ==6.12.1
+tested-with:        GHC ==6.12.3
 
 cabal-version:      >=1.2
 build-type:         Simple
@@ -20,26 +20,28 @@ extra-source-files:
 
 library
     Build-Depends:      base >= 3 && < 5, random, directory,
-                        array, containers,
-                        hmatrix >= 0.8.3, patrec >= 0.1,
+                        array, containers, process,
+                        hmatrix >= 0.8.3, prcv-util,
                         hTensor >= 0.5
 
     hs-source-dirs:     lib
 
     Exposed-modules:    Vision
-                        Vision.Geometry
                         Vision.Camera
-                        Vision.Estimation
                         Vision.Stereo
                         Vision.TensorRep
-                        Vision.Multiview
+                        Vision.Tensorial
                         Vision.SparseRep
                         Vision.Bundle
                         Vision.Gea
+                        Vision.Gea2
+                        Vision.Types
+                        Vision.Epipolar
+                        Vision.Bootstrap
+                        Vision.Multiview
+                        Vision.IO
+                        Vision.LASBA
                         Vision.Autofrontal
-                        Util.Quaternion
-                        Util.Ellipses
-                        Util.Sparse
 
     other-modules:
 

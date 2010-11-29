@@ -1,9 +1,8 @@
 module ShowReco where
 
-import Vision hiding (degree,rot1,rot2,rot3,infoSProb)
+import Vision -- hiding (degree,rot1,rot2,rot3,infoSProb)
 -- import Vision.Multiview
 -- import Vision.Gea
--- 
 -- import Text.Printf
 -- import Data.List
 -- import Data.Function(on)
@@ -13,12 +12,18 @@ import Numeric.LinearAlgebra
 -- 
 import EasyVision hiding (debug, numCams,(|+|), median)
 import Data.Colour.Names as Col
-import Graphics.UI.GLUT hiding (Size,scale,triangulate)
+import Graphics.UI.GLUT hiding (Size,scale,triangulate,Matrix)
 -- import Data.Maybe(fromJust)
 -- import Control.Arrow((&&&))
 
+import Control.Monad((>=>))
 
 runIt f = prepare >> f >> mainLoop
+mat2img = fromListsF . toLists
+
+showMat :: String -> Matrix Float -> IO (EVWindow (Matrix Float))
+showMat name m = evWindow m name (Size (rows m) (cols m)) (Just (get>=>drawImage.mat2img)) (const kbdQuit)
+
 
 shRecoG fc fp name s = do
     evWin3D () name 500 (Just disp) (const kbdQuit)
@@ -43,10 +48,10 @@ shRecosG fc fp name ss = do
   where
     disp st = do
         k <- get st
-        setColor' Col.gray
-        mapM_ (flip (drawCamera 0.1) Nothing) (fc $ ss!!k)
         setColor' black
-        sequence_ $ zipWith indexCam (fc $ ss!!k) [0..]
+        mapM_ (flip (drawCamera 0.1) Nothing) (fc $ ss!!k)
+        setColor' Col.gray
+        --sequence_ $ zipWith indexCam (fc $ ss!!k) [0..]
         pointSize $= 1
         setColor' blue
         renderPrimitive Points $ mapM_ (vertex.toList.inHomog) (fp $ ss!!k)
@@ -54,17 +59,12 @@ shRecosG fc fp name ss = do
            ,((SpecialKey KeyDown, Down, modif), \k -> max (k-1) 0)]
     n = length ss - 1
 
-shReco = shRecoG sCam sPts
-shRecos = shRecosG sCam sPts
 
 indexCam c s = rasterPos (Vertex3 x y z) >> renderString Helvetica12 (show s)
   where (_,_,cen) = factorizeCamera c
         [x,y,z] = toList cen
 
 ----------------------------------------------------
-
-relocateSparse p = p { sPts = newPts, sCam = newCams } where
-    (newCams, newPts) = relocateReco (sCam p, sPts p)
 
 relocateReco (cams,pts) = (newCams, newPts) where
     newPts = toRows $ (fromRows pts) <> trans hi

@@ -4,13 +4,15 @@ module Vision.Bundle(
     mySparseBundle, onlyPoints, onlyCams, alterPointsCams,
     hessianCamsBundle,
     sbaG,
-    module Vision.SparseRep) where
+    module Vision.SparseRep,
+    module Vision.LASBA) where
 
+import Vision.LASBA
 import Numeric.LinearAlgebra as LA hiding (i)
 import qualified Data.Array as A
 
 import Vision.Camera
-import Vision.Geometry
+import Util.Homogeneous
 
 import Util.Optimize(optimize,optimizeLM)
 
@@ -258,3 +260,4 @@ prepareBundleSelect used free s = (mods, vsol, newSol, fcost) where
 
     fcost = g . join . map snd . (\(x,_,_)->x) . getBlocks
         where g v = sqrt (norm v ^ (2::Int)  / fromIntegral (dim v))
+

@@ -8,7 +8,7 @@ import Data.List as L
 import qualified Data.Map as M
 import Data.Maybe(fromMaybe)
 import Control.Arrow((&&&))
-import System (getArgs)
+import System.Environment (getArgs)
 import Text.Printf(printf)
 import Util.Misc(splitEvery, randomPermutation, Vec, Seed)
 

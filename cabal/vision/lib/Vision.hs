@@ -2,31 +2,27 @@
 -----------------------------------------------------------------------------
 {- |
 Module      :  Vision
-Copyright   :  (c) Alberto Ruiz 2006-7
-License     :  GPL-style
+Copyright   :  (c) Alberto Ruiz 2006-10
+License     :  GPL
 
 Maintainer  :  Alberto Ruiz (aruiz at um dot es)
-Stability   :  very provisional
-Portability :  hmm...
+Stability   :  provisional
 
-Some algorithms for geometric computer vision.
+
+Algorithms for geometric computer vision.
 
 -}
 -----------------------------------------------------------------------------
 
 module Vision (
-    module Vision.Geometry,
+    module Util.Homogeneous,
+    module Util.Estimation,   
     module Vision.Camera,
-    module Vision.Estimation,
-    module Vision.Stereo,
-    module Vision.Bundle,
-    module Vision.Autofrontal
+    module Vision.Stereo
 ) where
 
-import Vision.Geometry
+import Util.Homogeneous
+import Util.Estimation
 import Vision.Camera
-import Vision.Estimation
 import Vision.Stereo
-import Vision.Bundle
-import Vision.Autofrontal
 

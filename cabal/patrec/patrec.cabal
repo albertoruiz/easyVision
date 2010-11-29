@@ -1,5 +1,5 @@
 Name:               patrec
-Version:            0.2.0
+Version:            0.3.0
 License:            GPL
 License-file:       LICENSE
 Author:             Alberto Ruiz
@@ -20,8 +20,8 @@ build-type:         Simple
 extra-source-files:
 
 library
-    Build-Depends:      base >= 3 && < 5, hmatrix >= 0.8.3, array,
-                        random, containers, process
+    Build-Depends:      base >= 3 && < 5, hmatrix >= 0.8.3, prcv-util,
+                        array, containers, process, random
 
     hs-source-dirs:     lib
 
@@ -36,13 +36,6 @@ library
                         Classifier.Regression
                         Classifier.Tree
                         Classifier.ToyProblems
-                        Util.Misc
-                        Util.Stat
-                        Util.Covariance
-                        Util.ICA
-                        Util.Probability
-                        Util.Kalman
-                        Util.Optimize
 
     other-modules:
 

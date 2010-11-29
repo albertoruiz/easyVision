@@ -5,7 +5,7 @@ module Util.Misc where
 import Numeric.LinearAlgebra
 import Debug.Trace
 import Data.Function(on)
-import Data.List(elemIndex, sortBy, sort, minimumBy, transpose)
+import Data.List(elemIndex, sortBy, sort, group)
 import System.Random
 import qualified Data.Array as A
 import System.Process(system)
@@ -27,7 +27,8 @@ diagl = diag . vec
 type Seed = Int
 
 debug :: (Show a) => String -> (a1 -> a) -> a1 -> a1
-debug msg f x = trace (msg ++ show (f x)) x
+debug msg f x = trace (light (msg ++ ": " ++ show (f x))) x
+    where light s = "\^[[2m"++s++"\^[[0m"
 
 -- | used to avoid incomplete patterns
 impossible :: String -> a
@@ -90,8 +91,8 @@ shDist name fmtm fmt xs = printf (name ++ fmtm ++" ("++fmt++", "++fmt++", "++fmt
 arrayOf :: [a] -> (Int -> a)
 arrayOf xs = (A.listArray (0, length xs -1) xs A.!)
 
-myintersect :: (Ord a) => [a] -> [a] -> [a]
-myintersect xs ys = go xs ys [] where
+myintersect' :: (Ord a) => [a] -> [a] -> [a]
+myintersect' xs ys = go xs ys [] where
     go [] _ x = x
     go _ [] x = x
     go (a:as) (b:bs) x
@@ -99,6 +100,7 @@ myintersect xs ys = go xs ys [] where
         | a > b = go as (b:bs) x
         | otherwise = go as bs (a:x)
 
+-- | intersection of two lists of ordered elements (the result is also ordered).
 intersectSorted :: (Ord a) => [a] -> [a] -> [a]
 intersectSorted xs ys = reverse (go xs ys []) where
     go [] _ x = x
@@ -108,6 +110,10 @@ intersectSorted xs ys = reverse (go xs ys []) where
         | a < b = go as (b:bs) x
         | otherwise = go as bs (a:x)
 
+-- | union for elements in Ord (the lists need not be ordered, but the result will be)
+unionSort :: (Ord a) => [[a]] -> [a]
+unionSort = map head . group . sort . concat
+
 
 -- | replace elements of xs at given positions by ys
 replaceAt :: [Int] -> [a] -> [a] -> [a]
@@ -116,6 +122,11 @@ replaceAt pos ys xs = zipWith f [0..] xs where
     f k x = case g k of
         Just y -> y
         Nothing -> x
+
+
+-- | select elements in a list at given positions
+selectPos :: (Num a, Enum a) => [a] -> [b] -> [b]
+selectPos is = map snd . filter (flip elem is . fst) . zip [0 ..]
 
 
 -- | specialized @(^2)@
@@ -167,35 +178,12 @@ unliftVector f = toList . f . fromList
 unliftRow :: Element a => (Matrix a -> Matrix a) -> (Vector a -> Vector a)
 unliftRow f = flatten . f . asRow
 
-{- | PedroE's algorithm. For example, with @dist x y = abs (x-y)@ we have:
 
-@> robustLocation dist [1,2,3,11,12,13,14,15::Double]
-[(1.0,0.0),(1.0,1.0),(2.0,1.0),(12.0,2.0),(13.0,2.0),(11.0,8.0),(11.0,9.0),(11.0,10.0)]@
 
--}
-robustLocation :: Ord b => (a -> a -> b) -> [a] -> [(a,b)]
-robustLocation dis l = mins where
-    mins = map (minimumBy (compare `on` snd)) dst
-    dst = transpose ds
-    ds = map getdis l
-    getdis p = sortBy (compare `on` snd) [(p, dis p y) | y<-l]
 
--- correlation coefficients from a covariance matrix
-correlation :: Mat -> Mat
-correlation c = c / outer s s where
-    s = sqrt (takeDiag c)
+-- | Obtains a vector in the same direction with 2-norm=1
+unitary :: Vec -> Vec
+unitary v = v / scalar (norm v)
 
--- | Minimum squared error solution of a (possibly overconstrained) homogeneous linear system.
---   (We assume that the solution is 1D).
-homogSolve :: Mat            -- ^ coefficient matrix
-           -> (Vec, Double) -- ^ (Solution, error)
-homogSolve coeffs = (sol,err) where
-    r = rows coeffs
-    c = cols coeffs
-    rs@(r1:_) = toRows coeffs
-    m | r >= c   = coeffs
-      | r == c-1 = fromRows (r1 : rs)
-      | otherwise = error "homogSolve with rows<cols-1"
-    (s,v) = rightSV m
-    sol = flatten $ dropColumns (c-1) v
-    err = s @> (c-1)
+
+

@@ -17,7 +17,7 @@ import Vision.SparseRep
 import Util.Sparse
 import Data.Function(on)
 import Data.Maybe(fromJust)
-import Util.Misc(debug,norm,arrayOf,replaceAt,myintersect,round',sqr,Mat,Vec)
+import Util.Misc(debug,norm,arrayOf,replaceAt,myintersect',round',sqr,Mat,Vec)
 
 
 -- | global epipolar adjustment using all views (default parameters)
@@ -38,11 +38,11 @@ geaG :: Double -- ^ delta
      -> SparseVP -- ^ problem
      -> (SparseVP, String) -- ^ solution and info
 geaG delta maxIt lambda used free s = (newSol sol, info) where
-    (sol, errs) = optimize 0 delta maxIt update fcost vsol
+    (sol, errs) = optimize 0 delta maxIt update _fcost vsol
     update = newtonStep lambda mods
     (mods,vsol,newSol,_fcost) = prepareEpipolarSelect used free s
     info = "epipolar errors: " ++ show (map round' errs)
-    fcost solu = 1E2 * (snd $ sGError (recompPts $ newSol solu))
+--    fcost solu = 1E2 * (snd $ sGError (recompPts $ newSol solu))
 
 -- | one optimization step (constant lambda)
 newtonStep :: Double -> (Vec -> (SMat, SMat)) -> Vec -> Vec
@@ -132,7 +132,7 @@ recompPtsSel s sel = s { sPts = replaceAt vis newps (sPts s) } where
     vis = ptsVisibleBy s sel
     newps = map (fromList.(++[1]).f) vis
     f p = triangulate1 cs ps where
-        (cs,ps) = unzip $ map g (reverse (v_of_p s p) `myintersect` (reverse (sort sel)))
+        (cs,ps) = unzip $ map g (reverse (v_of_p s p) `myintersect'` (reverse (sort sel)))
             where g k = (c k, ako' (p,k))
 
 -- | reconstruct selected views
@@ -144,5 +144,5 @@ recompCamsSel s sel desi = s { sCam = replaceAt desi newcs (sCam s') } where
     selpts = ptsVisibleBy s' sel
     newcs = map f desi
     f v = snd $ sepCam $ estimateCamera img world where
-        (world,img) = unzip $ map g (p_of_v s' v `myintersect` selpts)
+        (world,img) = unzip $ map g (p_of_v s' v `myintersect'` selpts)
             where g k = ((init.toList) (p k), ako' (k,v))

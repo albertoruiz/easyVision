@@ -42,7 +42,8 @@ import Foreign
 import Debug.Trace
 import Data.List(maximumBy, zipWith4, sort)
 import Numeric.LinearAlgebra
-import Vision.Geometry
+import Util.Homogeneous
+import Util.Rotation
 
 debug x = trace (show x) x
 

@@ -1,4 +1,6 @@
-cd patrec
+cd util
+cabal clean
+cd ../patrec
 cabal clean
 cd ../vision
 cabal clean

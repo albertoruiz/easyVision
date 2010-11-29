@@ -50,6 +50,8 @@ import Numeric.LinearAlgebra
 import Classifier.Base(group)
 import Data.IORef
 import Vision
+import Util.Misc(degree)
+import Util.Rotation
 import Numeric.GSL.Minimization
 import EasyVision.MiniApps.Combinators
 import EasyVision.MiniApps.Concurrent

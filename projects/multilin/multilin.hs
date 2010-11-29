@@ -10,7 +10,7 @@ import Graphics.Plot
 import System.Random
 import Debug.Trace
 import Vision
-import Vision.Multiview
+import Vision.Tensorial
 import System.Process
 import System.Environment
 import Data.List
@@ -30,7 +30,7 @@ import System.CPUTime
 --import Data.Maybe
 import Foreign(unsafePerformIO)
 import System.IO
-import Util.Misc(splitEvery,median)
+import Util.Misc(splitEvery,median,degree)
 
 
 
