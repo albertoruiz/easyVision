@@ -5,6 +5,7 @@ import Util.Stat
 import Classifier.Regression(msError)
 import Util.ICA
 import Util.Misc(debug)
+import Util.Gaussian(mixturePDF,findMixture)
 
 import Numeric.LinearAlgebra
 import EasyVision hiding (debug, whitener)
@@ -52,8 +53,9 @@ democlas x = do
          >> scwm "D Mah" p (distance mahalanobis)
          >> scwm "Gaussian" p (bayes gaussian)
          >> scwme "Gaussian, 3db" 3 p (bayes gaussian)
-         >> scwm "Naive Gaussian" p (distance naiveGaussian)
-
+         >> scwm "Naive Gaussian" p (bayes naiveGaussian)
+         >> scwme "Gaussian Mixture, 15db" 15 p (bayes gmm)
+         
 ---------------------------------------------------------------------------
 -- check PCA reconstruction quality measured in sigma units
 

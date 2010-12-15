@@ -24,7 +24,9 @@ laSBA' prjs pts cams kal = unsafePerformIO $ do
    saveQCams fc cams
    saveRawTracks fp (pts,prjs)
    saveMatrix fk "%f" kal
+   putStr "\^[[2m"
    _ <- system $ "lasba "++unwords [fc,fp,fk,rc,rp] ++" 2> /dev/null" -- ++ " > /dev/null"
+   putStr "\^[[0m"
    refcams <- loadQCams rc
    refpts <- loadMatrix rp
    hClose h

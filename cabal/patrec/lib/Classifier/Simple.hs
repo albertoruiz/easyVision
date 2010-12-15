@@ -18,7 +18,7 @@ module Classifier.Simple (
      Distance, distance,
      euclidean, mahalanobis,
      Likelihood, bayes,
-     gaussian,
+     gaussian, gmm,
      naiveGaussian, naive01, ferns,
      nearestNeighbour, subspace,
      robustLoc,
@@ -33,6 +33,7 @@ import Util.Probability(weighted)
 import Data.List(sort, transpose)
 import qualified Data.Map as M
 import Util.Stat
+import Util.Gaussian(mixturePDF,findMixture)
 import Util.Estimation(robustLocation)
 import Util.Misc(norm,(&),(//),(#),sqr,Vec)
 import Data.Maybe(fromMaybe)
@@ -94,6 +95,13 @@ gaussian vs = f where
     Stat {meanVector = m, invCov = ic} = stat (fromRows vs)
     k = -log (sqrt (abs( det ic)))
     f x = k + 0.5*((x-m) <> ic <.> (x-m))
+
+-- | gaussian mixture -log likelihood. The number of componentes
+-- is selected using the MDL criterion.
+gmm :: Likelihood Vec
+gmm xs = negate . log . mixturePDF mix
+  where mix = findMixture (fromRows xs)
+
 
 -- | Distance to the mean value of the population.
 euclidean :: Distance Vec

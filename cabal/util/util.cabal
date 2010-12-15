@@ -37,6 +37,7 @@ library
                         Util.Sparse
                         Util.ICA
                         Util.Stat
+                        Util.Gaussian
 
     other-modules:
 

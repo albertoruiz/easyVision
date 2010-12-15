@@ -40,12 +40,10 @@ import ImagProc.Ipp.Core
 import Foreign.C.Types(CUChar)
 import Foreign
 import Debug.Trace
-import Data.List(maximumBy, zipWith4, sort)
+import Data.List(maximumBy, zipWith4, sort,foldl')
 import Numeric.LinearAlgebra
 import Util.Homogeneous
 import Util.Rotation
-
-debug x = trace (show x) x
 
 data Polyline = Closed { polyPts :: [Point] }
               | Open   { polyPts :: [Point] }
@@ -253,7 +251,7 @@ auxSolid (s,sx,sy,sx2,sy2,sxy) seg@(Segment (Point x1 y1) (Point x2 y2))
        sxy + ((x1*y2-x2*y1)*(x1*(2*y1+y2)+x2*(y1+2*y2)))/24)
 
 moments2Gen method l = (mx,my,cxx,cyy,cxy)
-    where (s,sx,sy,sx2,sy2,sxy) = (foldl method (0,0,0,0,0,0). asSegments . Closed) l
+    where (s,sx,sy,sx2,sy2,sxy) = (foldl' method (0,0,0,0,0,0). asSegments . Closed) l
           mx = sx/s
           my = sy/s
           cxx = sx2/s - mx*mx
@@ -273,11 +271,13 @@ momentsBoundary = moments2Gen auxContour
 -- | Structure of a 2x2 covariance matrix
 eig2x2Dir :: (Double,Double,Double) -- ^ (cxx,cyy,cxy)
           -> (Double,Double,Double) -- ^ (v1,v2,angle), the eigenvalues of cov (v1>v2), and angle of dominant eigenvector
-eig2x2Dir (cxx,cyy,cxy) = (l1,l2,a)
-    where ra = sqrt(cxx*cxx + 4*cxy*cxy -2*cxx*cyy + cyy*cyy)
+eig2x2Dir (cxx,cyy,cxy) = (l1,l2,a')
+    where ra = sqrt(abs $ cxx*cxx + 4*cxy*cxy -2*cxx*cyy + cyy*cyy)
           l1 = 0.5*(cxx+cyy+ra)
           l2 = 0.5*(cxx+cyy-ra)
           a = atan2 (2*cxy) ((cxx-cyy+ra))
+          a' | abs cxy < eps && cyy > cxx = pi/2
+             | otherwise = a
 
 -- | Equalizes the eigenvalues of the covariance matrix of a continuous piecewise-linear contour. It preserves the general scale, position and orientation.
 whitenContour :: Polyline -> Polyline
