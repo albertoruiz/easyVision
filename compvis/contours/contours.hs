@@ -21,6 +21,9 @@ import Data.Array
 import ImagProc.Ipp.Core
 import Debug.Trace
 
+import Util.Misc(degree)
+import Util.Rotation(rot3)
+
 --debug x = trace (show x) x
 
 ------------------------------------------------------------
@@ -49,7 +52,7 @@ alignedTo w (f,hp,p) (g,hc,c) = htp h p
     where (a,_) = bestRotation w f g
           h = inv hc <> rot3 (-a) <> hp
 
-feat' = memo . normalizeStart . fourierPL . whitenContour
+feat' = memo . normalizeStart . fourierPL . equalizeContour
 
 feat c = (f,h,c) where
     f = memo . normalizeStart . fourierPL $ wc
@@ -127,7 +130,7 @@ worker cam param inWindow (prots',mbp) = do
         rawconts = contours 100 pixarea th2 (toEnum white) im
         proc = Closed . pixelsToPoints (size orig).douglasPeuckerClosed fracpix.fst3
         cs = map proc $ rawconts
-        wcs = map whitenContour cs
+        wcs = map equalizeContour cs
 
         --fcs = map (filterSpectral comps 100) cs
         --selc = map (Closed . map c2p . spectralComponent comps 100) wcs
@@ -210,7 +213,7 @@ spectralComponent w n cont = r where
 -- affine :: Int -> Polyline -> Polyline
 affine w (Closed c) = aps where
     (mx0,my0,_,_,_) = momentsContour c
-    Closed wps = whitenContour (Closed c)
+    Closed wps = equalizeContour (Closed c)
     fou = fourierPL (Closed wps)
     --a = (phase (fou (-w)) + phase (fou w)) / 2
     a = goodDir fou

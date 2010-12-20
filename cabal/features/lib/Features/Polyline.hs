@@ -18,9 +18,12 @@ module Features.Polyline (
     Polyline(..),
     perimeter,
     orientation,
-    whitenContour, whitener,
+    whitenContour, whitener, equalizeContour,
     fourierPL,
     norm2Cont,
+-- * K orientation
+    icaAngles,
+    kurtCoefs, kurtAlpha, kurtosisX,   
 -- * Reduction
     douglasPeucker, douglasPeuckerClosed,
     selectPolygons,
@@ -30,7 +33,7 @@ module Features.Polyline (
     contourAt,
 -- * Auxiliary tools
     momentsContour, momentsBoundary,
-    eig2x2Dir, asSegments, longestSegments
+    eig2x2Dir, asSegments, longestSegments, transPol,
 )
 where
 
@@ -40,10 +43,12 @@ import ImagProc.Ipp.Core
 import Foreign.C.Types(CUChar)
 import Foreign
 import Debug.Trace
-import Data.List(maximumBy, zipWith4, sort,foldl')
+import Data.List(sortBy, maximumBy, zipWith4, sort,foldl')
 import Numeric.LinearAlgebra
 import Util.Homogeneous
 import Util.Rotation
+import Util.Misc(degree)
+import Numeric.GSL.Polynomials(polySolve)
 
 data Polyline = Closed { polyPts :: [Point] }
               | Open   { polyPts :: [Point] }
@@ -280,22 +285,25 @@ eig2x2Dir (cxx,cyy,cxy) = (l1,l2,a')
              | otherwise = a
 
 -- | Equalizes the eigenvalues of the covariance matrix of a continuous piecewise-linear contour. It preserves the general scale, position and orientation.
-whitenContour :: Polyline -> Polyline
-whitenContour (Closed ps) = Closed wps where
+equalizeContour :: Polyline -> Polyline
+equalizeContour c@(Closed ps) = transPol t c where
     (mx,my,cxx,cyy,cxy) = momentsContour ps
     (l1,l2,a) = eig2x2Dir (cxx,cyy,cxy)
     t = desp (mx,my) <> rot3 (-a) <> diag (fromList [sqrt (l2/l1),1,1]) <> rot3 (a) <> desp (-mx,-my)
-    p2l (Point x y) = [x,y]
-    l2p [x,y] = Point x y
-    wps = map l2p $ ht t (map p2l ps)
-
 
 -- | Finds a transformation that equalizes the eigenvalues of the covariance matrix of a continuous piecewise-linear contour. It is affine invariant modulo rotation.
 whitener :: Polyline -> Matrix Double
 whitener (Closed ps) = t where
     (mx,my,cxx,cyy,cxy) = momentsContour ps
     (l1,l2,a) = eig2x2Dir (cxx,cyy,cxy)
-    t = rot3 (-a) <> diag (fromList [1/sqrt l1,1/sqrt l2,1]) <> rot3 (a) <> desp (-mx,-my)
+    t = diag (fromList [1/sqrt l1,1/sqrt l2,1]) <> rot3 (a) <> desp (-mx,-my)
+
+whitenContour t = transPol w t where w = whitener t
+
+transPol t (Closed ps) = Closed $ map l2p $ ht t (map p2l ps)
+
+p2l (Point x y) = [x,y]
+l2p [x,y] = Point x y
 
 ----------------------------------------------------------
 
@@ -378,3 +386,193 @@ tryPolygon eps n poly = if abs((a1-a2)/a1) < eps then [r] else []
           a2 = orientation r
 
 selectPolygons eps n = concat . map (tryPolygon eps n)
+
+----------------------------------------------------------------------
+
+auxKurt k seg@(Segment (Point x1 y1) (Point x2 y2)) =
+     k + (x1**4*x2*(y1 - y2) + 
+          x1**3*x2**2*
+           (y1 - y2) + 
+          x1**2*x2**3*
+           (y1 - y2) + 
+          x1*x2**4*
+           (y1 - y2) - 
+          x1**5*(2*y1 + y2) + 
+          x2**5*(y1 + 2*y2))
+       / 30
+
+kurtosisX p = foldl' auxKurt 0 (asSegments p) 
+
+----------------------------------------------------------------------
+
+kC 0 seg@(Segment (Point x1 y1) (Point x2 y2)) =
+    ((2*x1 + x2)*y1**5 + 
+    (-x1 + x2)*y1**4*y2 + 
+    (-x1 + x2)*y1**3*y2**2 + 
+    (-x1 + x2)*y1**2*y2**3 + 
+    (-x1 + x2)*y1*y2**4 - 
+    (x1 + 2*x2)*y2**5)/30
+
+kC 1 seg@(Segment (Point x1 y1) (Point x2 y2)) =
+   (-2*y1**6 + 2*y2**6 + 
+    x1**2*(y1 - y2)*
+     (10*y1**3 + 
+       6*y1**2*y2 + 
+       3*y1*y2**2 + 
+       y2**3) + 
+    x2**2*(y1 - y2)*
+     (y1**3 + 
+       3*y1**2*y2 + 
+       6*y1*y2**2 + 
+       10*y2**3) + 
+    2*x1*x2*
+     (2*y1**4 + 
+       y1**3*y2 - 
+       y1*y2**3 - 
+       2*y2**4))/30
+
+kC 2 seg@(Segment (Point x1 y1) (Point x2 y2)) =
+    (y1**3*
+     (20*x1**3 + 
+       6*x1**2*x2 + 
+       3*x1*x2**2 + 
+       x2**3 - 
+       10*x1*y1**2 + 
+       x2*y1**2) - 
+    (x1 - x2)*y1**2*
+     (6*x1**2 + 
+       6*x1*x2 + 
+       3*x2**2 + y1**2)*
+     y2 - 
+    (x1 - x2)*y1*
+     (3*x1**2 + 
+       6*x1*x2 + 
+       6*x2**2 + y1**2)*
+     y2**2 - 
+    (x1**3 + 
+       3*x1**2*x2 + 
+       6*x1*x2**2 + 
+       20*x2**3 + 
+       (x1 - x2)*y1**2)*
+     y2**3 + 
+    (-x1 + x2)*y1*
+     y2**4 - 
+    (x1 - 10*x2)*y2**5)/30
+
+kC 3 seg@(Segment (Point x1 y1) (Point x2 y2)) = 
+    (2*x1**3*x2*(y1 - y2)*
+     (2*y1 + y2) + 
+    x1**4*
+     (20*y1**2 - 
+       4*y1*y2 - y2**2)
+     + x1**2*
+     (3*x2**2*y1**2 - 
+       20*y1**4 - 
+       4*y1**3*y2 - 
+       3*
+        (x2**2 + y1**2)*
+        y2**2 - 
+       2*y1*y2**3 - 
+       y2**4) + 
+    x2**2*
+     (y1**4 + 
+       2*y1**3*y2 + 
+       3*y1**2*y2**2 + 
+       4*y1*y2**3 + 
+       20*y2**4 + 
+       x2**2*
+        (y1**2 + 
+          4*y1*y2 - 
+          20*y2**2)) + 
+    2*x1*x2*(y1 - y2)*
+     (x2**2*
+        (y1 + 2*y2) + 
+       (y1 + y2)*
+        (2*y1**2 + 
+          y1*y2 + 
+          2*y2**2)))/30 
+   
+kC 4 seg@(Segment (Point x1 y1) (Point x2 y2)) =    
+   (x1**4*x2*(y1 - y2) + 
+    x1**5*
+     (10*y1 - y2) + 
+    x1**2*x2*(y1 - y2)*
+     (x2**2 + 6*y1**2 + 
+       6*y1*y2 + 3*y2**2
+       ) + 
+    x1*x2**2*(y1 - y2)*
+     (x2**2 + 3*y1**2 + 
+       6*y1*y2 + 6*y2**2
+       ) + 
+    x1**3*
+     (x2**2*y1 - 
+       20*y1**3 - 
+       x2**2*y2 - 
+       6*y1**2*y2 - 
+       3*y1*y2**2 - 
+       y2**3) + 
+    x2**3*
+     (y1**3 + 
+       x2**2*
+        (y1 - 10*y2) + 
+       3*y1**2*y2 + 
+       6*y1*y2**2 + 
+       20*y2**3))/30
+
+kC 5 seg@(Segment (Point x1 y1) (Point x2 y2)) =
+    (2*x1**6 + 
+    2*x1**3*x2*
+     (y1 - y2)*
+     (2*y1 + y2) + 
+    2*x1*x2**3*
+     (y1 - y2)*
+     (y1 + 2*y2) + 
+    3*x1**2*x2**2*
+     (y1**2 - y2**2) - 
+    x1**4*
+     (10*y1**2 + 
+       4*y1*y2 + y2**2)
+     + x2**4*
+     (-2*x2**2 + 
+       y1**2 + 
+       4*y1*y2 + 
+       10*y2**2))/30
+
+kC 6 seg@(Segment (Point x1 y1) (Point x2 y2)) =
+    (x1**4*x2*(y1 - y2) + 
+    x1**3*x2**2*
+     (y1 - y2) + 
+    x1**2*x2**3*
+     (y1 - y2) + 
+    x1*x2**4*
+     (y1 - y2) - 
+    x1**5*(2*y1 + y2) + 
+    x2**5*(y1 + 2*y2))/30
+
+kurtCoefs p = foldl' f (repeat 0) (asSegments p)
+  where
+    f cs seg = zipWith (+) cs (map g [0..6])
+      where
+        g k = kC k seg
+
+cs alpha = [cos alpha ^ k * sin alpha ^ (6-k) | k <- [0..6 :: Int]]
+
+kurtAlpha coefs alpha = sum $ zipWith (*) coefs (cs alpha)
+
+derivCoefs [c0,c1,c2,c3,c4,c5,c6] =
+    [       -c1
+    , 6*c0-2*c2
+    , 5*c1-3*c3
+    , 4*c2-4*c4
+    , 3*c3-5*c5
+    , 2*c4-6*c6
+    ,   c5      ]
+
+icaAngles w = sortBy (compare `on` (negate.kur)) angs
+  where
+    angs = map realPart . filter ((<(0.1*degree)).abs.imagPart) . map (atan.recip) . polySolve . derivCoefs $ coefs
+    coefs = kurtCoefs w
+    kur = kurtAlpha coefs
+
+----------------------------------------------------------------------
+

@@ -184,11 +184,26 @@ unliftRow :: Element a => (Matrix a -> Matrix a) -> (Vector a -> Vector a)
 unliftRow f = flatten . f . asRow
 
 
-
-
 -- | Obtains a vector in the same direction with 2-norm=1
 unitary :: Vec -> Vec
 unitary v = v / scalar (norm v)
 
+-- | Matrix of pairwise squared distances of row vectors
+-- (using the matrix product trick in blog.smola.org)
+pairwiseD2 :: Mat -> Mat -> Mat
+pairwiseD2 x y | ok = x2 `outer` oy + ox `outer` y2 - 2* x <> trans y
+               | otherwise = error $ "pairwiseD2 with different number of columns: "
+                                   ++ show (size x) ++ ", " ++ show (size y)
+  where
+    ox = ones (rows x)
+    oy = ones (rows y)
+    oc = ones (cols x)
+    ones k = constant 1 k
+    x2 = sqr x <> oc
+    y2 = sqr y <> oc
+    ok = cols x == cols y
+
+size :: Matrix t -> (Int, Int)
+size m = (rows m, cols m)
 
 

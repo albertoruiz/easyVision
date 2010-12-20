@@ -1,5 +1,5 @@
--- affine alignment of contours
--- ./contours tv://
+-- capturamos el centro de la mancha
+------------------------------------
 
 import EasyVision
 import Graphics.UI.GLUT hiding (RGB,Size,minmax,histogram,Point,normalize)
@@ -22,6 +22,8 @@ import ImagProc.Ipp.Core
 import Debug.Trace
 import Util.Misc(pairsWith)
 import GHC.Float(double2Float)
+import Control.Monad(when)
+import System.Time
 
 ----------------------------------------------------------
 
@@ -103,7 +105,9 @@ main = do
 
     (cam, ctrl)  <- getCam 0 sz >>= withPause
 
-    state <- prepare' ()
+    prepare
+
+    mon <- signalMonitor "signals" 100 300 (const "") (-1,1)
 
     o <- createParameters [
         ("umbral2",intParam 128 1 255),
@@ -118,13 +122,14 @@ main = do
         ("selected",intParam 0 0 10)
      ]
 
-    addWindow "contours" sz Nothing (const (kbdcam ctrl)) state
+    t0 <- getClockTime
+    wind <- evWindow (False,t0) "contours" sz Nothing  (mouse (kbdcam ctrl))
 
-    launch' state (worker cam o)
+    launch (worker mon wind cam o)
 
 -----------------------------------------------------------------
 
-worker cam param inWindow _ = do
+worker mon wind cam param = do
 
 
     th2' <- getParam param "umbral2" ::IO Int
@@ -132,7 +137,7 @@ worker cam param inWindow _ = do
     smooth2 <- getParam param "smooth2" :: IO Int
     area <- getParam param "area"
     fracpix <- getParam param "fracpix"
-    comps <- getParam param "comps"
+    comps <- getParam param "comps" :: IO Int
     white <- getParam param "white"
     showFou <- getParam param "showFou" :: IO Int
 --    eps <- getParam param "eps"
@@ -146,26 +151,34 @@ worker cam param inWindow _ = do
         pixarea = h*w*area`div`1000
         rawconts = contours 100 pixarea th2 (toEnum white) im
         proc = Closed . pixelsToPoints (size orig).douglasPeuckerClosed fracpix.fst3
-        cs = map proc $ rawconts
-        wcs = map equalizeContour cs
-        fwcs = map fourierPL wcs
-        pos = map (c2p .($0)) fwcs
-        r21 = map g fwcs where g f = printf "%.2f" (magnitude (f 2) / magnitude (f 1))
-        nfs = concatMap normalize fwcs
+        cs = biggest . map proc $ rawconts
+        centers = map center cs
+--         wcs = map whitenContour cs
+--         fwcs = map fourierPL wcs
+--         pos = map (c2p .($0)) fwcs
+--         r21 = map g fwcs where g f = printf "%.2f" (magnitude (f 2) / magnitude (f 1))
+--         nfs = concatMap normalize fwcs
 
-    inWindow "contours" $ do
+    inWin wind $ do
+             (p,_) <- getW wind
              drawImage orig
              pointCoordinates (size im)
-             lineWidth $= 1
+             lineWidth $= 3
              setColor 1 1 0
-             mapM_ (shcont. invFou 50 comps) nfs
+             mapM_ shcont cs
+             when p $ mapM_ shCen2 centers >> setColor 1 0 0
+             mapM_ (text2D 0.8 0.5 .shCen) centers
+             pointSize $= 5
+             renderPrimitive Points (mapM_ vertex centers)
+             mapM_ mon centers
+{-             mapM_ (shcont. invFou 50 comps) nfs
              lineWidth $= 2
              setColor 0 0 1
              if (showFou==0) 
                 then mapM_ (shcont) cs
                 else mapM_ (shcont. invFou 50 comps . fourierPL) cs
              setColor 1 0 1
-             sequence_ $ zipWith textP pos r21
+             sequence_ $ zipWith textP pos r21-}
     return ()
 
 
@@ -190,3 +203,24 @@ invFou n w fou = Closed r where
 rot r f = g where g 0 = f 0
                   g w = cis (r) * f w
 
+biggest = take 1 . sortBy (compare `on` (negate.area))
+    where area c = abs (orientation c)
+
+center (Closed c) = [cx,cy] where
+    (cx,cy,_,_,_) = momentsContour c
+
+shCen [cx,cy] = printf "x=%7.3f  y=%7.3f" cx cy
+shCen2 [cx,cy] = printf "%7.3f     %7.3f\n" cx cy
+
+
+mouse _ st (MouseButton LeftButton) Down _ _ = do
+    tnew <- getClockTime
+    (click,told) <- get st
+    let td = timeDiffToString (diffClockTimes tnew told)
+    -- ++ show (diffClockTimes tnew told)
+    if not click
+        then putStr ("\nTime= 0") >> putStr "\n\n"
+        else putStr ("\nTime= " ++ td) >> putStr "\n\n"
+    st $= (not click, tnew)
+    return ()
+mouse def _ a b c d = def a b c d
