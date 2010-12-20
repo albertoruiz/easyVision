@@ -1,14 +1,14 @@
-Tested with IPP 5.3 on Ubuntu 9.10 x86
---------------------------------------
+Tested with IPP 5.3 on Ubuntu 9.10, 10.10 x86
+---------------------------------------------
 
-Install ghc and cabal-install following the instructions at:
+1. Install the Haskell Platform (we need ghc and cabal-install).
 
-http://code.haskell.org/hmatrix/ghc.html
-
-Add to .bahsrc
+2. Add to .bahsrc
 
 export IPP=/path/to/your/ipp/path/ia32/
 export LD_LIBRARY_PATH=$IPP/sharedlib
+
+3. Optional:
 
 $ wget http://perception.inf.um.es/~aruiz/CUDA.tar.gz
 
@@ -16,13 +16,24 @@ extract it to /path/to/CUDA and add to .bashrc
 
 export CUDA=/path/to/CUDA
 
-In a new terminal:
+4. In a new terminal:
 
 $ sudo apt-get install libgsl0-dev liblapack-dev
 $ sudo apt-get install libghc6-glut-dev
-$ sudo apt-get install nvidia-cg-toolkit libglew1.5-dev libdevil-dev g++
+
 $ sudo apt-get install mplayer
 $ sudo apt-get install darcs
+
+5. Optional:
+
+CUDA:
+$ sudo apt-get install nvidia-cg-toolkit libglew1.5-dev libdevil-dev g++
+
+OPENCV:
+$ sudo apt-get install libcv-dev libcvaux-dev libhighgui-dev
+(you may need to modify extra-lib-dirs in opencv.cabal)
+
+6. Install the packages:
 
 $ cabal update
 $ cd workdir
@@ -30,7 +41,14 @@ $ darcs get http://perception.inf.um.es/~aruiz/darcs/easyVision
 $ cd easyVision/cabal
 $ sh reinstall.sh
 
-Add to .bashrc the path to the working directory which contains
+7. Add to .bashrc the path to the working directory which contains
 the system-wide default mplayer command shortcuts "cameras.def"
 
 export EASYVISION=/path/to/workdir/
+
+8. If your Haskell GLUT package is > 2.1.1.2 you may need to hide it:
+
+$ sudo ghc-pkg hide GLUT-2.1.2.1
+
+(to be fixed)
+

@@ -38,6 +38,7 @@ library
     extra-libraries: ml cvaux highgui cv cxcore
     
     include-dirs: /usr/local/include/opencv
+    --include-dirs: /usr/include/opencv
 
     extra-lib-dirs: /usr/local/lib
 
