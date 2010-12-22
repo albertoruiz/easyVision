@@ -33,7 +33,7 @@ import Util.Probability(weighted)
 import Data.List(sort, transpose)
 import qualified Data.Map as M
 import Util.Stat
-import Util.Gaussian(mixturePDF,findMixture)
+import Util.Gaussian(mixturePDF,findMixture,gaussianLogLik, Gaussian(..))
 import Util.Estimation(robustLocation)
 import Util.Misc(norm,(&),(//),(#),sqr,Vec)
 import Data.Maybe(fromMaybe)
@@ -92,9 +92,8 @@ mahalanobis vs = f where
 -- | gaussian -log likelihood (mahalanobis + 1\/2 log sqrt det cov)
 gaussian :: Likelihood Vec
 gaussian vs = f where
-    Stat {meanVector = m, invCov = ic} = stat (fromRows vs)
-    k = -log (sqrt (abs( det ic)))
-    f x = k + 0.5*((x-m) <> ic <.> (x-m))
+    Stat {meanVector = m, covarianceMatrix = c} = stat (fromRows vs)
+    f = negate . gaussianLogLik (N m c)
 
 -- | gaussian mixture -log likelihood. The number of componentes
 -- is selected using the MDL criterion.
@@ -210,3 +209,4 @@ dicodist :: Distance Vec -> Dicotomizer
 dicodist d (g1,g2) = f where
     [d1,d2] = map d [g1,g2]
     f x = d2 x - d1 x
+

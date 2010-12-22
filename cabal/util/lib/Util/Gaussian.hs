@@ -17,7 +17,7 @@ EM estimation for mixtures of gaussians.
 module Util.Gaussian (
    -- * Single gaussian
    Gaussian(..),
-   gaussianPDF,
+   gaussianLogLik,
    marginal,
    conditional,
    jointLinear,
@@ -32,7 +32,7 @@ module Util.Gaussian (
 ) where
 
 import Numeric.LinearAlgebra
-import Util.Misc(mat,Mat,Vec,debug,Seed)
+import Util.Misc(mat,Mat,Vec,Seed)
 import Control.Arrow((***))
 import Data.List(sortBy)
 import Data.Function(on)
@@ -79,7 +79,6 @@ jointLinear (N m c) h (N o r) = N m' c'
                     ,[ trans cxy, cyy ]]
 
 -- direct, alternative method
-
 bayesGaussianLinear :: Vec -> Gaussian -> Mat -> Gaussian -> Gaussian
 bayesGaussianLinear y (N m c) h (N o r) = N m' c'
   where
@@ -98,15 +97,16 @@ bayesGaussianLinearK y (N m c) h (N o r) = N m' c'
 
 ----------------------------------------------------------------------
 
-gaussianPDF :: Gaussian -> Vec -> Double
-gaussianPDF (N m c) = f
+-- | gaussian pdf = exp . gaussianLogLik g
+gaussianLogLik :: Gaussian -> Vec -> Double
+gaussianLogLik (N m c) = f
   where
-    f z = k * exp (-0.5 * dM2 z)
+    (ic,(lad,_)) = invlndet c
+    k = fromIntegral (dim m) * log (2*pi) + lad
+    f z = -0.5*(k+dM2 z)
       where
         dM2 x = xm <.> (ic <> xm)
           where xm = x - m
-        ic = inv c
-        k = recip $ 2*pi ** (fromIntegral (dim m) / 2) * sqrt (det c)
 
 ----------------------------------------------------------------------
 
@@ -124,7 +124,7 @@ eStep :: Mat -> (Mixture,Double) -> (Mat,Double)
 eStep dat (mix,_) = (probs,loglik)
   where
     xs = toRows dat
-    fs = map (\(w,g)-> ((*w).gaussianPDF g)) mix
+    fs = map (\(w,g)-> ((*w). exp . gaussianLogLik g)) mix
     liks = mat [ [ f x | f <- fs ] | x <- xs ]
     sumRows = liks <> constant 1 (cols liks)
     probs = liks / asColumn sumRows
@@ -150,11 +150,12 @@ mStep dat (probs,l) = (mix,l)
                     t = trans (xc * p) <> xc
 
 em :: Mat -> Mixture -> (Mixture,Double)
-em dat mix = fst $ debug "EM lik" snd $ (mStep dat *** id)
-                                      $ optimize 0 0.1 20 
-                                        (eStep dat . mStep dat)
-                                        (negate.snd)
-                                        (eStep dat (mix,undefined))
+em dat mix = fst $ -- debug "EM lik" snd $
+    (mStep dat *** id) $
+    optimize 0 0.1 20 
+    (eStep dat . mStep dat)
+    (negate.snd)
+    (eStep dat (mix,undefined))
 
 ----------------------------------------------------------------------
 
@@ -200,5 +201,7 @@ findMixture dat = fst $ ms!!k
 
 mixturePDF :: Mixture -> Vec -> Double
 mixturePDF mix = f
-  where f x = sum [ w * gaussianPDF g x | (w,g) <- mix ] 
+  where
+    gs = [ (w*) . exp . gaussianLogLik g | (w,g) <- mix ]
+    f x = sum (map ($x) gs)
 
