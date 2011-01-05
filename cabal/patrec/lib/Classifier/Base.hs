@@ -22,7 +22,8 @@ module Classifier.Base (
 -- * Binary discriminants
      Feature, TwoGroups, Dicotomizer, -- multiclass,
 -- * Utilities
-     group, ungroup, addNoise, selectClasses, splitProportion, loadExamples,
+     group, ungroup, vectorLabels, softMax, loglik2prob,
+     addNoise, selectClasses, splitProportion, loadExamples,
      InfoLabels(..),
 ) where
 
@@ -30,8 +31,8 @@ import Numeric.LinearAlgebra
 import qualified Data.List as L
 import qualified Data.Map as Map
 import Data.Array
-import Util.Misc(Vec,Seed,round')
-import Util.Probability(Prob,mode,evidence)
+import Util.Misc(vec,Vec,Seed,round')
+import Util.Probability(Prob,mode,evidence,weighted)
 import Text.Printf(printf)
 
 
@@ -110,7 +111,21 @@ ungroup gs = s where
     s = concat $ zipWith f gs lbs
     f g lb = zip g (repeat lb)
 
+-- | replace string classes by positional codification
+vectorLabels :: Sample a -> [(a, Vec)]
+vectorLabels s = x where
+    lbs = snd (group s)
+    nc = length (labels lbs)
+    des k c = vec $ replicate (k-1) (-1) ++ [1] ++ replicate (c-k) (-1)
+    x = [(v, des (1+getIndex lbs l) nc) | (v,l) <- s]
 
+softMax :: Vec -> Vec
+softMax v = u / scalar (sumElements u)
+  where u = exp v
+
+-- | softMax with label info
+loglik2prob :: InfoLabels -> [Double] -> Prob Label
+loglik2prob lbs fs = weighted $ zip (labels lbs) (map exp fs)
 
 -- | read the examples from an ASCII file.
 -- Each example in a row, the last number should be an integer class code.
@@ -130,6 +145,7 @@ errorRate :: Sample a -> (a -> Label) -> Double
 errorRate exs c = fromIntegral ok / fromIntegral (length exs) where
     ok = length [() | (v,l)<-exs, l /= c v]
 
+{-
 -- | Computes the confusion matrix of a classifier on a sample
 confusion' ::Sample a -> (a -> Label) -> Matrix Double
 confusion' exs c = confusionMatrix where
@@ -140,7 +156,7 @@ confusion' exs c = confusionMatrix where
     nc = length (labels lbs)
     confusionMatrix = fromArray2D $
         accumArray (+) (0::Double) ((0::Int,0::Int),(nc-1,nc-1)) (zip te [1,1 ..])
-
+-}
 
 -- | Computes the confusion matrix taking into account rejection (last column).
 confusion ::Sample a -> (a -> Maybe Label) -> Matrix Double
@@ -173,3 +189,4 @@ shQuality d c = do
     print (tt,ac,rj)
     _ <- printf "Rej: %.2f %%  Err: %.2f\n" (100 * rj / tt) (100 - 100 * ac / (tt-rj))
     putStrLn $ format " " (show.round') m
+

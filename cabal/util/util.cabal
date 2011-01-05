@@ -19,7 +19,7 @@ build-type:         Simple
 extra-source-files:
 
 library
-    Build-Depends:      base >= 4 && < 5, hmatrix >= 0.10,
+    Build-Depends:      base >= 4 && < 5, hmatrix >= 0.10.1,
                         process, array, random, containers
 
     hs-source-dirs:     lib

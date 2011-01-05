@@ -24,7 +24,7 @@ module ImagProc.GPU.SIFT(
 import ImagProc.Ipp.Core
 import Foreign
 import Foreign.C.String
-import Numeric.LinearAlgebra
+import Numeric.LinearAlgebra hiding (step)
 import Data.Packed.Development
 import Graphics.UI.GLUT hiding (Point)
 import Control.Monad(when)

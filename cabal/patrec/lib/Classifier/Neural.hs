@@ -14,12 +14,12 @@ Backpropagation multilayer neural network.
 -----------------------------------------------------------------------------
 
 module Classifier.Neural (
-     learnNetwork, neural, createNet, adaptNet, perceptron, neural',
+     learnNetwork, neural, createNet, perceptron, neural',
 ) where
 
 import Numeric.LinearAlgebra hiding (i,eps)
 import Classifier.Base
-import Util.Misc(norm, randomPermutation, vec, Vec, Mat, Seed)
+import Util.Misc(norm, randomPermutation, Vec, Mat, Seed)
 import Util.Probability(weighted)
 
 -------------------------- Multilayer perceptron -----------------------
@@ -71,18 +71,12 @@ learnNetwork alpha eps maxepochs n prob = (r,e) where
     nets = backprop alpha n prob
     errs = map ((flip mseerror) prob) nets
     evol = zip nets errs
-    step = 1 --  *length prob
-    selected = [evol!!(k*step) | k <- [0 .. maxepochs]]
+    step' = 1 --  *length prob
+    selected = [evol!!(k*step') | k <- [0 .. maxepochs]]
     conv = takeWhile ((>eps).snd) selected
     r = fst $ last $ conv
     e = map (snd) conv
 
-adaptNet :: Sample a -> [(a, Vec)]
-adaptNet s = x where
-    lbs = snd (group s)
-    nc = length (labels lbs)
-    des k c = vec $ replicate (k-1) (-1) ++ [1] ++ replicate (c-k) (-1)
-    x = [(v, des (1+getIndex lbs l) nc) | (v,l) <- s]
 
 -- | multilayer perceptron with alpha parameter and desired number of units in the hidden layers (to do: use seed)
 neural     :: Double -- ^ alpha (e.g. 0.1)
@@ -102,7 +96,7 @@ neural' :: Double -> Double -> Int
         -> Sample (Vector Double)
         -> (NeuralNet, [Double])
 neural' alpha eps mxep hidden seed prob = (network, err) where
-    prob' = adaptNet prob
+    prob' = vectorLabels prob
     n = dim $ fst $ head prob'
     m = dim $ snd $ head prob'
     initial = createNet seed n hidden m

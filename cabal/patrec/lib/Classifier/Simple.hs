@@ -15,14 +15,14 @@ Very simple methods.
 
 
 module Classifier.Simple (
-     Distance, distance,
+     Distance, minDistance,
      euclidean, mahalanobis,
      Likelihood, bayes,
      gaussian, gmm,
      naiveGaussian, naive01, ferns,
      nearestNeighbour, subspace,
      robustLoc,
-     mse,
+     mse, lsc,
      multiclass, dicodist
 ) where
 
@@ -38,7 +38,7 @@ import Util.Estimation(robustLocation)
 import Util.Misc(norm,(&),(//),(#),sqr,Vec)
 import Data.Maybe(fromMaybe)
 import qualified Data.List as L
-import Control.Arrow((&&&))
+import Control.Arrow((&&&),(***))
 
 -- | mse linear discriminant using the pseudoinverse
 mse :: Dicotomizer
@@ -48,6 +48,14 @@ mse (g1,g2) = f where
     w = m <\> b
     f v = tanh (v # 1 <.> w)
 
+-- | linear least squares classifier
+lsc :: Learner Vec
+lsc prob = f where
+    (_,lbs) = group prob
+    (x,y) = ((&1).fromRows *** fromRows) $ unzip (vectorLabels prob)
+    w = x `linearSolveLS` y
+    f v = weighted $ zip (labels lbs) (toList $ exp $ trans w <> v#1)
+    
 --------------------------------------------------------------------------------
 
 -- | A measure of the disimilarity or distance from an attribute vector to a sample of vectors of a certain class
@@ -59,8 +67,8 @@ type Likelihood a = [a] -> a -> Double
 -- | A generic distance-based learning machine.
 -- (The output probabilities are not real,
 -- they are a simple heuristic approximation of relative distances)
-distance :: Distance a -> Learner a
-distance ds exs = c where
+minDistance :: Distance a -> Learner a
+minDistance ds exs = c where
     (gs,lbs) = group exs
     distfuns = map ds gs
     liks x = heur $ map ($x) distfuns
@@ -75,9 +83,8 @@ bayes :: Likelihood a -> Learner a
 bayes ds exs = c where
     (gs,lbs) = group exs
     distfuns = map ds gs
-    liks x = map (w.($x)) distfuns
-    w d = exp (-d)
-    c x = weighted $ zip (labels lbs) (liks x)
+    liks x = map (negate.($x)) distfuns
+    c = loglik2prob lbs . liks
 
 -- normSafe :: (Ord a, Fractional a) => a -> [a] -> [a]
 -- normSafe h ws = if t > h then map (/t) ws else map (const 1) ws

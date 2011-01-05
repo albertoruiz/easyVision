@@ -41,7 +41,7 @@ impossible msg = error ("impossible input in "++ msg)
 
 -- | stop the program if something is wrong
 assert :: Show a => String -> (a -> Bool) -> a -> a
-assert msg cond x = if cond x then x else error $ msg ++ show x
+assert msg cnd x = if cnd x then x else error $ msg ++ show x
 
 splitEvery :: Int -> [t] -> [[t]]
 splitEvery _ [] = []

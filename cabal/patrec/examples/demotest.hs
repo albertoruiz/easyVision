@@ -49,13 +49,16 @@ democlas x = do
     seed <- randomIO
     let p = addNoise seed 0.1 $ x 500
     runIt $ scw "examples" p
-         >> scwm "D euc" p (distance euclidean)
-         >> scwm "D Mah" p (distance mahalanobis)
+         >> scwm "D euc" p (minDistance euclidean)
+         >> scwme "lsc 1db" 1 p lsc
+         >> scwm "D Mah" p (minDistance mahalanobis)
          >> scwm "Gaussian" p (bayes gaussian)
          >> scwme "Gaussian, 3db" 3 p (bayes gaussian)
          >> scwm "Naive Gaussian" p (bayes naiveGaussian)
          >> scwme "Gaussian Mixture, 15db" 15 p (bayes gmm)
-         
+         >> scwme "NN [5] 3db" 3 p (neural 0.1 0.05 100 [10])
+         >> scwme "NN [20,10,5] 5db" 5 p (neural 0.05 0.05 200 [20,10,5])
+
 ---------------------------------------------------------------------------
 -- check PCA reconstruction quality measured in sigma units
 

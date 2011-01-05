@@ -23,7 +23,7 @@ import ImagProc.Generic(clone)
 import ImagProc.Ipp.AdHoc(set8u)
 import Foreign
 import Foreign.C.Types
-import Numeric.LinearAlgebra
+import Numeric.LinearAlgebra hiding (step)
 
 -- | Explores an image and returns a list of pixels (as [row,column]) where the image is greater than 0.0.
 getPoints32f :: Int -> ImageFloat -> [Pixel]

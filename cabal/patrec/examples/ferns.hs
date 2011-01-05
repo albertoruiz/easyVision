@@ -44,17 +44,17 @@ main = do
 
     let rawproblem = (train,test)
     putStr "distmed "
-    study' rawproblem (distance euclidean)
+    study' rawproblem (minDistance euclidean)
 --    putStr "mselin "
 --    study' rawproblem (multiclass mse)
     putStr "fastferns-1 "
-    study' (train',test') (distance naive01)
+    study' (train',test') (bayes naive01)
 
     let train'' = preprocess (binbool s randfeats) train
         test''  = preprocess (binbool s randfeats) test
 
     putStr "ferns-3 "
-    study' (train'',test'') (distance ferns)
+    study' (train'',test'') (bayes ferns)
 
 ---------------------------------------------------------
 

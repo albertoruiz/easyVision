@@ -42,7 +42,7 @@ import ImagProc.Ipp.Core
 import ImagProc(resize,yuvToRGB,toGray)
 import Data.IORef
 import Foreign (touchForeignPtr,castPtr)
-import Numeric.LinearAlgebra
+import Numeric.LinearAlgebra hiding (step)
 import Vision
 import Util.Rotation
 import Util.Misc(degree)

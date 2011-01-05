@@ -22,7 +22,7 @@ module ImagProc.ImageFold (
 where
 
 import ImagProc.Ipp.Core
-import Numeric.LinearAlgebra hiding ((.*))
+import Numeric.LinearAlgebra hiding ((.*),step)
 import Foreign
 import Control.Monad(when)
 import GHC.Prim
