@@ -24,6 +24,8 @@ import System.Environment(getArgs)
 import Data.List(minimumBy, elemIndex)
 import Numeric.LinearAlgebra
 import Vision
+import Vision.Autofrontal
+import Util.Misc(degree)
 
 -------------------------------------------------------
 
@@ -52,7 +54,7 @@ main = do
     let sz = Size 288 384
     (cam,ctrl) <- mplayer (args!!0) sz >>= withPause
 
-    (tb,kc,mc) <- newTrackball
+    (tb,kc,mc,_) <- newTrackball
 
     state <- prepare' ST { imgs=[]
                         , corners=[], marked = []

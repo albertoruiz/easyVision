@@ -9,7 +9,8 @@ import Numeric.GSL.Fourier
 import Data.IORef
 import Data.Array
 import Data.List(minimumBy)
-import Vision.Geometry
+import Util.Homogeneous
+import Util.Rotation(rot3)
 
 main = prepare >> trazo >> mainLoop
 

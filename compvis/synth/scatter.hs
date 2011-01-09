@@ -107,8 +107,8 @@ main = do
 
     let p = addNoise 0 0.2 $ moon 300
 
-    scwm p (distance mahalanobis)
-    scwm p (distance gaussian)
+    scwm p (minDistance mahalanobis)
+    scwm p (minDistance gaussian)
     scwm p (bayes gaussian)
     scwm p (multiclass $ treeOf (branch 0) (dicodist euclidean ) )
 
@@ -132,17 +132,17 @@ main = do
 
     scatterPlot "PDA" (Size 400 400) sep (0,1) [] (return ())
 
-    scwm' sep (distance euclidean)
+    scwm' sep (minDistance euclidean)
 
     shQuality sep $ Just . mode . bayes euclidean sep
-    shQuality sep $ Just . mode . distance euclidean sep
-    shQuality sep $ Just . mode . distance naiveGaussian sep
+    shQuality sep $ Just . mode . minDistance euclidean sep
+    shQuality sep $ Just . mode . minDistance naiveGaussian sep
 
-    shQuality redu $ Just . mode . distance euclidean redu
-    shQuality redu $ Just . mode . distance naiveGaussian redu
-    shQuality redu $ Just . mode . distance mahalanobis redu
+    shQuality redu $ Just . mode . minDistance euclidean redu
+    shQuality redu $ Just . mode . minDistance naiveGaussian redu
+    shQuality redu $ Just . mode . minDistance mahalanobis redu
     shQuality redu $ Just . mode . bayes gaussian redu
-    shQuality redu $ Just . mode . distance (subspace (NewDimension 10)) redu
+    shQuality redu $ Just . mode . minDistance (subspace (NewDimension 10)) redu
     mainLoop
 
 colors = [red,blue,orange,green]++repeat Col.lightgray

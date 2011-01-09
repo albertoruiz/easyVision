@@ -5,7 +5,11 @@ import Numeric.LinearAlgebra.Array.Util
 import Numeric.LinearAlgebra
 import Vision
 import Data.List(transpose)
-import Util.Misc(pairsWith)
+import Util.Misc(pairsWith,degree)
+import Util.Rotation
+import Util.Homogeneous
+import Vision.TensorRep
+import Vision.Tensorial
 
 disp = putStr . dispf 2
 

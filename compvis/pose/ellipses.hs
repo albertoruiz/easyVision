@@ -8,12 +8,13 @@ import Numeric.LinearAlgebra
 import Complex
 import Control.Monad(when)
 import Data.List(sortBy)
-import Vision.Geometry
+import Util.Misc(degree,unitary)
 import Vision.Camera
 import Util.Ellipses
 import Numeric.GSL.Minimization
 import Text.Printf
 import Data.Maybe(isJust)
+import Util.Homogeneous
 
 sz' = Size 600 600
 
@@ -63,7 +64,7 @@ worker w wr cam param = do
             rawellipses = sortBy (compare `on` (negate.perimeter))
                         . filter (isEllipse tol)
                         $ candidates
-            est (Closed ps) = estimateConicRaw (map p2l ps)
+            est (Closed ps) = estimateConicRaw ps
             ellipMat = map est rawellipses
             ellipses = map (fst.analyzeEllipse) ellipMat
         pointCoordinates (size $ gray orig)

@@ -5,6 +5,8 @@ import Numeric.LinearAlgebra hiding ((.*))
 import qualified Numeric.LinearAlgebra as LA
 import Vision
 import Text.Printf(printf)
+import Util.Misc(unitary)
+import Util.Rotation(rot3)
 
 ------------------------------------------------------------
 

@@ -6,12 +6,14 @@ import Control.Monad(when)
 import Numeric.LinearAlgebra
 import Text.Printf(printf)
 import Classifier
+import Util.Stat
+import Util.Misc(vec,Vec)
 
 pcaR r = mef (ReconstructionQuality r)
 
 -- | distances (kernel?) to samples
-distancesTo :: (a->b->Double) -> [b] -> a -> Attributes
-distancesTo f l x = vector (map (f x) l)
+distancesTo :: (a->b->Double) -> [b] -> a -> Vec
+distancesTo f l x = vec (map (f x) l)
 
 distancesToAll samp = distancesTo (\a b -> pnorm PNorm2 (a-b)) (map fst samp)
 
@@ -20,11 +22,11 @@ feat = andP [classi feat1, classi feat2]
 classi feat = normalizeAttr `ofP` pcaR 0.95 `ofP` distancesToAll `ofP` const feat
                                   --outputOf (distance nearestNeighbour) `ofP` const feat
 
-machine = distance nearestNeighbour `onP` feat
+machine = minDistance nearestNeighbour `onP` feat
 
-feat1 = vector . lbpN 8 . resize (mpSize 8) . gray
+feat1 = vec . lbpN 8 . resize (mpSize 8) . gray
 
-feat2 = vector . dw . histogramN [0..10] . hsvCode 80 85 135 . hsv
+feat2 = vec . dw . histogramN [0..10] . hsvCode 80 85 135 . hsv
                                                        --175
 
 dw (g:b:w:cs) = b:cs -- remove white
@@ -45,7 +47,7 @@ main = do
     Just catalog <- getRawOption "--catalog"
     protos <- getCatalog (catalog++".yuv") szA4 (catalog++".labels") Nothing channels
 
-    let classify = fst $ machine protos
+    let classify = mode . machine protos
 
     launch (worker cam wimg wa4 ratio szA4 classify)
 

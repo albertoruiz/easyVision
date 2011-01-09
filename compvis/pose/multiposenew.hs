@@ -217,7 +217,7 @@ betterRep = withQuat . factorizeCamera
           toQuat = uncurry axisToQuat . rotToAxis
 
 asMatrix (f,q,c) = kgen f <> fromBlocks [[r, asColumn (-r <> c)]]
-    where r = getRotation $ q
+    where r = quatToRot q
 
 weighted alpha (f1,r1,c1) (f2,r2,c2) = (alpha*f1+(1-alpha)*f2,
                                         slerp r2 r1 alpha,

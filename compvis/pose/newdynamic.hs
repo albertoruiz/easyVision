@@ -8,6 +8,7 @@ import System.Environment(getArgs)
 import qualified Data.Map as Map
 import Graphics.UI.GLUT hiding (Matrix, Size, Point)
 import Vision
+import Vision.Autofrontal
 import Control.Monad(when)
 import Numeric.LinearAlgebra
 import Data.IORef

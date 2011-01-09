@@ -6,6 +6,8 @@ import Graphics.UI.GLUT hiding (Point, histogram)
 import Data.List(minimumBy)
 import Numeric.LinearAlgebra
 import Vision
+import Util.Rotation(rot3)
+import Util.Misc(degree)
 
 feat = vector . lbpN 8 . resize (mpSize 5) . modifyROI (shrink (100,200))
 

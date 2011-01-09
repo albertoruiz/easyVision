@@ -1,6 +1,8 @@
 import EasyVision hiding (warper)
 import Numeric.LinearAlgebra
 import Vision
+import Util.Rotation(rot1,rot3)
+import Util.Misc(degree)
 
 szw = Size 600 500
 

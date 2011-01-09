@@ -3,6 +3,7 @@
 import EasyVision
 import Vision
 import Numeric.LinearAlgebra hiding ((.*))
+import Util.Misc(rot3)
 
 fftpow  = 8
 fftl    = 2^8

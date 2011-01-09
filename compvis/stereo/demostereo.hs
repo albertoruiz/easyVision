@@ -98,7 +98,7 @@ main = do
             print err
             let m = kgen df <> cameraAtOrigin
             let ms = map (kgen df <>) (camerasFromEssential e)
-            let m' = selectCamera (head pts1) (head pts2) m ms
+            let Just m' = selectCamera' (head pts1) (head pts2) m ms
             when (err < 3E-2) $ do
                 (wasMoving,(_,pts1,_,pts2)) <- getW w3D
                 putW w3D (wasMoving,(m,pts1,m',pts2))

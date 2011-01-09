@@ -5,12 +5,14 @@ import Graphics.UI.GLUT hiding (Size,histogram)
 import Classifier
 import Numeric.LinearAlgebra
 import Data.List(sortBy)
+import Util.Stat
+import Util.Misc(vec,Vec)
 
 pcaR r = mef (ReconstructionQuality r)
 
 -- | distances (kernel?) to samples
-distancesTo :: (a->b->Double) -> [b] -> a -> Attributes
-distancesTo f l x = vector (map (f x) l)
+distancesTo :: (a->b->Double) -> [b] -> a -> Vec
+distancesTo f l x = vec (map (f x) l)
 
 distancesToAll samp = distancesTo (\a b -> pnorm PNorm2 (a-b)) (map fst samp)
 
@@ -21,12 +23,13 @@ feat' = const feat2
 classi feat = normalizeAttr `ofP` pcaR 0.95 `ofP` distancesToAll `ofP` const feat
 --                                outputOf (distance nearestNeighbour)
 
-machine = detailed (distance nearestNeighbour `onP` feat)
+machine =  minDistance nearestNeighbour `onP` feat
+--machine = detailed (minDistance nearestNeighbour `onP` feat)
 --(distance mahalanobis `onP` (pcaR 0.9 `ofP` feat))
 
-feat1 = vector . lbpN 8 . resize (mpSize 8) . gray
+feat1 = vec . lbpN 8 . resize (mpSize 8) . gray
 
-feat2 = vector . dw . histogramN [0..10] . hsvCode 80 85 175 . hsv
+feat2 = vec . dw . histogramN [0..10] . hsvCode 80 85 175 . hsv
                                                        --135
 
 dw (g:b:w:cs) = b:cs -- remove white
@@ -78,7 +81,7 @@ worker cam w = do
         setColor 1 0 0
         renderSignal (map (*0.5) v)
         when (not $ null pats) $ do
-            text2D 0.9 0.6 (showB 1.2 $ classify img)
+            text2D 0.9 0.6 (show $ classify img)
 
 -----------------------------------------------------
 
@@ -102,4 +105,4 @@ getProtos sz feat = do
         Nothing -> return []
         Just catalog -> getCatalog (catalog++".yuv") sz (catalog++".labels") Nothing feat
 
-showB h l = unwords $ map fst $ filter ((<h).snd) l
+-- showB h l = unwords $ map fst $ filter ((<h).snd) l

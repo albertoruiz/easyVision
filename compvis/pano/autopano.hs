@@ -9,6 +9,8 @@ import Vision
 import ImagProc.Ipp.Core(intersection, shrink, validArea)
 import Numeric.GSL.Minimization
 import Numeric.LinearAlgebra
+import Util.Misc(degree)
+import Util.Rotation(rot1,rot2,rot3)
 
 asFloat grab = return $ grab >>= return . scale8u32f 0 1 . yuvToGray
 

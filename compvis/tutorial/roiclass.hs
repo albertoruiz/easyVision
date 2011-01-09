@@ -8,11 +8,13 @@ import qualified Data.Colour.Names as Col
 import Numeric.LinearAlgebra
 import Classifier
 import Data.List(maximumBy)
+import Util.Misc(vec)
+import Util.Probability(evidence)
 import Util
 
 genrois = roiGridStep 50 200 25 25
 commonproc = highPass8u Mask5x5 . median Mask5x5 . gray . channels
-feat = vector . map fromIntegral . histogram [0,8 .. 256]
+feat = vec . map fromIntegral . histogram [0,8 .. 256]
 machine = multiclass mse
 
 main = do
@@ -21,15 +23,15 @@ main = do
     prepare
     rawexamples <- mapM (readSelectedRois sz) files
     let examples = concatMap (createExamples commonproc genrois feat) (concat rawexamples)
-        (classifier, probs) = machine examples
-        detector = head . probs
+        classifier = machine examples
     putStrLn $ show (length examples) ++ " total examples"
 
     rawtest <- readSelectedRois sz test
     let test = concatMap (createExamples commonproc genrois feat) rawtest
     putStrLn $ show (length test) ++ " total test examples"
-    shConf test classifier
-    shErr  test classifier
+--    shQuality test classifier
+    shConf test (Just . mode . classifier)
+    shErr  test (mode . classifier)
 
     (camtest,ctrl) <- mplayer video sz >>= detectStatic 0.01 5 >>= withPause
     w <- evWindow () "Plates detection" sz Nothing  (const (kbdcam ctrl))
@@ -40,10 +42,11 @@ main = do
             candis = map (\r -> (r,imgproc)) (genrois (theROI img))
         lineWidth $= 1
         setColor' Col.gray
-        let pos = filter ((=="+").classifier. overROI feat) candis
+        let pos = filter ((=="+"). mode . classifier. overROI feat) candis
         mapM_ (drawROI.fst) pos
         when (not.null $ pos) $ do
             lineWidth $= 3
             setColor' Col.red
-            let best = maximumBy (compare `on` detector . overROI feat) pos
+            let best = maximumBy (compare `on` (evidence "+" . classifier) . overROI feat) pos
             drawROI (fst best)
+

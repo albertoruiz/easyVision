@@ -16,6 +16,8 @@ import Numeric.LinearAlgebra
 import Classifier
 import Data.List(maximumBy,isPrefixOf)
 import Text.Printf
+import Util.Misc(vec)
+import Util.Probability(evidence)
 
 
 genrois = roiGridStep 50 200 25 25
@@ -24,7 +26,7 @@ genrois = roiGridStep 50 200 25 25
 commonproc im = (chan, highPass8u  Mask5x5 . median Mask5x5 .  gray $ chan)
     where chan = channels im
 
-feat = [ (vector. map fromIntegral . lbp 4, gray.fst)
+feat = [ (vec. map fromIntegral . lbp 4, gray.fst)
        , (histov [0,8 .. 256], snd)
        ]
 -- machine =  distance gaussian `onP` mef (NewDimension 15)
@@ -42,8 +44,7 @@ main = do
 
     rawexamples <- mapM (readSelectedRois sz) files
     let examples = concatMap (createExamples commonproc genrois feat) (concat rawexamples)
-        (classifier, probs) = machine examples
-        detector = head . probs
+        classifier = machine examples
 
     putStrLn $ show (length examples) ++ " total examples"
 
@@ -53,8 +54,8 @@ main = do
     putStrLn $ show (length test) ++ " total test examples"
 
 
-    shConf test classifier
-    shErr  test classifier
+    shConf test (Just . mode . classifier)
+    shErr  test (mode . classifier)
     -- evaluation required in "two places" to avoid
     -- relearning the classifier in each frame (!!??)
 
@@ -67,8 +68,8 @@ main = do
             candis = map (\r -> (r,imgproc)) (genrois (theROI img))
         lineWidth $= 1
         setColor' Col.gray
-        let pos = filter ((=="+").classifier. features feat) candis
-            best = maximumBy (compare `on` detector . features feat) pos
+        let pos = filter ((=="+"). mode . classifier. features feat) candis
+            best = maximumBy (compare `on` (evidence "+" . classifier) . features feat) pos
         mapM_ (drawROI.fst) pos
 
         inWin w $ do
@@ -113,4 +114,4 @@ overROI (feat, sel) (r, obj) = feat (modifyROI (const r) (sel obj))
 
 features fs x = join $ map (flip overROI x) fs
 
-histov l = vector . map fromIntegral . histogram l
+histov l = vec . map fromIntegral . histogram l

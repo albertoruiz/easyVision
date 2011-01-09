@@ -3,6 +3,7 @@ import Graphics.UI.GLUT hiding (Size,Point)
 import Vision
 import OpenCV
 import Control.Monad(when)
+import Util.Misc(degree)
 
 main' = run (camera ~> gray >>= face' >>= monitor "Face" (mpSize 20) f >>= timeMonitor)
     where f (im,r) = do
