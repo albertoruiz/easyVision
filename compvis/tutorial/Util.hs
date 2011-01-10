@@ -24,5 +24,5 @@ createExamples commonproc candirois feat (img,roi) = ps ++ ns
 
 overROI feat (r, obj) = feat (modifyROI (const r) obj)
 
-shErr d c = putStrLn $ (printf "error %.3f" $ 100 * errorRate d c) ++ " %"
-shConf d c = putStrLn $ format " " (show.round) (confusion d c)
+shErr d c = putStrLn $ (printf "error %.3f" $ 100 * errorRate (quality d c)) ++ " %"
+shConf d c = putStrLn $ format " " (show.round) (confusion (quality d c))

@@ -55,7 +55,7 @@ main = do
 
 
     shConf test (Just . mode . classifier)
-    shErr  test (mode . classifier)
+    shErr  test (Just . mode . classifier)
     -- evaluation required in "two places" to avoid
     -- relearning the classifier in each frame (!!??)
 
@@ -105,8 +105,8 @@ createExamples commonproc candirois feat (img,roi) = ps ++ ns
           ejs t = map (\r -> (features feat (r, imgproc), t))
           sel c = filter (c.overlap roi)
 
-shErr d c = putStrLn $ (printf "error %.3f" $ 100 * errorRate d c) ++ " %"
-shConf d c = putStrLn $ format " " (show.round) (confusion d c)
+shErr d c = putStrLn $ (printf "error %.3f" $ 100 * errorRate (quality d c)) ++ " %"
+shConf d c = putStrLn $ format " " (show.round) (confusion $ quality d c)
 
 unitary v = v / scalar (pnorm PNorm2 v)
 

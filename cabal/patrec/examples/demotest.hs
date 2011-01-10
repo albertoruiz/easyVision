@@ -4,7 +4,7 @@ import Classifier.ToyProblems
 import Util.Stat
 import Classifier.Regression(msError)
 import Util.ICA
-import Util.Misc(debug)
+import Util.Misc(debug,randomPermutation)
 import Util.Gaussian(mixturePDF,findMixture)
 
 import Numeric.LinearAlgebra
@@ -58,6 +58,41 @@ democlas x = do
          >> scwme "Gaussian Mixture, 15db" 15 p (bayes gmm)
          >> scwme "NN [5] 3db" 3 p (neural 0.1 0.05 100 [10])
          >> scwme "NN [20,10,5] 5db" 5 p (neural 0.05 0.05 200 [20,10,5])
+
+----------------------------------------------------------------------
+
+study msg prob meth pred = do
+    let (train,test) = prob
+        c = meth train
+    putStr $ msg ++ "\nTraining error: "
+    printf "%.2f %%\n" $ errorRate $ quality train (pred.c)
+    putStr "Test quality: "
+    shQuality $ quality test (pred.c)
+
+
+demoQuality x = do
+    seed <- randomIO
+    let p = splitProportion 0.5 $ randomPermutation seed $ (addNoise seed 0.1 $ x 500)
+    study "Euclidean Distance" p (minDistance euclidean) (Just . mode)
+    study "LSC 1db" p (lsc) (reject 1)
+    study "Mahalanobis Distance" p (minDistance mahalanobis) (Just . mode)
+    study "Gaussian" p (bayes gaussian) (Just . mode)
+    study "Gaussian 3db" p (bayes gaussian) (reject 3)
+    study "Naive Gaussian" p (bayes naiveGaussian) (Just . mode)
+    study "Gaussian Mixture 15db" p (bayes gmm) (reject 15)
+    study "Multilayer Perceptron [5] 3db" p (neural 0.1 0.05 100 [10]) (reject 3)
+    study "Multilayer Perceptron [20,10,5] 5db" p (neural 0.05 0.05 200 [20,10,5]) (reject 5)
+
+{-
+         >> scwme "lsc 1db" 1 p lsc
+         >> scwm "D Mah" p (minDistance mahalanobis)
+         >> scwm "Gaussian" p (bayes gaussian)
+         >> scwme "Gaussian, 3db" 3 p (bayes gaussian)
+         >> scwm "Naive Gaussian" p (bayes naiveGaussian)
+         >> scwme "Gaussian Mixture, 15db" 15 p (bayes gmm)
+         >> scwme "NN [5] 3db" 3 p (neural 0.1 0.05 100 [10])
+         >> scwme "NN [20,10,5] 5db" 5 p (neural 0.05 0.05 200 [20,10,5])
+-}
 
 ---------------------------------------------------------------------------
 -- check PCA reconstruction quality measured in sigma units

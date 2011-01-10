@@ -31,7 +31,7 @@ main = do
     putStrLn $ show (length test) ++ " total test examples"
 --    shQuality test classifier
     shConf test (Just . mode . classifier)
-    shErr  test (mode . classifier)
+    shErr  test (Just . mode . classifier)
 
     (camtest,ctrl) <- mplayer video sz >>= detectStatic 0.01 5 >>= withPause
     w <- evWindow () "Plates detection" sz Nothing  (const (kbdcam ctrl))

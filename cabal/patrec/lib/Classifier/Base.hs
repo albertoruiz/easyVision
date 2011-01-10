@@ -18,9 +18,9 @@ module Classifier.Base (
      Label, Example, Sample,
      Learner, Classifier, Predictor,
 -- * Quality
-     mode, reject, errorRate, confusion, shQuality,
+     mode, reject, CQuality(..), quality, shQuality,
 -- * Binary discriminants
-     Feature, TwoGroups, Dicotomizer, -- multiclass,
+     Feature, TwoGroups, Dicotomizer,
 -- * Utilities
      group, ungroup, vectorLabels, softMax, loglik2prob,
      addNoise, selectClasses, splitProportion, loadExamples,
@@ -31,7 +31,7 @@ import Numeric.LinearAlgebra
 import qualified Data.List as L
 import qualified Data.Map as Map
 import Data.Array
-import Util.Misc(vec,Vec,Seed,round')
+import Util.Misc(vec,Vec,Mat,Seed,round')
 import Util.Probability(Prob,mode,evidence,weighted)
 import Text.Printf(printf)
 
@@ -47,6 +47,7 @@ type Classifier a = a -> Prob Label
 -- | create a classifier from labeled examples
 type Learner a = Sample a -> Classifier a
 
+-- | decision function with possible rejection
 type Predictor a = a -> Maybe Label
 
 -- | A function that tries to discriminate between two classes of objects (positive means the first class)
@@ -140,27 +141,9 @@ loadExamples filename = do
 
 ---------------------------------------------------
 
--- | Estimates the success rate of a classifier on a sample
-errorRate :: Sample a -> (a -> Label) -> Double
-errorRate exs c = fromIntegral ok / fromIntegral (length exs) where
-    ok = length [() | (v,l)<-exs, l /= c v]
-
-{-
--- | Computes the confusion matrix of a classifier on a sample
-confusion' ::Sample a -> (a -> Label) -> Matrix Double
-confusion' exs c = confusionMatrix where
-    lbs = extractLabels exs
-    l = getIndex lbs
-    estimatedLabels = map (l.c.fst) exs
-    te = zip (map (l.snd) exs) estimatedLabels
-    nc = length (labels lbs)
-    confusionMatrix = fromArray2D $
-        accumArray (+) (0::Double) ((0::Int,0::Int),(nc-1,nc-1)) (zip te [1,1 ..])
--}
-
 -- | Computes the confusion matrix taking into account rejection (last column).
-confusion ::Sample a -> (a -> Maybe Label) -> Matrix Double
-confusion exs c = confusionMatrix where
+confusion' ::Sample a -> Predictor a -> Matrix Double
+confusion' exs c = confusionMatrix where
     (_,lbs) = group exs
     l = getIndex lbs
     estimatedLabels = map (r l.c.fst) exs
@@ -179,14 +162,31 @@ reject db p = if evidence m p < db
                 else Just m
     where m = mode p
 
--- | Display the confusion matrix, error and rejection rates.
-shQuality :: Sample a -> (a -> Maybe Label) -> IO ()
-shQuality d c = do
-    let m = confusion d c
-        ac = sumElements (takeDiag m)
-        rj = sumElements (dropColumns (rows m) m)
-        tt = sumElements m
-    print (tt,ac,rj)
-    _ <- printf "Rej: %.2f %%  Err: %.2f\n" (100 * rj / tt) (100 - 100 * ac / (tt-rj))
+data CQuality = CQuality { confusion :: Mat
+                         , errorRate :: Double
+                         , rejectionRate :: Double }
+
+-- | confusion matrix, error and rejection rates.
+quality :: Sample a -> Predictor a -> CQuality
+quality d c = CQuality { confusion = m
+                       , rejectionRate = 100 * rj / tt
+                       , errorRate = 100 - 100 * ac / (tt-rj) }
+  where
+    m = confusion' d c
+    (ac,rj,tt) = art m
+
+art :: Mat -> (Double,Double,Double)
+art m = (ac,rj,tt)
+  where
+    ac = sumElements (takeDiag m)
+    rj = sumElements (dropColumns (rows m) m)
+    tt = sumElements m
+
+shQuality :: CQuality -> IO ()
+shQuality q = do
+    let m = confusion q
+        (ac,rj,tt) = art m
+    _ <- printf "%d/%d/%d\n" (round' ac) (round' rj) (round' tt)
+    _ <- printf "Rej: %.2f %%  Err: %.2f %%\n" (rejectionRate q) (errorRate q)
     putStrLn $ format " " (show.round') m
 

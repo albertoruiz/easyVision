@@ -13,17 +13,13 @@ import Text.Printf(printf)
 import Util.Misc(splitEvery, randomPermutation, Vec, Seed)
 
 
-study' prob meth = do
+study prob meth = do
     let (train,test) = prob
-    let c = mode . meth train
+    let c = Just . mode . meth train
     putStr "Training error: "
-    shErr train c
+    print $ errorRate $ quality train c
     putStr "Test error: "
-    shErr test c
-    shConf test (Just . c)
-
-shErr d c = printf "%.2f%%\n" (100 * errorRate d c)
-shConf d c = putStrLn $ format " " (show.round) (confusion d c)
+    shQuality $ quality test c
 
 
 main = do
@@ -44,17 +40,17 @@ main = do
 
     let rawproblem = (train,test)
     putStr "distmed "
-    study' rawproblem (minDistance euclidean)
+    study rawproblem (minDistance euclidean)
 --    putStr "mselin "
 --    study' rawproblem (multiclass mse)
-    putStr "fastferns-1 "
-    study' (train',test') (bayes naive01)
+    putStr "naive bayes 0/1 "
+    study (train',test') (bayes naive01)
 
     let train'' = preprocess (binbool s randfeats) train
         test''  = preprocess (binbool s randfeats) test
 
-    putStr "ferns-3 "
-    study' (train'',test'') (bayes ferns)
+    putStr "ferns "
+    study (train'',test'') (bayes ferns)
 
 ---------------------------------------------------------
 
@@ -74,3 +70,4 @@ randBinFeat coordPairs v = fromList $ map g coordPairs
 binbool :: Int -> [(Int, Int)] -> Vec -> [[Bool]]
 binbool k coordPairs v = splitEvery k $ map g coordPairs
     where g (a,b) = v@>a > v@>b
+
