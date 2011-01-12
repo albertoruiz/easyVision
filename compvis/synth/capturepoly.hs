@@ -70,12 +70,7 @@ analyze title sz f n0 c = evWindow n0 title sz (Just disp) (mouse kbdQuit)
 
 redu sz n = pixelsToPoints sz . douglasPeucker (fromIntegral n)
 
-smooth n = take 51 . invFou 100 n
-
-invFou n w fou = r where
-    f = fromList $ map fou [0..w] ++ replicate (n- 2*w - 1) 0 ++ map (fou) [-w,-w+1.. (-1)]
-    r = map c2p $ toList $ ifft (fromIntegral n *f)
-    c2p (x:+y) = Point x y
+smooth n = take 51 . polyPts . invFou 100 n
 
 symclose = Closed . (\c -> init c ++ init (reverse c))
 

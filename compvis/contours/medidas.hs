@@ -193,13 +193,6 @@ shcont (Closed c) = do
     renderPrimitive Points (vertex (head c))
 
 
-shiftStart r f = \w -> cis (fromIntegral w*r) * f w
-
-invFou n w fou = Closed r where
-    f = fromList $ map fou [0..w] ++ replicate (n- 2*w - 1) 0 ++ map (fou) [-w,-w+1.. (-1)]
-    r = map c2p $ toList $ ifft (fromIntegral n *f)
-
-
 rot r f = g where g 0 = f 0
                   g w = cis (r) * f w
 

@@ -11,6 +11,7 @@ import Data.Array
 import Data.List(minimumBy)
 import Util.Homogeneous
 import Util.Rotation(rot3)
+import Util.Misc(memo)
 
 main = prepare >> trazo >> mainLoop
 
@@ -67,20 +68,11 @@ trazo = do
 
 redu n = pixelsToPoints (mpSize 20) . douglasPeucker (fromIntegral n)
 
-smooth n = take 51 . invFou 100 n
-
-invFou n w fou = r where
-    f = fromList $ map fou [0..w] ++ replicate (n- 2*w - 1) 0 ++ map (fou) [-w,-w+1.. (-1)]
-    r = map c2p $ toList $ ifft (fromIntegral n *f)
-    c2p (x:+y) = Point x y
+smooth n = take 51 . polyPts . invFou 100 n
 
 symclose = Closed . (\c -> init c ++ init (reverse c))
 
-memo f = g where
-    m = listArray (-30,30::Int) [f k | k <- [-30..30]]
-    g w = m ! w
-
-feat = memo . fourierPL . symclose
+feat = memo 30 . fourierPL . symclose
 
 norScale f = g where
     s = sqrt $ sum [ f k * conjugate (f k) | k<-[-10..10] ]
@@ -115,3 +107,4 @@ shcontP c = do
     renderPrimitive Points   $ mapM_ vertex c
     setColor 1 0.2 0.2
     when (not (null c)) $ renderPrimitive Points $ vertex (head c)
+

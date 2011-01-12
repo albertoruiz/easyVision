@@ -36,9 +36,5 @@ shcont (Closed c) = do
     renderPrimitive LineLoop $ mapM_ vertex c
     pointSize $= 5
     renderPrimitive Points (vertex (head c))    
-    
-invFou n w fou = Closed r where
-    f = fromList $ map fou [0..w] ++ replicate (n- 2*w - 1) 0 ++ map (fou) [-w,-w+1.. (-1)]
-    r = map c2p $ toList $ ifft (fromIntegral n *f)
-    c2p (x:+y) = Point x y
+
 

@@ -50,21 +50,17 @@ main = do
                         then do let fig = toLists $ reshape 2 v
                                 renderPrimitive LineLoop $ mapM_ vertex fig
                         else do let w = (dim v `div` 2 - 1) `div` 2
-                                    fig = invFou 50 w . map l2c $ toLists $ reshape 2 v
+                                    fig = invFou' 50 w . map l2c $ toLists $ reshape 2 v
                                     Closed l = fig
                                 shcont fig
 
 l2c [x,y] = (x:+y)
 
-invFou n w fou = Closed r where
+invFou' n w fou = Closed r where
     f = fromList $ map (fou!!) [w..2*w] ++ replicate (n- 2*w - 1) 0 ++ map (fou!!) [0..w-1]
     r = map c2p $ toList $ ifft (fromIntegral n *f)
     c2p (x:+y) = Point x y
 
--- invFou n w fou = Closed r where
---     f = fromList $ map (fou!!) [0..w] ++ replicate (n- 2*w - 1) 0 ++ map (fou!!) [-w,-w+1.. (-1)]
---     r = map c2p $ toList $ ifft (fromIntegral n *f)
---     c2p (x:+y) = Point x y
 
 shcont (Closed c) = do
     renderPrimitive LineLoop $ mapM_ vertex c

@@ -15,9 +15,9 @@ Very simple methods.
 
 
 module Classifier.Simple (
-     Distance, minDistance,
+     Dist(..), Distance, minDistance,
      euclidean, mahalanobis,
-     Likelihood, bayes,
+     LogLik(..), Likelihood, bayes,
      gaussian, gmm,
      naiveGaussian, naive01, ferns,
      nearestNeighbour, subspace,

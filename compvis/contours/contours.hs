@@ -233,14 +233,6 @@ excentricity f w = (s/l,l,a) where
     a = 0.5*(phase p + phase n)
     --a' = if abs a < pi/2 then a else pi + a
 
-
-
-shiftStart r f = \w -> cis (fromIntegral w*r) * f w
-
-normalizeStart f = shiftStart (-t) f
-    where t = phase ((f (1)- (conjugate $ f(-1))))
-
-
 goodDir f = a where
     (_,_,a) = minimumBy (compare `on` quality) (map (excentricity f) [1..5])
     quality (ex,tam,_) = 2*ex/tam
@@ -257,11 +249,6 @@ normalizeRotation f = g where
         else cis (pi-a)
     g 0 = f 0
     g w = z * f w
-
-invFou n w fou = Closed r where
-    f = fromList $ map fou [0..w] ++ replicate (n- 2*w - 1) 0 ++ map (fou) [-w,-w+1.. (-1)]
-    r = map c2p $ toList $ ifft (fromIntegral n *f)
-    c2p (x:+y) = Point x y
 
 
 rot r f = g where g 0 = f 0

@@ -130,9 +130,6 @@ withRegion w world = (measure,post,cz,restart) where
     cz = 1E-5 .* ident ((2*w+1)*2)
     restart = givemeconts
 
-normalizeStart f = shiftStart (-t) f
-    where t = phase ((f (1)- (conjugate $ f(-1))))
-          shiftStart r f = \w -> cis (fromIntegral w*r) * f w
 
 givemeconts mbf ref img = cs where
         Size h w = size img

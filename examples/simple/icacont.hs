@@ -64,7 +64,11 @@ cross2 = Closed $ reverse [
     Point (-1) 1,
     Point 0 1 ]
 
-testCont = cross2
+rectangle = Closed [Point 0 0, Point 0 1, Point 5 1, Point 5 0]
+
+lshape = Closed [Point 0 0, Point 0 1, Point 3 1, Point 3 2, Point 4 2, Point 4 0]
+
+testCont = Closed $ reverse $ polyPts $ fst (pentominos!!7)
 
 kurtAlpha2 c = f
   where
@@ -79,7 +83,7 @@ icaconts w = map g (icaAngles w)
     g a = transPol (rot3 a) w
 
 test = do
-    let c = whitenContour' $ transPol (rot3 $ (10)*degree) testCont
+    let c = whitenContour $ transPol (rot3 $ (10)*degree) testCont
     showCont testCont
     showCont c
     print $ orientation testCont
@@ -95,7 +99,7 @@ test = do
 
 
 main = do
-    let w = whitenContour' $ transPol (rot3 $ (10)*degree) testCont
+    let w = whitenContour $ transPol (rot3 $ (10)*degree) testCont
     showCont testCont
     showCont w
     let as = vec [-90..90]

@@ -11,6 +11,7 @@ import qualified Data.Array as A
 import System.Process(system)
 import Foreign.Storable(Storable)
 import Text.Printf(printf)
+import Data.Array(listArray,(!))
 
 type Mat = Matrix Double
 type Vec = Vector Double
@@ -95,6 +96,13 @@ shDist name fmtm fmt xs = printf (name ++ fmtm ++" ("++fmt++", "++fmt++", "++fmt
 
 arrayOf :: [a] -> (Int -> a)
 arrayOf xs = (A.listArray (0, length xs -1) xs A.!)
+
+-- | memoize a function for arguments in [-a,a]
+memo :: Int -> (Int -> a) -> (Int -> a)
+memo mx f = g where
+    m = listArray (-mx,mx::Int) [f k | k <- [-mx..mx]]
+    g w = m ! w
+
 
 myintersect' :: (Ord a) => [a] -> [a] -> [a]
 myintersect' xs ys = go xs ys [] where
@@ -205,5 +213,4 @@ pairwiseD2 x y | ok = x2 `outer` oy + ox `outer` y2 - 2* x <> trans y
 
 size :: Matrix t -> (Int, Int)
 size m = (rows m, cols m)
-
 

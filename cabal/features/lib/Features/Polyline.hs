@@ -19,7 +19,7 @@ module Features.Polyline (
     perimeter,
     orientation,
     whitenContour, whitener, equalizeContour,
-    fourierPL,
+    fourierPL, invFou, normalizeStart, shiftStart,
     norm2Cont,
 -- * K orientation
     icaAngles,
@@ -34,6 +34,7 @@ module Features.Polyline (
 -- * Auxiliary tools
     momentsContour, momentsBoundary,
     eig2x2Dir, asSegments, longestSegments, transPol,
+    pentominos
 )
 where
 
@@ -46,9 +47,11 @@ import Debug.Trace
 import Data.List(sortBy, maximumBy, zipWith4, sort,foldl')
 import Numeric.LinearAlgebra
 import Util.Homogeneous
+import Util.Misc(diagl)
 import Util.Rotation
 import Util.Misc(degree)
 import Numeric.GSL.Polynomials(polySolve)
+import Numeric.GSL.Fourier(ifft)
 
 data Polyline = Closed { polyPts :: [Point] }
               | Open   { polyPts :: [Point] }
@@ -575,4 +578,47 @@ icaAngles w = sortBy (compare `on` (negate.kur)) angs
     kur = kurtAlpha coefs
 
 ----------------------------------------------------------------------
+
+flipx = transPol (diagl[-1,1,1])
+
+pentominos :: [(Polyline,String)]
+pentominos =
+    [ (Closed $ reverse [Point 0 0, Point 0 1, Point 5 1, Point 5 0], "I")
+    , (flipx $ Closed $ [Point 0 0, Point 0 1, Point 3 1, Point 3 2, Point 4 2, Point 4 0], "L")
+    , (Closed $ reverse [Point 0 0, Point 0 1, Point 3 1, Point 3 2, Point 4 2, Point 4 0], "J")
+    , (Closed $ reverse [Point 1 0, Point 1 1, Point 0 1, Point 0 2, Point 1 2, Point 1 3,
+                         Point 2 3, Point 2 2, Point 3 2, Point 3 1, Point 2 1, Point 2 0], "X")
+    , (Closed $ reverse [Point 0 0, Point 0 3, Point 1 3, Point 1 1, Point 3 1, Point 3 0], "V")
+    , (Closed $ reverse [Point 0 0, Point 0 1, Point 1 1, Point 1 3, Point 2 3, Point 2 1, Point 3 1, Point 3 0], "T")
+    , (flipx $ Closed $ [Point 0 0, Point 0 3, Point 2 3, Point 2 1, Point 1 1, Point 1 0], "P")
+    , (Closed $ reverse [Point 0 0, Point 0 3, Point 2 3, Point 2 1, Point 1 1, Point 1 0], "B")
+    , (flipx $ Closed $ [Point 0 2, Point 0 3, Point 2 3, Point 2 1, Point 3 1, Point 3 0, Point 1 0, Point 1 2], "Z")
+    , (Closed $ reverse [Point 0 2, Point 0 3, Point 2 3, Point 2 1, Point 3 1, Point 3 0, Point 1 0, Point 1 2], "S")
+    , (Closed $ reverse [Point 0 0, Point 0 2, Point 1 2, Point 1 1, Point 2 1, Point 2 2, Point 3 2, Point 3 0], "U")
+    , (flipx $ Closed $ [Point 0 0, Point 0 1, Point 2 1, Point 2 2, Point 3 2, Point 3 1, Point 4 1, Point 4 0], "Y")
+    , (Closed $ reverse [Point 0 0, Point 0 1, Point 2 1, Point 2 2, Point 3 2, Point 3 1, Point 4 1, Point 4 0], "Y'")
+    , (flipx $ Closed $ [Point 0 1, Point 0 3, Point 1 3, Point 1 2, Point 3 2, Point 3 1,
+                         Point 2 1, Point 2 0, Point 1 0, Point 1 1], "F")
+    , (Closed $ reverse [Point 0 1, Point 0 3, Point 1 3, Point 1 2, Point 3 2, Point 3 1,
+                         Point 2 1, Point 2 0, Point 1 0, Point 1 1], "Q")
+    , (flipx $ Closed $ [Point 0 1, Point 0 2, Point 2 2, Point 2 1, Point 4 1, Point 4 0, Point 1 0, Point 1 1], "N")
+    , (Closed $ reverse [Point 0 1, Point 0 2, Point 2 2, Point 2 1, Point 4 1, Point 4 0, Point 1 0, Point 1 1], "N'")
+    , (Closed $ reverse [Point 0 1, Point 0 3, Point 1 3, Point 1 2, Point 2 2, Point 2 1,
+                         Point 3 1, Point 3 0, Point 1 0, Point 1 1], "W")    
+    ]
+
+----------------------------------------------------------------------
+
+shiftStart :: Double -> (Int -> Complex Double) -> (Int -> Complex Double)
+shiftStart r f = \w -> cis (fromIntegral w*r) * f w
+
+normalizeStart :: (Int -> Complex Double) -> (Int -> Complex Double)
+normalizeStart f = shiftStart (-t) f
+    where t = phase ((f (1)- (conjugate $ f(-1))))
+
+invFou :: Int -> Int -> (Int -> Complex Double) -> Polyline
+invFou n w fou = Closed r where
+    f = fromList $ map fou [0..w] ++ replicate (n- 2*w - 1) 0 ++ map fou [-w,-w+1.. (-1)]
+    r = map c2p $ toList $ ifft (fromIntegral n *f)
+    c2p (x:+y) = Point x y
 
