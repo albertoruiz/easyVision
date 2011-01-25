@@ -20,10 +20,11 @@ module ImagProc.Util(
     getFlag, hasValue, maybeOption,
     findSize,
     -- * Camera selection
-    camera,
+    -- camera, moved to ev
     getCam, numCams,
     getMulticam,
     readFrames,
+    readFolder,
     -- * Video output
     writeFrames,
     optionalSaver,
@@ -44,7 +45,7 @@ import ImagProc.Camera
 import System.IO.Unsafe(unsafeInterleaveIO)
 import Data.List(isPrefixOf,foldl',tails,findIndex,isInfixOf)
 import Data.Maybe
-import System.Directory(doesFileExist)
+import System.Directory(doesFileExist, getDirectoryContents)
 import System.CPUTime
 import Text.Printf
 import Debug.Trace
@@ -325,7 +326,17 @@ saveFrame f cam = do
         sv (f x)
         return x
 
--- | returns the camera 0
-camera :: IO (IO Channels)
-camera = findSize >>= getCam 0 ~> channels
+----------------------------------------------------------------------
+
+-- | reads a list of images from a folder
+readFolder :: FilePath -> Maybe Size -> IO [ImageYUV]
+readFolder path mbsz = do
+    let sz = maybe (Size 600 800) id mbsz -- TO DO: remove fixed size
+    fs <- getDirectoryContents path
+    let nframes = length fs - 2  -- we assume there are only image files
+    cam <- mplayer ("mf://"++path++" -benchmark -loop 1") sz
+    imgs <- sequence (replicate nframes cam)
+    putStrLn $ show (length imgs) ++ " images in " ++ path
+    return imgs
+
 

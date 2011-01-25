@@ -134,7 +134,7 @@ kbdQuit _ _ _ _               = return ()
 mouseGen acts def st a b c d = do
     v <- get st
     case Prelude.lookup (a,b,c) acts of
-        Just op -> st $= op v >> postRedisplay Nothing
+        Just op -> st $= op d v >> postRedisplay Nothing
         Nothing -> def a b c d
 
 modif = Modifiers {ctrl = Up, shift = Up, alt = Up }
@@ -272,3 +272,4 @@ mvroi r (Position x y) =
     modifyIORef r (\ (ROI r1 _ c1 _) ->
                         ROI r1 (max (r1+minroi) (fromIntegral y))
                             c1 (max (c1+minroi) (fromIntegral x)))
+

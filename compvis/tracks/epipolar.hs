@@ -37,7 +37,7 @@ selectClick fundisp cam = do
         inWin w (fundisp x)
         return (xok,x)
 
-acts = [((MouseButton LeftButton, Down, modif)  , \(x,_) -> (x,True) )]
+acts = [((MouseButton LeftButton, Down, modif)  , \_ (x,_) -> (x,True) )]
 
 showCorresp = monitor "Correspondences" (mpSize 10) g where
     g (a,b,(f,l)) =  do

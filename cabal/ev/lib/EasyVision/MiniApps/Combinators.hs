@@ -16,6 +16,7 @@ Camera combinators: higher order functions which make virtual cameras from other
 module EasyVision.MiniApps.Combinators (
   -- * Camera combinators
   -- | A few useful combinators
+  camera,
   withPause,
   addSmall,
   detectMotion,
@@ -116,10 +117,33 @@ withPause grab = do
 
     return (virtual,control)
 
------------------------------------------------
+----------------------------------------------------------------------
 
+cameraFolder = do
+    path <- optionString "--photos" "."
+    sz <- findSize
+    imgs <- readFolder path (Just sz)
+    let disp rk = do
+           k <- get rk  
+           drawImage (imgs!!k)
+    w <- evWindow 0 ("Folder: "++path) (mpSize 10) (Just disp) (mouseGen (acts (length imgs -1)) kbdQuit)               
+    return $ do
+        k <- getW w    
+        return (channels $ imgs!!k)
+  where
+    acts n = [((MouseButton WheelUp,   Down, modif), \_ k -> min (k+1) n)
+             ,((MouseButton WheelDown, Down, modif), \_ k -> max (k-1) 0)]
 
---------------------------------------------------------------------------
+cameraV = findSize >>= getCam 0 ~> channels
+
+-- | returns the camera 0. It also admits --photos=path/to/folder/ with images.
+camera :: IO (IO Channels)
+camera = do
+    f <- hasValue "--photos"
+    if f then cameraFolder
+         else cameraV
+
+----------------------------------------------------------------------
 
 -- | Motion detector with a desired condition on the absolute pixel difference in the roi of two consecutive images (computed with help of 'addSmall').
 detectMotion :: (Double -> Bool) -> IO (ImageYUV, ImageGray) -> IO (IO (ImageYUV, ImageGray))

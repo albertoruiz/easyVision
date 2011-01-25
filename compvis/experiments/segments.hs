@@ -1,12 +1,13 @@
 import EasyVision
 import Graphics.UI.GLUT
-import ImagProc.C.Burns
+import ImagProc.C.Segments
+--import ImagProc.C.Burns
 
 main = do
     sz <- findSize
     prepare
 
-    (cam,ctrl) <- getCam 0 sz ~> channels >>= withPause
+    (cam,ctrl) <- camera >>= withPause
 
     e <- evWindow () "segments" sz Nothing (const (kbdcam ctrl))
 
@@ -33,9 +34,9 @@ main = do
         postp  <- getParam op "postproc"
         let pp = if postp == (0::Int) then False else True
 
-        minlen <- getParam bu "min line length"
-        mingrad <- getParam bu "min gradient"
-        buckets <- getParam bu "buckets"
+--        minlen <- getParam bu "min line length"
+--        mingrad <- getParam bu "min gradient"
+--        buckets <- getParam bu "buckets"
 
         method <- getParam op "method"
 
@@ -44,7 +45,7 @@ main = do
         let img = gray orig
             segs = if method == (0::Int)
                     then segments radius width median (fromIntegral high) (fromIntegral low) pp img
-                    else burns_line_extraction img buckets mingrad minlen
+                    else error "no" -- burns_line_extraction img buckets mingrad minlen
         inWin e $ do
             drawImage img
             setColor 1 0 0

@@ -86,9 +86,9 @@ main' = do
 main = do
     sz <- findSize
 
-    (cam, ctrl)  <- getCam 0 sz >>= withPause
-
     state <- prepare' ([],Nothing)
+
+    (cam, ctrl)  <- camera >>= withPause
 
     o <- createParameters [
         ("umbral2",intParam 128 1 255),
@@ -122,7 +122,7 @@ worker cam param inWindow (prots',mbp) = do
     eps <- getParam param "eps"
     rotation <- getParam param "rotation"
 
-    orig <- cam >>= return . yuvToGray
+    orig <- cam >>= return . gray
     let im = (smooth2 `times` median Mask3x3) orig
 
     let (Size h w) = size im

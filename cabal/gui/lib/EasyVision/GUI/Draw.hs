@@ -76,7 +76,7 @@ drawImage' :: (Drawable a, Image a) => a -> IO ()
 drawImage' im = do
     szW <- get windowSize
     let szI = glSize (size im)
-    when (szW /= szI) $ windowSize $= szI
+    when (szW /= szI) $ windowSize $= szI >> postRedisplay Nothing
     drawImage im
 
 pstart im = starting im (vroi im)

@@ -80,17 +80,17 @@ dispfun st = do
         
 ---------------------------------------------------------
 
-acts = [((Char 'x'            ,   Down, modif             )  , \(p1,p2,_) -> (p1,p2, ident 3))
-       ,((MouseButton WheelUp,   Down, modif {ctrl = Down}) , \(p1,p2,r) -> (p1,p2, rot1 ( 5*degree) <> r))
-       ,((MouseButton WheelDown, Down, modif {ctrl = Down}) , \(p1,p2,r) -> (p1,p2, rot1 (-5*degree) <> r))
-       ,((MouseButton WheelUp,   Down, modif {alt = Down})  , \(p1,p2,r) -> (p1,p2, rot2 ( 5*degree) <> r))
-       ,((MouseButton WheelDown, Down, modif {alt = Down})  , \(p1,p2,r) -> (p1,p2, rot2 (-5*degree) <> r))
-       ,((MouseButton WheelUp,   Down, modif)               , \(p1,p2,r) -> (p1,p2, rot3 ( 5*degree) <> r))
-       ,((MouseButton WheelDown, Down, modif)               , \(p1,p2,r) -> (p1,p2, rot3 (-5*degree) <> r))
-       ,((MouseButton WheelUp,   Down, modif {ctrl = Down, shift = Down}) , \(p1,p2,r) -> (p1,p2, rot1 ( 0.1*degree) <> r))
-       ,((MouseButton WheelDown, Down, modif {ctrl = Down, shift = Down}) , \(p1,p2,r) -> (p1,p2, rot1 (-0.1*degree) <> r))
-       ,((MouseButton WheelUp,   Down, modif {alt = Down, shift = Down})  , \(p1,p2,r) -> (p1,p2, rot2 ( 0.1*degree) <> r))
-       ,((MouseButton WheelDown, Down, modif {alt = Down, shift = Down})  , \(p1,p2,r) -> (p1,p2, rot2 (-0.1*degree) <> r))
-       ,((MouseButton WheelUp,   Down, modif {shift = Down})               , \(p1,p2,r) -> (p1,p2, rot3 ( 0.1*degree) <> r))
-       ,((MouseButton WheelDown, Down, modif {shift = Down})               , \(p1,p2,r) -> (p1,p2, rot3 (-0.1*degree) <> r))]
+acts = [((Char 'x'            ,   Down, modif             )  , \_ (p1,p2,_) -> (p1,p2, ident 3))
+       ,((MouseButton WheelUp,   Down, modif {ctrl = Down}) , \_ (p1,p2,r) -> (p1,p2, rot1 ( 5*degree) <> r))
+       ,((MouseButton WheelDown, Down, modif {ctrl = Down}) , \_ (p1,p2,r) -> (p1,p2, rot1 (-5*degree) <> r))
+       ,((MouseButton WheelUp,   Down, modif {alt = Down})  , \_ (p1,p2,r) -> (p1,p2, rot2 ( 5*degree) <> r))
+       ,((MouseButton WheelDown, Down, modif {alt = Down})  , \_ (p1,p2,r) -> (p1,p2, rot2 (-5*degree) <> r))
+       ,((MouseButton WheelUp,   Down, modif)               , \_ (p1,p2,r) -> (p1,p2, rot3 ( 5*degree) <> r))
+       ,((MouseButton WheelDown, Down, modif)               , \_ (p1,p2,r) -> (p1,p2, rot3 (-5*degree) <> r))
+       ,((MouseButton WheelUp,   Down, modif {ctrl = Down, shift = Down}) , \_ (p1,p2,r) -> (p1,p2, rot1 ( 0.1*degree) <> r))
+       ,((MouseButton WheelDown, Down, modif {ctrl = Down, shift = Down}) , \_ (p1,p2,r) -> (p1,p2, rot1 (-0.1*degree) <> r))
+       ,((MouseButton WheelUp,   Down, modif {alt = Down, shift = Down})  , \_ (p1,p2,r) -> (p1,p2, rot2 ( 0.1*degree) <> r))
+       ,((MouseButton WheelDown, Down, modif {alt = Down, shift = Down})  , \_ (p1,p2,r) -> (p1,p2, rot2 (-0.1*degree) <> r))
+       ,((MouseButton WheelUp,   Down, modif {shift = Down})               , \_ (p1,p2,r) -> (p1,p2, rot3 ( 0.1*degree) <> r))
+       ,((MouseButton WheelDown, Down, modif {shift = Down})               , \_ (p1,p2,r) -> (p1,p2, rot3 (-0.1*degree) <> r))]
 

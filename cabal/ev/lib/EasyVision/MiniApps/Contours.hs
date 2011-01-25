@@ -27,11 +27,9 @@ import Features
 -- import Control.Arrow((&&&),(***))
 
 
-
-
 $(autoParam "ContourParam" "contour-" [
     ("thres",  "Int",    intParam 128 1 255),
-    ("area",   "Int",    percent 1),
+    ("area",   "Int",    percent 10),
     ("fracpix","Double", realParam (1.5) 0 10),
     ("mode",   "String", stringParam "white" ["white", "black", "both"]),
     ("smooth", "Int",    intParam 1 0 10)] )
@@ -40,16 +38,16 @@ defContourParam :: ContourParam
 argContourParam :: IO ContourParam
 winContourParam :: IO (IO ContourParam)
 
-wcontours :: IO ImageGray -> IO (IO (ImageGray, ContourInfo))
-wcontours = smartContours .@. winContourParam
+wcontours :: (x -> ImageGray) -> IO x ->  IO (IO (x, ContourInfo))
+wcontours g = smartContours g .@. winContourParam
 
-smartContours :: ContourParam -> ImageGray -> ContourInfo
-smartContours ContourParam{..} x = r
-    where pre = smooth `times` median Mask3x3
+smartContours :: (x -> ImageGray) -> ContourParam -> x -> ContourInfo
+smartContours g ContourParam{..} x = r
+    where pre = (smooth `times` median Mask3x3) . g
           z = pre x
           rawg b y = map fst3 $ contours 100 pixarea (fromIntegral thres) b y
                where (Size h w) = size y
-                     pixarea = h*w*area`div`1000
+                     pixarea = h*w*area`div`10000
           cw = post $ rawg True z
           cb = post $ rawg False z
           cwb = cw ++ cb
@@ -59,7 +57,7 @@ smartContours ContourParam{..} x = r
                     "both"  -> cwb
                     _ -> error "smartContours unknown mode"
           redu = douglasPeuckerClosed fracpix
-          clo  = Closed . pixelsToPoints (size x)
+          clo  = Closed . pixelsToPoints (size z)
           times n f = (!!n) . iterate f
           fst3 (a,_,_) = a
           post = map (clo . redu)

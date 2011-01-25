@@ -27,6 +27,8 @@ module Features.Polyline (
 -- * Reduction
     douglasPeucker, douglasPeuckerClosed,
     selectPolygons,
+-- * Convex Hull
+    convexHull,
 -- * Extraction
     rawContour,
     contours,
@@ -313,26 +315,23 @@ l2p [x,y] = Point x y
 -- | Exact Fourier series of a piecewise-linear closed curve
 fourierPL :: Polyline -> (Int -> Complex Double)
 
-fourierPL c w | w >= 0    = p !! w
-              | otherwise = n !! (-w)
+fourierPL c = f
     where
         g = fourierPL' c
         p = map g [0..]
         n = map g [0,-1 .. ]
+        f w | w >= 0    = p !! w
+            | otherwise = n !! (-w)
 
 fourierPL' (Closed ps) = g where
     (zs,ts,aAs,hs) = prepareFourierPL ps
     g0 = 0.5 * sum (zipWith4 gamma zs ts (tail zs) (tail ts))
         where gamma z1 t1 z2 t2 = (z2+z1)*(t2-t1)
-    -- g w = k*r
-    --     where k = recip (-2*pi*i*w'^2)
-    --           r = sum (zipWith3 f hs cs ds)
-    --           w' = fromIntegral w
-    --           f h c d = (h ^^ w)*(w'*c+d)
     g 0 = g0
     g w = k* ((vhs**w') <.> vas)
-        where k = recip (-2*pi*i* (fromIntegral w)^2) * recip (2*pi*i)
-              w' = fromIntegral w
+        where k = recip (2*pi*w'')^2
+              w' = fromIntegral w  :: Vector (Complex Double)
+              w'' = fromIntegral w :: Complex Double
     vhs = fromList hs
     vas = fromList $ take (length hs) aAs
 
@@ -346,11 +345,8 @@ prepareFourierPL c = (zs,ts,aAs,hs) where
         where exp' t = exp (-2*pi*i*t)
     as = cycle $ zipWith4 alpha zs ts (tail zs) (tail ts)
         where alpha z1 t1 z2 t2 = (z2-z1)/(t2-t1)
-    -- bs = cycle $ zipWith3 beta zs as ts
-    --     where beta z alpha t = z-alpha*t
     aAs = zipWith (-) as (tail as)
-    -- bBs = zipWith (-) bs (tail bs)
-    -- ds = {-map (* recip (2*pi*i)) -} aAs
+
 
 --------------------------------------------------------------------------------
 -- | The average squared distance to the origin, assuming a parameterization between 0 and 1.
@@ -621,4 +617,26 @@ invFou n w fou = Closed r where
     f = fromList $ map fou [0..w] ++ replicate (n- 2*w - 1) 0 ++ map fou [-w,-w+1.. (-1)]
     r = map c2p $ toList $ ifft (fromIntegral n *f)
     c2p (x:+y) = Point x y
+
+
+----------------------------------------------------------------------
+
+convexHull :: [Point] -> [Point]
+convexHull ps = go [q0] rs
+  where
+    q0:qs = sortBy (compare `on` (\(Point x y) -> (y,x))) ps
+    rs = sortBy (compare `on` (ncosangle q0)) qs
+
+    go [p] [x,q]                     = [p,x,q]
+    go [p] (x:q:r)   | isLeft p x q  = go [x,p] (q:r)
+                     | otherwise     = go [p]   (q:r)
+    go (p:c) [x]     | isLeft p x q0 = x:p:c
+                     | otherwise     =   p:c
+    go (p:c) (x:q:r) | isLeft p x q  = go (x:p:c)   (q:r)
+                     | otherwise     = go c       (p:q:r)
+    
+    ncosangle p1@(Point x1 y1) p2@(Point x2 y2) = (x1-x2) / distPoints p1 p2
+
+    isLeft p1@(Point x1 y1) p2@(Point x2 y2) p3@(Point x3 y3) = 
+        (x2 - x1)*(y3 - y1) - (y2 - y1)*(x3 - x1) > 0
 

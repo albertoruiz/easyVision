@@ -16,9 +16,10 @@ main = do
 
     sz <- findSize
 
-    (cam, ctrl)  <- getCam 0 sz  ~> channels >>= withPause
-
     prepare
+
+    (cam, ctrl)  <- camera >>= withPause
+
 
     o <- createParameters [("threshold",realParam 0.5 0 1),
                            ("sigma",realParam 3 0 20),

@@ -58,12 +58,14 @@ import EasyVision.MiniApps.Concurrent
 import Util.Kalman
 import Text.Printf
 import Data.Function(on)
+
 import EasyVision.MiniApps.Corners
 import EasyVision.MiniApps.CornerTracker
 import EasyVision.MiniApps.SignalMonitor
 import EasyVision.MiniApps.PoseTracker
 import EasyVision.MiniApps.Contours
 import EasyVision.MiniApps.ScatterPlot
+
 
 -- | reads a labeled video
 readCatalog :: String -> Size -> String -> Maybe Int -> (ImageYUV-> a) -> IO [(a,String)]
@@ -486,3 +488,4 @@ zoomWindow winname sz f cam = do
         im <- cam
         z (f im)
         return im
+

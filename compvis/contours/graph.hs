@@ -17,7 +17,7 @@ $(autoParam "Selsol" ""
 
 
 
-main = run $ ((camera ~> gray >>= wcontours ~> (id *** adjacencies.contSel)) .&. winSelsol ~> sol) >>= monitor "image" (mpSize 20) sh
+main = run $ ((camera ~> gray >>= wcontours id ~> (id *** adjacencies.contSel)) .&. winSelsol ~> sol) >>= monitor "image" (mpSize 20) sh
 
 shContLab ((c,k), s) = do
     setColor 1 0.4 0.4
