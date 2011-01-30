@@ -4,6 +4,7 @@
 import EasyVision
 import Graphics.UI.GLUT
 import Control.Monad(when)
+import Util.Options
 
 main = do
     sz <- findSize

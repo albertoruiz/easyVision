@@ -19,9 +19,6 @@ module EasyVision.MiniApps.Combinators (
   camera,
   withPause,
   addSmall,
-  detectMotion,
-  detectStatic,
-  temporalEnvironment,
   warper,
   findPolygons, getPolygons, polyconsis,
   findRectangles,
@@ -63,6 +60,7 @@ import System.CPUTime
 import System.Time
 import Text.Printf
 --import ImagProc.C.Segments
+import Util.Options(optionString,hasValue)
 
 type SegmentExtractor = Int
          -> Float
@@ -145,100 +143,12 @@ camera = do
 
 ----------------------------------------------------------------------
 
--- | Motion detector with a desired condition on the absolute pixel difference in the roi of two consecutive images (computed with help of 'addSmall').
-detectMotion :: (Double -> Bool) -> IO (ImageYUV, ImageGray) -> IO (IO (ImageYUV, ImageGray))
-detectMotion cond = virtualCamera (detectMov' cond)
-
-detectMov' cond ((a,f):(b,g):t) =
-    if cond (absdif f g)
-        then (a,f) : detectMov' cond ((b,g):t)
-        else detectMov' cond ((b,g):t)
-
-absdif a b = sum8u (absDiff8u a b)
-
--- | Given a yuv camera adds a gray version (typically small), to be used with other combinators like 'detectMov'
-addSmall :: Size -> IO ImageYUV -> IO (IO (ImageYUV, ImageGray))
-addSmall sz grab = return $ do
+-- | Given a camera adds a gray version (typically small), to be used with other combinators like 'detectMov'
+addSmall :: Size -> (a->ImageGray) -> IO a -> IO (IO (a, ImageGray))
+addSmall sz f grab = return $ do
     im <- grab
-    let f = resize sz (fromYUV im)
-    return (im,f)
-
--- | Camera combinator which creates a list of the past and future values of a property in each frame (and applies a given function to it).
-temporalEnvironment :: ([p] -> x) -- ^ function to apply to the temporal enviroment (you can of course use id)
-                    -> Int        -- ^ number of frames in the past
-                    -> Int        -- ^ number of frames in the future
-                    -> IO (a,p)   -- ^ source camera
-                    -> IO (IO (a, x)) -- ^ result
-temporalEnvironment g past future = virtualCamera f where
-    f = map (adjust . unzip) . slidingGroup time
-    time = past + future + 1
-    adjust (cams, env)  = (cams!!past, g env)
-    slidingGroup n = map (take n) . tails
-
-----------------------------------------------------------
--- Detector of static frames
-
-addDiff = virtualCamera auxDif
-    where auxDif ((a,f):(b,g):t) = (a, nrm (size f) $ absdif f g) : auxDif ((b,g):t)
-          nrm (Size r w) = (/n) where n = fromIntegral (r*w*255)
-
-data StaticDetectorState = SDSGetIt
-                         | SDSWaitUp
-                         | SDSWaitDown
-                         deriving (Eq,Show)
-
-auxStatic th SDSGetIt x = SDSWaitUp
-
-auxStatic th SDSWaitUp x | last x > 5*th = SDSWaitDown
-                         | otherwise        = SDSWaitUp
-
-auxStatic th SDSWaitDown x | maximum x < th = SDSGetIt
-                           | otherwise      = SDSWaitDown
-
-addSDS th = virtualCamera (f SDSWaitUp)
-    where f st ((c,p):rest) = (c,(p,st')) : f st' rest
-               where st' = auxStatic th st p
-
-getIt xs = [c | (c,(_,st)) <- xs, st == SDSGetIt ]
-
-monitorStatic th (imag,(env,st)) = do
-    drawImage imag
-    setColor 1 0 0
-    text2D 30 30 (show st)
-    pointCoordinates (size imag)
-    lineWidth $= 2
-    renderSignal (map (10*) env)
-    setColor 0.5 0 0
-    lineWidth $= 1
-    renderAxes
-    renderPrimitive Lines $ mapM_ vertex [Point (-0.1) (10*th), Point 0.1 (10*th)]
-    renderPrimitive Lines $ mapM_ vertex [Point (-0.1) (5*10*th), Point 0.1 (5*10*th)]
-
--- | Detector of static frames.
-detectStatic :: Double -- ^ threshold (.e.g., 0.01)
-             -> Int    -- ^ number of frames which must be \"quiet\" (e.g. 5)
-             -> IO ImageYUV -- ^ source camera
-             -> IO (IO (ImageYUV)) -- ^ virtual camera
-detectStatic th nframes =
-    addSmall (mpSize 3)
-    >=> addDiff
-    -- >=> temporalEnvironment mean 3 0  -- for local extremes
-    >=> temporalEnvironment id nframes 0
-    >=> addSDS th
-    >=> monitor "temp env" (mpSize 10) (monitorStatic th)
-    >=> virtualCamera getIt
-
----
-
-mean l = sum l / fromIntegral (length l)
-
--- std l = sqrt $ mean $ map ((^2).subtract (mean l)) l
--- 
--- posMax l = p where
---     Just p = elemIndex (maximum l) l
--- 
--- posMin l = p where
---     Just p = elemIndex (minimum l) l
+    let x = resize sz (f im)
+    return (im,x)
 
 ---------------------------------------------------------
 

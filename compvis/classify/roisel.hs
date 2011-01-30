@@ -13,6 +13,7 @@ import Graphics.UI.GLUT
 import Control.Monad(when)
 import System(getArgs)
 import qualified Data.Colour.Names as Col
+import Util.Options
 
 main = do
     args <- getArgs

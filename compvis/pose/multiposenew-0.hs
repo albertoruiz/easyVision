@@ -14,6 +14,7 @@ import Text.Printf
 import Util.Kalman
 import Data.IORef
 import Data.Maybe
+import Util.Options
 
 main = do
     prepare

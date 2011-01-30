@@ -8,6 +8,7 @@ import Vision
 import Control.Monad(when)
 import Numeric.LinearAlgebra
 import Text.Printf(printf)
+import Util.Options
 
 main = do
     sz <- findSize

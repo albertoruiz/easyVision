@@ -29,7 +29,9 @@ module EasyVision.MiniApps (
     module EasyVision.MiniApps.Combinators,
     module EasyVision.MiniApps.Concurrent,
     module EasyVision.MiniApps.PoseTracker,
-    module EasyVision.MiniApps.ScatterPlot
+    module EasyVision.MiniApps.ScatterPlot,
+    module EasyVision.MiniApps.Static,
+    module EasyVision.MiniApps.Save,
 )where
 
 import Graphics.UI.GLUT as GL hiding (Size,Point,Matrix,matrix)
@@ -58,6 +60,7 @@ import EasyVision.MiniApps.Concurrent
 import Util.Kalman
 import Text.Printf
 import Data.Function(on)
+import Util.Options
 
 import EasyVision.MiniApps.Corners
 import EasyVision.MiniApps.CornerTracker
@@ -65,7 +68,8 @@ import EasyVision.MiniApps.SignalMonitor
 import EasyVision.MiniApps.PoseTracker
 import EasyVision.MiniApps.Contours
 import EasyVision.MiniApps.ScatterPlot
-
+import EasyVision.MiniApps.Static
+import EasyVision.MiniApps.Save
 
 -- | reads a labeled video
 readCatalog :: String -> Size -> String -> Maybe Int -> (ImageYUV-> a) -> IO [(a,String)]

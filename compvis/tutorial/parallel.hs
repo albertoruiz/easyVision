@@ -3,6 +3,7 @@ import Control.Arrow
 import Control.Monad
 import Debug.Trace
 import Numeric.LinearAlgebra hiding ((.*))
+import Util.Options
 
 camera k = findSize >>= getCam k ~> channels
 observe winname f = monitor winname (mpSize 20) f

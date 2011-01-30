@@ -4,7 +4,7 @@
 
 import EasyVision
 import Graphics.UI.GLUT hiding (Size, Point, Matrix)
-
+import Util.Options
 
 main = do
     sz <- findSize

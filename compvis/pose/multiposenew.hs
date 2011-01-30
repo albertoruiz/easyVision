@@ -17,6 +17,7 @@ import Data.Maybe
 import Control.Applicative((<$>),(<*>))
 import ImagProc.Ipp.Core
 import GHC.Float(float2Double)
+import Util.Options
 
 main = do
     prepare

@@ -15,12 +15,8 @@ General utilities.
 module ImagProc.Util(
     -- * Combinators
     virtualCamera, (~~>), (~>), (>~~>), (>~>), (.&.), (.@.),
-    -- * Command line options
-    getRawOption, getOption, optionString,
-    getFlag, hasValue, maybeOption,
-    findSize,
     -- * Camera selection
-    -- camera, moved to ev
+    findSize,
     getCam, numCams,
     getMulticam,
     readFrames,
@@ -28,13 +24,12 @@ module ImagProc.Util(
     -- * Video output
     writeFrames,
     optionalSaver,
+    autoSaver,
     saveRGB,
     process,
     saveFrame,
-    -- * Debug
-    timing,
-    debug,
     -- * Other
+    timing,
     on,
     lazyRead
 )where
@@ -48,7 +43,6 @@ import Data.Maybe
 import System.Directory(doesFileExist, getDirectoryContents)
 import System.CPUTime
 import Text.Printf
-import Debug.Trace
 import Control.Monad
 import Control.Arrow((&&&))
 import System.Environment(getArgs,getEnvironment)
@@ -56,6 +50,7 @@ import Data.Function(on)
 import Control.Concurrent
 import Data.IORef
 import ImagProc.C.UVC
+import Util.Options
 
 timing :: IO a -> IO a
 timing act = do
@@ -64,9 +59,6 @@ timing act = do
     t1 <- getCPUTime
     _ <- printf "%4.0f ms CPU\n" $ (fromIntegral (t1 - t0) / (10^9 :: Double))
     return r
-
-debug :: Show x => x -> x
-debug x = trace (show x) x
 
 -----------------------------------------------------------------------------------
 
@@ -148,54 +140,6 @@ writeFrames filename fs@(f0:_) = do
     sv <- openYUV4Mpeg sz filename Nothing
     mapM_ sv fs
 
--- | extracts an option from the command line. From --alpha=1.5 we get 1.5::Double.
-getOption :: Read a
-          => String  -- ^ option name (e.g. \"--alpha\")
-          -> a       -- ^ default value
-          -> IO a    -- ^ result
-getOption name def = do
-    mbopt <- getRawOption name
-    let v = case mbopt of
-                Nothing -> def
-                Just s  -> read s
-    return v
-
--- | searches for an optional argument
-getRawOption :: String -- ^ option name
-             -> IO (Maybe String)
-getRawOption name = do
-    args <- getArgs
-    let opts = filter ((name++"=") `isPrefixOf`) args
-    return $ case opts of
-        [] -> Nothing
-        xs -> Just (val (last xs))
-  where val = tail . dropWhile (/= '=')
-
-
-maybeOption name = fmap (fmap read) (getRawOption name)
-
--- | checks if --option=something has been given in the command line.
-hasValue :: String -- ^ option name, including the dashes (e.g. \"--opt\").
-         -> IO Bool
-hasValue name = do
-    x <- getRawOption name
-    return $ case x of
-        Nothing -> False
-        Just _  -> True
-
--- | checks if --option or --option=something has been given in the command line.
-getFlag :: String -- ^ option name, including the dashes (e.g. \"--opt\").
-        -> IO Bool
-getFlag name = do
-    args <- getArgs
-    return (any (isPrefixOf name) args)
-
--- | Special version of 'getOption' for strings, without the need of the quotes required by @read@.
-optionString :: String -- ^ option name
-             -> String -- ^ default value
-             -> IO String
-optionString name def = fmap (maybe def id) (getRawOption name)
-
 
 -- | Number of explicit camera arguments supplied (automatic aliases from cameras.def are not taken into account).
 numCams :: IO Int
@@ -217,8 +161,6 @@ getAliases = do
                         then let Just path = ev in readFile (path++"cameras.def")
                         else return []
 
-cleanOpts = filter (not . isPrefixOf "-")
-
 prepareAlias = filter (uncurry (/=)) . map (break (==' ')) . lines
 
 expand ali s = foldl' (flip replace) s ali
@@ -236,6 +178,30 @@ optionalSaver sz = do
     case filename of
         Nothing   -> return $ const (return ())
         Just path -> openYUV4Mpeg sz path limit
+
+----------------------------------------------
+
+-- | always saves the frames, in a new file if not given --save=<filename>
+autoSaver :: IO (ImageYUV -> IO ())
+autoSaver = do
+    filename <- findName
+    limit    <- maybeOption "--limit"
+    svref <- newIORef Nothing
+    return $ \im -> do
+        mbsv <- readIORef svref
+        case mbsv of
+            Just sv -> sv im
+            Nothing -> do sv <- openYUV4Mpeg (size im) filename limit
+                          writeIORef svref (Just sv)
+                          sv im            
+  where
+    findName :: IO String
+    findName = do
+        argfn <- getRawOption "--save"
+        newname <- (++".yuv") `fmap` nextFilename "savedframes"
+        return $ case argfn of
+                    Nothing -> newname
+                    Just filename -> filename
 
 ----------------------------------------------
 

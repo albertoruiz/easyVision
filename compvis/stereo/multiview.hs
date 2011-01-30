@@ -8,7 +8,7 @@ import Data.List
 import Numeric.LinearAlgebra
 import Vision
 import Text.Printf(printf)
-
+import Util.Options
 
 tracker n1 n2 = withChannels >=> regionDetector n1 >=> regionTracker n2
 

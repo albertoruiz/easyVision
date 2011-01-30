@@ -4,6 +4,7 @@ import EasyVision
 import Graphics.UI.GLUT hiding (Size)
 import System(getArgs)
 import Control.Monad(when)
+import Util.Options
 
 main = do
     single <- getFlag "--single"

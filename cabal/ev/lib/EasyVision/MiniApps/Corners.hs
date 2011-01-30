@@ -23,6 +23,7 @@ import EasyVision.MiniApps.Concurrent
 import ImagProc
 import ImagProc.Util
 import ImagProc.Camera
+import Util.Options(getFlag)
 import Graphics.UI.GLUT
 import Control.Monad((>=>))
 import Control.Applicative

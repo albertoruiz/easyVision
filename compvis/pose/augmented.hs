@@ -14,6 +14,7 @@ import Control.Monad(when)
 import Numeric.LinearAlgebra
 import Debug.Trace
 import Vision.Autofrontal
+import Util.Options
 
 debug x = trace (show x) x
 

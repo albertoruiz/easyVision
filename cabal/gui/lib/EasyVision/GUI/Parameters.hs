@@ -32,7 +32,7 @@ import Numeric
 import Data.List(elemIndex,foldl')
 import Control.Monad(ap)
 import Control.Applicative((<$>),(<*>))
-import ImagProc.Util(getOption,optionString)
+import Util.Options(getOption,optionString)
 
 import Language.Haskell.TH
 import Language.Haskell.TH.Syntax

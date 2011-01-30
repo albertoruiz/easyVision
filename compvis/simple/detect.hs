@@ -3,6 +3,7 @@
 import EasyVision
 import Graphics.UI.GLUT hiding (Size)
 import System
+import Util.Options
 
 main = do
     sz <- findSize
@@ -10,7 +11,7 @@ main = do
     th <- getOption "--sensi" 0.01
 
     (cam,ctrl) <- getCam 0 sz
-                  >>= addSmall (Size 90 120)
+                  >>= addSmall (Size 90 120) (gray.channels)
                   >>= detectMotion (th*255*90*120<)
                   >>= withPause
 

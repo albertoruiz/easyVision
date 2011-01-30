@@ -1,4 +1,5 @@
 import EasyVision hiding (observe)
+import Util.Options
 
 observe winname = monitor' winname (mpSize 20) drawImage
 

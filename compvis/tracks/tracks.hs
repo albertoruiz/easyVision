@@ -5,7 +5,7 @@ import Control.Arrow
 import Vision
 import Numeric.LinearAlgebra hiding ((.*))
 import qualified Data.Map as M
-
+import Util.Options
 
 f .***. g = uncurry zip . (f *** g) . unzip
 
@@ -70,7 +70,7 @@ board cam = return $ do
     return (img, pointsToPixels (size img) $ map head $ filter ((>25).length) $ tracks)
 
 
-okFrame xs = g . (\(k,x)->(k, head x, last x)) $ debug xs
+okFrame xs = g . (\(k,x)->(k, head x, last x)) $ xs
     where g (k,(a,_),(b,_)) = True
 
 auxsh ((im,tks),k) = do

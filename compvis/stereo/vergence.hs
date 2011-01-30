@@ -7,6 +7,7 @@ import Vision
 import Text.Printf(printf)
 import Util.Misc(unitary)
 import Util.Rotation(rot3)
+import Util.Options
 
 ------------------------------------------------------------
 

@@ -3,6 +3,7 @@
 import EasyVision
 import ImagProc.C.Segments
 import Text.Printf(printf)
+import Util.Options
 
 drift alpha = virtualCamera drifter
     where drifter (a:b:rest) = a : drifter ((alpha .* a |+| (1-alpha).* b):rest)

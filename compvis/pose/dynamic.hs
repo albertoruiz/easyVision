@@ -15,6 +15,7 @@ import Data.IORef
 import Control.Concurrent
 import Data.Maybe
 import Vision.Autofrontal
+import Util.Options
 
 data Particle = PT {
     x,y,z :: GLdouble,

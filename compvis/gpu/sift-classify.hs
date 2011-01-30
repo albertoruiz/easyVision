@@ -7,7 +7,7 @@ import Data.List(minimumBy)
 import Numeric.LinearAlgebra
 import Vision
 import ImagProc.GPU.SIFT
-
+import Util.Options
 
 main = do
     sz <- findSize

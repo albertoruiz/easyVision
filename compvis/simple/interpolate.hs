@@ -1,6 +1,7 @@
 -- example of virtual cameras
 
 import EasyVision
+import Util.Options
 
 -----------------------------------------------------------
 

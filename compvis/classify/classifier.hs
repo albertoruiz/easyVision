@@ -7,6 +7,7 @@ import Numeric.LinearAlgebra
 import Data.List(sortBy)
 import Util.Stat
 import Util.Misc(vec,Vec)
+import Util.Options
 
 pcaR r = mef (ReconstructionQuality r)
 

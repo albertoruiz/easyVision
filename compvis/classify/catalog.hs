@@ -1,6 +1,7 @@
 import EasyVision
 import Graphics.UI.GLUT
 import System(getArgs)
+import Util.Options
 
 main = do
     sz <- findSize

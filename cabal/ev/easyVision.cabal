@@ -39,6 +39,8 @@ library
                         EasyVision.MiniApps.PoseTracker
                         EasyVision.MiniApps.Contours
                         EasyVision.MiniApps.ScatterPlot
+                        EasyVision.MiniApps.Static
+                        EasyVision.MiniApps.Save
     other-modules:
 
     ghc-prof-options:   -auto-all

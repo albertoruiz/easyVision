@@ -14,6 +14,7 @@ import Vision
 import Vision.Autofrontal
 import Control.Monad(when)
 import Numeric.LinearAlgebra
+import Util.Options
 
 main = do
 

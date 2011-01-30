@@ -1,12 +1,12 @@
 {-# LANGUAGE TemplateHaskell, RecordWildCards, NamedFieldPuns #-}
 
-import EasyVision as EV hiding (debug)
+import EasyVision as EV
 import Graphics.UI.GLUT hiding (Point)
-import Util.Misc(diagl,degree,Vec,norm,debug,diagl,memo,Mat)
+import Util.Misc(diagl,degree,Vec,norm,debug,diagl,memo,Mat,mat,norm)
 import Util.Rotation(rot3)
 import Control.Arrow
-import Control.Applicative((<$>))
-import Control.Monad(when)
+import Control.Applicative((<$>),(<*>))
+import Control.Monad(when,ap)
 import Data.Colour.Names as Col
 import Vision(desp)
 import Numeric.LinearAlgebra -- ((<>),fromList,toList,fromComplex,join,dim)
@@ -290,6 +290,48 @@ digits = do
     let rawconts = contours 100 1 128 False img
         fst3 (a,_,_) = a
         proc = Closed . pixelsToPoints (size img).douglasPeuckerClosed 1 .fst3
-        cs = (map proc $ rawconts) `zip` cycle ["$","0","1","2","3","4","5","6","7","8","6"]
+        cs = (map proc $ rawconts) `zip` cycle ["$","0","1","2","3","4","5","6","7","8","9"]
     return cs
 
+----------------------------------------------------------------------
+
+analyzeAlign shapes = r
+  where
+    xs = map (map snd . toCanonic . fst) shapes
+    r = mat [ [ distMult a b | b <-xs ] | a <- xs ]
+    distMult us vs = minimum $ dist <$> us <*> vs
+
+
+analyzeInvar f shapes = r
+  where
+    xs = map (f.fst) shapes
+    r = mat [ [ norm (a-b) | b <-xs ] | a <- xs ]
+
+
+oldInvar w f = fromList desc where
+    sc = 1 -- g 1
+    g k = magnitude (f k) + magnitude (f (-k))
+    h k = g k/sc
+    desc = map h [2..(max 2 w)]
+
+simpleInvar w f = fromList desc where
+    g = magnitude . f
+    desc = map g [-w .. w]
+
+
+
+disp = putStr . dispf 0 . (100*)
+
+analyze gen = do
+    shapes <- fmap (filter ((not.(`elem`["9","Y'","J","S","B","Q","N'"])).snd)) gen
+    let a = analyzeInvar (simpleInvar 10 . fourierPL . whitenContour) shapes
+        b = analyzeAlign shapes
+        c = analyzeInvar (oldInvar 10 . fourierPL . whitenContour) shapes
+    dspnor c
+    dspnor a
+    dspnor b
+    dspnor $ (b-a)/b
+
+dspnor m = do
+    putStr . dispf 0 . (*100) $ m             
+    

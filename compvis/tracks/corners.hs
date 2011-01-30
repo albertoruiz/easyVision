@@ -1,6 +1,7 @@
 import EasyVision hiding ((.@.))
 import EasyVision.MiniApps.Corners
 import Control.Arrow((&&&))
+import Util.Options
 
 main1 = do
     corners <- getCornerDetector

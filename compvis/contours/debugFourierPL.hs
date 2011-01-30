@@ -1,4 +1,4 @@
-import EasyVision as EV hiding (debug,fourierPL)
+import EasyVision as EV hiding (fourierPL)
 import Control.Arrow
 import Numeric.LinearAlgebra
 import Util.Misc(memo,debug)

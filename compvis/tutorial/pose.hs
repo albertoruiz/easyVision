@@ -5,6 +5,7 @@ import Numeric.LinearAlgebra
 import System.Environment(getArgs)
 import Graphics.UI.GLUT hiding (Point,Size,scale)
 import Control.Monad(when)
+import Util.Options
 
 main = do
     prepare

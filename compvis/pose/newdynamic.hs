@@ -14,6 +14,7 @@ import Numeric.LinearAlgebra
 import Data.IORef
 import Control.Concurrent
 import Data.Maybe
+import Util.Options
 
 data Particle = PT {
     x,y,z :: GLdouble,

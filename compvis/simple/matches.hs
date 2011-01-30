@@ -10,6 +10,7 @@ import Data.List(minimumBy)
 import Text.Printf(printf)
 import Control.Parallel.Strategies
 import Vision
+import Util.Options
 
 -----------------------------------------------------------
 

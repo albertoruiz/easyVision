@@ -6,6 +6,7 @@ import Vision
 import Numeric.LinearAlgebra hiding ((.*))
 import Graphics.UI.GLUT as GL hiding(Point,Matrix)
 import Text.Printf(printf)
+import Util.Options
 
 main = do
     corners <- getCornerDetector

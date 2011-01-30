@@ -12,6 +12,7 @@ import Data.List((\\),sortBy,unzip4)
 import Debug.Trace
 import Text.Printf
 import Util.Kalman
+import Util.Options
 
 main = do
     prepare

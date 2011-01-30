@@ -33,7 +33,7 @@ main = do
     shConf test (Just . mode . classifier)
     shErr  test (Just . mode . classifier)
 
-    (camtest,ctrl) <- mplayer video sz >>= detectStatic 0.01 5 >>= withPause
+    (camtest,ctrl) <- mplayer video sz >>= detectStatic 0.01 5 5 (gray.channels) id >>= withPause
     w <- evWindow () "Plates detection" sz Nothing  (const (kbdcam ctrl))
     launch $ inWin w $ do
         img <- camtest

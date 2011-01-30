@@ -5,6 +5,7 @@ import Text.Printf
 import Numeric.LinearAlgebra
 import Control.Monad(when)
 import Numeric.GSL.Fourier
+import Util.Options
 
 disp m = putStrLn . format " " (printf "%5.2f") $ m
 

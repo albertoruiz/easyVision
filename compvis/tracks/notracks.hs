@@ -7,6 +7,7 @@ import Vision
 import Numeric.LinearAlgebra hiding ((.*))
 import Graphics.UI.GLUT hiding (Size,Point)
 import Debug.Trace
+import Util.Options
 
 f .***. g = uncurry zip . (f *** g) . unzip
 f .&&&. g = virtualCamera (map (id &&& id)) >=> virtualCamera (f .***. g)

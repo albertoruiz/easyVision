@@ -239,7 +239,7 @@ goodDir f = a where
 
 
 normalizeRotation f = g where
-    a = debug $ goodDir f
+    a = goodDir f
     aux = normalizeStart ( (* cis (-a) ).f)
     p0 = aux 1 + aux (-1) + aux 2 + aux (-2)
     pm = -aux 1 + aux (-1) + aux 2 + aux (-2)

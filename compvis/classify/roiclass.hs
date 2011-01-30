@@ -19,7 +19,6 @@ import Text.Printf
 import Util.Misc(vec)
 import Util.Probability(evidence)
 
-
 genrois = roiGridStep 50 200 25 25
 -- genrois = roiGridStep 100 100 25 25
 
@@ -59,7 +58,7 @@ main = do
     -- evaluation required in "two places" to avoid
     -- relearning the classifier in each frame (!!??)
 
-    (camtest,ctrl) <- mplayer video sz >>= detectStatic 0.01 5 >>= withPause
+    (camtest,ctrl) <- mplayer video sz >>= detectStatic 0.01 5 5 (gray.channels) id >>= withPause
     w <- evWindow () "Plates detection" sz Nothing  (const (kbdcam ctrl))
     t <- evWindow () "threshold" sz Nothing  (const (kbdcam ctrl))
     launch $ do
