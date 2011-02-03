@@ -56,7 +56,7 @@ import Numeric.GSL.Polynomials(polySolve)
 import Numeric.GSL.Fourier(ifft)
 
 data Polyline = Closed { polyPts :: [Point] }
-              | Open   { polyPts :: [Point] }
+              | Open   { polyPts :: [Point] } deriving (Show,Read)
 
 -- | (for an open polyline is the length)
 perimeter :: Polyline -> Double

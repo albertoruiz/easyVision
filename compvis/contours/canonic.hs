@@ -8,61 +8,128 @@ import Control.Arrow
 import Control.Applicative((<$>),(<*>))
 import Control.Monad(when,ap)
 import Data.Colour.Names as Col
-import Vision(desp)
+import Vision(desp, estimateHomography)
 import Numeric.LinearAlgebra -- ((<>),fromList,toList,fromComplex,join,dim)
 import Data.List(sortBy,minimumBy,groupBy,sort,zipWith4)
 import Data.Function(on)
 import Text.Printf(printf)
+import Data.IORef
+import Util.Options
 
 import Data.Complex
 import Classifier(Sample)
+
+import Tools
 
 $(autoParam "SCParam" "classify-"
   [( "epsilon","Double" ,realParam 0.2 0 1),
    ( "conf"   ,"Double" ,realParam 1.5 1 3)]
  )
 
---recognize = monitorC pentos
-recognize = monitorC digits
+mon = monitor "Image pauser" (mpSize 10) (drawImage . EV.gray)
 
-main = run $ camera ~> EV.gray >>= wcontours id ~> (id *** contSel) >>= recognize >>= timeMonitor
 
-orient = run $ camera ~> EV.gray >>= wcontours id ~> (id *** contSel) >>= monitorOrient >>= timeMonitor
+--recognize = shapeCatalog (return [])
+--recognize = shapeCatalog pentos
+--recognize = shapeCatalog digits
 
-test = run $ camera ~> EV.gray >>= wcontours id ~> (id *** contSel) >>= monitorTest >>= timeMonitor
+catalog = digits
+--catalog = return pentominos
+--catalog = read <$> readFile "digits.txt"
 
-monitorC gprot cam = do
+main = run $   camera ~> EV.gray
+           >>= wcontours id ~> (id *** contSel)
+           >>= shapeCatalog catalog (protos . protoOri)
+           >>= recognize classify
+           >>= timeMonitor
+
+main' = run $ (camera ~> EV.gray
+            >>= wcontours id ~> (id *** contSel)
+            >>= shapeCatalog catalog (protos . protoOri)
+            .&. winSCParam) ~> pureClassify >>= classifyMon
+            >>= timeMonitor
+
+
+recognize meth cam = do
     par <- winSCParam
-    prototypes <- (protos . protoOri) <$> gprot
-    monitor "contours" (mpSize 20) (sh par prototypes) cam
+    monitor "contours" (mpSize 20) (sh par) cam
   where
-    sh par prots (im, cs) = do
+    sh par (im, cs, prots) = do
         drawImage' im
         pointCoordinates (size im)
-        setColor' red
-        lineWidth $= 1
-        mapM_ (shcont) cs
         text2D 0.9 0.6 $ show (length cs)
         p <- par
-        mapM_ (align p prots) cs
+        when (not (null prots)) $ mapM_ (meth p prots) cs
+
 
 chPol (Closed ps) = Closed (convexHull ps)
 
 feat = map foufeat . icaConts' . whitenContour
 
+alignRefined SCParam {..} prots x = do
+    let (zs,c) = (toCanonic &&& id) x
+        (d,(mb,(cx,cb))) = minimumBy (compare `on` fst)  [(dist u v, (m,(u,v))) | (m,u) <- zs, (v,_) <- prots]
+        af1 = inv mb
+        al = transPol af1 (invFou 100 10 $ toFun cb)
+        ob = transPol af1 (invFou 100 10 $ toFun cx)
+        corr = zipWith (\a b->[a,b]) (polyPts al) (polyPts ob)
+        
+        aux (Closed ps) = map p2l ps
+        p2l (Point x y) = [x,y]
+        
+        h = estimateHomography (aux al) (aux ob)
+        alp = transPol h x
+        
+        (zs',c') = (toCanonic &&& id) alp
+        (d',(mb',cx')) = minimumBy (compare `on` fst)  [(dist u cb, (m,u)) | (m,u) <- zs']
+        al' = transPol (inv h <> inv mb') (invFou 100 10 $ toFun cb)
+        
+    lineWidth $= 1
+
+    setColor' green
+    shcont al
+    lineWidth $= 1
+    setColor' Col.gray
+    renderPrimitive Lines $ mapM_ vertex (concat corr)
+        
+    setColor' orange
+    shcont alp
+    when (d' < epsilon) $ do
+        lineWidth $= 1
+        setColor' yellow
+        shcont al'
+
+    setColor' red
+    lineWidth $= 1
+    shcont x
+    shcont ob
+
 
 
 align SCParam {..} prots x = do
+--    shcont x
     let (zs,c) = (toCanonic &&& id) x
-    let (d,(mb,cb)) = minimumBy (compare `on` fst)  [(dist u v, (m,v)) | (m,u) <- zs, (v,_) <- prots]
-    when (d < epsilon) $ do
-        lineWidth $= 3
-        setColor' green
+    let (d,(mb,(cx,cb))) = minimumBy (compare `on` fst)  [(dist u v, (m,(u,v))) | (m,u) <- zs, (v,_) <- prots]
+    when (not (null prots) && d < epsilon) $ do
+        lineWidth $= 1
         let al = transPol (inv mb) (invFou 100 10 $ toFun cb)
+            ob = transPol (inv mb) (invFou 100 10 $ toFun cx)
+            corr = zipWith (\a b->[a,b]) (polyPts al) (polyPts ob)
+        setColor' Col.gray
+        let aux (Closed ps) = map p2l ps
+            p2l (Point x y) = [x,y]
+        renderPrimitive Lines $ mapM_ vertex (concat corr)
+        lineWidth $= 1
+        setColor' yellow
         shcont al
-
+--    lineWidth $= 1
+--    setColor' red
+--    shcont x
 
 classify SCParam {..} prots x = do
+--    setColor' red
+--    lineWidth $= 1
+--    shcont x
     let (zs,c) = (feat &&& id) x
     let prep = take 3
              . sortBy (compare `on` fst)
@@ -76,8 +143,31 @@ classify SCParam {..} prots x = do
     let (d1,l):(d2,_):_ = lb
     when (d1 < epsilon && d2 > conf*d1) $ do
         text2D (d2f ox) (d2f up) l
-        lineWidth $= 4
+        lineWidth $= 1
         shcont c
+
+-- input: the result of shapeCatalog: image, contours, prototypes and classification parameters
+-- output: image and well classified shapes
+pureClassify ((im,cs,prots),SCParam {..}) = (im, oks)
+  where
+    oks = map (snd) $ filter ((<epsilon).fst) (map clas cs) 
+    clas x = minimumBy (compare `on` fst)  [(dist u v, (x,l)) | (m,u) <- zs, (v,l) <- prots]
+      where zs = toCanonic x
+
+classifyMon cam = monitor "Detected" (mpSize 20) sh cam
+  where
+    sh (im, oks) = do
+        drawImage' im
+        pointCoordinates (size im)
+        text2D 0.9 0.6 $ show (length oks)
+        mapM_ f oks
+    f (c,l) = do
+        shcont c
+        text2D (d2f ox) (d2f up) l
+      where
+        (ox,oy,_,_,_) = momentsContour (polyPts c)
+        up = 2/400 + maximum (map py (polyPts c))
+        
 
 -- with more detail
 classify' prots x = do
@@ -107,7 +197,12 @@ d2f = fromRational.toRational
 
 ----------------------------------------------------------------------
 
-monitorTest = monitor "contours" (mpSize 20) sh where
+-- DEMO > smooth
+-- show frequential smoothing of the equalized shapes
+
+smooth = run $ camera ~> EV.gray >>= wcontours id ~> (id *** contSel) >>= smoothTest >>= timeMonitor
+
+smoothTest = monitor "contours" (mpSize 20) sh where
     sh (im, cs) = do
         drawImage' im
         pointCoordinates (size im)
@@ -119,9 +214,14 @@ monitorTest = monitor "contours" (mpSize 20) sh where
         mapM_ (shcont.dispfeat) cs
         --mapM_ (print.orientation) cs
 
-dispfeat = invFou 100 10 . normalizeStart . memo 20 . fourierPL . equalizeContour
+    dispfeat = invFou 100 10 . normalizeStart . memo 20 . fourierPL . equalizeContour
 
 ----------------------------------------------------------------------
+
+-- DEMO > orient
+-- show canonic orientation of detected shapes
+
+orient = run $ camera ~> EV.gray >>= wcontours id ~> (id *** contSel) >>= monitorOrient >>= timeMonitor
 
 monitorOrient = monitor "contours" (mpSize 20) sh where
     sh (im, cs) = do
@@ -139,99 +239,17 @@ monitorOrient = monitor "contours" (mpSize 20) sh where
         lineWidth $= 2
         mapM_ shcont wcs2
 
-f c@(Closed ps) = map (transPol t) . icaConts . whitenContour $ c
-  where
-    t = desp (ox,oy) <> diagl [0.05,0.05,1]
-    (ox,oy,_,_,_) = momentsContour ps
+    f c@(Closed ps) = map (transPol t) . icaConts . whitenContour $ c
+      where
+        t = desp (ox,oy) <> diagl [0.05,0.05,1]
+        (ox,oy,_,_,_) = momentsContour ps
 
 ----------------------------------------------------------------------
 
-shcont (Closed c) = do
-    renderPrimitive LineLoop $ mapM_ vertex c
-    renderPrimitive Points $ vertex (head c)
-shcont (Open c) = do
-    renderPrimitive LineStrip $ mapM_ vertex c
 
-shcontO (Closed c) = do
-    pointCoordinates (EV.Size 500 500)
-    renderPrimitive LineLoop $ mapM_ vertex c
-    pointSize $= 6
-    renderPrimitive Points $ vertex (c!!0)
-    pointSize $= 4
-    renderPrimitive Points $ vertex (c!!1)
-    --print c
+-- DEMO > showCanonic
+-- show canonic versions of shapes and other interesting info
 
-----------------------------------------------------------------------
-
--- | smoothed frequential invariant representations
-toCanonic :: Polyline -> [(Mat,Vec)]
-toCanonic p = zip (map (<>w) cs) cps
-  where
-    w = rot3 (20*degree) <> whitener p
-    wp = transPol w p
-    cs = map rot3 (icaAngles' wp)
-    cps = map (foufeat .flip transPol wp) cs
-
-protoOri :: Sample Polyline -> Sample Polyline
-protoOri = concatMap (repSample . (f *** id))
-  where
-    f = icaConts'' . whitenContour . transPol (rot3 (10*degree)) -- hmm
-    repSample (xs,l) = map (id &&& const l) xs
-
-
-protos ::  Sample Polyline -> Sample Vec
-protos = map (foufeat *** id)
-
-foufeat = prec 10 .  normalizeStart . fourierPL
-
-
-prec' n f = join[r,c]
-    where 
-      (r,c) = fromComplex $ fromList $ map f ([1 .. n]++[-1,-2 .. -n])
-
-prec n f = join[r,c]
-    where 
-      (r,c) = fromComplex $ fromList $ map f ([-n..n])
-
-
-toFun cb k = cb@>(k+n) :+ cb@>(k+3*n+1)
-    where n = (dim cb - 2) `div` 4
-
-
-----------------------------------------------------------------------
-
-icaConts w = map g (icaAngles w)
-  where
-    g a = transPol (rot3 a) w
-
-icaConts' w = map g (icaAngles' w)
-  where
-    g a = transPol (rot3 a) w
-
-icaConts'' w = map g (icaAngles'' w)
-  where
-    g a = transPol (rot3 a) w
-
-icaAngles' w = as ++ map (+pi) as
-  where as = icaAngles w
-
-icaAngles'' w = [head as, last as]
-  where as = icaAngles w
-
-----------------------------------------------------------------------
-
-examplesBrowser :: String -> EV.Size -> (t -> IO a) -> Sample t -> IO (EVWindow (Int, Sample t))
-examplesBrowser name sz f exs =
-    evWindow (0,exs) name sz (Just disp) (mouseGen acts kbdQuit)
-  where
-    n = length exs - 1
-    disp st = do
-        (k,exs) <- get st
-        let (x,label) = exs!!k
-        f x
-        windowTitle $= name++" #"++show (k+1)++ ": "++label
-    acts = [((MouseButton WheelUp,   Down, modif), \_ (k,exs) -> (min (k+1) n, exs))
-           ,((MouseButton WheelDown, Down, modif), \_ (k,exs) -> (max (k-1) 0, exs))]
 
 runIt f = prepare >> f >> mainLoop
 
@@ -272,11 +290,11 @@ showDigits = do
     f = shcontO . transPol (diagl[0.1,0.1,1]) . whitenContour
 
 
-showpentos = runIt $ showpentoR
-                  >> showpentoW
-                  >> showpentoF
-                  >> showpentoCH
-                  >> showDigits
+showCanonic = runIt $ showpentoR
+                   >> showpentoW
+                   >> showpentoF
+                   >> showpentoCH
+                   >> showDigits
 
 ----------------------------------------------------------------------
 
@@ -295,17 +313,20 @@ digits = do
 
 ----------------------------------------------------------------------
 
+-- DEMO > analyze pentos
+-- show discrimination matrix for different distances in a given problem
+
 analyzeAlign shapes = r
   where
     xs = map (map snd . toCanonic . fst) shapes
-    r = mat [ [ distMult a b | b <-xs ] | a <- xs ]
+    r = mat [ [ distMult a b | b <-xs ] | a <- [0]:xs ]
     distMult us vs = minimum $ dist <$> us <*> vs
 
 
 analyzeInvar f shapes = r
   where
     xs = map (f.fst) shapes
-    r = mat [ [ norm (a-b) | b <-xs ] | a <- xs ]
+    r = mat [ [ norm (a-b) | b <-xs ] | a <- 0:xs ]
 
 
 oldInvar w f = fromList desc where
@@ -334,4 +355,6 @@ analyze gen = do
 
 dspnor m = do
     putStr . dispf 0 . (*100) $ m             
-    
+
+----------------------------------------------------------------------
+

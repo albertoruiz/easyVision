@@ -10,7 +10,7 @@ import Vision -- hiding (degree,rot1,rot2,rot3,infoSProb)
 import Numeric.LinearAlgebra
 -- import qualified Data.Array as A
 -- 
-import EasyVision hiding (debug, numCams,(|+|), median)
+import EasyVision hiding (numCams,(|+|), median)
 import Data.Colour.Names as Col
 import Graphics.UI.GLUT hiding (Size,scale,triangulate,Matrix)
 -- import Data.Maybe(fromJust)
@@ -55,8 +55,8 @@ shRecosG fc fp name ss = do
         pointSize $= 1
         setColor' blue
         renderPrimitive Points $ mapM_ (vertex.toList.inHomog) (fp $ ss!!k)
-    acts = [((SpecialKey KeyUp,   Down, modif), \k -> min (k+1) n)
-           ,((SpecialKey KeyDown, Down, modif), \k -> max (k-1) 0)]
+    acts = [((SpecialKey KeyUp,   Down, modif), \_ k -> min (k+1) n)
+           ,((SpecialKey KeyDown, Down, modif), \_ k -> max (k-1) 0)]
     n = length ss - 1
 
 

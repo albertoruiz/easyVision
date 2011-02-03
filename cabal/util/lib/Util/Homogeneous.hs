@@ -48,7 +48,7 @@ import Util.Misc(vec,Vec,mat,Mat,(#),unitary,norm,impossible)
 
 ----------------------------------------------------------------------
 
-data Point = Point { px :: !Double, py :: !Double} deriving (Eq, Show)
+data Point = Point { px :: !Double, py :: !Double} deriving (Eq, Show, Read)
 
 ----------------------------------------------------------------------
 

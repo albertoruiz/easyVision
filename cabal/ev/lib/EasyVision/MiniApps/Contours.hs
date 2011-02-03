@@ -32,7 +32,10 @@ $(autoParam "ContourParam" "contour-" [
     ("area",   "Int",    percent 10),
     ("fracpix","Double", realParam (1.5) 0 10),
     ("mode",   "String", stringParam "white" ["white", "black", "both"]),
-    ("smooth", "Int",    intParam 1 0 10)] )
+    ("smooth", "Int",    intParam 1 0 10),
+    ("thresDelta", "Int",    intParam 32 0 255),
+    ("thresRange", "Int",    intParam 0 0 10)] )
+
 
 defContourParam :: ContourParam
 argContourParam :: IO ContourParam
@@ -45,7 +48,10 @@ smartContours :: (x -> ImageGray) -> ContourParam -> x -> ContourInfo
 smartContours g ContourParam{..} x = r
     where pre = (smooth `times` median Mask3x3) . g
           z = pre x
-          rawg b y = map fst3 $ contours 100 pixarea (fromIntegral thres) b y
+          rawg b y = concatMap (\th -> map fst3 $ contours 100 pixarea (fromIntegral th) b y)
+                     [thres-thresDelta*thresRange,
+                      thres-thresDelta*(thresRange-1) .. 
+                      thres+thresDelta*thresRange]
                where (Size h w) = size y
                      pixarea = h*w*area`div`10000
           cw = post $ rawg True z
