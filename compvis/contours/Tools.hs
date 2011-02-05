@@ -1,9 +1,14 @@
 module Tools(
     -- * Invariant features
-    toCanonic,
-    protos, protoOri,
-    foufeat, toFun,
-    icaConts, icaConts',
+    toCanonicAll, toCanonic2,
+--    protos, 
+    protoOri,
+--    foufeat, 
+    toFun, 
+--    prec,
+    icaConts,
+--  icaContsAll, icaConts2,
+    alignment, refine,
     -- * Display
     shapeCatalog,
     examplesBrowser,
@@ -19,7 +24,7 @@ import Control.Arrow
 import Control.Applicative((<$>),(<*>))
 import Control.Monad(when,ap)
 import Data.Colour.Names as Col
-import Vision(desp, estimateHomography)
+import Vision (desp, scaling, estimateHomography)
 import Numeric.LinearAlgebra -- ((<>),fromList,toList,fromComplex,join,dim)
 import Data.List(sortBy,minimumBy,groupBy,sort,zipWith4)
 import Data.Function(on)
@@ -34,20 +39,53 @@ import Data.Maybe(isJust)
 ----------------------------------------------------------------------
 ----------------------------------------------------------------------
 
+type AlignInfo = (Double,(Polyline,Mat,Vec,Mat,Vec,String))
 
--- | smoothed frequential invariant representations
-toCanonic :: Polyline -> [(Mat,Vec)]
-toCanonic p = zip (map (<>w) cs) cps
+alignment :: Sample (Mat,Vec) -> Polyline -> AlignInfo
+alignment prots x = minimumBy (compare `on` fst) $ [basicDist x z p | z <- zs, p <- prots]
+  where
+    zs = toCanonicAll x
+    basicDist x (b,u) ((a,v),l) = (dist u v, (x,b,u,a,v,l))
+
+refine :: Double -> AlignInfo -> AlignInfo
+refine amax (d, (x,b,u,a,v,l)) = (d',(x, b',u',a,v,l))
+  where
+    alpha = minimumBy (compare `on` dist v . ufr) angs
+    uf = toFun u
+    ufr ang = prec 10 $ normalizeStart $ (cis ang *) . uf
+    angs = map (* degree) [-amax .. amax]
+    d' = dist (ufr alpha) v
+    u' = ufr alpha
+    b' = rot3 (-alpha) <> b
+
+dist a b = norm (a-b)
+    
+----------------------------------------------------------------------
+
+-- | smoothed frequential invariant representations (all for the unknow object) with alignment info
+toCanonicAll :: Polyline -> [(Mat,Vec)]
+toCanonicAll p = zip (map (<>w) cs) cps
   where
     w = rot3 (20*degree) <> whitener p
     wp = transPol w p
-    cs = map rot3 (icaAngles' wp)
+    cs = map rot3 (icaAnglesAll wp)
     cps = map (foufeat .flip transPol wp) cs
+
+-- | smoothed frequential invariant representations (the main two, for the prototypes) with alignment info
+toCanonic2 :: (Polyline,String) -> [((Mat,Vec),String)]
+toCanonic2 (p,l) = zip (map (<>w) cs) cps `zip` repeat l
+  where
+    w = rot3 (20*degree) <> whitener p
+    wp = transPol w p
+    cs = map rot3 (icaAngles2 wp)
+    cps = map (foufeat .flip transPol wp) cs
+
+
 
 protoOri :: Sample Polyline -> Sample Polyline
 protoOri = concatMap (repSample . (f *** id))
   where
-    f = icaConts'' . whitenContour . transPol (rot3 (10*degree)) -- hmm
+    f = icaConts2 . whitenContour . transPol (rot3 (10*degree)) -- hmm
     repSample (xs,l) = map (id &&& const l) xs
 
 
@@ -72,29 +110,30 @@ icaConts w = map g (icaAngles w)
   where
     g a = transPol (rot3 a) w
 
-icaConts' w = map g (icaAngles' w)
+icaContsAll w = map g (icaAnglesAll w)
   where
     g a = transPol (rot3 a) w
 
-icaConts'' w = map g (icaAngles'' w)
+icaConts2 w = map g (icaAngles2 w)
   where
     g a = transPol (rot3 a) w
 
-icaAngles' w = as ++ map (+pi) as
+icaAnglesAll w = as ++ map (+pi) as
   where as = icaAngles w
 
-icaAngles'' w = [head as, last as]
+icaAngles2 w = [head as, last as]
   where as = icaAngles w
 
 ----------------------------------------------------------------------
 ----------------------------------------------------------------------
 
-shapeCatalog gprot feat cam = do
+shapeCatalog gprot feat' cam = do
     raw <- gprot
-    let prototypes = feat raw
+    let feat = feat' . map (normalShape *** id)
+        prototypes = feat raw
         sz = mpSize 10
     w <- evWindow (raw,prototypes,Nothing,False) "Contour Selection" sz Nothing (marker kbdQuit)
-    s <- shapesBrowser "Prototypes" (mpSize 10) raw
+    s <- shapesBrowser "Shape" (EV.Size 240 240) raw
     return $ do
         (raw',prots',click,save) <- getW w
         (im,cs) <- cam
@@ -142,6 +181,7 @@ examplesBrowser name sz f exs =
     evWindow (0,exs) name sz (Just disp) (mouseGen acts kbdQuit)
   where
     disp st = do
+        pointCoordinates sz
         (k,exs) <- get st
         when (not $ null exs) $ do 
             let (x,label) = exs!!k
@@ -169,3 +209,10 @@ shcontO (Closed c) = do
 
 ----------------------------------------------------------------------
 
+normalShape c = transPol h c
+ where
+   (x,y,sx,sy,_) = momentsContour (polyPts c)
+   h = scaling (1/ sqrt( max sx sy)) <> desp (-x,-y)
+
+  
+    

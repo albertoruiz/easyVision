@@ -22,7 +22,7 @@ main = do
 
     sz <- findSize
 
-    (cam, ctrl)  <- getCam 0 sz  ~> channels >>= withPause
+    (cam, ctrl)  <- camera >>= withPause
 
     w <- evWindow () "image" sz Nothing  (const (kbdcam ctrl))
 
