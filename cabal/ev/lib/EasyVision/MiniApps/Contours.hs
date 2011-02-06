@@ -2,8 +2,8 @@
 -----------------------------------------------------------------------------
 {- |
 Module      :  EasyVision.MiniApss.Contours
-Copyright   :  (c) Alberto Ruiz 2010
-License     :  GPL-style
+Copyright   :  (c) Alberto Ruiz 2010-11
+License     :  GPL
 
 Maintainer  :  Alberto Ruiz (aruiz at um dot es)
 
@@ -31,9 +31,9 @@ $(autoParam "ContourParam" "contour-" [
     ("thres",  "Int",    intParam 128 1 255),
     ("area",   "Int",    percent 10),
     ("fracpix","Double", realParam (1.5) 0 10),
-    ("mode",   "String", stringParam "white" ["white", "black", "both"]),
+    ("mode",   "String", stringParam "black" ["white", "black", "both"]),
     ("smooth", "Int",    intParam 1 0 10),
-    ("thresDelta", "Int",    intParam 32 0 255),
+    ("thresDelta", "Int",    intParam 16 0 255),
     ("thresRange", "Int",    intParam 0 0 10)] )
 
 
@@ -79,7 +79,7 @@ data ContourInfo = ContourInfo {
     contSel   :: [Polyline]
     }
 
------------------------------------------------------
+----------------------------------------------------------------------
 
 contourMonitor :: (Image t, Drawable t) 
                => String
@@ -96,3 +96,5 @@ contourMonitor winname f = monitor winname (mpSize 20) sh where
         renderPrimitive LineLoop $ mapM_ vertex c
     shcont (Open c) = do
         renderPrimitive LineStrip $ mapM_ vertex c
+
+----------------------------------------------------------------------

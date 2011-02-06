@@ -2,7 +2,7 @@
 
 module Util.Misc where
 
-import Numeric.LinearAlgebra
+import Numeric.LinearAlgebra hiding (i)
 import Debug.Trace
 import Data.Function(on)
 import Data.List(elemIndex, sortBy, sort, group)
@@ -171,18 +171,18 @@ a // b = fromBlocks [[a],[b]]
 
 -- | load an audio file (currently using sox, TO DO: read sample rate)
 loadAudio :: FilePath -> IO Mat
-loadAudio path = do
-    let f = path ++ ".txt"
-    _ <- system $ "sox "++path ++" -t dat - | sed '/;/d' - > "++f
+loadAudio fpath = do
+    let f = fpath ++ ".txt"
+    _ <- system $ "sox "++fpath ++" -t dat - | sed '/;/d' - > "++f
     r <- loadMatrix f
     _ <- system $ "rm " ++ f
     return r
 
 -- | save a matrix to an audio file and play it (using sox's play)
 savePlayAudio :: Int -> Mat -> FilePath -> IO ()
-savePlayAudio rate m path = do
-    saveMatrix path "%f" m
-    _ <- system $ "play -r "++show rate++" -v 0.5 "++path
+savePlayAudio rate m fpath = do
+    saveMatrix fpath "%f" m
+    _ <- system $ "play -r "++show rate++" -v 0.5 "++fpath
     return ()
 
 unliftVector :: Storable a => (Vector a -> Vector a) -> ([a] -> [a])
@@ -214,3 +214,42 @@ pairwiseD2 x y | ok = x2 `outer` oy + ox `outer` y2 - 2* x <> trans y
 size :: Matrix t -> (Int, Int)
 size m = (rows m, cols m)
 
+----------------------------------------------------------------------
+
+-- spanning tree of a graph
+-- see also http://stackoverflow.com/questions/4290163/how-can-i-write-a-mst-algorithm-prim-or-kruskal-in-haskell
+
+
+-- | Minimum/maximum spanning tree, from sorted arcs
+-- | nmax is given by the caller to keep laziness
+kruskal :: Int -> [(Int, Int)] -> [(Int, Int)]
+kruskal nmax s = fst $ myfoldl' ((nmax==).length.fst) f ([],r0) s where
+    -- nmax = maximum (map snd s)
+    r0 = map return [0..nmax]
+    f (g,r) (i,j) = if i `elem` r!!j then (g,r) else ((i,j):g, r')
+        where r' = replaceAt z (replicate (length z) z) r
+              z = unionSort [r!!i, r!!j]
+
+myfoldl' :: (a -> Bool) -> (a -> t -> a) -> a -> [t] -> a
+myfoldl' done f z0 xs0 = lgo z0 xs0
+    where lgo z _ | done z = z
+          lgo z []     = z
+          lgo z (x:xs) = let z' = f z x in z' `seq` lgo z' xs    
+
+
+neigh :: (Ord t) => [(t, t)] -> t -> [t]
+neigh g n = unionSort [[ j | (k,j) <- g , k == n ],
+                      [ i | (i,k) <- g , k == n ]]
+
+
+--path from a to b in a tree
+path :: [(Int,Int)] -> Int -> Int -> [Int]
+path g a b | b `elem` na = [a,b]
+           | null subs = []
+           | otherwise = a : head subs
+  where
+    na = neigh g a
+    g' = filter noa g where noa (i,j) = i /= a && j /= a
+    subs = filter (not.null) [ path g' v b | v <- na ]
+
+----------------------------------------------------------------------

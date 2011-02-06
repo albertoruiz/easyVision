@@ -9,24 +9,26 @@ module Tools(
     icaConts,
 --  icaContsAll, icaConts2,
     alignment, refine,
+    -- * Digit tools
+    fixOrientation,
     -- * Display
     shapeCatalog,
     examplesBrowser,
-    shcont, shcontO
+    shcont, shcontO,
 ) where
 
 
 import EasyVision as EV
 import Graphics.UI.GLUT hiding (Point)
-import Util.Misc(diagl,degree,Vec,norm,debug,diagl,memo,Mat,mat,norm)
+import Util.Misc(diagl,degree,Vec,norm,debug,diagl,memo,Mat,mat,norm,unionSort,replaceAt,mean)
 import Util.Rotation(rot3)
 import Control.Arrow
 import Control.Applicative((<$>),(<*>))
 import Control.Monad(when,ap)
 import Data.Colour.Names as Col
-import Vision (desp, scaling, estimateHomography)
+import Vision (desp, scaling, estimateHomography, ht)
 import Numeric.LinearAlgebra -- ((<>),fromList,toList,fromComplex,join,dim)
-import Data.List(sortBy,minimumBy,groupBy,sort,zipWith4)
+import Data.List(sortBy,minimumBy,groupBy,sort,zipWith4,partition,transpose)
 import Data.Function(on)
 import Text.Printf(printf)
 import Data.IORef
@@ -59,6 +61,36 @@ refine amax (d, (x,b,u,a,v,l)) = (d',(x, b',u',a,v,l))
     b' = rot3 (-alpha) <> b
 
 dist a b = norm (a-b)
+    
+----------------------------------------------------------------------    
+    
+fixOrientation :: (a, [AlignInfo]) -> (a, [AlignInfo])
+fixOrientation (im, xs) = (im, zs ++ ys)
+  where
+    asym (_, (_,_,_,_,_,l)) = l `elem` ["1","2","3","4","5","7"]
+    (zs, qs)  = partition asym xs
+    ys = if null zs then qs else map (f dx dy) qs
+    g (_, (_,b,_,a,_,_)) = dir $ ht (inv b <> a) [[0,0],[1,0]]
+    dir [[ox,oy],[x,y]] = [x-ox,y-oy]
+    [dx,dy] = map mean $ transpose (map g zs)
+
+    f dx dy (d, (x,b,u,a,v,l)) | l `elem` ["$","6","9","8"] && flipped = (d, (x,b'',u,a,v, comp l))
+                               | l == "0" = (d, (x,b',u,a,v,l))
+                               | otherwise = (d, (x,b,u,a,v,l))
+      where
+        [[cx,cy],diry ] = ht (inv b <> a) [[0,0],[1,0]]
+        [r,s] = dir [[cx,cy],diry]
+        dot = r*dx + s*dy
+        flipped = dot < 0
+        b'' = rot3 pi <> b
+        aangle = acos (dot/(sqrt(dx*dx+dy*dy)*sqrt(r*r+s*s)))
+        [[tenx,teny]] = ht (rot3 (aangle)) [[r,s]]
+        angle | tenx * dx + teny * dy > 0 = aangle
+              | otherwise = -aangle
+        b' = b <> desp (cx,cy) <> rot3 (-angle) <> desp (-cx,-cy)
+        comp "6" = "9"
+        comp "9" = "6"
+        comp x = x
     
 ----------------------------------------------------------------------
 
@@ -215,4 +247,5 @@ normalShape c = transPol h c
    h = scaling (1/ sqrt( max sx sy)) <> desp (-x,-y)
 
   
-    
+----------------------------------------------------------------------
+

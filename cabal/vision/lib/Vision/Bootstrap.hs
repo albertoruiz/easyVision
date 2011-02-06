@@ -14,7 +14,7 @@ module Vision.Bootstrap(
 import Util.Rotation
 import Vision.Epipolar
 import Util.Misc(vec,Mat,Vec,debug,degree,impossible,(&),arrayOf,
-                 unionSort,unitary,replaceAt,round')
+                 unionSort,unitary,round',kruskal,path)
 import Numeric.LinearAlgebra hiding (i)
 import Numeric.LinearAlgebra.Tensor hiding (scalar)
 import Numeric.LinearAlgebra.Array.Util hiding (scalar)
@@ -133,8 +133,8 @@ selectUsefulPoints n p = obs where
     obs = [((r i, j),pt) | ((i,j),pt) <- projs p, i `elem` pts ]
     sel = take n . sortBy (compare `on` negate.length.v_of_p p) . p_of_v p   
     pts = unionSort $ map sel (rangeCams p)
-    r i = fromJust $ lookup i assoc
-    assoc = zip pts [0..]
+    r i = fromJust $ lookup i assocl
+    assocl = zip pts [0..]
 
 estimatePointsCenters :: Int -> [Mat] -> Projections Calibrated -> (Motion,Motion)
 estimatePointsCenters n rots p = (newCams sol, newCams (-sol)) where
@@ -162,40 +162,6 @@ estimatePointsCenters n rots p = (newCams sol, newCams (-sol)) where
     hv (Point x y) = unitary (vec [x,y,1])
 
 -----------------------------------------------------------------
--- spanning tree of a graph
--- see also http://stackoverflow.com/questions/4290163/how-can-i-write-a-mst-algorithm-prim-or-kruskal-in-haskell
-
-
-neigh :: (Ord t) => [(t, t)] -> t -> [t]
-neigh g n = unionSort [[ j | (k,j) <- g , k == n ],
-                      [ i | (i,k) <- g , k == n ]]
-
--- spanning tree, from sorted arcs
--- nmax is given from outside to keep laziness
-kruskal :: Int -> [(Int, Int)] -> [(Int, Int)]
-kruskal nmax s = fst $ myfoldl' ((nmax==).length.fst) f ([],r0) s where
-    -- nmax = maximum (map snd s)
-    r0 = map return [0..nmax]
-    f (g,r) (i,j) = if i `elem` r!!j then (g,r) else ((i,j):g, r')
-        where r' = replaceAt z (replicate (length z) z) r
-              z = unionSort [r!!i, r!!j]
-
-myfoldl' :: (a -> Bool) -> (a -> t -> a) -> a -> [t] -> a
-myfoldl' done f z0 xs0 = lgo z0 xs0
-    where lgo z _ | done z = z
-          lgo z []     = z
-          lgo z (x:xs) = let z' = f z x in z' `seq` lgo z' xs
-
-
---path from a to b in a tree
-path :: [(Int,Int)] -> Int -> Int -> [Int]
-path g a b | b `elem` na = [a,b]
-           | null subs = []
-           | otherwise = a : head subs
-  where
-    na = neigh g a
-    g' = filter noa g where noa (i,j) = i /= a && j /= a
-    subs = filter (not.null) [ path g' v b | v <- na ]
 
 -- | sequence of spanning trees from sorted arcs
 spanningTrees :: Int -> [(Int, Int)] -> [[(Int, Int)]]

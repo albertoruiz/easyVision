@@ -41,7 +41,7 @@ main = run $ camera ~> EV.gray
             >>= parseMon
             >>= timeMonitor
 
-
+----------------------------------------------------------------------
 
 parseMon = monitor "Parse" (mpSize 10) sh
   where
@@ -51,11 +51,14 @@ parseMon = monitor "Parse" (mpSize 10) sh
         pointCoordinates (mpSize 10)
         shcont (chPol $ Closed $ concatMap (polyPts.f) oks)
 
+----------------------------------------------------------------------
 
 classify SCParam {..} (im,cs,prots) = (im, oks)
   where
     oks = filter ((<epsilon).fst) (map clas cs) 
     clas = refine maxangle . alignment prots
+
+----------------------------------------------------------------------
 
 classifyMon cam = monitor "Detected" (mpSize 20) sh cam
   where
@@ -76,8 +79,7 @@ classifyMon cam = monitor "Detected" (mpSize 20) sh cam
       where
         (ox,oy,_,_,_) = momentsContour (polyPts c)
         up = 2/400 + maximum (map py (polyPts c))
-
-unitCircle = Closed [Point (cos (t*degree)) (sin (t*degree)) | t <- [0,10 .. 350]]
+        unitCircle = Closed [Point (cos (t*degree)) (sin (t*degree)) | t <- [0,10 .. 350]]
 
 
 alignMon cam = monitor "Alignment" (mpSize 20) sh cam
