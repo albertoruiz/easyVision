@@ -36,7 +36,7 @@ $ sudo apt-get install libcv-dev libcvaux-dev libhighgui-dev
 
 $ cabal update
 $ cd workdir
-$ darcs get http://perception.inf.um.es/~aruiz/darcs/easyVision
+$ darcs get http://patch-tag.com/r/aruiz/easyVision
 $ cd easyVision/cabal
 $ sh reinstall.sh
 
