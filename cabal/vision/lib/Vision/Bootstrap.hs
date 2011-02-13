@@ -189,7 +189,7 @@ initRots epi = r0 where
     sel = filter (isJust.rot.snd) epi         -- selected subgraph
     rots = mapSnd (fromJust.rot) sel          -- extract rotations
     arcs1 = map fst $ sortBy (compare `on` negate.s2.snd) sel
-    span1 = kruskal (nc - 1) arcs1
+    span1 = debug "arcs" id $ kruskal (nc - 1) arcs1
     r0 = graphInit span1 rots
 
 lieAverage :: Vec -> Double -> [Mat] -> [((Int,Int),Mat)] -> [Mat]

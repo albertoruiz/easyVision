@@ -22,6 +22,8 @@ module Util.Covariance (
 
 , whitener, whiteningTransf
 
+, isoDist, isoDistTransf
+
 , normalizer
 
 , correlation
@@ -29,7 +31,7 @@ module Util.Covariance (
 ) where
 
 import Numeric.LinearAlgebra hiding (eigenvalues)
-import Util.Misc(Vec,Mat,sqr, unliftRow)
+import Util.Misc(Vec,Mat,sqr, unliftRow, debug, diagl,mean,norm)
 
 meanRow :: Mat -> Vec
 meanRow m = ones <> m
@@ -134,6 +136,28 @@ whitener st = Codec { encodeRows = \x -> (x - m) <> trans w
   where
     m = asRow $ meanV st
     w = whitening st
+
+
+----------------------------------------------------------------------
+
+isoDistTransf :: Mat -> CovStr -> Mat
+isoDistTransf z st = fromBlocks [[ w, -wm]
+                                ,[ 0,  1 ]]
+  where
+    m = meanV st
+    w = diagl [d,d]
+    wm = asColumn (w <> m)
+    
+    d = recip . (/sqrt 2) . mean . map norm . toRows $ z- asRow m
+
+
+
+isoDist :: Mat -> CovStr -> Codec
+isoDist z st = Codec { encodeRows = \x -> (x - m) / scalar d
+                     , decodeRows = \y -> (y * scalar d) + m }
+  where
+    m = asRow $ meanV st
+    d = (/sqrt 2) . mean . map norm . toRows $ z-m
 
 --------------------------------------------------------------
 

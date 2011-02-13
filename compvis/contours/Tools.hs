@@ -241,11 +241,12 @@ shcontO (Closed c) = do
 
 ----------------------------------------------------------------------
 
-normalShape c = transPol h c
+normalShape c = transPol h c -- (h<>rotAround x y (-pi/2)) c
  where
    (x,y,sx,sy,_) = momentsContour (polyPts c)
    h = scaling (1/ sqrt( max sx sy)) <> desp (-x,-y)
 
+rotAround x y a = desp (x,y) <> rot3 a <> desp (-x,-y)
   
 ----------------------------------------------------------------------
 

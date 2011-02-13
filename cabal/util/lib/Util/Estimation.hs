@@ -103,11 +103,11 @@ withNormalization lt estimateRelation dest orig = lt wd <> h <> wo
     xo = mat orig
     std = covStr xd
     sto = covStr xo
-    nd = toLists $ encodeRows (whitener std) xd
-    no = toLists $ encodeRows (whitener sto) xo
+    nd = toLists $ encodeRows (isoDist xd std) xd
+    no = toLists $ encodeRows (isoDist xo sto) xo
     h = estimateRelation nd no
-    wd = whiteningTransf std
-    wo = whiteningTransf sto
+    wd = isoDistTransf xd std
+    wo = isoDistTransf xo sto
 
 -- | withNormalization inv estimateHomographyRaw
 estimateHomography :: [[Double]] -> [[Double]] -> Mat
