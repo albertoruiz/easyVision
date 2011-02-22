@@ -73,8 +73,9 @@ export OPENCV=/usr/local/lib
 
 export LD_LIBRARY_PATH=$IPP_SHARED:$CUDA:$OPENCV
 
+6. Install the packages.
 
-6. Install the packages:
+In a new terminal:
 
 $ cabal update
 $ cd workdir
@@ -112,4 +113,7 @@ export EASYVISION=/path/to/workdir/
 
 $ cd ../compis/simple
 $ runhaskell demo.hs tv://
+
+NOTE: programs using the optional functions provided by OpenCV and CUDA
+      must currently be run only in compiled mode.
 
