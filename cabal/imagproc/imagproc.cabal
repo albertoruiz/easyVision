@@ -62,9 +62,3 @@ library
     --ghc-options:        -Wall
                         -fno-warn-missing-signatures
 
-    if arch(x86_64)
-        extra-libraries: guide ippcoreem64t ippiem64t ippsem64t ippccem64t ippvcem64t ippcvem64t
-        ld-options:     -pthread
-    else
-        extra-libraries: guide ippcore ippi ipps ippcc ippvc ippcv
-
