@@ -9,34 +9,42 @@ module Tools(
     icaConts,
 --  icaContsAll, icaConts2,
     alignment, refine,
+    -- * Projective rectification from circles
+    rectifyMon, rectifierFromManyCircles, imagOfCircPt,
     -- * Digit tools
     fixOrientation,
     -- * Display
     shapeCatalog,
     examplesBrowser,
     shcont, shcontO,
+    rotAround
 ) where
 
 
 import EasyVision as EV
 import Graphics.UI.GLUT hiding (Point)
-import Util.Misc(diagl,degree,Vec,norm,debug,diagl,memo,Mat,mat,norm,unionSort,replaceAt,mean)
+import Util.Misc(diagl,degree,Vec,norm,debug,diagl,memo,Mat,mat,norm,unionSort,replaceAt,mean,median,unitary,pairsWith)
+import Util.Covariance(meanV,covStr)
 import Util.Rotation(rot3)
 import Control.Arrow
 import Control.Applicative((<$>),(<*>))
 import Control.Monad(when,ap)
 import Data.Colour.Names as Col
-import Vision (desp, scaling, estimateHomography, ht)
+import Vision (desp, scaling, estimateHomography, ht, cross,
+               inHomog,circularConsistency,focalFromCircularPoint,similarFrom2Points,
+               rectifierFromCircularPoint)
 import Numeric.LinearAlgebra -- ((<>),fromList,toList,fromComplex,join,dim)
 import Data.List(sortBy,minimumBy,groupBy,sort,zipWith4,partition,transpose)
 import Data.Function(on)
 import Text.Printf(printf)
 import Data.IORef
 import Util.Options
+import Util.Ellipses
 
 import Data.Complex
 import Classifier(Sample)
-import Data.Maybe(isJust)
+import Data.Maybe(isJust,catMaybes)
+import Numeric.GSL.Minimization
 
 ----------------------------------------------------------------------
 ----------------------------------------------------------------------
@@ -241,6 +249,11 @@ shcontO (Closed c) = do
 
 ----------------------------------------------------------------------
 
+centerShape c = transPol h c -- (h<>rotAround x y (-pi/2)) c
+ where
+   (x,y,_,_,_) = momentsContour (polyPts c)
+   h = desp (-x,-y)
+
 normalShape c = transPol h c -- (h<>rotAround x y (-pi/2)) c
  where
    (x,y,sx,sy,_) = momentsContour (polyPts c)
@@ -249,4 +262,129 @@ normalShape c = transPol h c -- (h<>rotAround x y (-pi/2)) c
 rotAround x y a = desp (x,y) <> rot3 a <> desp (-x,-y)
   
 ----------------------------------------------------------------------
+
+-- | obtain a rectifing homograpy from several conics which are the image of circles 
+--rectifierFromManyCircles :: [Mat] -> Maybe Mat
+rectifierFromManyCircles f cs = r ijs
+  where
+    cqs = zip cs (map (fst.analyzeEllipse) cs)
+    ijs = catMaybes (pairsWith imagOfCircPt cqs)
+    r [] = ident 3
+    r xs = rectifierFromCircularPoint (f $ average' xs)
+    average xs = (x,y) where [x,y] = toList (head xs)
+    average' zs = (x,y)
+      where
+        pn = meanV . covStr . fromRows $ map (fst.fromComplex) zs
+        cpn = complex pn
+        ds = Util.Misc.median $ [pnorm PNorm2 (z - cpn) | z <- zs]
+        [pnx,pny] = toList pn
+        dir = scalar i * complex (scalar ds * unitary (fromList [pny, -pnx]))
+        [x,y] = debug "I'" id $ toList (cpn + dir)
+
+
+imagOfCircPt :: (Mat,EllipseParams) -> (Mat,EllipseParams) -> Maybe (Vector (Complex Double))
+imagOfCircPt (c1,q1) (c2,q2) = (fmap h.fst) (selectSol q1 q2 (intersectionEllipses c1 c2))
+  where
+    h (a,b) = fromList [a,b]      
+
+improveCirc (rx:+ix,ry:+iy) ells = (rx':+ix',ry':+iy') where
+    [rx',ix',ry',iy'] = fst $ minimize NMSimplex2 1e-5 300 (replicate 4 0.1) cost [rx,ix,ry,iy]
+    cost [rx,ix,ry,iy] = sum $ map (eccentricity.rectif) $ ells
+        where rectif e = mt t <> e <> inv t
+              t = rectifierFromCircularPoint (rx:+ix,ry:+iy)
+    eccentricity con = d1-d2 where (_,_,d1,d2,_) = fst $ analyzeEllipse con
+
+mt m = trans (inv m)
+----------------------------------------------------------------------
+
+rectifyMon sz cam = do wr <- evWindow () "Rectif"   sz Nothing (const kbdQuit)
+                       monitor "Rectify" (mpSize 10) (sh wr) cam
+  where
+    g (d, (x,b,u,a,v,l)) = (d,((x, inv b <> a),l))
+    h (d,((c,m),l)) = trans (inv m) <> diagl [1,1,-1] <> (inv m)
+    f (d,((c,m),l)) = do
+        let ellip = transPol m unitCircle
+            ((mx,my,dx,dy,alpha),_) = analyzeEllipse (estimateConicRaw $ polyPts ellip)
+        setColor' red
+        shcont ellip
+        shcont $ transPol (rotAround mx my (-alpha)) (Closed [Point (mx+1*dx) my, Point (mx-1*dx) my])
+        shcont $ transPol (rotAround mx my (-alpha)) (Closed [Point mx (my+1*dy), Point mx (my-1*dy)])
+ 
+    sh wr (im,oks) = when (length oks > 2) $ do
+        drawImage im
+        pointCoordinates (mpSize 10)
+        mapM_ (f.g) oks        
+        let gc (d, (x,b,u,a,v,l)) = x
+            ellipMat = map (h.g) (sortBy (compare `on` fst) oks)
+            ellipses = map (fst.analyzeEllipse) ellipMat
+            improve = id
+            sc = 1
+            orig = im
+        when (length ellipMat >= 2) $ do
+            let sol = intersectionEllipses (ellipMat!!0) (ellipMat!!1)
+                (mbij,mbother) = selectSol (ellipses!!0) (ellipses!!1) sol
+            when (isJust mbij && isJust mbother) $ do
+                let Just ijr    = mbij
+                    ij = improve ijr
+                    Just other = mbother
+                    [h1,h2] = getHorizs [ij,other]
+                lineWidth $= 1
+                setColor' Col.blue
+                shLine h1
+                setColor' Col.yellow
+                shLine h2
+                pointSize $= 5
+                setColor' Col.purple
+                renderPrimitive Points $ mapM (vertex.map realPart.t2l) [ij,other]
+                setColor' Col.green
+                mapM_ shLine $ map (map realPart) $ tangentEllipses (ellipMat!!0) (ellipMat!!1)
+                
+                let cc = inv (ellipMat!!0) <> (ellipMat!!1)
+                    vs = map (fst . fromComplex) . toColumns . snd . eig $ cc
+                setColor' Col.white
+                renderPrimitive Points (mapM (vertex . toList. inHomog) vs)
+
+                let ccl = (ellipMat!!0) <> inv (ellipMat!!1)
+                    vsl = map (fst . fromComplex) . toColumns . snd . eig $ ccl
+                mapM_ (shLine.toList) vsl
+
+
+
+                let recraw = rectifierFromCircularPoint ij
+                             --rectifierFromManyCircles id (ellipMat)
+                    (mx,my,_,_,_) = head ellipses
+                    (mx2,my2,_,_,_) = last ellipses
+                    [[mx',my'],[mx'2,my'2]] = ht recraw [[mx,my],[mx2,my2]]
+                    -- okrec = similarFrom2Points [mx',my'] [mx'2,my'2] [0,0] [-0.5, 0] <> recraw
+                    okrec = similarFrom2Points [mx',my'] [mx'2,my'2] [mx,my] [mx2, my2] <> recraw
+                
+                    --drawImage $ warp 0 sz' (scaling sc <> w) (gray orig)
+                inWin wr $ drawImage $ warp 0 sz (scaling sc <> okrec ) ( orig)
+                --text2D 30 30 $ show $ focalFromHomogZ0 (inv recraw)
+                -- it is also encoded in the circular points
+                text2D 30 30 $ printf "f = %.2f" $ focalFromCircularPoint ij
+                text2D 30 50 $ printf "ang = %.1f" $ abs ((acos $ circularConsistency ij)/degree - 90)
+
+unitCircle = Closed [Point (cos (t*degree)) (sin (t*degree)) | t <- [0,10 .. 350]]
+
+
+getHorizs pts = map linf pts where
+    linf (x,y) = toList $ unitary $ snd $ fromComplex $ cross v (conj v)
+        where v = fromList [x,y,1]
+
+selectSol (x1,y1,_,_,_) (x2,y2,_,_,_) pts = (ij,other) where
+    ls = getHorizs pts
+    ij    = mbhead [v | (v,l) <- zip pts ls, f l (x1,y1) * f l (x2,y2) > 0 ]
+    other = mbhead [v | (v,l) <- zip pts ls, f l (x1,y1) * f l (x2,y2) < 0 ]
+    f [a,b,c] (x,y) = a*x + b*y + c
+    mbhead [] = Nothing
+    mbhead x  = Just (head x)
+
+tangentEllipses c1 c2 = map ((++[1]). t2l) $ intersectionEllipses (inv c1) (inv c2)
+
+t2l (a,b) = [a,b]
+
+shLine [a,b,c] = renderPrimitive Lines $ mapM f [-1,1]
+    where f x = vertex $ Point x ((-a*x-c)/b)
+
 

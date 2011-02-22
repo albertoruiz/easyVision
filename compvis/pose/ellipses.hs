@@ -16,6 +16,10 @@ import Text.Printf
 import Data.Maybe(isJust)
 import Util.Homogeneous
 
+import Util.Misc(Mat,pairsWith,debug,mean)
+import Util.Covariance(covStr,meanV)
+import Data.Maybe(catMaybes)
+
 sz' = Size 600 600
 
 main = do
@@ -105,11 +109,13 @@ worker w wr cam param = do
 
 
 
-                let recraw = rectifierFromCircularPoint ij
+                let recraw = -- rectifierFromCircularPoint ij
+                             rectifierFromManyCircles improve ellipMat
                     (mx,my,_,_,_) = ellipses!!0
                     (mx2,my2,_,_,_) = ellipses!!1
                     [[mx',my'],[mx'2,my'2]] = ht recraw [[mx,my],[mx2,my2]]
-                    okrec = similarFrom2Points [mx',my'] [mx'2,my'2] [0,0] [-0.5, 0] <> recraw
+--                    okrec = similarFrom2Points [mx',my'] [mx'2,my'2] [0,0] [-0.5, 0] <> recraw
+                    okrec = similarFrom2Points [mx',my'] [mx'2,my'2] [mx,my] [mx2, my2] <> recraw
                 inWin wr $ do
                     --drawImage $ warp 0 sz' (scaling sc <> w) (gray orig)
                     drawImage $ warp (0,0,0) sz' (scaling sc <> okrec ) (rgb orig)
@@ -177,3 +183,29 @@ improveCirc (rx:+ix,ry:+iy) ells = (rx':+ix',ry':+iy') where
         where rectif e = mt t <> e <> inv t
               t = rectifierFromCircularPoint (rx:+ix,ry:+iy)
     eccentricity con = d1-d2 where (_,_,d1,d2,_) = fst $ analyzeEllipse con
+
+----------------------------------------------------------------------
+    
+-- | obtain a rectifing homograpy from several conics which are the image of circles 
+--rectifierFromManyCircles :: [Mat] -> Maybe Mat
+rectifierFromManyCircles f cs = r ijs
+  where
+    cqs = zip cs (map (fst.analyzeEllipse) cs)
+    ijs = catMaybes (pairsWith imagOfCircPt cqs)
+    r [] = ident 3
+    r xs = rectifierFromCircularPoint (f $ average' xs)
+    average xs = (x,y) where [x,y] = toList (head xs)
+    average' zs = (x,y)
+      where
+        pn = meanV . covStr . debug "pn" id . fromRows $ map (fst.fromComplex) zs
+        cpn = complex pn
+        ds = mean $ debug "ds" id [pnorm PNorm2 (z - cpn) | z <- zs]
+        [pnx,pny] = toList pn
+        dir = scalar i * complex (scalar ds * unitary (fromList [pny, -pnx]))
+        [x,y] = toList (cpn + dir)
+
+imagOfCircPt :: (Mat,EllipseParams) -> (Mat,EllipseParams) -> Maybe (Vector (Complex Double))
+imagOfCircPt (c1,q1) (c2,q2) = (fmap h.fst) (selectSol q1 q2 (intersectionEllipses c1 c2))
+  where
+    h (a,b) = fromList [a,b]
+

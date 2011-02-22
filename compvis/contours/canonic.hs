@@ -15,7 +15,9 @@ import Data.Function(on)
 import Text.Printf(printf)
 import Data.IORef
 import Util.Options
+import Util.Ellipses
 import ImagProc(otsuThreshold)
+
 
 import Data.Complex
 import Classifier(Sample)
@@ -39,7 +41,11 @@ main = run $ camera ~> EV.gray
             >>= classifyMon
             >>= alignMon
             >>= parseMon
+            >>= rectifyMon (mpSize 10)
             >>= timeMonitor
+
+----------------------------------------------------------------------
+
 
 ----------------------------------------------------------------------
 
@@ -75,11 +81,14 @@ classifyMon cam = monitor "Detected" (mpSize 20) sh cam
         text2D (d2f ox) (d2f up) (printf "%s %.0f" l (d*100))
         setColor' yellow
         shcont $ (transPol m) (Closed [Point (-1) (-1), Point 1 (-1), Point 1 1, Point (-1) 1])
-        shcont $ (transPol m) unitCircle
+        let ellip = transPol m unitCircle
+        shcont ellip
       where
         (ox,oy,_,_,_) = momentsContour (polyPts c)
         up = 2/400 + maximum (map py (polyPts c))
-        unitCircle = Closed [Point (cos (t*degree)) (sin (t*degree)) | t <- [0,10 .. 350]]
+
+
+unitCircle = Closed [Point (cos (t*degree)) (sin (t*degree)) | t <- [0,10 .. 350]]
 
 
 alignMon cam = monitor "Alignment" (mpSize 20) sh cam

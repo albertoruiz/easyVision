@@ -52,6 +52,11 @@ bootFromRots' n rots p = selectSol camsol p
     camsol = estimatePointsCenters n rots (views p)
 
 
+bootstrapFrom rs' p = bootFromRots rs p
+  where
+    rs = refineRots q (epi p) rs'
+    q e = nEpi e > 30 && s2 e > 0.95
+
 bootstrap p = bootFromRots rs p
   where
     rs = refineRots q (epi p) (initRots (epi p))
@@ -79,7 +84,10 @@ test name = do
     
     let s' = bootFromRots (map rotOfCam (cams s)) p
     printf "boot with optimal rots rmse (x1000): %.5f\n" $ krms s'
-    
+
+    let s'test = bootstrapFrom  (map rotOfCam (cams s)) p
+    printf "boot with refined optimal rots rmse (x1000): %.5f\n" $ krms s'test
+
     let b0 = bootFromRots (initRots (epi p)) p
     printf "boot with init rots rmse (x1000): %.2f\n" $ krms b0
     
