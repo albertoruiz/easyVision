@@ -114,6 +114,6 @@ export EASYVISION=/path/to/workdir/
 $ cd ../compis/simple
 $ runhaskell demo.hs tv://
 
-NOTE: programs using the optional functions provided by OpenCV and CUDA
-      must currently be run only in compiled mode.
+NOTE: Programs using the optional functions provided by OpenCV and CUDA
+      can only be run in compiled mode.
 

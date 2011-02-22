@@ -10,7 +10,7 @@ module Tools(
 --  icaContsAll, icaConts2,
     alignment, refine,
     -- * Projective rectification from circles
-    rectifyMon, rectifierFromManyCircles, imagOfCircPt,
+    rectifyMon,
     -- * Digit tools
     fixOrientation,
     -- * Display
@@ -31,8 +31,7 @@ import Control.Applicative((<$>),(<*>))
 import Control.Monad(when,ap)
 import Data.Colour.Names as Col
 import Vision (desp, scaling, estimateHomography, ht, cross,
-               inHomog,circularConsistency,focalFromCircularPoint,similarFrom2Points,
-               rectifierFromCircularPoint)
+               inHomog,circularConsistency,focalFromCircularPoint,similarFrom2Points)
 import Numeric.LinearAlgebra -- ((<>),fromList,toList,fromComplex,join,dim)
 import Data.List(sortBy,minimumBy,groupBy,sort,zipWith4,partition,transpose)
 import Data.Function(on)
@@ -40,6 +39,7 @@ import Text.Printf(printf)
 import Data.IORef
 import Util.Options
 import Util.Ellipses
+import Vision.Camera(rectifierFromCircularPoint,imagOfCircPt,selectSol,getHorizs)
 
 import Data.Complex
 import Classifier(Sample)
@@ -169,7 +169,7 @@ icaAngles2 w = [head as, last as]
 
 shapeCatalog gprot feat' cam = do
     raw <- gprot
-    let feat = feat' . map (normalShape *** id)
+    let feat = feat' . map (centerShape *** id)
         prototypes = feat raw
         sz = mpSize 10
     w <- evWindow (raw,prototypes,Nothing,False) "Contour Selection" sz Nothing (marker kbdQuit)
@@ -263,37 +263,6 @@ rotAround x y a = desp (x,y) <> rot3 a <> desp (-x,-y)
   
 ----------------------------------------------------------------------
 
--- | obtain a rectifing homograpy from several conics which are the image of circles 
---rectifierFromManyCircles :: [Mat] -> Maybe Mat
-rectifierFromManyCircles f cs = r ijs
-  where
-    cqs = zip cs (map (fst.analyzeEllipse) cs)
-    ijs = catMaybes (pairsWith imagOfCircPt cqs)
-    r [] = ident 3
-    r xs = rectifierFromCircularPoint (f $ average' xs)
-    average xs = (x,y) where [x,y] = toList (head xs)
-    average' zs = (x,y)
-      where
-        pn = meanV . covStr . fromRows $ map (fst.fromComplex) zs
-        cpn = complex pn
-        ds = Util.Misc.median $ [pnorm PNorm2 (z - cpn) | z <- zs]
-        [pnx,pny] = toList pn
-        dir = scalar i * complex (scalar ds * unitary (fromList [pny, -pnx]))
-        [x,y] = debug "I'" id $ toList (cpn + dir)
-
-
-imagOfCircPt :: (Mat,EllipseParams) -> (Mat,EllipseParams) -> Maybe (Vector (Complex Double))
-imagOfCircPt (c1,q1) (c2,q2) = (fmap h.fst) (selectSol q1 q2 (intersectionEllipses c1 c2))
-  where
-    h (a,b) = fromList [a,b]      
-
-improveCirc (rx:+ix,ry:+iy) ells = (rx':+ix',ry':+iy') where
-    [rx',ix',ry',iy'] = fst $ minimize NMSimplex2 1e-5 300 (replicate 4 0.1) cost [rx,ix,ry,iy]
-    cost [rx,ix,ry,iy] = sum $ map (eccentricity.rectif) $ ells
-        where rectif e = mt t <> e <> inv t
-              t = rectifierFromCircularPoint (rx:+ix,ry:+iy)
-    eccentricity con = d1-d2 where (_,_,d1,d2,_) = fst $ analyzeEllipse con
-
 mt m = trans (inv m)
 ----------------------------------------------------------------------
 
@@ -352,8 +321,8 @@ rectifyMon sz cam = do wr <- evWindow () "Rectif"   sz Nothing (const kbdQuit)
 
                 let recraw = rectifierFromCircularPoint ij
                              --rectifierFromManyCircles id (ellipMat)
-                    (mx,my,_,_,_) = head ellipses
-                    (mx2,my2,_,_,_) = last ellipses
+                    nsz (_,_,dx,dy,_) = -dx-dy
+                    (mx,my,_,_,_):(mx2,my2,_,_,_):_ = sortBy (compare `on` nsz) ellipses
                     [[mx',my'],[mx'2,my'2]] = ht recraw [[mx,my],[mx2,my2]]
                     -- okrec = similarFrom2Points [mx',my'] [mx'2,my'2] [0,0] [-0.5, 0] <> recraw
                     okrec = similarFrom2Points [mx',my'] [mx'2,my'2] [mx,my] [mx2, my2] <> recraw
@@ -366,19 +335,6 @@ rectifyMon sz cam = do wr <- evWindow () "Rectif"   sz Nothing (const kbdQuit)
                 text2D 30 50 $ printf "ang = %.1f" $ abs ((acos $ circularConsistency ij)/degree - 90)
 
 unitCircle = Closed [Point (cos (t*degree)) (sin (t*degree)) | t <- [0,10 .. 350]]
-
-
-getHorizs pts = map linf pts where
-    linf (x,y) = toList $ unitary $ snd $ fromComplex $ cross v (conj v)
-        where v = fromList [x,y,1]
-
-selectSol (x1,y1,_,_,_) (x2,y2,_,_,_) pts = (ij,other) where
-    ls = getHorizs pts
-    ij    = mbhead [v | (v,l) <- zip pts ls, f l (x1,y1) * f l (x2,y2) > 0 ]
-    other = mbhead [v | (v,l) <- zip pts ls, f l (x1,y1) * f l (x2,y2) < 0 ]
-    f [a,b,c] (x,y) = a*x + b*y + c
-    mbhead [] = Nothing
-    mbhead x  = Just (head x)
 
 tangentEllipses c1 c2 = map ((++[1]). t2l) $ intersectionEllipses (inv c1) (inv c2)
 

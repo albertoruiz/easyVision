@@ -109,8 +109,8 @@ worker w wr cam param = do
 
 
 
-                let recraw = -- rectifierFromCircularPoint ij
-                             rectifierFromManyCircles improve ellipMat
+                let recraw = rectifierFromCircularPoint ij
+                             -- rectifierFromManyCircles improve ellipMat
                     (mx,my,_,_,_) = ellipses!!0
                     (mx2,my2,_,_,_) = ellipses!!1
                     [[mx',my'],[mx'2,my'2]] = ht recraw [[mx,my],[mx2,my2]]
@@ -164,18 +164,6 @@ tangentEllipses c1 c2 = map ((++[1]). t2l) $ intersectionEllipses (inv c1) (inv 
 
 --------------------------------------------------------------------
 
-getHorizs pts = map linf pts where
-    linf (x,y) = toList $ unitary $ snd $ fromComplex $ cross v (conj v)
-        where v = fromList [x,y,1]
-
-selectSol (x1,y1,_,_,_) (x2,y2,_,_,_) pts = (ij,other) where
-    ls = getHorizs pts
-    ij    = mbhead [v | (v,l) <- zip pts ls, f l (x1,y1) * f l (x2,y2) > 0 ]
-    other = mbhead [v | (v,l) <- zip pts ls, f l (x1,y1) * f l (x2,y2) < 0 ]
-    f [a,b,c] (x,y) = a*x + b*y + c
-    mbhead [] = Nothing
-    mbhead x  = Just (head x)
-
 -- hmm, this must be studied in more depth
 improveCirc (rx:+ix,ry:+iy) ells = (rx':+ix',ry':+iy') where
     [rx',ix',ry',iy'] = fst $ minimize NMSimplex2 1e-5 300 (replicate 4 0.1) cost [rx,ix,ry,iy]
@@ -203,9 +191,4 @@ rectifierFromManyCircles f cs = r ijs
         [pnx,pny] = toList pn
         dir = scalar i * complex (scalar ds * unitary (fromList [pny, -pnx]))
         [x,y] = toList (cpn + dir)
-
-imagOfCircPt :: (Mat,EllipseParams) -> (Mat,EllipseParams) -> Maybe (Vector (Complex Double))
-imagOfCircPt (c1,q1) (c2,q2) = (fmap h.fst) (selectSol q1 q2 (intersectionEllipses c1 c2))
-  where
-    h (a,b) = fromList [a,b]
 

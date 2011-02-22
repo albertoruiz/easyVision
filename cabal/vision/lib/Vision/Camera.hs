@@ -41,6 +41,7 @@ module Vision.Camera
 , rectifierFromAbsoluteDualConic
 , estimateAbsoluteDualConic
 , focalFromCircularPoint
+, imagOfCircPt, getHorizs, selectSol
 , circularConsistency
 , cameraModelOrigin
 , projectionAt, projectionAtF
@@ -61,6 +62,7 @@ import Util.Rotation
 import Graphics.Plot(gnuplotWin)
 
 import Util.Misc(mat,vec,Mat,Vec,norm,unitary,(&),(//),diagl,degree,impossible)
+import Util.Ellipses(EllipseParams,intersectionEllipses)
 
 cameraAtOrigin :: Mat
 cameraAtOrigin = ident 3 & 0
@@ -431,6 +433,24 @@ circularConsistency (x,y) = innerLines n0 h where
 
     innerLines l m = (l.*.m)/ sqrt (l.*.l) / sqrt(m.*.m)
         where a.*.b = a <> mS <.> b
+
+
+imagOfCircPt :: (Mat,EllipseParams) -> (Mat,EllipseParams) -> Maybe (Vector (Complex Double))
+imagOfCircPt (c1,q1) (c2,q2) = (fmap h.fst) (selectSol q1 q2 (intersectionEllipses c1 c2))
+  where
+    h (a,b) = fromList [a,b]
+
+getHorizs pts = map linf pts where
+    linf (x,y) = toList $ unitary $ snd $ fromComplex $ cross v (conj v)
+        where v = fromList [x,y,1]
+
+selectSol (x1,y1,_,_,_) (x2,y2,_,_,_) pts = (ij,other) where
+    ls = getHorizs pts
+    ij    = mbhead [v | (v,l) <- zip pts ls, f l (x1,y1) * f l (x2,y2) > 0 ]
+    other = mbhead [v | (v,l) <- zip pts ls, f l (x1,y1) * f l (x2,y2) < 0 ]
+    f [a,b,c] (x,y) = a*x + b*y + c
+    mbhead [] = Nothing
+    mbhead x  = Just (head x)
 
 --------------------------------------------------------------------------------
 -- camera parameterization and Jacobian
