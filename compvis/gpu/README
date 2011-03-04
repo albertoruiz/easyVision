@@ -1,0 +1,8 @@
+The programs using CUDA can only be run in compiled mode.
+
+Workaround: 
+
+$ cp $EASYVISION/cabal/gpu/dso_handle.c .
+$ gcc -c dso_handle.c
+$ ghci prog.hs dso_handle.o
+

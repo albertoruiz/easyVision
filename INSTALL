@@ -48,32 +48,24 @@ In principle, hmatrix will be automatically installed later, but we may
 want to install it now and verify that it works ok.
 See the hmatrix web page for help.
 
-4. Optional:
+4. OPENCV (Optional)
 
-CUDA (currently only for i386):
+$ sudo apt-get install libcv-dev libcvaux-dev libhighgui-dev
+
+5: CUDA (Optional, currently only for i386):
 
 $ wget http://perception.inf.um.es/~aruiz/CUDA.tar.gz
 
 extract it to /path/to/CUDA and add to .bashrc:
 
 export CUDA=/path/to/CUDA
+export LD_LIBRARY_PATH=$IPP_SHARED:$CUDA
 
 $ sudo apt-get install nvidia-current nvidia-cg-toolkit libglew1.5-dev libdevil-dev g++
 
-OPENCV:
-$ sudo apt-get install libcv-dev libcvaux-dev libhighgui-dev
-(you may need to modify extra-lib-dirs in opencv.cabal)
-
-Add to .bashrc:
-
-export OPENCV=/usr/local/lib
 
 
-5. Add to .bahsrc
-
-export LD_LIBRARY_PATH=$IPP_SHARED:$CUDA:$OPENCV
-
-6. Install the packages.
+6. Get the source code:
 
 In a new terminal:
 
@@ -113,7 +105,4 @@ export EASYVISION=/path/to/workdir/
 
 $ cd ../compis/simple
 $ runhaskell demo.hs tv://
-
-NOTE: Programs using the optional functions provided by OpenCV and CUDA
-      can only be run in compiled mode.
 

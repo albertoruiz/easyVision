@@ -71,7 +71,7 @@ side x = renderPrimitive Polygon $ mapM_ vertex $
                  [x,0,0]]
 
 face cam = do
-    detect <- cascadeClassifier "/usr/local/share/opencv/haarcascades/haarcascade_frontalface_alt.xml"
+    detect <- cascadeClassifier "../../data/haarcascades/haarcascade_frontalface_alt.xml"
     return $ do
          x <- cam
          let r = detect x 1
@@ -80,10 +80,11 @@ face cam = do
 
 
 face' cam = do
-    detect <- cascadeClassifier "/usr/local/share/opencv/haarcascades/haarcascade_frontalface_alt.xml"
-    nested <- cascadeClassifier "/usr/local/share/opencv/haarcascades/haarcascade_mcs_nose.xml"
+    detect <- cascadeClassifier "../../data/haarcascades/haarcascade_frontalface_alt.xml"
+    nested <- cascadeClassifier "../../data/share/opencv/haarcascades/haarcascade_mcs_nose.xml"
     return $ do
          x <- cam
          let r = detect x 1
          let r2 = if null r then [] else nested (modifyROI (const $ head r) x) 1
          return (x,r++r2)
+
