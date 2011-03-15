@@ -68,7 +68,7 @@ rectangle = Closed [Point 0 0, Point 0 1, Point 5 1, Point 5 0]
 
 lshape = Closed [Point 0 0, Point 0 1, Point 3 1, Point 3 2, Point 4 2, Point 4 0]
 
-testCont = Closed $ reverse $ polyPts $ fst (pentominos!!7)
+testCont = Closed $ reverse $ polyPts $ fst (pentominos!!5)
 
 kurtAlpha2 c = f
   where

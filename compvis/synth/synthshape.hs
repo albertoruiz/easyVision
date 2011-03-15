@@ -19,6 +19,7 @@ main = do
     pf <- createParameters (freqs maxw)
 
     w <- evWindow () "Synthesizer" sz (Just $ disp pa pf) (const kbdQuit)
+    clearColor $= Color4 1 1 1 1
 
     mainLoop
 
@@ -29,10 +30,12 @@ disp pa pf _ = do
     wf <- sequence $ map (\w -> getParam pf ("f "++show w)) [-maxw .. maxw]
     let f k = (wa!!(k+maxw) :+ 0) * cis (2*pi*wf!!(k+maxw))
     pointCoordinates (mpSize 20)
+    setColor 0 0 0
     shcont $ invFou 200 maxw f
     postRedisplay Nothing
 
 shcont (Closed c) = do
+    --lineWidth $= 3
     renderPrimitive LineLoop $ mapM_ vertex c
     pointSize $= 5
     renderPrimitive Points (vertex (head c))    

@@ -15,6 +15,7 @@ import Numeric.LinearAlgebra
 import Debug.Trace
 import Vision.Autofrontal
 import Util.Options
+import Data.Colour.Names
 
 debug x = trace (show x) x
 
@@ -98,16 +99,22 @@ worker cam op mbf w = do
                     lineWidth $= 1
                     renderPrimitive LineLoop (mapM_ vertex a4)
 
-                    houseModel
+                    unitCube
+                    --houseModel
 
     return ()
 
 ---------------------------------------------------------
 
-a4 = [[   0,    0]
+a4' = [[   0,    0]
      ,[   0, 2.97]
      ,[2.10, 2.97]
      ,[2.10,    0]]
+
+a4 = [[0, 0]
+      ,[0, 3]
+      ,[2, 3]
+      ,[2, 0]]
 
 pl (Point x y) = [x,y]
 
@@ -134,4 +141,25 @@ text2D x y s = do
     rasterPos (Vertex2 x (y::GLfloat))
     renderString Helvetica12 s
 
+unitCube = do
+    setColor' red
+    renderPrimitive Polygon $ v5 >> v6 >> v7 >> v8
+    setColor' green
+    renderPrimitive Polygon $ v1 >> v2 >> v6 >> v5
+    setColor' blue
+    renderPrimitive Polygon $ v1 >> v4 >> v8 >> v5
+    setColor' yellow
+    renderPrimitive Polygon $ v2 >> v3 >> v7 >> v6
+    setColor' orange
+    renderPrimitive Polygon $ v3 >> v4 >> v8 >> v7
+  where
+    v a b c = vertex $ Vertex3 a b (c::GLdouble)
+    v1 = v 0 0 0
+    v2 = v 2 0 0
+    v3 = v 2 3 0
+    v4 = v 0 3 0
+    v5 = v 0 0 2
+    v6 = v 2 0 2
+    v7 = v 2 3 2
+    v8 = v 0 3 2
 

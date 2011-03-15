@@ -1,19 +1,26 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
 
-module OpenCV (testImage8u, hough, cascadeClassifier) where
+module OpenCV(
+  testImage8u,
+  hough,
+  cascadeClassifier,
+
+  module OpenCV.MSER
+) where
 
 import ImagProc.Ipp.Core
 import Foreign
 import Foreign.C.String
 
+import OpenCV.MSER
+
 ------------------------------------------------------------------
 
 app1G f (G im) =
-    f (ptr im) (fi.step$im) (fi $ width $ isize im) (fi $ height $ isize im)
-      (fi $ r1 $ vroi im) (fi $ r2 $ vroi im) (fi.c1.vroi $ im) (fi.c2.vroi$im)
+    f (ptr im) (fi.step $ im) (fi $ width $ isize im) (fi $ height $ isize im)
+      (fi $ r1 $ vroi im) (fi $ r2 $ vroi im) (fi.c1.vroi $ im) (fi.c2.vroi $ im)
 
 ------------------------------------------------------------------
-
 
 testImage8u :: ImageGray -> IO ()
 testImage8u = app1G c_testImage8u
@@ -80,4 +87,3 @@ cascadeClassifier file = do
     free cascade
     return (cascadeDetect c)
 
-------------------------------------------------------------------

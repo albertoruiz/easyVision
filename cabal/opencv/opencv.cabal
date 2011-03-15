@@ -20,15 +20,17 @@ extra-source-files:
 library
 
     Build-Depends:      base >= 3 && < 5,
-                        imagproc
+                        imagproc, ev-gui
 
     hs-source-dirs:     lib
 
     Exposed-modules:   OpenCV
+                       OpenCV.MSER
 
     other-modules:
 
-    c-sources:          lib/opencv.c, lib/opencv2.cpp
+    c-sources:          lib/OpenCV/C/opencv.c
+                        lib/OpenCV/C/opencv2.cpp
 
     ghc-prof-options:   -auto-all
 

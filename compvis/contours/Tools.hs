@@ -1,5 +1,8 @@
+{-# LANGUAGE TemplateHaskell, RecordWildCards, NamedFieldPuns #-}
+
 module Tools(
     -- * Invariant features
+    maxFreq,
     toCanonicAll, toCanonic2,
 --    protos, 
     protoOri,
@@ -9,15 +12,20 @@ module Tools(
     icaConts,
 --  icaContsAll, icaConts2,
     alignment, refine,
+    classifier, classifyMon,
+    alignMon, alignMon',
     -- * Projective rectification from circles
-    rectifyMon,
+    rectifyMon, tryMetric,
     -- * Digit tools
     fixOrientation,
     -- * Display
-    shapeCatalog,
+    shapeCatalog, normalShape, centerShape,
     examplesBrowser,
     shcont, shcontO,
-    rotAround
+    rotAround,
+    unitCube,
+    -- * Prototypes
+    letters, digits
 ) where
 
 
@@ -47,7 +55,15 @@ import Data.Maybe(isJust,catMaybes)
 import Numeric.GSL.Minimization
 
 ----------------------------------------------------------------------
+
+$(autoParam "SCParam" "classify-"
+  [( "epsilon","Double" ,realParam 0.2 0 1),
+   ( "maxangle"  ,"Double" ,realParam 5 0 20)]
+ )
+
 ----------------------------------------------------------------------
+
+maxFreq = 10
 
 type AlignInfo = (Double,(Polyline,Mat,Vec,Mat,Vec,String))
 
@@ -62,7 +78,7 @@ refine amax (d, (x,b,u,a,v,l)) = (d',(x, b',u',a,v,l))
   where
     alpha = minimumBy (compare `on` dist v . ufr) angs
     uf = toFun u
-    ufr ang = prec 10 $ normalizeStart $ (cis ang *) . uf
+    ufr ang = prec maxFreq $ normalizeStart $ (cis ang *) . uf
     angs = map (* degree) [-amax .. amax]
     d' = dist (ufr alpha) v
     u' = ufr alpha
@@ -70,7 +86,97 @@ refine amax (d, (x,b,u,a,v,l)) = (d',(x, b',u',a,v,l))
 
 dist a b = norm (a-b)
     
-----------------------------------------------------------------------    
+----------------------------------------------------------------------
+
+classify SCParam {..} (im,cs,prots) = (im, oks)
+  where
+    oks = filter ((<epsilon).fst) (map clas cs) 
+    clas = refine maxangle . alignment prots
+
+classifier = classify .@. winSCParam
+
+----------------------------------------------------------------------
+
+classifyMon cam = monitor "Detected" (mpSize 20) sh cam
+  where
+    sh (im, oks) = do
+        drawImage' im
+        pointCoordinates (size im)
+        setColor' white
+        text2D 0.9 0.6 $ show (length oks)
+        mapM_ (f.g) oks
+    g (d, (x,b,u,a,v,l)) = (d,((x, inv b <> a),l))
+    f (d,((c,m),l)) = do
+        setColor' white
+        shcont c
+        text2D (d2f ox) (d2f up) l -- (printf "%s %.0f" l (d*100))
+        setColor' yellow
+        shcont $ (transPol m) (Closed [Point (-1) (-1), Point 1 (-1), Point 1 1, Point (-1) 1])
+        setColor' red
+        shcont $ (transPol m) (Closed [Point 0 0, Point (-3) 0, Point 0 0, Point 0 3])
+      where
+        (ox,oy,_,_,_) = momentsContour (polyPts c)
+        up = 2/400 + maximum (map py (polyPts c))
+
+d2f = fromRational.toRational
+
+----------------------------------------------------------------------
+
+-- only alignment
+alignMon cam = monitor "Alignment" (mpSize 20) sh cam
+  where
+    sh (im, oks) = do
+        drawImage' im
+        pointCoordinates (size im)
+        setColor' white
+        text2D 0.9 0.6 $ show (length oks)
+        mapM_ (f.g) oks
+    g (d, (x,b,u,a,v,l)) = (b,(u,v))
+    f (mb,(cx,cb)) = do
+        lineWidth $= 1
+        let al = transPol (inv mb) (invFou 100 maxFreq $ toFun cb)
+            ob = transPol (inv mb) (invFou 100 maxFreq $ toFun cx)
+            corr = zipWith (\a b->[a,b]) (polyPts al) (polyPts ob)
+        setColor' yellow
+        let aux (Closed ps) = map p2l ps
+            p2l (Point x y) = [x,y]
+        renderPrimitive Lines $ mapM_ vertex (concat corr)
+        lineWidth $= 1
+        setColor' red
+        shcont al
+
+----------------------------------------------------------------------
+
+-- alignment and classification
+alignMon' cam = monitor "Alignment" (mpSize 20) sh cam
+  where
+    sh (im, oks) = do
+        drawImage' im
+        pointCoordinates (size im)
+        setColor' white
+        text2D 0.9 0.6 $ show (length oks)
+        mapM_ (f.g) oks
+    g (d, (x,b,u,a,v,l)) = (d,x,(b,(u,v)),l)
+    f (d,x,(mb,(cx,cb)),l) = do
+        lineWidth $= 1
+        let al = transPol (inv mb) (invFou 100 maxFreq $ toFun cb)
+            ob = transPol (inv mb) (invFou 100 maxFreq $ toFun cx)
+            corr = zipWith (\a b->[a,b]) (polyPts al) (polyPts ob)
+        setColor' yellow
+        let aux (Closed ps) = map p2l ps
+            p2l (Point x y) = [x,y]
+        renderPrimitive Lines $ mapM_ vertex (concat corr)
+        lineWidth $= 1
+        setColor' red
+        shcont al
+        setColor' black
+        text2D (d2f ox) (d2f up) (printf "%s %.0f" l (d*100))
+      where
+        (ox,oy,_,_,_) = momentsContour (polyPts x)
+        up = 2/400 + maximum (map py (polyPts x))
+
+----------------------------------------------------------------------
+
     
 fixOrientation :: (a, [AlignInfo]) -> (a, [AlignInfo])
 fixOrientation (im, xs) = (im, zs ++ ys)
@@ -133,7 +239,7 @@ protos ::  Sample Polyline -> Sample Vec
 protos = map (foufeat *** id)
 
 
-foufeat = prec 10 .  normalizeStart . fourierPL
+foufeat = prec maxFreq .  normalizeStart . fourierPL
 
 
 prec n f = join[r,c]
@@ -167,9 +273,9 @@ icaAngles2 w = [head as, last as]
 ----------------------------------------------------------------------
 ----------------------------------------------------------------------
 
-shapeCatalog gprot feat' cam = do
+shapeCatalog prepro gprot feat' cam = do
     raw <- gprot
-    let feat = feat' . map (centerShape *** id)
+    let feat = feat' . map (prepro *** id)
         prototypes = feat raw
         sz = mpSize 10
     w <- evWindow (raw,prototypes,Nothing,False) "Contour Selection" sz Nothing (marker kbdQuit)
@@ -180,13 +286,14 @@ shapeCatalog gprot feat' cam = do
         let (raw,prots) = case click of
                 Nothing -> (raw',prots')
                 Just pix  -> let [pt] = pixelsToPoints sz [pix]
-                                 newc = (closestTo pt cs, "?" ++ show (length prots' + 1))
+                                 newc = (normalShape $ closestTo pt cs, "?" ++ show (length prots' + 1))
                            in (newc:raw', feat [newc] ++ prots')
         when (isJust click) $ putW s (0, raw) >> postRedisplay (Just (evW s))
         inWin w $ do
             drawImage im
             pointCoordinates sz
             text2D 0.9 0.6 $ show (length cs)
+            setColor' orange
             mapM_ shcont cs
             
         when save $ writeFile "shapes.txt" (show raw)
@@ -283,8 +390,8 @@ rectifyMon sz cam = do wr <- evWindow () "Rectif"   sz Nothing (const kbdQuit)
         drawImage im
         pointCoordinates (mpSize 10)
         mapM_ (f.g) oks        
-        let gc (d, (x,b,u,a,v,l)) = x
-            ellipMat = map (h.g) (sortBy (compare `on` fst) oks)
+        let gc (d, (x,b,u,a,v,l)) = d -- abs (orientation x)
+            ellipMat = map (h.g) (sortBy (compare `on` gc) oks)
             ellipses = map (fst.analyzeEllipse) ellipMat
             improve = id
             sc = 1
@@ -299,14 +406,14 @@ rectifyMon sz cam = do wr <- evWindow () "Rectif"   sz Nothing (const kbdQuit)
                     [h1,h2] = getHorizs [ij,other]
                 lineWidth $= 1
                 setColor' Col.blue
-                shLine h1
+                --shLine h1
                 setColor' Col.yellow
-                shLine h2
+                --shLine h2
                 pointSize $= 5
                 setColor' Col.purple
-                renderPrimitive Points $ mapM (vertex.map realPart.t2l) [ij,other]
+                --renderPrimitive Points $ mapM (vertex.map realPart.t2l) [ij,other]
                 setColor' Col.green
-                mapM_ shLine $ map (map realPart) $ tangentEllipses (ellipMat!!0) (ellipMat!!1)
+                --mapM_ shLine $ map (map realPart) $ tangentEllipses (ellipMat!!0) (ellipMat!!1)
                 
                 let cc = inv (ellipMat!!0) <> (ellipMat!!1)
                     vs = map (fst . fromComplex) . toColumns . snd . eig $ cc
@@ -315,7 +422,7 @@ rectifyMon sz cam = do wr <- evWindow () "Rectif"   sz Nothing (const kbdQuit)
 
                 let ccl = (ellipMat!!0) <> inv (ellipMat!!1)
                     vsl = map (fst . fromComplex) . toColumns . snd . eig $ ccl
-                mapM_ (shLine.toList) vsl
+                --mapM_ (shLine.toList) vsl
 
 
 
@@ -343,4 +450,71 @@ t2l (a,b) = [a,b]
 shLine [a,b,c] = renderPrimitive Lines $ mapM f [-1,1]
     where f x = vertex $ Point x ((-a*x-c)/b)
 
+
+----------------------------------------------------------------------
+
+tryMetric (im,oks) = (im,oks')
+  where
+    oks' = map f oks
+    g (d, (x,b,_,a,_,l)) = (d,((x, inv b <> a),l))
+    h (_,((_,m),_)) = trans (inv m) <> diagl [1,1,-1] <> (inv m)
+    gc (d, (x,_,_,_,_,_)) = d -- abs (orientation x)
+    ellipMat = map (h.g) (sortBy (compare `on` gc) oks)
+    ellipses = map (fst.analyzeEllipse) ellipMat
+    sol = intersectionEllipses (ellipMat!!0) (ellipMat!!1)
+    (mbij,_) = selectSol (ellipses!!0) (ellipses!!1) sol
+    Just ij = mbij
+    recraw = rectifierFromCircularPoint ij
+    nsz (_,_,dx,dy,_) = -dx-dy
+    (mx,my,_,_,_):(mx2,my2,_,_,_):_ = sortBy (compare `on` nsz) ellipses
+    [[mx',my'],[mx'2,my'2]] = ht recraw [[mx,my],[mx2,my2]]
+    okrec = similarFrom2Points [mx',my'] [mx'2,my'2] [mx,my] [mx2, my2] <> recraw
+    rectif = if length oks > 1 && isJust mbij then okrec else ident 3
+    f (d, (x,b,u,a,v,l)) = (d', (x,b'<>rectif,u',a',v',l'))
+      where
+        (d', (x',b',u',a',v',l')) = alignment [((a,v),l)] (transPol rectif x)
+    
+----------------------------------------------------------------------
+
+unitCube = do
+    setColor' red
+    renderPrimitive Polygon $ v5 >> v6 >> v7 >> v8
+    setColor' green
+    renderPrimitive Polygon $ v1 >> v2 >> v6 >> v5
+    setColor' blue
+    renderPrimitive Polygon $ v1 >> v4 >> v8 >> v5
+    setColor' yellow
+    renderPrimitive Polygon $ v2 >> v3 >> v7 >> v6
+    setColor' orange
+    renderPrimitive Polygon $ v3 >> v4 >> v8 >> v7
+    setColor' purple
+    renderPrimitive Polygon $ v1 >> v2 >> v3 >> v4
+  where
+    v a b c = vertex $ Vertex3 a b (c::GLdouble)
+    v1 = v 0 0 0
+    v2 = v 1 0 0
+    v3 = v 1 1 0
+    v4 = v 0 1 0
+    v5 = v 0 0 1
+    v6 = v 1 0 1
+    v7 = v 1 1 1
+    v8 = v 0 1 1
+
+----------------------------------------------------------------------
+
+letters :: IO [(Polyline,String)]
+letters = flip zip (reverse $ map return "ABCDEFGHIJKLMNOPQRSTUVWXYZ") . map fst . readt <$> readFile "letters.txt"
+    where readt x = read x :: [(Polyline,String)]
+
+----------------------------------------------------------------------
+
+digits :: IO (Sample Polyline)
+digits = do
+    cam <- mplayer "mf://digits.jpg" (mpSize 40)
+    img <- (EV.gray. channels) `fmap` cam
+    let rawconts = contours 100 1 128 False img
+        fst3 (a,_,_) = a
+        proc = Closed . pixelsToPoints (size img).douglasPeuckerClosed 1 .fst3
+        cs = (map proc $ rawconts) `zip` cycle ["$","0","1","2","3","4","5","6","7","8","9"]
+    return cs
 

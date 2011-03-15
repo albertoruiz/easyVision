@@ -1,14 +1,12 @@
-{-# LANGUAGE TemplateHaskell, RecordWildCards, NamedFieldPuns #-}
-
 import EasyVision as EV
 import Graphics.UI.GLUT hiding (Point)
-import Util.Misc(diagl,degree,Vec,norm,debug,diagl,memo,Mat,mat,norm)
+import Util.Misc(diagl,degree,vec,Vec,norm,debug,diagl,memo,Mat,mat,norm)
 import Util.Rotation(rot3)
 import Control.Arrow
 import Control.Applicative((<$>),(<*>))
 import Control.Monad(when,ap)
 import Data.Colour.Names as Col
-import Vision(desp, estimateHomography)
+import Vision(desp, cross, estimateHomography,cameraFromHomogZ0,factorizeCamera,ht,cameraAtOrigin)
 import Numeric.LinearAlgebra -- ((<>),fromList,toList,fromComplex,join,dim)
 import Data.List(sortBy,minimumBy,groupBy,sort,zipWith4)
 import Data.Function(on)
@@ -24,28 +22,148 @@ import Classifier(Sample)
 
 import Tools
 
-$(autoParam "SCParam" "classify-"
-  [( "epsilon","Double" ,realParam 0.2 0 1),
-   ( "maxangle"  ,"Double" ,realParam 10 0 45)]
- )
 
 --catalog = digits
-catalog = return pentominos
+--catalog = pentos
 --catalog = read <$> readFile "digits.txt"
+catalog = letters
 
+main' = run $ camera ~> EV.gray
+            >>= wcontours id ~> (id *** contSel)
+            >>= shapeCatalog normalShape catalog (concatMap toCanonic2)
+       
 
 main = run $ camera ~> EV.gray
             >>= wcontours id ~> (id *** contSel)
-            >>= shapeCatalog catalog (concatMap toCanonic2)
-            >>= classify .@. winSCParam ~> snd
-            >>= classifyMon
-            >>= alignMon
-            >>= parseMon
-            >>= rectifyMon (mpSize 10)
+            >>= shapeCatalog normalShape catalog (concatMap toCanonic2)
+            >>= classifier ~> snd
+--            >>= classifyMon
+            >>= alignMon'
+--            >>= parseMon
+--            >>= rectifyMon (mpSize 10)
+--            ~> tryMetric
+--            >>= alignMon
+--            >>= virtualMon
+            >>= virtualMonAffine
             >>= timeMonitor
 
 ----------------------------------------------------------------------
+type OKS = (Double, (Polyline,Mat,Vec,Mat,Vec,String))
 
+virtualMon = monitor "Virtual" (mpSize 20) sh
+  where
+    f (_, (x,_,_,_,_,_)) = x
+    g (_, (_,b,_,a,_,_)) = c where Just c = cameraFromHomogZ0 (Just 1.8) (inv b <> a <> diagl[1,-1,1])
+    h cam = do
+        cameraView cam (4/3) 0.1 100
+        unitCube -- houseModel
+        setColor' purple
+        lineWidth $= 3
+        renderPrimitive LineLoop $ mapM_ vertex $ [[0,0,0],
+                                                   [0,0,2::Double],
+                                                   [0,0,0],[2,0,0],[0,0,0],[0,2,0]]
+        
+        
+    sh (im,oks) = when (length oks > 2) $ do
+        clear [DepthBuffer]
+        drawImage (im::ImageGray)
+        clear [DepthBuffer]
+        --pointCoordinates (mpSize 10)
+        depthFunc $= Just Less
+        
+        mapM_ (h.g) (oks::[OKS])
+
+----------------------------------------------------------------------
+
+virtualMonAffine = monitor "Virtual Affine" (mpSize 20) sh
+  where
+    f (_, (x,_,_,_,_,_)) = x
+    g (_, (x,b,_,a,_,l)) = (c,x,h)
+      where 
+        h = inv b <> a
+        c = cameraFromAffineHomogZ0 1.7 (h <> diagl[-1,1,1])
+    s (_, (_,_,_,_,_,l)) = not (l `elem` ["I","O","0","9","6"])
+    h (cam,x,h) = do
+        --cameraView cam (4/3) 0.1 1000
+        --unitCube -- houseModel
+        setColor' yellow
+        lineWidth $= 3
+{-
+        renderPrimitive LineLoop $ mapM_ vertex $ ht cam [[0,0,0],
+                                                   [0,0,2::Double],
+                                                   [0,0,0],[2,0,0],[0,0,0],[0,2,0]]
+        setColor' blue
+        lineWidth $= 1
+-}        
+        let ih = inv (h <> diagl[-1,1,1])
+            up = (4 >< 3) [1,0,0
+                          ,0,0,0
+                          ,0,1,0
+                          ,0,0,1]
+            el = (4 >< 3) [1,0,0
+                          ,0,1,0
+                          ,0,0,0
+                          ,0,0,1]
+            ym = minimum $ map py $ polyPts $ transPol ih x
+            d1 = desp (0,-ym)
+            d2 = (4><4) [1,0,0,0
+                        ,0,1,0,ym
+                        ,0,0,1,0
+                        ,0,0,0,1]
+            d3 = (4><4) [1,0,0,0
+                        ,0,1,0,0
+                        ,0,0,1,1
+                        ,0,0,0,1]
+            t = cam <> d2 <> up <> d1 <> ih
+            r = cam <> d3 <> el <> ih
+        shcont $ transPol t x
+        
+    sh (im,oks) = do
+        clear [DepthBuffer]
+        drawImage (im::ImageGray)
+        clear [DepthBuffer]
+        pointCoordinates (mpSize 10)
+        depthFunc $= Just Less
+        
+        mapM_ (h.g) (filter s oks::[OKS])
+
+----------------------------------------------------------------------
+
+cameraFromAffineHomogZ0 f h = cam
+  where
+    h0 = diagl [1,1,f] <> h
+    s = sqrt(h0 @@>(0,0) **2 + h0 @@>(0,1) **2)
+    h1 = h0 / scalar s
+    [ [r1, r2, tx]
+     ,[r3, r4, ty]
+     ,[ _,  _, tz]] = toLists h1
+    
+    cam = diagl[f,f,1] <> (3><4) [ r1, r2, x, tx,
+                                   r3, r4, y, ty,
+                                   a ,  b, c, tz ]
+    
+    x =    - (sqrt(2)*
+         (r1*r3 + r2*r4))/
+       sqrt(r1**2 + r2**2 - 
+         r3**2 - r4**2 + 
+         sqrt(((r2 + r3)**
+              2 + 
+             (r1 - r4)**2)*
+           ((r2 - r3)**2 + 
+             (r1 + r4)**2)))
+             
+    y =    (sqrt(r1**2 + 
+           r2**2 - r3**2 - 
+           r4**2 +
+           sqrt(((r2 + r3)**
+               2 + 
+               (r1 - r4)**2)*
+             ((r2 - r3)**2 + 
+               (r1 + r4)**2))
+           )/sqrt(2))    
+
+    [a,b,c] = --toList $ (vec [r1, r2, x] `cross` vec [r3, r4, y]) / 20
+              [0,0,0]
 
 ----------------------------------------------------------------------
 
@@ -53,20 +171,13 @@ parseMon = monitor "Parse" (mpSize 10) sh
   where
     f (_, (x,_,_,_,_,_)) = x
     sh (im,oks) = when (length oks > 2) $ do
-        drawImage im
+        drawImage (im::ImageGray)
         pointCoordinates (mpSize 10)
         shcont (chPol $ Closed $ concatMap (polyPts.f) oks)
 
 ----------------------------------------------------------------------
 
-classify SCParam {..} (im,cs,prots) = (im, oks)
-  where
-    oks = filter ((<epsilon).fst) (map clas cs) 
-    clas = refine maxangle . alignment prots
-
-----------------------------------------------------------------------
-
-classifyMon cam = monitor "Detected" (mpSize 20) sh cam
+classifyMon' cam = monitor "Detected" (mpSize 20) sh cam
   where
     sh (im, oks) = do
         drawImage' im
@@ -76,13 +187,15 @@ classifyMon cam = monitor "Detected" (mpSize 20) sh cam
         mapM_ (f.g) oks
     g (d, (x,b,u,a,v,l)) = (d,((x, inv b <> a),l))
     f (d,((c,m),l)) = do
-        setColor' white
+        setColor' red
+        lineWidth $= 3
         shcont c
+        setColor' black
         text2D (d2f ox) (d2f up) (printf "%s %.0f" l (d*100))
         setColor' yellow
-        shcont $ (transPol m) (Closed [Point (-1) (-1), Point 1 (-1), Point 1 1, Point (-1) 1])
-        let ellip = transPol m unitCircle
-        shcont ellip
+        --shcont $ (transPol m) (Closed [Point (-1) (-1), Point 1 (-1), Point 1 1, Point (-1) 1])
+        --let ellip = transPol m unitCircle
+        --shcont ellip
       where
         (ox,oy,_,_,_) = momentsContour (polyPts c)
         up = 2/400 + maximum (map py (polyPts c))
@@ -90,28 +203,6 @@ classifyMon cam = monitor "Detected" (mpSize 20) sh cam
 
 unitCircle = Closed [Point (cos (t*degree)) (sin (t*degree)) | t <- [0,10 .. 350]]
 
-
-alignMon cam = monitor "Alignment" (mpSize 20) sh cam
-  where
-    sh (im, oks) = do
-        drawImage' im
-        pointCoordinates (size im)
-        setColor' white
-        text2D 0.9 0.6 $ show (length oks)
-        mapM_ (f.g) oks
-    g (d, (x,b,u,a,v,l)) = (b,(u,v))
-    f (mb,(cx,cb)) = do
-        lineWidth $= 1
-        let al = transPol (inv mb) (invFou 100 10 $ toFun cb)
-            ob = transPol (inv mb) (invFou 100 10 $ toFun cx)
-            corr = zipWith (\a b->[a,b]) (polyPts al) (polyPts ob)
-        setColor' yellow
-        let aux (Closed ps) = map p2l ps
-            p2l (Point x y) = [x,y]
-        renderPrimitive Lines $ mapM_ vertex (concat corr)
-        lineWidth $= 1
-        setColor' red
-        shcont al
 
 ----------------------------------------------------------------------
         
@@ -159,15 +250,15 @@ monitorOrient = monitor "contours" (mpSize 20) sh where
         let wcs1 = map (head . f) cs
             wcs2 = map (last . f) cs
         setColor' red
-        lineWidth $= 2
+        lineWidth $= 3
         mapM_ shcont wcs1
         setColor' blue
-        lineWidth $= 2
-        mapM_ shcont wcs2
+        lineWidth $= 3
+--        mapM_ shcont wcs2
 
     f c@(Closed ps) = map (transPol t) . icaConts . whitenContour $ c
       where
-        t = desp (ox,oy) <> diagl [0.05,0.05,1]
+        t = desp (ox,oy) <> diagl [0.025,0.025,1]
         (ox,oy,_,_,_) = momentsContour ps
 
 ----------------------------------------------------------------------
@@ -227,16 +318,6 @@ showCanonic = runIt $ showpentoR
 pentos :: IO (Sample Polyline)
 pentos = return pentominos
 
-digits :: IO (Sample Polyline)
-digits = do
-    cam <- mplayer "mf://digits.jpg" (mpSize 40)
-    img <- (EV.gray. channels) `fmap` cam
-    let rawconts = contours 100 1 128 False img
-        fst3 (a,_,_) = a
-        proc = Closed . pixelsToPoints (size img).douglasPeuckerClosed 1 .fst3
-        cs = (map proc $ rawconts) `zip` cycle ["$","0","1","2","3","4","5","6","7","8","9"]
-    return cs
-
 ----------------------------------------------------------------------
 
 -- DEMO > analyze pentos
@@ -245,14 +326,14 @@ digits = do
 analyzeAlign shapes = r
   where
     xs = map (map snd . toCanonicAll . fst) shapes
-    r = mat [ [ distMult a b | b <-xs ] | a <- [0]:xs ]
+    r = mat [ [ distMult a b | b <-xs ] | a <- {-[0]:-}xs ]
     distMult us vs = minimum $ dist <$> us <*> vs
 
 
 analyzeInvar f shapes = r
   where
     xs = map (f.fst) shapes
-    r = mat [ [ norm (a-b) | b <-xs ] | a <- 0:xs ]
+    r = mat [ [ norm (a-b) | b <-xs ] | a <- {-0:-}xs ]
 
 
 oldInvar w f = fromList desc where
@@ -270,17 +351,22 @@ simpleInvar w f = fromList desc where
 disp = putStr . dispf 0 . (100*)
 
 analyze gen = do
-    shapes <- fmap (filter ((not.(`elem`["9","Y'","J","S","B","Q","N'"])).snd)) gen
-    let a = analyzeInvar (simpleInvar 10 . fourierPL . whitenContour) shapes
+    --shapes <- fmap (filter ((not.(`elem`["9","Y'","J","S","B","Q","N'"])).snd)) gen
+    shapes <- fmap (filter ((not.(`elem`["9"])).snd)) gen
+    let a = analyzeInvar (simpleInvar maxFreq . fourierPL . whitenContour) shapes
         b = analyzeAlign shapes
-        c = analyzeInvar (oldInvar 10 . fourierPL . whitenContour) shapes
-    dspnor c
-    dspnor a
+        c = analyzeInvar (oldInvar maxFreq . fourierPL . whitenContour) shapes
+    --dspnor c
+--    dspnor a
     dspnor b
     dspnor $ (b-a)/b
 
 dspnor m = do
     putStr . dispf 0 . (*100) $ m             
+
+dspnor' m = do
+    putStr $ latexFormat "bmatrix" (dispf 0 (takeColumns 13 $ 100*m)) 
+
 
 ----------------------------------------------------------------------
 

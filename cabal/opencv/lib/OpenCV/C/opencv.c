@@ -14,6 +14,7 @@ void testImage8u(void * pSrc,
 
     IplImage * img = cvCreateImageHeader(cvSize(width,height), 8, 1 );
     img->imageData = pSrc;
+    cvSetImageROI(img,cvRect(sc1,sr1,sc2-sc1+1,sr2-sr1+1));
 
     cvSmooth( img, img, CV_GAUSSIAN, 5, 0,0,0);
     cvCanny( img, img, 10,100,3);
