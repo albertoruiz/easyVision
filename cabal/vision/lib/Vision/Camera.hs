@@ -28,6 +28,7 @@ module Vision.Camera
 , homogZ0
 , focalFromHomogZ0
 , cameraFromHomogZ0
+, cameraFromAffineHomogZ0
 , poseFromHomogZ0
 , cameraFromPlane
 , kgen
@@ -220,7 +221,45 @@ cameraFromHomogZ0 mbf c = res where
     m2 = kgen f <> fromColumns [-r1,-r2,r3,-t]
     m = if cen1@>2 > 0 then m1 else m2
 
+----------------------------------------------------------------------
 
+-- | computes an affine camera from an affine homography of the floor plane.
+--   It requires a non optional focal distance.
+cameraFromAffineHomogZ0 :: Double -> Mat -> Mat
+cameraFromAffineHomogZ0 f h = cam
+  where
+    h0 = diagl [1,1,f] <> h
+    s = sqrt(h0 @@>(0,0) **2 + h0 @@>(0,1) **2)
+    h1 = h0 / scalar s
+    [ [r1, r2, tx]
+     ,[r3, r4, ty]
+     ,[ _,  _, tz]] = toLists h1
+    
+    cam = diagl[f,f,1] <> (3><4) [ r1, r2, x, tx,
+                                   r3, r4, y, ty,
+                                   0 ,  0, 0, tz ]
+    
+    x =    - (sqrt(2)*
+         (r1*r3 + r2*r4))/
+       sqrt(r1**2 + r2**2 - 
+         r3**2 - r4**2 + 
+         sqrt(((r2 + r3)**
+              2 + 
+             (r1 - r4)**2)*
+           ((r2 - r3)**2 + 
+             (r1 + r4)**2)))
+             
+    y =    (sqrt(r1**2 + 
+           r2**2 - r3**2 - 
+           r4**2 +
+           sqrt(((r2 + r3)**
+               2 + 
+               (r1 - r4)**2)*
+             ((r2 - r3)**2 + 
+               (r1 + r4)**2))
+           )/sqrt(2))    
+
+----------------------------------------------------------------------
 
 
 cameraOutline :: Double -> [[Double]]

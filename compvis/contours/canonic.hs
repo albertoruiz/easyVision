@@ -6,9 +6,10 @@ import Control.Arrow
 import Control.Applicative((<$>),(<*>))
 import Control.Monad(when,ap)
 import Data.Colour.Names as Col
-import Vision(desp, cross, estimateHomography,cameraFromHomogZ0,factorizeCamera,ht,cameraAtOrigin)
+import Vision(desp, cross, estimateHomography,cameraFromHomogZ0,
+              cameraFromAffineHomogZ0,factorizeCamera,ht,cameraAtOrigin)
 import Numeric.LinearAlgebra -- ((<>),fromList,toList,fromComplex,join,dim)
-import Data.List(sortBy,minimumBy,groupBy,sort,zipWith4)
+import Data.List(sortBy,minimumBy,groupBy,sort,zipWith4,transpose)
 import Data.Function(on)
 import Text.Printf(printf)
 import Data.IORef
@@ -44,7 +45,8 @@ main = run $ camera ~> EV.gray
 --            ~> tryMetric
 --            >>= alignMon
 --            >>= virtualMon
-            >>= virtualMonAffine
+            >>= virtualMonAffine vertical
+            >>= virtualMonAffine elevated
             >>= timeMonitor
 
 ----------------------------------------------------------------------
@@ -75,7 +77,7 @@ virtualMon = monitor "Virtual" (mpSize 20) sh
 
 ----------------------------------------------------------------------
 
-virtualMonAffine = monitor "Virtual Affine" (mpSize 20) sh
+virtualMonAffine h = monitor "Virtual Affine" (mpSize 20) sh
   where
     f (_, (x,_,_,_,_,_)) = x
     g (_, (x,b,_,a,_,l)) = (c,x,h)
@@ -83,40 +85,6 @@ virtualMonAffine = monitor "Virtual Affine" (mpSize 20) sh
         h = inv b <> a
         c = cameraFromAffineHomogZ0 1.7 (h <> diagl[-1,1,1])
     s (_, (_,_,_,_,_,l)) = not (l `elem` ["I","O","0","9","6"])
-    h (cam,x,h) = do
-        --cameraView cam (4/3) 0.1 1000
-        --unitCube -- houseModel
-        setColor' yellow
-        lineWidth $= 3
-{-
-        renderPrimitive LineLoop $ mapM_ vertex $ ht cam [[0,0,0],
-                                                   [0,0,2::Double],
-                                                   [0,0,0],[2,0,0],[0,0,0],[0,2,0]]
-        setColor' blue
-        lineWidth $= 1
--}        
-        let ih = inv (h <> diagl[-1,1,1])
-            up = (4 >< 3) [1,0,0
-                          ,0,0,0
-                          ,0,1,0
-                          ,0,0,1]
-            el = (4 >< 3) [1,0,0
-                          ,0,1,0
-                          ,0,0,0
-                          ,0,0,1]
-            ym = minimum $ map py $ polyPts $ transPol ih x
-            d1 = desp (0,-ym)
-            d2 = (4><4) [1,0,0,0
-                        ,0,1,0,ym
-                        ,0,0,1,0
-                        ,0,0,0,1]
-            d3 = (4><4) [1,0,0,0
-                        ,0,1,0,0
-                        ,0,0,1,1
-                        ,0,0,0,1]
-            t = cam <> d2 <> up <> d1 <> ih
-            r = cam <> d3 <> el <> ih
-        shcont $ transPol t x
         
     sh (im,oks) = do
         clear [DepthBuffer]
@@ -127,43 +95,53 @@ virtualMonAffine = monitor "Virtual Affine" (mpSize 20) sh
         
         mapM_ (h.g) (filter s oks::[OKS])
 
-----------------------------------------------------------------------
+--- effects
 
-cameraFromAffineHomogZ0 f h = cam
-  where
-    h0 = diagl [1,1,f] <> h
-    s = sqrt(h0 @@>(0,0) **2 + h0 @@>(0,1) **2)
-    h1 = h0 / scalar s
-    [ [r1, r2, tx]
-     ,[r3, r4, ty]
-     ,[ _,  _, tz]] = toLists h1
-    
-    cam = diagl[f,f,1] <> (3><4) [ r1, r2, x, tx,
-                                   r3, r4, y, ty,
-                                   a ,  b, c, tz ]
-    
-    x =    - (sqrt(2)*
-         (r1*r3 + r2*r4))/
-       sqrt(r1**2 + r2**2 - 
-         r3**2 - r4**2 + 
-         sqrt(((r2 + r3)**
-              2 + 
-             (r1 - r4)**2)*
-           ((r2 - r3)**2 + 
-             (r1 + r4)**2)))
-             
-    y =    (sqrt(r1**2 + 
-           r2**2 - r3**2 - 
-           r4**2 +
-           sqrt(((r2 + r3)**
-               2 + 
-               (r1 - r4)**2)*
-             ((r2 - r3)**2 + 
-               (r1 + r4)**2))
-           )/sqrt(2))    
+vertical (cam,x,h) = do
+    setColor' yellow
+    lineWidth $= 3
+    let ih = inv (h <> diagl[-1,1,1])
+        up = (4 >< 3) [1,0,0
+                      ,0,0,0
+                      ,0,1,0
+                      ,0,0,1]
+        ym = minimum $ map py $ polyPts $ transPol ih x
+        d1 = desp (0,-ym)
+        d2 = (4><4) [1,0,0,0
+                    ,0,1,0,ym
+                    ,0,0,1,0
+                    ,0,0,0,1]
+        t = cam <> d2 <> up <> d1 <> ih
+    shcont $ transPol t x
 
-    [a,b,c] = --toList $ (vec [r1, r2, x] `cross` vec [r3, r4, y]) / 20
-              [0,0,0]
+axes (cam,x,h) = do
+    setColor' yellow
+    lineWidth $= 3
+    renderPrimitive LineLoop $ mapM_ vertex $ ht cam [[0,0,0],
+                                               [0,0,2::Double],
+                                               [0,0,0],[2,0,0],[0,0,0],[0,2,0]]
+
+
+elevated (cam,x,h) = do
+    setColor' yellow
+    lineWidth $= 1
+    let ih = inv (h <> diagl[-1,1,1])
+        el = (4 >< 3) [1,0,0
+                      ,0,1,0
+                      ,0,0,0
+                      ,0,0,1]
+        ym = minimum $ map py $ polyPts $ transPol ih x
+        d3 = (4><4) [1,0,0,0
+                    ,0,1,0,0
+                    ,0,0,1,2
+                    ,0,0,0,1]
+        t = cam <> d3 <> el <> ih
+        y = transPol t x
+    shcont y
+    setColor' Col.gray
+    shcont x
+    renderPrimitive Lines $ mapM_ vertex $ concat $ transpose [polyPts x, polyPts y]
+
 
 ----------------------------------------------------------------------
 
