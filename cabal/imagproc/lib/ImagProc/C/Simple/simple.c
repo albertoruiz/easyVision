@@ -308,3 +308,49 @@ int histodir(float * pSrc1, int sstep1,
     #undef X
     #undef Y
 }
+
+//---------------------------- 2D histogram --------------------------
+
+int histogram2D (unsigned char * pSrc1, int sstep1,
+                 unsigned char * pSrc2, int sstep2,
+                 float * pDst , int sstepD,
+                 int sr1, int sr2, int sc1, int sc2) {
+    #define X(r,c) (*(pSrc1+(r)*sstep1/1+(c)))
+    #define Y(r,c) (*(pSrc2+(r)*sstep2/1+(c)))
+    #define Z(r,c) (pDst +(r)*sstepD/4+(c))
+    int r,c;
+    for (r=sr1; r<=sr2; r++) {
+        for(c=sc1; c<=sc2; c++) {
+            float* p = Z(Y(r,c),X(r,c));
+            (*p)++;
+        }
+    }
+    return 0;
+    #undef X
+    #undef Y
+    #undef Z
+}
+
+int lookup2D (unsigned char * pSrc1, int sstep1,
+                       unsigned char * pSrc2, int sstep2,
+                       float         * pSrc3, int sstep3,
+                       float         * pDst , int sstepD,
+                       int sr1, int sr2, int sc1, int sc2) {
+    #define X(r,c) (*(pSrc1+(r)*sstep1/1+(c)))
+    #define Y(r,c) (*(pSrc2+(r)*sstep2/1+(c)))
+    #define H(r,c) (*(pSrc3+(r)*sstep3/4+(c)))
+    #define Z(r,c) (*(pDst +(r)*sstepD/4+(c)))
+    int r,c;
+    for (r=sr1; r<=sr2; r++) {
+        for(c=sc1; c<=sc2; c++) {
+            Z(r,c) = H(Y(r,c),X(r,c));
+        }
+    }
+    return 0;
+    #undef X
+    #undef Y
+    #undef H
+    #undef Z
+}
+
+

@@ -1,13 +1,14 @@
 import EasyVision as EV
-import Graphics.UI.GLUT hiding (Point)
+import Graphics.UI.GLUT hiding (Point,Size)
 import Util.Misc(diagl,degree,vec,Vec,norm,debug,diagl,memo,Mat,mat,norm)
 import Util.Rotation(rot3)
 import Control.Arrow
 import Control.Applicative((<$>),(<*>))
 import Control.Monad(when,ap)
 import Data.Colour.Names as Col
-import Vision(desp, cross, estimateHomography,cameraFromHomogZ0,
-              cameraFromAffineHomogZ0,factorizeCamera,ht,cameraAtOrigin)
+import Vision(desp, cross, estimateHomography,cameraFromHomogZ0, homog, inHomog,
+              cameraFromAffineHomogZ0,factorizeCamera,ht,cameraAtOrigin,
+              similarFrom2Points, scaling)
 import Numeric.LinearAlgebra -- ((<>),fromList,toList,fromComplex,join,dim)
 import Data.List(sortBy,minimumBy,groupBy,sort,zipWith4,transpose)
 import Data.Function(on)
@@ -25,29 +26,44 @@ import Tools
 
 
 --catalog = digits
---catalog = pentos
+catalog = pentos
 --catalog = read <$> readFile "digits.txt"
-catalog = letters
+--catalog = letters
 
-main' = run $ camera ~> EV.gray
+main = main1
+
+main2 = run $ camera ~> EV.gray
             >>= wcontours id ~> (id *** contSel)
             >>= shapeCatalog normalShape catalog (concatMap toCanonic2)
        
 
-main = run $ camera ~> EV.gray
+main1 = run $ camera ~> EV.gray
             >>= wcontours id ~> (id *** contSel)
             >>= shapeCatalog normalShape catalog (concatMap toCanonic2)
             >>= classifier ~> snd
 --            >>= classifyMon
-            >>= alignMon'
+            >>= alignMon' "Alignment"
 --            >>= parseMon
---            >>= rectifyMon (mpSize 10)
+            >>= rectifyMon (mpSize 10)
 --            ~> tryMetric
 --            >>= alignMon
 --            >>= virtualMon
+            >>= virtualExperiment axes
             >>= virtualMonAffine vertical
             >>= virtualMonAffine elevated
             >>= timeMonitor
+
+main3 = run $ camera ~> EV.gray
+            >>= wcontours id ~> (id *** contSel)
+            >>= shapeCatalog centerShape catalog (concatMap toCanonic2)
+            >>= classifier ~> snd
+            >>= alignMon' "Pre"
+            >>= rectifyMon (mpSize 10)
+            ~> tryMetric
+            >>= alignMon' "Post"
+            >>= virtualMon
+            >>= timeMonitor
+
 
 ----------------------------------------------------------------------
 type OKS = (Double, (Polyline,Mat,Vec,Mat,Vec,String))
@@ -55,7 +71,7 @@ type OKS = (Double, (Polyline,Mat,Vec,Mat,Vec,String))
 virtualMon = monitor "Virtual" (mpSize 20) sh
   where
     f (_, (x,_,_,_,_,_)) = x
-    g (_, (_,b,_,a,_,_)) = c where Just c = cameraFromHomogZ0 (Just 1.8) (inv b <> a <> diagl[1,-1,1])
+    g (_, (_,b,_,a,_,_)) = c where Just c = cameraFromHomogZ0 (Just 1.7) (inv b <> a <> diagl[1,-1,1])
     h cam = do
         cameraView cam (4/3) 0.1 100
         unitCube -- houseModel
@@ -74,6 +90,60 @@ virtualMon = monitor "Virtual" (mpSize 20) sh
         depthFunc $= Just Less
         
         mapM_ (h.g) (oks::[OKS])
+
+----------------------------------------------------------------------
+
+virtualExperiment h cam = do wr <- evWindow () "Rectify Vertical"  (mpSize 10) Nothing (const kbdQuit)
+                             monitor "Virtual Affine" (mpSize 20) (sh wr) cam
+  where
+    f (_, (x,_,_,_,_,_)) = x
+    g (_, (x,b,_,a,_,l)) = (c,x,h)
+      where 
+        h = inv b <> a
+        c = cameraFromAffineHomogZ0 1.7 (h <> diagl[-1,1,1])
+    s (_, (_,_,_,_,_,l)) = not (l `elem` ["I","O","0"])
+        
+    sh wr (im,oks) = do
+        clear [DepthBuffer]
+        drawImage (im::ImageGray)
+        clear [DepthBuffer]
+        pointCoordinates (mpSize 10)
+        depthFunc $= Just Less
+        let rec = map g (filter s oks::[OKS])
+        
+        mapM_ h rec
+        r <- h2 rec
+        inWin wr $ drawImage' $ warp 0 (Size 400 400) r im
+        return ()
+
+h2 oks = do
+    let f(c,_,_) = homog (vec a) `cross ` homog (vec b)
+          where [a,b] = ht c [[0,0,0],[0,0,5::Double]]
+        v = intersectionManyLines $ map f oks
+    --print (inHomog v)
+    pointSize $= 5
+    setColor' red
+    let ihv = toList $ inHomog v
+    renderPrimitive Points (vertex ihv)
+    let f = 1.7
+        w = diagl [1,1,f**2]
+        h = w<>v
+        r = rectifierFromHorizon f h
+        area (_,x,_) = abs (orientation x)
+        center (_,z,_) = [x,y]
+           where (x,y,_,_,_) = momentsContour (polyPts z)
+        [c1,c2] = take 2 $ map center $ sortBy (compare `on` negate . area) oks
+        [a,b] = ht r [c1,c2]
+        r' = if length oks > 1 then scaling 0.5 <> similarFrom2Points a b c1 c2 <> r
+                               else ident 3
+    shLine (toList h)
+    setColor' Col.gray
+    lineWidth $= 1
+    let ff (c,_,_) = [ihv, head (ht c [[0,0,0]])]
+    renderPrimitive Lines $ mapM_ vertex (concatMap ff oks) 
+    
+    return r'
+--    putStrLn "----------------------"
 
 ----------------------------------------------------------------------
 
@@ -116,10 +186,14 @@ vertical (cam,x,h) = do
 
 axes (cam,x,h) = do
     setColor' yellow
+    lineWidth $= 1
+    renderPrimitive LineLoop $ mapM_ vertex $ ht cam [[0,0,0],[0,0,5::Double]]
     lineWidth $= 3
     renderPrimitive LineLoop $ mapM_ vertex $ ht cam [[0,0,0],
                                                [0,0,2::Double],
                                                [0,0,0],[2,0,0],[0,0,0],[0,2,0]]
+
+
 
 
 elevated (cam,x,h) = do

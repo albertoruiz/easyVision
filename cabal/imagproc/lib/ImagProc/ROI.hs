@@ -26,7 +26,8 @@ module ImagProc.ROI
   roiFromPixel,
   roiFrom2Pixels,
   roiCenter,
-  roiRadius
+  roiRadius,
+  roiDiv
 ) where
 
 import ImagProc.Base
@@ -81,7 +82,7 @@ roiArea (ROI r1 r2 c1 c2) = w*h where
 inROI :: ROI -> Pixel -> Bool
 inROI (ROI r1 r2 c1 c2) (Pixel r c) = r1 <= r && r <= r2 && c1 <= c && c <= c2
 
--- | checks that a pixel is in a ROI
+-- | checks that a point is in a ROI
 inROI' :: Size -> ROI -> Point -> Bool
 inROI' sz (ROI r1 r2 c1 c2) = g where
     g (Point x y) = x1 <= x && x <= x2 && y1 <= y && y <= y2
@@ -133,3 +134,9 @@ roiCenter (ROI r1 r2 c1 c2) = Pixel (r1 + (r2-r1+1)`div`2) (c1 + (c2-c1+1)`div`2
 -- | the inverse of roiFromPixel
 roiRadius :: ROI -> Int
 roiRadius (ROI r1 r2 c1 c2) = min ((r2-r1+1)`div`2) ((c2-c1+1)`div`2)
+
+-- | scale down a ROI (useful for U and V in YUV images)
+roiDiv :: Int -> ROI -> ROI
+roiDiv k (ROI r1 r2 c1 c2) = ROI (d r1) (d r2) (d c1) (d c2)
+  where d = (`div` k)
+

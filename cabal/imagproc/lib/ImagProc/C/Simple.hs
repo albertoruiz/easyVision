@@ -19,8 +19,7 @@ Interface to a few simple algorithms implemented in C.
 module ImagProc.C.Simple where
 
 import ImagProc.Ipp.Core
-import ImagProc.Generic(clone)
-import ImagProc.Ipp.AdHoc(set8u)
+import ImagProc.Generic(clone,set)
 import Foreign
 import Foreign.C.Types
 import Numeric.LinearAlgebra hiding (step)
@@ -87,7 +86,7 @@ hsvCodeTest b g w (C orig) = unsafePerformIO $ do
 hsvCode :: Int -> Int -> Int -> ImageRGB -> ImageGray
 hsvCode b g w (C im) = unsafePerformIO $ do
     G r <- image (isize im)
-    set8u 0 (theROI (G r)) (G r)
+    set 0 (theROI (G r)) (G r)
     hsvcode b g w
             (ptr im) (step im)
             (ptr r) (step r)
@@ -181,3 +180,44 @@ foreign import ccall "Simple/simple.h histodir"
                 -> Int -> Int -> Int -> Int
                 -> Double -> Int -> Int
                 -> Int -> Ptr Double -> IO Int
+
+-----------------------------------------------------------------------------
+
+-- | 2D Histogram
+histogram2D :: ImageGray -- ^ a
+            -> ImageGray -- ^ b
+            -> ImageFloat -- ^ histogram
+histogram2D (G a) (G b) = unsafePerformIO $ do
+    F z <- image (Size 256 256)
+    set 0.0 (vroi z) (F z)
+    c_histogram2D (ptr a) (step a) (ptr b) (step b) (ptr z) (step z)
+               (r1 (vroi a)) (r2 (vroi a)) (c1 (vroi a)) (c2 (vroi a))
+               // checkIPP "c_histogram2D" [a,b]
+    return (F z)
+
+
+foreign import ccall "Simple/simple.h histogram2D"
+     c_histogram2D :: Ptr () -> Int -> Ptr () -> Int -> Ptr () -> Int
+                   -> Int -> Int -> Int -> Int
+                   -> IO Int
+
+----------------------------------------------------------------------
+
+-- | LookUp pixel table
+lookup2D :: ImageGray -- ^ a
+         -> ImageGray -- ^ b
+         -> ImageFloat -- ^ 256x256 table
+         -> ImageFloat
+lookup2D (G a) (G b) (F h) = unsafePerformIO $ do
+    F z <- modifyROI (const (vroi a)) `fmap` image (isize a)
+    c_lookup2D (ptr a) (step a) (ptr b) (step b) (ptr h) (step h) (ptr z) (step z)
+               (r1 (vroi a)) (r2 (vroi a)) (c1 (vroi a)) (c2 (vroi a))
+               // checkIPP "c_lookup2D" [a,b]
+    return (F z)
+
+
+foreign import ccall "Simple/simple.h lookup2D"
+     c_lookup2D :: Ptr () -> Int -> Ptr () -> Int -> Ptr () -> Int -> Ptr () -> Int
+                   -> Int -> Int -> Int -> Int
+                   -> IO Int
+

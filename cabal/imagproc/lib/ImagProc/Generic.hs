@@ -182,6 +182,8 @@ constImage val sz = unsafePerformIO $ do
 data Channels = CHIm
     { yuv  :: ImageYUV
     , gray :: ImageGray
+    , uCh  :: ImageGray
+    , vCh  :: ImageGray
     , rgb  :: ImageRGB
     , rCh  :: ImageGray
     , gCh  :: ImageGray
@@ -195,6 +197,8 @@ channels :: ImageYUV -> Channels
 channels img = CHIm
     { yuv = img
     , gray = fromYUV img
+    , uCh = u
+    , vCh = v
     , rgb = rgbAux
     , rCh = getChannel 0 rgbAux
     , gCh = getChannel 1 rgbAux
@@ -205,11 +209,14 @@ channels img = CHIm
     }
     where rgbAux = fromYUV img
           hsvAux = rgbToHSV rgbAux
+          (u,v) = yuvToUV img
 
 channelsFromRGB :: ImageRGB -> Channels
 channelsFromRGB img = CHIm
     { yuv = yuvAux
     , gray = fromYUV yuvAux
+    , uCh = u
+    , vCh = v
     , rgb = img
     , rCh = getChannel 0 img
     , gCh = getChannel 1 img
@@ -220,6 +227,7 @@ channelsFromRGB img = CHIm
     }
     where yuvAux = toYUV img
           hsvAux = rgbToHSV img
+          (u,v) = yuvToUV yuvAux
 
 ------------------------------------------------
 

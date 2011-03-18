@@ -14,14 +14,16 @@ module Tools(
     alignment, refine,
     classifier, classifyMon,
     alignMon, alignMon',
-    -- * Projective rectification from circles
-    rectifyMon, tryMetric,
+    -- * Projective rectification from circles and vertical vanishing point
+    rectifyMon, tryMetric, rectifierFromHorizon,
     -- * Digit tools
     fixOrientation,
+    -- * Other tools
+    intersectionManyLines,
     -- * Display
     shapeCatalog, normalShape, centerShape,
     examplesBrowser,
-    shcont, shcontO,
+    shcont, shcontO, shLine,
     rotAround,
     unitCube,
     -- * Prototypes
@@ -31,15 +33,18 @@ module Tools(
 
 import EasyVision as EV
 import Graphics.UI.GLUT hiding (Point)
-import Util.Misc(diagl,degree,Vec,norm,debug,diagl,memo,Mat,mat,norm,unionSort,replaceAt,mean,median,unitary,pairsWith)
+import Util.Misc(diagl,degree,Vec,vec,norm,debug,diagl,memo,Mat,mat,norm,
+                 unionSort,replaceAt,mean,median,unitary,pairsWith)
+import Util.Estimation(homogSolve)
 import Util.Covariance(meanV,covStr)
-import Util.Rotation(rot3)
+import Util.Rotation(rot3,rot1)
 import Control.Arrow
 import Control.Applicative((<$>),(<*>))
 import Control.Monad(when,ap)
 import Data.Colour.Names as Col
 import Vision (desp, scaling, estimateHomography, ht, cross,
-               inHomog,circularConsistency,focalFromCircularPoint,similarFrom2Points)
+               inHomog,circularConsistency,focalFromCircularPoint,similarFrom2Points,
+               kgen,mS)
 import Numeric.LinearAlgebra -- ((<>),fromList,toList,fromComplex,join,dim)
 import Data.List(sortBy,minimumBy,groupBy,sort,zipWith4,partition,transpose)
 import Data.Function(on)
@@ -148,7 +153,7 @@ alignMon cam = monitor "Alignment" (mpSize 20) sh cam
 ----------------------------------------------------------------------
 
 -- alignment and classification
-alignMon' cam = monitor "Alignment" (mpSize 20) sh cam
+alignMon' name cam = monitor name (mpSize 20) sh cam
   where
     sh (im, oks) = do
         drawImage' im
@@ -371,6 +376,32 @@ rotAround x y a = desp (x,y) <> rot3 a <> desp (-x,-y)
 ----------------------------------------------------------------------
 
 mt m = trans (inv m)
+
+----------------------------------------------------------------------
+
+-- hmm, algebraic error
+-- [Vec3->HPoint2]
+intersectionManyLines :: [Vec] -> Vec
+intersectionManyLines ls | length ls > 1 = fst (homogSolve a)
+                         | otherwise = vec [0,0,1]
+  where a = fromRows $ map unitary ls
+
+----------------------------------------------------------------------
+
+rectifier rho yh f = kgen f <> rot1 (atan2 f yh) <> rot3 (-rho) <> kgen (recip f)
+
+rectifierFromHorizon f h = rectifier rho yh f
+  where
+    dn = mS <> h
+    l0n = cross dn (vec [0,0,1])
+    nh = cross h l0n
+    Point x y = hp2p nh
+    yh = sqrt (x*x+y*y)
+    rho = atan2 x y
+
+--p2hp (Point x y) = vec [x,y,1]
+hp2p v = Point x y where [x,y] = toList (inHomog v)
+
 ----------------------------------------------------------------------
 
 rectifyMon sz cam = do wr <- evWindow () "Rectif"   sz Nothing (const kbdQuit)
@@ -386,7 +417,7 @@ rectifyMon sz cam = do wr <- evWindow () "Rectif"   sz Nothing (const kbdQuit)
         shcont $ transPol (rotAround mx my (-alpha)) (Closed [Point (mx+1*dx) my, Point (mx-1*dx) my])
         shcont $ transPol (rotAround mx my (-alpha)) (Closed [Point mx (my+1*dy), Point mx (my-1*dy)])
  
-    sh wr (im,oks) = when (length oks > 2) $ do
+    sh wr (im,oks) = when (length oks >= 2) $ do
         drawImage im
         pointCoordinates (mpSize 10)
         mapM_ (f.g) oks        
@@ -472,7 +503,7 @@ tryMetric (im,oks) = (im,oks')
     rectif = if length oks > 1 && isJust mbij then okrec else ident 3
     f (d, (x,b,u,a,v,l)) = (d', (x,b'<>rectif,u',a',v',l'))
       where
-        (d', (x',b',u',a',v',l')) = alignment [((a,v),l)] (transPol rectif x)
+        (d', (x',b',u',a',v',l')) = refine 10 $ alignment [((a,v),l)] (transPol rectif x)
     
 ----------------------------------------------------------------------
 

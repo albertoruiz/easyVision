@@ -27,6 +27,9 @@ module EasyVision.MiniApps.Combinators (
   monitor, observe, run,
   counter, countDown,
   frameRate, compCost, timeMonitor,
+  selectROI,
+  selectSnd,
+  updateMaybe
 )where
 
 import ImagProc.Ipp.Core
@@ -230,7 +233,62 @@ timeMonitor = compCost >=> frameRate >=> monitor "Timing"  (Size 50 230) f >~> (
         text2D 15 30 $ printf " %3.0f ms CPU  / %4.0f Hz   /   %3.0f%%" (t1::Double) (1000/t2::Double) (100*t1/t2)
 
 
-------------------------------------------------------------
+----------------------------------------------------------------------
+
+
+selectROI :: Drawable b => String -> (a -> b) -> IO a -> IO (IO (a, ROI))
+selectROI name f cam = do
+    let sz = mpSize 20
+    w <- evWindow () name sz Nothing (const kbdQuit)
+    let d = 50
+    evROI w $= ROI d (height sz-d) d (width sz-d)
+    return $ do
+        x <- cam
+        r <- getROI w
+        inWin w $ do drawImage (f x)
+                     drawROI r
+        return (x,r)
+
+----------------------------------------------------------------------
+
+-- | forwards the snd part of the tuple if the user clicks
+selectSnd :: String -> ((a, b) -> IO ()) -> IO (a, b) -> IO (IO (a, Maybe b))
+selectSnd name f cam = do
+    w <- evWindow False ("Click to select: "++name) (mpSize 10) Nothing (mouseGen acts kbdQuit)
+    return $ do
+        (x,y) <- cam
+        inWin w $ f (x,y)
+        s <- getW w
+        let y' = if s then Just y else Nothing
+        putW w False
+        return (x, y')
+  where acts = [((MouseButton LeftButton,   Down, modif), \ _ _ -> True)]
+
+----------------------------------------------------------------------
+
+-- | this is like a fold, using the Just values to update
+updateMaybe :: String        -- ^ window name
+            -> (a -> b -> b) -- ^ update function
+            -> b             -- ^ initial value
+            -> ((x,b) -> IO ()) -- ^ display operation
+            -> IO (x, Maybe a)  -- ^ input process
+            -> IO(IO(x,b))      -- ^ output
+updateMaybe name f b0 disp cam = do
+    w <- evWindow b0 name (mpSize 10) Nothing (const kbdQuit)
+    return $ do
+        (x,ma) <- cam
+        b <- getW w
+        let b' = case ma of
+                    Just a  -> f a b
+                    Nothing -> b
+        putW w b'
+        inWin w $ disp (x,b')
+        return (x,b')
+
+
+----------------------------------------------------------------------
+-- To be moved:
+----------------------------------------------------------------------
 
 conjugateRotation pan tilt rho foc sca =
         scaling sca
