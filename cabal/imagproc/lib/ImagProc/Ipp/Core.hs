@@ -39,6 +39,7 @@ module ImagProc.Ipp.Core
           , val8u, fval
           -- * Misc
           , saveRGB
+          , img2mat, mat2img
           -- * Reexported modules
           , module ImagProc.Ipp.Structs, CInt, CUChar, fi, ti
           , module ImagProc.Base, module ImagProc.ROI
@@ -61,6 +62,10 @@ import Data.List(isPrefixOf)
 import GHC.Base
 import GHC.IOBase
 import GHC.ForeignPtr(mallocPlainForeignPtrBytes)
+
+import Numeric.LinearAlgebra(rows,cols,Matrix,ident)
+import Data.Packed.Development(app1,mat,cmat,createMatrix,MatrixOrder(..))
+import Foreign(unsafePerformIO,copyBytes,castPtr)
 
 ---------------------------------------
 fi :: Int -> CInt
@@ -352,3 +357,27 @@ saveRGB Nothing im = do
         k = 3 - length sn
         shj = replicate k '0' ++ sn
     saveRGB (Just (name ++"-"++ shj)) im
+
+
+mat2img :: Matrix Float -> ImageFloat
+mat2img m | cols m `rem` 32 /= 0 = error "mat2img with wrong padding"
+          | otherwise = unsafePerformIO (f m)
+  where
+    f m = do
+        (F im) <- image (Size (rows m) (cols m))
+        let g r c p = copyBytes (ptr im) (castPtr p) (fromIntegral $ r*c*4) >> return 0 
+        app1 g mat (cmat m) "mat2img"
+        return (F im)
+
+
+img2mat :: ImageFloat -> Matrix Float
+img2mat (F im) | c `rem` 32 /= 0 = error "img2mat with wrong padding"
+               | otherwise = unsafePerformIO (f im)
+  where
+    Size r c = isize im
+    f im = do
+        m <- createMatrix RowMajor r c
+        let g r c p = copyBytes (castPtr p) (ptr im) (fromIntegral $ r*c*4) >> return 0 
+        app1 g mat (cmat m) "img2mat" >> return 0 // checkIPP "img2mat" [im]
+        return m
+

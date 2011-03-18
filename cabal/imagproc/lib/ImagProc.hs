@@ -30,7 +30,8 @@ module ImagProc (
     filter32f, filter8u,
     gaussS, gaussS',
     rotateROI,
-    pyramid
+    pyramid,
+    mat2img, img2mat
 ) where
 
 import ImagProc.Ipp.Core
@@ -184,3 +185,4 @@ dec x = resize8u InterpLinear sz2 . f . gauss8u Mask3x3 $  x
           sz2 = (Size (h `div` 2) (w `div` 2))
           f = forceROI (theROI x)
           forceROI r (G im) = G im { vroi = r }
+
