@@ -29,7 +29,7 @@ module EasyVision.MiniApps.Combinators (
   frameRate, compCost, timeMonitor,
   selectROI,
   selectSnd,
-  updateMaybe
+  updateMaybe, updateMaybeSave
 )where
 
 import ImagProc.Ipp.Core
@@ -52,7 +52,7 @@ import Vision
 import Util.Rotation
 import Util.Misc(degree)
 import Vision.Autofrontal(autoOrthogonality)
-import Numeric.LinearAlgebra
+import Numeric.LinearAlgebra hiding (join)
 import ImagProc.Generic
 import Debug.Trace
 import Data.List(tails)
@@ -63,7 +63,12 @@ import System.CPUTime
 import System.Time
 import Text.Printf
 --import ImagProc.C.Segments
-import Util.Options(optionString,hasValue)
+import Util.Options(optionString,hasValue,optionFromFile)
+
+import Data.Maybe(isJust)
+import Control.Monad(when)
+import Util.Options(getRawOption)
+import Numeric.LinearAlgebra(Matrix)
 
 type SegmentExtractor = Int
          -> Float
@@ -238,12 +243,13 @@ timeMonitor = compCost >=> frameRate >=> monitor "Timing"  (Size 50 230) f >~> (
 
 selectROI :: Drawable b => String -> (a -> b) -> IO a -> IO (IO (a, ROI))
 selectROI name f cam = do
+    (cam', ctrl) <- withPause cam
     let sz = mpSize 20
-    w <- evWindow () name sz Nothing (const kbdQuit)
+    w <- evWindow () name sz Nothing (const (kbdcam ctrl))
     let d = 50
     evROI w $= ROI d (height sz-d) d (width sz-d)
     return $ do
-        x <- cam
+        x <- cam'
         r <- getROI w
         inWin w $ do drawImage (f x)
                      drawROI r
@@ -285,6 +291,31 @@ updateMaybe name f b0 disp cam = do
         inWin w $ disp (x,b')
         return (x,b')
 
+
+-- | the same as updateMaybe, but the updated values are saved to a file 
+--   and can be loaded with a command line option.
+updateMaybeSave
+    :: (Read b, Show b)
+    => String        -- ^ window name
+    -> String        -- ^ load option name (without --)
+    -> (a -> b -> b) -- ^ update function
+    -> b             -- ^ initial value
+    -> ((x,b) -> IO ()) -- ^ display operation
+    -> IO (x, Maybe a)  -- ^ input process
+    -> IO(IO(x,b))      -- ^ output
+updateMaybeSave name option f b0 disp cam = do
+    b0' <- optionFromFile ("--"++option) b0
+    w <- evWindow b0' name (mpSize 10) Nothing (const kbdQuit)
+    return $ do
+        (x,ma) <- cam
+        b <- getW w
+        let b' = case ma of
+                    Just a  -> f a b
+                    Nothing -> b
+        putW w b'
+        inWin w $ disp (x,b')
+        when (isJust ma) $ writeFile ("saved-"++option) (show b')
+        return (x,b')
 
 ----------------------------------------------------------------------
 -- To be moved:

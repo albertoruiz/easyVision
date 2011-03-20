@@ -4,6 +4,7 @@ module Util.Options (
     getRawOption,
     getOption,
     optionString,
+    optionFromFile,
     getFlag,
     hasValue,
     maybeOption,
@@ -14,6 +15,9 @@ module Util.Options (
 import Data.List(isPrefixOf)
 import System.Environment(getArgs)
 import System.Directory(getDirectoryContents)
+import Control.Monad(join)
+import Control.Applicative((<$>))
+import Data.Traversable(sequenceA)
 
 -- | extracts an option from the command line. From --alpha=1.5 we get 1.5::Double.
 getOption :: Read a
@@ -76,4 +80,12 @@ nextFilename prefix = do
         k = 3 - length sn
         shj = replicate k '0' ++ sn
     return $ prefix ++ "-" ++ shj
+
+-- | similar to getOption, but the value is read from a file
+optionFromFile
+    :: Read a
+    => String  -- ^ option name for the filename
+    -> a       -- ^ default value
+    -> IO a    -- ^ result
+optionFromFile option x = maybe x id <$> join (fmap sequenceA $ (fmap (fmap read . readFile)) <$> getRawOption option)
 
