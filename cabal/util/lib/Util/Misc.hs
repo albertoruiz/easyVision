@@ -33,6 +33,9 @@ debug msg f x = trace (dimString (msg ++ ": " ++ show (f x))) x
 dimString :: String -> String
 dimString s = "\^[[2m"++s++"\^[[0m"
 
+redString :: String -> String
+redString s = "\^[[0;31m"++s++"\^[[0m"
+
 debugMat :: String -> Int -> (t -> Mat) -> t -> t
 debugMat msg dec f x = trace (dimString (msg ++ " " ++ init (dispf dec (f x)))) x
 

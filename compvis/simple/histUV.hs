@@ -8,7 +8,8 @@ import Control.Arrow
 
 
 $(autoParam "LikParam" ""
-  [( "scale","Float" ,realParam 100 0 200)]
+  [( "scale","Float" ,realParam 100 0 200),
+   ( "sigma","Float" ,realParam 1 0 5)]
  )
 
 
@@ -18,7 +19,9 @@ main = run $ camera -- >>= observe "Image" rgb
            >>= selectHistogram >>= updateModel
            >>= liks .@. winLikParam
            >>= observe "Likelihood" snd
-           >>= observe "Mask" mask
+           ~>  mask
+           >>= observe "Mask" shMask
+           >>= wcontours snd ~> (fst *** contWhite) >>= shRegions
            >>= timeMonitor
 
 ----------------------------------------------------------------------
@@ -38,19 +41,22 @@ norm' img = recip s .* img
 
 lik (x,h) = lookup2D (uCh x) (vCh x) h
 
-liks LikParam {..} (x,h) = scale .* lik (x,h)
+liks LikParam {..} (x,h) = scale .* lik (x, gaussS sigma h)
 
 ----------------------------------------------------------------------
 
-mask ((im,h),lk) = m |*| g
+close = dilate3x3 . erode3x3 
+open = erode3x3 . dilate3x3
+
+mask ((im,_),lk) = (im,mk)
   where
-    m = id $ one |-| thresholdVal32f 1 1 IppCmpGreater lk
-    g = resize sz2 $ float (gray im)
-    one = constImage 1 sz2
-    sz2 = Size (div r 2) (div c 2) where Size r c = size (gray im) 
-    close = dilate3x3 . erode3x3 
-    open = erode3x3 . dilate3x3
-    post = float . close . toGray
+    mk = post $ one |-| thresholdVal32f 1 1 IppCmpGreater lk
+    one = constImage 1 (size lk)
+    post = close . toGray
+
+shMask (im,mk) = float mk |*| float g
+  where
+    g = resize (size mk) $ gray im
 
 ----------------------------------------------------------------------
 
@@ -69,4 +75,20 @@ instance Show ImageFloat where
 
 instance Read ImageFloat where
    readsPrec _ s = [(mat2img $ read s,"")]
+
+----------------------------------------------------------------------
+
+shRegions = monitor "Regions" (mpSize 20) sh where
+  sh (im,cs) = do
+      drawImage (rgb im)
+      pointCoordinates (mpSize 20)
+      lineWidth $= 3
+      setColor 0 0 1
+      mapM_ shcont cs
+      
+      
+shcont (Closed c) = do
+    renderPrimitive LineLoop $ mapM_ vertex c
+shcont (Open c) = do
+    renderPrimitive LineStrip $ mapM_ vertex c
 

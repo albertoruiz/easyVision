@@ -30,7 +30,7 @@ catalog = pentos
 --catalog = read <$> readFile "digits.txt"
 --catalog = letters
 
-main = main1
+main = main3
 
 main2 = run $ camera ~> EV.gray
             >>= wcontours id ~> (id *** contSel)
@@ -57,11 +57,16 @@ main3 = run $ camera ~> EV.gray
             >>= wcontours id ~> (id *** contSel)
             >>= shapeCatalog centerShape catalog (concatMap toCanonic2)
             >>= classifier ~> snd
-            >>= alignMon' "Pre"
+--            >>= alignMon' "Pre"
+            ~>  distImage
+            >>= alignMon' "Pre-DistImage"
             >>= rectifyMon (mpSize 10)
-            ~> tryMetric
+            ~>  tryMetric
             >>= alignMon' "Post"
+            ~>  distImage
+            >>= alignMon' "Post-DistImage"       
             >>= virtualMon
+            >>= coherent
             >>= timeMonitor
 
 

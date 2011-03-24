@@ -5,6 +5,5 @@
 > import Distribution.Simple.LocalBuildInfo
 > import Distribution.PackageDescription
 > import Distribution.Simple.Utils
-> import System
 
 > main = defaultMainWithHooks autoconfUserHooks

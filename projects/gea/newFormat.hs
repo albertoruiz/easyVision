@@ -1,7 +1,7 @@
 -- simpler format for multiview problems
 
 import Numeric.LinearAlgebra
-import Vision
+import Vision hiding (selectSol)
 import Vision.LASBA
 import qualified Vision.Gea2 as G
 import Vision.Types
@@ -10,8 +10,12 @@ import Vision.Multiview
 import Vision.Epipolar
 import Vision.Bootstrap
 import ShowReco
+import Util.Misc(diagl,mean,debug,dimString)
+import Graphics.Plot
 
 import Text.Printf
+import Control.Applicative
+import Control.Arrow
 
 ----------------------------------------------------------------
 
@@ -71,8 +75,15 @@ relocate p = p { pts = newPts, cams = newCams }
 
 ----------------------------------------------------------------------
 
-test name = do
+test name = loadProblem name >>= testGo name
+
+testCal name = do
     p <- loadProblem name
+    f <- autoCal p
+    let p' = recalibrate f p
+    testGo name p'
+
+testGo name p = do
     printf "Initial mse: %.2f\n" $ rms (projs $ rawviews p) (kal p) (cams p) (pts p) **2 * 2
     printf "Initial calibrated rmse (x1000): %.2f\n" $ krms p
     
@@ -131,4 +142,74 @@ flipProb name = do
 flipc = map (diag (fromList[1,-1,1]) <>)
 flipk = map (diag (fromList[ 1,1,-1]) <>)
 flipp = map (\(ij,Point x y) -> (ij,Point (-x) y))
+
+----------------------------------------------------------------------
+
+-- with aligned camera centers, given the rotations, the system for
+-- the centers only is degenerate. The system for centers and points 
+-- is ok, but of course much more costly.
+
+-- A simple synthetic problem for testing
+syntProb = r
+  where
+    mkcam x y z = syntheticCamera $ easyCamera 40 (x,y,z) (0,0,0) 0
+    --cams = [mkcam 0 5 0, mkcam 0 5 1, mkcam 1 5 0, mkcam 1 5 1] `zip` [0..]
+    cams = [mkcam 0 5 0, mkcam 0 5 1, mkcam 0 5 2, mkcam 0 5 3] `zip` [0..]
+    pts = sequence (replicate 3 [-1,0,1]) `zip` [0..]
+    f (x,i) (c,j) = ((i,j), l2p y) where [y] = ht c [x]
+    p2 = f <$> pts <*> cams
+    l2p [x,y] = Point x y
+    ks = map (fst.sepCam.fst) cams
+    kp2 = mkProjections (calibrateProjections ks p2)
+    r = VP { pts = undefined
+           , rawviews = mkProjections p2
+           , views = kp2
+           , cams = undefined
+           , kal = ks
+           , epi = mkEpiObs kp2
+           }
+
+exper = do
+    let p = syntProb
+    let b = bootstrap'' p
+    printf "boot rmse (x1000): %.2f\n" $ krms b
+    
+    
+    let g = gea b
+    printf "GEA calibrated rmse (x1000): %.2f\n" $ krms g
+    runIt $ shRecos "synth" (map relocate [b,g])
+    
+bootstrap' p = bootFromRots rs p
+  where
+    rs = refineRots q (epi p) (initRots (epi p))
+    q e = nEpi e > 7 && s2 e > 0.95
+
+bootstrap'' p = bootFromRots' 50 rs p
+  where
+    rs = refineRots q (epi p) (initRots (epi p))
+    q e = nEpi e > 7 && s2 e > 0.95
+
+qual p = \f -> mean (map (qq f) es)
+  where
+    es = debug "esens" length $ map snd (esens p)
+    qq f e = fst $ qEssen $ diagl[f,f,1] <> e <> diagl [f,f,1]
+    esens p = map (fst &&& esen . snd) (epi p)
+
+autoCal p = do
+    mplot [fs,qs]
+    return f
+  where
+    g = qual p
+    fs = linspace 100 (0.25,4) :: Vector Double
+    qs = mapVector g fs
+    f = fs @> maxIndex qs
+
+recalibrate f p = p
+    { views = kp2
+    , kal = ks
+    , epi = mkEpiObs kp2 }
+  where
+    p2 = rawviews p
+    ks = map (diagl[f,f,1]<>) (kal p)
+    kp2 = mkProjections (calibrateProjections ks (projs p2))
 

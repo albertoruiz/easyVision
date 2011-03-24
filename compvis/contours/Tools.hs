@@ -15,7 +15,7 @@ module Tools(
     classifier, classifyMon,
     alignMon, alignMon',
     -- * Projective rectification from circles and vertical vanishing point
-    rectifyMon, tryMetric, rectifierFromHorizon,
+    rectifyMon, tryMetric, rectifierFromHorizon, coherent, distImage,
     -- * Digit tools
     fixOrientation,
     -- * Other tools
@@ -32,7 +32,7 @@ module Tools(
 
 
 import EasyVision as EV
-import Graphics.UI.GLUT hiding (Point)
+import Graphics.UI.GLUT hiding (Point,Size,scale)
 import Util.Misc(diagl,degree,Vec,vec,norm,debug,diagl,memo,Mat,mat,norm,
                  unionSort,replaceAt,mean,median,unitary,pairsWith)
 import Util.Estimation(homogSolve)
@@ -68,7 +68,7 @@ $(autoParam "SCParam" "classify-"
 
 ----------------------------------------------------------------------
 
-maxFreq = 10
+maxFreq = 3
 
 type AlignInfo = (Double,(Polyline,Mat,Vec,Mat,Vec,String))
 
@@ -300,6 +300,8 @@ shapeCatalog prepro gprot feat' cam = do
             text2D 0.9 0.6 $ show (length cs)
             setColor' orange
             mapM_ shcont cs
+            setColor' yellow
+            renderAxes
             
         when save $ writeFile "shapes.txt" (show raw)
         putW w (raw,prots,Nothing,False)
@@ -404,8 +406,8 @@ hp2p v = Point x y where [x,y] = toList (inHomog v)
 
 ----------------------------------------------------------------------
 
-rectifyMon sz cam = do wr <- evWindow () "Rectif"   sz Nothing (const kbdQuit)
-                       monitor "Rectify" (mpSize 10) (sh wr) cam
+rectifyMon sz cam = do wr <- evWindow () "Rectify omega" (Size 400 400)Nothing (const kbdQuit)
+                       monitor "Ellipses" sz (sh wr) cam
   where
     g (d, (x,b,u,a,v,l)) = (d,((x, inv b <> a),l))
     h (d,((c,m),l)) = trans (inv m) <> diagl [1,1,-1] <> (inv m)
@@ -425,7 +427,7 @@ rectifyMon sz cam = do wr <- evWindow () "Rectif"   sz Nothing (const kbdQuit)
             ellipMat = map (h.g) (sortBy (compare `on` gc) oks)
             ellipses = map (fst.analyzeEllipse) ellipMat
             improve = id
-            sc = 1
+            sc = 0.5
             orig = im
         when (length ellipMat >= 2) $ do
             let sol = intersectionEllipses (ellipMat!!0) (ellipMat!!1)
@@ -466,7 +468,7 @@ rectifyMon sz cam = do wr <- evWindow () "Rectif"   sz Nothing (const kbdQuit)
                     okrec = similarFrom2Points [mx',my'] [mx'2,my'2] [mx,my] [mx2, my2] <> recraw
                 
                     --drawImage $ warp 0 sz' (scaling sc <> w) (gray orig)
-                inWin wr $ drawImage $ warp 0 sz (scaling sc <> okrec ) ( orig)
+                inWin wr $ drawImage $ warp 0 (Size 400 400) (scaling sc <> okrec ) ( orig)
                 --text2D 30 30 $ show $ focalFromHomogZ0 (inv recraw)
                 -- it is also encoded in the circular points
                 text2D 30 30 $ printf "f = %.2f" $ focalFromCircularPoint ij
@@ -489,7 +491,7 @@ tryMetric (im,oks) = (im,oks')
     oks' = map f oks
     g (d, (x,b,_,a,_,l)) = (d,((x, inv b <> a),l))
     h (_,((_,m),_)) = trans (inv m) <> diagl [1,1,-1] <> (inv m)
-    gc (d, (x,_,_,_,_,_)) = d -- abs (orientation x)
+    gc (d, (x,_,_,_,_,l)) = d -- abs (orientation x)
     ellipMat = map (h.g) (sortBy (compare `on` gc) oks)
     ellipses = map (fst.analyzeEllipse) ellipMat
     sol = intersectionEllipses (ellipMat!!0) (ellipMat!!1)
@@ -504,7 +506,63 @@ tryMetric (im,oks) = (im,oks')
     f (d, (x,b,u,a,v,l)) = (d', (x,b'<>rectif,u',a',v',l'))
       where
         (d', (x',b',u',a',v',l')) = refine 10 $ alignment [((a,v),l)] (transPol rectif x)
+
+----------------------------------------------------------------------
     
+distImage (im,oks) = (im,oks')
+  where
+    oks' = map f oks
+    f (d, r@(x,b,u,a,v,l)) = (d',r)
+      where
+        xf = foufeat x
+        pf = foufeat (transPol (inv b) $ invFou 30 maxFreq $ toFun v)
+        d' = 10* norm (xf-pf) -- / norm xf
+
+----------------------------------------------------------------------
+
+coherent cam = monitor "Coherent" (mpSize 20) sh cam
+  where
+    sh (im, oks) = do
+        drawImage' im
+        pointCoordinates (size im)
+        setColor' white
+        text2D 0.9 0.6 $ show (length oks)
+        f (map g oks)
+    g (d, (x,b,u,a,v,l)) = inv b <> a
+    f hs = do
+        let i'j's = map cph hs
+            pns = map (toList.scale 0.25.fst.fromComplex) i'j's
+        pointSize $= 3
+        renderPrimitive Points (mapM_ vertex pns)
+
+-- | image of the circular points under by the homography of a metric plane
+     
+cph :: Mat -> Vector (Complex Double)
+cph h = ihc (h1 + i `scale` h2)
+  where [h1,h2,_] = toColumns (complex h)
+
+-- | convert to inhomogenous complex vector
+ihc :: Vector (Complex Double) -> Vector (Complex Double)
+ihc v = scale (recip w) (subVector 0 (n-1) v)
+  where n = dim v
+        w = v@>(n-1)
+
+
+{-
+    f (mb,(cx,cb)) = do
+        lineWidth $= 1
+        let al = transPol (inv mb) (invFou 100 maxFreq $ toFun cb)
+            ob = transPol (inv mb) (invFou 100 maxFreq $ toFun cx)
+            corr = zipWith (\a b->[a,b]) (polyPts al) (polyPts ob)
+        setColor' yellow
+        let aux (Closed ps) = map p2l ps
+            p2l (Point x y) = [x,y]
+        renderPrimitive Lines $ mapM_ vertex (concat corr)
+        lineWidth $= 1
+        setColor' red
+        shcont al
+-}
+
 ----------------------------------------------------------------------
 
 unitCube = do

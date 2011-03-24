@@ -19,10 +19,10 @@ import Graphics.UI.GLUT hiding (Size,scale,triangulate,Matrix)
 import Control.Monad((>=>))
 
 runIt f = prepare >> f >> mainLoop
-mat2img = fromListsF . toLists
+mat2img' = fromListsF . toLists
 
 showMat :: String -> Matrix Float -> IO (EVWindow (Matrix Float))
-showMat name m = evWindow m name (Size (rows m) (cols m)) (Just (get>=>drawImage.mat2img)) (const kbdQuit)
+showMat name m = evWindow m name (Size (rows m) (cols m)) (Just (get>=>drawImage.mat2img')) (const kbdQuit)
 
 
 shRecoG fc fp name s = do
