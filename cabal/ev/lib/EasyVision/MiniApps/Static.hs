@@ -23,7 +23,8 @@ import Graphics.UI.GLUT hiding (Size,Point)
 import Control.Monad(when,(>=>),forever)
 import EasyVision.GUI
 import ImagProc.Ipp.Core
-import EasyVision.MiniApps.Combinators
+import EasyVision.MiniApps.Misc(addSmall)
+import EasyVision.MiniApps.Combinators(monitor)
 import Data.List(tails)
 import ImagProc.Camera(mpSize)
 import ImagProc

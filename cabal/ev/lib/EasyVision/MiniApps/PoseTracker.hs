@@ -28,7 +28,7 @@ import Data.List(sort,nub,sortBy,minimumBy)
 import Numeric.LinearAlgebra
 import Data.IORef
 import Vision
-import EasyVision.MiniApps.Combinators(findPolygons,getPolygons,polyconsis)
+import EasyVision.MiniApps.Misc(findPolygons,getPolygons,polyconsis)
 import Util.Kalman
 import Text.Printf
 import Util.Stat
