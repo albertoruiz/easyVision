@@ -47,6 +47,7 @@ library
                         ImagProc.Ipp.AdHoc
                         ImagProc.Ipp.AutoGen
                         ImagProc.Ipp.Core
+                        ImagProc.Ipp.Convert
                         ImagProc.Ipp.Pure
                         ImagProc.Ipp.Wrappers
                         ImagProc.Ipp.Structs
@@ -62,3 +63,4 @@ library
     --ghc-options:        -Wall
                         -fno-warn-missing-signatures
 
+    ghc-options:        -fwarn-unused-imports

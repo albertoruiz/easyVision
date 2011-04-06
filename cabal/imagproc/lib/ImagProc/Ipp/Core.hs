@@ -6,12 +6,11 @@
 -----------------------------------------------------------------------------
 {- |
 Module      :  ImagProc.Ipp.Core
-Copyright   :  (c) Alberto Ruiz 2006
-License     :  GPL-style
+Copyright   :  (c) Alberto Ruiz 2006-11
+License     :  GPL
 
 Maintainer  :  Alberto Ruiz (aruiz at um dot es)
 Stability   :  very provisional
-Portability :  hmm...
 
 Experimental interface to Intel Integrated Performance Primitives for image processing.
 
@@ -37,9 +36,6 @@ module ImagProc.Ipp.Core
           , ImageYUV (Y)
           -- * Image coordinates
           , val8u, fval
-          -- * Misc
-          , saveRGB, saveGray, loadGray, loadRGB
-          , img2mat, mat2img
           -- * Reexported modules
           , module ImagProc.Ipp.Structs, CInt, CUChar, fi, ti
           , module ImagProc.Base, module ImagProc.ROI
@@ -53,21 +49,9 @@ import Control.Monad(when)
 import ImagProc.Ipp.Wrappers
 import Foreign.C.String(peekCString)
 import Foreign.C.Types
-import Foreign.Marshal.Utils(copyBytes)
-import System.IO
-import System.Process
-import System.Directory(getDirectoryContents,doesFileExist)
-import Data.List(isPrefixOf)
-
-import Util.Options(nextFilename)
-
 import GHC.Base
-import GHC.IO
 import GHC.ForeignPtr(mallocPlainForeignPtrBytes)
 
-import Numeric.LinearAlgebra(rows,cols,Matrix,ident)
-import Data.Packed.Development(app1,mat,cmat,createMatrix,MatrixOrder(..))
-import Foreign(unsafePerformIO,copyBytes,castPtr)
 
 ---------------------------------------
 fi :: Int -> CInt
@@ -343,136 +327,4 @@ setValue Img {fptr = fp, ptr = p, jump = j} v r c = do
     touchForeignPtr fp
 
 -------------------------------------------------------------------
-
--- | Writes to a file (with automatic name if Nothing) a RGB image in png format.
--- (uses imagemagick' convert.)
-saveRGB :: Maybe FilePath -> ImageRGB -> IO ()
-saveRGB (Just filename) (C im) = do
-    handle <- openFile (filename++".rgb") WriteMode
-    let Size h w = isize im
-    when (w`rem` 32 /= 0) $ putStrLn "Warning, saveRGB with wrong padding"
-    hPutBuf handle (castPtr (ptr im)) (w*h*3)
-    hClose handle
-    touchForeignPtr (fptr im)
-    system $ "convert -flip -size "++show w++"x"++show h++" -depth 8 rgb:"
-             ++(filename++".rgb ")++(filename++".png")
-    system $ "rm "++(filename++".rgb")
-    return ()
-
-saveRGB Nothing im = do
-    let name = "screenshot"
-    fs <- getDirectoryContents "."
-    let n = 1+ length (filter (name `isPrefixOf`) fs)
-        sn = show n
-        k = 3 - length sn
-        shj = replicate k '0' ++ sn
-    saveRGB (Just (name ++"-"++ shj)) im
-
-
-mat2img :: Matrix Float -> ImageFloat
-mat2img m | cols m `rem` 32 /= 0 = error "mat2img with wrong padding"
-          | otherwise = unsafePerformIO (f m)
-  where
-    f m = do
-        (F im) <- image (Size (rows m) (cols m))
-        let g r c p = copyBytes (ptr im) (castPtr p) (fromIntegral $ r*c*4) >> return 0 
-        app1 g mat (cmat m) "mat2img"
-        return (F im)
-
-
-img2mat :: ImageFloat -> Matrix Float
-img2mat (F im) | c `rem` 32 /= 0 = error "img2mat with wrong padding"
-               | otherwise = unsafePerformIO (f im)
-  where
-    Size r c = isize im
-    f im = do
-        m <- createMatrix RowMajor r c
-        let g r c p = copyBytes (castPtr p) (ptr im) (fromIntegral $ r*c*4) >> return 0 
-        app1 g mat (cmat m) "img2mat" >> return 0 // checkIPP "img2mat" [im]
-        return m
-
-----------------------------------------------------------------------
-{-
-
--- | Writes to a file (with automatic name if Nothing) a RGB image in png format.
--- (uses imagemagick' convert.)
-saveRGB' :: Maybe FilePath -> ImageRGB -> IO ()
-saveRGB' (Just filename) (C im) = do
-    handle <- openFile (filename++".rgb") WriteMode
-    let (ps,c) = roiPtrs im
-        f p = hPutBuf handle p c
-        Size h w = roiSize (vroi im)
-    mapM_ f ps
-    hClose handle
-    touchForeignPtr (fptr im)
-    system $ "convert -flip -size "++show w++"x"++show h++" -depth 8 rgb:"
-             ++(filename++".rgb ")++(filename++".png")
-    system $ "rm "++(filename++".rgb")
-    return ()
-
-saveRGB' Nothing im = do
-    name <- nextFilename "screenshot"
-    saveRGB' (Just name) im
--}
-----------------------------------------------------------------------
-
--- | Save the ROI of a 8u image to a file.
--- It uses imagemagick' convert. The file format is given by the extension.
-saveGray :: FilePath -> ImageGray -> IO ()
-saveGray filename (G im) = do
-    handle <- openFile (filename++".8u") WriteMode
-    let (ps,c) = roiPtrs im
-        f p = hPutBuf handle p c
-        Size h w = roiSize (vroi im)
-    mapM_ f ps
-    hClose handle
-    touchForeignPtr (fptr im)
-    system $ "convert -size "++show w++"x"++show h++" -depth 8 gray:"
-             ++(filename++".8u ")++filename
-    system $ "rm "++(filename++".8u")
-    return ()
-
-----------------------------------------------------------------------
-
--- | Load an image using imagemagick's convert.
-loadGray :: FilePath -> IO ImageGray
-loadGray filename = do
-    Size h w <- getSize filename
-    system $ "convert "++filename++" -depth 8 gray:"
-             ++(filename++".8u ")
-    handle <- openFile (filename++".8u") ReadMode
-    G im <- image (Size h w)
-    let (ps,c) = roiPtrs im
-        f p = hGetBuf handle p c
-    mapM_ f ps
-    hClose handle
-    touchForeignPtr (fptr im)
-    system $ "rm "++(filename++".8u")
-    return (G im)
-
--- | Load an image using imagemagick's convert.
-loadRGB :: FilePath -> IO ImageRGB
-loadRGB filename = do
-    Size h w <- getSize filename
-    system $ "convert "++filename++" -depth 8 rgb:"
-             ++(filename++".rgb ")
-    handle <- openFile (filename++".rgb") ReadMode
-    C im <- image (Size h w)
-    let (ps,c) = roiPtrs im
-        f p = hGetBuf handle p (c*3)
-    mapM_ f ps
-    hClose handle
-    touchForeignPtr (fptr im)
-    system $ "rm "++(filename++".rgb")
-    return (C im)
-
-
-getSize :: FilePath -> IO Size
-getSize imagfile = do
-    s <- readProcess "identify" [imagfile] ""
-    return (g $ words $ map f $ words s!!2)
-  where
-    f 'x' = ' '
-    f a = a
-    g [w,h] = Size (read h) (read w)
 

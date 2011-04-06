@@ -154,7 +154,7 @@ worker cam op mbf (getPos,setAccel) inWindow st = do
             field
 
             pos <- getPos
-            sphere (x pos) (y pos)
+            sphere (x pos) (y pos) 0.3 0.3
 
             let (invr,_) = toCameraSystem r
                 (invp,_) = toCameraSystem p
@@ -202,19 +202,6 @@ isA4 mbf tol pts = ao < tol && cy < 0
 text2D x y s = do
     rasterPos (Vertex2 x (y::GLfloat))
     renderString Helvetica12 s
-
-
-sphere x y = do
-    lineWidth $=1
-    setColor 1 0.5 0.5
-    translate $ Vector3 x y 0.3
-    renderQuadric 
-        (QuadricStyle Nothing NoTextureCoordinates Outside FillStyle)
-        (Sphere 0.29 10 10)
-    setColor 0 0 0
-    renderQuadric 
-        (QuadricStyle Nothing NoTextureCoordinates Outside LineStyle)
-        (Sphere 0.3 10 10)
 
 
 v a b c = vertex $ Vertex3 a b (c::GLdouble)

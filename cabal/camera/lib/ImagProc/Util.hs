@@ -25,7 +25,6 @@ module ImagProc.Util(
     writeFrames,
     optionalSaver,
     autoSaver,
-    saveRGB,
     process,
     saveFrame,
     -- * Other
@@ -35,6 +34,7 @@ module ImagProc.Util(
 )where
 
 import ImagProc.Ipp.Core
+import ImagProc.Ipp.Convert(loadRGB)
 import ImagProc.Generic(Channels,channels,GImg,toYUV)
 import ImagProc.Camera
 import System.IO.Unsafe(unsafeInterleaveIO)

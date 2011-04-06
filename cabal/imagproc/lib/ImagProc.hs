@@ -21,6 +21,7 @@ module ImagProc (
     module ImagProc.Generic,
     module ImagProc.Images,
     module ImagProc.C.Simple,
+    module ImagProc.Ipp.Convert,
     binarize8u, binarize32f,
     localMax,
     Grads(..),gradients,
@@ -30,12 +31,11 @@ module ImagProc (
     filter32f, filter8u,
     gaussS, gaussS',
     rotateROI,
-    pyramid,
-    mat2img, img2mat,
-    saveGray
+    pyramid
 ) where
 
 import ImagProc.Ipp.Core
+import ImagProc.Ipp.Convert
 import ImagProc.Ipp.AdHoc
 import ImagProc.Ipp.Pure
 import ImagProc.Ipp.Structs

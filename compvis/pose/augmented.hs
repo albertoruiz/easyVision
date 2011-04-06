@@ -99,7 +99,7 @@ worker cam op mbf w = do
                     lineWidth $= 1
                     renderPrimitive LineLoop (mapM_ vertex a4)
 
-                    unitCube
+                    block
                     --houseModel
 
     return ()
@@ -141,7 +141,7 @@ text2D x y s = do
     rasterPos (Vertex2 x (y::GLfloat))
     renderString Helvetica12 s
 
-unitCube = do
+block = do
     setColor' red
     renderPrimitive Polygon $ v5 >> v6 >> v7 >> v8
     setColor' green

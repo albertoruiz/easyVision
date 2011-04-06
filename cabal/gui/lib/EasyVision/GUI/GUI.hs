@@ -29,7 +29,7 @@ module EasyVision.GUI.GUI (
 
 import EasyVision.GUI.Draw
 import ImagProc.Base
-import ImagProc.Ipp(Size(..),ippSetNumThreads,ROI(..),saveRGB)
+import ImagProc.Ipp(Size(..),ippSetNumThreads,ROI(..),saveRGB')
 import Graphics.UI.GLUT hiding (RGB, Matrix, Size)
 import qualified Graphics.UI.GLUT as GL
 import Data.IORef
@@ -128,7 +128,7 @@ kbdcam ctrl = kbd where
 kbdQuit :: KeyboardMouseCallback
 kbdQuit (Char '\27') Down Modifiers {shift=Down} _ = leaveMainLoop >> system "killall mplayer" >> return ()
 kbdQuit (Char '\27') Down _ _ = leaveMainLoop
-kbdQuit (Char   'i') Down _ _ = captureGL >>= saveRGB Nothing
+kbdQuit (Char   'i') Down _ _ = captureGL >>= saveRGB' Nothing
 kbdQuit _ _ _ _               = return ()
 
 mouseGen acts def st a b c d = do

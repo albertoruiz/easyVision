@@ -59,7 +59,6 @@ import Classifier(Sample)
 import Data.Maybe(isJust,catMaybes)
 import Numeric.GSL.Minimization
 
-import ImagProc.Ipp.Core(loadRGB)
 
 ----------------------------------------------------------------------
 
