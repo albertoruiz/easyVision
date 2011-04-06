@@ -25,12 +25,12 @@ import Classifier(Sample)
 import Tools
 
 
---catalog = digits
-catalog = pentos
+catalog = digits
+--catalog = pentos
 --catalog = read <$> readFile "digits.txt"
 --catalog = letters
 
-main = main3
+main = main1
 
 main2 = run $ camera ~> EV.gray
             >>= wcontours id ~> (id *** contSel)
@@ -69,6 +69,17 @@ main3 = run $ camera ~> EV.gray
             >>= coherent
             >>= timeMonitor
 
+main4 = run $ camera ~> EV.gray
+            >>= wcontours id ~> (id *** contSel)
+            >>= shapeCatalog normalShape catalog (concatMap toCanonic2)
+            >>= classifier ~> snd
+            >>= alignMon' "Pre"
+            >>= virtualMon
+            >>= virtualExperiment axes
+            ~> refineTangentImage -- ~> refineTangentImage
+            >>= alignMon' "Post"
+            >>= virtualMon
+            >>= timeMonitor
 
 ----------------------------------------------------------------------
 type OKS = (Double, (Polyline,Mat,Vec,Mat,Vec,String))
@@ -79,7 +90,7 @@ virtualMon = monitor "Virtual" (mpSize 20) sh
     g (_, (_,b,_,a,_,_)) = c where Just c = cameraFromHomogZ0 (Just 1.7) (inv b <> a <> diagl[1,-1,1])
     h cam = do
         cameraView cam (4/3) 0.1 100
-        unitCube -- houseModel
+        unitCube 1 -- houseModel
         setColor' purple
         lineWidth $= 3
         renderPrimitive LineLoop $ mapM_ vertex $ [[0,0,0],
@@ -105,7 +116,7 @@ virtualExperiment h cam = do wr <- evWindow () "Rectify Vertical"  (mpSize 10) N
     g (_, (x,b,_,a,_,l)) = (c,x,h)
       where 
         h = inv b <> a
-        c = cameraFromAffineHomogZ0 1.7 (h <> diagl[-1,1,1])
+        c = cameraFromAffineHomogZ0 (1.7) (h <> diagl[-1,1,1])
     s (_, (_,_,_,_,_,l)) = not (l `elem` ["I","O","0"])
         
     sh wr (im,oks) = do

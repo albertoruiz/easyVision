@@ -5,7 +5,7 @@ import Graphics.UI.GLUT hiding (RGB,Size,minmax,histogram,Point,set,Matrix)
 import qualified Data.Colour.Names as Col
 import Numeric.GSL.Fourier
 import Numeric.LinearAlgebra
-import Complex
+--import Complex
 import Control.Monad(when)
 import Data.List(sortBy)
 import Util.Misc(degree,unitary)
@@ -16,9 +16,10 @@ import Text.Printf
 import Data.Maybe(isJust)
 import Util.Homogeneous
 
-import Util.Misc(Mat,pairsWith,debug,mean)
+import Util.Misc(Mat,pairsWith,debug,mean,diagl)
 import Util.Covariance(covStr,meanV)
 import Data.Maybe(catMaybes)
+import Data.Colour.Names as Col hiding (gray)
 
 sz' = Size 600 600
 
@@ -38,6 +39,7 @@ main = do
                            ("method", intParam 1 1 2)]
 
     w  <- evWindow () "Ellipses" sz  Nothing (const (kbdcam ctrl))
+    depthFunc $= Just Less
     wr <- evWindow () "Rectif"   sz' Nothing (const (kbdcam ctrl))
 
     launch (worker w wr cam o)
@@ -57,8 +59,9 @@ worker w wr cam param = do
     orig <- cam
 
     inWin w $ do
+        clear [DepthBuffer]
         drawImage (gray orig)
-
+        clear [DepthBuffer]
         let (Size h w) = size (gray orig)
             pixarea = h*w*area`div`1000
             redu = Closed . pixelsToPoints (size $ gray orig). douglasPeuckerClosed fracpix
@@ -77,7 +80,7 @@ worker w wr cam param = do
         mapM_ shcont candidates
         setColor' Col.red
         lineWidth $= 3
-        mapM_ (disppl . conicPoints) ellipses
+        mapM_ (shcont . Closed . conicPoints 50) ellipses
         when (length ellipses >= 2) $ do
             let improve = if method == 1 then id else flip improveCirc ellipMat
             let sol = intersectionEllipses (ellipMat!!0) (ellipMat!!1)
@@ -107,15 +110,24 @@ worker w wr cam param = do
                     vsl = map (fst . fromComplex) . toColumns . snd . eig $ ccl
                 mapM_ (shLine.toList) vsl
 
-
-
                 let recraw = rectifierFromCircularPoint ij
                              -- rectifierFromManyCircles improve ellipMat
                     (mx,my,_,_,_) = ellipses!!0
                     (mx2,my2,_,_,_) = ellipses!!1
                     [[mx',my'],[mx'2,my'2]] = ht recraw [[mx,my],[mx2,my2]]
 --                    okrec = similarFrom2Points [mx',my'] [mx'2,my'2] [0,0] [-0.5, 0] <> recraw
-                    okrec = similarFrom2Points [mx',my'] [mx'2,my'2] [mx,my] [mx2, my2] <> recraw
+                    okrec = diagl[-1,1,1]<>similarFrom2Points [mx',my'] [mx'2,my'2] [mx,my] [mx2, my2] <> recraw
+                    
+                    Just cam = cameraFromHomogZ0 Nothing (inv okrec)
+
+                    elliprec = map f ellipMat
+                      where f m =  analyzeEllipse $ a <> m <> trans a
+                            a = mt okrec
+                    g ((x,y,r,_,_),_) = sphere x y (r/2) (r/2)
+                cameraView cam (4/3) 0.1 100
+                clear [DepthBuffer]
+                mapM_ g elliprec
+                
                 inWin wr $ do
                     --drawImage $ warp 0 sz' (scaling sc <> w) (gray orig)
                     drawImage $ warp (0,0,0) sz' (scaling sc <> okrec ) (rgb orig)
@@ -125,29 +137,11 @@ worker w wr cam param = do
                     text2D 30 50 $ printf "ang = %.1f" $ abs ((acos $ circularConsistency ij)/degree - 90)
 
 
-norm x = pnorm PNorm2 x
 mt m = trans (inv m)
---diagl = diag . fromList
-
 fst3 (a,_,_) = a
 t2l (a,b) = [a,b]
-htp h (Closed c) = Closed . map l2p . ht h . map p2l $ c
-p2l (Point x y) = [x,y]
-l2p [x,y] = Point x y
 
-disppl l = renderPrimitive LineLoop $ mapM_ vertex l
-
-shcont (Closed c) = disppl c
-
-shLine [a,b,c] = renderPrimitive Lines $ mapM f [-1,1]
-    where f x = vertex $ Point x ((-a*x-c)/b)
-
-conicPoints (mx,my,d1,d2,a) = xs where
-    xs = map pt ts
-    ts = tail $ toList $ linspace 50 (0,2*pi)
-    pt t = [mx + x*cos a - y*sin a, my + x*sin a + y*cos a]
-        where x = d1*cos t
-              y = d2*sin t
+shcont = renderPrimitive LineLoop . vertex
 
 ----------------------------------------------------------------
 
@@ -191,4 +185,6 @@ rectifierFromManyCircles f cs = r ijs
         [pnx,pny] = toList pn
         dir = scalar i * complex (scalar ds * unitary (fromList [pny, -pnx]))
         [x,y] = toList (cpn + dir)
+
+----------------------------------------------------------------------
 

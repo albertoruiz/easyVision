@@ -25,7 +25,7 @@ module ImagProc.Ipp.Core
             -- * Creation of images
           , img, imgAs, getData32f, setData32f, setData8u, setValue
             -- * Regions of interest
-          , fullroi, invalidROIs, roiSZ, validArea
+          , fullroi, invalidROIs, roiSZ, validArea, roiPtrs
             -- * Wrapper tools
           , src, dst, checkIPP, warningIPP, (//), starting
             -- * Image types
@@ -38,7 +38,7 @@ module ImagProc.Ipp.Core
           -- * Image coordinates
           , val8u, fval
           -- * Misc
-          , saveRGB
+          , saveRGB, saveGray, loadGray, loadRGB
           , img2mat, mat2img
           -- * Reexported modules
           , module ImagProc.Ipp.Structs, CInt, CUChar, fi, ti
@@ -59,8 +59,10 @@ import System.Process
 import System.Directory(getDirectoryContents,doesFileExist)
 import Data.List(isPrefixOf)
 
+import Util.Options(nextFilename)
+
 import GHC.Base
-import GHC.IOBase
+import GHC.IO
 import GHC.ForeignPtr(mallocPlainForeignPtrBytes)
 
 import Numeric.LinearAlgebra(rows,cols,Matrix,ident)
@@ -120,6 +122,14 @@ img RGB  = img' RGB  1 3
 img I32f = img' I32f 4 1
 img I64f = img' I64f 8 1
 img YUV  = img' YUV  1 2 -- img' YUV ? ? -- hmm.. is 4:2:0
+
+roiPtrs :: Img -> ([Ptr ()],Int)
+roiPtrs img@Img {ptr = p, step = s, vroi = roi@(ROI r1 r2 c1 c2) } = (map row [0..r2-r1], c2-c1+1)
+  where
+    p' = starting img roi
+    row k = plusPtr p' (k*s)
+
+
 
 -- | to be deprecated
 getData32f :: ImageFloat -> IO [[Float]]
@@ -380,4 +390,89 @@ img2mat (F im) | c `rem` 32 /= 0 = error "img2mat with wrong padding"
         let g r c p = copyBytes (castPtr p) (ptr im) (fromIntegral $ r*c*4) >> return 0 
         app1 g mat (cmat m) "img2mat" >> return 0 // checkIPP "img2mat" [im]
         return m
+
+----------------------------------------------------------------------
+{-
+
+-- | Writes to a file (with automatic name if Nothing) a RGB image in png format.
+-- (uses imagemagick' convert.)
+saveRGB' :: Maybe FilePath -> ImageRGB -> IO ()
+saveRGB' (Just filename) (C im) = do
+    handle <- openFile (filename++".rgb") WriteMode
+    let (ps,c) = roiPtrs im
+        f p = hPutBuf handle p c
+        Size h w = roiSize (vroi im)
+    mapM_ f ps
+    hClose handle
+    touchForeignPtr (fptr im)
+    system $ "convert -flip -size "++show w++"x"++show h++" -depth 8 rgb:"
+             ++(filename++".rgb ")++(filename++".png")
+    system $ "rm "++(filename++".rgb")
+    return ()
+
+saveRGB' Nothing im = do
+    name <- nextFilename "screenshot"
+    saveRGB' (Just name) im
+-}
+----------------------------------------------------------------------
+
+-- | Save the ROI of a 8u image to a file.
+-- It uses imagemagick' convert. The file format is given by the extension.
+saveGray :: FilePath -> ImageGray -> IO ()
+saveGray filename (G im) = do
+    handle <- openFile (filename++".8u") WriteMode
+    let (ps,c) = roiPtrs im
+        f p = hPutBuf handle p c
+        Size h w = roiSize (vroi im)
+    mapM_ f ps
+    hClose handle
+    touchForeignPtr (fptr im)
+    system $ "convert -size "++show w++"x"++show h++" -depth 8 gray:"
+             ++(filename++".8u ")++filename
+    system $ "rm "++(filename++".8u")
+    return ()
+
+----------------------------------------------------------------------
+
+-- | Load an image using imagemagick's convert.
+loadGray :: FilePath -> IO ImageGray
+loadGray filename = do
+    Size h w <- getSize filename
+    system $ "convert "++filename++" -depth 8 gray:"
+             ++(filename++".8u ")
+    handle <- openFile (filename++".8u") ReadMode
+    G im <- image (Size h w)
+    let (ps,c) = roiPtrs im
+        f p = hGetBuf handle p c
+    mapM_ f ps
+    hClose handle
+    touchForeignPtr (fptr im)
+    system $ "rm "++(filename++".8u")
+    return (G im)
+
+-- | Load an image using imagemagick's convert.
+loadRGB :: FilePath -> IO ImageRGB
+loadRGB filename = do
+    Size h w <- getSize filename
+    system $ "convert "++filename++" -depth 8 rgb:"
+             ++(filename++".rgb ")
+    handle <- openFile (filename++".rgb") ReadMode
+    C im <- image (Size h w)
+    let (ps,c) = roiPtrs im
+        f p = hGetBuf handle p (c*3)
+    mapM_ f ps
+    hClose handle
+    touchForeignPtr (fptr im)
+    system $ "rm "++(filename++".rgb")
+    return (C im)
+
+
+getSize :: FilePath -> IO Size
+getSize imagfile = do
+    s <- readProcess "identify" [imagfile] ""
+    return (g $ words $ map f $ words s!!2)
+  where
+    f 'x' = ' '
+    f a = a
+    g [w,h] = Size (read h) (read w)
 

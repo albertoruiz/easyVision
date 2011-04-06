@@ -16,7 +16,7 @@ Camera combinators: higher order functions which make virtual cameras from other
 module EasyVision.MiniApps.Combinators (
   -- * Camera combinators
   -- | A few useful combinators
-  camera,
+  camera, cameraFolderG,
   withPause,
   addSmall,
   warper,
@@ -24,12 +24,13 @@ module EasyVision.MiniApps.Combinators (
   findRectangles,
   onlyRectangles,
   rectifyQuadrangle,
-  monitor, observe, run,
+  monitor, observe, run, runFPS,
   counter, countDown,
   frameRate, compCost, timeMonitor,
   selectROI,
   selectSnd,
-  updateMaybe, updateMaybeSave
+  updateMaybe, updateMaybeSave,
+  clickStatusWindow
 )where
 
 import ImagProc.Ipp.Core
@@ -67,6 +68,7 @@ import Util.Options(optionString,hasValue,optionFromFile)
 
 import Data.Maybe(isJust)
 import Control.Monad(when)
+import Control.Arrow((***))
 import Util.Options(getRawOption)
 import Numeric.LinearAlgebra(Matrix)
 
@@ -140,6 +142,21 @@ cameraFolder = do
     acts n = [((MouseButton WheelUp,   Down, modif), \_ k -> min (k+1) n)
              ,((MouseButton WheelDown, Down, modif), \_ k -> max (k-1) 0)]
 
+cameraFolderG path = do
+    imgs <- readFolder' path
+    let disp rk = do
+           k <- get rk  
+           drawImage' (fst $ imgs!!k)
+    w <- evWindow 0 ("Folder: "++path) (mpSize 10) (Just disp) (mouseGen (acts (length imgs -1)) kbdQuit)               
+    return $ do
+        k <- getW w    
+        return (channelsFromRGB $ fst $ imgs!!k)
+  where
+    acts n = [((MouseButton WheelUp,   Down, modif), \_ k -> min (k+1) n)
+             ,((MouseButton WheelDown, Down, modif), \_ k -> max (k-1) 0)]
+
+
+
 cameraV = findSize >>= getCam 0 ~> channels
 
 -- | returns the camera 0. It also admits --photos=path/to/folder/ with images.
@@ -202,6 +219,9 @@ observe winname f = monitor winname (mpSize 20) (drawImage'.f)
 
 run :: IO (IO a) -> IO ()
 run c = prepare >> (c >>= launch . (>> return ()))
+
+runFPS :: Int -> IO (IO a) -> IO ()
+runFPS n c = prepare >> (c >>= launchFreq n . (>> return ()))
 
 -----------------------------------------------------------
 
@@ -316,6 +336,33 @@ updateMaybeSave name option f b0 disp cam = do
         inWin w $ disp (x,b')
         when (isJust ma) $ writeFile ("saved-"++option) (show b')
         return (x,b')
+
+----------------------------------------------------------------------
+
+-- | windows with a state which is updated when the user clicks on it
+clickStatusWindow
+    :: String            -- ^ window name
+    -> Size              -- ^ initial size
+    -> s                 -- ^ initial state
+    -> (x -> s -> s)     -- ^ update on click
+    -> (x -> s -> IO ()) -- ^ display function (always)
+    -> (x -> s -> IO ()) -- ^ action (only when the state is update)
+    -> IO x              -- ^ input
+    -> IO (IO (x,s))     -- ^ result
+clickStatusWindow name sz s0 update display act cam = do
+    w <- evWindow (False,s0) name sz Nothing (mouse kbdQuit)
+    return $ do
+        x <- cam
+        (click, s) <- getW w
+        let s' = if click then update x s else s
+        inWin w (display x s')
+        putW w (False, s')
+        when click (act x s')
+        return (x,s')
+  where
+    mouse m st (MouseButton LeftButton) Down _ _ = do
+        st $~ (not *** id)
+    mouse m _ a b c d = m a b c d
 
 ----------------------------------------------------------------------
 -- To be moved:

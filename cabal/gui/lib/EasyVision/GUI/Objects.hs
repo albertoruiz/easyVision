@@ -14,12 +14,12 @@ True coordinates of several calibration objects and 3D models
 -----------------------------------------------------------------------------
 
 module EasyVision.GUI.Objects (
-    a4Ref, asymRef, cornerRef, houseModel
+    a4Ref, asymRef, cornerRef, houseModel, unitCube, sphere
 ) where
 
 import Graphics.UI.GLUT
-import EasyVision.GUI.Draw(setColor)
-
+import EasyVision.GUI.Draw(setColor,setColor')
+import Data.Colour.Names
 
 asymRef = map (map (*0.54))
        [ [ 0, 0]
@@ -73,3 +73,45 @@ houseModel = do
         v 1 1 1
         v 1 1 0
         v 1 0 0
+
+-- | cube of give size at the origin
+unitCube :: Double -> IO ()
+unitCube d = do
+    setColor' red
+    renderPrimitive Polygon $ v5 >> v6 >> v7 >> v8
+    setColor' green
+    renderPrimitive Polygon $ v1 >> v2 >> v6 >> v5
+    setColor' blue
+    renderPrimitive Polygon $ v1 >> v4 >> v8 >> v5
+    setColor' yellow
+    renderPrimitive Polygon $ v2 >> v3 >> v7 >> v6
+    setColor' orange
+    renderPrimitive Polygon $ v3 >> v4 >> v8 >> v7
+    setColor' purple
+    renderPrimitive Polygon $ v1 >> v2 >> v3 >> v4
+  where
+    v a b c = vertex $ Vertex3 a b (c::GLdouble)
+    v1 = v 0 0 0
+    v2 = v d 0 0
+    v3 = v d d 0
+    v4 = v 0 d 0
+    v5 = v 0 0 d
+    v6 = v d 0 d
+    v7 = v d d d
+    v8 = v 0 d d
+
+-- | draw sphere at x y z and radious r
+sphere :: Double -> Double -> Double -> Double -> IO ()
+sphere x y z r = do
+    lineWidth $=1
+    setColor 1 0.5 0.5
+    translate $ Vector3 x y z
+    renderQuadric 
+        (QuadricStyle Nothing NoTextureCoordinates Outside FillStyle)
+        (Sphere (r*0.99) 20 20)
+    setColor 0 0 0
+    renderQuadric 
+        (QuadricStyle Nothing NoTextureCoordinates Outside LineStyle)
+        (Sphere r 20 20)
+    translate $ Vector3 (-x) (-y) (-z)
+

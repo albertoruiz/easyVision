@@ -41,6 +41,7 @@ library
                         EasyVision.MiniApps.ScatterPlot
                         EasyVision.MiniApps.Static
                         EasyVision.MiniApps.Save
+                        EasyVision.MiniApps.RegionMarker
     other-modules:
 
     ghc-prof-options:   -auto-all

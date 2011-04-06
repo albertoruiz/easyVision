@@ -15,7 +15,8 @@ module Util.Ellipses (
     EllipseParams,
     analyzeEllipse,
     intersectionEllipses,
-    estimateConicRaw
+    estimateConicRaw,
+    conicPoints
 ) where
 
 import Numeric.LinearAlgebra
@@ -160,4 +161,13 @@ intersectionEllipses c1 c2 = map (\[x,y]->(x,y)) sol where
     sol = if abs(d/a) > 1E-6
         then htc (complex $ inv w) $ intersectionReduced (getCoeffs c2')
         else htc (complex $ inv w) $ intersectionCommonCenter ((a/f):+0,(b/f):+0)
+
+
+conicPoints :: Int -> EllipseParams -> [Point]
+conicPoints n (mx,my,d1,d2,a) = xs where
+    xs = map pt ts
+    ts = tail $ toList $ linspace n (0,2*pi)
+    pt t = Point (mx + x*cos a - y*sin a) (my + x*sin a + y*cos a)
+        where x = d1*cos t
+              y = d2*sin t
 

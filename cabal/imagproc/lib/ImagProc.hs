@@ -31,7 +31,8 @@ module ImagProc (
     gaussS, gaussS',
     rotateROI,
     pyramid,
-    mat2img, img2mat
+    mat2img, img2mat,
+    saveGray
 ) where
 
 import ImagProc.Ipp.Core

@@ -1,5 +1,4 @@
-{-# OPTIONS -fglasgow-exts #-}
-
+{-# LANGUAGE FlexibleInstances #-}
 -----------------------------------------------------------------------------
 {- |
 Module      :  EasyVision.GUI.Draw
@@ -29,6 +28,7 @@ module EasyVision.GUI.Draw
 , cameraView
 , drawInterestPoints
 , drawVector
+, shLine
 , extractSquare
 , newTrackball
 , captureGL
@@ -52,6 +52,7 @@ import qualified Data.Colour.RGBSpace as Col
 import Data.Colour.SRGB hiding (RGB)
 import Data.Colour
 import Control.Monad(when)
+import Features(Polyline(..))
 
 
 -- | Types of images that can be shown in a window
@@ -190,6 +191,7 @@ draw2Dwith ortho = do
     matrixMode $= Modelview 0
     loadIdentity
 
+----------------------------------------------------------------------
 
 instance Vertex Pixel where
     vertex (Pixel r c) = vertex (Vertex2 (fromIntegral c) (fromIntegral r::GLint))
@@ -215,9 +217,31 @@ instance Vertex Segment where
         vertex $ (extreme2 s)
     vertexv = undefined
 
+instance Vertex (Vector Double) where
+    vertex v | dim v == 2 = vertex (Vertex2 (v@>0) (v@>1))
+             | dim v == 3 = vertex (Vertex3 (v@>0) (v@>1) (v@>2))
+    vertexv = undefined
+
+instance Vertex (Vector (Complex Double)) where
+    vertex = mapM_ vertex . toList
+    vertexv = undefined
+
+instance Vertex (Matrix Double) where
+    vertex = mapM_ vertex . toRows
+    vertexv = undefined
+
+instance Vertex Polyline where
+    vertex = mapM_ vertex . polyPts
+    vertexv = undefined
+
+
+----------------------------------------------------------------------
+
 text2D x y s = do
     rasterPos (Vertex2 x (y::GLfloat))
     renderString Helvetica12 s
+
+----------------------------------------------------------------------
 
 -- | It shows the outline of a camera and an optional image (texture) in its image plane.
 drawCamera :: Double -> Matrix Double -> Maybe ImageFloat -> IO ()
@@ -291,7 +315,10 @@ shIP' (IP (Point x y) s o _) = do
 
 -----------------------------------------------------
 
-
+-- | Draw a 2D line [a,b,c]
+shLine :: [Double] -> IO ()
+shLine [a,b,c] = renderPrimitive Lines $ mapM_ f [-1,1]
+    where f x = vertex $ Point x ((-a*x-c)/b)
 
 ------------------------------------------------------------
 
@@ -366,3 +393,4 @@ evSize (GL.Size w h) = Size    (t h) (t w) where t = fromIntegral.toInteger
 -- | converts a 'Size' into an OpenGL Size.
 glSize :: Size -> GL.Size
 glSize (Size    h w) = GL.Size (t w) (t h) where t = fromIntegral.toInteger
+

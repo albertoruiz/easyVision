@@ -34,7 +34,7 @@ import Util.Covariance
 import Util.Homogeneous
 import Data.List(transpose,nub,maximumBy,genericLength,sortBy,minimumBy)
 import System.Random
-import Util.Misc(norm,mat,vec,Mat,Vec,splitEvery,impossible,posMax)
+import Util.Misc(norm,mat,vec,Mat,Vec,splitEvery,impossible,posMax,debug)
 import Data.Function(on)
 
 
@@ -154,7 +154,7 @@ ransac estimator isInlier n prob dat = (bestModel,okinliers) where
     eps = map prop inls where prop l = 1 - genericLength l / genericLength dat
     ns = scanl1 min $ map (ransacSize n prob) eps 
     k = fst $ head $ dropWhile (\(j,m) -> j<m) (zip [1 ..] ns)
-    p = posMax (map length (take k inls))
+    p = debug "ransac" id $ posMax (map length (take k inls))
     bestModel = models!!p
     okinliers = inls!!p
 

@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeSynonymInstances, TemplateHaskell #-}
+{-# LANGUAGE TypeSynonymInstances, TemplateHaskell, FlexibleInstances #-}
 -----------------------------------------------------------------------------
 {- |
 Module      :  EasyVision.GUI.Parameters

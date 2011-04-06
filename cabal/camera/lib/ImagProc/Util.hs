@@ -20,7 +20,7 @@ module ImagProc.Util(
     getCam, numCams,
     getMulticam,
     readFrames,
-    readFolder,
+    readFolder, readFolder',
     -- * Video output
     writeFrames,
     optionalSaver,
@@ -38,13 +38,14 @@ import ImagProc.Ipp.Core
 import ImagProc.Generic(Channels,channels,GImg,toYUV)
 import ImagProc.Camera
 import System.IO.Unsafe(unsafeInterleaveIO)
-import Data.List(isPrefixOf,foldl',tails,findIndex,isInfixOf)
+import Data.List(isPrefixOf,foldl',tails,findIndex,isInfixOf,isSuffixOf)
 import Data.Maybe
 import System.Directory(doesFileExist, getDirectoryContents)
 import System.CPUTime
 import Text.Printf
 import Control.Monad
 import Control.Arrow((&&&))
+import Control.Applicative((<$>))
 import System.Environment(getArgs,getEnvironment)
 import Data.Function(on)
 import Control.Concurrent
@@ -294,7 +295,7 @@ saveFrame f cam = do
 
 ----------------------------------------------------------------------
 
--- | reads a list of images from a folder
+-- | reads a list of images from a folder. Fixed size using mplayer
 readFolder :: FilePath -> Maybe Size -> IO [ImageYUV]
 readFolder path mbsz = do
     let sz = maybe (Size 600 800) id mbsz -- TO DO: remove fixed size
@@ -305,4 +306,19 @@ readFolder path mbsz = do
     putStrLn $ show (length imgs) ++ " images in " ++ path
     return imgs
 
+----------------------------------------------------------------------
+
+-- | reads a list of images from a folder. Variable size, using imageMagick
+readFolder' :: FilePath -> IO [(ImageRGB,String)]
+readFolder' path = do
+    fs <- filter isImage <$> getDirectoryContents path
+    let nframes = length fs
+    imgs <- mapM (loadRGB.((path++"/")++)) fs
+    putStrLn $ show (length imgs) ++ " images in " ++ path
+    --print $ unwords fs
+    return (zip imgs fs)
+  where
+    isImage name = any g [".png",".jpg",".JPG"]
+      where
+        g e = e `isSuffixOf` name
 

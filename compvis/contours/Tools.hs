@@ -16,23 +16,23 @@ module Tools(
     alignMon, alignMon',
     -- * Projective rectification from circles and vertical vanishing point
     rectifyMon, tryMetric, rectifierFromHorizon, coherent, distImage,
+    rectifierFromAffineHomogs, refineTangent, refineTangentImage,
     -- * Digit tools
     fixOrientation,
     -- * Other tools
     intersectionManyLines,
     -- * Display
     shapeCatalog, normalShape, centerShape,
-    examplesBrowser,
-    shcont, shcontO, shLine,
+    examplesBrowser, imagesBrowser,
+    shcont, shcontO,
     rotAround,
-    unitCube,
     -- * Prototypes
     letters, digits
 ) where
 
 
 import EasyVision as EV
-import Graphics.UI.GLUT hiding (Point,Size,scale)
+import Graphics.UI.GLUT hiding (Point,Size,scale,samples)
 import Util.Misc(diagl,degree,Vec,vec,norm,debug,diagl,memo,Mat,mat,norm,
                  unionSort,replaceAt,mean,median,unitary,pairsWith)
 import Util.Estimation(homogSolve)
@@ -42,11 +42,11 @@ import Control.Arrow
 import Control.Applicative((<$>),(<*>))
 import Control.Monad(when,ap)
 import Data.Colour.Names as Col
-import Vision (desp, scaling, estimateHomography, ht, cross,
+import Vision (desp, scaling, estimateHomography, ht, cross, homog,
                inHomog,circularConsistency,focalFromCircularPoint,similarFrom2Points,
-               kgen,mS)
+               kgen,mS, cameraFromAffineHomogZ0,estimateFundamentalRaw)
 import Numeric.LinearAlgebra -- ((<>),fromList,toList,fromComplex,join,dim)
-import Data.List(sortBy,minimumBy,groupBy,sort,zipWith4,partition,transpose)
+import Data.List(sortBy,minimumBy,groupBy,sort,zipWith4,partition,transpose,foldl')
 import Data.Function(on)
 import Text.Printf(printf)
 import Data.IORef
@@ -59,6 +59,8 @@ import Classifier(Sample)
 import Data.Maybe(isJust,catMaybes)
 import Numeric.GSL.Minimization
 
+import ImagProc.Ipp.Core(loadRGB)
+
 ----------------------------------------------------------------------
 
 $(autoParam "SCParam" "classify-"
@@ -68,7 +70,7 @@ $(autoParam "SCParam" "classify-"
 
 ----------------------------------------------------------------------
 
-maxFreq = 3
+maxFreq = 15
 
 type AlignInfo = (Double,(Polyline,Mat,Vec,Mat,Vec,String))
 
@@ -344,13 +346,36 @@ examplesBrowser name sz f exs =
     acts = [((MouseButton WheelUp,   Down, modif), \_ (k,exs) -> (min (k+1) (length exs - 1), exs))
            ,((MouseButton WheelDown, Down, modif), \_ (k,exs) -> (max (k-1) 0, exs))]
 
+
 ----------------------------------------------------------------------
 
-shcont (Closed c) = do
-    renderPrimitive LineLoop $ mapM_ vertex c
---    renderPrimitive Points $ vertex (head c)
-shcont (Open c) = do
-    renderPrimitive LineStrip $ mapM_ vertex c
+testLoad path = do
+    xs <- readFolder' path
+    prepare >> imagesBrowser "Images" (mpSize 20) xs >> mainLoop
+
+
+testLoad' imgfile = do
+    x <- loadRGB imgfile
+    run $ return (return x) >>= observe "loaded" id
+
+-----------------------------
+
+imagesBrowser :: String -> EV.Size -> Sample ImageRGB -> IO (EVWindow (Int, Sample ImageRGB))
+imagesBrowser name sz = examplesBrowser name sz f
+  where
+    f img = do
+        drawImage' img
+        pixelCoordinates (size img)
+        setColor' red
+        text2D 20 20 (shSize img)
+    shSize x = show w ++ "x" ++ show h
+      where Size h w = size x
+
+----------------------------------------------------------------------
+
+shcont c@(Closed _) = renderPrimitive LineLoop (vertex c)
+
+shcont c@(Open _) = renderPrimitive LineStrip (vertex c)
 
 shcontO (Closed c) = do
     pointCoordinates (EV.Size 500 500)
@@ -401,7 +426,7 @@ rectifierFromHorizon f h = rectifier rho yh f
     yh = sqrt (x*x+y*y)
     rho = atan2 x y
 
---p2hp (Point x y) = vec [x,y,1]
+p2hp (Point x y) = vec [x,y,1]
 hp2p v = Point x y where [x,y] = toList (inHomog v)
 
 ----------------------------------------------------------------------
@@ -508,6 +533,21 @@ tryMetric (im,oks) = (im,oks')
         (d', (x',b',u',a',v',l')) = refine 10 $ alignment [((a,v),l)] (transPol rectif x)
 
 ----------------------------------------------------------------------
+
+rectifierFromAffineHomogs f hs = rectifierFromVerticals f ls
+  where
+    ls = map (g . cameraFromAffineHomogZ0 f ) hs  -- Warning...
+    g c = homog (vec a) `cross ` homog (vec b)
+      where [a,b] = ht c [[0,0,0],[0,0,1]] -- or select columns
+          
+
+rectifierFromVerticals f ls = (v,rectifierFromHorizon f h)
+  where
+    v = intersectionManyLines ls
+    w = diagl [1,1,f**2]
+    h = w<>v
+
+----------------------------------------------------------------------
     
 distImage (im,oks) = (im,oks')
   where
@@ -517,6 +557,58 @@ distImage (im,oks) = (im,oks')
         xf = foufeat x
         pf = foufeat (transPol (inv b) $ invFou 30 maxFreq $ toFun v)
         d' = 10* norm (xf-pf) -- / norm xf
+
+----------------------------------------------------------------------
+
+samples = 100
+    
+p2l (Point x y) = [x,y]    
+    
+refineTangent (im,oks) = (im,oks')
+  where
+    oks' = map f oks
+    f (d, (x,b,u,a,v,l)) = (d',(x,b',u',a,v,l))
+      where
+        xr = invFou samples maxFreq $ toFun u
+        pr = invFou samples maxFreq $ toFun v
+        g a b = unitary $ cross a b
+        cpr = z ++ [head z]
+          where z = map p2hp (polyPts pr)
+        ls = zipWith g cpr (tail cpr)
+        pl2l = map p2l . polyPts
+        ls' = ls
+        xr' = map (unitary.homog.vec) $ pl2l xr
+        h = estimateHomographyLinesPoints ls' xr'
+        b' = h <> b
+        u' = foufeat $ transPol b' x
+        d' = norm (u'-v)
+
+
+refineTangentImage (im,oks) = (im,oks')
+  where
+    oks' = map f oks
+    f (d, (x,b,u,a,v,l)) = (d',(x,b',u',a,v,l))
+      where
+        xr = invFou samples maxFreq $ toFun $ foufeat x
+        pr = invFou samples maxFreq $ toFun $ foufeat (transPol (inv b) $ invFou samples maxFreq $ toFun v)
+        g a b = unitary $ cross a b
+        cpr = z ++ [head z]
+          where z = map p2hp (polyPts pr)
+        ls = zipWith g cpr (tail cpr)
+        pl2l = map p2l . polyPts
+        ls' = ls
+        xr' = map (unitary.homog.vec) $ pl2l xr
+        h = estimateHomographyLinesPoints ls' xr'
+        b' = b <> h
+        u' = foufeat $ transPol b' x
+        d' = norm (u'-v)
+
+
+estimateHomographyLinesPoints :: [Vec] -> [Vec] -> Mat
+estimateHomographyLinesPoints ls ps = f where
+    f = reshape 3 $ fst $ homogSolve (fromRows eqs)
+    eqs = zipWith eq ls ps where
+     eq l p = flatten (outer l p)
 
 ----------------------------------------------------------------------
 
@@ -547,48 +639,6 @@ ihc v = scale (recip w) (subVector 0 (n-1) v)
   where n = dim v
         w = v@>(n-1)
 
-
-{-
-    f (mb,(cx,cb)) = do
-        lineWidth $= 1
-        let al = transPol (inv mb) (invFou 100 maxFreq $ toFun cb)
-            ob = transPol (inv mb) (invFou 100 maxFreq $ toFun cx)
-            corr = zipWith (\a b->[a,b]) (polyPts al) (polyPts ob)
-        setColor' yellow
-        let aux (Closed ps) = map p2l ps
-            p2l (Point x y) = [x,y]
-        renderPrimitive Lines $ mapM_ vertex (concat corr)
-        lineWidth $= 1
-        setColor' red
-        shcont al
--}
-
-----------------------------------------------------------------------
-
-unitCube = do
-    setColor' red
-    renderPrimitive Polygon $ v5 >> v6 >> v7 >> v8
-    setColor' green
-    renderPrimitive Polygon $ v1 >> v2 >> v6 >> v5
-    setColor' blue
-    renderPrimitive Polygon $ v1 >> v4 >> v8 >> v5
-    setColor' yellow
-    renderPrimitive Polygon $ v2 >> v3 >> v7 >> v6
-    setColor' orange
-    renderPrimitive Polygon $ v3 >> v4 >> v8 >> v7
-    setColor' purple
-    renderPrimitive Polygon $ v1 >> v2 >> v3 >> v4
-  where
-    v a b c = vertex $ Vertex3 a b (c::GLdouble)
-    v1 = v 0 0 0
-    v2 = v 1 0 0
-    v3 = v 1 1 0
-    v4 = v 0 1 0
-    v5 = v 0 0 1
-    v6 = v 1 0 1
-    v7 = v 1 1 1
-    v8 = v 0 1 1
-
 ----------------------------------------------------------------------
 
 letters :: IO [(Polyline,String)]
@@ -606,4 +656,41 @@ digits = do
         proc = Closed . pixelsToPoints (size img).douglasPeuckerClosed 1 .fst3
         cs = (map proc $ rawconts) `zip` cycle ["$","0","1","2","3","4","5","6","7","8","9"]
     return cs
+
+----------------------------------------------------------------------
+
+auxMoments (s,sx,sy,sx2,sy2,sxy,sx3,sx2y,sxy2,sy3) seg@(Segment (Point a b) (Point c d))
+    = (s   + (a*d-c*b)/2,
+       sx  + ( 2*a*c*(d-b)-c^2*(2*b+d)+a^2*(2*d+b))/12,
+       sy  + (-2*b*d*(c-a)+d^2*(2*a+c)-b^2*(2*c+a))/12,
+       sx2 + ( (a^2*c+a*c^2)*(d-b) + (a^3-c^3)*(b+d))/12,
+       sy2 + (-(b^2*d+b*d^2)*(c-a) - (b^3-d^3)*(a+c))/12,
+       sxy + ((a*d-c*b)*(a*(2*b+d)+c*(b+2*d)))/24,
+       sx3 + (2*a**3*c*(b-d) + 2*a**2*c**2*(b-d) + 2*a*c**3*(b-d) - a**4*(3*b + 2*d) + c**4*(2*b + 3*d))/40,
+       sx2y + (a**2*c*(b - d)*(3*b + 2*d) + a*c**2*(b - d)*(2*b + 3*d) - a**3*(b**2 + 3*b*d + d**2) + c**3*(b**2 + 3*b*d + d**2))/60,
+       sxy2 + (b**3*(a**2 + 3*a*c + c**2) + b**2*(-3*a**2 + a*c + 2*c**2)*d - b*(a - c)*(2*a + 3*c)*d**2 - (a**2 + 3*a*c + c**2)*d**3)/60,
+       sy3 + (b**4*(3*a + 2*c) + 2*b**3*(-a + c)*d + 2*b**2*(-a + c)*d**2 + 2*b*(-a + c)*d**3 - (2*a + 3*c)*d**4)/40)
+
+rawMoments = foldl' auxMoments (0,0,0,0,0,0,0,0,0,0). asSegments
+
+data Moments = Moments {
+    m_a :: Double,
+    m_mx, m_my :: Double,
+    m_cxx, m_cyy, m_cxy :: Double,
+    m_cxxx, m_cxxy, m_cxyy, m_cyyy :: Double }
+    
+
+moments l = Moments {..}
+  where
+    (s,sx,sy,sx2,sy2,sxy,sx3,sx2y,sxy2,sy3) = rawMoments l
+    m_a = s
+    m_mx = sx/s
+    m_my = sy/s
+    m_cxx = sx2/s - m_mx*m_mx
+    m_cyy = sy2/s - m_my*m_my
+    m_cxy = sxy/s - m_mx*m_my
+    m_cxxx = 0
+    m_cxxy = 0
+    m_cxyy = 0
+    m_cyyy = 0
 
