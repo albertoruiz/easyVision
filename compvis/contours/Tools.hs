@@ -359,7 +359,7 @@ testLoad' imgfile = do
 
 -----------------------------
 
-imagesBrowser :: String -> EV.Size -> Sample ImageRGB -> IO (EVWindow (Int, Sample ImageRGB))
+imagesBrowser :: (Image t, Drawable t) => String -> Size -> Sample t -> IO (EVWindow (Int, Sample t))
 imagesBrowser name sz = examplesBrowser name sz f
   where
     f img = do

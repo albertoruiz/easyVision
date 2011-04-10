@@ -64,7 +64,7 @@ procLine = do
     clearColor $= Color4 1 1 1 1
 
 procCircle = do
-    pts <- points 0.02 100 200
+    pts <- points 0.02 100 500
     let okmodel = estimateCircle pts
     print $ fst okmodel
     evWindow () "Data" sz (Just $ disp0 (pts)) (const kbdQuit)
