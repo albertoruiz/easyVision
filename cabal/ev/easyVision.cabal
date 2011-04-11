@@ -43,6 +43,7 @@ library
                         EasyVision.MiniApps.Static
                         EasyVision.MiniApps.Save
                         EasyVision.MiniApps.RegionMarker
+                        EasyVision.MiniApps.Browser
     other-modules:
 
     ghc-prof-options:   -auto-all
