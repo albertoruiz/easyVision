@@ -10,6 +10,7 @@ import Control.Arrow
 import Vision(desp, scaling)
 import Util.Rotation(rot3)
 import Util.Optimize(optimize)
+import Text.Printf(printf)
 
 disp = putStrLn . dispf 5
 
@@ -115,15 +116,24 @@ testTracker = run $ camera ~> float.gray
                   >>= trackerMon2
                   >>= timeMonitor
                   
-trackerMon = monitor "Tracker" (mpSize 10) sh
+trackerMon = monitorWheel (0,1) "Tracker" (mpSize 10) sh
   where
-    sh (img, Nothing) = do
+    sh _ (img, Nothing) = do
         drawImage' (img :: ImageFloat)
-    sh (img, Just (t,(_,h,e))) = do
+    sh 0 (img, Just (t,(_,h,e))) = do
+        let ih = inv h
         drawImage' img
         pointCoordinates (size t)
-        shcont $ transPol (inv h) $ roi2poly (size t) (theROI t)
-        text2D 0.9 0.7 (show $ round $ e*10)
+        shcont $ transPol ih $ roi2poly (size t) (theROI t)
+        setColor 1 0 0
+        text2D 0.9 0.65 (printf "%.1f" e)
+    sh 1 (img, Just (t,(_,h,e))) = do
+        let ih = inv h
+        drawImage' (warpOn img ih t)
+        pointCoordinates (size t)
+        setColor 1 0 0
+        text2D 0.9 0.65 (printf "%.1f" e)
+
 
 trackerMon2 = monitor "Tracker Error" (mpSize 10) sh
   where

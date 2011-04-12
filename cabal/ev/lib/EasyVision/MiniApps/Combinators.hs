@@ -14,8 +14,10 @@ Camera combinators: higher order functions which make virtual cameras from other
 
 module EasyVision.MiniApps.Combinators (
   camera, cameraFolderG,
+  run, runFPS,
   withPause,
-  monitor, observe, run, runFPS,
+  monitor, observe,
+  monitorWheel, 
   counter, countDown,
   frameRate, compCost, timeMonitor,
   selectROI,
@@ -314,3 +316,30 @@ clickStatusWindow name sz s0 update display act cam = do
         st $~ (not *** id)
     mouse m _ a b c d = m a b c d
 
+----------------------------------------------------------------------
+
+-- | This is a monitor with a display function which depends on an Int value
+-- which can be changed with the mouse wheel
+monitorWheel
+    :: (Int,Int)           -- ^ range of display parameters
+    -> String              -- ^ window name
+    -> Size                -- ^ window size
+    -> (Int -> a -> IO ()) -- ^ monitor function
+    -> (IO a)              -- ^ original camera
+    -> IO (IO a)           -- ^ new camera
+monitorWheel (k1,k2) name sz fun cam = do
+    (cam', ctrl) <- withPause cam
+    w <- evWindow k1 name sz Nothing (mouse (kbdcam ctrl))
+    return $ do
+        thing <- cam'
+        k <- getW w
+        inWin w (fun k thing)
+        return thing
+  where
+    mouse _ st (MouseButton WheelUp) Down _ _ = do
+        st $~ (min k2 . (+1))
+    mouse _ st (MouseButton WheelDown) Down _ _ = do
+        st $~ (max k1 . (subtract 1))
+    mouse m _ a b c d = m a b c d
+
+----------------------------------------------------------------------
