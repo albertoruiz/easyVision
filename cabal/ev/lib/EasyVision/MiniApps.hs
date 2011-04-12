@@ -20,7 +20,6 @@ module EasyVision.MiniApps (
     hsvPalette,
     regionDetector, regionTracker,
     panoramic,
-    zoomer, zoomWindow,
     --module EasyVision.MiniApps.Corners,
     getCornerDetector, cornerMonitor,
     ContourInfo(..), wcontours, contourMonitor,
@@ -34,7 +33,8 @@ module EasyVision.MiniApps (
     module EasyVision.MiniApps.Save,
     module EasyVision.MiniApps.RegionMarker,
     module EasyVision.MiniApps.Misc,
-    module EasyVision.MiniApps.Browser
+    module EasyVision.MiniApps.Browser,
+    module EasyVision.MiniApps.Zoom
 )where
 
 import Graphics.UI.GLUT as GL hiding (Size,Point,Matrix,matrix)
@@ -76,6 +76,7 @@ import EasyVision.MiniApps.Save
 import EasyVision.MiniApps.RegionMarker
 import EasyVision.MiniApps.Misc
 import EasyVision.MiniApps.Browser
+import EasyVision.MiniApps.Zoom
 
 -- | reads a labeled video
 readCatalog :: String -> Size -> String -> Maybe Int -> (ImageYUV-> a) -> IO [(a,String)]
@@ -410,92 +411,4 @@ cost simil a fa b fb [pan, tilt, roll] = simil a h b
     where h = conjugateRotation pan tilt roll fb fa
 
 findRot simil a fa b fb pi ti ri = fst $ minimize NMSimplex2 1E-3 30 [0.1*degree, 0.1*degree,0.1*degree] (cost simil a fa b fb) [pi,ti,ri]
-
------------------------------------------------------------------------
-
--- | Creates a \"zoom\" window, in which we can easily observe pixel values. When the zoom level is very large numeric pixel values
---   are also shown. The function returns an update function to change the image to be zoomed (in the same location as the previous one).
---
--- click: center pixel
---
--- mouse wheel: zoom in and zoom out
---
--- q: destroy this window (only)
-
-zoomer :: String        -- ^ window title
-       -> Int          -- ^ size in pixels of the zoom window
-       -> ImageGray    -- ^ initial image to analyze
-       -> IO (ImageGray -> IO ()) -- ^ update function
-zoomer title szz img0 = do
-    w <- evWindow (img0,Pixel (h`div`2) (w`div`2),z0,True)
-                  title isz (Just disp) (mouse kbdQuit)
-    let f im = do
-            (_,p,z,ok) <- getW w
-            when ok $ do                 -- inWin w, disp (evSt w) hmm
-                putW w (im,p,z,ok)
-                postRedisplay (Just (evW w))
-    return f
-    where
-    isz = Size szz szz
-    Size h w = size img0
-    s2 = (szz-1) `div` 2
-    z0 = min h w `div` 2
-    disp st = do
-        k@(img,p,z,_) <- get st
-        let roi = roiFromPixel z p
-            imgz = modifyROI (const roi) img
-        drawImage $ resize8u InterpNN isz imgz
-        pointCoordinates isz
-        setColor 0.4 0 0
-        when (z>12) renderAxes
-        when (z<=12) $ do
-            pixelCoordinates (Size (2*z+1) (2*z+1))
-            let ROI r1 r2 c1 c2 = theROI imgz
-                v = fromIntegral (2*z+1) / fromIntegral szz
-                dx = 0.5 - 5*v
-                dy = 0.5 + 5*v
-            setColor 0.6 0.6 0.6
-            renderPrimitive Lines $ sequence_ [vertex (Pixel (r-r1) 0) >> vertex (Pixel (r-r1) (c2-c1+1)) |r<-[r1..r2]]
-            renderPrimitive Lines $ sequence_ [vertex (Pixel 0 (c-c1)) >> vertex (Pixel (r2-r1+1) (c-c1)) |c<-[c1..c2]]
-            setColor 0 0 0.7
-            sequence_ [text2D' (fromIntegral (c-c1) +dx) (fromIntegral (r-r1) +dy) (show $ imgz `val8u` (Pixel r c)) |r<-[r1..r2],c<-[c1..c2]]
-    mouse _ st (MouseButton WheelUp) Down _ _ = do
-        (im,p,z,ok) <- get st
-        st $= clip (im,p,z+(max 1 $ z`div`10),ok)
-        postRedisplay Nothing
-    mouse _ st (MouseButton WheelDown) Down _ _ = do
-        (im,p,z,ok) <- get st
-        st $= clip (im,p,z-(max 1 $ z`div`10),ok)
-        postRedisplay Nothing
-    mouse _ st (MouseButton LeftButton) Down _ (Position x y) = do
-        (im,Pixel r c,z,ok) <- get st
-        st $= clip (im, Pixel (r+(fromIntegral y-s2)*z`div`s2) (c+(fromIntegral x-s2)*z`div`s2) ,z, ok)
-        postRedisplay Nothing
-    mouse _ st (Char ' ') Down _ _ = do
-        (im,Pixel r c,z,ok) <- get st
-        st $= (im,Pixel r c,z, not ok)
-        postRedisplay Nothing
-    mouse _ st (Char 'q') Down _ _ = do
-        Just w <- get currentWindow
-        destroyWindow w
-    mouse def _ a b c d = def a b c d
-
-    clip (im,Pixel r c, z, ok) = (im,Pixel r' c', z', ok) where
-        z' = max 1 $ min (min h w`div`2) $ z
-        r' = max z' $ min (h-z'-1) $ r
-        c' = max z' $ min (w-z'-1) $ c
-
-    text2D' x y s = do
-        rasterPos (Vertex2 x (y::GLfloat))
-        renderString Helvetica10 s
-
--- | zoom window as a virtual camera
-zoomWindow :: String -> Int -> (a -> ImageGray) -> IO a -> IO (IO a)
-zoomWindow winname sz f cam = do
-    i0 <- cam
-    z <- zoomer winname sz (f i0)
-    return $ do
-        im <- cam
-        z (f im)
-        return im
 
