@@ -1,14 +1,13 @@
-{-# OPTIONS_GHC -fglasgow-exts #-}
+{-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies, FlexibleInstances #-}
 
 -----------------------------------------------------------------------------
 {- |
 Module      :  ImagProc.Generic
-Copyright   :  (c) Alberto Ruiz 2007
-License     :  GPL-style
+Copyright   :  (c) Alberto Ruiz 2007-10
+License     :  GPL
 
 Maintainer  :  Alberto Ruiz (aruiz at um dot es)
-Stability   :  very provisional
-Portability :  hmm...
+Stability   :  provisional
 
 -}
 -----------------------------------------------------------------------------
@@ -18,16 +17,14 @@ module ImagProc.Generic (
 , blockImage
 , warp, warpOn, warpOn'
 , constImage, cloneClear, clean
-, Channels(..), channels
+, Channels(..), channels, grayscale
 , channelsFromRGB
 )
 where
 
 import ImagProc.Ipp
-import Foreign.C.Types(CUChar)
 import Foreign hiding (shift)
 import Numeric.LinearAlgebra
-import Vision
 
 class Image image => GImg pixel image | pixel -> image, image -> pixel where
     zeroP :: pixel
@@ -181,7 +178,7 @@ constImage val sz = unsafePerformIO $ do
 
 data Channels = CHIm
     { yuv  :: ImageYUV
-    , gray :: ImageGray
+    , yCh :: ImageGray
     , uCh  :: ImageGray
     , vCh  :: ImageGray
     , rgb  :: ImageRGB
@@ -193,10 +190,13 @@ data Channels = CHIm
     , sCh  :: ImageGray
     }
 
+grayscale :: Channels -> ImageGray
+grayscale = yCh
+
 channels :: ImageYUV -> Channels
 channels img = CHIm
     { yuv = img
-    , gray = fromYUV img
+    , yCh = fromYUV img
     , uCh = u
     , vCh = v
     , rgb = rgbAux
@@ -214,7 +214,7 @@ channels img = CHIm
 channelsFromRGB :: ImageRGB -> Channels
 channelsFromRGB img = CHIm
     { yuv = yuvAux
-    , gray = fromYUV yuvAux
+    , yCh = fromYUV yuvAux
     , uCh = u
     , vCh = v
     , rgb = img
@@ -234,3 +234,4 @@ channelsFromRGB img = CHIm
 uradialG gen f k im = gen fp fp (fromIntegral w / 2) (fromIntegral h / 2) k 0 im
         where Size h w = size im
               fp = f * fromIntegral w / 2
+

@@ -54,7 +54,7 @@ poseTracker "" mbf ref cam = do
     tracker <- poseTrackerGen (withRegion 2 ref) mbf ref
     return $ do
         img <- cam
-        ((pose,st,cov),obs) <- tracker (gray img)
+        ((pose,st,cov),obs) <- tracker (grayscale img)
         return (img, pose, (st,cov), obs)
 
 poseTracker winname mbf ref cam = poseTrackerMonitor poseTracker winname mbf ref cam
@@ -221,7 +221,7 @@ poseTrackerMonitor tracker winname mbf ref cam = do
 
             let scale = 0.3
                 h = f (syntheticCamera pose) where f =  fromColumns . g. toColumns where g [a,b,c,d] = [a,b,d] 
-                floor = warp 1 (Size 256 256) (scaling scale <> inv h) (float $ gray img)
+                floor = warp 1 (Size 256 256) (scaling scale <> inv h) (float $ grayscale img)
             when (rank h == 3) $ drawTexture floor $ map (++[-0.01]) $ ht (scaling (1/scale)) [[1,1],[-1,1],[-1,-1],[1,-1]]
 
             setColor 1 0 0
@@ -230,7 +230,7 @@ poseTrackerMonitor tracker winname mbf ref cam = do
 
             lineWidth $= 1
             setColor 0 0 1
-            drawCamera 0.4 (syntheticCamera pose) (Just (extractSquare 128 (float $ gray img)))
+            drawCamera 0.4 (syntheticCamera pose) (Just (extractSquare 128 (float $ grayscale img)))
 
             pixelCoordinates (Size 500 500)
             setColor 0 0.5 0.5

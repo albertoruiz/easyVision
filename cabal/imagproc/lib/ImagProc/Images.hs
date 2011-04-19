@@ -1,14 +1,12 @@
-{-# OPTIONS -fglasgow-exts #-}
-
 -----------------------------------------------------------------------------
 {- |
 Module      :  ImagProc.Images
-Copyright   :  (c) Alberto Ruiz 2006
-License     :  GPL-style
+Copyright   :  (c) Alberto Ruiz 2006-10
+License     :  GPL
 
 Maintainer  :  Alberto Ruiz (aruiz at um dot es)
-Stability   :  very provisional
-Portability :  hmm...
+Stability   :  provisional
+
 
 Type safe interface to the IPP images.
 

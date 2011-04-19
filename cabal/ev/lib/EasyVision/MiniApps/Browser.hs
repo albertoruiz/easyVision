@@ -39,7 +39,9 @@ examplesBrowser name sz f es =
             f x
             windowTitle $= name++" #"++show (k+1)++ ": "++label
     acts = [((MouseButton WheelUp,   Down, modif), \_ (k,exs) -> (min (k+1) (length exs - 1), exs))
-           ,((MouseButton WheelDown, Down, modif), \_ (k,exs) -> (max (k-1) 0, exs))]
+           ,((SpecialKey  KeyUp,     Down, modif), \_ (k,exs) -> (min (k+1) (length exs - 1), exs))
+           ,((MouseButton WheelDown, Down, modif), \_ (k,exs) -> (max (k-1) 0, exs))
+           ,((SpecialKey  KeyDown,   Down, modif), \_ (k,exs) -> (max (k-1) 0, exs))]
 
 
 -- | a window to display labeled images

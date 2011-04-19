@@ -12,18 +12,18 @@ module Tools(
     icaConts,
 --  icaContsAll, icaConts2,
     alignment, refine,
-    classifier, classifyMon,
+    classifier, classifyMon, OKS, elongated,
     alignMon, alignMon',
     -- * Projective rectification from circles and vertical vanishing point
     rectifyMon, tryMetric, rectifierFromHorizon, coherent, distImage,
     rectifierFromAffineHomogs, refineTangent, refineTangentImage,
     -- * Digit tools
-    fixOrientation,
+    fixOrientation, horizontalGroups, drawTree,
     -- * Other tools
     intersectionManyLines,
     -- * Display
     shapeCatalog, normalShape, centerShape,
-    examplesBrowser, imagesBrowser,
+    examplesBrowser, imagesBrowser, shapesBrowser,
     shcont, shcontO,
     rotAround,
     -- * Prototypes
@@ -34,7 +34,7 @@ module Tools(
 import EasyVision as EV
 import Graphics.UI.GLUT hiding (Point,Size,scale,samples)
 import Util.Misc(diagl,degree,Vec,vec,norm,debug,diagl,memo,Mat,mat,norm,
-                 unionSort,replaceAt,mean,median,unitary,pairsWith)
+                 unionSort,replaceAt,mean,median,unitary,pairsWith,kruskal,neigh)
 import Util.Estimation(homogSolve)
 import Util.Covariance(meanV,covStr)
 import Util.Rotation(rot3,rot1)
@@ -46,7 +46,7 @@ import Vision (desp, scaling, estimateHomography, ht, cross, homog,
                inHomog,circularConsistency,focalFromCircularPoint,similarFrom2Points,
                kgen,mS, cameraFromAffineHomogZ0,estimateFundamentalRaw)
 import Numeric.LinearAlgebra -- ((<>),fromList,toList,fromComplex,join,dim)
-import Data.List(sortBy,minimumBy,groupBy,sort,zipWith4,partition,transpose,foldl')
+import Data.List(sortBy,minimumBy,groupBy,sort,zipWith4,partition,transpose,foldl',group)
 import Data.Function(on)
 import Text.Printf(printf)
 import Data.IORef
@@ -69,7 +69,8 @@ $(autoParam "SCParam" "classify-"
 
 ----------------------------------------------------------------------
 
-maxFreq = 15
+-- must be a parameters
+maxFreq = 10
 
 type AlignInfo = (Double,(Polyline,Mat,Vec,Mat,Vec,String))
 
@@ -100,6 +101,11 @@ classify SCParam {..} (im,cs,prots) = (im, oks)
     clas = refine maxangle . alignment prots
 
 classifier = classify .@. winSCParam
+
+----------------------------------------------------------------------
+
+-- to be changed to a record
+type OKS = (Double, (Polyline,Mat,Vec,Mat,Vec,String))
 
 ----------------------------------------------------------------------
 
@@ -212,6 +218,63 @@ fixOrientation (im, xs) = (im, zs ++ ys)
         comp "9" = "6"
         comp x = x
     
+----------------------------------------------------------------------
+
+-- find groups of "horizontally" aligned shapes
+-- we obtain the connected components of the spanning tree of distances between shapes
+-- the distance is the minimum between the center of a shape and the +/3 widths of the other
+
+drawTree dt = do
+    setColor' white
+    renderPrimitive Lines $ mapM_ vertex dt
+    setColor' red
+    pointSize $= 3
+    renderPrimitive Points $ mapM_ vertex dt
+
+
+tree xs = (t, concatMap h t)
+  where
+    t = kruskal (length xs-1) arcs
+    arcs = map snd $ filter ((<0.2).fst) $ sort $ pairsWith f (ys `zip` [0..])
+
+    ys = map g xs
+    g  (d, (x,b,u,a,v,l)) = (Point cx cy, Point x1 y1, Point x2 y2)
+        where [[cx,cy],[x1,y1],[x2,y2]] = ht (inv b <> a) [[0,0],[3,0],[-3,0]]
+
+    f ((p,p1,p2),i) ((q,q1,q2),j) = (d,(i,j))
+      where
+        d = min (distPoints p q1 + distPoints q p2)
+                (distPoints p q2 + distPoints q p1)
+
+    h (i,j) = [Point cx cy, Point dx dy]
+      where
+        (Point cx cy,_,_) = ys!!i
+        (Point dx dy,_,_) = ys!!j 
+
+
+connected nmax arcs = fixedPoint grow (map return [0..nmax])
+  where
+    fixedPoint f x0 = let x1 = f x0 in if x1 == x0 then x0 else fixedPoint f x1
+    grow = unique . map (unique . concatMap neigh')
+    neigh' x = x : neigh arcs x
+    unique :: Ord t => [t] -> [t]
+    unique = map head . group . sort
+
+horizontalGroups sel = (dt,gs)
+  where
+    (t, dt) = tree sel
+    con = filter ((>2).length) $ connected (length sel -1) t
+    gs = map (map (sel!!)) con
+
+
+----------------------------------------------------------------------
+
+elongated :: Double -> Polyline -> Bool
+elongated r p = sqrt l2 / sqrt l1 < 1/r 
+  where
+    (l1,l2,_) = eig2x2Dir (cxx,cyy,cxy)
+    (mx,my,cxx,cyy,cxy) = momentsContour $ polyPts p
+
 ----------------------------------------------------------------------
 
 -- | smoothed frequential invariant representations (all for the unknow object) with alignment info
@@ -462,7 +525,7 @@ rectifyMon sz cam = do wr <- evWindow () "Rectify omega" (Size 400 400)Nothing (
                     -- okrec = similarFrom2Points [mx',my'] [mx'2,my'2] [0,0] [-0.5, 0] <> recraw
                     okrec = similarFrom2Points [mx',my'] [mx'2,my'2] [mx,my] [mx2, my2] <> recraw
                 
-                    --drawImage $ warp 0 sz' (scaling sc <> w) (gray orig)
+                    --drawImage $ warp 0 sz' (scaling sc <> w) (grayscale orig)
                 inWin wr $ drawImage $ warp 0 (Size 400 400) (scaling sc <> okrec ) ( orig)
                 --text2D 30 30 $ show $ focalFromHomogZ0 (inv recraw)
                 -- it is also encoded in the circular points
@@ -620,7 +683,7 @@ letters = flip zip (reverse $ map return "ABCDEFGHIJKLMNOPQRSTUVWXYZ") . map fst
 digits :: IO (Sample Polyline)
 digits = do
     cam <- mplayer "mf://digits.jpg" (mpSize 40)
-    img <- (EV.gray. channels) `fmap` cam
+    img <- (grayscale . channels) `fmap` cam
     let rawconts = contours 100 1 128 False img
         fst3 (a,_,_) = a
         proc = Closed . pixelsToPoints (size img).douglasPeuckerClosed 1 .fst3

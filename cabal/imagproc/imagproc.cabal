@@ -6,7 +6,7 @@ Author:             Alberto Ruiz
 Maintainer:         Alberto Ruiz <aruiz@um.es>
 Stability:          experimental
 Homepage:           http://www.easyvision.googlepages.com/
-Synopsis:           Simple pattern recognition algorithms
+Synopsis:           Image processing based on IPP
 Description:
  Image processing using Intel's IPP
 

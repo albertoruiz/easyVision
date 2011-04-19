@@ -45,7 +45,7 @@ type SegmentExtractor = Int
 
 ----------------------------------------------------------------------
 
--- | Given a camera adds a gray version (typically small), to be used with other combinators like 'detectMov'
+-- | Given a camera adds a grayscale version (typically small), to be used with other combinators like 'detectMov'
 addSmall :: Size -> (a->ImageGray) -> IO a -> IO (IO (a, ImageGray))
 addSmall sz f grab = return $ do
     im <- grab
@@ -110,7 +110,7 @@ findRectangles segments ratio cam = do
             ,[2.10,           0]]
     return $ do
         orig <- cam
-        let img = gray orig
+        let img = grayscale orig
         radius <- getParam op "radius"
         width  <- getParam op "width"
         median <- getParam op "median"
@@ -184,7 +184,7 @@ findPolygons segments mbf ref cam = do
                              ("orthotol",realParam 0.4 0.01 1.0)]
     return $ do
         orig <- cam
-        let img = gray orig
+        let img = grayscale orig
         radius <- getParam op "radius"
         width  <- getParam op "width"
         median <- getParam op "median"

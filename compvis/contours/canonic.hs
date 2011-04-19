@@ -32,12 +32,12 @@ catalog = digits
 
 main = main1
 
-main2 = run $ camera ~> EV.gray
+main2 = run $ camera ~> grayscale
             >>= wcontours id ~> (id *** contSel)
             >>= shapeCatalog normalShape catalog (concatMap toCanonic2)
        
 
-main1 = run $ camera ~> EV.gray
+main1 = run $ camera ~> grayscale
             >>= wcontours id ~> (id *** contSel)
             >>= shapeCatalog normalShape catalog (concatMap toCanonic2)
             >>= classifier ~> snd
@@ -53,7 +53,7 @@ main1 = run $ camera ~> EV.gray
             >>= virtualMonAffine elevated
             >>= timeMonitor
 
-main3 = run $ camera ~> EV.gray
+main3 = run $ camera ~> grayscale
             >>= wcontours id ~> (id *** contSel)
             >>= shapeCatalog centerShape catalog (concatMap toCanonic2)
             >>= classifier ~> snd
@@ -69,7 +69,7 @@ main3 = run $ camera ~> EV.gray
             >>= coherent
             >>= timeMonitor
 
-main4 = run $ camera ~> EV.gray
+main4 = run $ camera ~> grayscale
             >>= wcontours id ~> (id *** contSel)
             >>= shapeCatalog normalShape catalog (concatMap toCanonic2)
             >>= classifier ~> snd
@@ -82,7 +82,6 @@ main4 = run $ camera ~> EV.gray
             >>= timeMonitor
 
 ----------------------------------------------------------------------
-type OKS = (Double, (Polyline,Mat,Vec,Mat,Vec,String))
 
 virtualMon = monitor "Virtual" (mpSize 20) sh
   where
@@ -285,7 +284,7 @@ d2f = fromRational.toRational
 -- DEMO > smooth
 -- show frequential smoothing of the equalized shapes
 
-smooth = run $ camera ~> EV.gray >>= wcontours id ~> (id *** contSel) >>= smoothTest >>= timeMonitor
+smooth = run $ camera ~> grayscale >>= wcontours id ~> (id *** contSel) >>= smoothTest >>= timeMonitor
 
 smoothTest = monitor "contours" (mpSize 20) sh where
     sh (im, cs) = do
@@ -306,7 +305,7 @@ smoothTest = monitor "contours" (mpSize 20) sh where
 -- DEMO > orient
 -- show canonic orientation of detected shapes
 
-orient = run $ camera ~> EV.gray >>= wcontours id ~> (id *** contSel) >>= monitorOrient >>= timeMonitor
+orient = run $ camera ~> grayscale >>= wcontours id ~> (id *** contSel) >>= monitorOrient >>= timeMonitor
 
 monitorOrient = monitor "contours" (mpSize 20) sh where
     sh (im, cs) = do

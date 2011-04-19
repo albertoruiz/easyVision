@@ -1,6 +1,9 @@
 -- experiments with Lucas-Kanade Tracker
 -- use in compiled mode with -O
 
+-- version with parameters for contrast and brightness
+-- to do: module
+
 import EasyVision
 import Graphics.UI.GLUT hiding (Point,Size,scale,samples,Matrix)
 import Numeric.LinearAlgebra as LA hiding (i,(.*))
@@ -74,8 +77,8 @@ mktS [s,e,f] = (3><3) [1+s,0, e,
                        0,1+s, f,
                        0,  0, 1]
 
-mkt = mktP
-sdi = sdiP
+mkt = mktA
+sdi = sdiA
 
 
 lkStep t = f
@@ -83,16 +86,18 @@ lkStep t = f
     g = gradients t
     tx = gf    .* gx g
     ty = (-gf) .* gy g
-    sdis = sdi tx ty
+    sdis = [t,uimg] ++ sdi tx ty
     ih = debug "H" id $ inv (hessianI sdis)
-    f i' (h,_) = (h',err)
+    f i' ((h,a,b),_) = ((h',a',b'),err)
       where        
         i = warpTo (theROI t) h i'
-        e = i |-| t
+        e = i |-| (realToFrac (1/a) .* t |+| realToFrac (-b) .* uimg)
         err = rms e
         sdpars = sdpar e sdis
         dps = ih <> sdpars
-        h' = (mkt.toList $ dps) <> h
+        h' = (mkt.drop 2.toList $ dps) <> h
+        a' = a - dps@>0
+        b' = b - dps@>1
 
 
 rms img = k * (sum32f . abs32f) img
@@ -141,7 +146,7 @@ okTrack img t k h e = (img, Just (t,(k,h',e',h)))
   where
     (h',e') = fst $ kltv h e k img
 
-newTemp img t h = (img, Just (t',(k,h, 0,h)))
+newTemp img t (h,_,_) = (img, Just (t',(k,(h,1,0), 0,(h,1,0))))
   where
     t' = modifyROI (const (theROI t)) $ warpTo (theROI t) h img
     k = lkStep t'
@@ -160,107 +165,44 @@ testTracker = run $ camera ~> float.gray
                   >>= trackerMon2
                   >>= timeMonitor
                   
-trackerMon = monitorWheel (0,1) "Tracker" (mpSize 10) sh
+trackerMon = monitorWheel (0,2) "Tracker" (mpSize 10) sh
   where
     sh _ (img, Nothing) = do
         drawImage' (img :: ImageFloat)
-    sh 0 (img, Just (t,(_,h,e,ha))) = do
+    sh 0 (img, Just (t,(_,(h,_,_),e,ha))) = do
         let ih = inv h
         drawImage' img
         pointCoordinates (size t)
---        setColor 1 0.5 0.5
---        shcont $ transPol (inv ha) $ roi2poly (size t) (theROI t)
         setColor 1 1 1
         shcont $ transPol ih $ roi2poly (size t) (theROI t)        
         setColor 1 0 0
         text2D 0.9 0.65 (printf "%.1f" e)
-    sh 1 (img, Just (t,(_,h,e,_))) = do
+    sh 1 (img, Just (t,(_,(h,a,b),e,_))) = do
+        let ih = inv h
+        drawImage' (warpOn img ih (realToFrac (1/a) .* t |+| realToFrac (-b) .* uimg))
+        pointCoordinates (size t)
+        setColor 1 0 0
+        text2D 0.9 0.65 (printf "%.1f    %.1f   %.1f" e (a) (255*b))
+    sh 2 (img, Just (t,(_,(h,a,b),e,_))) = do
         let ih = inv h
         drawImage' (warpOn img ih t)
         pointCoordinates (size t)
         setColor 1 0 0
-        text2D 0.9 0.65 (printf "%.1f" e)
+        text2D 0.9 0.65 (printf "Raw t   %.1f    %.1f   %.1f" e (a) (255*b))
 
 
 trackerMon2 = monitor "Tracker Error" (mpSize 10) sh
   where
     sh (img, Nothing) = return ()
-    sh (img, Just (t,(_,h,e,_))) = do
-        drawImage' $ shGrad $  t |-| warpTo (theROI t) h img
+    sh (img, Just (t,(_,(h,a,b),e,_))) = do
+        drawImage' $ shGrad $  t |-| realToFrac (a) .* warpTo (theROI t) h img |+| realToFrac (b) .* uimg
 
 getTemplate = clickStatusWindow "getTemplate" (mpSize 10) Nothing update display action
   where
     update _ (Just _) = Nothing
-    update (x,roi) Nothing = Just (t, (lkStep t,ident 3, 0,ident 3))
+    update (x,roi) Nothing = Just (t, (lkStep t,(ident 3,1,0), 0,(ident 3,1,0)))
       where t = modifyROI (const roi) x
     display (x,roi) Nothing = drawImage' (modifyROI (const roi) x)
     display _ (Just (x,_)) = drawImage' x >> setColor 1 0 0 >> drawROI (theROI x)
     action _ _ = return ()
-
-----------------------------------------------------------------------
-------- tests --------------------------------------------------------
-
-showImags xs = prepare >> proc >> mainLoop
-  where proc = imagesBrowser "Images" (mpSize 10) (zip xs (map show [1..]))
-
-setROI = modifyROI (const (roiFromPixel 80 (Pixel 200 250))) 
-
-
-test = do
-    x' <- float . gray . channelsFromRGB <$> loadRGB "hz.png"
-    --x' <- loadRGB "hz.png"
-    let t = setROI x'
-        i = warp 0 (size x') (desp (5/640, -5/640)) x'
-        g = gradients i
-        wi = setROI i
-        wix = setROI (gx g)
-        wiy = setROI (gy g)
-        e = t |-| wi
-        sdis = sdi wix wiy
-        sdpars = sdpar e sdis
---    print $ inv $ hessianI sdis
---    print $ sdpar e sdis
-    print $ inv (hessianI sdis) <> sdpars
-    print $ lkStepF t i (constant 0 6)
-    showImags $ [t,i, shGrad (gx g), shGrad (gy g), wi, shGrad wix, shGrad wiy, shGrad e]
-              ++ map (shGrad.(sdis!!)) [0..5]
-    
-h0 = diagl[1.05,1,1] <> desp (15*2/640, -10*2/640)
-
-lkStepF t i' ps = ps'
-  where
-    h = (mkt.toList) ps
-    i = warp 0 (size i') h i'
-    g = gradients i
-    sr = modifyROI (const (theROI t))
-    wi = sr i
-    wix = gf    .* sr (gx g)
-    wiy = (-gf) .* sr (gy g)
-    e = t |-| wi
-    sdis = sdi wix wiy
-    sdpars = sdpar e sdis
-    dps = inv (hessianI sdis) <> sdpars
-    ps' = ps - dps
-
-conver = do
-    x' <- float . gray . channelsFromRGB <$> loadRGB "hz.png"
-    let t = setROI x'
-        i = warp 0 (size x') h0 x'
-        hs = map (double . mkt . toList) $ iterate (lkStepF t i) (constant 0 6)
-        ss = take 30 $ map (\h->warp 0 (size i) h i) hs
-    disp (inv h0)
-    disp $ hs!!30
-    showImags $ [x',i,setROI i, t] ++ map setROI ss
-
-
-conver3 = do
-    x' <- float . gray . channelsFromRGB <$> loadRGB "hz.png"
-    let t = setROI x'
-        klt = lkStep t
-        i = warp 0 (size x') h0 x'
-        hs = map (double.fst . debug "e" snd) $ iterate (klt i) (ident 3, 0)
-        ss = take 30 $ map (\h->warp 0 (size i) h i) hs
-    disp (inv h0)
-    --disp $ hs!!30    
-    showImags $ [x',i,setROI i, t] ++ map (shGrad .(|-|t)) ss
 

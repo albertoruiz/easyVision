@@ -1,14 +1,13 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-{-# OPTIONS -fvia-C #-}
+
 -----------------------------------------------------------------------------
 {- |
 Module      :  ImagProc.Ipp.Wrappers
-Copyright   :  (c) Alberto Ruiz 2006-8
-License     :  GPL-style
+Copyright   :  (c) Alberto Ruiz 2006-10
+License     :  GPL
 
 Maintainer  :  Alberto Ruiz (aruiz at um dot es)
-Stability   :  very provisional
-Portability :  hmm...
+Stability   :  provisional
 
 Special interface to some IPP functions not yet automatically generated.
 

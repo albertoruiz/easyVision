@@ -18,6 +18,7 @@ module EasyVision.MiniApps.Combinators (
   withPause,
   monitor, observe,
   monitorWheel, 
+  gray,
   counter, countDown,
   frameRate, compCost, timeMonitor,
   selectROI,
@@ -38,10 +39,13 @@ import ImagProc.Camera(mpSize)
 import System.CPUTime
 import System.Time
 import Text.Printf
-import Util.Options(optionString,hasValue,optionFromFile)
+import Util.Options(optionString,hasValue,optionFromFile,getFlag)
 import Data.Maybe(isJust)
 import Control.Arrow((***))
 
+
+-- deprecated
+gray = grayscale
 
 {- | Adds a pause control to a camera. Commands:
 
@@ -92,39 +96,39 @@ cameraFolder = do
     let disp rk = do
            k <- get rk  
            drawImage (imgs!!k)
-    w <- evWindow 0 ("Folder: "++path) (mpSize 10) (Just disp) (mouseGen (acts (length imgs -1)) kbdQuit)               
+    w <- evWindow 0 ("Folder: "++path) (mpSize 10) (Just disp) (mouseGen (cfacts (length imgs -1)) kbdQuit)               
     return $ do
         k <- getW w    
         return (channels $ imgs!!k)
-  where
-    acts n = [((MouseButton WheelUp,   Down, modif), \_ k -> min (k+1) n)
-             ,((MouseButton WheelDown, Down, modif), \_ k -> max (k-1) 0)]
 
-cameraFolderG path = do
+cameraFolderG = do
+    path <- optionString "--photos" "."
     imgs <- readFolder' path
     let disp rk = do
            k <- get rk  
            drawImage' (fst $ imgs!!k)
-    w <- evWindow 0 ("Folder: "++path) (mpSize 10) (Just disp) (mouseGen (acts (length imgs -1)) kbdQuit)               
+    w <- evWindow 0 ("Folder: "++path) (mpSize 10) (Just disp) (mouseGen (cfacts (length imgs -1)) kbdQuit)               
     return $ do
         k <- getW w    
         return (channelsFromRGB $ fst $ imgs!!k)
-  where
-    acts n = [((MouseButton WheelUp,   Down, modif), \_ k -> min (k+1) n)
-             ,((MouseButton WheelDown, Down, modif), \_ k -> max (k-1) 0)]
 
+
+cfacts n = [((MouseButton WheelUp,   Down, modif), \_ k -> min (k+1) n)
+           ,((SpecialKey  KeyUp,     Down, modif), \_ k -> min (k+1) n)
+           ,((MouseButton WheelDown, Down, modif), \_ k -> max (k-1) 0)
+           ,((SpecialKey  KeyDown,   Down, modif), \_ k -> max (k-1) 0)]
 
 
 cameraV = findSize >>= getCam 0 ~> channels
 
--- | returns the camera 0. It also admits --photos=path/to/folder/ with images.
+-- | returns the camera 0. (It also admits --photos=path/to/folder/ with images, and --variable-size, to read images of
+-- different arbitrary sizes.)
 camera :: IO (IO Channels)
 camera = do
     f <- hasValue "--photos"
-    if f then cameraFolder
+    g <- getFlag "--variable-size"
+    if f then if g then cameraFolderG else cameraFolder
          else cameraV
-
-
 
 ---------------------------------------------------------
 
@@ -298,7 +302,7 @@ clickStatusWindow
     -> s                 -- ^ initial state
     -> (x -> s -> s)     -- ^ update on click
     -> (x -> s -> IO ()) -- ^ display function (always)
-    -> (x -> s -> IO ()) -- ^ action (only when the state is update)
+    -> (x -> s -> IO ()) -- ^ action (only when the state is updated)
     -> IO x              -- ^ input
     -> IO (IO (x,s))     -- ^ result
 clickStatusWindow name sz s0 update display act cam = do
@@ -339,6 +343,10 @@ monitorWheel (k1,k2) name sz fun cam = do
     mouse _ st (MouseButton WheelUp) Down _ _ = do
         st $~ (min k2 . (+1))
     mouse _ st (MouseButton WheelDown) Down _ _ = do
+        st $~ (max k1 . (subtract 1))
+    mouse _ st (SpecialKey KeyUp) Down _ _ = do
+        st $~ (min k2 . (+1))
+    mouse _ st (SpecialKey KeyDown) Down _ _ = do
         st $~ (max k1 . (subtract 1))
     mouse m _ a b c d = m a b c d
 
