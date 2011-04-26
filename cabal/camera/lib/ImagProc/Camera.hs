@@ -23,17 +23,11 @@ module ImagProc.Camera (
 
 import ImagProc.Ipp.Core
 import Foreign
-import Foreign.C.Types (CChar,CUChar)
-import Foreign.C.String(newCString)
 import Data.IORef
 import System.IO
-import System.Environment
 import System.Process
 import System.Exit
 import Data.List(isInfixOf)
-import System.Directory(doesFileExist)
-import Control.Monad(when)
-import Data.Maybe
 
 -- | Computes a 4\/3 \'good\' size for both mplayer and IPP. mpSize 20 = 640x480
 mpSize :: Int -> Size
@@ -51,43 +45,56 @@ mplayer' :: String                       -- ^ any url admitted by mplayer
 mplayer' url (Size h w) = do
 
     let fifo = "/tmp/mplayer-fifo"
-    system $ "rm -f "++fifo
-    system $ "mkfifo "++fifo
+    _ <- system $ "rm -f "++fifo
+    _ <- system $ "mkfifo "++fifo
 
     k <- mallocBytes 1
     poke k '\0'         -- essential!!
 
-    let loop url | "-loop" `isInfixOf` url = ""
-                 | otherwise               = " -loop 0"
+    let loop | "-loop" `isInfixOf` url = ""
+             | otherwise               = " -loop 0"
 
-        mpcommand = url ++ " -vf scale=" ++ show w ++ ":" ++ show h
-                    ++ " -vo yuv4mpeg:file="++fifo++" -nosound -slave" ++ loop url
+        vfscale = " -vf scale=" ++ show w ++ ":" ++ show h
+
+        url' | "-vf" `isInfixOf` url = url
+             | otherwise             = url ++ vfscale
+
+        mpcommand =  url'
+                  ++ " -vo yuv4mpeg:file="
+                  ++ fifo
+                  ++ " -nosound -slave"
+                  ++ loop
 
     --(i,o,e,p) <- runInteractiveProcess "mplayer" (words mpcommand) Nothing Nothing
     --(i,o,e,p) <- runInteractiveCommand ("mplayer " ++mpcommand)
 
+    --putStrLn mpcommand
     putStr "Press Ctrl-C and check the URL\r"
-    system $ "mplayer "++ mpcommand ++" >/dev/null 2>/dev/null &"
+    _ <- system $ "mplayer "++ mpcommand ++" >/dev/null 2>/dev/null &"
 
     f <- openFile fifo ReadMode
 
-    let find = do
-        n <- hGetBuf f k 1
-        --print n
+    let find ss = do
+        _n <- hGetBuf f k 1
+        --print _n
         v <- peek (castPtr k)
         putChar v
-        if v=='\n' then return () else find
+        if v=='\n' then return (reverse ss) else find (v:ss)
 
-    find
-    system $ "rm "++fifo
+    info <- find ""
+    --putStrLn info
+    let [w',h'] = map (read.tail) . take 2 . drop 1 . words $ info
+    --print (Size h' w')
+    
+    _ <- system $ "rm "++fifo
 
     let grab = do
-        Y im <- image (Size h w)
-        let frameSize = w*h*3`div`2
+        Y im <- image (Size h' w')
+        let frameSize = w'*h'*3`div`2
         n <- hGetBuf f (castPtr (ptr im)) 6
         if n < 6
             then return Nothing
-            else do hGetBuf f (castPtr (ptr im)) frameSize
+            else do _ <- hGetBuf f (castPtr (ptr im)) frameSize
                     return (Just (Y im))
 
     return grab

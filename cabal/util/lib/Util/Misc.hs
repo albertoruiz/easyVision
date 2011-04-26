@@ -5,7 +5,7 @@ module Util.Misc where
 import Numeric.LinearAlgebra hiding (i)
 import Debug.Trace
 import Data.Function(on)
-import Data.List(elemIndex, sortBy, sort, group)
+import Data.List(elemIndex, sortBy, sort, group, isPrefixOf)
 import System.Random
 import qualified Data.Array as A
 import System.Process(system)
@@ -138,6 +138,13 @@ replaceAt pos ys xs = zipWith f [0..] xs where
     f k x = case g k of
         Just y -> y
         Nothing -> x
+
+-- | replace substring
+rep :: Eq a => ([a], [a]) -> [a] -> [a]
+rep (_,_) [] = []
+rep (c,r) f@(x:xs) 
+  | c `isPrefixOf` f = r ++ rep (c,r) (drop (length c) f)
+  | otherwise        = x:(rep (c,r) xs)
 
 
 -- | select elements in a list at given positions

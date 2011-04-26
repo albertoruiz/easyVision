@@ -346,26 +346,24 @@ shapeCatalog prepro gprot feat' cam = do
     raw <- gprot
     let feat = feat' . map (prepro *** id)
         prototypes = feat raw
-        sz = mpSize 10
-    w <- evWindow (raw,prototypes,Nothing,False) "Contour Selection" sz Nothing (marker kbdQuit)
+    w <- evWindow (raw,prototypes,Nothing,False) "Contour Selection" (mpSize 10) Nothing (marker kbdQuit)
     s <- shapesBrowser "Shape" (EV.Size 240 240) raw
     return $ do
         (raw',prots',click,save) <- getW w
         (im,cs) <- cam
-        let (raw,prots) = case click of
+        let sz = size im -- required to avoid space leak !?
+            (raw,prots) = case click of
                 Nothing -> (raw',prots')
                 Just pix  -> let [pt] = pixelsToPoints sz [pix]
                                  newc = (normalShape $ closestTo pt cs, "?" ++ show (length prots' + 1))
                            in (newc:raw', feat [newc] ++ prots')
         when (isJust click) $ putW s (0, raw) >> postRedisplay (Just (evW s))
         inWin w $ do
-            drawImage im
+            drawImage' im
             pointCoordinates sz
             text2D 0.9 0.6 $ show (length cs)
             setColor' orange
             mapM_ shcont cs
-            setColor' yellow
-            renderAxes
             
         when save $ writeFile "shapes.txt" (show raw)
         putW w (raw,prots,Nothing,False)
