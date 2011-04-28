@@ -2,7 +2,7 @@ import EasyVision
 import Graphics.UI.GLUT
 import Control.Monad(when)
 
-main = run (camera ~> gray >>= bgDiff)
+main = run (camera ~> grayscale >>= bgDiff)
 
 bgDiff cam = do
     w <- evWindow (True,undefined) "bg diff" (mpSize 20) Nothing (mouse kbdQuit)

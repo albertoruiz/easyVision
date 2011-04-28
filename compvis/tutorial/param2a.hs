@@ -10,7 +10,7 @@ $(autoParam "Param" ""
     ("rad"  ,"Int",    intParam  4 1 25),
     ("thres","Float",  realParam 0.6 0 1)])
 
-main = run $ (camera ~> gray ~> float .&. winParam)
+main = run $ (camera ~> grayscale ~> float .&. winParam)
          ~>  fst &&& corners
          >>= monitor "corners" (mpSize 20) sh
 

@@ -1,15 +1,13 @@
-import EasyVision hiding ((.&.))
+import EasyVision
 import Graphics.UI.GLUT
 import Control.Arrow
-import Control.Monad
+import Control.Applicative
 
-(.&.) = liftM2 (liftM2 (,))
-
-camera' = camera ~> (gray >>> float)
+camera' = camera ~> (grayscale >>> float)
 
 data Param = Param { sigma :: Float, rad :: Int, thres :: Float }
 
-main = run $ camera' .&. userParam
+main = run $ (camera' .&. userParam)
          ~>  fst &&& corners
          >>= monitor "corners" (mpSize 20) sh
 
@@ -34,6 +32,7 @@ userParam = do
     o <- createParameters [("sigma",realParam 3 0 20),
                            ("rad"  ,intParam  4 1 25),
                            ("thres",realParam 0.6 0 1)]
-    return $ return Param `ap` getParam o "sigma"
-                          `ap` getParam o "rad"
-                          `ap` getParam o "thres"
+    return $ Param <$> getParam o "sigma"
+                   <*> getParam o "rad"
+                   <*> getParam o "thres"
+

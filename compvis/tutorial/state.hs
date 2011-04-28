@@ -7,7 +7,7 @@ main = do
     cam <- getCam 0 sz ~> channels
     w <- evWindow (True,undefined) "bg diff" sz Nothing (mouse kbdQuit)
     launch $ do
-        img <- fmap gray cam
+        img <- fmap grayscale cam
         (rec,bg) <- getW w
         if rec
             then putW w (False, img)

@@ -7,4 +7,4 @@ smooth cam = do
         sigma <- getParam o "sigma"
         return (gaussS sigma x)
 
-main = run $ camera ~> float . gray >>= smooth >>= observe "gauss" id
+main = run $ camera ~> float . grayscale >>= smooth >>= observe "gauss" id

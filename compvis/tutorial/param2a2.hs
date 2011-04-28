@@ -3,12 +3,12 @@
 import EasyVision
 import Graphics.UI.GLUT
 
-$(autoParam "Param" ""
+autoParam "Param" "corners-"
     [("sigma","Float", realParam 3 0 20),
     ("rad"  ,"Int",    intParam  4 1 25),
-    ("thres","Float",  realParam 0.3 0 1)])
+    ("thres","Float",  realParam 0.3 0 1)]
 
-main = run $ camera ~> gray >>= corners .@. winParam >>= shCor
+main = run $ camera ~> grayscale >>= corners .@. winParam >>= shCor
 
 corners Param{..} = getPts 100 rad thres . hessian . gradients . gaussS sigma . float
 

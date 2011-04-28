@@ -4,7 +4,7 @@ import Graphics.UI.GLUT
 main = do
     prepare
     sz <- findSize
-    cam <- getCam 0 sz ~> float . gray . channels
+    cam <- getCam 0 sz ~> float . grayscale . channels
     o <- createParameters [("sigma",realParam 3 0 20),
                            ("rad"  ,intParam  4 1 25),
                            ("thres",realParam 0.6 0 1)]

@@ -1,5 +1,9 @@
 import EasyVision
 
-drift r (a:b:xs) = a : drift r ((r .* a |+| (1-r).* b):xs)
+drift r a b = r .* a |+| (1-r) .* b
 
-main = run $ camera ~> float.gray ~~> drift 0.9 >>= observe "drift" id
+main = run $   camera
+           ~>  float . grayscale
+           ~~> scanl1 (drift 0.9)
+           >>= observe "drift" id
+

@@ -9,7 +9,7 @@ main = do
     cam <- mplayer ("mf://"++file) sz
     img <- cam
 
-    let x = float.gray.channels $ img
+    let x = float. grayscale . channels $ img
 
     watch "Image" (const id) img
     watch "3 * 4" (const $ gaussS 3 . gaussS 4) x
