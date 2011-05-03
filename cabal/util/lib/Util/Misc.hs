@@ -240,6 +240,8 @@ kruskal nmax s = fst $ myfoldl' ((nmax==).length.fst) f ([],r0) s where
         where r' = replaceAt z (replicate (length z) z) r
               z = unionSort [r!!i, r!!j]
 
+
+-- TO DO: use scanl and takeWhile
 myfoldl' :: (a -> Bool) -> (a -> t -> a) -> a -> [t] -> a
 myfoldl' done f z0 xs0 = lgo z0 xs0
     where lgo z _ | done z = z
@@ -263,3 +265,8 @@ path g a b | b `elem` na = [a,b]
     subs = filter (not.null) [ path g' v b | v <- na ]
 
 ----------------------------------------------------------------------
+
+-- | Taken from \"not-in-base\" package.
+lambdify :: (a -> b -> t) -> (c -> a) -> (c -> b) -> c -> t
+lambdify f a b x = f (a x) (b x)
+

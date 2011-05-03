@@ -20,6 +20,7 @@ import qualified Data.IntMap as IM
 import qualified Data.Map as M
 import Util.Optimize(optimize)
 import Util.Estimation(estimateHomographyRaw)
+import Text.Printf(printf)
 
 main = do
     prepare >> proc >> mainLoop
@@ -93,7 +94,7 @@ shapes1BrowserT name sz = examplesBrowser name sz sh
         
 showEvolution name sz a b = examplesBrowser name sz sh (cs `zip` map show [0..])
   where
-    cs = take 20 $ iterate (warpStep projective a) b
+    cs = take 20 $ iterate (warpStep displac a) b
     sh c = do
         setColor' white
         shcont a
@@ -101,7 +102,6 @@ showEvolution name sz a b = examplesBrowser name sz sh (cs `zip` map show [0..])
         shcont c
 
 
-disp = putStrLn . dispf 5
 
 textAt :: Point -> String -> IO ()
 textAt (Point x y) s = text2D (d x) (d y) s
@@ -118,6 +118,7 @@ proc = do
     shapes1BrowserD "derivative" (mpSize 20) (p `zip` map show [0..])
     shapes1BrowserT "update" (mpSize 20) (p `zip` map show [0..])
     showEvolution "evol" (mpSize 20) cc4 (transPol (rot1 (5*degree) <> diagl[1.1,0.9,1] <> desp (0.02,0.01)<>rot3 (5*degree)) cc4)
+    showEvolution "evol2" (mpSize 20) cc4 (transPol (desp (0.9,0.8)) cc4)
 
 ----------------------------------------------------------------------
 ----------------------------------------------------------------------
@@ -394,7 +395,7 @@ warpStep (ps,mk) a = f
     h = debugMat "H" 5 id $ hess ps a
     f b = r
       where
-        da = debug "diff" (sum . map (abs.snd)) $ diffCont a b
+        da = debug "diff" ((printf "%.5f" :: Double->String). sum . map (abs.snd)) $ diffCont a b
         g = grad ps da
         x = - inv h <> g
         t = mk (toList $ x)

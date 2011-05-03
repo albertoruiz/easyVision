@@ -12,7 +12,7 @@ module Tools(
     icaConts,
 --  icaContsAll, icaConts2,
     alignment, refine,
-    classifier, classifyMon, OKS, elongated,
+    classifier, classifyMon, AlignInfo, elongated,
     alignMon, alignMon',
     -- * Projective rectification from circles and vertical vanishing point
     rectifyMon, tryMetric, rectifierFromHorizon, coherent, distImage,
@@ -20,14 +20,14 @@ module Tools(
     -- * Digit tools
     fixOrientation, horizontalGroups, drawTree,
     -- * Other tools
-    intersectionManyLines,
+    intersectionManyLines, mseLine, pt2hv, hv2pt,
     -- * Display
-    shapeCatalog, normalShape, centerShape,
+    shapeCatalog, normalShape, centerShape, boxShape,
     examplesBrowser, imagesBrowser, shapesBrowser,
     shcont, shcontO,
     rotAround,
     -- * Prototypes
-    letters, digits
+    letters, digits, digits'
 ) where
 
 
@@ -101,11 +101,6 @@ classify SCParam {..} (im,cs,prots) = (im, oks)
     clas = refine maxangle . alignment prots
 
 classifier = classify .@. winSCParam
-
-----------------------------------------------------------------------
-
--- to be changed to a record
-type OKS = (Double, (Polyline,Mat,Vec,Mat,Vec,String))
 
 ----------------------------------------------------------------------
 
@@ -346,11 +341,12 @@ shapeCatalog prepro gprot feat' cam = do
     raw <- gprot
     let feat = feat' . map (prepro *** id)
         prototypes = feat raw
-    w <- evWindow (raw,prototypes,Nothing,False) "Contour Selection" (mpSize 10) Nothing (marker kbdQuit)
+    (cam',ctrl) <- withPause cam
+    w <- evWindow (raw,prototypes,Nothing,False) "Contour Selection" (mpSize 10) Nothing (marker (kbdcam ctrl))
     s <- shapesBrowser "Shape" (EV.Size 240 240) raw
     return $ do
         (raw',prots',click,save) <- getW w
-        (im,cs) <- cam
+        (im,cs) <- cam'
         let sz = size im -- required to avoid space leak !?
             (raw,prots) = case click of
                 Nothing -> (raw',prots')
@@ -374,7 +370,7 @@ shapeCatalog prepro gprot feat' cam = do
         let clicked = Pixel (fromIntegral y) (fromIntegral x)
         writeIORef st (r,p, Just clicked, False)
 
-    marker _ st (Char 's') Down _ _ = do
+    marker _ st (Char 'S') Down _ _ = do
         (r,p,_,_) <- readIORef st
         writeIORef st (r,p, Nothing, True)
 
@@ -430,6 +426,20 @@ normalShape c = transPol h c -- (h<>rotAround x y (-pi/2)) c
    h = scaling (1/ sqrt( max sx sy)) <> desp (-x,-y)
 
 rotAround x y a = desp (x,y) <> rot3 a <> desp (-x,-y)
+
+bounding p = Closed [Point x2 y2, Point x1 y2, Point x1 y1, Point x2 y1] 
+  where
+    x1 = minimum xs
+    x2 = maximum xs
+    y1 = minimum ys
+    y2 = maximum ys
+    xs = map px (polyPts p)
+    ys = map py (polyPts p)
+
+boxShape c = transPol h c
+  where
+    Closed [Point x2 y2, _, Point x1 y1, _] = bounding c
+    h = scaling (2/(y2-y1)) <> desp (-(x1+x2)/2,-(y1+y2)/2)
   
 ----------------------------------------------------------------------
 
@@ -438,11 +448,19 @@ mt m = trans (inv m)
 ----------------------------------------------------------------------
 
 -- hmm, algebraic error
--- [Vec3->HPoint2]
+-- [Vec3]->HPoint2
 intersectionManyLines :: [Vec] -> Vec
 intersectionManyLines ls | length ls > 1 = fst (homogSolve a)
                          | otherwise = vec [0,0,1]
   where a = fromRows $ map unitary ls
+
+-- [Point2] -> Line2
+mseLine :: [Point] -> [Double]
+mseLine ps
+    | length ps < 2 = error "mseLine with < 2 points"
+    | otherwise = (toList . fst) (homogSolve a)
+  where
+    a = fromRows (map pt2hv ps)
 
 ----------------------------------------------------------------------
 
@@ -453,12 +471,12 @@ rectifierFromHorizon f h = rectifier rho yh f
     dn = mS <> h
     l0n = cross dn (vec [0,0,1])
     nh = cross h l0n
-    Point x y = hp2p nh
+    Point x y = hv2pt nh
     yh = sqrt (x*x+y*y)
     rho = atan2 x y
 
-p2hp (Point x y) = vec [x,y,1]
-hp2p v = Point x y where [x,y] = toList (inHomog v)
+pt2hv (Point x y) = vec [x,y,1]
+hv2pt v = Point x y where [x,y] = toList (inHomog v)
 
 ----------------------------------------------------------------------
 
@@ -604,7 +622,7 @@ refineTangent (im,oks) = (im,oks')
         pr = invFou samples maxFreq $ toFun v
         g a b = unitary $ cross a b
         cpr = z ++ [head z]
-          where z = map p2hp (polyPts pr)
+          where z = map pt2hv (polyPts pr)
         ls = zipWith g cpr (tail cpr)
         pl2l = map p2l . polyPts
         ls' = ls
@@ -624,7 +642,7 @@ refineTangentImage (im,oks) = (im,oks')
         pr = invFou samples maxFreq $ toFun $ foufeat (transPol (inv b) $ invFou samples maxFreq $ toFun v)
         g a b = unitary $ cross a b
         cpr = z ++ [head z]
-          where z = map p2hp (polyPts pr)
+          where z = map pt2hv (polyPts pr)
         ls = zipWith g cpr (tail cpr)
         pl2l = map p2l . polyPts
         ls' = ls
@@ -678,9 +696,11 @@ letters = flip zip (reverse $ map return "ABCDEFGHIJKLMNOPQRSTUVWXYZ") . map fst
 
 ----------------------------------------------------------------------
 
-digits :: IO (Sample Polyline)
-digits = do
-    cam <- mplayer "mf://digits.jpg" (mpSize 40)
+digits = digits' "digits.jpg"
+
+digits' :: FilePath -> IO (Sample Polyline)
+digits' path = do
+    cam <- mplayer ("mf://"++path) (mpSize 40)
     img <- (grayscale . channels) `fmap` cam
     let rawconts = contours 100 1 128 False img
         fst3 (a,_,_) = a

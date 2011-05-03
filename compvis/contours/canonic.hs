@@ -104,7 +104,7 @@ virtualMon = monitor "Virtual" (mpSize 20) sh
         --pointCoordinates (mpSize 10)
         depthFunc $= Just Less
         
-        mapM_ (h.g) (oks::[OKS])
+        mapM_ (h.g) (oks::[AlignInfo])
 
 ----------------------------------------------------------------------
 
@@ -124,7 +124,7 @@ virtualExperiment h cam = do wr <- evWindow () "Rectify Vertical"  (mpSize 10) N
         clear [DepthBuffer]
         pointCoordinates (mpSize 10)
         depthFunc $= Just Less
-        let rec = map g (filter s oks::[OKS])
+        let rec = map g (filter s oks::[AlignInfo])
         
         mapM_ h rec
         r <- h2 rec
@@ -178,7 +178,7 @@ virtualMonAffine h = monitor "Virtual Affine" (mpSize 20) sh
         pointCoordinates (mpSize 10)
         depthFunc $= Just Less
         
-        mapM_ (h.g) (filter s oks::[OKS])
+        mapM_ (h.g) (filter s oks::[AlignInfo])
 
 --- effects
 

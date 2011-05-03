@@ -8,7 +8,7 @@ import Util.Misc(debug,randomPermutation)
 import Util.Gaussian(mixturePDF,findMixture)
 
 import Numeric.LinearAlgebra
-import EasyVision hiding (debug, whitener)
+import EasyVision hiding (whitener, examplesBrowser)
 import Data.Colour.Names as Col
 import Graphics.UI.GLUT hiding (Size,scale)
 import Data.Maybe(maybe)
@@ -126,14 +126,14 @@ examplesBrowser name sz f exs =
         let (x,label) = exs!!k
         f x
         windowTitle $= name++" #"++show (k+1)++ ": "++label
-    acts = [((MouseButton WheelUp,   Down, modif), \(k,exs) -> (min (k+1) n, exs))
-           ,((MouseButton WheelDown, Down, modif), \(k,exs) -> (max (k-1) 0, exs))]
+    acts = [((MouseButton WheelUp,   Down, modif), \_ (k,exs) -> (min (k+1) n, exs))
+           ,((MouseButton WheelDown, Down, modif), \_ (k,exs) -> (max (k-1) 0, exs))]
 
 showImage name img = evWindow img name (size img) (Just (get>=>drawImage)) (const kbdQuit)
 
-shDigRaw v = drawImage $ mat2img  (reshape 28 v)
+shDigRaw v = drawImage $ mat2img . single $ (reshape 28 v)
 
-mat2img = fromListsF . toLists . single
+--mat2img = fromListsF . toLists . single
 
 shDig = shDigRaw . autoscale
 
@@ -167,11 +167,11 @@ testBrowser n c = do
     let pica = aux $ toRows $ wd <> trans ica
     scw "ICA" pica
     scw3 "ICA" pica
-    showImage "PCA vs ICA" $ mat2img $ fromBlocks $ map (\x->map (reshape 28 . autoscale) (take n x)) [pc,icab]
+    showImage "PCA vs ICA" $ mat2img . single $ fromBlocks $ map (\x->map (reshape 28 . autoscale) (take n x)) [pc,icab]
     let expca k  = expand (fst $ zeros!!k) med (take n pc)
-    showImage "Expansion PCA " $ mat2img $ autoscale $ fromBlocks $ map (\t->map (reshape 28 ) (take (n+3) t)) (map expca [0..9])
+    showImage "Expansion PCA " $ mat2img . single $ autoscale $ fromBlocks $ map (\t->map (reshape 28 ) (take (n+3) t)) (map expca [0..9])
     let exica k  = expand (fst $ zeros!!k) med icab
-    showImage "Expansion ICA " $ mat2img $ autoscale $ fromBlocks $ map (\t->map (reshape 28 ) (take (n+3) t)) (map exica [0..9])
+    showImage "Expansion ICA " $ mat2img .single $ autoscale $ fromBlocks $ map (\t->map (reshape 28 ) (take (n+3) t)) (map exica [0..9])
     mainLoop
     --return $ fromRows icab <> trans (fromRows icab)
 

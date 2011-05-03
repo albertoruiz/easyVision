@@ -60,7 +60,7 @@ withPause grab = do
     paused <- newIORef False
     frozen <- newIORef undefined
     step   <- newIORef False
-    pass   <- newIORef True
+    pass   <- newIORef False
 
     let control command = do
         case command of
