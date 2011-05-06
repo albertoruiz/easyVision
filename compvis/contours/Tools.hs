@@ -188,27 +188,30 @@ alignMon' name cam = monitor name (mpSize 20) sh cam
 fixOrientation :: (a, [AlignInfo]) -> (a, [AlignInfo])
 fixOrientation (im, xs) = (im, zs ++ ys)
   where
-    asym (_, (_,_,_,_,_,l)) = l `elem` ["1","2","3","4","5","7"]
     (zs, qs)  = partition asym xs
+      where
+        asym (_, (_,_,_,_,_,l)) = l `elem` ["1","2","3","4","5","7"]
+    
     ys = if null zs then qs else map (f dx dy) qs
-    g (_, (_,b,_,a,_,_)) = dir $ ht (inv b <> a) [[0,0],[1,0]]
-    dir [[ox,oy],[x,y]] = [x-ox,y-oy]
+    
     [dx,dy] = map mean $ transpose (map g zs)
-
-    f dx dy (d, (x,b,u,a,v,l)) | l `elem` ["$","6","9","8"] && flipped = (d, (x,b'',u,a,v, comp l))
-                               | l == "0" = (d, (x,b',u,a,v,l))
+      where
+        g (_, (_,b,_,a,_,_)) = dir $ ht (inv b <> a) [[0,0],[1,0]]
+    
+    dir [[ox,oy],[x,y]] = [x-ox,y-oy]
+    
+    f dx dy (d, (x,b,u,a,v,l)) | l `elem` ["$","6","9","8"] && flipped = (d, (x,b,u, a<>rot3 pi, v, comp l))
+                               | l == "0" = (d, (x,b,u, rot3 angle <> a, v,l))
                                | otherwise = (d, (x,b,u,a,v,l))
       where
         [[cx,cy],diry ] = ht (inv b <> a) [[0,0],[1,0]]
         [r,s] = dir [[cx,cy],diry]
         dot = r*dx + s*dy
         flipped = dot < 0
-        b'' = rot3 pi <> b
-        aangle = acos (dot/(sqrt(dx*dx+dy*dy)*sqrt(r*r+s*s)))
-        [[tenx,teny]] = ht (rot3 (aangle)) [[r,s]]
-        angle | tenx * dx + teny * dy > 0 = aangle
-              | otherwise = -aangle
-        b' = b <> desp (cx,cy) <> rot3 (-angle) <> desp (-cx,-cy)
+
+        [[xx,xy]] = ht (inv a <> b) [[cx+dx,cy+dy]]
+        angle = - atan2 xy xx
+
         comp "6" = "9"
         comp "9" = "6"
         comp x = x

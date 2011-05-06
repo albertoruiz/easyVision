@@ -10,11 +10,11 @@ import Features.Polyline
 import Data.List(groupBy,sortBy,(\\))
 import Data.Function(on)
 import Data.Maybe(isJust)
-import Numeric.LinearAlgebra(ident,fromLists,fromList,inv,dispf,(<>),(@>),(><),toList,Matrix,asRow,rcond)
+import Numeric.LinearAlgebra(ident,fromLists,fromList,inv,dispf,(<>),(@>),(><),toList,Matrix,asRow,rcond,toRows,fromRows,scale)
 import GHC.Float(double2Float)
 import Data.Colour.Names as Col
 import Numeric.GSL.Special(hyperg_2F1)
-import Vision(desp,normat3)
+import Vision(desp,normat3,scaling)
 import Util.Rotation(rot3,rot1)
 import qualified Data.IntMap as IM
 import qualified Data.Map as M
@@ -94,7 +94,7 @@ shapes1BrowserT name sz = examplesBrowser name sz sh
         
 showEvolution name sz a b = examplesBrowser name sz sh (cs `zip` map show [0..])
   where
-    cs = take 20 $ iterate (warpStep displac a) b
+    cs = take 20 $ iterate (warpStep projective a) b
     sh c = do
         setColor' white
         shcont a
@@ -102,6 +102,15 @@ showEvolution name sz a b = examplesBrowser name sz sh (cs `zip` map show [0..])
         shcont c
 
 
+showLinComb = examplesBrowser "linear combination" (mpSize 20) sh cs
+  where
+    cs = map gen [0,0.1 ..10] `zip` (map show [0..])
+    sh a = shcont a
+    v2p (toList->[x,y]) = Point x y
+    p2v (Point x y) = vec[x,y]
+    gen x = Closed $ map v2p $ toRows $ c0 + (x/10) `scale` c1
+    c0 = fromRows $ map p2v . polyPts . transPol (desp (-0.25,-0.25) <>scaling (1/5)). fst . head $ filter ((=="T").snd) pentominos
+    c1 = fromRows [vec[1,0],vec[1,0],0,0,0,0,vec[-1,0],vec[-1,0]]
 
 textAt :: Point -> String -> IO ()
 textAt (Point x y) s = text2D (d x) (d y) s
@@ -118,8 +127,11 @@ proc = do
     shapes1BrowserD "derivative" (mpSize 20) (p `zip` map show [0..])
     shapes1BrowserT "update" (mpSize 20) (p `zip` map show [0..])
     showEvolution "evol" (mpSize 20) cc4 (transPol (rot1 (5*degree) <> diagl[1.1,0.9,1] <> desp (0.02,0.01)<>rot3 (5*degree)) cc4)
-    showEvolution "evol2" (mpSize 20) cc4 (transPol (desp (0.9,0.8)) cc4)
-
+    showEvolution "evol2" (mpSize 20) cc4 (transPol (desp (0.1,0.1)) cc4)
+    showEvolution "evol3" (mpSize 20) cc5 (transPol (desp (0.1,0.1)) cc4)
+    showEvolution "evol4" (mpSize 20) cc5 (transPol (scaling 1.2 <>desp (0.2,0.1)) cc4)
+    showLinComb
+    
 ----------------------------------------------------------------------
 ----------------------------------------------------------------------
 
@@ -219,6 +231,11 @@ cc4 = Closed [ Point a a, Point a b, Point b b, Point b a]
     a = -0.5
     b = 0.5
 
+cc5 = Closed [ Point a a, Point a 0, Point a b, Point b b, Point b a]
+  where
+    a = -0.5
+    b = 0.5
+
 ((s1,s2),nex) = mkMerge cc1 cc2
 
 test = mapM_ print $ loops cc1 cc2
@@ -279,7 +296,8 @@ shareWeights (c,(a,_)) = map f ss
     w = orientation c
     ss = asSegments a
     l = sum $ map segmentLength ss
-    f s = (s, segmentLength s * w / l) 
+    --f s = (s, segmentLength s * w / l) 
+    f s = (s, w / l) 
 
 diffCont a b = concatMap shareWeights (circuits a b)
 
@@ -291,11 +309,11 @@ data InfoSeg = InfoSeg {
 infoSeg (Segment (Point x1 y1) (Point x2 y2)) = InfoSeg {
     gx = dy/d,
     gy = -dx/d,
-    mpq = m }
+    mpq = \i j -> d* m i j }  -- ok dt
   where
     dx = x2-x1
     dy = y2-y1
-    d = 1 -- sqrt (dx*dx + dy*dy)   -- ???
+    d = sqrt (dx*dx + dy*dy)   -- ???
     m 0 0 = 1
     m 1 0 = (x1+x2)/2
     m 0 1 = (y1+y2)/2
@@ -349,6 +367,7 @@ grad ps dc = r
 z = (0,0,0)
 sc_x = ((1,1,0),z)
 sc_y = (z,(1,0,1))
+sc_c = ((1,1,0),(1,0,1))
 d_x = ((1,0,0),z)
 d_y = (z,(1,0,0))
 sk_x = ((1,0,1),z)
@@ -369,17 +388,6 @@ mktP [a,d,c,b,e,f,g,h] = (3><3) [1+a,c,   e,
                              b  ,1+d, f,
                              g  ,  h, 1] :: Matrix Double
 
-projectiveI' = [sc_x, sc_y, sk_x, sk_y, d_x, d_y, p_y]
-mktP' [a,d,c,b,e,f,h] = (3><3) [1+a,c,   e,
-                             b  ,1+d, f,
-                             0  ,  h, 1] :: Matrix Double
-
-
-projectiveI'' = [p_x]
-mktP'' [g] = (3><3) [1+0,0,   0,
-                     0  ,1+0, 0,
-                     g  , 0, 1] :: Matrix Double
-
 projective = (projectiveI, mktP)
 
 
@@ -389,6 +397,17 @@ mktD [e,f] = (3><3) [1, 0, e,
                      0, 0, 1] :: Matrix Double
 
 displac = (desI,mktD)
+
+
+scaledespI = [sc_c, d_x, d_y]
+mktSD [s,e,f] = (3><3) [1+s,  0, e,
+                        0,  1+s, f,
+                        0,    0, 1] :: Matrix Double
+
+scaledesp = (scaledespI,mktSD)
+
+
+
 
 warpStep (ps,mk) a = f
   where

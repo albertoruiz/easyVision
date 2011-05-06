@@ -10,7 +10,7 @@ import Numeric.LinearAlgebra as LA hiding (i,(.*))
 import Util.Misc(diagl,debug,vec,Mat,degree)
 import Control.Applicative
 import Control.Arrow
-import Vision(desp, scaling)
+import Vision(desp, scaling, ht, cameraFromHomogZ0)
 import Util.Rotation(rot3)
 import Util.Optimize(optimize)
 import Text.Printf(printf)
@@ -77,8 +77,8 @@ mktS [s,e,f] = (3><3) [1+s,0, e,
                        0,1+s, f,
                        0,  0, 1]
 
-mkt = mktA
-sdi = sdiA
+mkt = mktP
+sdi = sdiP
 
 
 lkStep t = f
@@ -165,7 +165,7 @@ testTracker = run $ camera ~> float.gray
                   >>= trackerMon2
                   >>= timeMonitor
                   
-trackerMon = monitorWheel (0,2) "Tracker" (mpSize 10) sh
+trackerMon = monitorWheel (0,3) "Tracker" (mpSize 10) sh
   where
     sh _ (img, Nothing) = do
         drawImage' (img :: ImageFloat)
@@ -189,6 +189,15 @@ trackerMon = monitorWheel (0,2) "Tracker" (mpSize 10) sh
         pointCoordinates (size t)
         setColor 1 0 0
         text2D 0.9 0.65 (printf "Raw t   %.1f    %.1f   %.1f" e (a) (255*b))
+    sh 3 (img, Just (t,(_,(h,a,b),e,_))) = do
+        let ih = inv h
+        --clear [DepthBuffer]
+        drawImage' img
+        --clear [DepthBuffer]
+        let Just cam = cameraFromHomogZ0 (Just 1.7) ih
+        pointCoordinates (size t)
+        setColor 1 0 0
+        renderPrimitive LineStrip $ mapM_ vertex $ ht cam [[0,0,0],[0.4,0,0],[0,0,0],[0,0.4,0],[0,0,0],[0,0,0.4]] 
 
 
 trackerMon2 = monitor "Tracker Error" (mpSize 10) sh
