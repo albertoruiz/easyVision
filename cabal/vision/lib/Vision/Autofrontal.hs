@@ -2,11 +2,10 @@
 {- |
 Module      :  Vision.Autofrontal
 Copyright   :  (c) Alberto Ruiz 2006
-License     :  GPL-style
+License     :  GP
 
 Maintainer  :  Alberto Ruiz (aruiz at um dot es)
-Stability   :  very provisional
-Portability :  hmm...
+Stability   :  provisional
 
 Practical Planar Metric Rectification.
 Ruiz et al. BMVC06
@@ -15,12 +14,12 @@ Ruiz et al. BMVC06
 -----------------------------------------------------------------------------
 
 module Vision.Autofrontal (
-    camera0,
-    KnownFs(..),
-    extractInfo,
+    KnownFs(..), PolarHorizon, MetricInfo,
     consistency,
+    camera0,
     findSol,
-    autoOrthogonality
+    autoOrthogonality,
+    extractInfo
 ) where
 
 -- experiments on planar rectification
@@ -29,32 +28,30 @@ import Numeric.LinearAlgebra
 import Numeric.GSL.Minimization
 import Util.Homogeneous
 import Vision.Camera
-import Data.List (elemIndex,sort)
-import Util.Misc(unitary,degree)
-import Util.Rotation(rot1,rot3)
+import Util.Misc(unitary,degree,vec,Mat,Vec,median,norm,impossible)
+import Data.Maybe(catMaybes)
 
-matrix = fromLists :: [[Double]] -> Matrix Double
-vector = fromList ::  [Double] -> Vector Double
-
-norm x = pnorm PNorm2 x
 
 data KnownFs = AllKnown [Double] | F1Known Double | AllUnknown | ConstantUnknown
 
-extractInfo :: KnownFs -> [Matrix Double] -> (Double,Double) -> (Matrix Double, [Maybe (Matrix Double)])
+type PolarHorizon = (Double, Double)
+type MetricInfo = (PolarHorizon, Double) 
 
-extractInfo (AllKnown fs) hs horiz = (c,mbOmegas) where
+extractInfo :: KnownFs -> [Mat] -> (Double,Double) -> (Mat, [Maybe Mat])
+
+extractInfo (AllKnown fs) _ horiz = (c,mbOmegas) where
     mbOmegas = map (Just . omegaGen) (tail fs)
-    c = rectifier' (horiz, head fs)
+    c = camera0 (horiz, head fs)
 
-extractInfo (F1Known f1) hs horiz = (c,mbOmegas) where
-    mbOmegas = repeat Nothing :: [Maybe (Matrix Double)]
-    c = rectifier' (horiz,f1)
+extractInfo (F1Known f1) _ horiz = (c,mbOmegas) where
+    mbOmegas = repeat Nothing -- :: [Maybe (Matrix Double)]
+    c = camera0 (horiz,f1)
 
 extractInfo AllUnknown hs horiz = (c,mbOmegas) where
     mf1s = map (estimateFTransfer horiz) hs
     mf1 = estimatorF mf1s
     c = case mf1 of 
-            Just f1 -> rectifier' (horiz,f1)
+            Just f1 -> camera0 (horiz,f1)
             Nothing -> ident 3
     mbOmegas = repeat Nothing :: [Maybe (Matrix Double)]
 
@@ -62,41 +59,47 @@ extractInfo ConstantUnknown hs horiz = (c,mbOmegas) where
     mf1s = map (estimateFTransfer horiz) hs
     mf1 = estimatorF mf1s
     c = case mf1 of 
-            Just f1 -> rectifier' (horiz,f1)
+            Just f1 -> camera0 (horiz,f1)
             Nothing -> ident 3
     mbOmega1 = mf1 >>= \f -> Just (omegaGen f)
     mbOmegas = repeat mbOmega1
 
 
-consistency :: KnownFs -> [Matrix Double] -> (Double,Double) -> Double
+consistency :: KnownFs -> [Mat] -> PolarHorizon -> Double
 
 consistency info hs horiz = r where
     ihs = map inv hs
     (c,mbOmegas) = extractInfo info hs horiz
     r = quality ihs mbOmegas c
 
+
+quality :: [Mat] -> [Maybe Mat] -> Mat -> Double
 quality ihs mbOmgs c = sum qs / fromIntegral (length ihs) where 
     camscorr = map (<>c) ihs
     qs = zipWith autoOrthogonality mbOmgs camscorr
 
 
 -- this gives a low value if h is a similar transformation
+similarityDegree :: Mat -> Double
 similarityDegree h = pnorm PNorm1 (m'-v) where
-    v = vector [1,0,0,0,1,0,0,0,0]
+    v = vec [1,0,0,0,1,0,0,0,0]
     m = flatten (h <> mS <> trans h)
     m' = m / scalar (m@>0)
 
--- hmm! premature optimization...
+
+omegaGen :: Double -> Mat
 omegaGen f = kgen (recip (f*f))
 
 -- this gives a measure of the difference with a camera homography, for known f
+orthogonality :: Mat -> Mat -> Double
 orthogonality omega c = pnorm PNorm1 (m'-v) where
-    v = vector [1,0,0,1]
+    v = vec [1,0,0,1]
     m = flatten $ subMatrix (0,0) (2,2) q
     m' = m / scalar (m@>0)
     q = trans c <> omega <> c
 
--- si das un f (omega) la usa, si no intenta estimarla y si no puede ve si es similar
+-- if given f (omega) it uses it, otherwise we try to estimate it. If not possible we check if this is a similar transformation.
+autoOrthogonality :: Maybe Mat -> Mat -> Double
 autoOrthogonality mbOmega c = res where
     res = case mbOmega of
             Just omega -> orthogonality omega c
@@ -105,14 +108,16 @@ autoOrthogonality mbOmega c = res where
             Just f -> orthogonality (omegaGen f) c
             Nothing -> similarityDegree c
 
+{-
 -- rectifier transformation
--- should be precomputed
 rectifier ((rho,yh),f) = kgen f <> rot1 (atan2 f yh) <> rot3 (-rho) <> kgen (recip f)
+-}
 
--- associated camera (the inverse of the above)
---rectifier' ((rho,yh),f) = kgen f <> rot3 rho <> rot1 (- atan2 f yh) <> kgen (recip f)
---rectifier' = inv.rectifier 
-rectifier' ((rho,yh),f) = reshape 3 $ vector [
+--camera0 ((rho,yh),f) = kgen f <> rot3 rho <> rot1 (- atan2 f yh) <> kgen (recip f)
+--camera0 = inv.rectifier 
+-- | true camera (the inverse of the rectifying transformation)
+camera0 :: MetricInfo -> Mat
+camera0 ((rho,yh),f) = (3 >< 3) [
       cr, -ca*sr, -f*sa*sr,
       sr,  ca*cr,  f*cr*sa,
       0,  -sa/f ,  ca ]
@@ -122,8 +127,7 @@ rectifier' ((rho,yh),f) = reshape 3 $ vector [
           cr = cos rho
           sr = - sin rho      
 
-camera0 = rectifier'
-
+{-
 northPoint c = c <> mS <> trans c <> linf    
     
 ryf c = focalFromHomogZ0 c >>= \f -> Just ((rho,yh),f) where
@@ -132,17 +136,18 @@ ryf c = focalFromHomogZ0 c >>= \f -> Just ((rho,yh),f) where
     yh = sqrt (nx*nx+ny*ny)
     nx = x/w
     ny = y/w
-    
+-}    
     
 
-polarHoriz :: (Double,Double) -> Vector Double
+polarHoriz :: PolarHorizon -> Vec
 polarHoriz (r',y) = h where
     r = -(r'+3*pi/2)
-    n = vector [y* cos r, y* sin r , 1]
+    n = vec [y* cos r, y* sin r , 1]
     h = cross n (mA<>n)
     
   
 -- estimation of f1 given a polar horiz (r,y) and a interimage homograpy 1<-k
+estimateFTransfer :: PolarHorizon -> Mat -> Maybe Double
 estimateFTransfer (r,y) h = res 
   where
     horiz = polarHoriz (r,y) -- horiz in view 1
@@ -162,25 +167,23 @@ estimateFTransfer (r,y) h = res
  
 
 
-posMin l = i where
-    Just i = elemIndex (minimum l) l
-
-mbMedian l = m where
-    n = length l
-    m = if n == 0 
-            then Nothing
-            else Just (sort l !! (n`quot`2))
             
 -- a partir de la distribución de posibles estimaciones da la mediana o Nothing...
 estimatorF :: [Maybe Double] -> Maybe Double
-estimatorF mbfs = mbMedian fs where
-    fs = [ f | Just f <- mbfs ]    
+estimatorF = mbMedian . catMaybes  
+  where
+    mbMedian :: Ord a => [a] -> Maybe a
+    mbMedian l | null l    = Nothing
+               | otherwise = Just (median l)
 
 
 -------------------------------------------------------
 
-mkfun f = g where
-    g [a,b] = f (a,b)
-
+-- | for a cost function based on 'consistency'
+findSol :: (PolarHorizon -> Double) -> (Double, Double) -> ([Double], Mat)
 findSol fun (rinit,hinit) = minimize NMSimplex2 1e-6 500 [0.1*degree,0.01] (mkfun fun) [rinit,hinit]
+  where
+    mkfun f = g where
+        g [a,b] = f (a,b)
+        g _ = impossible "mkfun"
 

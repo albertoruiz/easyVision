@@ -3,7 +3,7 @@
 module Tools(
     -- * Invariant features
     maxFreq,
-    toCanonicAll, toCanonic2,
+    toCanonicAll, toCanonic2, canonical,
 --    protos, 
     protoOri,
 --    foufeat, 
@@ -120,7 +120,7 @@ classifyMon cam = monitor "Detected" (mpSize 20) sh cam
         setColor' yellow
         shcont $ (transPol m) (Closed [Point (-1) (-1), Point 1 (-1), Point 1 1, Point (-1) 1])
         setColor' red
-        shcont $ (transPol m) (Closed [Point 0 0, Point (-3) 0, Point 0 0, Point 0 3])
+        shcont $ (transPol m) (Closed [Point 0 0, Point (-2) 0, Point 0 0, Point 0 2])
       where
         (ox,oy,_,_,_) = momentsContour (polyPts c)
         up = 2/400 + maximum (map py (polyPts c))
@@ -230,6 +230,7 @@ drawTree dt = do
     renderPrimitive Points $ mapM_ vertex dt
 
 
+tree :: [AlignInfo] -> ([(Int,Int)],[Point])
 tree xs = (t, concatMap h t)
   where
     t = kruskal (length xs-1) arcs
@@ -237,7 +238,7 @@ tree xs = (t, concatMap h t)
 
     ys = map g xs
     g  (d, (x,b,u,a,v,l)) = (Point cx cy, Point x1 y1, Point x2 y2)
-        where [[cx,cy],[x1,y1],[x2,y2]] = ht (inv b <> a) [[0,0],[3,0],[-3,0]]
+        where [[cx,cy],[x1,y1],[x2,y2]] = ht (inv b <> a) [[0,0],[2,0],[-2,0]]
 
     f ((p,p1,p2),i) ((q,q1,q2),j) = (d,(i,j))
       where
@@ -293,6 +294,17 @@ toCanonic2 (p,l) = zip (map (<>w) cs) cps `zip` repeat l
     cs = map rot3 (icaAngles2 wp)
     cps = map (foufeat .flip transPol wp) cs
 
+
+-- | whitened with natural orientation, and additional angles
+canonical :: Polyline -> (Polyline, Mat, [Double])
+canonical p = (r, n, map (subtract a) as)
+  where
+    w = rot3 (20*degree) <> whitener p  -- check solver
+    wp = transPol w p
+    a:as = icaAnglesAll wp
+    c = rot3 a -- max kurt if orientation ok
+    n = c <> w
+    r = transPol n p
 
 
 protoOri :: Sample Polyline -> Sample Polyline

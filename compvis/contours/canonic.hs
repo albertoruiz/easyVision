@@ -30,12 +30,20 @@ catalog = digits
 --catalog = read <$> readFile "digits.txt"
 --catalog = letters
 
-main = main1
+main = main0
+
+main0 = run $ camera ~> grayscale
+            >>= wcontours id ~> (id *** contSel)
+            >>= shapeCatalog normalShape catalog (concatMap toCanonic2)
+            >>= classifier ~> snd
+            >>= alignMon' "Alignment"
+            >>= timeMonitor
+
 
 main2 = run $ camera ~> grayscale
             >>= wcontours id ~> (id *** contSel)
             >>= shapeCatalog normalShape catalog (concatMap toCanonic2)
-       
+            >>= timeMonitor
 
 main1 = run $ camera ~> grayscale
             >>= wcontours id ~> (id *** contSel)
@@ -317,15 +325,15 @@ monitorOrient = monitor "contours" (mpSize 20) sh where
         let wcs1 = map (head . f) cs
             wcs2 = map (last . f) cs
         setColor' red
-        lineWidth $= 3
+        lineWidth $= 2
         mapM_ shcont wcs1
-        setColor' blue
-        lineWidth $= 3
---        mapM_ shcont wcs2
+    --    setColor' blue
+    --    lineWidth $= 2
+    --    mapM_ shcont wcs2
 
     f c@(Closed ps) = map (transPol t) . icaConts . whitenContour $ c
       where
-        t = desp (ox,oy) <> diagl [0.025,0.025,1]
+        t = desp (ox,oy) <> diagl [0.05,0.05,1]
         (ox,oy,_,_,_) = momentsContour ps
 
 ----------------------------------------------------------------------
