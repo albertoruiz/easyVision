@@ -99,34 +99,6 @@ rms img = k * (sum32f . abs32f) img
   where
     k = 255 / fromIntegral (roiArea (theROI img))
 
-----------------------------------------------------------------------
-
--- to be replaced by a new warpBack function
-warpTo droi h img = warp zeroP sz h x
-  where
-    sz = size img
-    sroi = transformROI sz (inv h) droi
-    x = modifyROI (const sroi) img
-    
-bounding p = Closed [Point x2 y2, Point x1 y2, Point x1 y1, Point x2 y1] 
-  where
-    x1 = minimum xs
-    x2 = maximum xs
-    y1 = minimum ys
-    y2 = maximum ys
-    xs = map px (polyPts p)
-    ys = map py (polyPts p)
-
-roi2poly sz (ROI r1 r2 c1 c2) = Closed $ pixelsToPoints sz p
-  where
-    p = [Pixel r1 c1, Pixel r1 c2, Pixel r2 c2, Pixel r2 c1]
-
-poly2roi sz p = ROI r1 r2 c1 c2
-  where
-    (Closed [p1,_,p3,_]) = bounding p
-    [Pixel r1 c1, Pixel r2 c2] = pointsToPixels sz [p1,p3]
-
-transformROI sz h = shrink (-1,-1) . poly2roi sz . transPol h . roi2poly sz
 
 ----------------------------------------------------------------------
 

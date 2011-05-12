@@ -88,6 +88,6 @@ cleanOdd [a,b] | a == -b = [a,b]
 cleanOdd (a:b:c:rest) | b==(-a) || b==(-c) = a: cleanOdd (b:c:rest)
                       | otherwise = cleanOdd (a:c:rest)
 
-clockwise p@(Closed l) | orientation p < 0 = p  -- in the camera frame clockwise orientation is negative
-                       | otherwise         = Closed (reverse l)
+clockwise p@(Closed l) | orientedArea p < 0 = p  -- in the camera frame clockwise orientation is negative
+                       | otherwise          = Closed (reverse l)
 

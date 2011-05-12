@@ -24,7 +24,8 @@ module EasyVision.MiniApps.Combinators (
   selectROI,
   selectSnd,
   updateMaybe, updateMaybeSave,
-  clickStatusWindow
+  clickStatusWindow,
+  warpTo
 )where
 
 import ImagProc.Ipp.Core
@@ -42,6 +43,9 @@ import Text.Printf
 import Util.Options(optionString,hasValue,optionFromFile,getFlag)
 import Data.Maybe(isJust)
 import Control.Arrow((***))
+import Util.Misc(Mat)
+import Features.Polyline
+import Numeric.LinearAlgebra(inv)
 
 
 -- deprecated
@@ -351,3 +355,16 @@ monitorWheel (k1,k2) name sz fun cam = do
     mouse m _ a b c d = m a b c d
 
 ----------------------------------------------------------------------
+
+-- temporary location, and
+-- to be replaced by a new warpBack function
+warpTo :: GImg pix img => ROI -> Mat -> img -> img
+warpTo droi h img = warp zeroP sz h x
+  where
+    sz = size img
+    sroi = transformROI sz (inv h) droi
+    x = modifyROI (const sroi) img
+
+transformROI :: Size -> Mat -> ROI -> ROI
+transformROI sz h = shrink (-1,-1) . poly2roi sz . transPol h . roi2poly sz
+

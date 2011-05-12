@@ -152,10 +152,10 @@ h2 oks = do
         w = diagl [1,1,f**2]
         h = w<>v
         r = rectifierFromHorizon f h
-        area (_,x,_) = abs (orientation x)
+        theArea (_,x,_) = area x
         center (_,z,_) = [x,y]
            where (x,y,_,_,_) = momentsContour (polyPts z)
-        [c1,c2] = take 2 $ map center $ sortBy (compare `on` negate . area) oks
+        [c1,c2] = take 2 $ map center $ sortBy (compare `on` negate . theArea) oks
         [a,b] = ht r [c1,c2]
         r' = if length oks > 1 then scaling 0.5 <> similarFrom2Points a b c1 c2 <> r
                                else ident 3

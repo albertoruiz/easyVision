@@ -33,7 +33,7 @@ shapes2Browser name sz = examplesBrowser name sz sh
     sh (a,b) = do
         let cs = map fst $ circuits a b
             f c = do
-                if orientation c < 0 then setColor 1 0 0 else setColor 0 0 1
+                if orientedArea c < 0 then setColor 1 0 0 else setColor 0 0 1
                 shcont c
         mapM_ f cs
         
@@ -43,7 +43,7 @@ shapes1Browser name sz = examplesBrowser name sz sh
     sh a = do
         let cs = map fst $ circuits a (transPol (diagl[1.1,0.9,1]) a)
             f c = do
-                if orientation c < 0 then setColor 1 0 0 else setColor 0 0 1
+                if orientedArea c < 0 then setColor 1 0 0 else setColor 0 0 1
                 shcont c
         mapM_ f cs
         print (a,(transPol (diagl[1.1,0.9,1]) a))
@@ -55,7 +55,7 @@ shapes1BrowserD name sz = examplesBrowser name sz sh
         let b = transPol (desp (0.02,0.01)) a
         let cs = circuits a b
             f (c,(x,y)) = do
-                if orientation c < 0
+                if orientedArea c < 0
                     then do
                         setColor' red
                         shcont x
@@ -293,7 +293,7 @@ circuits x y = map f (rawCircuits x y)
 
 shareWeights (c,(a,_)) = map f ss
   where
-    w = orientation c
+    w = orientedArea c
     ss = asSegments a
     l = sum $ map segmentLength ss
     --f s = (s, segmentLength s * w / l) 

@@ -197,7 +197,6 @@ rot r f = g where g 0 = f 0
                   g w = cis (r) * f w
 
 biggest = take 1 . sortBy (compare `on` (negate.area))
-    where area c = abs (orientation c)
 
 center (Closed c) = [cx,cy] where
     (cx,cy,_,_,_) = momentsContour c

@@ -1,12 +1,11 @@
 -----------------------------------------------------------------------------
 {- |
 Module      :  Features.Polyline
-Copyright   :  (c) Alberto Ruiz 2007
-License     :  GPL-style
+Copyright   :  (c) Alberto Ruiz 2007-11
+License     :  GPL
 
 Maintainer  :  Alberto Ruiz (aruiz at um dot es)
-Stability   :  very provisional
-Portability :  hmm...
+Stability   :  provisional
 
 Some operations with polylines.
 
@@ -17,7 +16,7 @@ module Features.Polyline (
 -- * Operations
     Polyline(..),
     perimeter,
-    orientation,
+    area, orientedArea,
     whitenContour, whitener, equalizeContour,
     fourierPL, invFou, normalizeStart, shiftStart,
     norm2Cont,
@@ -36,7 +35,9 @@ module Features.Polyline (
 -- * Auxiliary tools
     momentsContour, momentsBoundary,
     eig2x2Dir, asSegments, longestSegments, transPol,
-    pentominos
+    pentominos,
+    bounding,
+    roi2poly, poly2roi
 )
 where
 
@@ -66,12 +67,13 @@ perimeter (Closed l) = perimeter' (last l:l)
 perimeter' [_] = 0
 perimeter' (a:b:rest) = distPoints a b + perimeter' (b:rest)
 
+area :: Polyline -> Double
+area = abs . orientedArea
+
 -- | Oriented area of a closed polyline. The clockwise sense is positive in the x-y world frame (\"floor\",z=0) and negative in the camera frame.
---
--- area = abs.orientation.
-orientation :: Polyline -> Double
-orientation (Open _) = error "undefined orientation of open polyline"
-orientation (Closed l) = -0.5 * orientation' (last l:l)
+orientedArea :: Polyline -> Double
+orientedArea (Open _) = error "undefined orientation of open polyline"
+orientedArea (Closed l) = -0.5 * orientation' (last l:l)
 
 orientation' [_] = 0
 orientation' (Point x1 y1:r@(Point x2 y2:_)) = x1*y2-x2*y1 + orientation' r
@@ -235,13 +237,13 @@ criticalPoint eps2 p1 p2 p3s = r where
         then Just p3
         else Nothing
 
----------------------------------------------------------------------------
+----------------------------------------------------------------------
 
 asSegments :: Polyline -> [Segment]
 asSegments (Open ps') = zipWith Segment ps' (tail ps')
 asSegments (Closed ps) = asSegments $ Open $ ps++[head ps]
 
---asSegmentsClosed ps = zipWith Segment ps' (tail ps') where ps' = ps++[head ps]
+----------------------------------------------------------------------
 
 auxContour (s,sx,sy,sx2,sy2,sxy) seg@(Segment (Point x1 y1) (Point x2 y2))
     = (s+l,
@@ -381,8 +383,8 @@ inter l1 l2 = Point x y where [x,y] = toList $ inHomog (cross l1 l2)
 
 tryPolygon eps n poly = if abs((a1-a2)/a1) < eps then [r] else []
     where r = reducePolygonTo n poly
-          a1 = orientation poly
-          a2 = orientation r
+          a1 = orientedArea poly
+          a2 = orientedArea r
 
 selectPolygons eps n = concat . map (tryPolygon eps n)
 
@@ -618,7 +620,6 @@ invFou n w fou = Closed r where
     r = map c2p $ toList $ ifft (fromIntegral n *f)
     c2p (x:+y) = Point x y
 
-
 ----------------------------------------------------------------------
 
 convexHull :: [Point] -> [Point]
@@ -639,4 +640,27 @@ convexHull ps = go [q0] rs
 
     isLeft p1@(Point x1 y1) p2@(Point x2 y2) p3@(Point x3 y3) = 
         (x2 - x1)*(y3 - y1) - (y2 - y1)*(x3 - x1) > 0
+
+----------------------------------------------------------------------
+
+bounding :: Polyline -> Polyline
+bounding p = Closed [Point x2 y2, Point x1 y2, Point x1 y1, Point x2 y1] 
+  where
+    x1 = minimum xs
+    x2 = maximum xs
+    y1 = minimum ys
+    y2 = maximum ys
+    xs = map px (polyPts p)
+    ys = map py (polyPts p)
+
+roi2poly :: Size -> ROI -> Polyline
+roi2poly sz (ROI r1 r2 c1 c2) = Closed $ pixelsToPoints sz p
+  where
+    p = [Pixel r1 c1, Pixel r1 c2, Pixel r2 c2, Pixel r2 c1]
+
+poly2roi :: Size -> Polyline -> ROI
+poly2roi sz p = ROI r1 r2 c1 c2
+  where
+    (Closed [p1,_,p3,_]) = bounding p
+    [Pixel r1 c1, Pixel r2 c2] = pointsToPixels sz [p1,p3]
 

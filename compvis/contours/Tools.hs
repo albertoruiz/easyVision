@@ -442,15 +442,6 @@ normalShape c = transPol h c -- (h<>rotAround x y (-pi/2)) c
 
 rotAround x y a = desp (x,y) <> rot3 a <> desp (-x,-y)
 
-bounding p = Closed [Point x2 y2, Point x1 y2, Point x1 y1, Point x2 y1] 
-  where
-    x1 = minimum xs
-    x2 = maximum xs
-    y1 = minimum ys
-    y2 = maximum ys
-    xs = map px (polyPts p)
-    ys = map py (polyPts p)
-
 boxShape c = transPol h c
   where
     Closed [Point x2 y2, _, Point x1 y1, _] = bounding c
