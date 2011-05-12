@@ -45,6 +45,8 @@ library
                         EasyVision.MiniApps.RegionMarker
                         EasyVision.MiniApps.Browser
                         EasyVision.MiniApps.Zoom
+                        EasyVision.MiniApps.OCR
+
     other-modules:
 
     ghc-prof-options:   -auto-all

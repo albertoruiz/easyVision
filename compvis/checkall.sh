@@ -5,6 +5,9 @@ make ghci
 cd ../contours
 make ghci
 
+cd ../lkt
+make ghci
+
 cd ../pano
 make ghci
 

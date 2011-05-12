@@ -34,7 +34,8 @@ module EasyVision.MiniApps (
     module EasyVision.MiniApps.RegionMarker,
     module EasyVision.MiniApps.Misc,
     module EasyVision.MiniApps.Browser,
-    module EasyVision.MiniApps.Zoom
+    module EasyVision.MiniApps.Zoom,
+    module EasyVision.MiniApps.OCR
 )where
 
 import Graphics.UI.GLUT as GL hiding (Size,Point,Matrix,matrix)
@@ -77,6 +78,7 @@ import EasyVision.MiniApps.RegionMarker
 import EasyVision.MiniApps.Misc
 import EasyVision.MiniApps.Browser
 import EasyVision.MiniApps.Zoom
+import EasyVision.MiniApps.OCR
 
 -- | reads a labeled video
 readCatalog :: String -> Size -> String -> Maybe Int -> (ImageYUV-> a) -> IO [(a,String)]
