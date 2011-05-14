@@ -17,7 +17,12 @@ module Features.Polyline (
     Polyline(..),
     perimeter,
     area, orientedArea,
+-- * Normalization
+    centerShape,
+    normalShape,
+    boxShape,
     whitenContour, whitener, equalizeContour,
+-- * Fourier Transform
     fourierPL, invFou, normalizeStart, shiftStart,
     norm2Cont,
 -- * K orientation
@@ -663,4 +668,27 @@ poly2roi sz p = ROI r1 r2 c1 c2
   where
     (Closed [p1,_,p3,_]) = bounding p
     [Pixel r1 c1, Pixel r2 c2] = pointsToPixels sz [p1,p3]
+
+----------------------------------------------------------------------
+
+-- | centered
+centerShape :: Polyline -> Polyline
+centerShape c = transPol h c
+ where
+   (x,y,_,_,_) = momentsContour (polyPts c)
+   h = desp (-x,-y)
+
+-- | centered and unit max std
+normalShape :: Polyline -> Polyline
+normalShape c = transPol h c
+ where
+   (x,y,sx,sy,_) = momentsContour (polyPts c)
+   h = scaling (1/ sqrt( max sx sy)) <> desp (-x,-y)
+
+-- | centered and the middle of bounding box of height 2
+boxShape :: Polyline -> Polyline
+boxShape c = transPol h c
+  where
+    Closed [Point x2 y2, _, Point x1 y1, _] = bounding c
+    h = scaling (2/(y2-y1)) <> desp (-(x1+x2)/2,-(y1+y2)/2)
 

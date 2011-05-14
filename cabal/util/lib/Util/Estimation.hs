@@ -23,6 +23,8 @@ module Util.Estimation
 -- * Other
 , robustLocation
 , withNormalization
+, intersectionManyLines
+, mseLine
   -- * 2D Homography estimation
 , estimateHomographyRaw
 , estimateHomography
@@ -34,7 +36,7 @@ import Util.Covariance
 import Util.Homogeneous
 import Data.List(transpose,nub,maximumBy,genericLength,sortBy,minimumBy)
 import System.Random
-import Util.Misc(norm,mat,vec,Mat,Vec,splitEvery,impossible,posMax,debug)
+import Util.Misc(norm,mat,vec,Mat,Vec,splitEvery,impossible,posMax,debug,unitary)
 import Data.Function(on)
 
 
@@ -189,4 +191,22 @@ robustLocation dis l = mins where
     dst = transpose ds
     ds = map getdis l
     getdis p = sortBy (compare `on` snd) [(p, dis p y) | y<-l]
+
+----------------------------------------------------------------------
+
+-- hmm, algebraic error
+-- [Vec3]->HPoint2
+intersectionManyLines :: [Vec] -> Vec
+intersectionManyLines ls | length ls > 1 = fst (homogSolve a)
+                         | otherwise = vec [0,0,1]
+  where a = fromRows $ map unitary ls
+
+-- [Point2] -> Line2
+-- | line passing through several points
+mseLine :: [Point] -> [Double]
+mseLine ps
+    | length ps < 2 = error "mseLine with < 2 points"
+    | otherwise = (toList . fst) (homogSolve a)
+  where
+    a = fromRows (map pt2hv ps)
 

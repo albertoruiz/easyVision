@@ -19,11 +19,8 @@ module Tools(
     rectifierFromAffineHomogs, refineTangent, refineTangentImage,
     -- * Digit tools
     fixOrientation, horizontalGroups, drawTree,
-    -- * Other tools
-    intersectionManyLines, mseLine, pt2hv, hv2pt,
     -- * Display
-    shapeCatalog, normalShape, centerShape, boxShape,
-    examplesBrowser, imagesBrowser, shapesBrowser,
+    examplesBrowser, imagesBrowser,
     shcont, shcontO,
     rotAround,
     -- * Prototypes
@@ -35,7 +32,8 @@ import EasyVision as EV
 import Graphics.UI.GLUT hiding (Point,Size,scale,samples)
 import Util.Misc(diagl,degree,Vec,vec,norm,debug,diagl,memo,Mat,mat,norm,
                  unionSort,replaceAt,mean,median,unitary,pairsWith,kruskal,neigh)
-import Util.Estimation(homogSolve)
+import Util.Estimation(homogSolve,intersectionManyLines)
+import Util.Homogeneous(pt2hv,hv2pt)
 import Util.Covariance(meanV,covStr)
 import Util.Rotation(rot3,rot1)
 import Control.Arrow
@@ -350,59 +348,6 @@ icaAngles2 w = [head as, last as]
   where as = icaAngles w
 
 ----------------------------------------------------------------------
-----------------------------------------------------------------------
-
-shapeCatalog prepro gprot feat' cam = do
-    raw <- gprot
-    let feat = feat' . map (prepro *** id)
-        prototypes = feat raw
-    (cam',ctrl) <- withPause cam
-    w <- evWindow (raw,prototypes,Nothing,False) "Contour Selection" (mpSize 10) Nothing (marker (kbdcam ctrl))
-    s <- shapesBrowser "Shape" (EV.Size 240 240) raw
-    return $ do
-        (raw',prots',click,save) <- getW w
-        (im,cs) <- cam'
-        let sz = size im -- required to avoid space leak !?
-            (raw,prots) = case click of
-                Nothing -> (raw',prots')
-                Just pix  -> let [pt] = pixelsToPoints sz [pix]
-                                 newc = (normalShape $ closestTo pt cs, "?" ++ show (length prots' + 1))
-                           in (newc:raw', feat [newc] ++ prots')
-        when (isJust click) $ putW s (0, raw) >> postRedisplay (Just (evW s))
-        inWin w $ do
-            drawImage' im
-            pointCoordinates sz
-            text2D 0.9 0.6 $ show (length cs)
-            setColor' orange
-            mapM_ shcont cs
-            
-        when save $ writeFile "shapes.txt" (show raw)
-        putW w (raw,prots,Nothing,False)
-        return (im,cs,prots)
-  where
-    marker _ st (MouseButton LeftButton) Down _ pos@(Position x y) = do
-        (r,p,_,_) <- readIORef st
-        let clicked = Pixel (fromIntegral y) (fromIntegral x)
-        writeIORef st (r,p, Just clicked, False)
-
-    marker _ st (Char 'S') Down _ _ = do
-        (r,p,_,_) <- readIORef st
-        writeIORef st (r,p, Nothing, True)
-
-    marker def _ a b c d = def a b c d
-
-    closestTo pt = minimumBy (compare `on` (d pt))
-      where
-        d p c = distPoints p (cen c)
-        cen (Closed c) = Point cx cy where (cx,cy,_,_,_) = momentsContour c
-
-
-shapesBrowser :: String -> EV.Size -> Sample Polyline -> IO (EVWindow (Int, Sample Polyline))
-shapesBrowser name sz = examplesBrowser name sz f
-  where
-    f = shcont . transPol (diagl[-0.2,0.2,1]) . whitenContour
-
-----------------------------------------------------------------------
 
 testLoad path = do
     xs <- readFolder' path
@@ -430,43 +375,9 @@ shcontO (Closed c) = do
 
 ----------------------------------------------------------------------
 
-centerShape c = transPol h c -- (h<>rotAround x y (-pi/2)) c
- where
-   (x,y,_,_,_) = momentsContour (polyPts c)
-   h = desp (-x,-y)
-
-normalShape c = transPol h c -- (h<>rotAround x y (-pi/2)) c
- where
-   (x,y,sx,sy,_) = momentsContour (polyPts c)
-   h = scaling (1/ sqrt( max sx sy)) <> desp (-x,-y)
-
 rotAround x y a = desp (x,y) <> rot3 a <> desp (-x,-y)
 
-boxShape c = transPol h c
-  where
-    Closed [Point x2 y2, _, Point x1 y1, _] = bounding c
-    h = scaling (2/(y2-y1)) <> desp (-(x1+x2)/2,-(y1+y2)/2)
-  
-----------------------------------------------------------------------
-
 mt m = trans (inv m)
-
-----------------------------------------------------------------------
-
--- hmm, algebraic error
--- [Vec3]->HPoint2
-intersectionManyLines :: [Vec] -> Vec
-intersectionManyLines ls | length ls > 1 = fst (homogSolve a)
-                         | otherwise = vec [0,0,1]
-  where a = fromRows $ map unitary ls
-
--- [Point2] -> Line2
-mseLine :: [Point] -> [Double]
-mseLine ps
-    | length ps < 2 = error "mseLine with < 2 points"
-    | otherwise = (toList . fst) (homogSolve a)
-  where
-    a = fromRows (map pt2hv ps)
 
 ----------------------------------------------------------------------
 
@@ -480,9 +391,6 @@ rectifierFromHorizon f h = rectifier rho yh f
     Point x y = hv2pt nh
     yh = sqrt (x*x+y*y)
     rho = atan2 x y
-
-pt2hv (Point x y) = vec [x,y,1]
-hv2pt v = Point x y where [x,y] = toList (inHomog v)
 
 ----------------------------------------------------------------------
 

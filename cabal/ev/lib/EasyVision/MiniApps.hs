@@ -22,7 +22,7 @@ module EasyVision.MiniApps (
     panoramic,
     --module EasyVision.MiniApps.Corners,
     getCornerDetector, cornerMonitor,
-    ContourInfo(..), wcontours, contourMonitor,
+    module EasyVision.MiniApps.Contours,
     module EasyVision.MiniApps.CornerTracker,
     module EasyVision.MiniApps.SignalMonitor,
     module EasyVision.MiniApps.Combinators,
@@ -70,7 +70,7 @@ import EasyVision.MiniApps.Corners
 import EasyVision.MiniApps.CornerTracker
 import EasyVision.MiniApps.SignalMonitor
 import EasyVision.MiniApps.PoseTracker
-import EasyVision.MiniApps.Contours
+import EasyVision.MiniApps.Contours hiding (ContourParam(..))
 import EasyVision.MiniApps.ScatterPlot
 import EasyVision.MiniApps.Static
 import EasyVision.MiniApps.Save

@@ -8,7 +8,7 @@ import Control.Monad(when,ap)
 import Data.Colour.Names as Col
 import Vision(desp, cross, estimateHomography,cameraFromHomogZ0, homog, inHomog,
               cameraFromAffineHomogZ0,factorizeCamera,ht,cameraAtOrigin,
-              similarFrom2Points, scaling)
+              similarFrom2Points, scaling, intersectionManyLines)
 import Numeric.LinearAlgebra -- ((<>),fromList,toList,fromComplex,join,dim)
 import Data.List(sortBy,minimumBy,groupBy,sort,zipWith4,transpose)
 import Data.Function(on)

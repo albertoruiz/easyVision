@@ -40,6 +40,7 @@ module Util.Homogeneous
 , normat3
 -- * Utilities
 , similarFrom2Points
+, pt2hv, hv2pt
 ) where
 
 import Numeric.LinearAlgebra
@@ -224,4 +225,10 @@ similarFrom2Points [ax,ay] [bx,by] [a'x,a'y] [b'x,b'y] = t where
     ang = atan2 (b'y-a'y) (b'x-a'x) - atan2 (by-ay) (bx-ax)
     t = desp (a'x,a'y) <> rot3 (-ang) <> scaling s <> desp (-ax,-ay)
 similarFrom2Points _ _ _ _ = impossible "similarFrom2Points"
+
+pt2hv :: Point -> Vec
+pt2hv (Point x y) = vec [x,y,1]
+
+hv2pt :: Vec -> Point
+hv2pt v = Point x y where [x,y] = toList (inHomog v)
 
