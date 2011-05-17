@@ -41,8 +41,8 @@ import Control.Applicative((<$>),(<*>))
 import Control.Monad(when,ap)
 import Data.Colour.Names as Col
 import Vision (desp, scaling, estimateHomography, ht, cross, homog,
-               inHomog,circularConsistency,focalFromCircularPoint,similarFrom2Points,
-               kgen,mS, cameraFromAffineHomogZ0,estimateFundamentalRaw)
+               inHomog,circularConsistency,focalFromCircularPoint,
+               kgen,mS, cameraFromAffineHomogZ0,estimateFundamentalRaw,adjustRectifier)
 import Numeric.LinearAlgebra -- ((<>),fromList,toList,fromComplex,join,dim)
 import Data.List(sortBy,minimumBy,groupBy,sort,zipWith4,partition,transpose,foldl',group)
 import Data.Function(on)
@@ -401,7 +401,7 @@ rectifyMon sz cam = do wr <- evWindow () "Rectify omega" (Size 400 400)Nothing (
     h (d,((c,m),l)) = trans (inv m) <> diagl [1,1,-1] <> (inv m)
     f (d,((c,m),l)) = do
         let ellip = transPol m unitCircle
-            ((mx,my,dx,dy,alpha),_) = analyzeEllipse (estimateConicRaw $ polyPts ellip)
+            InfoEllipse {conicCenter = (mx,my), conicSizes = (dx,dy), conicAngle = alpha} = analyzeEllipse (estimateConicRaw $ polyPts ellip)
         setColor' red
         shcont ellip
         shcont $ transPol (rotAround mx my (-alpha)) (Closed [Point (mx+1*dx) my, Point (mx-1*dx) my])
@@ -413,13 +413,13 @@ rectifyMon sz cam = do wr <- evWindow () "Rectify omega" (Size 400 400)Nothing (
         mapM_ (f.g) oks        
         let gc (d, (x,b,u,a,v,l)) = d -- abs (orientation x)
             ellipMat = map (h.g) (sortBy (compare `on` gc) oks)
-            ellipses = map (fst.analyzeEllipse) ellipMat
+            ellipses = map analyzeEllipse ellipMat
             improve = id
             sc = 0.5
             orig = im
         when (length ellipMat >= 2) $ do
             let sol = intersectionEllipses (ellipMat!!0) (ellipMat!!1)
-                (mbij,mbother) = selectSol (ellipses!!0) (ellipses!!1) sol
+                (mbij,mbother) = selectSol (conicCenter (ellipses!!0)) (conicCenter (ellipses!!1)) sol
             when (isJust mbij && isJust mbother) $ do
                 let Just ijr    = mbij
                     ij = improve ijr
@@ -449,11 +449,9 @@ rectifyMon sz cam = do wr <- evWindow () "Rectify omega" (Size 400 400)Nothing (
 
                 let recraw = rectifierFromCircularPoint ij
                              --rectifierFromManyCircles id (ellipMat)
-                    nsz (_,_,dx,dy,_) = -dx-dy
-                    (mx,my,_,_,_):(mx2,my2,_,_,_):_ = sortBy (compare `on` nsz) ellipses
-                    [[mx',my'],[mx'2,my'2]] = ht recraw [[mx,my],[mx2,my2]]
-                    -- okrec = similarFrom2Points [mx',my'] [mx'2,my'2] [0,0] [-0.5, 0] <> recraw
-                    okrec = similarFrom2Points [mx',my'] [mx'2,my'2] [mx,my] [mx2, my2] <> recraw
+                    nsz InfoEllipse {conicSizes = (dx,dy)} = -dx-dy
+                    (mx,my):(mx2,my2):_ = map conicCenter $ sortBy (compare `on` nsz) ellipses
+                    okrec = adjustRectifier recraw [mx,my] [mx2, my2]
                 
                     --drawImage $ warp 0 sz' (scaling sc <> w) (grayscale orig)
                 inWin wr $ drawImage $ warp 0 (Size 400 400) (scaling sc <> okrec ) ( orig)
@@ -480,16 +478,13 @@ tryMetric (im,oks) = (im,oks')
     g (d, (x,b,_,a,_,l)) = (d,((x, inv b <> a),l))
     h (_,((_,m),_)) = trans (inv m) <> diagl [1,1,-1] <> (inv m)
     gc (d, (x,_,_,_,_,l)) = d -- abs (orientation x)
-    ellipMat = map (h.g) (sortBy (compare `on` gc) oks)
-    ellipses = map (fst.analyzeEllipse) ellipMat
-    sol = intersectionEllipses (ellipMat!!0) (ellipMat!!1)
-    (mbij,_) = selectSol (ellipses!!0) (ellipses!!1) sol
+    ellipses = map (analyzeEllipse.h.g) (sortBy (compare `on` gc) oks)
+    mbij = imagOfCircPt (ellipses!!0) (ellipses!!1)
     Just ij = mbij
     recraw = rectifierFromCircularPoint ij
-    nsz (_,_,dx,dy,_) = -dx-dy
-    (mx,my,_,_,_):(mx2,my2,_,_,_):_ = sortBy (compare `on` nsz) ellipses
-    [[mx',my'],[mx'2,my'2]] = ht recraw [[mx,my],[mx2,my2]]
-    okrec = similarFrom2Points [mx',my'] [mx'2,my'2] [mx,my] [mx2, my2] <> recraw
+    nsz InfoEllipse {conicSizes = (dx,dy)} = -dx-dy
+    (mx,my):(mx2,my2):_ = map conicCenter $ sortBy (compare `on` nsz) ellipses
+    okrec = adjustRectifier recraw [mx,my] [mx2, my2]
     rectif = if length oks > 1 && isJust mbij then okrec else ident 3
     f (d, (x,b,u,a,v,l)) = (d', (x,b'<>rectif,u',a',v',l'))
       where

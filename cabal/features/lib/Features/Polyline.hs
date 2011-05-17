@@ -22,6 +22,7 @@ module Features.Polyline (
     normalShape,
     boxShape,
     whitenContour, whitener, equalizeContour,
+    isEllipse,
 -- * Fourier Transform
     fourierPL, invFou, normalizeStart, shiftStart,
     norm2Cont,
@@ -691,4 +692,16 @@ boxShape c = transPol h c
   where
     Closed [Point x2 y2, _, Point x1 y1, _] = bounding c
     h = scaling (2/(y2-y1)) <> desp (-(x1+x2)/2,-(y1+y2)/2)
+
+----------------------------------------------------------------------
+
+-- | checks if a polyline is very similar to an ellipse.
+isEllipse :: Int -- ^ tolerance (per 1000 of total energy) (e.g. 10)
+          -> Polyline -> Bool
+isEllipse tol c = (ft-f1)/ft < fromIntegral tol/1000 where
+    wc = whitenContour c   -- required?
+    f  = fourierPL wc
+    f0 = magnitude (f 0)
+    f1 = sqrt (magnitude (f (-1)) ^2 + magnitude (f 1) ^2)
+    ft = sqrt (norm2Cont wc - f0 ^2)
 

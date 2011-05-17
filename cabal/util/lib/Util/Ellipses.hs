@@ -11,10 +11,10 @@
 --
 -----------------------------------------------------------------------------
 
-module Util.Ellipses (
-    EllipseParams,
-    analyzeEllipse,
+module Util.Ellipses ( 
+    InfoEllipse(..), analyzeEllipse,
     intersectionEllipses,
+    tangentEllipses,
     estimateConicRaw,
     conicPoints
 ) where
@@ -22,14 +22,9 @@ module Util.Ellipses (
 import Numeric.LinearAlgebra
 import Numeric.GSL.Polynomials
 import Util.Homogeneous
-import Util.Misc(mat,Mat,diagl)
+import Util.Misc(mat,Mat,diagl,mt,impossible)
 import Util.Estimation(homogSolve)
 import Util.Rotation(rot3)
-
---------------------------------------------------------------------
-
-mt :: Mat -> Mat
-mt m = trans (inv m)
 
 --------------------------------------------------------------------
 
@@ -48,11 +43,21 @@ estimateConicRaw ps = con where
 
 --------------------------------------------------------------------
 
--- | (mx,my,dx,dy,alpha)
-type EllipseParams = (Double,Double,Double,Double,Double) 
+data InfoEllipse = InfoEllipse {
+    conicCenter :: (Double,Double),
+    conicSizes  :: (Double,Double),
+    conicAngle  :: Double,
+    conicMatrix :: Mat,
+    conicTrans  :: Mat }
 
-analyzeEllipse :: Mat -> (EllipseParams,Mat)
-analyzeEllipse m = ((mx,my,dx,dy,alpha),t) where
+analyzeEllipse :: Mat -> InfoEllipse
+analyzeEllipse m = InfoEllipse {
+    conicCenter = (mx,my),
+    conicSizes  = (dx,dy),
+    conicAngle  = alpha,
+    conicMatrix = m,
+    conicTrans  = t }
+  where 
     a = m@@>(0,0)
     b = m@@>(1,1)
     c = m@@>(0,1)
@@ -86,7 +91,7 @@ reduceConics c1 c2 = (w, c2') where
     sg = signum s
     p = (if sg@>1 < 0 then flipud else id) (ident 3)
     w1 = mt $ p <> diag (sg / sqrt (abs s)) <> trans v
-    (mx,my,_,_,a) = fst $ analyzeEllipse (mt w1 <> c2 <> inv w1)
+    InfoEllipse {conicCenter = (mx,my), conicAngle = a} = analyzeEllipse (mt w1 <> c2 <> inv w1)
     w2 = chooseRot mx my a
     w = w2 <> w1
     c2' = mt w <> c2 <> inv w
@@ -152,7 +157,7 @@ intersectionCommonCenter (a,b) = [s1,s2,s3,s4] where
     s4 = [ p, q]
 
 intersectionEllipses :: Mat-> Mat -> [(Complex Double, Complex Double)]
-intersectionEllipses c1 c2 = map (\[x,y]->(x,y)) sol where
+intersectionEllipses c1 c2 = map l2t sol where
     (w, c2') = reduceConics c1 c2
     a = c2'@@>(0,0)
     b = c2'@@>(1,1)
@@ -161,10 +166,17 @@ intersectionEllipses c1 c2 = map (\[x,y]->(x,y)) sol where
     sol = if abs(d/a) > 1E-6
         then htc (complex $ inv w) $ intersectionReduced (getCoeffs c2')
         else htc (complex $ inv w) $ intersectionCommonCenter ((a/f):+0,(b/f):+0)
+    l2t [x,y] = (x,y)
+    l2t _ = impossible "l2t"
 
 
-conicPoints :: Int -> EllipseParams -> [Point]
-conicPoints n (mx,my,d1,d2,a) = xs where
+tangentEllipses :: Mat-> Mat -> [[Complex Double]]
+tangentEllipses c1 c2 = map t2l $ intersectionEllipses (inv c1) (inv c2)
+  where t2l (a,b) = [a,b,1]
+
+
+conicPoints :: Int -> InfoEllipse -> [Point]
+conicPoints n InfoEllipse {conicCenter = (mx,my), conicSizes = (d1,d2), conicAngle = a} = xs where
     xs = map pt ts
     ts = tail $ toList $ linspace n (0,2*pi)
     pt t = Point (mx + x*cos a - y*sin a) (my + x*sin a + y*cos a)

@@ -33,6 +33,7 @@ module EasyVision.GUI.Draw
 , newTrackball
 , captureGL
 , evSize, glSize
+, renderPolyline
 ) where
 
 import Graphics.UI.GLUT hiding (RGB, Matrix, Size, Point)
@@ -393,4 +394,12 @@ evSize (GL.Size w h) = Size    (t h) (t w) where t = fromIntegral.toInteger
 -- | converts a 'Size' into an OpenGL Size.
 glSize :: Size -> GL.Size
 glSize (Size    h w) = GL.Size (t w) (t h) where t = fromIntegral.toInteger
+
+----------------------------------------------------------------------
+
+renderPolyline :: Polyline -> IO ()
+renderPolyline c@(Closed _) = renderPrimitive LineLoop (vertex c)
+renderPolyline c@(Open _) = renderPrimitive LineStrip (vertex c)
+
+----------------------------------------------------------------------
 

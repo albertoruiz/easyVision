@@ -8,7 +8,7 @@ import Util.Misc(randomPermutation,vec,debug,degree)
 import Util.Homogeneous(homog,inHomog)
 import Vision(cross,mS)
 import Util.Estimation(ransac)
-import Util.Ellipses(conicPoints)
+import Util.Ellipses(conicPoints,InfoEllipse(..))
 
 ----------------------------------------------------------------------
 
@@ -27,7 +27,9 @@ points sigma m n = do
 
 noisy seed sigma m = m + scalar sigma * reshape (cols m) (randomVector seed Gaussian (rows m*cols m))
 
-circle m = fromLists $ map p2l $ conicPoints m (0,0,0.5,0.5,0)
+circlePoints n (x,y,r) = conicPoints n InfoEllipse {conicCenter = (x,y), conicSizes = (r,r), conicAngle = 0, conicTrans = undefined, conicMatrix = undefined}
+
+circle m = fromLists $ map p2l $ circlePoints m (0,0,0.5)
   where p2l (Point x y) = [x,y]
 
 estimateLine = ransac estimator inlier 2 0.99
@@ -94,5 +96,5 @@ disp0 pts _ = do
     setColor 0 0 0
     renderPrimitive Points $ mapM_ vertex pts
 
-shCircle [x,y,r] = renderPrimitive LineLoop $ vertex $ Closed $ conicPoints 35 (x,y,r,r,0)
+shCircle [x,y,r] = renderPrimitive LineLoop $ vertex $ Closed $ circlePoints 35 (x,y,r)
 

@@ -12,8 +12,8 @@ Maintainer  :  Alberto Ruiz (aruiz at um dot es)
 
 module EasyVision.MiniApps.Contours (
     ContourParam(..), winContourParam, argContourParam, defContourParam,
-    ContourInfo(..), smartContours, contourMonitor, wcontours,
-    renderPolyline,
+    ContourInfo(..), smartContours,
+    wcontours, contourMonitor, 
     shapeCatalog
 ) where
 
@@ -51,6 +51,7 @@ defContourParam :: ContourParam
 argContourParam :: IO ContourParam
 winContourParam :: IO (IO ContourParam)
 
+-- | find closed contours
 wcontours :: (x -> ImageGray) -> IO x ->  IO (IO (x, ContourInfo))
 wcontours g = smartContours g .@. winContourParam
 
@@ -91,17 +92,21 @@ data ContourInfo = ContourInfo {
 
 ----------------------------------------------------------------------
 
-contourMonitor :: (Image t, Drawable t) 
-               => String
-               -> IO ()
-               -> IO (t, ContourInfo)
-               -> IO (IO (t, ContourInfo))
-contourMonitor winname f = monitor winname (mpSize 20) sh where
-    sh (im, cs) = do
+-- | to be optionally used after wcontours
+contourMonitor :: String
+               -> (x -> ImageGray)  -- ^ selector
+               -> IO ()             -- ^ graphic primitives previous to renderPolyline
+               -> (x -> [Polyline]) -- ^ selector
+               -> IO x
+               -> IO (IO x)
+contourMonitor winname selImg f selCont = monitor winname (mpSize 10) sh where
+    sh x = do
+        let im = selImg x
+            cs = selCont x
         drawImage' im
         pointCoordinates (size im)
         f
-        mapM_ renderPolyline (contSel cs)
+        mapM_ renderPolyline cs
 
 ----------------------------------------------------------------------
 
@@ -160,12 +165,6 @@ shapeCatalog prepro gprot feat' cam = do
     shapesBrowser name sz = examplesBrowser name sz f
       where
         f = renderPolyline . transPol (diagl[-0.4,0.4,1]) . normalShape
-
-----------------------------------------------------------------------
-
-renderPolyline :: Polyline -> IO ()
-renderPolyline c@(Closed _) = renderPrimitive LineLoop (vertex c)
-renderPolyline c@(Open _) = renderPrimitive LineStrip (vertex c)
 
 ----------------------------------------------------------------------
 

@@ -1,190 +1,147 @@
--- ellipse detection and similar rectification from the images of circles
-
-import EasyVision hiding ((.*))
-import Graphics.UI.GLUT hiding (RGB,Size,minmax,histogram,Point,set,Matrix)
-import qualified Data.Colour.Names as Col
-import Numeric.GSL.Fourier
-import Numeric.LinearAlgebra
---import Complex
+import EasyVision hiding (c1,c2)
+import Control.Arrow((***),(&&&))
+import Control.Applicative((<$>))
+import Data.Traversable(traverse)
 import Control.Monad(when)
-import Data.List(sortBy)
-import Util.Misc(degree,unitary)
-import Vision.Camera
+import Data.Colour.Names(red,yellow,orange,purple)
+import Graphics.UI.GLUT hiding (Point, Size)
 import Util.Ellipses
-import Numeric.GSL.Minimization
-import Text.Printf
+import Data.List(sortBy)
 import Data.Maybe(isJust)
-import Util.Homogeneous
+import Util.Misc(Mat,mt,diagl,degree)
+import Numeric.LinearAlgebra
+import Vision
+import Text.Printf(printf)
 
-import Util.Misc(Mat,pairsWith,debug,mean,diagl)
-import Util.Covariance(covStr,meanV)
-import Data.Maybe(catMaybes)
-import Data.Colour.Names as Col hiding (gray)
 
-sz' = Size 600 600
+main = run $ camera ~> grayscale
+            >>= wcontours id ~> (id *** contSel)
+            >>= contourMonitor "all contours" fst (lineWidth $= 3 >> setColor' red) snd
+            ~>  findEllipses
+            >>= contourMonitor "detected ellipses" fst (lineWidth $= 3 >> setColor' yellow) snd
+            ~>  modelEllipses
+            >>= contourMonitor "model conics" fst (lineWidth $= 3 >> setColor' orange) (map (Closed . conicPoints 50) . snd)
+            ~>  computeRectifier
+            >>= observe "rectified" (\(im,(_,h)) -> warp zeroP (Size 600 600) h im)
+            >>= showThings
+            >>= poseMonitor
+            >>= timeMonitor
 
-main = do
+----------------------------------------------------------------------
 
-    sz <- findSize
+findEllipses :: (c, [Polyline]) -> (c, [Polyline])
+findEllipses = (id *** sortBy (compare `on` negate . area) . filter (isEllipse 5))
 
-    (cam, ctrl)  <- getCam 0 sz  ~> channels >>= withPause
+modelEllipses :: (c, [Polyline]) -> (c, [InfoEllipse])
+modelEllipses = (id *** map (analyzeEllipse . estimateConicRaw . polyPts))
+ 
+computeRectifier :: (c, [InfoEllipse]) -> (c, ([InfoEllipse],Mat))
+computeRectifier = (id *** (id &&& rectifierFromCircles) )    
 
-    prepare
+----------------------------------------------------------------------
 
-    o <- createParameters [("threshold",intParam 128 1 255),
-                           ("area",percent 5),
-                           ("tolerance",percent 10),
-                           ("fracpix",realParam 0.8 0 10),
-                           ("scale", realParam 1 0 5),
-                           ("method", intParam 1 1 2)]
+rectifierFromCircles :: [InfoEllipse] -> Mat
 
-    w  <- evWindow () "Ellipses" sz  Nothing (const (kbdcam ctrl))
+rectifierFromCircles [] = ident 3
+rectifierFromCircles [_] = ident 3
+
+rectifierFromCircles [e1,e2] = rectif
+  where
+    mbij = imagOfCircPt e1 e2
+    Just ij = mbij
+    recraw = rectifierFromCircularPoint ij
+    [(mx,my),(mx2,my2)] = map conicCenter [e1,e2]
+    rec = adjustRectifier' recraw [mx,my] [mx2,my2]
+    rectif = if isJust mbij then rec else ident 3
+
+-- provisional
+rectifierFromCircles es = rectifierFromCircles (take 2 es)
+
+----------------------------------------------------------------------
+
+adjustRectifier' r p1 p2 = s <> r
+  where
+    [p1',p2'] = ht r [p1,p2]
+    s = similarFrom2Points p1' p2' [0,0] [0.5,0]
+
+----------------------------------------------------------------------
+
+showThings :: IO (ImageGray, ([InfoEllipse], Mat)) -> IO (IO (ImageGray, ([InfoEllipse], Mat)))
+showThings c = do
+    m <- monitorWheel (0,3) "misc" (mpSize 10) sh c
     depthFunc $= Just Less
-    wr <- evWindow () "Rectif"   sz' Nothing (const (kbdcam ctrl))
-
-    launch (worker w wr cam o)
-
------------------------------------------------------------------
-
-worker w wr cam param = do
-
-    th2 <- fromIntegral `fmap` (getParam param "threshold" ::IO Int)
-    area <- getParam param "area"
-    fracpix <- getParam param "fracpix"
-    tol <- getParam param "tolerance"
-    sc  <- getParam param "scale"
-    method  <- getParam param "method" :: IO Int
-    alpha <- getParam param "alpha" :: IO Double
-
-    orig <- cam
-
-    inWin w $ do
+    return m
+  where
+    sh k (img,(es,rec)) = do
         clear [DepthBuffer]
-        drawImage (gray orig)
+        drawImage' img
         clear [DepthBuffer]
-        let (Size h w) = size (gray orig)
-            pixarea = h*w*area`div`1000
-            redu = Closed . pixelsToPoints (size $ gray orig). douglasPeuckerClosed fracpix
-            cs1 = map (redu.fst3) $ contours 100 pixarea th2 True (gray orig)
-            cs2 = map (redu.fst3) $ contours 100 pixarea th2 False (gray orig)
-            candidates = cs1++cs2
-            rawellipses = sortBy (compare `on` (negate.perimeter))
-                        . filter (isEllipse tol)
-                        $ candidates
-            est (Closed ps) = estimateConicRaw ps
-            ellipMat = map est rawellipses
-            ellipses = map (fst.analyzeEllipse) ellipMat
-        pointCoordinates (size $ gray orig)
-        lineWidth $= 1
-        setColor' Col.yellow
-        mapM_ shcont candidates
-        setColor' Col.red
-        lineWidth $= 3
-        mapM_ (shcont . Closed . conicPoints 50) ellipses
-        when (length ellipses >= 2) $ do
-            let improve = if method == 1 then id else flip improveCirc ellipMat
-            let sol = intersectionEllipses (ellipMat!!0) (ellipMat!!1)
-                (mbij,mbother) = selectSol (ellipses!!0) (ellipses!!1) sol
-            when (isJust mbij && isJust mbother) $ do
-                let Just ijr    = mbij
-                    ij = improve ijr
-                    Just other = mbother
-                    [h1,h2] = getHorizs [ij,other]
-                lineWidth $= 1
-                setColor' Col.blue
-                shLine h1
-                setColor' Col.yellow
-                shLine h2
+        pointCoordinates (size img)
+        when (length es >= 2) $ do
+            let [e1,e2] = take 2 es
+                [c1,c2] = map conicMatrix [e1,e2]
+            
+            when (k `elem` [0,1]) $ do
+                setColor' orange
+                mapM_ shLine $ map (map realPart) $ tangentEllipses c1 c2
+
+                -- invariant of two conics
+                setColor' yellow
                 pointSize $= 5
-                setColor' Col.purple
-                renderPrimitive Points $ mapM (vertex.map realPart.t2l) [ij,other]
-                setColor' Col.green
-                mapM_ shLine $ map (map realPart) $ tangentEllipses (ellipMat!!0) (ellipMat!!1)
-                
-                let cc = inv (ellipMat!!0) <> (ellipMat!!1)
-                    vs = map (fst . fromComplex) . toColumns . snd . eig $ cc
-                setColor' Col.white
-                renderPrimitive Points (mapM (vertex . toList. inHomog) vs)
-
-                let ccl = (ellipMat!!0) <> inv (ellipMat!!1)
-                    vsl = map (fst . fromComplex) . toColumns . snd . eig $ ccl
+                let vs  = map (fst . fromComplex) . toColumns . snd . eig $ inv c1 <> c2
+                    vsl = map (fst . fromComplex) . toColumns . snd . eig $ c1 <> inv c2
+                renderPrimitive Points (mapM_ (vertex . toList. inHomog) vs)
                 mapM_ (shLine.toList) vsl
 
-                let recraw = rectifierFromCircularPoint ij
-                             -- rectifierFromManyCircles improve ellipMat
-                    (mx,my,_,_,_) = ellipses!!0
-                    (mx2,my2,_,_,_) = ellipses!!1
-                    [[mx',my'],[mx'2,my'2]] = ht recraw [[mx,my],[mx2,my2]]
---                    okrec = similarFrom2Points [mx',my'] [mx'2,my'2] [0,0] [-0.5, 0] <> recraw
-                    okrec = diagl[-1,1,1]<>similarFrom2Points [mx',my'] [mx'2,my'2] [mx,my] [mx2, my2] <> recraw
-                    
-                    Just cam = cameraFromHomogZ0 Nothing (inv okrec)
-
-                    elliprec = map f ellipMat
-                      where f m =  analyzeEllipse $ a <> m <> trans a
-                            a = mt okrec
-                    g ((x,y,r,_,_),_) = sphere x y (r/2) (r/2)
-                cameraView cam (4/3) 0.1 100
-                clear [DepthBuffer]
-                mapM_ g elliprec
+            when (k `elem` [0,2]) $ do
+                -- intersections and horizon
                 
-                inWin wr $ do
-                    --drawImage $ warp 0 sz' (scaling sc <> w) (gray orig)
-                    drawImage $ warp (0,0,0) sz' (scaling sc <> okrec ) (rgb orig)
-                    --text2D 30 30 $ show $ focalFromHomogZ0 (inv recraw)
-                    -- it is also encoded in the circular points
-                    text2D 30 30 $ printf "f = %.2f" $ focalFromCircularPoint ij
-                    text2D 30 50 $ printf "ang = %.1f" $ abs ((acos $ circularConsistency ij)/degree - 90)
+                let [m1,m2] = map conicCenter [e1,e2]
+                    [c1,c2] = map conicMatrix [e1,e2]
+                    (Just ij, Just other) = selectSol m1 m2 (intersectionEllipses c1 c2)
+                    [htrue,hfalse] = getHorizs [ij,other]
+                setColor' purple
+                pointSize $= 5
+                renderPrimitive Points $ mapM_ (\(a,b) -> vertex (Point (realPart a) (realPart b))) [ij,other]
+                mapM_ shLine [htrue,hfalse]
 
-
-mt m = trans (inv m)
-fst3 (a,_,_) = a
-t2l (a,b) = [a,b]
-
-shcont = renderPrimitive LineLoop . vertex
-
-----------------------------------------------------------------
-
-isEllipse tol c = (ft-f1)/ft < fromIntegral (tol::Int)/1000 where
-    wc = whitenContour c
-    f  = fourierPL wc
-    f0 = magnitude (f 0)
-    f1 = sqrt (magnitude (f (-1)) ^2 + magnitude (f 1) ^2)
-    ft = sqrt (norm2Cont wc - f0 ^2)
-
-----------------------------------------------------------------
-
-tangentEllipses c1 c2 = map ((++[1]). t2l) $ intersectionEllipses (inv c1) (inv c2)
-
---------------------------------------------------------------------
-
--- hmm, this must be studied in more depth
-improveCirc (rx:+ix,ry:+iy) ells = (rx':+ix',ry':+iy') where
-    [rx',ix',ry',iy'] = fst $ minimize NMSimplex2 1e-5 300 (replicate 4 0.1) cost [rx,ix,ry,iy]
-    cost [rx,ix,ry,iy] = sum $ map (eccentricity.rectif) $ ells
-        where rectif e = mt t <> e <> inv t
-              t = rectifierFromCircularPoint (rx:+ix,ry:+iy)
-    eccentricity con = d1-d2 where (_,_,d1,d2,_) = fst $ analyzeEllipse con
+            let okrec = diagl[-1,1,1] <> rec
+            let mbcam = cameraFromHomogZ0 Nothing (inv okrec)
+                Just cam = mbcam
+                elliprec = map (f.conicMatrix) es
+                  where f m =  analyzeEllipse $ a <> m <> trans a
+                        a = mt okrec
+                g InfoEllipse {conicCenter = (x,y), conicSizes = (r,_)} = sphere x y (r/2) (r/2)
+            when (k `elem` [0,3] && isJust mbcam) $ do
+                let Just ij = imagOfCircPt e1 e2
+                    [f1',f2',_] = toList . takeDiag . fst . sepCam $ cam
+                setColor' red
+                text2D 0.9 0.6 $ printf "f = %.2f (%.2f, %.2f)" (focalFromCircularPoint ij) f1' f2'
+                text2D 0.9 0.6 $ printf "f = %.2f" $ focalFromCircularPoint ij
+                text2D 0.9 0.5 $ printf "ang = %.1f" $ abs ((acos $ circularConsistency ij)/degree - 90)
+                clear [DepthBuffer]
+                cameraView cam (4/3) 0.1 100
+                mapM_ g elliprec
 
 ----------------------------------------------------------------------
-    
--- | obtain a rectifing homograpy from several conics which are the image of circles 
---rectifierFromManyCircles :: [Mat] -> Maybe Mat
-rectifierFromManyCircles f cs = r ijs
+
+poseMonitor:: IO (ImageGray, ([InfoEllipse], Mat)) -> IO (IO (ImageGray, ([InfoEllipse], Mat)))
+poseMonitor c = do
+    w <- evWindow3D () "pose" 400 (const $ kbdQuit)
+    clearColor $= Color4 1 1 1 1
+    return $ do
+       x <- c
+       inWin w (sh x)
+       return x
   where
-    cqs = zip cs (map (fst.analyzeEllipse) cs)
-    ijs = catMaybes (pairsWith imagOfCircPt cqs)
-    r [] = ident 3
-    r xs = rectifierFromCircularPoint (f $ average' xs)
-    average xs = (x,y) where [x,y] = toList (head xs)
-    average' zs = (x,y)
-      where
-        pn = meanV . covStr . debug "pn" id . fromRows $ map (fst.fromComplex) zs
-        cpn = complex pn
-        ds = mean $ debug "ds" id [pnorm PNorm2 (z - cpn) | z <- zs]
-        [pnx,pny] = toList pn
-        dir = scalar i * complex (scalar ds * unitary (fromList [pny, -pnx]))
-        [x,y] = toList (cpn + dir)
-
-----------------------------------------------------------------------
+    sh (im,(es,rec)) = do
+        let scale = 1
+            okrec = diagl[-1,1,1] <>rec
+            fim = float im
+            floor = warp 1 (Size 256 256) (scaling (scale) <> okrec) fim
+        drawTexture floor $ map (++[-0.01]) $ ht (scaling (1/scale)) [[1,1],[-1,1],[-1,-1],[1,-1]]
+        let shCam = flip (drawCamera 0.2) (Just (extractSquare 128 fim))
+            mbcam = cameraFromHomogZ0 Nothing (inv okrec)
+        setColor' orange
+        traverse shCam mbcam
 

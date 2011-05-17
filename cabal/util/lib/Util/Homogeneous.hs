@@ -40,6 +40,7 @@ module Util.Homogeneous
 , normat3
 -- * Utilities
 , similarFrom2Points
+, adjustRectifier
 , pt2hv, hv2pt
 ) where
 
@@ -226,6 +227,13 @@ similarFrom2Points [ax,ay] [bx,by] [a'x,a'y] [b'x,b'y] = t where
     t = desp (a'x,a'y) <> rot3 (-ang) <> scaling s <> desp (-ax,-ay)
 similarFrom2Points _ _ _ _ = impossible "similarFrom2Points"
 
+-- | apply similar transformation to make the given points fixed under the transformation 
+adjustRectifier :: Mat -> [Double] -> [Double] -> Matrix Double
+adjustRectifier rec p1 p2 = s <> rec
+  where
+    [p1',p2'] = ht rec [p1,p2]
+    s = similarFrom2Points p1' p2' p1 p2
+ 
 pt2hv :: Point -> Vec
 pt2hv (Point x y) = vec [x,y,1]
 

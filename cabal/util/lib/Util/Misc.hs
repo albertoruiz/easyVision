@@ -270,3 +270,8 @@ path g a b | b `elem` na = [a,b]
 lambdify :: (a -> b -> t) -> (c -> a) -> (c -> b) -> c -> t
 lambdify f a b x = f (a x) (b x)
 
+--------------------------------------------------------------------
+
+mt :: Mat -> Mat
+mt = trans . inv
+
