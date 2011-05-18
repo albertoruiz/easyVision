@@ -17,7 +17,8 @@ module EasyVision.MiniApps.Combinators (
   run, runFPS,
   withPause,
   monitor, observe,
-  monitorWheel, 
+  monitorWheel,
+  monitor3D, 
   gray,
   counter, countDown,
   frameRate, compCost, timeMonitor,
@@ -146,6 +147,23 @@ monitor :: String     -- ^ window name
 monitor name sz fun cam = do
     (cam', ctrl) <- withPause cam
     w <- evWindow () name sz Nothing (const (kbdcam ctrl))
+    return $ do
+        thing <- cam'
+        inWin w (fun thing)
+        return thing
+
+---------------------------------------------------------
+
+-- | This is a "monitor" for 3D objects. The viewpoint can be changed with the mouse (drag, wheel, O).
+monitor3D :: String     -- ^ window name
+          -> Int        -- ^ size of square window
+          -> (a->IO ()) -- ^ monitor function
+          -> (IO a)     -- ^ original camera
+          -> IO (IO a)  -- ^ new camera
+monitor3D name sz fun cam = do
+    (cam', ctrl) <- withPause cam
+    w <- evWindow3D () name sz (const $ kbdQuit)
+    clearColor $= Color4 1 1 1 1
     return $ do
         thing <- cam'
         inWin w (fun thing)

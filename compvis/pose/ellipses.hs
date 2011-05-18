@@ -16,15 +16,13 @@ import Text.Printf(printf)
 
 main = run $ camera ~> grayscale
             >>= wcontours id ~> (id *** contSel)
-            >>= contourMonitor "all contours" fst (lineWidth $= 3 >> setColor' red) snd
-            ~>  findEllipses
-            >>= contourMonitor "detected ellipses" fst (lineWidth $= 3 >> setColor' yellow) snd
-            ~>  modelEllipses
-            >>= contourMonitor "model conics" fst (lineWidth $= 3 >> setColor' orange) (map (Closed . conicPoints 50) . snd)
+            >>= showContours
+            ~>  (modelEllipses . findEllipses)
+            >>= showConics
             ~>  computeRectifier
             >>= observe "rectified" (\(im,(_,h)) -> warp zeroP (Size 600 600) h im)
             >>= showThings
-            >>= poseMonitor
+            >>= showPose
             >>= timeMonitor
 
 ----------------------------------------------------------------------
@@ -51,7 +49,7 @@ rectifierFromCircles [e1,e2] = rectif
     Just ij = mbij
     recraw = rectifierFromCircularPoint ij
     [(mx,my),(mx2,my2)] = map conicCenter [e1,e2]
-    rec = adjustRectifier' recraw [mx,my] [mx2,my2]
+    rec = adjustRectifier recraw [mx,my] [mx2,my2]
     rectif = if isJust mbij then rec else ident 3
 
 -- provisional
@@ -63,6 +61,13 @@ adjustRectifier' r p1 p2 = s <> r
   where
     [p1',p2'] = ht r [p1,p2]
     s = similarFrom2Points p1' p2' [0,0] [0.5,0]
+
+----------------------------------------------------------------------
+
+showContours = contourMonitor "contours" fst (lineWidth $= 3 >> setColor' red) snd
+
+showConics = contourMonitor "model conics" fst (lineWidth $= 3 >> setColor' yellow) f
+  where f = map (Closed . conicPoints 50) . snd
 
 ----------------------------------------------------------------------
 
@@ -125,23 +130,18 @@ showThings c = do
 
 ----------------------------------------------------------------------
 
-poseMonitor:: IO (ImageGray, ([InfoEllipse], Mat)) -> IO (IO (ImageGray, ([InfoEllipse], Mat)))
-poseMonitor c = do
-    w <- evWindow3D () "pose" 400 (const $ kbdQuit)
-    clearColor $= Color4 1 1 1 1
-    return $ do
-       x <- c
-       inWin w (sh x)
-       return x
+showPose :: IO (ImageGray, ([InfoEllipse], Mat)) -> IO (IO (ImageGray, ([InfoEllipse], Mat)))
+showPose = monitor3D "pose" 400 sh
   where
     sh (im,(es,rec)) = do
-        let scale = 1
-            okrec = diagl[-1,1,1] <>rec
+        let okrec = diagl[-1,1,1] <>rec
             fim = float im
-            floor = warp 1 (Size 256 256) (scaling (scale) <> okrec) fim
-        drawTexture floor $ map (++[-0.01]) $ ht (scaling (1/scale)) [[1,1],[-1,1],[-1,-1],[1,-1]]
+            floor = warp 1 (Size 256 256) okrec fim
+        drawTexture floor $ map (++[-0.01]) [[1,1],[-1,1],[-1,-1],[1,-1]]
         let shCam = flip (drawCamera 0.2) (Just (extractSquare 128 fim))
             mbcam = cameraFromHomogZ0 Nothing (inv okrec)
         setColor' orange
         traverse shCam mbcam
+        return ()
+
 
