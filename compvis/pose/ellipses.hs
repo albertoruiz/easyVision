@@ -1,6 +1,5 @@
 import EasyVision hiding (c1,c2)
 import Control.Arrow((***),(&&&))
-import Control.Applicative((<$>))
 import Data.Traversable(traverse)
 import Control.Monad(when)
 import Data.Colour.Names(red,yellow,orange,purple)
@@ -15,15 +14,15 @@ import Text.Printf(printf)
 
 
 main = run $ camera ~> grayscale
-            >>= wcontours id ~> (id *** contSel)
-            >>= showContours
-            ~>  (modelEllipses . findEllipses)
-            >>= showConics
-            ~>  computeRectifier
-            >>= observe "rectified" (\(im,(_,h)) -> warp zeroP (Size 600 600) h im)
-            >>= showThings
-            >>= showPose
-            >>= timeMonitor
+         >>= wcontours id ~> (id *** contSel)
+         >>= showContours
+         ~>  (modelEllipses . findEllipses)
+         >>= showConics
+         ~>  computeRectifier
+         >>= observe "rectified" (\(im,(_,h)) -> warp zeroP (Size 600 600) h im)
+         >>= showThings
+         >>= showPose
+         >>= timeMonitor
 
 ----------------------------------------------------------------------
 
@@ -133,7 +132,7 @@ showThings c = do
 showPose :: IO (ImageGray, ([InfoEllipse], Mat)) -> IO (IO (ImageGray, ([InfoEllipse], Mat)))
 showPose = monitor3D "pose" 400 sh
   where
-    sh (im,(es,rec)) = do
+    sh (im,(_,rec)) = do
         let okrec = diagl[-1,1,1] <>rec
             fim = float im
             floor = warp 1 (Size 256 256) okrec fim
@@ -143,5 +142,4 @@ showPose = monitor3D "pose" 400 sh
         setColor' orange
         traverse shCam mbcam
         return ()
-
 
