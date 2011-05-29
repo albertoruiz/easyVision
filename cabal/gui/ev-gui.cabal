@@ -36,6 +36,7 @@ library
                         EasyVision.GUI.Draw
                         EasyVision.GUI.GUI
                         EasyVision.GUI.Objects
+                        EasyVision.GUI.Model3DS
                         EasyVision.GUI.Parameters
                         EasyVision.GUI.Trackball
 
@@ -44,4 +45,9 @@ library
     ghc-prof-options:   -auto-all
 
     ghc-options:        -Wall
+    
+    extra-libraries:    3ds GLEW
+    
+    C-sources:          lib/EasyVision/GUI/C/model3ds.c
+    CC-options:         -std=c99
 

@@ -3,7 +3,7 @@
 module Tools(
     -- * Invariant features
     maxFreq,
-    toCanonicAll, toCanonic2, canonical,
+    toCanonicAll, toCanonic2,
 --    protos, 
     protoOri,
 --    foufeat, 
@@ -13,7 +13,7 @@ module Tools(
 --  icaContsAll, icaConts2,
     alignment, refine,
     classifier, classifyMon, AlignInfo, elongated,
-    alignMon, alignMon',
+    alignMon, alignMon', showAlignment',
     -- * Projective rectification from circles and vertical vanishing point
     rectifyMon, tryMetric, rectifierFromHorizon, coherent, distImage,
     rectifierFromAffineHomogs, refineTangent, refineTangentImage,
@@ -67,7 +67,7 @@ $(autoParam "SCParam" "classify-"
 
 ----------------------------------------------------------------------
 
--- must be a parameters
+-- must be a parameter
 maxFreq = 10
 
 type AlignInfo = (Double,(Polyline,Mat,Vec,Mat,Vec,String))
@@ -101,6 +101,60 @@ classify SCParam {..} (im,cs,prots) = (im, oks)
 classifier = classify .@. winSCParam
 
 ----------------------------------------------------------------------
+
+showAlignment' cam = monitorWheel (0,2) "Detected" (mpSize 20) sh cam
+  where
+    sh k (im, oks) = do
+        drawImage' im
+        pointCoordinates (size im)
+        setColor' white
+        text2D 0.9 0.6 $ show (length oks)
+        mapM_ (h k) oks
+
+    h 0 = f0 . g1
+    h 1 = f1 . g1
+    h 2 = f2 . g2
+
+    g1 (d, (x,b,u,a,v,l)) = (d,((x, inv b <> a),l))
+
+    f0 (d,((c,m),l)) = do
+        text2D (d2f ox) (d2f oy) l
+      where
+        (ox,oy,_,_,_) = momentsContour (polyPts c)
+
+    f1 (d,((c,m),l)) = do
+        setColor' white
+        shcont c
+        text2D (d2f ox) (d2f up) l -- (printf "%s %.0f" l (d*100))
+        setColor' yellow
+        shcont $ (transPol m) (Closed [Point (-1) (-1), Point 1 (-1), Point 1 1, Point (-1) 1])
+        setColor' red
+        shcont $ (transPol m) (Closed [Point 0 0, Point (-2) 0, Point 0 0, Point 0 2])
+      where
+        (ox,oy,_,_,_) = momentsContour (polyPts c)
+        up = 2/400 + maximum (map py (polyPts c))
+
+    g2 (d, (x,b,u,a,v,l)) = (d,x,(b,(u,v)),l)
+    f2 (d,x,(mb,(cx,cb)),l) = do
+        lineWidth $= 1
+        let al = transPol (inv mb) (invFou 100 maxFreq $ toFun cb)
+            ob = transPol (inv mb) (invFou 100 maxFreq $ toFun cx)
+            corr = zipWith (\a b->[a,b]) (polyPts al) (polyPts ob)
+        setColor' yellow
+        let aux (Closed ps) = map p2l ps
+            p2l (Point x y) = [x,y]
+        renderPrimitive Lines $ mapM_ vertex (concat corr)
+        lineWidth $= 1
+        setColor' red
+        shcont al
+        setColor' black
+        text2D (d2f ox) (d2f up) (printf "%s %.0f" l (d*100))
+      where
+        (ox,oy,_,_,_) = momentsContour (polyPts x)
+        up = 2/400 + maximum (map py (polyPts x))
+
+----------------------------------------------------------------------
+
 
 classifyMon cam = monitor "Detected" (mpSize 20) sh cam
   where
@@ -293,16 +347,6 @@ toCanonic2 (p,l) = zip (map (<>w) cs) cps `zip` repeat l
     cps = map (foufeat .flip transPol wp) cs
 
 
--- | whitened with natural orientation, and additional angles
-canonical :: Polyline -> (Polyline, Mat, [Double])
-canonical p = (r, n, map (subtract a) as)
-  where
-    w = rot3 (20*degree) <> whitener p  -- check solver
-    wp = transPol w p
-    a:as = icaAnglesAll wp
-    c = rot3 a -- max kurt if orientation ok
-    n = c <> w
-    r = transPol n p
 
 
 protoOri :: Sample Polyline -> Sample Polyline

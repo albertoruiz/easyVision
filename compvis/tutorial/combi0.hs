@@ -4,6 +4,6 @@ grid n = map (blockImage . splitEvery n) . splitEvery (n*n) . map (resize (mpSiz
     where splitEvery _ [] = []
           splitEvery k l = take k l : splitEvery k (drop k l)
 
-main = run $   camera ~> rgb
-           ~~> grid 5 
-           >>= observe "grid" id
+main = run  $    camera ~> rgb
+            ~~>  grid 5 
+            >>=  observe "grid" id

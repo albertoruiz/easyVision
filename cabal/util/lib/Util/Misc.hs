@@ -5,7 +5,7 @@ module Util.Misc where
 import Numeric.LinearAlgebra hiding (i)
 import Debug.Trace
 import Data.Function(on)
-import Data.List(elemIndex, sortBy, sort, group, isPrefixOf)
+import Data.List(elemIndex, sortBy, sort, group, isPrefixOf, tails)
 import System.Random
 import qualified Data.Array as A
 import System.Process(system)
@@ -274,4 +274,20 @@ lambdify f a b x = f (a x) (b x)
 
 mt :: Mat -> Mat
 mt = trans . inv
+
+----------------------------------------------------------------------
+
+rotateLeft :: Int -> [a] -> [a]
+rotateLeft n list | n >= 0    =  take len $ drop n $ cycle list
+                  | otherwise =  rotateLeft (len + n) list
+  where
+    len = length list
+
+sliding :: Int -> [a] -> [[a]]
+sliding k = filter ((==k).length) . map (take k) . tails
+
+slidingPeriodic :: Int -> [a] -> [[a]]
+slidingPeriodic k xs = take n . sliding k . cycle $ xs
+  where
+    n = length xs
 

@@ -14,7 +14,10 @@ module EasyVision.MiniApps.Contours (
     ContourParam(..), winContourParam, argContourParam, defContourParam,
     ContourInfo(..), smartContours,
     wcontours, contourMonitor, 
-    shapeCatalog
+    shapeCatalog,
+    PolygonParam(..), winPolygonParam, argPolygonParam, defPolygonParam,
+    polygonalize,
+    drawContourLabeled
 ) where
 
 import EasyVision.MiniApps.Combinators
@@ -25,7 +28,7 @@ import ImagProc.Camera
 import Graphics.UI.GLUT hiding (Size,Point)
 import Features hiding(area)
 import EasyVision.MiniApps.Browser(examplesBrowser)
-import Util.Misc(diagl,impossible)
+import Util.Misc(diagl,impossible,degree)
 import Classifier(Sample)
 import Data.IORef(readIORef,writeIORef)
 import Data.Colour.Names(orange)
@@ -33,8 +36,7 @@ import Control.Monad(when)
 import Data.Maybe(isJust)
 import Control.Arrow((***))
 import Data.List(minimumBy)
-import Numeric.LinearAlgebra((<>))
-import Vision(desp,scaling)
+import Data.Colour.Names as Col
 
 
 $(autoParam "ContourParam" "contour-" [
@@ -73,7 +75,8 @@ smartContours g ContourParam{..} x = r
                     "black" -> cb
                     "both"  -> cwb
                     _ -> error "smartContours unknown mode"
-          redu = douglasPeuckerClosed fracpix
+          redu | fracpix > 0.01 = douglasPeuckerClosed fracpix
+               | otherwise   = id
           clo  = Closed . pixelsToPoints (size z)
           times n f = (!!n) . iterate f
           fst3 (a,_,_) = a
@@ -111,13 +114,16 @@ contourMonitor winname selImg f selCont = monitor winname (mpSize 10) sh where
 ----------------------------------------------------------------------
 
 -- | load/add/save/store shapes
-shapeCatalog :: (Drawable t, Image t)
-             => (Polyline -> Polyline) -- ^ preprocessing
-             -> IO (Sample Polyline)   -- ^ initial set
-             -> (Sample Polyline -> [a]) -- ^ feature extraction
-             -> IO (t, [Polyline])       -- ^ input camera with polylines
-             -> IO (IO (t, [Polyline], [a])) -- ^ input and features of current set
-shapeCatalog prepro gprot feat' cam = do
+shapeCatalog
+    :: (Drawable t, Image t)
+    => (x -> t)                 -- ^ selector of image from the input (e.g. fst when using wcont)
+    -> (x -> [Polyline])        -- ^ selector of polylines from the input (e.g snd or selCont . snd)
+    -> (Polyline -> Polyline)   -- ^ preprocessing
+    -> IO (Sample Polyline)     -- ^ initial set
+    -> (Sample Polyline -> [a]) -- ^ feature extraction
+    -> IO x                     -- ^ input camera with polylines
+    -> IO (IO (x, [a]))         -- ^ input and features of current set
+shapeCatalog fimg fpoly prepro gprot feat' cam = do
     oraw <- gprot
     let feat = feat' . map (prepro *** id)
         prototypes = feat oraw
@@ -126,14 +132,16 @@ shapeCatalog prepro gprot feat' cam = do
     s <- shapesBrowser "Shape" (Size 240 240) oraw
     return $ do
         (raw',prots',click,save) <- getW w
-        (im,cs) <- cam'
+        x <- cam'
+        let im = fimg x
+            cs = fpoly x
         let sz = size im -- required to avoid space leak !?
             (raw,prots) = case click of
                 Nothing -> (raw',prots')
                 Just pix  -> let [pt] = pixelsToPoints sz [pix]
                                  newc = (prepro $ closestTo pt cs, "?" ++ show (length prots' + 1))
                            in (newc:raw', feat [newc] ++ prots')
-        when (isJust click) $ putW s (0, raw) >> postRedisplay (Just (evW s))
+        when (isJust click && not (null cs)) $ putW s (0, raw) >> postRedisplay (Just (evW s))
         inWin w $ do
             drawImage' im
             pointCoordinates sz
@@ -143,7 +151,7 @@ shapeCatalog prepro gprot feat' cam = do
             
         when save $ writeFile "shapes.txt" (show raw)
         putW w (raw,prots,Nothing,False)
-        return (im,cs,prots)
+        return (x,prots)
   where
     marker _ st (MouseButton LeftButton) Down _ (Position x y) = do
         (r,p,_,_) <- readIORef st
@@ -167,4 +175,26 @@ shapeCatalog prepro gprot feat' cam = do
         f = renderPolyline . transPol (diagl[-0.4,0.4,1]) . normalShape
 
 ----------------------------------------------------------------------
+
+autoParam "PolygonParam" "polygon-"
+  [( "eps","Double" ,realParam 10 0 50),
+   ( "sides","Int" ,intParam 4 3 10),
+   ( "tol","Double" ,realParam 10 0 45)]
+
+polygonalize PolygonParam {..} = id *** selectPolygons (eps/1000) sides . map (cleanPol (cos $ tol*degree))
+
+----------------------------------------------------------------------
+
+drawContourLabeled (Closed c) = do
+    lineWidth $= 1
+    setColor' green
+    renderPrimitive LineLoop (vertex (Closed c))
+    setColor' red
+    pointSize $= 5
+    renderPrimitive Points (vertex $ head c)
+    pointSize $= 3
+    setColor' orange
+    renderPrimitive Points (vertex $ Closed $ tail c)
+    setColor' blue
+    sequence_ (zipWith textAt c (map show [0..]))    
 

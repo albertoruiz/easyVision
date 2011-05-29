@@ -20,7 +20,7 @@ module EasyVision.GUI.Draw
 , Drawable(..), drawImage'
 , drawTexture
 , setColor, setColor'
-, text2D
+, text2D, textAt
 , renderSignal
 , renderAxes
 , drawROI
@@ -39,7 +39,6 @@ module EasyVision.GUI.Draw
 import Graphics.UI.GLUT hiding (RGB, Matrix, Size, Point)
 import qualified Graphics.UI.GLUT as GL
 import ImagProc.Ipp.Core
---import Features.Matching
 import ImagProc(resize,yuvToRGB,toGray)
 import Data.IORef
 import Foreign (touchForeignPtr,castPtr)
@@ -48,12 +47,12 @@ import Vision
 import Util.Rotation
 import Util.Misc(degree)
 import EasyVision.GUI.Trackball
---import EasyVision.Util
 import qualified Data.Colour.RGBSpace as Col
 import Data.Colour.SRGB hiding (RGB)
 import Data.Colour
 import Control.Monad(when)
 import Features(Polyline(..))
+import GHC.Float(double2Float)
 
 
 -- | Types of images that can be shown in a window
@@ -241,6 +240,9 @@ instance Vertex Polyline where
 text2D x y s = do
     rasterPos (Vertex2 x (y::GLfloat))
     renderString Helvetica12 s
+
+textAt (Point x y) s = text2D (d x) (d y) s
+  where d = double2Float
 
 ----------------------------------------------------------------------
 

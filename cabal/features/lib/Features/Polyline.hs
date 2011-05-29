@@ -31,7 +31,7 @@ module Features.Polyline (
     kurtCoefs, kurtAlpha, kurtosisX,   
 -- * Reduction
     douglasPeucker, douglasPeuckerClosed,
-    selectPolygons,
+    selectPolygons, cleanPol,
 -- * Convex Hull
     convexHull,
 -- * Extraction
@@ -53,7 +53,7 @@ import ImagProc.Ipp.Core
 import Foreign.C.Types(CUChar)
 import Foreign
 import Debug.Trace
-import Data.List(sortBy, maximumBy, zipWith4, sort,foldl')
+import Data.List(sortBy, maximumBy, zipWith4, sort,foldl', tails)
 import Numeric.LinearAlgebra
 import Util.Homogeneous
 import Util.Misc(diagl)
@@ -367,7 +367,36 @@ norm2Cont c@(Closed ps) = 1/3/perimeter c * go (ps++[head ps]) where
         distPoints a b *
         (x1*x1 + x2*x2 + x1*x2 + y1*y1 + y2*y2 + y1*y2)
         + go (b:rest)
---------------------------------------------------------------------------------
+
+----------------------------------------------------------------------
+
+cang p1@(Point x1 y1) p2@(Point x2 y2) p3@(Point x3 y3) = c
+  where
+    dx1 = (x2-x1)
+    dy1 = (y2-y1)
+    
+    dx2 = (x3-x2)
+    dy2 = (y3-y2)
+    
+    l1 = sqrt (dx1**2 + dy1**2)
+    l2 = sqrt (dx2**2 + dy2**2)
+
+    c = (dx1*dx2 + dy1*dy2) / l1 / l2
+
+areaTriang p1 p2 p3 = sqrt $ p * (p-d1) * (p-d2) * (p-d3)
+  where
+    d1 = distPoints p1 p2
+    d2 = distPoints p1 p3
+    d3 = distPoints p2 p3
+    p = (d1+d2+d3)/2
+
+----------------------------------------------------------------------
+
+cleanPol tol (Closed ps) = Closed r
+  where
+    n = length ps
+    r = map snd . filter ((<tol).abs.fst) . map go . take n . tails $ ps++ps
+    go (p1:p2:p3:_) = (cang p1 p2 p3, p2)
 
 longestSegments k poly = filter ok ss
     where ss = asSegments poly
@@ -376,23 +405,27 @@ longestSegments k poly = filter ok ss
 
 reducePolygonTo n poly = Closed $ segsToPoints $ longestSegments n poly
 
-segToHomogLine s = cross (fromList [px $ extreme1 $ s, py $ extreme1 $ s, 1])
-                         (fromList [px $ extreme2 $ s, py $ extreme2 $ s, 1])
 
 segsToPoints p = stp $ map segToHomogLine $ p ++ [head p]
+  where
+    segToHomogLine s = cross (fromList [px $ extreme1 $ s, py $ extreme1 $ s, 1])
+                             (fromList [px $ extreme2 $ s, py $ extreme2 $ s, 1])
 
-stp [] = []
-stp [_] = []
-stp (a:b:rest) = inter a b : stp (b:rest)
+    stp [] = []
+    stp [_] = []
+    stp (a:b:rest) = inter a b : stp (b:rest)
 
-inter l1 l2 = Point x y where [x,y] = toList $ inHomog (cross l1 l2)
+    inter l1 l2 = Point x y where [x,y] = toList $ inHomog (cross l1 l2)
 
-tryPolygon eps n poly = if abs((a1-a2)/a1) < eps then [r] else []
+tryPolygon eps n poly = if length (polyPts r) == n && abs((a1-a2)/a1) < eps && ok then [r] else []
     where r = reducePolygonTo n poly
           a1 = orientedArea poly
           a2 = orientedArea r
+          p = perimeter r
+          l = minimum $ map segmentLength (asSegments r)
+          ok = l > p / fromIntegral n / 10
 
-selectPolygons eps n = concat . map (tryPolygon eps n)
+selectPolygons eps n = concatMap (tryPolygon eps n)
 
 ----------------------------------------------------------------------
 
