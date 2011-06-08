@@ -30,11 +30,13 @@ catalog = digits
 --catalog = read <$> readFile "digits.txt"
 --catalog = letters
 
+injectProtos = shapeCatalog fst snd normalShape catalog (concatMap toCanonic2)
+
 main = main0
 
 main0 = run $ camera ~> grayscale
             >>= wcontours id ~> (id *** contSel)
-            >>= shapeCatalog normalShape catalog (concatMap toCanonic2)
+            >>= injectProtos
             >>= classifier ~> snd
             >>= alignMon' "Alignment"
             >>= timeMonitor
@@ -42,12 +44,12 @@ main0 = run $ camera ~> grayscale
 
 main2 = run $ camera ~> grayscale
             >>= wcontours id ~> (id *** contSel)
-            >>= shapeCatalog normalShape catalog (concatMap toCanonic2)
+            >>= injectProtos
             >>= timeMonitor
 
 main1 = run $ camera ~> grayscale
             >>= wcontours id ~> (id *** contSel)
-            >>= shapeCatalog normalShape catalog (concatMap toCanonic2)
+            >>= injectProtos
             >>= classifier ~> snd
 --            >>= classifyMon
             >>= alignMon' "Alignment"
@@ -63,7 +65,7 @@ main1 = run $ camera ~> grayscale
 
 main3 = run $ camera ~> grayscale
             >>= wcontours id ~> (id *** contSel)
-            >>= shapeCatalog centerShape catalog (concatMap toCanonic2)
+            >>= injectProtos
             >>= classifier ~> snd
 --            >>= alignMon' "Pre"
             ~>  distImage
@@ -79,7 +81,7 @@ main3 = run $ camera ~> grayscale
 
 main4 = run $ camera ~> grayscale
             >>= wcontours id ~> (id *** contSel)
-            >>= shapeCatalog normalShape catalog (concatMap toCanonic2)
+            >>= injectProtos
             >>= classifier ~> snd
             >>= alignMon' "Pre"
             >>= virtualMon

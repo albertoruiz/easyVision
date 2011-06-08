@@ -51,7 +51,7 @@ showPose = monitor3D "pose" 400 sh
 ----------------------------------------------------------------------
 
 showThings c = do rec
-                    r <- monitorWheel (0,30) "misc" (mpSize 10) (sh f) c
+                    r <- monitorWheel (0,0,30) "misc" (mpSize 10) (sh f) c
                     depthFunc $= Just Less
                     f <- prepareModel "lunarlandernofoil_carbajal.3ds"
                     g <- prepareModel "STS.3ds"

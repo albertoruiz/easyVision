@@ -11,9 +11,10 @@ Maintainer  :  Alberto Ruiz (aruiz at um dot es)
 -----------------------------------------------------------------------------
 
 module EasyVision.MiniApps.Contours (
+    ContourInfo(..), 
     ContourParam(..), winContourParam, argContourParam, defContourParam,
-    ContourInfo(..), smartContours,
-    wcontours, contourMonitor, 
+    smartContours, wcontours,
+    contourMonitor, 
     shapeCatalog,
     PolygonParam(..), winPolygonParam, argPolygonParam, defPolygonParam,
     polygonalize,
@@ -38,15 +39,25 @@ import Control.Arrow((***))
 import Data.List(minimumBy)
 import Data.Colour.Names as Col
 
+data ContourInfo = ContourInfo {
+    contWhite :: [Polyline],
+    contBlack :: [Polyline],
+    contBoth  :: [Polyline],
+    contSel   :: [Polyline]
+    }
 
-$(autoParam "ContourParam" "contour-" [
+autoParam "ContourParam" "contour-" [
+    ("athres",  "Int",    intParam 1 (-20) 10),
     ("thres",  "Int",    intParam 128 1 255),
     ("area",   "Int",    percent 10),
     ("fracpix","Double", realParam (1.5) 0 10),
     ("mode",   "String", stringParam "black" ["white", "black", "both"]),
+    ("auto",   "Int",    intParam 0 0 1),
     ("smooth", "Int",    intParam 1 0 10),
+    ("asmooth", "Int",    intParam 0 0 10),
     ("thresDelta", "Int",    intParam 16 0 255),
-    ("thresRange", "Int",    intParam 0 0 10)] )
+    ("thresRange", "Int",    intParam 0 0 10),
+    ("radius", "Int",    intParam 10 0 30)]
 
 
 defContourParam :: ContourParam
@@ -59,16 +70,21 @@ wcontours g = smartContours g .@. winContourParam
 
 smartContours :: (x -> ImageGray) -> ContourParam -> x -> ContourInfo
 smartContours g ContourParam{..} x = r
-    where pre = (smooth `times` median Mask3x3) . g
-          z = pre x
-          rawg b y = concatMap (\th -> map fst3 $ contours 100 pixarea (fromIntegral th) b y)
+    where pre 0 = (smooth `times` median Mask3x3) . g
+          pre 1 = (asmooth `times` median Mask3x3) . autoThres radius . g
+          z = pre auto x
+          pixarea = h*w*area`div`10000 where Size h w = size z
+              
+          rawg 1 True y = map fst3 $ contours 100 pixarea (128-fromIntegral athres) True y
+          rawg 1 False y = map fst3 $ contours 100 pixarea (128+fromIntegral athres) False y
+
+          rawg 0 b y = concatMap (\th -> map fst3 $ contours 100 pixarea (fromIntegral th) b y)
                      [thres-thresDelta*thresRange,
                       thres-thresDelta*(thresRange-1) .. 
                       thres+thresDelta*thresRange]
-               where (Size h w) = size y
-                     pixarea = h*w*area`div`10000
-          cw = post $ rawg True z
-          cb = post $ rawg False z
+
+          cw = post $ rawg auto True z
+          cb = post $ rawg auto False z
           cwb = cw ++ cb
           cs = case mode of
                     "white" -> cw
@@ -86,12 +102,15 @@ smartContours g ContourParam{..} x = r
                           , contBoth  = cwb
                           , contSel   = cs }
 
-data ContourInfo = ContourInfo {
-    contWhite :: [Polyline],
-    contBlack :: [Polyline],
-    contBoth  :: [Polyline],
-    contSel   :: [Polyline]
-    }
+
+----------------------------------------------------------------------
+
+autoThres r x = sh d
+  where
+    f = float x
+    s = filterBox r r f
+    d = f |-| s
+    sh = scale32f8u (-1) 1
 
 ----------------------------------------------------------------------
 

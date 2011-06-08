@@ -28,9 +28,9 @@ hess (im, g@Grads {..}) = r
 
 harr (im, g@Grads {..}) = r
   where
-    r = blockImage [[ im    , sh gx   , sh gx2    ]
+    r = blockImage [[ im    , sh gx   , toGray gx2    ]
                    ,[ sh gy , sh gxgy  , sha t2 ]
-                   ,[ sh gy2, toGray gm , sha h ]]
+                   ,[ toGray gy2, toGray gm , sha h ]]
     gx2 = gaussS 2 $ gx |*| gx
     gy2 = gaussS 2 $ gy |*| gy
     gxgy = gaussS 2 $ gx |*| gy

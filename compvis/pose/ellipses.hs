@@ -72,7 +72,7 @@ showConics = contourMonitor "model conics" fst (lineWidth $= 3 >> setColor' yell
 
 showThings :: IO (ImageGray, ([InfoEllipse], Mat)) -> IO (IO (ImageGray, ([InfoEllipse], Mat)))
 showThings c = do
-    m <- monitorWheel (0,3) "misc" (mpSize 10) sh c
+    m <- monitorWheel (0,0,3) "misc" (mpSize 10) sh c
     depthFunc $= Just Less
     return m
   where

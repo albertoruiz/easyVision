@@ -41,7 +41,7 @@ export IPP_LINK=-pthread
 $ sudo apt-get install libgsl0-dev liblapack-dev     (for hmatrix)
 $ sudo apt-get install libghc6-glut-dev
 
-$ sudo apt-get install mplayer imagemagick
+$ sudo apt-get install mplayer imagemagick libglew1.5-dev
 $ sudo apt-get install darcs
 
 In principle, hmatrix will be automatically installed later, but we may

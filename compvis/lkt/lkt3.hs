@@ -201,9 +201,9 @@ rectifMon = monitor "Rectifier" (mpSize 10) sh
   where
     sh (_,[]) = return ()
     sh (t,hs) = do
-        let f = consistency (AllKnown (repeat 1.7)) hs
+        let -- f = consistency (AllKnown (repeat 1.7)) hs
             -- f = consistency ConstantUnknown hs
-            -- f = consistency (F1Known 1.7) hs
+            f = consistency (F1Known 1.7) hs
             -- f = consistency AllUnknown hs
             ([r,y],sh) = findSol f (0,0)
             rec = inv $ camera0 ((r,y),1.7)

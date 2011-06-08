@@ -74,8 +74,17 @@ mktS [s,e,f] = (3><3) [1+s,0, e,
                        0,1+s, f,
                        0,  0, 1]
 
-mkt = mktP
-sdi = sdiP
+
+-- displacement and rotation
+
+sdiR dx dy = [ dx |*| ((-1) .* yimg) |+| dy |*| ximg , dx, dy] 
+
+mktR [a,e,f] = (3><3) [cos a, -sin a, e,
+                       sin a,  cos a, f,
+                           0,      0, 1]
+
+mkt = mktR
+sdi = sdiR
 
 
 lkStep t = f

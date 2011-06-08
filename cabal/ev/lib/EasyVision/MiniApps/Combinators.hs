@@ -18,11 +18,12 @@ module EasyVision.MiniApps.Combinators (
   withPause,
   monitor, observe,
   monitorWheel,
-  monitor3D, 
+  monitor3D,
+  monitorScanLine, 
   gray,
   counter, countDown,
   frameRate, compCost, timeMonitor,
-  selectROI,
+  selectROI, selectROIfun,
   selectSnd,
   updateMaybe, updateMaybeSave,
   clickStatusWindow,
@@ -238,9 +239,12 @@ timeMonitor = compCost >=> frameRate >=> monitor "Timing"  (Size 50 230) f >~> (
 
 ----------------------------------------------------------------------
 
-
 selectROI :: Drawable b => String -> (a -> b) -> IO a -> IO (IO (a, ROI))
-selectROI name f cam = do
+selectROI name f = selectROIfun name f (\_ _ -> return ()) (,)
+
+
+selectROIfun :: Drawable b => String -> (a -> b) -> (a -> ROI -> IO()) -> (a -> ROI -> c)-> IO a -> IO (IO c)
+selectROIfun name sel mon result cam = do
     (cam', ctrl) <- withPause cam
     let sz = mpSize 20
     w <- evWindow () name sz Nothing (const (kbdcam ctrl))
@@ -249,9 +253,10 @@ selectROI name f cam = do
     return $ do
         x <- cam'
         r <- getROI w
-        inWin w $ do drawImage (f x)
+        inWin w $ do drawImage (sel x)
                      drawROI r
-        return (x,r)
+                     mon x r
+        return (result x r)
 
 ----------------------------------------------------------------------
 
@@ -347,15 +352,15 @@ clickStatusWindow name sz s0 update display act cam = do
 -- | This is a monitor with a display function which depends on an Int value
 -- which can be changed with the mouse wheel
 monitorWheel
-    :: (Int,Int)           -- ^ range of display parameters
+    :: (Int,Int,Int)       -- ^ initial value and range of display parameters
     -> String              -- ^ window name
     -> Size                -- ^ window size
     -> (Int -> a -> IO ()) -- ^ monitor function
     -> (IO a)              -- ^ original camera
     -> IO (IO a)           -- ^ new camera
-monitorWheel (k1,k2) name sz fun cam = do
+monitorWheel (k0,k1,k2) name sz fun cam = do
     (cam', ctrl) <- withPause cam
-    w <- evWindow k1 name sz Nothing (mouse (kbdcam ctrl))
+    w <- evWindow k0 name sz Nothing (mouse (kbdcam ctrl))
     return $ do
         thing <- cam'
         k <- getW w
@@ -385,4 +390,21 @@ warpTo droi h img = warp zeroP sz h x
 
 transformROI :: Size -> Mat -> ROI -> ROI
 transformROI sz h = shrink (-1,-1) . poly2roi sz . transPol h . roi2poly sz
+
+----------------------------------------------------------------------
+
+monitorScanLine :: String -> (x -> ImageGray) -> IO x -> IO (IO x)
+monitorScanLine name sel = monitorWheel (240,0,479) name (mpSize 20) sh
+  where
+    sh k x = do
+      let im = sel x
+          ROI r1 r2 c1 c2 = theROI im
+          vs = zipWith (flip Pixel) [c1..] $ map (\x->round (480-479/255 * fromIntegral x::Float)) $ sampleLine8u im (Pixel k c1) (Pixel k c2)
+      drawImage im
+      setColor 1 0.8 0.8
+      renderPrimitive LineStrip (mapM_ vertex [Pixel 240 0,Pixel 240 639])
+      setColor 1 1 0
+      renderPrimitive LineStrip (mapM_ vertex [Pixel k c1,Pixel k c2])
+      setColor 1 0 0
+      when (r1<=k && k <= r2) $ renderPrimitive LineStrip (mapM_ vertex vs)
 

@@ -112,9 +112,7 @@ showLinComb = examplesBrowser "linear combination" (mpSize 20) sh cs
     c0 = fromRows $ map p2v . polyPts . transPol (desp (-0.25,-0.25) <>scaling (1/5)). fst . head $ filter ((=="T").snd) pentominos
     c1 = fromRows [vec[1,0],vec[1,0],0,0,0,0,vec[-1,0],vec[-1,0]]
 
-textAt :: Point -> String -> IO ()
-textAt (Point x y) s = text2D (d x) (d y) s
-    where d = double2Float
+
 
 drawPosIndex :: [Point] -> IO ()
 drawPosIndex ps = sequence_ $ zipWith textAt ps (map show [0..])

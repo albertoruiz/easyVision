@@ -93,7 +93,7 @@ dist a b = norm (a-b)
     
 ----------------------------------------------------------------------
 
-classify SCParam {..} (im,cs,prots) = (im, oks)
+classify SCParam {..} ((im,cs),prots) = (im, oks)
   where
     oks = filter ((<epsilon).fst) (map clas cs) 
     clas = refine maxangle . alignment prots
@@ -102,7 +102,7 @@ classifier = classify .@. winSCParam
 
 ----------------------------------------------------------------------
 
-showAlignment' cam = monitorWheel (0,2) "Detected" (mpSize 20) sh cam
+showAlignment' cam = monitorWheel (0,0,2) "Detected" (mpSize 20) sh cam
   where
     sh k (im, oks) = do
         drawImage' im
