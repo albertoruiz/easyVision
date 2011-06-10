@@ -13,9 +13,12 @@ import Vision(desp, scaling, cameraFromHomogZ0, ht)
 import Util.Rotation(rot3)
 import Util.Optimize(optimize)
 import Text.Printf(printf)
-import GHC.Float(float2Double)
+import GHC.Float(float2Double,double2Float)
 import Data.Colour.Names
 import Util.Ellipses
+import Vision(estimateHomographyRaw,cross)
+import Util.Kalman(unscentedTransform,ukfDefaultParam)
+import Data.List(foldl1')
 
 disp = putStrLn . dispf 5
 
@@ -74,11 +77,25 @@ autoBinarize x = binarize8u (otsuThreshold x) x
 
 basis = imageBasis (mpSize 20)
 
-main = run $ camera
+main1 = run $ camera
     ~>  grayscale
     >>= monMoments
     >>= monitorScanLine "scanLine" id
     >>= timeMonitor
+
+main2 = run $ camera
+    ~>  grayscale
+    >>= regionMarker (mpSize 20) id
+    ~>  fun
+    >>= moni
+    >>= timeMonitor
+
+main = run $ camera
+    ~>  grayscale
+    >>= regionMarker (mpSize 20) id
+    >>= moniMask
+    >>= timeMonitor
+
 
 monBasis = monitorWheel (0,0,6) "basis" (mpSize 10) sh
   where
@@ -111,4 +128,66 @@ polyEllipseMoments (mx,my,cxx,cyy,cxy) n = Closed . conicPoints 30 $ e
             conicAngle = a,
             conicMatrix = undefined, 
             conicTrans = undefined }
+
+----------------------------------------------------------------------
+
+-- must add h to rectifyRegion, remove input, and add window title!
+transOfRectif im pol = t
+  where
+    t = estimateHomographyRaw [[s,r],[-s,r],[-s,-r],[s,-r]] (g pol)
+    g (Closed ps) = map (\(Point x y) -> [x,y]) ps
+    (Size h w) = size im
+    r = fromIntegral h / fromIntegral w
+    s = 1 --640 / fromIntegral w
+    
+fun (im,pol) = (im,e)
+  where
+    r = snd $ rectifyRegion id 640 defAspectRatioParam (im,pol)
+    h = inv (transOfRectif r pol) 
+    m@(mx,my,cxx,cyy,cxy) = momentsImage basis . float .autoBinarize . notI $ r
+    med = fromList [mx,my]
+    cov = (2><2) [cxx,cxy,cxy,cyy]
+    wf v = fromList w
+      where
+        [w] = ht h [toList v]
+    (med', cov') = unscentedTransform ukfDefaultParam wf (med,cov)
+    m' = (mx',my',cxx',cyy',cxy')
+    [mx',my'] = toList med'
+    [cxx',cxy',_,cyy'] = toList $ flatten cov'
+    e = polyEllipseMoments m' 30
+
+moni = monitor "whoa" (mpSize 20) sh
+  where
+    sh (im,p) = do
+       drawImage' im
+       pointCoordinates (size im)
+       setColor' yellow
+       renderPrimitive LineLoop (vertex p)
+
+----------------------------------------------------------------------
+
+p2hv (Point x y) = vec[x,y,1]
+
+moniMask = monitor "regionMask" (mpSize 20) sh
+  where
+    sh (im,p) = do
+        let f = float (notI im)
+            ss = asSegments p
+            roi = poly2roi (size im) p
+            b = (setROI roi (xIb basis), setROI roi (yIb basis))
+            mask = foldl1' (|*|) (map (maskDir b) ss)
+            thing = binarize8u 128 $ toGray ( f |*| mask )
+            m@(mx,my,_,_,_) = momentsImage basis (float thing)
+            e = polyEllipseMoments m 30
+        drawImage' thing
+        pointCoordinates (size thing)
+        pointSize $= 3
+        setColor 1 0 0
+        renderPrimitive Points $ vertex (Point mx my)
+        renderPrimitive LineLoop (vertex e) 
+            
+maskDir (xI,yI) (Segment p0 p1) = mask
+  where
+    [a,b,c] = toList $ single $ cross (p2hv p0) (p2hv p1)
+    mask = thresholdVal32f (-c) 0 IppCmpLess . thresholdVal32f (-c) 1 IppCmpGreater $ a .* xI |+| b .* yI
 

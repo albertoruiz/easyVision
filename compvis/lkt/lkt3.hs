@@ -140,7 +140,7 @@ testTracker = run $ camera ~> float.gray
                   >>= rectifMon
                   >>= timeMonitor
                   
-trackerMon = monitorWheel (0,3) "Tracker" (mpSize 10) sh
+trackerMon = monitorWheel (0,0,3) "Tracker" (mpSize 10) sh
   where
     sh _ (img, Nothing) = do
         drawImage' (img :: ImageFloat)
