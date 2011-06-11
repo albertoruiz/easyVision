@@ -27,7 +27,9 @@ module EasyVision.MiniApps.Combinators (
   selectSnd,
   updateMaybe, updateMaybeSave,
   clickStatusWindow,
-  warpTo
+  warpTo,
+  maskDir, maskPoly,
+  polyEllipseMoments
 )where
 
 import ImagProc.Ipp.Core
@@ -44,11 +46,13 @@ import System.Time
 import Text.Printf
 import Util.Options(optionString,hasValue,optionFromFile,getFlag)
 import Data.Maybe(isJust)
+import Data.List(foldl1')
 import Control.Arrow((***))
 import Util.Misc(Mat)
 import Features.Polyline
-import Numeric.LinearAlgebra(inv)
-
+import Numeric.LinearAlgebra(inv,single,toList)
+import Vision(pt2hv,cross)
+import Util.Ellipses
 
 -- deprecated
 gray = grayscale
@@ -390,6 +394,32 @@ warpTo droi h img = warp zeroP sz h x
 
 transformROI :: Size -> Mat -> ROI -> ROI
 transformROI sz h = shrink (-1,-1) . poly2roi sz . transPol h . roi2poly sz
+
+----------------------------------------------------------------------
+
+maskDir (xI,yI) (Segment p0 p1) = binarize32f (-c) (a .* xI |+| b .* yI)
+  where
+    [a,b,c] = toList $ single $ cross (pt2hv p0) (pt2hv p1)
+
+maskPoly :: (ImageFloat,ImageFloat) -> Polyline -> ImageGray
+maskPoly (xI,yI) p = foldl1' (andI) (map (toGray . maskDir b) ss)
+  where
+    sz = size xI
+    ss = asSegments p
+    roi = poly2roi sz p
+    b = (setROI roi xI, setROI roi yI)
+
+polyEllipseMoments :: (Double,Double,Double,Double,Double) -> Int -> Polyline
+polyEllipseMoments (mx,my,cxx,cyy,cxy) n = Closed . conicPoints 30 $ e
+  where
+    (l1,l2,a) = eig2x2Dir (cxx,cyy,cxy)
+    e = InfoEllipse {
+            conicCenter = (mx,my), 
+            conicSizes = (2*sqrt l1, 2*sqrt l2), 
+            conicAngle = a,
+            conicMatrix = undefined, 
+            conicTrans = undefined }
+
 
 ----------------------------------------------------------------------
 

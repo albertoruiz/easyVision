@@ -36,6 +36,8 @@ library
     Exposed-modules:
                         ImagProc
                         ImagProc.Base
+                        ImagProc.Tools
+                        ImagProc.Moments
                         ImagProc.Images
                         ImagProc.ROI
                         ImagProc.Generic

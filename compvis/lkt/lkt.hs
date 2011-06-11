@@ -1,7 +1,7 @@
 -- experiments with Lucas-Kanade Tracker
 -- use in compiled mode with -O
 
-import EasyVision
+import EasyVision hiding (setROI)
 import Graphics.UI.GLUT hiding (Point,Size,scale,samples,Matrix)
 import Numeric.LinearAlgebra as LA hiding (i,(.*))
 import Util.Misc(diagl,debug,vec,Mat,degree)

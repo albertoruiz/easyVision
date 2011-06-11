@@ -10,14 +10,13 @@ autoParam "VParam" "vectorize-"
 
 mirror = mirror8u 0 . mirror8u 1
 
-main = run $ camera ~> mirror . grayscale >>= selectROI "jeje" id ~> setROI
+main = run $ camera ~> mirror . grayscale >>= selectROI "jeje" id ~> uncurry (flip setROI)
            >>= vec .@. winVParam
            >>= observe "img" snd
 
 vec VParam{..} = notI .toGray . autoscale scale. float .notI .toGray
                . gaussS sigma. float . thresholdVal8u (fromIntegral thres) 255 IppCmpGreater
 
-setROI (i,r) = modifyROI (const r) i
 
 autoscale s x = (s*recip mx) .* x
   where (mn,mx) = minmax x

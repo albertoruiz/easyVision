@@ -7,5 +7,3 @@ main = runFPS 10
     >>= ocrWindow autoBinarize
     >>= timeMonitor
 
-autoBinarize img = binarize8u (otsuThreshold img) img
-

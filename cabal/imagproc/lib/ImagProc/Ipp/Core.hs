@@ -227,6 +227,9 @@ class Image a where
     -- | modifies the valid 'ROI' of an image in a \"safe\" way
     -- (the new ROI is the intersection of the desired ROI and the old valid ROI)
     modifyROI :: (ROI->ROI) -> a -> a
+    -- | modifyROI . const
+    setROI :: ROI -> a -> a
+    setROI = modifyROI . const
 
 instance Image ImageFloat where
     image s = do
