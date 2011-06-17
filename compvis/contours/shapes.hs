@@ -15,15 +15,16 @@ import Vision
 import Control.Monad(when)
 import Data.Maybe(isJust)
 
-
-
 import Tools(toCanonicAll,toCanonic2,maxFreq,toFun,AlignInfo,digits)
+
+square = Closed $ map (\(a,b)->Point a b) [(0, 0), (0, 0.25), (0, 0.5), (0, 0.75), (0,1), (0.25, 1), (0.5, 1), (0.75, 1), (1, 1), (1, 0.75), (1, 0.5), (1, 0.25), (1, 0), (0.75, 0), (0.5, 0), (0.25,0)]
+
 
 main = run $ camera  ~> grayscale
 --         >>= detectStatic 0.02 1.5 5 grayscale rgb ~> grayscale
          >>= wcontours id ~> (id *** contSel)
          ~>  id *** filter (not . elongated 5) . map shape
-         >>= injectPrototypes normalShape digits
+         >>= injectPrototypes normalShape (return [])
          >>= showCanonical
          ~>  preClassify >>= showAlign
          >>= timeMonitor
@@ -55,6 +56,7 @@ data Shape = Shape { shapeContour  :: Polyline
                    , whiteShape    :: Polyline
                    , fourier       :: Int -> Complex Double
                    , featInv       :: Vec
+                   , invSimil      :: Vec
                    , kAngles       :: [Double]
                    }
 
@@ -68,6 +70,7 @@ analyzeShape (p,(mx,my,cxx,cyy,cxy)) = Shape {
     whiteShape = r,
     fourier = normalizeStart fou,
     featInv = fromList $ map (magnitude.fou) [-10 .. 10],
+    invSimil = featNotBad,
     kAngles = as }
   where
     (l1,l2,phi) = eig2x2Dir (cxx,cyy,cxy)
@@ -75,7 +78,14 @@ analyzeShape (p,(mx,my,cxx,cyy,cxy)) = Shape {
     r = transPol w p
     as = icaAngles r    
     fou = fourierPL r
-    
+    fouSimil = magnitude . fourierPL p
+    featBad = fromList [ f k / f 1 | k <- [ 2 .. 15 ]]
+       where
+         f k = fouSimil k + fouSimil (-k)
+    featNotBad = fromList [ f k / s | k <- [-15,-14 .. -2] ++ [2..15]]
+       where
+         f = fouSimil
+         s = f 1 + f (-1)
 ----------------------------------------------------------------------
 
 preClassify ((x,cs),prots) = (x, classifInvar prots cs)
@@ -89,6 +99,7 @@ classifInvar prots cs = oks
     basicDist x (y,l) = ((d,l),(x,y))
       where
         d = dist (featInv x) (featInv y)
+        --d = dist (invSimil x) (invSimil y)
 
 dist a b = pnorm PNorm2 (a-b)
 d2f = fromRational.toRational

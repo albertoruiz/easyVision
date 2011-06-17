@@ -38,8 +38,10 @@ import Data.Function(on)
 import Data.List(sortBy,groupBy,intercalate)
 import Util.Misc(posMax)
 import Text.Printf(printf)
+import Control.Monad(ap)
+import Control.Applicative
 
-data Prob a = Prob [(a,Double)]
+data Prob a = Prob [(a,Double)] deriving Eq
 
 mapv :: (a -> b) -> [(a, p)] -> [(b, p)]
 mapv f = map $ \(v,p) -> (f v, p)
@@ -71,6 +73,10 @@ instance Monad Prob where
 
 pjoin :: Prob (Prob a) -> Prob a
 pjoin (Prob xs) = Prob $ concat [ mapp (*p) y | (Prob y, p) <- xs]
+
+instance Applicative Prob where
+   (<*>) = ap
+   pure = return
 
 ---------------------------------------------------------
 
