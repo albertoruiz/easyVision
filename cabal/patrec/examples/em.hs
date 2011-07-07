@@ -6,7 +6,7 @@ import Util.Rotation(rot3)
 import Util.Homogeneous(ht)
 import Util.Optimize(optimize)
 
-import EasyVision hiding (debug, whitener)
+import EasyVision
 import Data.Colour.Names as Col
 import Graphics.UI.GLUT hiding (Size,scale)
 import Data.Maybe(maybe)
