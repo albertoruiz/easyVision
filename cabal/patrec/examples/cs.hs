@@ -1,39 +1,15 @@
 -- simple example of L1 minimization and compressed sensing
 
 import Numeric.LinearAlgebra
-import Util.Misc(Mat,Vec,vec,debug)
-import Numeric.LinearProgramming
+import Util.Misc(Mat,Vec,vec,debug,norm,randomPermutation)
+import Util.L1
 import Text.Printf(printf)
 import Control.Monad(when)
-
--- overconstrained
-l1SolveO :: Mat -> Vec -> Vec
-l1SolveO a y = debug "L1" (const j) $ vec (take n x)
-  where
-    n = cols a
-    m = rows a
-    eye = ident m
-    c = fromBlocks [[ a,-eye],
-                    [-a,-eye]]
-    d = join [y,-y]
-    p = Dense $ zipWith (:<=:) (toLists c) (toList d)
-    Optimal (j,x) = simplex (Minimize (replicate n 0 ++ replicate m 1)) p (map Free [1..(n+m)])
+import Numeric.GSL.Fourier
+import Graphics.Plot
 
 
--- underconstrained
-l1SolveU :: Mat -> Vec -> Vec
-l1SolveU a y = debug "L1" (const j) $ vec (take n x)
-  where
-    n = cols a
-    c1 = map (\k ->  [ 1#k, -1#k+n] :<=: 0) [1..n]
-    c2 = map (\k ->  [-1#k, -1#k+n] :<=: 0) [1..n]
-    c3 = zipWith (:==:) (map sp $ toRows a) (toList y)
-    sp v = zipWith (#) (toList v) [1..]
-    p = Sparse (c1 ++ c2 ++ c3)
-    Optimal (j,x) = simplex (Minimize (replicate n 0 ++ replicate n 1)) p (map Free [1..(2*n)])
-
-
-gaussianMatrix seed (r,c) = reshape c $ randomVector seed Gaussian (r*c)
+gaussianMatrix seed (r,c) = reshape c $ randomVector seed Gaussian (r*c) / fromIntegral c
 
 a = (3><2) [6,0,
             0,2,
@@ -57,7 +33,7 @@ y = m <> x
 
 dispSp v = mapVectorWithIndexM_ (\k v -> when (abs v > 1E-10) (printf "%d: %.5f\n" k v :: IO ())) v
 
---mapVectorWithIndex g = head . mapVectorWithIndexM (\a b -> [g a b])
+mapVectorWithIndex g = head . mapVectorWithIndexM (\a b -> [g a b])
 
 main = do
     print s1
@@ -72,4 +48,53 @@ main = do
     print $ l1SolveU c d
     putStrLn "---------------------"
     dispSp $ l1SolveU m y
+    putStrLn "---------------------"
+    showSol
+
+----------------------------------------------------------------------
+
+dctBasis n = trans $ normRows $ fromColumns $ map (fst . fromComplex . subVector 0 n . (*corr) . ifft . dup) $ toColumns $ ident n
+  where
+    dup v = join [v, rev v]
+    rev = fromList . reverse . toList
+    corr = fromList $ map g [0..2*fromIntegral n-1]
+    g k = cis (2*pi*k*(1/4/fromIntegral n))
+    normRows m = ns * m
+      where
+        ns = asColumn $ fromList $ map (recip . norm) (toRows m)
+    
+----------------------------------------------------------------------
+
+ndim = 1000
+
+bb = dctBasis ndim
+
+sol = ndim |> ([0,1,0,0,1]++replicate 20 0 ++ [1]++repeat 0)
+
+showSol = do
+  dispSp estim
+  mplot [fromList [1..fromIntegral ndim], bb <> sol, bb <> estim]
+  print $ norm (ys - ys') / norm ys
+  mplot [bb <> estim2]
+  mplot [fromList [1..fromIntegral ndim], bb <> sol, bb <> estDir]
+  print $ norm (zs - zs') / norm zs
+
+
+measure = gaussianMatrix 778 (30,ndim) <> bb
+
+ys = measure <> sol
+
+ys' = (ys  + 0.00005 * randomVector 12345 Gaussian (dim ys))
+
+estim = l1SolveU measure ys'
+
+estim2 = measure <\> ys'
+
+direct = fromRows $ take 30 $ randomPermutation 888 $ toRows bb
+
+zs = direct <> sol
+
+estDir = l1SolveU direct zs'
+
+zs' = (zs  + 0.001 * randomVector 12345 Gaussian (dim zs))
 

@@ -20,7 +20,8 @@ extra-source-files:
 
 library
     Build-Depends:      base >= 4 && < 5, hmatrix >= 0.10.1,
-                        process, array, random, containers, directory
+                        process, array, random, containers, directory,
+                        hmatrix-glpk
 
     hs-source-dirs:     lib
 
@@ -39,6 +40,7 @@ library
                         Util.ICA
                         Util.Stat
                         Util.Gaussian
+                        Util.L1
 
     other-modules:
 
