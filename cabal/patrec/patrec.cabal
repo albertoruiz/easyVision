@@ -20,7 +20,7 @@ build-type:         Simple
 extra-source-files:
 
 library
-    Build-Depends:      base >= 3 && < 5, hmatrix >= 0.8.3, prcv-util,
+    Build-Depends:      base >= 3 && < 5, hmatrix >= 0.11.2, prcv-util,
                         array, containers, process, random
 
     hs-source-dirs:     lib

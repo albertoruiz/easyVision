@@ -88,24 +88,24 @@ ofP prop other prob = prop prob' . other prob where
 -----------------------------------------------------------------
 
 mean :: Mat -> Vec
-mean = meanVector . stat
+mean = fst . meanCov
 
 cov :: Mat -> Mat
-cov  = covarianceMatrix . stat
+cov  = snd . meanCov
 
--- warning: we assume descending order in eig(R) (!?)
--- | Most discriminant linear features (lda)
+-- | Most discriminant linear features (LDA, Fisher)
 mdf :: Property Vec Vec
 mdf exs = f where
     f x = (x - m) <> v'
     n = length gs - 1
     gs = fst$ group exs
-    (v',_) = fromComplex $ takeColumns n v
-    (_l,v) = eig (inv c <> cm)
+    v' = takeColumns n v
+    (_l,v) = geigSH' cm c
     (m,c) = meanCov $ fromRows $ map fst exs
-    cm = cov $ fromRows $ map (mean.fromRows) $ gs
+    cm = cov $ fromRows $ map (mean.fromRows) $ gs 
 
--- | Most expressive linear features (pca)
+
+-- | Most expressive linear features (PCA)
 mef :: PCARequest -> Property Vec Vec
 mef req exs = encodeVector . pca req . stat . fromRows . map fst $ exs
 

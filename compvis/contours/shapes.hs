@@ -11,6 +11,7 @@ import Util.Misc(Mat,Vec,norm,degree,diagl,debug,posMax)
 import Util.Rotation
 import Classifier(Sample)
 import Vision
+import Util.Options(optionFromFile)
 
 import Control.Monad(when)
 import Data.Maybe(isJust)
@@ -24,7 +25,7 @@ main = run $ camera  ~> grayscale
 --         >>= detectStatic 0.02 1.5 5 grayscale rgb ~> grayscale
          >>= wcontours id ~> (id *** contSel)
          ~>  id *** filter (not . elongated 5) . map shape
-         >>= injectPrototypes normalShape (return [])
+         >>= injectPrototypes normalShape (optionFromFile "--catalog" [])
          >>= showCanonical
          ~>  preClassify >>= showAlign
          >>= timeMonitor

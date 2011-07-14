@@ -25,9 +25,8 @@ import Classifier(Sample)
 import Tools
 
 
-catalog = digits
+catalog = (read <$> readFile "digits.txt") >>= optionFromFile "--catalog"
 --catalog = pentos
---catalog = read <$> readFile "digits.txt"
 --catalog = letters
 
 injectProtos = shapeCatalog fst snd normalShape catalog (concatMap toCanonic2)
