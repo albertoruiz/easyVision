@@ -25,7 +25,7 @@ main = run $ camera  ~> grayscale
 --         >>= detectStatic 0.02 1.5 5 grayscale rgb ~> grayscale
          >>= wcontours id ~> (id *** contSel)
          ~>  id *** filter (not . elongated 5) . map shape
-         >>= injectPrototypes normalShape (optionFromFile "--catalog" [])
+         >>= injectPrototypes normalShape (optionFromFile "--catalog" pentominos)
          >>= showCanonical
          ~>  preClassify >>= showAlign
          >>= timeMonitor

@@ -17,7 +17,7 @@ HOpenGL drawing utilities.
 module EasyVision.GUI.Draw
 ( pointCoordinates
 , pixelCoordinates
-, Drawable(..), drawImage'
+, Drawable(..), drawImage', drawImage''
 , drawTexture
 , setColor, setColor'
 , text2D, textAt
@@ -79,6 +79,24 @@ drawImage' im = do
     let szI = glSize (size im)
     when (szW /= szI) $ windowSize $= szI >> postRedisplay Nothing
     drawImage im
+
+-- | The same as 'drawImage'', but with a maximum window size
+drawImage'' :: (Drawable a, Image a) => Int -> a -> IO ()
+drawImage'' mx im = do
+    szW <- get windowSize
+    let szI = glSize (downscale mx $ size im)
+    when (szW /= szI) $ windowSize $= szI >> postRedisplay Nothing
+    drawImage im
+
+downscale mx (Size h w)
+    | s <= mx = (Size h w)
+    | otherwise = (Size h' w')
+  where
+    s = max h w
+    r = fromIntegral w /  fromIntegral h
+    (h',w') | w > h     = (round (fromIntegral mx/r), mx)
+            | otherwise = (mx, round (fromIntegral mx*r))
+
 
 pstart im = starting im (vroi im)
 

@@ -39,7 +39,7 @@ indexSample p = mapM_ (\((v,_),k)-> textAt (Point (v@>0) (v@>1)) (show k)) (zip 
 
 ---------------------------------------------------------------------------
 
-main = test sshape
+main = test sshape 0.1 0.8
 
 sigma = 1
 
@@ -67,16 +67,17 @@ eigSorted (l,v) = fromColumns $ sortWith (negate . magnitude) (toList l) (toColu
 
 sortWith f k v = map snd $ sortBy (compare `on` (f.fst)) $ zip k v
 
-test prob = do
-    seed <- return 66666 -- randomIO
-    let p = addNoise seed 0.1 $ prob 200
-        x = fst (GP.matData p :: (Mat,Vec))  -- data matrix
-        s = GP.gaussK sigma x x :: Mat       -- similarity matrix
-        g = step (s-0.8)                     -- graph
-        --l = lapSym g; u = snd (eigSH l)    -- laplacian and eigenvectors in columns
+test prob noise threshold = do
+    seed <- return 66666 --  randomIO
+    let p = filter ((==snd(head (prob 200))).snd) $ addNoise seed noise $ prob 200
+        x = fromRows (map fst p)             -- data matrix
+        s = GP.gaussK sigma x x              -- similarity matrix
+        g = step (s-threshold)               -- graph (or s)
+        --l = lapSym g; u = snd (dbgeig $ eigSH l)    -- laplacian and eigenvectors in columns
+        --l = lap g; u = snd (dbgeig $ eigSH l)                   
                            
         --l = lapRW g; u = fst . fromComplex . eigSorted . eig $ l
-        (d,l) = lapDL g; u = snd (geigSH' l d) -- RW
+        (d,l) = lapDL g; u = snd (dbgeig $ geigSH' l d) -- RW
         
         y = fromColumns . take 3 . tail . reverse . toColumns $ u  -- e.g. 2 principal components
         
@@ -86,8 +87,11 @@ test prob = do
         --scw "clusters" (map (,"?") (toRows y))
         scw "spectral embedding" (toRows y `zip` map snd p)
         scw3 "spectral embedding" (ba (toRows y `zip` map snd p))
-        scw3 "naive embedding" (ba (toRows y' `zip` map snd p))
+        --scw3 "naive embedding" (ba (toRows y' `zip` map snd p))
 
 ba p = boxAttr p `preprocess` p
+
+dbgeig x = debug "eig" (take 10.reverse.toList.fst) x 
+dbgeig' x = debug "eig" (take 10.toList.fst) x
 ----------------------------------------------------------------------
 

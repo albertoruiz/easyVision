@@ -116,7 +116,7 @@ cameraFolderG = do
     imgs <- readFolder' path
     let disp rk = do
            k <- get rk  
-           drawImage' (fst $ imgs!!k)
+           drawImage'' 320 (fst $ imgs!!k)
     w <- evWindow 0 ("Folder: "++path) (mpSize 10) (Just disp) (mouseGen (cfacts (length imgs -1)) kbdQuit)               
     return $ do
         k <- getW w    
@@ -243,11 +243,11 @@ timeMonitor = compCost >=> frameRate >=> monitor "Timing"  (Size 50 230) f >~> (
 
 ----------------------------------------------------------------------
 
-selectROI :: Drawable b => String -> (a -> b) -> IO a -> IO (IO (a, ROI))
+selectROI :: (Image b, Drawable b) => String -> (a -> b) -> IO a -> IO (IO (a, ROI))
 selectROI name f = selectROIfun name f (\_ _ -> return ()) (,)
 
 
-selectROIfun :: Drawable b => String -> (a -> b) -> (a -> ROI -> IO()) -> (a -> ROI -> c)-> IO a -> IO (IO c)
+selectROIfun :: (Image b, Drawable b) => String -> (a -> b) -> (a -> ROI -> IO()) -> (a -> ROI -> c)-> IO a -> IO (IO c)
 selectROIfun name sel mon result cam = do
     (cam', ctrl) <- withPause cam
     let sz = mpSize 20
@@ -257,7 +257,10 @@ selectROIfun name sel mon result cam = do
     return $ do
         x <- cam'
         r <- getROI w
-        inWin w $ do drawImage (sel x)
+        inWin w $ do drawImage'' 640 (sel x)
+                     sz <- evSize `fmap` get windowSize
+                     pixelCoordinates sz
+                     setColor 1 0 0
                      drawROI r
                      mon x r
         return (result x r)
