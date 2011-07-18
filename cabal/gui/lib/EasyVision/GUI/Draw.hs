@@ -32,7 +32,7 @@ module EasyVision.GUI.Draw
 , extractSquare
 , newTrackball
 , captureGL
-, evSize, glSize
+, evSize, glSize, limitSize
 , renderPolyline
 ) where
 
@@ -84,11 +84,12 @@ drawImage' im = do
 drawImage'' :: (Drawable a, Image a) => Int -> a -> IO ()
 drawImage'' mx im = do
     szW <- get windowSize
-    let szI = glSize (downscale mx $ size im)
+    let szI = glSize (limitSize mx $ size im)
     when (szW /= szI) $ windowSize $= szI >> postRedisplay Nothing
     drawImage im
 
-downscale mx (Size h w)
+limitSize :: Int -> Size -> Size
+limitSize mx (Size h w)
     | s <= mx = (Size h w)
     | otherwise = (Size h' w')
   where
