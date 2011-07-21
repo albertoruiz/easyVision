@@ -1,10 +1,10 @@
-{-# LANGUAGE TemplateHaskell, RecordWildCards, NamedFieldPuns #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module Shapes(
-    Shape(..),
+    Shape(..), ShapeMatch(..),
     shape,
     elongated,
-    preClassify
+    matchShapes, matchShapesSimple
 ) where
 
 import EasyVision
@@ -38,29 +38,35 @@ data Shape = Shape { shapeContour  :: Polyline
                    , shapeAxes     :: (Double,Double,Double)
                    , shapeWhitener :: Mat
                    , whiteShape    :: Polyline
-                   , fourier       :: Int -> Complex Double
-                   , featInv       :: Vec
+                   , invAffine     :: Vec
                    , invSimil      :: Vec
                    , kAngles       :: [Double]
+                   , kFeats        :: [CVec]
+                   , kHyps         :: [(CVec,Mat)]
+                   , kShapes       :: [Polyline]
                    }
 
 
-analyzeShape mW (p,(mx,my,cxx,cyy,cxy)) = Shape {
-    shapeContour = p,
-    shapeMoments = (mx,my,cxx,cyy,cxy),
-    shapeAxes = (l1,l2,phi),
-    shapeWhitener = w,
-    whiteShape = r,
-    fourier = normalizeStart fou,
-    featInv = fromList $ map (magnitude.fou) [-mW .. mW],
-    invSimil = featNotBad,
-    kAngles = as }
+analyzeShape mW (p,(mx,my,cxx,cyy,cxy)) = Shape {..}
   where
-    (l1,l2,phi) = eig2x2Dir (cxx,cyy,cxy)
-    w = rot3 (27*degree) <> diagl [1/sqrt l1,1/sqrt l2,1] <> rot3 phi <> desp (-mx,-my)
-    r = transPol w p
-    as = icaAngles r    
-    fou = fourierPL r
+    shapeContour = p
+    shapeMoments = (mx,my,cxx,cyy,cxy)
+    shapeAxes @ (l1,l2,phi) = eig2x2Dir (cxx,cyy,cxy)
+    shapeWhitener = rot3 (27*degree) <> diagl [1/sqrt l1,1/sqrt l2,1] <> rot3 phi <> desp (-mx,-my)
+    whiteShape = transPol shapeWhitener p
+    fou = fourierPL whiteShape
+    invAffine = fromList $ map (magnitude.fou) [-mW .. mW]
+
+    kAngles = icaAngles whiteShape >>= (\a -> [a,a+pi])
+    kFeats = map f kAngles
+      where
+        f a = g $ normalizeStart $ (*cis (-a)) . fou
+        g fun = fromList $ map fun [-mW .. mW]
+    kws = map rot3 kAngles
+    kHyps = zip kFeats kws
+    kShapes = map (flip transPol whiteShape) kws
+
+    invSimil = 2*featNotBad
     fouSimil = magnitude . fourierPL p
     featBad = fromList [ f k / f 1 | k <- [ 2 .. mW ]]
        where
@@ -72,21 +78,35 @@ analyzeShape mW (p,(mx,my,cxx,cyy,cxy)) = Shape {
 
 ----------------------------------------------------------------------
 
-preClassify ((x,cs),prots) = (x, classifInvar prots cs)
+data ShapeMatch = ShapeMatch {
+    proto  :: Shape,
+    label  :: String, 
+    target :: Shape,
+    invDist :: Double,
+    wt, wp, wa :: Mat,
+    alignDist :: Double }
 
-classifInvar :: Sample Shape -> [Shape] -> [[((Double, String), (Shape, Shape))]]
-classifInvar prots cs = oks
+shapeMatch :: Sample Shape -> Shape -> [ShapeMatch]
+shapeMatch prots c = map (match c) prots
   where
-    theDist = fst.fst
-    oks =  map (sortBy (compare `on` theDist) . filter ((<0.2).theDist) . clas) cs
-    clas x = map (basicDist x) prots
-    basicDist x (y,l) = ((d,l),(x,y))
+    match x (y,l) = ShapeMatch {..}
       where
-        d = (dist `on` featInv) x y
---        d = (dist `on` invSimil) x y
+        proto = y
+        label = l
+        target = x
+        invDist = (dist `on` invAffine) x y
+        dist a b = norm (a-b)    
+        (alignDist,((ft,wt),(fp,wp))) = minimumBy (compare `on` fst) [ (d ht hp, (ht,hp)) | hp <- kHyps proto, ht <- kHyps target]
+        d (u,_) (v,_) = pnorm PNorm2 (u-v)
+        wa = inv (wt <> shapeWhitener target) <> wp <> shapeWhitener proto
 
 
-dist a b = norm (a-b)
+matchShapes th1 th2 ((x,cs),prots) = (x, map (filterGood . shapeMatch prots) cs)
+  where
+    filterGood = sortBy (compare `on` alignDist) . filter good
+    good m = invDist m < th1 && alignDist m < th2
 
-----------------------------------------------------------------------
+matchShapesSimple ((x,cs),prots) = (x, map (filterGood . shapeMatch prots) cs)
+  where
+    filterGood = sortBy (compare `on` invDist) . filter ((<0.3).invDist)
 

@@ -1,4 +1,3 @@
-{-# LANGUAGE RecordWildCards, NamedFieldPuns #-}
 
 import EasyVision
 import Control.Arrow((***),(&&&))
@@ -18,6 +17,7 @@ import Control.Applicative((<$>))
 import Data.Maybe(isJust)
 
 import Shapes
+import NewTools
 
 import Tools(toCanonicAll,toCanonic2,maxFreq,toFun,AlignInfo,digits)
 
@@ -25,43 +25,23 @@ square = Closed $ map (\(a,b)->Point a b) [(0, 0), (0, 0.25), (0, 0.5), (0, 0.75
 
 catalog = (read <$> readFile "digits.txt") >>= optionFromFile "--catalog"
 
-main = run $ camera  ~> grayscale
+main = main1
+
+main1 = run $ camera  ~> grayscale
 --         >>= detectStatic 0.02 1.5 5 grayscale rgb ~> grayscale
          >>= wcontours id ~> (id *** contSel)
          ~>  id *** filter (not . elongated 5) . map shape
-         >>= injectPrototypes normalShape catalog
-         >>= showCanonical
-         ~>  preClassify >>= showAlign
+         >>= injectPrototypes boxShape catalog
+--         >>= showCanonical
+         ~>  matchShapes 0.3 0.25
+         >>= showAlign
          >>= timeMonitor
 
-----------------------------------------------------------------------
-
-injectPrototypes prepro ioprots = shapeCatalog fst (map shapeContour.snd) prepro ioprots (map (shape *** id))
-
-showContours = contourMonitor "contours" fst (lineWidth $= 2 >> setColor' red) snd
-
-showCanonical = contourMonitor "canonical" (fst.fst) (lineWidth $= 3 >> setColor' yellow) (map f . snd . fst)
-  where
-    f Shape {whiteShape = s, shapeMoments = (ox,oy,_,_,_), kAngles = a:as }  = transPol t s
-      where
-        t = desp (ox,oy) <> diagl [0.05,0.05,1] <> rot3 a
-
-----------------------------------------------------------------------
-
-showAlign cam = monitorWheel (0,0,2) "Detected" (mpSize 20) sh cam
-  where
-    sh k (im, oks) = do
-        drawImage' im
-        pointCoordinates (size im)
-        setColor' white
-        text2D 0.9 0.6 $ printf "%d, Tot=%.2f" (length oks) (sum $ map (fst.fst.head) $ filter (not.null) oks)
-        mapM_ (h k) oks
-
-    h 0 [] = return ()
-    h 0 (((d,l),(x,p)):ps) = textAt (Point ox oy) (printf "%s (%.0f)" ls (d*100))
-      where
-        Shape { shapeMoments = (ox,oy,_,_,_) } = x
-        ls = l ++ concatMap (snd.fst) ps
+main2 = run $ camera  ~> grayscale
+          >>= observe "image" id
+          >>= wcontours id ~> (id *** contSel)
+          >>= showContours
+          >>= timeMonitor
 
 ----------------------------------------------------------------------
 
