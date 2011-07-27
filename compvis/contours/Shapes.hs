@@ -78,13 +78,15 @@ analyzeShape mW (p,(mx,my,cxx,cyy,cxy)) = Shape {..}
 
 ----------------------------------------------------------------------
 
-data ShapeMatch = ShapeMatch {
-    proto  :: Shape,
-    label  :: String, 
-    target :: Shape,
-    invDist :: Double,
-    wt, wp, wa :: Mat,
-    alignDist :: Double }
+data ShapeMatch = ShapeMatch
+    { proto      :: Shape
+    , label      :: String
+    , target     :: Shape
+    , invDist    :: Double
+    , alignDist  :: Double
+    , wt, wp, wa :: Mat
+    , waRot      :: Double
+    }
 
 shapeMatch :: Sample Shape -> Shape -> [ShapeMatch]
 shapeMatch prots c = map (match c) prots
@@ -99,8 +101,17 @@ shapeMatch prots c = map (match c) prots
         (alignDist,((ft,wt),(fp,wp))) = minimumBy (compare `on` fst) [ (d ht hp, (ht,hp)) | hp <- kHyps proto, ht <- kHyps target]
         d (u,_) (v,_) = pnorm PNorm2 (u-v)
         wa = inv (wt <> shapeWhitener target) <> wp <> shapeWhitener proto
-
-
+        waRot = rotTrans wa
+        
+rotTrans w = rho
+  where
+    [[a1,a2],[b1,b2]] = ht w [[0,0],[0,1]]
+    dx = b1-a1
+    dy = b2-a2
+    rho = atan2 dx dy
+  
+----------------------------------------------------------------------  
+  
 matchShapes th1 th2 ((x,cs),prots) = (x, map (filterGood . shapeMatch prots) cs)
   where
     filterGood = sortBy (compare `on` alignDist) . filter good
@@ -109,4 +120,5 @@ matchShapes th1 th2 ((x,cs),prots) = (x, map (filterGood . shapeMatch prots) cs)
 matchShapesSimple ((x,cs),prots) = (x, map (filterGood . shapeMatch prots) cs)
   where
     filterGood = sortBy (compare `on` invDist) . filter ((<0.3).invDist)
+
 

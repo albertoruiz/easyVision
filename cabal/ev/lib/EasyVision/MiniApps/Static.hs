@@ -79,7 +79,7 @@ addSDS th thf = virtualCamera (f SDSWaitUp)
     where f st ((c,p):rest) = (c,(p,st')) : f st' rest
                where st' = auxStatic th thf st p
 
-getIt xs = [c | (c,(_,st)) <- xs, st == SDSGetIt ]
+getIt xs = fst (head xs) : [c | (c,(_,st)) <- xs, st == SDSGetIt ]
 
 monitorStatic th thf g (imag,(env,st)) = do
     let x = g imag
@@ -94,6 +94,7 @@ monitorStatic th thf g (imag,(env,st)) = do
     renderAxes
     renderPrimitive Lines $ mapM_ vertex [Point (-0.1) (10*th), Point 0.1 (10*th)]
     renderPrimitive Lines $ mapM_ vertex [Point (-0.1) (thf*10*th), Point 0.1 (thf*10*th)]
+    mainLoopEvent
 
 -- | Detector of static frames.
 detectStatic :: (Drawable b, Image b)
@@ -107,7 +108,6 @@ detectStatic :: (Drawable b, Image b)
 detectStatic th thf nframes f g =
     addSmall (mpSize 3) f
     >=> addDiff
-    -- >=> temporalEnvironment mean 3 0  -- for local extremes
     >=> temporalEnvironment id nframes 0
     >=> addSDS th thf
     >=> monitor "temp env" (mpSize 10) (monitorStatic th thf g)

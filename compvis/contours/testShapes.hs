@@ -34,6 +34,7 @@ main1 = run $ camera  ~> grayscale
          >>= injectPrototypes boxShape catalog
 --         >>= showCanonical
          ~>  matchShapes 0.3 0.25
+--         ~>  matchShapesSimple
          >>= showAlign
          >>= timeMonitor
 
