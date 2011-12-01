@@ -1,4 +1,4 @@
-{-# LANGUAGE ForeignFunctionInterface #-}
+{-# LANGUAGE ForeignFunctionInterface, CPP #-}
 -----------------------------------------------------------------------------
 {- |
 Module      :  ImagProc.C.UVC
@@ -22,6 +22,8 @@ import Foreign.C.Types(CChar)
 import Foreign.C.String(newCString)
 import ImagProc.Ipp hiding (r1,c1,r2,c2)
 
+#ifdef HASUVC
+
 foreign import ccall "openUVC"
     c_openUVC :: Ptr CChar -> CInt -> CInt -> CInt -> IO (Ptr ())
 
@@ -36,3 +38,15 @@ uvcCamera d (Size h w) fps = do
         Y im <- image (Size h w)
         c_grabUVC han (ptr im)
         return (Y im)
+
+#else
+
+uvcCamera :: String -> Size -> Int -> IO (IO ImageYUV)
+uvcCamera d (Size h w) fps = do
+    return $ do
+        Y im <- image (Size h w)
+        -- fill it with something nice...
+        return (Y im)
+#endif
+
+

@@ -16,19 +16,26 @@ tested-with:        GHC ==6.10.4, GHC ==6.12.1
 cabal-version:      >=1.2
 build-type:         Simple
 
-extra-source-files:     lib/ImagProc/C/UVC/avilib.h
-                        lib/ImagProc/C/UVC/color.h
-                        lib/ImagProc/C/UVC/huffman.h
-                        lib/ImagProc/C/UVC/utils.h
-                        lib/ImagProc/C/UVC/v4l2uvc.h
-                        lib/ImagProc/C/UVC/dynctrl-logitech.c
-                        lib/ImagProc/C/UVC/uvc_compat.h
-                        lib/ImagProc/C/UVC/uvcvideo.h
 
 
-extra-tmp-files:
+
+extra-source-files: lib/ImagProc/C/UVC/avilib.h
+                    lib/ImagProc/C/UVC/color.h
+                    lib/ImagProc/C/UVC/huffman.h
+                    lib/ImagProc/C/UVC/utils.h
+                    lib/ImagProc/C/UVC/v4l2uvc.h
+                    lib/ImagProc/C/UVC/dynctrl-logitech.c
+                    lib/ImagProc/C/UVC/uvc_compat.h
+                    lib/ImagProc/C/UVC/uvcvideo.h
+
+flag uvc
+    description:    Use uvc cameras
+    default:        True
+
 
 library
+
+
     Build-Depends:      base >= 3 && < 5, prcv-util, imagproc >= 0.1,
                         directory, process
 
@@ -38,14 +45,16 @@ library
                         ImagProc.Camera
                         ImagProc.Util
 
-    other-modules:
 
-    c-sources:          lib/ImagProc/C/UVC/avilib.c
-                        lib/ImagProc/C/UVC/color.c
-                        lib/ImagProc/C/UVC/utils.c
-                        lib/ImagProc/C/UVC/v4l2uvc.c
-                        lib/ImagProc/C/UVC/capture.c
 
+    if flag(uvc)
+        if ! os(OSX)
+            cpp-options: -DHASUVC
+            c-sources:          lib/ImagProc/C/UVC/avilib.c
+                                lib/ImagProc/C/UVC/color.c
+                                lib/ImagProc/C/UVC/utils.c
+                                lib/ImagProc/C/UVC/v4l2uvc.c
+                                lib/ImagProc/C/UVC/capture.c
 
     include-dirs:       lib/ImagProc/C/UVC/
 
