@@ -1,7 +1,7 @@
 -- generated automatically by adapter.hs
 
 {-# LANGUAGE ForeignFunctionInterface #-}
-{-# OPTIONS -fvia-C #-}
+{-#  #-}
 
 module ImagProc.Ipp.Adapt where
 

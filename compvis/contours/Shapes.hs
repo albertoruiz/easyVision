@@ -44,6 +44,8 @@ data Shape = Shape { shapeContour  :: Polyline
                    , kFeats        :: [CVec]
                    , kHyps         :: [(CVec,Mat)]
                    , kShapes       :: [Polyline]
+                   , kFeatsMirror  :: [CVec]
+                   , kHypsMirror   :: [(CVec,Mat)]
                    }
 
 
@@ -65,6 +67,9 @@ analyzeShape mW (p,(mx,my,cxx,cyy,cxy)) = Shape {..}
     kws = map rot3 kAngles
     kHyps = zip kFeats kws
     kShapes = map (flip transPol whiteShape) kws
+    
+    kFeatsMirror = kFeats ++ map conj kFeats
+    kHypsMirror = kHyps ++ map (conj *** (*diagl[1,-1,1])) kHyps
 
     invSimil = 2*featNotBad
     fouSimil = magnitude . fourierPL p
@@ -98,7 +103,7 @@ shapeMatch prots c = map (match c) prots
         target = x
         invDist = (dist `on` invAffine) x y
         dist a b = norm (a-b)    
-        (alignDist,((ft,wt),(fp,wp))) = minimumBy (compare `on` fst) [ (d ht hp, (ht,hp)) | hp <- kHyps proto, ht <- kHyps target]
+        (alignDist,((ft,wt),(fp,wp))) = minimumBy (compare `on` fst) [ (d ht hp, (ht,hp)) | hp <- take 8 (kHyps proto), ht <- kHyps target]
         d (u,_) (v,_) = pnorm PNorm2 (u-v)
         wa = inv (wt <> shapeWhitener target) <> wp <> shapeWhitener proto
         waRot = rotTrans wa
@@ -117,8 +122,8 @@ matchShapes th1 th2 ((x,cs),prots) = (x, map (filterGood . shapeMatch prots) cs)
     filterGood = sortBy (compare `on` alignDist) . filter good
     good m = invDist m < th1 && alignDist m < th2
 
-matchShapesSimple ((x,cs),prots) = (x, map (filterGood . shapeMatch prots) cs)
+matchShapesSimple th ((x,cs),prots) = (x, map (filterGood . shapeMatch prots) cs)
   where
-    filterGood = sortBy (compare `on` invDist) . filter ((<0.3).invDist)
+    filterGood = sortBy (compare `on` invDist) . filter ((<th).invDist)
 
 

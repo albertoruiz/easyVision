@@ -2,7 +2,7 @@
 
 module NewTools (
     injectPrototypes,
-    showCanonical, showContours,
+    showCanonical, showDirs, showContours,
     showAlign
 ) where
 
@@ -10,11 +10,11 @@ import EasyVision
 import Control.Arrow((***),(&&&))
 import Graphics.UI.GLUT hiding (Point,Size)
 import Data.Colour.Names
-import Numeric.LinearAlgebra((<>),fromList)
+import Numeric.LinearAlgebra((<>),fromList,inv)
 import Text.Printf(printf)
-import Util.Misc(diagl,mean)
+import Util.Misc(diagl,mean,vec)
 import Util.Rotation(rot3)
-import Vision(desp)
+import Vision(desp,inHomog,hv2pt)
 import Classifier(Sample)
 import Control.Monad(when)
 import Data.List(minimumBy,sortBy)
@@ -40,10 +40,18 @@ showCanonical = contourMonitor "canonical" (fst.fst) (lineWidth $= 3 >> setColor
         t = desp (ox,oy) <> diagl [0.05,0.05,1]
         (ox,oy,_,_,_) = shapeMoments
 
+
+showDirs = contourMonitor "canonical" (fst.fst) (lineWidth $= 1 >> setColor' white) (map f . snd . fst)
+  where
+    f Shape {..}  = dirs
+      where
+        (ox,oy,_,_,_) = shapeMoments
+        dirs = Closed $ concatMap ((\x->[Point ox oy, x]). hv2pt.(<> vec [2,0,1]) . inv .  (<> shapeWhitener). snd) kHyps
+
 ----------------------------------------------------------------------
 
 showAlign :: IO (ImageGray,[[ShapeMatch]]) -> IO (IO (ImageGray,[[ShapeMatch]]))
-showAlign cam = monitorWheel (3,0,3) "Detected" (mpSize 20) sh cam
+showAlign cam = monitorWheel (3,0,5) "Detected" (mpSize 20) sh cam
   where
     labs = concatMap label
     sh k (im, oks) = do
@@ -89,10 +97,29 @@ showAlign cam = monitorWheel (3,0,3) "Detected" (mpSize 20) sh cam
         let Shape { shapeMoments = (ox,oy,_,_,_) } = target
         setColor' white; textAt (Point ox oy) label
 
-    sc 0 _ = return ()
-    sc 1 _ = return ()
-    sc 3 _ = return ()
-    sc 2 oks = textAt (Point 0.9 0.5) $ printf "E = %.1f" e
+    h 4 (ShapeMatch {..} : _) = do
+        setColor' blue
+        let Shape { shapeMoments = (ox,oy,_,_,_) } = target
+            dirs = map (hv2pt.(<> vec [2,0,1]) . inv .  (<> shapeWhitener target). snd) (kHyps target)
+        renderPrimitive Lines (mapM_ vertex (concatMap (\x->[Point ox oy, x]) dirs))
+
+    h 5 (ShapeMatch {..} : _) = do
+        
+        let Shape { shapeMoments = (ox,oy,_,_,_) } = target
+            dirs = concatMap ((\x->[Point ox oy, x]).hv2pt.(<> vec [0,2,1]) . inv .  (<> shapeWhitener target). snd) (kHyps target)
+            sh = renderPrimitive Lines . mapM_ vertex
+        setColor' blue;  sh dirs  
+        setColor' white; sh (take 4 dirs)
+        setColor' red;   sh (drop 12 dirs)
+
+    sc 0 _ = textAt (Point 0.9 0.65) "Invariant"
+    sc 1 _ = textAt (Point 0.9 0.65) "Invariant"
+    sc 3 _ = textAt (Point 0.9 0.65) "Alignment"
+    sc 2 oks = do textAt (Point 0.9 0.65) "Alignment"
+                  textAt (Point 0.9 0.5) $ printf "E = %.1f" e
       where
         e = (100*) $ mean $ map (alignDist.head) $ filter (not.null) oks
     
+    sc 4 _ = textAt (Point 0.9 0.65) "Directions"
+    sc 5 _ = textAt (Point 0.9 0.65) "Directions"
+

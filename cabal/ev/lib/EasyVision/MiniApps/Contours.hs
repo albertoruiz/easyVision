@@ -15,7 +15,7 @@ module EasyVision.MiniApps.Contours (
     ContourParam(..), winContourParam, argContourParam, defContourParam,
     smartContours, wcontours,
     contourMonitor, 
-    shapeCatalog,
+    shapeCatalog, shapeCatalog',
     PolygonParam(..), winPolygonParam, argPolygonParam, defPolygonParam,
     polygonalize,
     drawContourLabeled
@@ -142,13 +142,17 @@ shapeCatalog
     -> (Sample Polyline -> [a]) -- ^ feature extraction
     -> IO x                     -- ^ input camera with polylines
     -> IO (IO (x, [a]))         -- ^ input and features of current set
-shapeCatalog fimg fpoly prepro gprot feat' cam = do
+shapeCatalog = shapeCatalog' False
+
+shapeCatalog' hide fimg fpoly prepro gprot feat' cam = do
     oraw <- gprot
     let feat = feat' . map (prepro *** id)
         prototypes = feat oraw
     (cam',ctrl) <- withPause cam
     w <- evWindow (oraw,prototypes,Nothing,False) "Contour Selection" (mpSize 10) Nothing (marker (kbdcam ctrl))
+    when hide (windowStatus $= Hidden)
     s <- shapesBrowser "Shape" (Size 240 240) oraw
+    when hide (windowStatus $= Hidden)
     return $ do
         (raw',prots',click,save) <- getW w
         x <- cam'

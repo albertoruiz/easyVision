@@ -5,7 +5,7 @@ module Tools(
     maxFreq,
     toCanonicAll, toCanonic2,
 --    protos, 
-    protoOri,
+    protoOri, protoOriAll,
 --    foufeat, 
     toFun, 
 --    prec,
@@ -353,6 +353,12 @@ protoOri :: Sample Polyline -> Sample Polyline
 protoOri = concatMap (repSample . (f *** id))
   where
     f = icaConts2 . whitenContour . transPol (rot3 (10*degree)) -- hmm
+    repSample (xs,l) = map (id &&& const l) xs
+
+protoOriAll :: Sample Polyline -> Sample Polyline
+protoOriAll = concatMap (repSample . (f *** id))
+  where
+    f = icaContsAll . whitenContour . transPol (rot3 (10*degree)) -- hmm
     repSample (xs,l) = map (id &&& const l) xs
 
 

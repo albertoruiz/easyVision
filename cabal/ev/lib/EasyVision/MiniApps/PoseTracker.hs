@@ -51,7 +51,7 @@ poseTracker :: String -> Maybe Double -> [[Double]] -> IO Channels
             -> IO (IO(Channels, CameraParameters, (Vector Double, Matrix Double), Maybe (Vector Double, Double)))
 
 poseTracker "" mbf ref cam = do
-    tracker <- poseTrackerGen (withRegion 2 ref) mbf ref
+    tracker <- poseTrackerGen (withRegion 5 ref) mbf ref
     return $ do
         img <- cam
         ((pose,st,cov),obs) <- tracker (grayscale img)

@@ -46,6 +46,8 @@ library
 
                         lib/ImagProc/C/Corners/corners.c
 
+                        lib/ImagProc/C/NP/contours.cpp
+
     include-dirs:       lib/ImagProc/C/Segments
 
     cc-options:         -O4

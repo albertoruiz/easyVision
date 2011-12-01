@@ -87,8 +87,8 @@ mktR [a,e,f] = (3><3) [cos a, -sin a, e,
                            0,      0, 1]
 
 
-mkt = mktP
-sdi = sdiP
+mkt = mktD
+sdi = sdiD
 
 
 lkStep t = f

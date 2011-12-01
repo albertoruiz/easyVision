@@ -23,7 +23,11 @@ where
 
 import ImagProc.Ipp.Core
 import Numeric.LinearAlgebra hiding ((.*),step)
-import Foreign
+import System.IO.Unsafe(unsafePerformIO)
+import Foreign.Storable
+import Foreign.Ptr
+import Foreign.ForeignPtr
+import Foreign.Marshal.Array
 import Control.Monad(when)
 import GHC.Prim
 

@@ -127,7 +127,8 @@ kbdcam ctrl = kbd where
 -- Also, pressing i saves a screenshot of the full opengl window contents.
 kbdQuit :: KeyboardMouseCallback
 kbdQuit (Char '\27') Down Modifiers {shift=Down} _ = leaveMainLoop >> system "killall mplayer" >> return ()
-kbdQuit (Char '\27') Down _ _ = exitWith ExitSuccess
+kbdQuit (Char '\27') Down Modifiers {ctrl=Down} _ = exitWith ExitSuccess
+kbdQuit (Char '\27') Down _ _ = leaveMainLoop
 kbdQuit (Char   'i') Down _ _ = captureGL >>= saveRGB' Nothing
 kbdQuit _ _ _ _               = return ()
 
@@ -186,7 +187,7 @@ evWindow st0 name size mdisp kbd = do
                 swapBuffers
     displayCallback $= draw
 
-    actionOnWindowClose $= Exit
+    actionOnWindowClose $= ContinueExectuion
 
     let Size h w = size
         initROI = ROI {r1=0, r2=h-1, c1=0, c2=w-1}

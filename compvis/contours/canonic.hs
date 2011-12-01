@@ -1,3 +1,5 @@
+module Main where
+
 import EasyVision as EV
 import Graphics.UI.GLUT hiding (Point,Size)
 import Util.Misc(diagl,degree,vec,Vec,norm,debug,diagl,memo,Mat,mat,norm)
@@ -31,7 +33,7 @@ catalog = (read <$> readFile "digits.txt") >>= optionFromFile "--catalog"
 
 injectProtos = shapeCatalog fst snd normalShape catalog (concatMap toCanonic2)
 
-main = main0
+main = main1b
 
 main0 = run $ camera ~> grayscale
             >>= wcontours id ~> (id *** contSel)
@@ -60,6 +62,22 @@ main1 = run $ camera ~> grayscale
             >>= virtualExperiment axes
             >>= virtualMonAffine vertical
             >>= virtualMonAffine elevated
+            >>= timeMonitor
+
+main1b = run $ camera ~> grayscale
+            >>= wcontours id ~> (id *** contSel)
+            >>= injectProtos
+            >>= classifier ~> snd
+--            >>= classifyMon
+            >>= alignMon' "Alignment"
+--            >>= parseMon
+--            >>= rectifyMon (mpSize 10)
+--            ~> tryMetric
+--            >>= alignMon
+--            >>= virtualMon
+--            >>= virtualExperiment axes
+            >>= virtualMonAffine vertical
+--            >>= virtualMonAffine elevated
             >>= timeMonitor
 
 main3 = run $ camera ~> grayscale
@@ -178,8 +196,9 @@ virtualMonAffine h = monitor "Virtual Affine" (mpSize 20) sh
       where 
         h = inv b <> a
         c = cameraFromAffineHomogZ0 1.7 (h <> diagl[-1,1,1])
-    s (_, (_,_,_,_,_,l)) = not (l `elem` ["I","O","0","9","6"])
-        
+    s (_, (_,_,_,_,_,l)) = -- not (l `elem` ["I","O","0","9","6"])
+                           -- True
+                           not (l `elem` ["O","0","I"])   
     sh (im,oks) = do
         clear [DepthBuffer]
         drawImage (im::ImageGray)
@@ -382,12 +401,19 @@ showDigits = do
   where
     f = shcontO . transPol (diagl[0.1,0.1,1]) . whitenContour
 
+showMPEG7 = do
+    s <- read <$> readFile "mpeg7shapes.txt" :: IO (Sample Polyline)
+    examplesBrowser "mpeg7" (EV.Size 500 500) f (protoOriAll s)
+  where
+    f = shcontO . transPol (diagl[0.2,0.2,1]) . whitenContour
+
 
 showCanonic = runIt $ showpentoR
                    >> showpentoW
                    >> showpentoF
                    >> showpentoCH
                    >> showDigits
+                   >> showMPEG7
 
 ----------------------------------------------------------------------
 

@@ -41,7 +41,7 @@ scwme title evi p met = scwc title p (maybe "REJECT" id . reject evi . met p)
 
 scw3 title p = scatterPlot3D title 400 p (0,1,2) colors (return ())
 
-rawmnist = loadExamples "../../../data/mnist.txt"
+rawmnist = loadExamples "../../data/mnist.txt"
 
 ---------------------------------------------------------------------------
 

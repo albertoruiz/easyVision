@@ -26,6 +26,7 @@ library
                         prcv-util, features,
                         base >= 3 && < 5,
                         colour >= 2.2,
+                        -- OpenGL, GLUT,
                         OpenGL < 2.2.4, GLUT < 2.1.2,
                         containers, process,
                         template-haskell, ghc-prim

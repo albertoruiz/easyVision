@@ -28,7 +28,8 @@ module Features.Polyline (
     norm2Cont,
 -- * K orientation
     icaAngles,
-    kurtCoefs, kurtAlpha, kurtosisX,   
+    kurtCoefs, kurtAlpha, kurtosisX,
+    skewX, 
 -- * Reduction
     douglasPeucker, douglasPeuckerClosed,
     selectPolygons, cleanPol,
@@ -613,6 +614,22 @@ icaAngles w = sortBy (compare `on` (negate.kur)) angs
     angs = map realPart . filter ((<(0.1*degree)).abs.imagPart) . map (atan.recip) . polySolve . derivCoefs $ coefs
     coefs = kurtCoefs w
     kur = kurtAlpha coefs
+
+--------------------------------------------------------------------------------
+
+auxSkew k seg@(Segment (Point x1 y1) (Point x2 y2)) =
+     k + (2*x1**3*x2*
+           (y1 - y2) + 
+          2*x1**2*x2**2*
+           (y1 - y2) + 
+          2*x1*x2**3*
+           (y1 - y2) - 
+          x1**4*
+           (3*y1 + 2*y2) + 
+          x2**4*(2*y1 + 3*y2))
+         /40
+
+skewX p = foldl' auxSkew 0 (asSegments p) 
 
 ----------------------------------------------------------------------
 
