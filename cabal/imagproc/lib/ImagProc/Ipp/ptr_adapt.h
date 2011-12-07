@@ -22,6 +22,7 @@ int ippiSum_32f_C1Rx(float*, int, void*, double*, int);
 int ippiHistogramRange_8u_C1Rx(unsigned char*, int, void*, int*, int*, int);
 int ippiFilterMedian_8u_C1Rx(unsigned char*, int, unsigned char*, int, void*, void*, void*);
 int ippiFilterMax_32f_C1Rx(float*, int, float*, int, void*, void*, void*);
+int ippiFilterBox_8u_C1Rx(unsigned char*, int, unsigned char*, int, void*, void*, void*);
 int ippiFilterBox_32f_C1Rx(float*, int, float*, int, void*, void*, void*);
 int ippiFilterSobelVert_32f_C1Rx(float*, int, float*, int, void*);
 int ippiFilterSobelHoriz_32f_C1Rx(float*, int, float*, int, void*);

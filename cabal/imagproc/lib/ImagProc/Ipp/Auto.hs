@@ -55,20 +55,20 @@ ioMagnitudePack_32f_C1R  = {-# SCC "ippiMagnitudePack_32f_C1R" #-} auto_1_32f_C1
 ioMirror_8u_C1R flip = {-# SCC "ippiMirror_8u_C1R" #-} auto_1_8u_C1R (f flip) "ippiMirror_8u_C1R"
     where f flip pSrc srcStep pDst dstStep roiSize = ippiMirror_8u_C1R pSrc srcStep pDst dstStep roiSize flip
 
-{- |    Transforms the source image by remapping its pixels
-                  dst[i,j] = src[xMap[i,j], yMap[i,j]] -}
-ioRemap_8u_C1R srcSize srcRoi pxMap xMapStep pyMap yMapStep interpolation = {-# SCC "ippiRemap_8u_C1R" #-} auto_1_8u_C1R (f srcSize srcRoi pxMap xMapStep pyMap yMapStep interpolation) "ippiRemap_8u_C1R"
-    where f srcSize srcRoi pxMap xMapStep pyMap yMapStep interpolation pSrc srcStep pDst dstStep dstRoiSize = ippiRemap_8u_C1R pSrc srcSize srcStep srcRoi pxMap xMapStep pyMap yMapStep pDst dstStep dstRoiSize interpolation
+{- |             Transforms the source image by remapping its pixels
+                          dst[i,j] = src[xMap[i,j], yMap[i,j]] -}
+ioRemap_8u_C1R srcSize srcROI pxMap xMapStep pyMap yMapStep interpolation = {-# SCC "ippiRemap_8u_C1R" #-} auto_1_8u_C1R (f srcSize srcROI pxMap xMapStep pyMap yMapStep interpolation) "ippiRemap_8u_C1R"
+    where f srcSize srcROI pxMap xMapStep pyMap yMapStep interpolation pSrc srcStep pDst dstStep dstRoiSize = ippiRemap_8u_C1R pSrc srcSize srcStep srcROI pxMap xMapStep pyMap yMapStep pDst dstStep dstRoiSize interpolation
 
-{- |    Transforms the source image by remapping its pixels
-                  dst[i,j] = src[xMap[i,j], yMap[i,j]] -}
-ioRemap_8u_C3R srcSize srcRoi pxMap xMapStep pyMap yMapStep interpolation = {-# SCC "ippiRemap_8u_C3R" #-} auto_1_8u_C3R (f srcSize srcRoi pxMap xMapStep pyMap yMapStep interpolation) "ippiRemap_8u_C3R"
-    where f srcSize srcRoi pxMap xMapStep pyMap yMapStep interpolation pSrc srcStep pDst dstStep dstRoiSize = ippiRemap_8u_C3R pSrc srcSize srcStep srcRoi pxMap xMapStep pyMap yMapStep pDst dstStep dstRoiSize interpolation
+{- |             Transforms the source image by remapping its pixels
+                          dst[i,j] = src[xMap[i,j], yMap[i,j]] -}
+ioRemap_8u_C3R srcSize srcROI pxMap xMapStep pyMap yMapStep interpolation = {-# SCC "ippiRemap_8u_C3R" #-} auto_1_8u_C3R (f srcSize srcROI pxMap xMapStep pyMap yMapStep interpolation) "ippiRemap_8u_C3R"
+    where f srcSize srcROI pxMap xMapStep pyMap yMapStep interpolation pSrc srcStep pDst dstStep dstRoiSize = ippiRemap_8u_C3R pSrc srcSize srcStep srcROI pxMap xMapStep pyMap yMapStep pDst dstStep dstRoiSize interpolation
 
-{- |    Transforms the source image by remapping its pixels
-                  dst[i,j] = src[xMap[i,j], yMap[i,j]] -}
-ioRemap_32f_C1R srcSize srcRoi pxMap xMapStep pyMap yMapStep interpolation = {-# SCC "ippiRemap_32f_C1R" #-} auto_1_32f_C1R (f srcSize srcRoi pxMap xMapStep pyMap yMapStep interpolation) "ippiRemap_32f_C1R"
-    where f srcSize srcRoi pxMap xMapStep pyMap yMapStep interpolation pSrc srcStep pDst dstStep dstRoiSize = ippiRemap_32f_C1R pSrc srcSize srcStep srcRoi pxMap xMapStep pyMap yMapStep pDst dstStep dstRoiSize interpolation
+{- |             Transforms the source image by remapping its pixels
+                          dst[i,j] = src[xMap[i,j], yMap[i,j]] -}
+ioRemap_32f_C1R srcSize srcROI pxMap xMapStep pyMap yMapStep interpolation = {-# SCC "ippiRemap_32f_C1R" #-} auto_1_32f_C1R (f srcSize srcROI pxMap xMapStep pyMap yMapStep interpolation) "ippiRemap_32f_C1R"
+    where f srcSize srcROI pxMap xMapStep pyMap yMapStep interpolation pSrc srcStep pDst dstStep dstRoiSize = ippiRemap_32f_C1R pSrc srcSize srcStep srcROI pxMap xMapStep pyMap yMapStep pDst dstStep dstRoiSize interpolation
 
 {- |   Performs horizontal median filtering -}
 ioFilterMedian_8u_C1R maskSize anchor = {-# SCC "ippiFilterMedian_8u_C1R" #-} auto_1_8u_C1R (f maskSize anchor) "ippiFilterMedian_8u_C1R"
@@ -77,6 +77,10 @@ ioFilterMedian_8u_C1R maskSize anchor = {-# SCC "ippiFilterMedian_8u_C1R" #-} au
 {- |   Applies the "max" filter to an image -}
 ioFilterMax_32f_C1R maskSize anchor = {-# SCC "ippiFilterMax_32f_C1R" #-} auto_1_32f_C1R (f maskSize anchor) "ippiFilterMax_32f_C1R"
     where f maskSize anchor pSrc srcStep pDst dstStep dstRoiSize = ippiFilterMax_32f_C1R pSrc srcStep pDst dstStep dstRoiSize maskSize anchor
+
+{- |              Blurs an image using a simple box filter -}
+ioFilterBox_8u_C1R maskSize anchor = {-# SCC "ippiFilterBox_8u_C1R" #-} auto_1_8u_C1R (f maskSize anchor) "ippiFilterBox_8u_C1R"
+    where f maskSize anchor pSrc srcStep pDst dstStep dstRoiSize = ippiFilterBox_8u_C1R pSrc srcStep pDst dstStep dstRoiSize maskSize anchor
 
 {- |              Blurs an image using a simple box filter -}
 ioFilterBox_32f_C1R maskSize anchor = {-# SCC "ippiFilterBox_32f_C1R" #-} auto_1_32f_C1R (f maskSize anchor) "ippiFilterBox_32f_C1R"
@@ -338,7 +342,7 @@ ioRectStdDev_32f_C1R rect = {-# SCC "ippiRectStdDev_32f_C1R" #-} auto_2_32f_C1R 
 
 ------ inplace arity 2 ------
 
-{- |  -}
+{- |             calculation min/max value for every element of two images -}
 ioMaxEvery_8u_C1IR  = {-# SCC "ippiMaxEvery_8u_C1IR" #-} auto_11_8u_C1IR f "ippiMaxEvery_8u_C1IR"
     where f pSrc srcStep pSrcDst srcDstStep roiSize = ippiMaxEvery_8u_C1IR pSrc srcStep pSrcDst srcDstStep roiSize
 
@@ -346,7 +350,7 @@ ioMaxEvery_8u_C1IR  = {-# SCC "ippiMaxEvery_8u_C1IR" #-} auto_11_8u_C1IR f "ippi
 ioMinEvery_8u_C1IR  = {-# SCC "ippiMinEvery_8u_C1IR" #-} auto_11_8u_C1IR f "ippiMinEvery_8u_C1IR"
     where f pSrc srcStep pSrcDst srcDstStep roiSize = ippiMinEvery_8u_C1IR pSrc srcStep pSrcDst srcDstStep roiSize
 
-{- |  -}
+{- |             calculation min/max value for every element of two images -}
 ioMaxEvery_32f_C1IR  = {-# SCC "ippiMaxEvery_32f_C1IR" #-} auto_11_32f_C1IR f "ippiMaxEvery_32f_C1IR"
     where f pSrc srcStep pSrcDst srcDstStep roiSize = ippiMaxEvery_32f_C1IR pSrc srcStep pSrcDst srcDstStep roiSize
 

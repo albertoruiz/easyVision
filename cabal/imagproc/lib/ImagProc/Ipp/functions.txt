@@ -24,6 +24,7 @@ ippi.h  ippiFilterSobelHoriz_32f_C1R
 ippi.h  ippiFilterGauss_32f_C1R
 ippi.h  ippiFilterGauss_8u_C1R
 ippi.h  ippiFilterBox_32f_C1R
+ippi.h  ippiFilterBox_8u_C1R
 ippi.h  ippiFilterLaplace_32f_C1R
 ippi.h  ippiFilterMedian_8u_C1R
 ippi.h  ippiFilterHipass_8u_C1R

@@ -58,16 +58,16 @@ int ippiMirror_8u_C1Rx(Ipp8u* pSrc, int srcStep, Ipp8u* pDst, int dstStep, IppiS
     return ippiMirror_8u_C1R(pSrc, srcStep, pDst, dstStep, *roiSize, flip);
 }
 
-int ippiRemap_8u_C1Rx(Ipp8u* pSrc, IppiSize* srcSize, int srcStep, IppiRect* srcRoi, Ipp32f* pxMap, int xMapStep, Ipp32f* pyMap, int yMapStep, Ipp8u* pDst, int dstStep, IppiSize* dstRoiSize, int interpolation) {
-    return ippiRemap_8u_C1R(pSrc, *srcSize, srcStep, *srcRoi, pxMap, xMapStep, pyMap, yMapStep, pDst, dstStep, *dstRoiSize, interpolation);
+int ippiRemap_8u_C1Rx(Ipp8u* pSrc, IppiSize* srcSize, int srcStep, IppiRect* srcROI, Ipp32f* pxMap, int xMapStep, Ipp32f* pyMap, int yMapStep, Ipp8u* pDst, int dstStep, IppiSize* dstRoiSize, int interpolation) {
+    return ippiRemap_8u_C1R(pSrc, *srcSize, srcStep, *srcROI, pxMap, xMapStep, pyMap, yMapStep, pDst, dstStep, *dstRoiSize, interpolation);
 }
 
-int ippiRemap_8u_C3Rx(Ipp8u* pSrc, IppiSize* srcSize, int srcStep, IppiRect* srcRoi, Ipp32f* pxMap, int xMapStep, Ipp32f* pyMap, int yMapStep, Ipp8u* pDst, int dstStep, IppiSize* dstRoiSize, int interpolation) {
-    return ippiRemap_8u_C3R(pSrc, *srcSize, srcStep, *srcRoi, pxMap, xMapStep, pyMap, yMapStep, pDst, dstStep, *dstRoiSize, interpolation);
+int ippiRemap_8u_C3Rx(Ipp8u* pSrc, IppiSize* srcSize, int srcStep, IppiRect* srcROI, Ipp32f* pxMap, int xMapStep, Ipp32f* pyMap, int yMapStep, Ipp8u* pDst, int dstStep, IppiSize* dstRoiSize, int interpolation) {
+    return ippiRemap_8u_C3R(pSrc, *srcSize, srcStep, *srcROI, pxMap, xMapStep, pyMap, yMapStep, pDst, dstStep, *dstRoiSize, interpolation);
 }
 
-int ippiRemap_32f_C1Rx(Ipp32f* pSrc, IppiSize* srcSize, int srcStep, IppiRect* srcRoi, Ipp32f* pxMap, int xMapStep, Ipp32f* pyMap, int yMapStep, Ipp32f* pDst, int dstStep, IppiSize* dstRoiSize, int interpolation) {
-    return ippiRemap_32f_C1R(pSrc, *srcSize, srcStep, *srcRoi, pxMap, xMapStep, pyMap, yMapStep, pDst, dstStep, *dstRoiSize, interpolation);
+int ippiRemap_32f_C1Rx(Ipp32f* pSrc, IppiSize* srcSize, int srcStep, IppiRect* srcROI, Ipp32f* pxMap, int xMapStep, Ipp32f* pyMap, int yMapStep, Ipp32f* pDst, int dstStep, IppiSize* dstRoiSize, int interpolation) {
+    return ippiRemap_32f_C1R(pSrc, *srcSize, srcStep, *srcROI, pxMap, xMapStep, pyMap, yMapStep, pDst, dstStep, *dstRoiSize, interpolation);
 }
 
 int ippiSum_8u_C1Rx(Ipp8u* pSrc, int srcStep, IppiSize* roiSize, Ipp64f* pSum) {
@@ -88,6 +88,10 @@ int ippiFilterMedian_8u_C1Rx(Ipp8u* pSrc, int srcStep, Ipp8u* pDst, int dstStep,
 
 int ippiFilterMax_32f_C1Rx(Ipp32f* pSrc, int srcStep, Ipp32f* pDst, int dstStep, IppiSize* dstRoiSize, IppiSize* maskSize, IppiPoint* anchor) {
     return ippiFilterMax_32f_C1R(pSrc, srcStep, pDst, dstStep, *dstRoiSize, *maskSize, *anchor);
+}
+
+int ippiFilterBox_8u_C1Rx(Ipp8u* pSrc, int srcStep, Ipp8u* pDst, int dstStep, IppiSize* dstRoiSize, IppiSize* maskSize, IppiPoint* anchor) {
+    return ippiFilterBox_8u_C1R(pSrc, srcStep, pDst, dstStep, *dstRoiSize, *maskSize, *anchor);
 }
 
 int ippiFilterBox_32f_C1Rx(Ipp32f* pSrc, int srcStep, Ipp32f* pDst, int dstStep, IppiSize* dstRoiSize, IppiSize* maskSize, IppiPoint* anchor) {

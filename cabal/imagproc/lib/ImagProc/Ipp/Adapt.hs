@@ -1,7 +1,7 @@
 -- generated automatically by adapter.hs
 
 {-# LANGUAGE ForeignFunctionInterface #-}
-{-#  #-}
+{-# OPTIONS #-}
 
 module ImagProc.Ipp.Adapt where
 
@@ -115,37 +115,37 @@ ippiMirror_8u_C1R pSrc srcStep pDst dstStep roiSize flip = do
 
 foreign import ccall "adapt.h ippiRemap_8u_C1Rx"
     ippiRemap_8u_C1Rx :: Ptr CUChar -> Ptr IppiSize -> Int -> Ptr IppiRect -> Ptr Float -> Int -> Ptr Float -> Int -> Ptr CUChar -> Int -> Ptr IppiSize -> Int -> IO Int
-ippiRemap_8u_C1R pSrc srcSize srcStep srcRoi pxMap xMapStep pyMap yMapStep pDst dstStep dstRoiSize interpolation = do
+ippiRemap_8u_C1R pSrc srcSize srcStep srcROI pxMap xMapStep pyMap yMapStep pDst dstStep dstRoiSize interpolation = do
     psrcSize <- new srcSize
-    psrcRoi <- new srcRoi
+    psrcROI <- new srcROI
     pdstRoiSize <- new dstRoiSize
-    r <- ippiRemap_8u_C1Rx pSrc psrcSize srcStep srcRoi pxMap xMapStep pyMap yMapStep pDst dstStep pdstRoiSize interpolation
+    r <- ippiRemap_8u_C1Rx pSrc psrcSize srcStep srcROI pxMap xMapStep pyMap yMapStep pDst dstStep pdstRoiSize interpolation
     free psrcSize
-    free psrcRoi
+    free psrcROI
     free pdstRoiSize
     return r
 
 foreign import ccall "adapt.h ippiRemap_8u_C3Rx"
     ippiRemap_8u_C3Rx :: Ptr CUChar -> Ptr IppiSize -> Int -> Ptr IppiRect -> Ptr Float -> Int -> Ptr Float -> Int -> Ptr CUChar -> Int -> Ptr IppiSize -> Int -> IO Int
-ippiRemap_8u_C3R pSrc srcSize srcStep srcRoi pxMap xMapStep pyMap yMapStep pDst dstStep dstRoiSize interpolation = do
+ippiRemap_8u_C3R pSrc srcSize srcStep srcROI pxMap xMapStep pyMap yMapStep pDst dstStep dstRoiSize interpolation = do
     psrcSize <- new srcSize
-    psrcRoi <- new srcRoi
+    psrcROI <- new srcROI
     pdstRoiSize <- new dstRoiSize
-    r <- ippiRemap_8u_C3Rx pSrc psrcSize srcStep srcRoi pxMap xMapStep pyMap yMapStep pDst dstStep pdstRoiSize interpolation
+    r <- ippiRemap_8u_C3Rx pSrc psrcSize srcStep srcROI pxMap xMapStep pyMap yMapStep pDst dstStep pdstRoiSize interpolation
     free psrcSize
-    free psrcRoi
+    free psrcROI
     free pdstRoiSize
     return r
 
 foreign import ccall "adapt.h ippiRemap_32f_C1Rx"
     ippiRemap_32f_C1Rx :: Ptr Float -> Ptr IppiSize -> Int -> Ptr IppiRect -> Ptr Float -> Int -> Ptr Float -> Int -> Ptr Float -> Int -> Ptr IppiSize -> Int -> IO Int
-ippiRemap_32f_C1R pSrc srcSize srcStep srcRoi pxMap xMapStep pyMap yMapStep pDst dstStep dstRoiSize interpolation = do
+ippiRemap_32f_C1R pSrc srcSize srcStep srcROI pxMap xMapStep pyMap yMapStep pDst dstStep dstRoiSize interpolation = do
     psrcSize <- new srcSize
-    psrcRoi <- new srcRoi
+    psrcROI <- new srcROI
     pdstRoiSize <- new dstRoiSize
-    r <- ippiRemap_32f_C1Rx pSrc psrcSize srcStep srcRoi pxMap xMapStep pyMap yMapStep pDst dstStep pdstRoiSize interpolation
+    r <- ippiRemap_32f_C1Rx pSrc psrcSize srcStep srcROI pxMap xMapStep pyMap yMapStep pDst dstStep pdstRoiSize interpolation
     free psrcSize
-    free psrcRoi
+    free psrcROI
     free pdstRoiSize
     return r
 
@@ -192,6 +192,18 @@ ippiFilterMax_32f_C1R pSrc srcStep pDst dstStep dstRoiSize maskSize anchor = do
     pmaskSize <- new maskSize
     panchor <- new anchor
     r <- ippiFilterMax_32f_C1Rx pSrc srcStep pDst dstStep pdstRoiSize pmaskSize panchor
+    free pdstRoiSize
+    free pmaskSize
+    free panchor
+    return r
+
+foreign import ccall "adapt.h ippiFilterBox_8u_C1Rx"
+    ippiFilterBox_8u_C1Rx :: Ptr CUChar -> Int -> Ptr CUChar -> Int -> Ptr IppiSize -> Ptr IppiSize -> Ptr IppiPoint -> IO Int
+ippiFilterBox_8u_C1R pSrc srcStep pDst dstStep dstRoiSize maskSize anchor = do
+    pdstRoiSize <- new dstRoiSize
+    pmaskSize <- new maskSize
+    panchor <- new anchor
+    r <- ippiFilterBox_8u_C1Rx pSrc srcStep pDst dstStep pdstRoiSize pmaskSize panchor
     free pdstRoiSize
     free pmaskSize
     free panchor
