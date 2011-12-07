@@ -36,6 +36,8 @@ library
 
                         ImagProc.C.Corners
 
+    --                    ImagProc.C.NP
+
     other-modules:
 
     c-sources:          lib/ImagProc/C/Segments/mycvRunnings.c
@@ -46,7 +48,7 @@ library
 
                         lib/ImagProc/C/Corners/corners.c
 
-                        lib/ImagProc/C/NP/contours.cpp
+    --                    lib/ImagProc/C/NP/npcp.c
 
     include-dirs:       lib/ImagProc/C/Segments
 

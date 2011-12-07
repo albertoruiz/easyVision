@@ -37,6 +37,16 @@ void grabUVC(struct vdIn * v, Ipp8u * p) {
 
     ippiYCbCr422ToYCbCr420_8u_C2P3R(v->framebuffer, v->width*2, dest, steps, roiSize);
 
+/*
+    // copy the gray plane
+    int k, d = 0;
+    unsigned char * s = v->framebuffer;
+    for(k=0; k<(v->width*v->height); k++) {
+       p[k] = s[d]; d+=2;
+    }
+
+*/
+
 //    captura sin transformación de formato
 //    memcpy(p, videoIn->framebuffer, videoIn->width * (videoIn->height) * 2);
 
@@ -47,4 +57,5 @@ void grabUVC(struct vdIn * v, Ipp8u * p) {
 //    close_v4l2(videoIn);
 //	  free(videoIn);
 
+////////////////////////////////////////////////////////////////////////////////////
 

@@ -8,13 +8,13 @@ cd ../imagproc
 cabal install
 cd ../camera
 cabal install
-cd ../contrib
-cabal install
 cd ../features
 cabal install
 cd ../gui
 cabal install
 cd ../ev
+cabal install
+cd ../contrib
 cabal install
 cd ../gpu
 cabal install

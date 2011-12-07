@@ -8,13 +8,13 @@ cd ../imagproc
 cabal clean
 cd ../camera
 cabal clean
-cd ../contrib
-cabal clean
 cd ../features
 cabal clean
 cd ../gui
 cabal clean
 cd ../ev
+cabal clean
+cd ../contrib
 cabal clean
 cd ../gpu
 cabal clean

@@ -18,6 +18,8 @@ import Control.Monad(when)
 import Control.Applicative((<$>))
 import Data.Maybe(isJust)
 
+--import ImagProc.C.NP
+
 import Shapes
 import NewTools
 
@@ -27,11 +29,13 @@ square = Closed $ map (\(a,b)->Point a b) [(0, 0), (0, 0.25), (0, 0.5), (0, 0.75
 
 catalog = (read <$> readFile "digits.txt") >>= optionFromFile "--catalog"
 
+
 main = main1
 
 main1 = run $ camera  ~> grayscale
---         >>= detectStatic 0.02 1.5 5 grayscale rgb ~> grayscale
+--       >>= detectStatic 0.02 1.5 5 grayscale rgb ~> grayscale
          >>= wcontours id ~> (id *** contSel)
+--         ~>  id &&& npcontours
          ~>  id *** filter (not . elongated 5) . map shape
          >>= injectPrototypes boxShape catalog
          >>= showCanonical
@@ -44,6 +48,7 @@ main1 = run $ camera  ~> grayscale
 main2 = run $ camera  ~> grayscale
           >>= observe "image" id
           >>= wcontours id ~> (id *** contSel)
+--          ~>  id &&& npcontours
           >>= showContours
           >>= timeMonitor
 

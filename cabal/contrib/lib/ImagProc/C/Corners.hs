@@ -14,11 +14,12 @@ Interface to the FAST + Shi-Tomasi corner extractor used in PTAM and similar sys
 -----------------------------------------------------------------------------
 
 module ImagProc.C.Corners (
-    fastCorners, prufun, prucor
+    fastCorners, prufun, prucor, sumInC, invertInC
 )
 where
 
 import ImagProc.Ipp.Core
+import ImagProc.Generic(clone)
 import Foreign
 import Util.Misc(splitEvery)
 import Data.Function(on)
@@ -38,6 +39,31 @@ foreign import ccall "prufun"
     c_prufun :: Ptr () -> CInt -> CInt -> CInt -> CInt -> CInt -> IO (CInt)
 
 prufun = app1G c_prufun
+
+------------------------------------------------
+
+foreign import ccall "customSum"
+    c_customSum :: Ptr () -> CInt -> CInt -> CInt -> CInt -> CInt -> Ptr (CInt) -> IO (CInt)
+
+sumInC (G x) = unsafePerformIO $ do
+    presult <- malloc
+    ok <- app1G c_customSum (G x) presult
+    result <- peek presult
+    touchForeignPtr . fptr $ x
+    return result 
+
+------------------------------------------------
+
+foreign import ccall "customInvert"
+    c_customInvert :: Ptr () -> CInt -> CInt -> CInt -> CInt -> CInt
+                   -> Ptr () -> CInt -> CInt -> CInt -> CInt -> CInt
+                   -> IO (CInt)
+
+invertInC (G x) = unsafePerformIO $ do
+    G res <- clone (G x)
+    ok <- app1G c_customInvert (G x) `app1G` G res
+    mapM_ (touchForeignPtr . fptr)  [x,res]
+    return (G res) 
 
 ----------------------------------------------------
 
