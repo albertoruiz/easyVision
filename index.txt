@@ -20,7 +20,7 @@ from [Hackage][hackage].
 Source Code
 -----------
 
-$ [darcs get http://patch-tag.com/r/aruiz/easyVision][source2]
+$ [https://github.com/AlbertoRuiz/easyVision][source3]
 
 Installation
 ------------
@@ -28,7 +28,7 @@ Installation
 The system is not yet in Hackage but the packages are in standard cabal
 format and can be easily installed.
 
-See the [INSTALL][install3] file for details.
+See the [INSTALL][install4] file for details.
 
 Help
 ----
@@ -58,9 +58,11 @@ Related work
 
 [source]: http://perception.inf.um.es/cgi-bin/darcsweb.cgi?r=easyVision;a=summary
 [source2]: http://patch-tag.com/r/aruiz/easyVision
+[source3]: https://github.com/AlbertoRuiz/easyVision
 [install]: http://code.haskell.org/easyVision/INSTALL
 [install2]: http://perception.inf.um.es/~aruiz/darcs/easyVision/INSTALL
 [install3]:http://patch-tag.com/r/aruiz/easyVision/snapshot/current/content/pretty/INSTALL
+[install4]: https://github.com/AlbertoRuiz/easyVision/blob/master/INSTALL
 [tutorial]: http://perception.inf.um.es/easyVision/easyVision.pdf
 [blog]: http://covector.blogspot.com/
 
