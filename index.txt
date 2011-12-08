@@ -1,0 +1,72 @@
+<HEAD>
+    <TITLE>easyVision</TITLE>
+    <STYLE> <!-- body{width: 600px; margin:50px auto;font-family:arial} --> </STYLE>
+</HEAD>
+
+
+<center>Haskell packages<br> for Computer Vision</center>
+==========================
+
+This is an experimental [Haskell][haskell] framework for fast prototyping of computer vision and image processing applications. We take advantage of the expressive power of functional programming to easily write elegant programs, supported by standard low level specialized libraries.
+
+This software is extremely provisional. It may not work "out of the box" and I do not yet recommend it for serious applications.
+
+Requirements
+------------
+
+Intel IPP, OpenGL, mplayer, and several standard Haskell packages available
+from [Hackage][hackage].
+
+Source Code
+-----------
+
+$ [darcs get http://patch-tag.com/r/aruiz/easyVision][source2]
+
+Installation
+------------
+
+The system is not yet in Hackage but the packages are in standard cabal
+format and can be easily installed.
+
+See the [INSTALL][install3] file for details.
+
+Help
+----
+
+- [Tutorial][tutorial]
+
+- [Blog][blog]
+
+Related work
+------------
+
+- There is an [early approach][yale] by the Yale Haskell Group.
+
+- Computer Vision packages by [Noam Lewis][lewis] and [Ville Tirronen][tirronen] in Hackage.
+
+- [Repa][repa]
+
+- - -
+
+[Alberto Ruiz][yo]
+
+[yo]: http://dis.um.es/profesores/alberto
+[haskell]: http://www.haskell.org
+[hmatrix]: http://code.haskell.org/hmatrix
+[hmatrix2]: http://perception.inf.um.es/hmatrix
+[hackage]: http://hackage.haskell.org
+
+[source]: http://perception.inf.um.es/cgi-bin/darcsweb.cgi?r=easyVision;a=summary
+[source2]: http://patch-tag.com/r/aruiz/easyVision
+[install]: http://code.haskell.org/easyVision/INSTALL
+[install2]: http://perception.inf.um.es/~aruiz/darcs/easyVision/INSTALL
+[install3]:http://patch-tag.com/r/aruiz/easyVision/snapshot/current/content/pretty/INSTALL
+[tutorial]: http://perception.inf.um.es/easyVision/easyVision.pdf
+[blog]: http://covector.blogspot.com/
+
+[yale]: http://haskell.cs.yale.edu/?post_type=publication&p=196
+[lewis]: http://hackage.haskell.org/package/HOpenCV
+[tirronen]: http://hackage.haskell.org/package/CV
+[repa]: http://hackage.haskell.org/package/repa-examples
+
+
