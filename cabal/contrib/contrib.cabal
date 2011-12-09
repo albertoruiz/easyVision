@@ -14,7 +14,7 @@ Category:           Math
 tested-with:        GHC ==6.10.4, GHC ==6.12.1
 
 cabal-version:      >=1.2
-build-type:         Simple
+build-type:         Custom
 
 extra-source-files:     lib/ImagProc/C/Segments/mycv.h
                         lib/ImagProc/C/Segments/mycvRunnings.h
@@ -36,7 +36,7 @@ library
 
                         ImagProc.C.Corners
 
-    --                    ImagProc.C.NP
+                        ImagProc.C.NP
 
     other-modules:
 
@@ -48,7 +48,7 @@ library
 
                         lib/ImagProc/C/Corners/corners.c
 
-    --                    lib/ImagProc/C/NP/npcp.c
+    extra-libraries:    npcp
 
     include-dirs:       lib/ImagProc/C/Segments
 
@@ -57,3 +57,4 @@ library
     ghc-prof-options:   -auto-all
 
     ghc-options:        -Wall
+

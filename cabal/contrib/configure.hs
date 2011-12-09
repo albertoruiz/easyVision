@@ -5,6 +5,6 @@ import System.Environment(getEnv)
 main = do
     nppath <- getEnv "EASYVISION"
     putStrLn $ "EASYVISION path: " ++ nppath
-    writeFile "imagproc-gpu.buildinfo" $ 
+    writeFile "contrib.buildinfo" $ 
               "extra-lib-dirs: "++nppath++"/lib\n"
 

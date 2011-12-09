@@ -1,108 +1,87 @@
-Tested with IPP 5.3 and 7.0 on Ubuntu 9.10 and 10.10 x86
---------------------------------------------------------
+Tested on Ubuntu x86
+--------------------
 
-1. Install the Haskell Platform (we need ghc and cabal-install).
+1. Install the Haskell Platform (we need ghc and cabal-install) and run:
 
-   Add to .bahsrc (this only needed to run programs built by cabal, e.g. darcs):
-
-PATH=$PATH:~/.cabal/bin
-
+   $ cabal update
 
 2. Install IPP. You can download a noncomercial version for Linux:
 
-http://software.intel.com/en-us/articles/non-commercial-software-download/
+   http://software.intel.com/en-us/articles/non-commercial-software-download/
 
-Add to .bahsrc:
+   Add to .bahsrc:
 
-For IPP 7.0, 32 bit:
+   For IPP 7.0, 32 bit:
 
-export IPP_INC=/opt/intel/composerxe/ipp/include
-export IPP_SHARED="/opt/intel/composerxe/ipp/lib/ia32:/opt/intel/compilerpro-12.0.2.137/compiler/lib/ia32/"
-export IPP_LIBS="ippcore ippi ipps ippcc ippvc ippcv iomp5"
-export IPP_LINK=-pthread 
+        export IPP_INC=/opt/intel/composerxe/ipp/include
+        export IPP_SHARED="/opt/intel/composerxe/ipp/lib/ia32:/opt/intel/compilerpro-12.0.2.137/compiler/lib/ia32/"
+        export IPP_LIBS="ippcore ippi ipps ippcc ippvc ippcv iomp5"
+        export IPP_LINK=-pthread 
 
-For IPP 5.3, 32 bit:
+   For IPP 5.3, 32 bit:
 
-export IPP_INC=/path/to/your/ipp/path/ia32/include
-export IPP_SHARED=/path/to/your/ipp/path/ia32/sharedlib
-export IPP_LIBS=guide ippcore ippi ipps ippcc ippvc ippcv
-export IPP_LINK=
+        export IPP_INC=/path/to/your/ipp/path/ia32/include
+        export IPP_SHARED=/path/to/your/ipp/path/ia32/sharedlib
+        export IPP_LIBS=guide ippcore ippi ipps ippcc ippvc ippcv
+        export IPP_LINK=
 
-For IPP 5.3, 64 bit:
+   For IPP 5.3, 64 bit:
 
-export IPP_INC=/path/to/your/ipp/path/ia32/include
-export IPP_SHARED=/path/to/your/ipp/path/ia32/sharedlib
-export IPP_LIBS=guide ippcoreem64t ippiem64t ippsem64t ippccem64t ippvcem64t ippcvem64t
-export IPP_LINK=-pthread
+        export IPP_INC=/path/to/your/ipp/path/ia32/include
+        export IPP_SHARED=/path/to/your/ipp/path/ia32/sharedlib
+        export IPP_LIBS=guide ippcoreem64t ippiem64t ippsem64t ippccem64t ippvcem64t ippcvem64t
+        export IPP_LINK=-pthread
 
+3. Get the source code:
 
-3. In a new terminal:
+    $ git clone git://github.com/AlbertoRuiz/easyVision.git
 
-$ sudo apt-get install libgsl0-dev liblapack-dev libglpk-dev     (for hmatrix)
-$ sudo apt-get install libghc6-glut-dev
+4. Add to .bahsrc:
 
-$ sudo apt-get install mplayer imagemagick libglew1.5-dev lib3ds-dev
-$ sudo apt-get install darcs
+    export EASYVISION=/your/path/to/easyVision/
+    export LD_LIBRARY_PATH=$IPP_SHARED:$EASYVISION/lib
 
-In principle, hmatrix will be automatically installed later, but we may
-want to install it now and verify that it works ok.
-See the hmatrix web page for help.
+5. Install the foreign libraries. In a new terminal:
 
-4. OPENCV (Optional)
+    $ sudo apt-get install libgsl0-dev liblapack-dev libglpk-dev
+    $ sudo apt-get install libghc6-glut-dev
+    $ sudo apt-get install mplayer imagemagick libglew1.5-dev lib3ds-dev
 
-$ sudo apt-get install libcv-dev libcvaux-dev libhighgui-dev
+    OPENCV (Optional):
 
-5: CUDA (Optional, currently only for i386):
+    $ sudo apt-get install libcv-dev libcvaux-dev libhighgui-dev
 
-$ wget http://perception.inf.um.es/~aruiz/CUDA.tar.gz
+    CUDA (Optional, currently only for i386):
 
-extract it to /path/to/CUDA and add to .bashrc:
+    $ sudo apt-get install nvidia-current nvidia-cg-toolkit libdevil-dev g++
 
-export CUDA=/path/to/CUDA
-export LD_LIBRARY_PATH=$IPP_SHARED:$CUDA
+6. Check GLUT version:
 
-$ sudo apt-get install nvidia-current nvidia-cg-toolkit libdevil-dev g++
+    $ ghc-pkg list | grep GLUT
 
+    If your Haskell GLUT package is > 2.1.1.2 you may need to hide it:
 
+    $ sudo ghc-pkg hide GLUT-2.1.2.1
 
-6. Get the source code:
+    (to be fixed)
 
-In a new terminal:
+7. Install the packages:
 
-$ cabal update
-$ cd workdir
-$ darcs get http://patch-tag.com/r/aruiz/easyVision
+    $ cd easyVision/cabal
+    $ sh reinstall.sh
 
-(If you find a bug getting the repo try again with the most recent darcs: 
+    The optional packages (imagproc-gpu, contrib, or opencv) may fail, but the
+    basic system will be correctly installed if "easyVision-0.1.0" is shown by 
 
-    $ sudo apt-get install libncurses5-dev libcurl4-gnutls-dev
-    $ cabal install darcs
-)
+    $ ghc-pkg list
 
-7. Check GLUT version:
+8. Try a simple program, for instance:
 
-$ ghc-pkg list | grep GLUT
+    $ cd ../compis/tutorial
+    $ runhaskell play.hs tv://
+    $ cd ../simple
+    $ runhaskell gradient.hs uvc0
+    $ runhaskell demo.hs yourvideo.avi
 
-If your Haskell GLUT package is > 2.1.1.2 you may need to hide it:
-
-$ sudo ghc-pkg hide GLUT-2.1.2.1
-
-(to be fixed)
-
-8. Install all packages:
-
-$ cd easyVision/cabal
-$ sh reinstall.sh
-
-(Only the optional packages gpu and opencv can possibly fail). 
-
-8. Optional: Add to .bashrc the path to the working directory which contains
-the system-wide default mplayer command shortcuts "cameras.def"
-
-export EASYVISION=/path/to/workdir/
-
-9. Try a simple program:
-
-$ cd ../compis/simple
-$ runhaskell demo.hs tv://
+9. Enjoy!
 
