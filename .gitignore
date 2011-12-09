@@ -3,5 +3,8 @@ push.sh
 findFiles.sh
 index.html
 QuickList.txt
-cabal/*/dist
+dist
+*.buildinfo
+*.o
+*.hi
 

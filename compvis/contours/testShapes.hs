@@ -27,7 +27,7 @@ import Tools(toCanonicAll,toCanonic2,maxFreq,toFun,AlignInfo,digits,shcont)
 
 square = Closed $ map (\(a,b)->Point a b) [(0, 0), (0, 0.25), (0, 0.5), (0, 0.75), (0,1), (0.25, 1), (0.5, 1), (0.75, 1), (1, 1), (1, 0.75), (1, 0.5), (1, 0.25), (1, 0), (0.75, 0), (0.5, 0), (0.25,0)]
 
-catalog = (read <$> readFile "digits.txt") >>= optionFromFile "--catalog"
+catalog = (read <$> readFile "../../data/shapes/digits.txt") >>= optionFromFile "--catalog"
 
 
 main = main1
