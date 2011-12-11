@@ -21,7 +21,8 @@ module EasyVision.MiniApps.PoseTracker (
 import Graphics.UI.GLUT as GL hiding (Size,Point,Matrix,matrix)
 import EasyVision.GUI hiding (State)
 import ImagProc hiding ((.*))
-import Features
+import Contours.Polyline
+import Features.Polyline
 import qualified ImagProc as IP
 import Control.Monad(when)
 import Data.List(sort,nub,sortBy,minimumBy)

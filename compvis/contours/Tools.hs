@@ -12,7 +12,7 @@ module Tools(
     icaConts,
 --  icaContsAll, icaConts2,
     alignment, refine,
-    classifier, classifyMon, AlignInfo, elongated,
+    classifier, classifyMon, AlignInfo, Tools.elongated,
     alignMon, alignMon', showAlignment',
     -- * Projective rectification from circles and vertical vanishing point
     rectifyMon, tryMetric, rectifierFromHorizon, coherent, distImage,

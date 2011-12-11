@@ -20,7 +20,7 @@ extra-source-files:
 
 library
     Build-Depends:      base >= 3 && < 5,
-                        features >= 0.1, 
+                        features >= 0.1, contours,
                         imagproc >= 0.1,
                         camera >= 0.1,
                         vision >= 0.1, hmatrix >= 0.8.3,

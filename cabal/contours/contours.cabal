@@ -1,0 +1,34 @@
+Name:               contours
+Version:            0.1.0
+License:            GPL
+License-file:       LICENSE
+Author:             Alberto Ruiz
+Maintainer:         Alberto Ruiz <aruiz@um.es>
+Stability:          experimental
+Homepage:           http://perception.inf.um.es/easyVision
+Synopsis:           contour functions and shape matching
+Description:
+                    contour functions and shape matching
+
+Category:           Math
+
+cabal-version:      >=1.2
+build-type:         Simple
+
+extra-source-files:
+
+library
+    Build-Depends:      base >= 3 && < 5,
+                        hmatrix, vision, imagproc,
+                        patrec, prcv-util
+
+    hs-source-dirs:     src
+
+    Exposed-modules:    Contours
+                        Contours.Polyline
+                        Contours.Shapes
+
+    ghc-prof-options:   -auto-all
+
+    ghc-options:        -Wall
+

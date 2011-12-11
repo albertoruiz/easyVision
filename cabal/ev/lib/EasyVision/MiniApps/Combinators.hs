@@ -49,7 +49,7 @@ import Data.Maybe(isJust)
 import Data.List(foldl1')
 import Control.Arrow((***))
 import Util.Misc(Mat)
-import Features.Polyline
+import Contours.Polyline
 import Numeric.LinearAlgebra(inv,single,toList)
 import Vision(pt2hv,cross)
 import Util.Ellipses

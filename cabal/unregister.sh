@@ -4,9 +4,11 @@ ghc-pkg unregister imagproc-gpu
 
 ghc-pkg unregister easyVision
 
-ghc-pkg unregister ev-gui
-
 ghc-pkg unregister features
+
+ghc-pkg unregister contours
+
+ghc-pkg unregister ev-gui
 
 ghc-pkg unregister imagproc-contrib
 

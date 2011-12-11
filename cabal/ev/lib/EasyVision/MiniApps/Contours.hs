@@ -27,7 +27,8 @@ import ImagProc
 import ImagProc.Util
 import ImagProc.Camera
 import Graphics.UI.GLUT hiding (Size,Point)
-import Features hiding(area)
+import Contours hiding(area)
+import Features.Polyline
 import EasyVision.MiniApps.Browser(examplesBrowser)
 import Util.Misc(diagl,impossible,degree)
 import Classifier(Sample)

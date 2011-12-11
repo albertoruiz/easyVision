@@ -23,7 +23,7 @@ import Data.Tree
 import Debug.Trace
 import Vision
 import Numeric.LinearAlgebra
-import Features.Polyline
+import Contours.Polyline
 import ImagProc
 
 vector = fromList :: [Double] -> Vector Double

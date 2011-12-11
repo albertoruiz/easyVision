@@ -1,16 +1,13 @@
 {-# LANGUAGE RecordWildCards #-}
 
-module Shapes(
+module Contours.Shapes(
     Shape(..), ShapeMatch(..),
     shape,
     elongated, rev,
     matchShapes, matchShapesSimple
 ) where
 
-import EasyVision
 import Control.Arrow((***),(&&&))
-import Graphics.UI.GLUT hiding (Point,Size)
-import Data.Colour.Names
 import Numeric.LinearAlgebra
 import Text.Printf(printf)
 import Data.List(minimumBy,sortBy,groupBy)
@@ -18,11 +15,13 @@ import Util.Misc(Mat,Vec,norm,degree,diagl,debug,posMax,norm)
 import Util.Rotation
 import Classifier(Sample)
 import Vision
+import ImagProc.Base(Polyline(..))
 import Util.Options(optionFromFile)
-
+import Contours.Polyline
 import Control.Monad(when)
 import Control.Applicative((<$>))
 import Data.Maybe(isJust)
+import Data.Function(on)
 
 
 shape :: Polyline -> Shape

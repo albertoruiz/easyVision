@@ -20,7 +20,7 @@ extra-source-files:
 
 library
     Build-Depends:      base >= 3 && < 5,
-                        containers, array,
+                        containers, array, contours,
                         hmatrix >= 0.8.3, vision >= 0.1,
                         imagproc >= 0.1, prcv-util
 
@@ -38,4 +38,4 @@ library
 
     ghc-prof-options:   -auto-all
 
-    ghc-options:        -Wall
+--    ghc-options:        -Wall

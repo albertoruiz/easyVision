@@ -19,7 +19,6 @@ import Classifier(Sample)
 import Control.Monad(when)
 import Data.List(minimumBy,sortBy)
 
-import Shapes
 
 ----------------------------------------------------------------------
 
