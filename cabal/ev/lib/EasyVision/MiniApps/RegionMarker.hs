@@ -24,7 +24,7 @@ module EasyVision.MiniApps.RegionMarker (
 import Graphics.UI.GLUT hiding (Size,Point)
 import Features.Polyline
 import EasyVision.GUI
-import ImagProc.Ipp.Core(Size(..),Image,Point(..),Pixel(..),distPoints,pixelsToPoints)
+import ImagProc.Ipp.Core(Size(..),Image,Point(..),Pixel(..),distPoints,pixelsToPoints,Polyline(..))
 import ImagProc(GImg(..),warp)
 import ImagProc.Camera(mpSize)
 import Util.Misc(replaceAt,posMin,impossible)

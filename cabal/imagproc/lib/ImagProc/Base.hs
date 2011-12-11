@@ -20,7 +20,8 @@ module ImagProc.Base
   pixelsToPoints, pointsToPixels, pixelToPointTrans,
   Segment(..),
   segmentLength,
-  InterestPoint(..)
+  InterestPoint(..),
+  Polyline(..)
 ) where
 
 import qualified Numeric.LinearAlgebra as LA
@@ -72,6 +73,12 @@ pointsToPixels sz ps = fix ps where
     nor = LA.inv (pixelToPointTrans sz)
     fix = map listToPixel. ht nor . map pointToList
 
+--------------------------------------------------------------------------------
+
+data Polyline = Closed { polyPts :: [Point] }
+              | Open   { polyPts :: [Point] } deriving (Show,Read)
+
+--------------------------------------------------------------------------------
 
 data Segment = Segment {
     extreme1 :: !Point,

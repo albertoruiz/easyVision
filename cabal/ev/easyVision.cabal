@@ -20,7 +20,8 @@ extra-source-files:
 
 library
     Build-Depends:      base >= 3 && < 5,
-                        features >= 0.1, imagproc >= 0.1,
+                        features >= 0.1, 
+                        imagproc >= 0.1,
                         camera >= 0.1,
                         vision >= 0.1, hmatrix >= 0.8.3,
                         prcv-util, patrec, ev-gui >= 0.1,
@@ -51,5 +52,5 @@ library
 
     ghc-prof-options:   -auto-all
 
-    ghc-options:        -Wall
+--    ghc-options:        -Wall
 

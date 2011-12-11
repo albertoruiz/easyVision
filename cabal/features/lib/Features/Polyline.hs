@@ -14,7 +14,6 @@ Some operations with polylines.
 
 module Features.Polyline (
 -- * Operations
-    Polyline(..),
     perimeter,
     area, orientedArea,
 -- * Normalization
@@ -62,9 +61,6 @@ import Util.Rotation
 import Util.Misc(degree)
 import Numeric.GSL.Polynomials(polySolve)
 import Numeric.GSL.Fourier(ifft)
-
-data Polyline = Closed { polyPts :: [Point] }
-              | Open   { polyPts :: [Point] } deriving (Show,Read)
 
 -- | (for an open polyline is the length)
 perimeter :: Polyline -> Double

@@ -23,10 +23,9 @@ library
                         camera >= 0.1,
                         vision >= 0.1,
                         hmatrix >= 0.8.3,
-                        prcv-util, features,
+                        prcv-util,
                         base >= 3 && < 5,
                         colour >= 2.2,
-                        -- OpenGL, GLUT,
                         OpenGL < 2.2.4, GLUT < 2.1.2,
                         containers, process,
                         template-haskell, ghc-prim
@@ -45,7 +44,7 @@ library
 
     ghc-prof-options:   -auto-all
 
-    ghc-options:        -Wall
+--    ghc-options:        -Wall
     
     extra-libraries:    3ds GLEW
     

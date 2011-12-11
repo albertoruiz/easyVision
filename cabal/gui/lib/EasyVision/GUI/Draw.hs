@@ -51,7 +51,7 @@ import qualified Data.Colour.RGBSpace as Col
 import Data.Colour.SRGB hiding (RGB)
 import Data.Colour
 import Control.Monad(when)
-import Features(Polyline(..))
+--import Features(Polyline(..))
 import GHC.Float(double2Float)
 
 

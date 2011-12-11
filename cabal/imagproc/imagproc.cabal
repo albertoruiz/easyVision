@@ -63,6 +63,6 @@ library
     ghc-prof-options:   -auto-all
 
     --ghc-options:        -Wall
-                        -fno-warn-missing-signatures
+    --                    -fno-warn-missing-signatures
 
     ghc-options:        -fwarn-unused-imports
