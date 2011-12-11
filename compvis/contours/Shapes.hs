@@ -3,7 +3,7 @@
 module Shapes(
     Shape(..), ShapeMatch(..),
     shape,
-    elongated,
+    elongated, rev,
     matchShapes, matchShapesSimple
 ) where
 
@@ -29,6 +29,9 @@ shape :: Polyline -> Shape
 shape = analyzeShape 10 . (id &&& momentsContour . polyPts)
 
 elongated r Shape { shapeAxes = (l1,l2,_) } = sqrt l2 / sqrt l1 < 1/r 
+
+rev (Closed ps) = Closed (reverse ps)
+rev (Open ps) = Open (reverse ps)
 
 ----------------------------------------------------------------------
 type CVec = Vector (Complex Double)

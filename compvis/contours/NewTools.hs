@@ -2,7 +2,7 @@
 
 module NewTools (
     injectPrototypes,
-    showCanonical, showDirs, showContours,
+    showCanonical, showDirs, showContours, shcont,
     showAlign
 ) where
 
@@ -32,6 +32,20 @@ injectPrototypes
 injectPrototypes prepro ioprots = shapeCatalog fst (map shapeContour.snd) prepro ioprots (map (shape *** id))
 
 showContours = contourMonitor "contours" fst (lineWidth $= 2 >> setColor' red) snd
+
+shcont c@(Closed _) = renderPrimitive LineLoop (vertex c)
+shcont c@(Open _) = renderPrimitive LineStrip (vertex c)
+
+shcontO (Closed c) = do
+    pointCoordinates (Size 500 500)
+    renderPrimitive LineLoop $ mapM_ vertex c
+    pointSize $= 6
+    renderPrimitive Points $ vertex (c!!0)
+    pointSize $= 4
+    renderPrimitive Points $ vertex (c!!1)
+    --print c
+
+
 
 showCanonical = contourMonitor "canonical" (fst.fst) (lineWidth $= 3 >> setColor' yellow) (map f . snd . fst)
   where

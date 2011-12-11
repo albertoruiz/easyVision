@@ -1,4 +1,5 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
+{-# LANGUAGE TemplateHaskell, RecordWildCards #-}
 -----------------------------------------------------------------------------
 {- |
 Module      :  ImagProc.C.NP
@@ -14,13 +15,17 @@ Interface to the New Paradigm.
 -----------------------------------------------------------------------------
 
 module ImagProc.C.NP (   
-    npbRaw, npbParse, toPixels, npb
+    npbRaw, npbParse, toPixels, npb,
+    wnpcontours
 )
 where
 
 import ImagProc.Ipp.Core
-import ImagProc(set)
+import ImagProc(set,filterBox8u)
 import Foreign
+import EasyVision.GUI.Parameters(autoParam,intParam)
+import Features.Polyline(Polyline(..),douglasPeuckerClosed)
+import ImagProc.Util((.@.))
 --import Control.Arrow((***))
 
 --------------------------------------------------------------------------------
@@ -90,3 +95,22 @@ toPixelsI _ = []
 
 npb :: Int -> ImageGray -> ImageGray -> ([[Pixel]], [[Pixel]])
 npb lmin x1 x2 = npbParse (fi lmin) . npbRaw x1 $ x2
+
+--------------------------------------------------------------------------------
+
+autoParam "NPParam" ""
+    [ ("rad1","Int",intParam 1 0 10)
+    , ("rad2","Int",intParam 15 0 30)
+    , ("minlen", "Int", intParam 50 0 200)]
+
+wnpcontours :: IO ImageGray ->  IO (IO (ImageGray, [Polyline]))
+wnpcontours = npcontours .@. winNPParam
+
+npcontours NPParam{..} x = ok
+  where
+    x' = filterBox8u rad1 rad1 x
+    y = filterBox8u rad2 rad2 x        
+    (cl,_) = npb minlen x' y
+    ok = map proc cl
+    proc = Closed . pixelsToPoints (size x). douglasPeuckerClosed 1.5
+
