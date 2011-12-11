@@ -29,12 +29,14 @@ module ImagProc.Ipp.Convert (
 import ImagProc.Ipp.Core
 import Foreign hiding (shift)
 import Control.Monad(when)
+import Control.Arrow((***))
 import System.IO
 import System.Process
 import System.Directory(getDirectoryContents)
 import Data.List(isPrefixOf)
 import Data.Packed.Development(app1,mat,cmat,createMatrix,MatrixOrder(..))
 import Numeric.LinearAlgebra(Matrix,rows,cols)
+import Util.Options(getOption)
 
 
 -- | Writes to a file (with automatic name if Nothing) a RGB image in png format.
@@ -129,39 +131,56 @@ saveGray filename (G im) = do
 loadGray :: FilePath -> IO ImageGray
 loadGray filename = do
     Size h w <- getSize filename
-    system $ "convert "++filename++" -depth 8 gray:"
-             ++(filename++".8u ")
+    let fname = fixSpaces filename
+    mh <- getOption "--maxHeight" h
+    let (h',w') = fixSizes mh h w
+    system $ "convert -resize "++show w' ++"x"++show h'++"! "++fname++" -depth 8 gray:"
+             ++(fname++".8u ")
     handle <- openFile (filename++".8u") ReadMode
-    G im <- image (Size h w)
+    G im <- image (Size h' w')
     let (ps,c) = roiPtrs im
         f p = hGetBuf handle p c
     mapM_ f ps
     hClose handle
     touchForeignPtr (fptr im)
-    system $ "rm "++(filename++".8u")
+    system $ "rm "++(fname++".8u")
     return (G im)
 
 -- | Load an image using imagemagick's convert.
 loadRGB :: FilePath -> IO ImageRGB
 loadRGB filename = do
     Size h w <- getSize filename
-    system $ "convert "++filename++" -depth 8 rgb:"
-             ++(filename++".rgb ")
+    let fname = fixSpaces filename
+    mh <- getOption "--maxHeight" h
+    let (h',w') = fixSizes mh h w
+    -- print (h,w)
+    -- print (h',w')
+    --print filename
+    system $ "convert -resize "++show w' ++"x"++show h'++"! "++fname++" -depth 8 rgb:"
+             ++(fname++".rgb")
     handle <- openFile (filename++".rgb") ReadMode
-    C im <- image (Size h w)
+    C im <- image (Size h' w')
     let (ps,c) = roiPtrs im
         f p = hGetBuf handle p (c*3)
     mapM_ f ps
     hClose handle
     touchForeignPtr (fptr im)
-    system $ "rm "++(filename++".rgb")
+    system $ "rm "++(fname++".rgb")
     return (C im)
 
+fixSizes mh h w = (mkEven *** mkEven) $ if h > mh then (mh, (mh*w) `div` h) else (h,w)
+  where
+    mkEven n = ((n+1) `div` 2) * 2
+
+fixSpaces = concatMap f
+  where
+    f ' ' = "\\ "
+    f x = [x]
 
 getSize :: FilePath -> IO Size
 getSize imagfile = do
     s <- readProcess "identify" [imagfile] ""
-    return (g $ words $ map f $ words s!!2)
+    return (g $ words $ map f $ reverse (words s)!!6)
   where
     f 'x' = ' '
     f a = a
