@@ -37,13 +37,21 @@ foreign import ccall unsafe "getContoursAlberto"
           -> Ptr CInt -> Ptr CInt                        -- np nc
           -> IO ()
 
+foreign import ccall unsafe "getContours"
+   c_npb2 :: Ptr () -> Ptr () -> CInt -> CInt            -- ptr1 ptr2 step rows 
+          -> CInt -> CInt -> CInt -> CInt                -- c1 c2 r1 r2
+          -> Ptr (Ptr CInt) -> Ptr (Ptr CInt)            -- ps cs
+          -> Ptr CInt -> Ptr CInt                        -- np nc
+          -> IO ()
+
 --------------------------------------------------------------------------------
 
-npbRaw :: ImageGray -> ImageGray -> ([CInt], [CInt])
-npbRaw x1 x2 = unsafePerformIO $ do
+npbRaw :: Int -> ImageGray -> ImageGray -> ([CInt], [CInt])
+npbRaw mode x1 x2 = unsafePerformIO $ do
   let G im1 = x1
       G im2 = x2
       v z = fi . z . vroi $ im2
+      cfun = [c_npb, c_npb2]
 
   mapM_ ((flip (set 0)) x2) (invalidROIs x2) 
   
@@ -52,10 +60,10 @@ npbRaw x1 x2 = unsafePerformIO $ do
   pn <- new 0
   cn <- new 0
 
-  c_npb (ptr im1) (ptr im2)
-        (fi.step $ im2) (fi.height.isize $ im2)
-        (v c1) (v c2) (v r1) (v r2)
-        ppp ppc pn cn
+  (cfun!!mode) (ptr im1) (ptr im2)
+               (fi.step $ im2) (fi.height.isize $ im2)
+               (v c1) (v c2) (v r1) (v r2)
+               ppp ppc pn cn
       
   pp <- peek ppp
   pc <- peek ppc
@@ -93,24 +101,40 @@ toPixelsI (x:y:zs) = Pixel (1+ti x) (1+ti y) : toPixelsI zs
 toPixelsI _ = []
 
 
-npb :: Int -> ImageGray -> ImageGray -> ([[Pixel]], [[Pixel]])
-npb lmin x1 x2 = npbParse (fi lmin) . npbRaw x1 $ x2
+npb :: Int -> Int -> ImageGray -> ImageGray -> ([[Pixel]], [[Pixel]])
+npb mode lmin x1 x2 = npbParse (fi lmin) . npbRaw mode x1 $ x2
 
 --------------------------------------------------------------------------------
 
 autoParam "NPParam" ""
     [ ("rad1","Int",intParam 1 0 10)
     , ("rad2","Int",intParam 15 0 30)
-    , ("minlen", "Int", intParam 50 0 200)]
+    , ("minlen", "Int", intParam 50 0 200)
+    , ("mode", "Int", intParam 0 0 1)]
 
 wnpcontours :: IO ImageGray ->  IO (IO (ImageGray, [Polyline]))
 wnpcontours = npcontours .@. winNPParam
 
-npcontours NPParam{..} x = ok
+---------------------------------------
+
+npcontours NPParam{mode = 0, ..} x = ok
   where
     x' = filterBox8u rad1 rad1 x
     y = filterBox8u rad2 rad2 x        
-    (cl,_) = npb minlen x' y
+    (cl,_) = npb 0 minlen x' y
     ok = map proc cl
     proc = Closed . pixelsToPoints (size x). douglasPeuckerClosed 1.5
+
+---------------------------------------
+
+npcontours NPParam{mode = 1, ..} x = ok
+  where
+    x' = filterBox8u rad1 rad1 x
+    y = filterBox8u rad2 rad2 x        
+    (cl,_) = npb 1 minlen x' y
+    ok = map proc cl
+    proc = Closed . pixelsToPoints (size x). douglasPeuckerClosed 1.5
+
+---------------------------------------
+
 
