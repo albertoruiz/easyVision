@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleInstances, TypeSynonymInstances, FlexibleContexts #-}
 -----------------------------------------------------------------------------
 {- |
-Module      :  Util.Geometry
+Module      :  Util.Homogeneous
 Copyright   :  (c) Alberto Ruiz 2006-10
 License     :  GPL
 

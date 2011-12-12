@@ -24,7 +24,7 @@ import ImagProc.Ipp.Core
 import ImagProc(set,filterBox8u)
 import Foreign
 import EasyVision.GUI.Parameters(autoParam,intParam)
-import Contours.Polyline(douglasPeuckerClosed)
+import Contours.Base(douglasPeuckerClosed)
 import ImagProc.Util((.@.))
 
 --------------------------------------------------------------------------------

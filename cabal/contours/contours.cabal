@@ -25,10 +25,13 @@ library
     hs-source-dirs:     src
 
     Exposed-modules:    Contours
-                        Contours.Polyline
-                        Contours.Shapes
+                        Contours.Base
+                        Contours.Normalization
+                        Contours.Fourier
+                        Contours.Orientation
+                        Contours.Matching
 
     ghc-prof-options:   -auto-all
 
-    ghc-options:        -Wall
+--    ghc-options:        -Wall
 

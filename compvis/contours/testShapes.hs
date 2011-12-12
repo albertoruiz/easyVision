@@ -34,8 +34,8 @@ main1 = run $ camera  ~> grayscale
          >>= wnpcontours ~> (id *** filter isBlack)
          ~>  id *** filter (not . elongated 8) . map shape
          >>= injectPrototypes boxShape catalog
-         >>= showCanonical
-         >>= showDirs
+--         >>= showCanonical
+--         >>= showDirs
          ~>  matchShapes 0.3 0.25               -- TODO: parameter window
 --         ~>  matchShapesSimple 0.3
          >>= showAlign

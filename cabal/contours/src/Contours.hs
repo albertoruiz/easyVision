@@ -13,10 +13,16 @@ Contour functions.
 -----------------------------------------------------------------------------
 
 module Contours (
-    module Contours.Polyline,
-    module Contours.Shapes
+    module Contours.Base,
+    module Contours.Normalization,
+    module Contours.Fourier,
+    module Contours.Orientation,
+    module Contours.Matching
 ) where
 
-import Contours.Polyline
-import Contours.Shapes
+import Contours.Base
+import Contours.Normalization
+import Contours.Fourier
+import Contours.Orientation
+import Contours.Matching
 

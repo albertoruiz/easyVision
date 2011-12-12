@@ -23,7 +23,7 @@ module EasyVision.MiniApps.Misc (
 
 import ImagProc.Ipp.Core
 import ImagProc
-import Contours.Polyline
+import Contours.Base
 import Foreign
 import EasyVision.GUI
 import Graphics.UI.GLUT hiding (Size,Point)
