@@ -86,8 +86,20 @@ int ippiFilterMedian_8u_C1Rx(Ipp8u* pSrc, int srcStep, Ipp8u* pDst, int dstStep,
     return ippiFilterMedian_8u_C1R(pSrc, srcStep, pDst, dstStep, *dstRoiSize, *maskSize, *anchor);
 }
 
+int ippiFilterMax_8u_C1Rx(Ipp8u* pSrc, int srcStep, Ipp8u* pDst, int dstStep, IppiSize* dstRoiSize, IppiSize* maskSize, IppiPoint* anchor) {
+    return ippiFilterMax_8u_C1R(pSrc, srcStep, pDst, dstStep, *dstRoiSize, *maskSize, *anchor);
+}
+
 int ippiFilterMax_32f_C1Rx(Ipp32f* pSrc, int srcStep, Ipp32f* pDst, int dstStep, IppiSize* dstRoiSize, IppiSize* maskSize, IppiPoint* anchor) {
     return ippiFilterMax_32f_C1R(pSrc, srcStep, pDst, dstStep, *dstRoiSize, *maskSize, *anchor);
+}
+
+int ippiFilterMin_8u_C1Rx(Ipp8u* pSrc, int srcStep, Ipp8u* pDst, int dstStep, IppiSize* dstRoiSize, IppiSize* maskSize, IppiPoint* anchor) {
+    return ippiFilterMin_8u_C1R(pSrc, srcStep, pDst, dstStep, *dstRoiSize, *maskSize, *anchor);
+}
+
+int ippiFilterMin_32f_C1Rx(Ipp32f* pSrc, int srcStep, Ipp32f* pDst, int dstStep, IppiSize* dstRoiSize, IppiSize* maskSize, IppiPoint* anchor) {
+    return ippiFilterMin_32f_C1R(pSrc, srcStep, pDst, dstStep, *dstRoiSize, *maskSize, *anchor);
 }
 
 int ippiFilterBox_8u_C1Rx(Ipp8u* pSrc, int srcStep, Ipp8u* pDst, int dstStep, IppiSize* dstRoiSize, IppiSize* maskSize, IppiPoint* anchor) {
@@ -174,6 +186,10 @@ int ippiCopy_8u_C3Rx(Ipp8u* pSrc, int srcStep, Ipp8u* pDst, int dstStep, IppiSiz
     return ippiCopy_8u_C3R(pSrc, srcStep, pDst, dstStep, *roiSize);
 }
 
+int ippiCopy_8u_C1MRx(Ipp8u* pSrc, int srcStep, Ipp8u* pDst, int dstStep, IppiSize* roiSize, Ipp8u* pMask, int maskStep) {
+    return ippiCopy_8u_C1MR(pSrc, srcStep, pDst, dstStep, *roiSize, pMask, maskStep);
+}
+
 int ippiCopy_32f_C1Rx(Ipp32f* pSrc, int srcStep, Ipp32f* pDst, int dstStep, IppiSize* roiSize) {
     return ippiCopy_32f_C1R(pSrc, srcStep, pDst, dstStep, *roiSize);
 }
@@ -244,6 +260,10 @@ int ippiOr_8u_C1Rx(Ipp8u* pSrc1, int src1Step, Ipp8u* pSrc2, int src2Step, Ipp8u
 
 int ippiNot_8u_C1Rx(Ipp8u* pSrc, int srcStep, Ipp8u* pDst, int dstStep, IppiSize* roiSize) {
     return ippiNot_8u_C1R(pSrc, srcStep, pDst, dstStep, *roiSize);
+}
+
+int ippiCompareC_8u_C1Rx(Ipp8u* pSrc, int srcStep, Ipp8u value, Ipp8u* pDst, int dstStep, IppiSize* roiSize, IppCmpOp ippCmpOp) {
+    return ippiCompareC_8u_C1R(pSrc, srcStep, value, pDst, dstStep, *roiSize, ippCmpOp);
 }
 
 int ippiCompare_32f_C1Rx(Ipp32f* pSrc1, int src1Step, Ipp32f* pSrc2, int src2Step, Ipp8u* pDst, int dstStep, IppiSize* roiSize, IppCmpOp ippCmpOp) {

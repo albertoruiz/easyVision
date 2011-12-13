@@ -31,6 +31,9 @@ ippi.h  ippiFilterHipass_8u_C1R
 ippi.h  ippiThreshold_Val_32f_C1R
 ippi.h  ippiThreshold_Val_8u_C1R
 ippi.h  ippiFilterMax_32f_C1R
+ippi.h  ippiFilterMin_32f_C1R
+ippi.h  ippiFilterMax_8u_C1R
+ippi.h  ippiFilterMin_8u_C1R
 ippi.h  ippiDilate3x3_8u_C1R
 ippi.h  ippiErode3x3_8u_C1R
 ippi.h  ippiNot_8u_C1R
@@ -41,6 +44,7 @@ ippi.h  ippiAdd_32f_C1R
 ippi.h  ippiSub_32f_C1R
 ippi.h  ippiAdd_8u_C1RSfs
 ippi.h  ippiSub_8u_C1RSfs
+ippi.h  ippiCompareC_8u_C1R
 ippcv.h ippiAbsDiff_8u_C1R
 ippcv.h ippiAbsDiff_32f_C1R
 ippi.h  ippiSum_8u_C1R
@@ -48,6 +52,7 @@ ippi.h  ippiSum_32f_C1R
 ippi.h  ippiMulC_32f_C1R
 ippi.h  ippiCompare_32f_C1R
 ippi.h  ippiCopy_32f_C1MR
+ippi.h  ippiCopy_8u_C1MR
 ippi.h  ippiImageJaehne_32f_C1R
 ippi.h  ippiMinMax_32f_C1R
 ippi.h  ippiMaxIndx_32f_C1R

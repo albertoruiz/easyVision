@@ -21,8 +21,6 @@ import ImagProc.Ipp.Adapt
 import ImagProc.Ipp.Auto
 import ImagProc.Ipp.Wrappers
 import Foreign hiding (shift)
-import Foreign.C.Types(CUChar,CInt)
-
 
 -- | Writes into a existing image a desired value in a specified roi.
 set32f :: Float      -- ^ desired value
@@ -361,6 +359,18 @@ copyMask32f (F im) (G mask) = unsafePerformIO $ do
     set32f 0.0 (fullroi r) (F r)
     ippiCopy_32f_C1MR // src im roi // dst r roi // src mask roi // checkIPP "copyMask32f" [im,mask]
     return $ F r {vroi = roi}
+
+-- | Creates a copy of the source image only on corresponding pixels in which mask=255
+copyMask8u  :: ImageGray    -- ^ source image
+            -> ImageGray    -- ^ mask image
+            -> ImageGray    -- ^ result
+copyMask8u (G im) (G mask) = unsafePerformIO $ do
+    r <- imgAs im
+    let roi = intersection (vroi im) (vroi mask)
+    set8u 0 (fullroi r) (G r)
+    ippiCopy_8u_C1MR // src im roi // dst r roi // src mask roi // checkIPP "copyMask8uf" [im,mask]
+    return $ G r {vroi = roi}
+
 
 -- | Sum of all pixels in the roi a 8u image
 sum8u :: ImageGray -> Double
