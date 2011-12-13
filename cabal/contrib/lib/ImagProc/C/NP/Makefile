@@ -1,4 +1,5 @@
 lib:
-	gcc -O3 -c npcp.c -fPIC
-	gcc npcp.o -shared -o ../../../../../../lib/libnpcp.so
-	# ar rvs libnpcp.a npcp.o
+	gcc -O3 -c npcp.c  -fPIC
+	gcc -O3 -c npcp2.c -fPIC
+	gcc npcp.o npcp2.o -shared -o ../../../../../../lib/libnpcp.so
+

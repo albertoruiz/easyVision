@@ -75,8 +75,20 @@ ioFilterMedian_8u_C1R maskSize anchor = {-# SCC "ippiFilterMedian_8u_C1R" #-} au
     where f maskSize anchor pSrc srcStep pDst dstStep dstRoiSize = ippiFilterMedian_8u_C1R pSrc srcStep pDst dstStep dstRoiSize maskSize anchor
 
 {- |   Applies the "max" filter to an image -}
+ioFilterMax_8u_C1R maskSize anchor = {-# SCC "ippiFilterMax_8u_C1R" #-} auto_1_8u_C1R (f maskSize anchor) "ippiFilterMax_8u_C1R"
+    where f maskSize anchor pSrc srcStep pDst dstStep dstRoiSize = ippiFilterMax_8u_C1R pSrc srcStep pDst dstStep dstRoiSize maskSize anchor
+
+{- |   Applies the "max" filter to an image -}
 ioFilterMax_32f_C1R maskSize anchor = {-# SCC "ippiFilterMax_32f_C1R" #-} auto_1_32f_C1R (f maskSize anchor) "ippiFilterMax_32f_C1R"
     where f maskSize anchor pSrc srcStep pDst dstStep dstRoiSize = ippiFilterMax_32f_C1R pSrc srcStep pDst dstStep dstRoiSize maskSize anchor
+
+{- |   Applies the "min" filter to an image -}
+ioFilterMin_8u_C1R maskSize anchor = {-# SCC "ippiFilterMin_8u_C1R" #-} auto_1_8u_C1R (f maskSize anchor) "ippiFilterMin_8u_C1R"
+    where f maskSize anchor pSrc srcStep pDst dstStep dstRoiSize = ippiFilterMin_8u_C1R pSrc srcStep pDst dstStep dstRoiSize maskSize anchor
+
+{- |   Applies the "min" filter to an image -}
+ioFilterMin_32f_C1R maskSize anchor = {-# SCC "ippiFilterMin_32f_C1R" #-} auto_1_32f_C1R (f maskSize anchor) "ippiFilterMin_32f_C1R"
+    where f maskSize anchor pSrc srcStep pDst dstStep dstRoiSize = ippiFilterMin_32f_C1R pSrc srcStep pDst dstStep dstRoiSize maskSize anchor
 
 {- |              Blurs an image using a simple box filter -}
 ioFilterBox_8u_C1R maskSize anchor = {-# SCC "ippiFilterBox_8u_C1R" #-} auto_1_8u_C1R (f maskSize anchor) "ippiFilterBox_8u_C1R"
@@ -175,6 +187,12 @@ ioCopy_8u_C3R  = {-# SCC "ippiCopy_8u_C3R" #-} auto_1_8u_C3R f "ippiCopy_8u_C3R"
 {- |   copy pixel values from the source image to the destination  image
 
  -}
+ioCopy_8u_C1MR pMask maskStep = {-# SCC "ippiCopy_8u_C1MR" #-} auto_1_8u_C1MR (f pMask maskStep) "ippiCopy_8u_C1MR"
+    where f pMask maskStep pSrc srcStep pDst dstStep roiSize = ippiCopy_8u_C1MR pSrc srcStep pDst dstStep roiSize pMask maskStep
+
+{- |   copy pixel values from the source image to the destination  image
+
+ -}
 ioCopy_32f_C1R  = {-# SCC "ippiCopy_32f_C1R" #-} auto_1_32f_C1R f "ippiCopy_32f_C1R"
     where f pSrc srcStep pDst dstStep roiSize = ippiCopy_32f_C1R pSrc srcStep pDst dstStep roiSize
 
@@ -205,6 +223,10 @@ ioScale_32f8u_C1R vMin vMax = {-# SCC "ippiScale_32f8u_C1R" #-} auto_1_32f8u_C1R
  -}
 ioNot_8u_C1R  = {-# SCC "ippiNot_8u_C1R" #-} auto_1_8u_C1R f "ippiNot_8u_C1R"
     where f pSrc srcStep pDst dstStep roiSize = ippiNot_8u_C1R pSrc srcStep pDst dstStep roiSize
+
+{- |   Compares pixel values of two images, or pixel values of an image to a constant -}
+ioCompareC_8u_C1R value ippCmpOp = {-# SCC "ippiCompareC_8u_C1R" #-} auto_1_8u_C1R (f value ippCmpOp) "ippiCompareC_8u_C1R"
+    where f value ippCmpOp pSrc srcStep pDst dstStep roiSize = ippiCompareC_8u_C1R pSrc srcStep value pDst dstStep roiSize ippCmpOp
 
 {- |    Performs not in-place erosion/dilation using a 3x3 mask
  -}

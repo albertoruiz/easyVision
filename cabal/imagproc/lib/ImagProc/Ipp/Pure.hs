@@ -21,7 +21,9 @@ module ImagProc.Ipp.Pure (
     float, toGray, scale32f8u, scale8u32f,
     rgbToHSV, hsvToRGB,
     thresholdVal32f, thresholdVal8u,
-    filterMax, filterBox, filterBox8u,
+    compareC8u,
+    filterMax, filterMin, filterMax8u, filterMin8u,
+    filterBox, filterBox8u,
     maxEvery, minEvery,
     sobelVert, sobelHoriz,
     gauss, gauss8u, laplace, median, highPass8u,
@@ -111,6 +113,9 @@ sub8u k = flip (mkInt (ioSub_8u_C1RSfs k))
 sub8uRel :: Int -> ImageGray -> ImageGray -> ImageGray
 sub8uRel k = flip (mkRel (ioSub_8u_C1RSfs k))
 
+-- | compare with a constant
+compareC8u :: CUChar -> IppCmp -> ImageGray -> ImageGray
+compareC8u v cmp = mkId (ioCompareC_8u_C1R v (codeCmp cmp))
 
 
 -- | conversion from discrete gray level images (0-255) to floating point (0->0, 255->)
@@ -157,7 +162,32 @@ thresholdVal8u t v cmp = mkId (ioThreshold_Val_8u_C1R t v (codeCmp cmp))
 
 -- | Changes each pixel by the maximum value in its neighbourhood of given radius.
 filterMax :: Int -> ImageFloat -> ImageFloat
+filterMax 0 = id
 filterMax r = mkShrink (r,r) (ioFilterMax_32f_C1R sz pt) where
+    d = fi (2*r+1)
+    sz = IppiSize d d
+    pt = IppiPoint (fi r) (fi r)
+
+-- | Changes each pixel by the minimum value in its neighbourhood of given radius.
+filterMin :: Int -> ImageFloat -> ImageFloat
+filterMin 0 = id
+filterMin r = mkShrink (r,r) (ioFilterMin_32f_C1R sz pt) where
+    d = fi (2*r+1)
+    sz = IppiSize d d
+    pt = IppiPoint (fi r) (fi r)
+
+-- | Changes each pixel by the maximum value in its neighbourhood of given radius.
+filterMax8u :: Int -> ImageGray -> ImageGray
+filterMax8u 0 = id
+filterMax8u r = mkShrink (r,r) (ioFilterMax_8u_C1R sz pt) where
+    d = fi (2*r+1)
+    sz = IppiSize d d
+    pt = IppiPoint (fi r) (fi r)
+
+-- | Changes each pixel by the minimum value in its neighbourhood of given radius.
+filterMin8u :: Int -> ImageGray -> ImageGray
+filterMin8u 0 = id
+filterMin8u r = mkShrink (r,r) (ioFilterMin_8u_C1R sz pt) where
     d = fi (2*r+1)
     sz = IppiSize d d
     pt = IppiPoint (fi r) (fi r)
@@ -166,12 +196,14 @@ filterMax r = mkShrink (r,r) (ioFilterMax_32f_C1R sz pt) where
 
 -- | image average in rectangles of given semiheight and semiwidth
 filterBox :: Int -> Int -> ImageFloat -> ImageFloat
+filterBox 0 0 = id
 filterBox h w = mkShrink (h,w) (ioFilterBox_32f_C1R sz pt) where
     sz = IppiSize (fi (2*w+1)) (fi (2*h+1))
     pt = IppiPoint (fi w) (fi h)
 
 -- | image average in rectangles of given semiheight and semiwidth
 filterBox8u :: Int -> Int -> ImageGray -> ImageGray
+filterBox8u 0 0 = id
 filterBox8u h w = mkShrink (h,w) (ioFilterBox_8u_C1R sz pt) where
     sz = IppiSize (fi (2*w+1)) (fi (2*h+1))
     pt = IppiPoint (fi w) (fi h)
@@ -263,3 +295,4 @@ minEvery = mkIdIPInt32f ioMinEvery_32f_C1IR
 undistortRadial8u fx fy cx cy k1 k2 = mkId (ioUndistortRadial_8u_C1R fx fy cx cy k1 k2 nullPtr)
 undistortRadialRGB fx fy cx cy k1 k2 = mkId (ioUndistortRadial_8u_C3R fx fy cx cy k1 k2 nullPtr)
 undistortRadial32f fx fy cx cy k1 k2 = mkId (ioUndistortRadial_32f_C1R fx fy cx cy k1 k2 nullPtr)
+

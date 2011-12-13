@@ -32,6 +32,7 @@ module ImagProc.Ipp.AutoGen(
     auto_1_8u_P3R,
     auto_1_8u_C1C3R,
     auto_1_32f_C1MR,
+    auto_1_8u_C1MR,
 
     auto_2_8u_C1R,
     auto_2_32f_C1R,
@@ -120,6 +121,7 @@ auto_1_8u_C3P3R = error $ "auto_1_8u_C3P3R not yet defined"
 auto_1_8u_P3R = error $ "auto_1_8u_P3R not yet defined"
 auto_1_8u_C1C3R = error $ "auto_1_8u_C1C3R not yet defined"
 auto_1_32f_C1MR = error $ "auto_1_32f_C1MR not yet defined"
+auto_1_8u_C1MR = error $ "auto_1_8u_C1MR not yet defined"
 
 ----------------------------------------------------------
 

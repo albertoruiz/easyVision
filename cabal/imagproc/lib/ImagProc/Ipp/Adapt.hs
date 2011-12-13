@@ -185,6 +185,18 @@ ippiFilterMedian_8u_C1R pSrc srcStep pDst dstStep dstRoiSize maskSize anchor = d
     free panchor
     return r
 
+foreign import ccall "adapt.h ippiFilterMax_8u_C1Rx"
+    ippiFilterMax_8u_C1Rx :: Ptr CUChar -> Int -> Ptr CUChar -> Int -> Ptr IppiSize -> Ptr IppiSize -> Ptr IppiPoint -> IO Int
+ippiFilterMax_8u_C1R pSrc srcStep pDst dstStep dstRoiSize maskSize anchor = do
+    pdstRoiSize <- new dstRoiSize
+    pmaskSize <- new maskSize
+    panchor <- new anchor
+    r <- ippiFilterMax_8u_C1Rx pSrc srcStep pDst dstStep pdstRoiSize pmaskSize panchor
+    free pdstRoiSize
+    free pmaskSize
+    free panchor
+    return r
+
 foreign import ccall "adapt.h ippiFilterMax_32f_C1Rx"
     ippiFilterMax_32f_C1Rx :: Ptr Float -> Int -> Ptr Float -> Int -> Ptr IppiSize -> Ptr IppiSize -> Ptr IppiPoint -> IO Int
 ippiFilterMax_32f_C1R pSrc srcStep pDst dstStep dstRoiSize maskSize anchor = do
@@ -192,6 +204,30 @@ ippiFilterMax_32f_C1R pSrc srcStep pDst dstStep dstRoiSize maskSize anchor = do
     pmaskSize <- new maskSize
     panchor <- new anchor
     r <- ippiFilterMax_32f_C1Rx pSrc srcStep pDst dstStep pdstRoiSize pmaskSize panchor
+    free pdstRoiSize
+    free pmaskSize
+    free panchor
+    return r
+
+foreign import ccall "adapt.h ippiFilterMin_8u_C1Rx"
+    ippiFilterMin_8u_C1Rx :: Ptr CUChar -> Int -> Ptr CUChar -> Int -> Ptr IppiSize -> Ptr IppiSize -> Ptr IppiPoint -> IO Int
+ippiFilterMin_8u_C1R pSrc srcStep pDst dstStep dstRoiSize maskSize anchor = do
+    pdstRoiSize <- new dstRoiSize
+    pmaskSize <- new maskSize
+    panchor <- new anchor
+    r <- ippiFilterMin_8u_C1Rx pSrc srcStep pDst dstStep pdstRoiSize pmaskSize panchor
+    free pdstRoiSize
+    free pmaskSize
+    free panchor
+    return r
+
+foreign import ccall "adapt.h ippiFilterMin_32f_C1Rx"
+    ippiFilterMin_32f_C1Rx :: Ptr Float -> Int -> Ptr Float -> Int -> Ptr IppiSize -> Ptr IppiSize -> Ptr IppiPoint -> IO Int
+ippiFilterMin_32f_C1R pSrc srcStep pDst dstStep dstRoiSize maskSize anchor = do
+    pdstRoiSize <- new dstRoiSize
+    pmaskSize <- new maskSize
+    panchor <- new anchor
+    r <- ippiFilterMin_32f_C1Rx pSrc srcStep pDst dstStep pdstRoiSize pmaskSize panchor
     free pdstRoiSize
     free pmaskSize
     free panchor
@@ -381,6 +417,14 @@ ippiCopy_8u_C3R pSrc srcStep pDst dstStep roiSize = do
     free proiSize
     return r
 
+foreign import ccall "adapt.h ippiCopy_8u_C1MRx"
+    ippiCopy_8u_C1MRx :: Ptr CUChar -> Int -> Ptr CUChar -> Int -> Ptr IppiSize -> Ptr CUChar -> Int -> IO Int
+ippiCopy_8u_C1MR pSrc srcStep pDst dstStep roiSize pMask maskStep = do
+    proiSize <- new roiSize
+    r <- ippiCopy_8u_C1MRx pSrc srcStep pDst dstStep proiSize pMask maskStep
+    free proiSize
+    return r
+
 foreign import ccall "adapt.h ippiCopy_32f_C1Rx"
     ippiCopy_32f_C1Rx :: Ptr Float -> Int -> Ptr Float -> Int -> Ptr IppiSize -> IO Int
 ippiCopy_32f_C1R pSrc srcStep pDst dstStep roiSize = do
@@ -522,6 +566,14 @@ foreign import ccall "adapt.h ippiNot_8u_C1Rx"
 ippiNot_8u_C1R pSrc srcStep pDst dstStep roiSize = do
     proiSize <- new roiSize
     r <- ippiNot_8u_C1Rx pSrc srcStep pDst dstStep proiSize
+    free proiSize
+    return r
+
+foreign import ccall "adapt.h ippiCompareC_8u_C1Rx"
+    ippiCompareC_8u_C1Rx :: Ptr CUChar -> Int -> CUChar -> Ptr CUChar -> Int -> Ptr IppiSize -> CInt -> IO Int
+ippiCompareC_8u_C1R pSrc srcStep value pDst dstStep roiSize ippCmpOp = do
+    proiSize <- new roiSize
+    r <- ippiCompareC_8u_C1Rx pSrc srcStep value pDst dstStep proiSize ippCmpOp
     free proiSize
     return r
 
