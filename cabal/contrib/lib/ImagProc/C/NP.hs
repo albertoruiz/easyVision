@@ -21,12 +21,12 @@ module ImagProc.C.NP (
 where
 
 import ImagProc.Ipp.Core
-import ImagProc(set,filterBox8u)
+import ImagProc
 import Foreign
 import EasyVision.GUI.Parameters(autoParam,intParam)
 import Features.Polyline(douglasPeuckerClosed)
 import ImagProc.Util((.@.))
---import Control.Arrow((***))
+import Control.Monad(when)
 
 --------------------------------------------------------------------------------
 
@@ -53,7 +53,7 @@ npbRaw mode x1 x2 = unsafePerformIO $ do
       v z = fi . z . vroi $ im2
       cfun = [c_npb, c_npb2]
 
-  mapM_ ((flip (set 0)) x2) (invalidROIs x2) 
+  when (mode==0) $ mapM_ ((flip (set 0)) x2) (invalidROIs x2) 
   
   ppp <- new nullPtr
   ppc <- new nullPtr
@@ -108,9 +108,11 @@ npb mode lmin x1 x2 = npbParse (fi lmin) . npbRaw mode x1 $ x2
 
 autoParam "NPParam" ""
     [ ("rad1","Int",intParam 1 0 10)
-    , ("rad2","Int",intParam 15 0 30)
+    , ("rad2","Int",intParam 10 0 30)
+    , ("th","Int",intParam 15 0 100)
+    , ("radMM", "Int", intParam 2 0 10)
     , ("minlen", "Int", intParam 50 0 200)
-    , ("mode", "Int", intParam 0 0 1)]
+    , ("mode", "Int", intParam 1 0 1)]
 
 wnpcontours :: IO ImageGray ->  IO (IO (ImageGray, [Polyline]))
 wnpcontours = npcontours .@. winNPParam
@@ -130,8 +132,13 @@ npcontours NPParam{mode = 0, ..} x = ok
 npcontours NPParam{mode = 1, ..} x = ok
   where
     x' = filterBox8u rad1 rad1 x
-    y = filterBox8u rad2 rad2 x        
-    (cl,_) = npb 1 minlen x' y
+    y =  filterBox8u rad2 rad2 x
+    mn = filterMin8u radMM x
+    mx = filterMax8u radMM x
+    dif = sub8u 1 mx mn
+    mask = compareC8u (fromIntegral th) IppCmpGreater dif
+    z = copyMask8u  y mask
+    (cl,_) = npb 1 minlen x' z
     ok = map proc cl
     proc = Closed . pixelsToPoints (size x). douglasPeuckerClosed 1.5
 
