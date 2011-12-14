@@ -107,41 +107,26 @@ npb mode lmin x1 x2 = npbParse (fi lmin) . npbRaw mode x1 $ x2
 --------------------------------------------------------------------------------
 
 autoParam "NPParam" ""
-    [ ("rad1","Int",intParam 1 0 10)
-    , ("rad2","Int",intParam 10 0 30)
-    , ("th","Int",intParam 15 0 100)
-    , ("radMM", "Int", intParam 2 0 10)
-    , ("minlen", "Int", intParam 50 0 200)
-    , ("mode", "Int", intParam 1 0 1)]
+    [ ("rad","Int",intParam 10 0 30)
+    , ("th","Int",intParam 30 0 100)
+    , ("minlen", "Int", intParam 50 0 200)]
 
 wnpcontours :: IO ImageGray ->  IO (IO (ImageGray, [Polyline]))
 wnpcontours = npcontours .@. winNPParam
 
 ---------------------------------------
 
-npcontours NPParam{mode = 0, ..} x = ok
+npcontours NPParam{..} x = ok
   where
-    x' = filterBox8u rad1 rad1 x
-    y = filterBox8u rad2 rad2 x        
-    (cl,_) = npb 0 minlen x' y
-    ok = map proc cl
-    proc = Closed . pixelsToPoints (size x). douglasPeuckerClosed 1.5
-
----------------------------------------
-
-npcontours NPParam{mode = 1, ..} x = ok
-  where
-    x' = filterBox8u rad1 rad1 x
-    y =  filterBox8u rad2 rad2 x
-    mn = filterMin8u radMM x
-    mx = filterMax8u radMM x
-    dif = sub8u 1 mx mn
+    y =  filterBox8u rad rad x
+    mn = filterMin8u 2 x
+    mx = filterMax8u 2 x
+    dif = sub8u 0 mx mn
     mask = compareC8u (fromIntegral th) IppCmpGreater dif
     z = copyMask8u  y mask
-    (cl,_) = npb 1 minlen x' z
+    (cl,_) = npb 1 minlen x z
     ok = map proc cl
     proc = Closed . pixelsToPoints (size x). douglasPeuckerClosed 1.5
 
 ---------------------------------------
-
 
