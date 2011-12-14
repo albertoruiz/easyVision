@@ -8,9 +8,11 @@ cd ../imagproc
 cabal clean
 cd ../camera
 cabal clean
-cd ../features
-cabal clean
 cd ../gui
+cabal clean
+cd ../contours
+cabal clean
+cd ../features
 cabal clean
 cd ../ev
 cabal clean

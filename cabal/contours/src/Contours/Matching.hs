@@ -1,16 +1,13 @@
 {-# LANGUAGE RecordWildCards #-}
 
-module Shapes(
+module Contours.Matching(
     Shape(..), ShapeMatch(..),
     shape,
-    elongated, rev,
+    elongated, isEllipse,
     matchShapes, matchShapesSimple
 ) where
 
-import EasyVision
 import Control.Arrow((***),(&&&))
-import Graphics.UI.GLUT hiding (Point,Size)
-import Data.Colour.Names
 import Numeric.LinearAlgebra
 import Text.Printf(printf)
 import Data.List(minimumBy,sortBy,groupBy)
@@ -18,20 +15,20 @@ import Util.Misc(Mat,Vec,norm,degree,diagl,debug,posMax,norm)
 import Util.Rotation
 import Classifier(Sample)
 import Vision
+import ImagProc.Base(Polyline(..))
 import Util.Options(optionFromFile)
-
+import Contours.Base
+import Contours.Normalization
+import Contours.Fourier
+import Contours.Orientation
 import Control.Monad(when)
 import Control.Applicative((<$>))
 import Data.Maybe(isJust)
+import Data.Function(on)
 
 
 shape :: Polyline -> Shape
 shape = analyzeShape 10 . (id &&& momentsContour . polyPts)
-
-elongated r Shape { shapeAxes = (l1,l2,_) } = sqrt l2 / sqrt l1 < 1/r 
-
-rev (Closed ps) = Closed (reverse ps)
-rev (Open ps) = Open (reverse ps)
 
 ----------------------------------------------------------------------
 type CVec = Vector (Complex Double)
@@ -129,4 +126,19 @@ matchShapesSimple th ((x,cs),prots) = (x, map (filterGood . shapeMatch prots) cs
   where
     filterGood = sortBy (compare `on` invDist) . filter ((<th).invDist)
 
+----------------------------------------------------------------------
+
+-- | checks if a polyline is very similar to an ellipse.
+isEllipse :: Int -- ^ tolerance (per 1000 of total energy) (e.g. 10)
+          -> Polyline -> Bool
+isEllipse tol c = (ft-f1)/ft < fromIntegral tol/1000 where
+    wc = whitenContour c   -- required?
+    f  = fourierPL wc
+    f0 = magnitude (f 0)
+    f1 = sqrt (magnitude (f (-1)) ^2 + magnitude (f 1) ^2)
+    ft = sqrt (norm2Cont wc - f0 ^2)
+
+----------------------------------------------------------------------
+
+elongated r Shape { shapeAxes = (l1,l2,_) } = sqrt l2 / sqrt l1 < 1/r 
 

@@ -10,6 +10,8 @@ cd ../camera
 cabal install
 cd ../gui
 cabal install
+cd ../contours
+cabal install
 cd ../features
 cabal install
 cd ../ev
