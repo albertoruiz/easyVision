@@ -61,7 +61,7 @@ posMax :: Ord a => [a] -> Int
 posMax l = p where
     Just p = elemIndex (maximum l) l
 
--- | returns the position of the maximum element.
+-- | returns the position of the minimum element.
 posMin :: Ord a => [a] -> Int
 posMin l = p where
     Just p = elemIndex (minimum l) l

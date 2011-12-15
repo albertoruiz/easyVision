@@ -205,7 +205,8 @@ inHomogMat m = ma / (mb `outer` constant 1 (cols ma))
           mb = flatten $ dropColumns (cols m -1) m
 
 htc :: (Product t, Container Vector t, Num (Vector t)) => Matrix t -> [[t]] -> [[t]]
-htc h = toLists. inHomogMat . (<> trans h) . homogMat . fromLists
+htc h [] = []
+htc h l  = toLists. inHomogMat . (<> trans h) . homogMat . fromLists $ l
 
 -- | transforms a list of inhomogeneous vectors, given as lists, using a homogeneous transformation.
 ht :: Mat -> [[Double]] -> [[Double]]

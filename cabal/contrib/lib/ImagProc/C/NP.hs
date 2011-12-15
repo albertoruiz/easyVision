@@ -24,7 +24,7 @@ import ImagProc.Ipp.Core
 import ImagProc
 import Foreign
 import EasyVision.GUI.Parameters(autoParam,intParam)
-import Contours.Base(douglasPeuckerClosed)
+import Contours.Base(douglasPeuckerClosed,douglasPeucker)
 import ImagProc.Util((.@.))
 import Control.Monad(when)
 
@@ -111,12 +111,14 @@ autoParam "NPParam" ""
     , ("th","Int",intParam 30 0 100)
     , ("minlen", "Int", intParam 50 0 200)]
 
-wnpcontours :: IO ImageGray ->  IO (IO (ImageGray, [Polyline]))
+wnpcontours :: IO ImageGray ->  IO (IO (ImageGray, ([Polyline],[Polyline])))
 wnpcontours = npcontours .@. winNPParam
 
 ---------------------------------------
 
-npcontours NPParam{..} x = ok
+-- | result = (closed, open)
+npcontours :: NPParam -> ImageGray -> ([Polyline],[Polyline])
+npcontours NPParam{..} x = (map proc1 cl, map proc2 op)
   where
     y =  filterBox8u rad rad x
     mn = filterMin8u 2 x
@@ -124,9 +126,9 @@ npcontours NPParam{..} x = ok
     dif = sub8u 0 mx mn
     mask = compareC8u (fromIntegral th) IppCmpGreater dif
     z = copyMask8u  y mask
-    (cl,_) = npb 1 minlen x z
-    ok = map proc cl
-    proc = Closed . pixelsToPoints (size x). douglasPeuckerClosed 1.5
+    (cl,op) = npb 1 minlen x z
+    proc1 = Closed . pixelsToPoints (size x). douglasPeuckerClosed 1.5
+    proc2 = Open . pixelsToPoints (size x). douglasPeucker 1.5
 
 ---------------------------------------
 

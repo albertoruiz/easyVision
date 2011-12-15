@@ -118,6 +118,7 @@ asSegments (Closed ps) = asSegments $ Open $ ps++[head ps]
 ----------------------------------------------------------------------
 
 transPol t (Closed ps) = Closed $ map l2p $ ht t (map p2l ps)
+transPol t (Open ps)   = Open   $ map l2p $ ht t (map p2l ps)
 
 p2l (Point x y) = [x,y]
 l2p [x,y] = Point x y
