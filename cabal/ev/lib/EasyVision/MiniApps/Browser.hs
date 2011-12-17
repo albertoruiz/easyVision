@@ -53,16 +53,17 @@ editBrowser :: Show b
             -> (t -> IO a)  -- ^ display function
             -> [((Key, KeyState, Modifiers), Int -> Int -> t -> t)] -- ^ custom object modification commands
             -> ((t, String) -> b) -- ^ projection function for saving to a file
+            -> FilePath           -- ^ save file name
             -> [(t, String)] -- ^ labeled objects
             -> IO (EVWindow (Bool, Int, [(t, [Char])]))
-editBrowser name sz f kuser svf es =
+editBrowser name sz f kuser svf fnsv es =
     evWindow (False,0,es) name sz (Just disp) (mouseGen (acts++ map g kuser) kbdQuit)
   where
     disp st = do
         pointCoordinates sz
         (sv,k,exs) <- get st
         when sv $ do
-            writeFile "saved.txt" (show $ map svf exs)
+            writeFile fnsv (show $ map svf exs)
             st $= (False,k,exs)
         when (not $ null exs) $ do 
             let (x,label) = exs!!k
