@@ -15,8 +15,8 @@ HOpenGL drawing utilities.
 -----------------------------------------------------------------------------
 
 module EasyVision.GUI.Draw
-( pointCoordinates
-, pixelCoordinates
+( pointCoordinates, pointCoords
+, pixelCoordinates, pixelCoords
 , Drawable(..), drawImage', drawImage''
 , drawTexture
 , setColor, setColor'
@@ -198,10 +198,16 @@ pointCoordinates :: Size -> IO()
 pointCoordinates (Size h w) = draw2Dwith (ortho2D 1 (-1) (-r) r)
     where r = fromIntegral h / fromIntegral w
 
+pointCoords :: IO ()
+pointCoords = get windowSize >>= pointCoordinates . evSize
+
 -- | Sets ortho2D to draw 2D unnormalized pixels as x (column, 0 left) and y (row, 0 top).
 pixelCoordinates :: Size -> IO()
 pixelCoordinates (Size h w) = draw2Dwith (ortho2D eps (fromIntegral w -eps) (fromIntegral h - eps) eps)
     where eps = 0.0001
+
+pixelCoords :: IO ()
+pixelCoords = get windowSize >>= pointCoordinates . evSize
 
 draw2Dwith ortho = do
     matrixMode $= Projection

@@ -1,49 +1,35 @@
-import EasyVision hiding (warper)
-import Numeric.LinearAlgebra
-import Vision
-import Util.Rotation(rot1,rot3)
+{-# LANGUAGE TemplateHaskell, RecordWildCards #-}
+
+import EasyVision
+import Numeric.LinearAlgebra ((<>))
+import Vision(ht,desp,scaling,kgen)
+import Util.Rotation
 import Util.Misc(degree)
 
-szw = Size 600 500
+autoParam "CGParam" "cg-"
+    [ ("pan",  "Double",   realParam (0) (-40) (40))
+    , ("dx",  "Double",    realParam (0) (-1) (1))
+    , ("dy",  "Double",    realParam (0) (-1) (1))
+    , ("tilt", "Double",   realParam (0) (-30) (30))
+    , ("roll",  "Double",  realParam  0 (-40) (40))
+    , ("focal",  "Double", listParam 2.8 [0.5, 0.7, 1, 2, 2.6, 2.8, 5, 5.5, 9,10])
+    , ("scale",  "Double", listParam 1 [1.05**k|k<-[-20..20]])]
 
-main = do
-    sz <- findSize
-    (cam,ctrl) <- getCam 0 sz >>= withPause
-    prepare
+main = run $   camera ~> rgb
+           >>= deskew .@. winCGParam
+           >>= observe "output" snd
 
-    param <- createParameters [("alpha", realParam (-40) (-100) (100))
-                              ,("rho",  realParam 0 (-180) (180))
-                              ,("foc",  listParam 2 [0.5, 0.7, 1, 2, 5,5.5, 9,10])
-                              ,("sca",  listParam 0.5 [1.1**k|k<-[-20..20]])]
+deskew par@CGParam{..} img = warp (80,0,0) (size img) r img
+  where
+    h = conjugateRotation par
+    [[a,b]] = ht h [[dx,-dy]]
+    r = desp (-a,-b) <> h
 
-    wCam <- evWindow () "camera" sz Nothing (const (kbdcam ctrl))
-    wWarp <-evWindow () "warped" szw Nothing (const (kbdcam ctrl))
+conjugateRotation CGParam{..} =
+        scaling scale
+        <> kgen focal
+        <> rot1 (tilt*degree)
+        <> rot2 (pan*degree)
+        <> rot3 (roll*degree) 
+        <> kgen (1/focal)
 
-    launch (worker wCam wWarp cam param)
-
--------------------------------------------------------
-
-vector v = fromList v :: Vector Double
-
-warper alpha rho foc sca = r where 
-    t = kgen foc
-        <> rot1 alpha <> rot3 rho 
-        <> kgen (1/foc)
-    [a,b] = toList $ inHomog $ t <> vector [0,0,1]
-    r = scaling sca <> desp (-a,-b) <> t
-
-----------------------------------------------------------
-
-worker wCam wWarp cam param = do
-
-    camera <- cam >>= return . yuvToRGB
-    inWin wCam (drawImage camera)
-
-    alpha <- getParam param "alpha"
-    rho   <- getParam param "rho"
-    foc   <- getParam param "foc"
-    sca   <- getParam param "sca"
-
-    let t = warper (alpha*degree) (rho*degree) foc sca
-    inWin wWarp $ do
-        drawImage $ warp (80,0,0) szw t camera

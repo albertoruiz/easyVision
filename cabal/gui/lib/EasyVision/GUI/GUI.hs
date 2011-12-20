@@ -21,7 +21,7 @@ module EasyVision.GUI.GUI (
 , addWindow, evWindow, evWindow3D, evWin3D, EVWindow(..)
 , launch, launch', launchFreq
 , InWindow, inWin, getW, putW, getROI
-, kbdcam, kbdQuit, mouseGen, modif
+, kbdcam, kbdQuit, mouseGen, mouseGenPt, modif
 -- * Drawing utilities
 , module EasyVision.GUI.Draw
 , module EasyVision.GUI.Objects
@@ -137,6 +137,17 @@ mouseGen acts def st a b c d = do
     case Prelude.lookup (a,b,c) acts of
         Just op -> st $= op d v >> postRedisplay Nothing
         Nothing -> def a b c d
+
+mouseGenPt acts def st a b c d = do
+    v <- get st
+    sz <- evSize `fmap` get windowSize
+    case Prelude.lookup (a,b,c) acts of
+        Just op -> st $= withPoint op sz d v >> postRedisplay Nothing
+        Nothing -> def a b c d
+
+withPoint f sz (Position c r) = f p
+  where
+   [p] = pixelsToPoints sz [Pixel (fromIntegral r) (fromIntegral c)]
 
 modif = Modifiers {ctrl = Up, shift = Up, alt = Up }
 

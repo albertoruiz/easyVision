@@ -32,31 +32,28 @@ import GHC.Float
 import Vision(desp,estimateHomographyRaw)
 import Data.Colour.Names as Col hiding (gray)
 
-
-regionMarker :: (Image a, Drawable a) => Size -> (t -> a) -> IO t -> IO (IO (t, Polyline))
-regionMarker sz g cam = do
-    w <- evWindow initRegion "Region Marker" sz Nothing (mouseGen (acts sz) kbdQuit)
+regionMarker :: (Image a, Drawable a) => (t -> a) -> IO t -> IO (IO (t, Polyline))
+regionMarker g cam = do
+    w <- evWindow initRegion "Region Marker" (mpSize 10) Nothing (mouseGenPt acts kbdQuit)
     return $ do
         thing <- cam
         c <- getW w
         inWin w $ do
-            drawImage (g thing)
-            pointCoordinates sz
+            drawImage' (g thing)
+            pointCoords
             shRegion c
         return (thing, c)
   where
-    acts sz = ((MouseButton LeftButton, Down, modif), f sz)
+    acts = ((MouseButton LeftButton, Down, modif), f)
               : map ch "1234"
-        where ch c = ((Char c, Down, modif), h c sz)
-    f sz pos (Closed ps) = Closed (replaceAt [k] [clickedPoint] ps)
-        where clickedPoint = sel sz pos
-              k = posMin $ map (distPoints clickedPoint) ps
-    f _ _ _ = impossible "Open polyline in regionMarker"
+        where ch c = ((Char c, Down, modif), h c)
+    f clickedPoint (Closed ps) = Closed (replaceAt [k] [clickedPoint] ps)
+        where 
+          k = posMin $ map (distPoints clickedPoint) ps
+    f _ _ = impossible "Open polyline in regionMarker"
 
-    sel sz (Position c r) = head $ pixelsToPoints sz [Pixel (fromIntegral r) (fromIntegral c)]
-
-    h c sz pos (Closed ps)
-        | k `elem` [0 .. length ps - 1] = Closed (replaceAt [k] [sel sz pos] ps)
+    h c clicked (Closed ps)
+        | k `elem` [0 .. length ps - 1] = Closed (replaceAt [k] [clicked] ps)
         | otherwise                     = (Closed ps)
       where k = fromEnum c - fromEnum '1'
 

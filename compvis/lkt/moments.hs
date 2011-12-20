@@ -14,7 +14,7 @@ main1 = run $ camera
 
 main = run $ camera
     ~>  grayscale
-    >>= regionMarker (mpSize 20) id
+    >>= regionMarker id
     >>= moniMask
     >>= timeMonitor
 
