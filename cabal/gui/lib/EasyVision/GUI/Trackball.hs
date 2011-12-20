@@ -2,6 +2,7 @@
 
 module EasyVision.GUI.Trackball (newTrackball) where
 
+import EasyVision.GUI.Util
 import Util.Quaternion
 import Util.Homogeneous(cross)
 import Numeric.LinearAlgebra
@@ -70,18 +71,18 @@ newTrackball = do
                           autoSpeed = 0 }
     let trackball = do
             s <- readIORef st
-            let rot = getRotationHL (tbQuat s)
+            let rot = map doubleGL $ getRotationHL (tbQuat s)
             mat <- newMatrix RowMajor rot :: IO (GLmatrix GLdouble)
             matrixMode $= Projection
             loadIdentity
             perspective 40 1 1 100
-            lookAt (Vertex3 0 0 (dist s))
+            lookAt (Vertex3 0 0 (doubleGL $ dist s))
                    (Vertex3 0 0 0)
                    (Vector3 0 1 0)
             matrixMode $= Modelview 0
             loadIdentity
             multMatrix mat
-            rotate (vertAngle s) (Vector3 0 0 (1::GLdouble))
+            rotate (doubleGL $ vertAngle s) (Vector3 0 0 (1::GLdouble))
             Size sz _ <- get windowSize
             writeIORef st s {wsize = fromIntegral sz}
 

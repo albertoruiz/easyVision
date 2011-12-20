@@ -15,12 +15,8 @@ HOpenGL drawing utilities.
 -----------------------------------------------------------------------------
 
 module EasyVision.GUI.Draw
-( pointCoordinates, pointCoords
-, pixelCoordinates, pixelCoords
-, Drawable(..), drawImage', drawImage''
+( Drawable(..), drawImage', drawImage''
 , drawTexture
-, setColor, setColor'
-, text2D, textAt
 , renderSignal
 , renderAxes
 , drawROI
@@ -32,7 +28,7 @@ module EasyVision.GUI.Draw
 , extractSquare
 , newTrackball
 , captureGL
-, evSize, glSize, limitSize
+, limitSize
 , renderPolyline
 ) where
 
@@ -46,6 +42,7 @@ import Numeric.LinearAlgebra hiding (step)
 import Vision
 import Util.Rotation
 import Util.Misc(degree)
+import EasyVision.GUI.Util
 import EasyVision.GUI.Trackball
 import qualified Data.Colour.RGBSpace as Col
 import Data.Colour.SRGB hiding (RGB)
@@ -178,36 +175,12 @@ drawTexture (F im) [v1,v2,v3,v4] = do
     texture Texture2D $= Disabled
 
   where
-    vert :: TexCoord2 GLdouble -> [GLdouble] -> IO ()
-    vert t [x,y,z] = do
+    vert :: TexCoord2 GLdouble -> [Double] -> IO ()
+    vert t p = do
           multiTexCoord (TextureUnit 0) t
-          vertex (Vertex3 x y z)
+          vertex p
 
 ------------------------------------------------------------
-
--- | Sets the current color to the given R, G, and B components.
-setColor :: Float -> Float -> Float -> IO ()
-setColor r g b = currentColor $= Color4 r g (b::GLfloat) 1
-
--- | Sets the current color to the given R, G, and B components.
-setColor' :: Colour Float -> IO ()
-setColor' c = setColor r g b where Col.RGB {Col.channelRed = r, Col.channelGreen = g, Col.channelBlue = b} = toSRGB c
-
--- | Sets ortho2D to draw 2D normalized points in a right handed 3D system (x from -1 (left) to +1 (right) and y from -1 (bottom) to +1 (top)).
-pointCoordinates :: Size -> IO()
-pointCoordinates (Size h w) = draw2Dwith (ortho2D 1 (-1) (-r) r)
-    where r = fromIntegral h / fromIntegral w
-
-pointCoords :: IO ()
-pointCoords = get windowSize >>= pointCoordinates . evSize
-
--- | Sets ortho2D to draw 2D unnormalized pixels as x (column, 0 left) and y (row, 0 top).
-pixelCoordinates :: Size -> IO()
-pixelCoordinates (Size h w) = draw2Dwith (ortho2D eps (fromIntegral w -eps) (fromIntegral h - eps) eps)
-    where eps = 0.0001
-
-pixelCoords :: IO ()
-pixelCoords = get windowSize >>= pointCoordinates . evSize
 
 draw2Dwith ortho = do
     matrixMode $= Projection
@@ -215,59 +188,6 @@ draw2Dwith ortho = do
     ortho
     matrixMode $= Modelview 0
     loadIdentity
-
-----------------------------------------------------------------------
-
-instance Vertex Pixel where
-    vertex (Pixel r c) = vertex (Vertex2 (fromIntegral c) (fromIntegral r::GLint))
-    vertexv = undefined
-
-instance Vertex Point where
-    vertex (Point x y) = vertex (Vertex2 x y)
-    vertexv = undefined
-
-instance Vertex [Double] where
-    vertex [x,y]   = vertex (Vertex2 x y)
-    vertex [x,y,z] = vertex (Vertex3 x y z)
-    vertex _  = error "vertex on list without two or three elements"
-    vertexv = undefined
-
-instance Vertex (Complex Double) where
-    vertex (x:+y) = vertex (Vertex2 x y)
-    vertexv = undefined
-
-instance Vertex Segment where
-    vertex s = do
-        vertex $ (extreme1 s)
-        vertex $ (extreme2 s)
-    vertexv = undefined
-
-instance Vertex (Vector Double) where
-    vertex v | dim v == 2 = vertex (Vertex2 (v@>0) (v@>1))
-             | dim v == 3 = vertex (Vertex3 (v@>0) (v@>1) (v@>2))
-    vertexv = undefined
-
-instance Vertex (Vector (Complex Double)) where
-    vertex = mapM_ vertex . toList
-    vertexv = undefined
-
-instance Vertex (Matrix Double) where
-    vertex = mapM_ vertex . toRows
-    vertexv = undefined
-
-instance Vertex Polyline where
-    vertex = mapM_ vertex . polyPts
-    vertexv = undefined
-
-
-----------------------------------------------------------------------
-
-text2D x y s = do
-    rasterPos (Vertex2 x (y::GLfloat))
-    renderString Helvetica12 s
-
-textAt (Point x y) s = text2D (d x) (d y) s
-  where d = double2Float
 
 ----------------------------------------------------------------------
 
@@ -334,12 +254,12 @@ shIP' (IP (Point x y) s o _) = do
     renderPrimitive LineLoop box
     renderPrimitive Lines dir
   where
-    box =  vertex (Vertex2 (x-s) (y-s))
-        >> vertex (Vertex2 (x-s) (y+s))
-        >> vertex (Vertex2 (x+s) (y+s))
-        >> vertex (Vertex2 (x+s) (y-s))
-    dir = vertex (Vertex2 (x) (y))
-        >> vertex (Vertex2 (x-s*cos o) (y+s*sin o))
+    box =  vertex (Point (x-s) (y-s))
+        >> vertex (Point (x-s) (y+s))
+        >> vertex (Point (x+s) (y+s))
+        >> vertex (Point (x+s) (y-s))
+    dir = vertex (Point (x) (y))
+        >> vertex (Point (x-s*cos o) (y+s*sin o))
 
 -----------------------------------------------------
 
@@ -361,13 +281,13 @@ cameraView m ar near far = do
     matrixMode $= Projection
     loadIdentity
     let fov = 2* atan (1/(f*ar)) / degree
-    perspective fov ar near far
+    perspective (doubleGL fov) (doubleGL ar) (doubleGL near) (doubleGL far)
     lookAt (Vertex3 0 0 0)
            (Vertex3 0 0 1)
            (Vector3 0 1 0)
     matrixMode $= Modelview 0
     loadIdentity
-    mat <- newMatrix RowMajor (toList $ flatten $ inv p) :: IO (GLmatrix GLdouble)
+    mat <- newMatrix RowMajor (map doubleGL $ toList $ flatten $ inv p) :: IO (GLmatrix GLdouble)
     multMatrix mat
 
 ------------------------------------------------------
@@ -412,17 +332,6 @@ captureGL = do
     return img
 
 ----------------------------------------------------------------
-
--- we should use only one size type
--- | converts an OpenGL Size into a 'Size'
-evSize :: GL.Size -> Size
-evSize (GL.Size w h) = Size    (t h) (t w) where t = fromIntegral.toInteger
-
--- | converts a 'Size' into an OpenGL Size.
-glSize :: Size -> GL.Size
-glSize (Size    h w) = GL.Size (t w) (t h) where t = fromIntegral.toInteger
-
-----------------------------------------------------------------------
 
 renderPolyline :: Polyline -> IO ()
 renderPolyline c@(Closed _) = renderPrimitive LineLoop (vertex c)

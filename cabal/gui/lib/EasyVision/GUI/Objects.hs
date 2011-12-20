@@ -19,7 +19,7 @@ module EasyVision.GUI.Objects (
 ) where
 
 import Graphics.UI.GLUT
-import EasyVision.GUI.Draw(setColor,setColor')
+import EasyVision.GUI.Util(doubleGL,setColor,setColor')
 import Data.Colour.Names
 import EasyVision.GUI.Model3DS
 
@@ -44,7 +44,7 @@ a4Ref = [[   0, 0]
         ,[   1, r]
         ,[   1, 0]] where r = sqrt 2
 
-v a b c = vertex $ Vertex3 a b (c::GLdouble)
+v a b c = vertex $ Vertex3 (doubleGL a) (doubleGL b) (doubleGL c)
 
 houseModel = do
     setColor 1 0.5 0.5
@@ -95,7 +95,6 @@ block x y z = do
     setColor' purple
     renderPrimitive Polygon $ v1 >> v2 >> v3 >> v4
   where
-    v a b c = vertex $ Vertex3 a b (c::GLdouble)
     v1 = v 0 0 0
     v2 = v x 0 0
     v3 = v x y 0
@@ -112,12 +111,12 @@ sphere x y z r = do
     lineWidth $=1
     setColor 1 0.5 0.5
     preservingMatrix $ do
-        translate $ Vector3 x y z
+        translate $ Vector3 (doubleGL x) (doubleGL y) (doubleGL z)
         renderQuadric 
             (QuadricStyle Nothing NoTextureCoordinates Outside FillStyle)
-            (Sphere (r*0.99) 20 20)
+            (Sphere (doubleGL $ r*0.99) 20 20)
         setColor 0 0 0
         renderQuadric 
             (QuadricStyle Nothing NoTextureCoordinates Outside LineStyle)
-            (Sphere r 20 20)
+            (Sphere (doubleGL r) 20 20)
 

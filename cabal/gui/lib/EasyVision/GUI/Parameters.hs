@@ -22,6 +22,8 @@ module EasyVision.GUI.Parameters (
 ) where
 
 import ImagProc.Ipp.Core hiding (r1,c1,r2,c2)
+import EasyVision.GUI.Util
+import EasyVision.GUI.GUI
 import EasyVision.GUI.GUI
 import Graphics.UI.GLUT hiding (RGB, Matrix, Size)
 import Data.IORef

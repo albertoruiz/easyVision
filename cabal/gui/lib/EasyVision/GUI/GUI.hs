@@ -15,18 +15,15 @@ The GUI of EasyVision, based on HOpenGL.
 -----------------------------------------------------------------------------
 
 module EasyVision.GUI.GUI (
--- * Application interface
   State(..)
 , prepare, prepare'
 , addWindow, evWindow, evWindow3D, evWin3D, EVWindow(..)
 , launch, launch', launchFreq
 , InWindow, inWin, getW, putW, getROI
 , kbdcam, kbdQuit, mouseGen, mouseGenPt, modif
--- * Drawing utilities
-, module EasyVision.GUI.Draw
-, module EasyVision.GUI.Objects
 ) where
 
+import EasyVision.GUI.Util
 import EasyVision.GUI.Draw
 import ImagProc.Base
 import ImagProc.Ipp(Size(..),ippSetNumThreads,ROI(..),saveRGB')

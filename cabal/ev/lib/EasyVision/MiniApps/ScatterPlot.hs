@@ -47,7 +47,7 @@ scatter examples (i,j) colornames prefun = do
     clear [ColorBuffer]
     matrixMode $= Projection
     loadIdentity
-    ortho2D (a1-da) (a2+da) (b1-db) (b2+db)
+    ortho2D (doubleGL $ a1-da) (doubleGL $ a2+da) (doubleGL $ b1-db) (doubleGL $ b2+db)
     matrixMode $= Modelview 0
     loadIdentity
     let f pts col = do
@@ -63,13 +63,9 @@ scatter examples (i,j) colornames prefun = do
     pointSize $= 3
     sequence_ $ zipWith f (reverse gs) (reverse colors)
 
-    let text2D x y s = do
-        rasterPos (Vertex2 x (y::GLdouble))
-        renderString Helvetica12 s
-
     setColor 0.5 0.5 0.5
-    text2D a2 b1 (show i)
-    text2D a1 b2 (show j)
+    textAt (Point a2 b1) (show i)
+    textAt (Point a1 b2) (show j)
 
 
 scatterPlot name sz exs coor colors prefun = do
@@ -142,7 +138,7 @@ scatter3D examples (i,j,k) colornames prefun = do
         Vertex3 0 0 0,
         Vertex3 0 1 0,
         Vertex3 0 0 0,
-        Vertex3 0 0 (1::Float)]
+        Vertex3 0 0 (1::GLfloat)]
 
 
 
