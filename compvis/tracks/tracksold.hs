@@ -3,7 +3,7 @@
 --experiment...
 
 import EasyVision
-import Graphics.UI.GLUT hiding (RGB,Size,minmax,histogram,Point,set)
+import Graphics.UI.GLUT hiding (RGB,Size,minmax,histogram,Point)
 import GHC.Float(float2Double,double2Float)
 import Control.Monad
 --import Data.List(transpose)

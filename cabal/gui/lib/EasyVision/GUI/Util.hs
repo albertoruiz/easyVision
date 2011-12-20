@@ -35,6 +35,7 @@ import Data.Colour
 import Control.Monad(when)
 --import Features(Polyline(..))
 import GHC.Float(double2Float)
+import Unsafe.Coerce(unsafeCoerce)
 
 ------------------------------------------------------------
 
@@ -152,10 +153,8 @@ glSize (Size    h w) = GL.Size (t w) (t h) where t = fromIntegral.toInteger
 ----------------------------------------------------------------------
 
 doubleGL :: Double -> GLdouble
-doubleGL = realToFrac
--- convertGLDouble = unsafeCoerce
+doubleGL = unsafeCoerce -- realToFrac
 
 floatGL :: Float -> GLfloat
-floatGL = realToFrac
--- convertGLFloat = unsafeCoerce
+floatGL = unsafeCoerce -- realToFrac
 

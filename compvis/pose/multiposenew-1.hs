@@ -3,7 +3,7 @@
 
 import EasyVision hiding ((.*),State)
 import qualified EasyVision as EV
-import Graphics.UI.GLUT hiding (Matrix, Size, Point,set,triangulate,scale)
+import Graphics.UI.GLUT hiding (Matrix, Size, Point, triangulate,scale)
 import Vision
 import Numeric.LinearAlgebra
 import Control.Monad(when,(>=>))

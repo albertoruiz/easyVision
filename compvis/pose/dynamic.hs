@@ -18,8 +18,8 @@ import Vision.Autofrontal
 import Util.Options
 
 data Particle = PT {
-    x,y,z :: GLdouble,
-    vx,vy,vz :: GLdouble }
+    x,y,z :: Double,
+    vx,vy,vz :: Double }
 
 createParticle = do
     p <- newMVar PT {x=1,y=1.5,z=0,vx=0.000,vy=0.000,vz=0}

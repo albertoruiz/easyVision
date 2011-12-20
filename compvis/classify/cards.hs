@@ -1,6 +1,6 @@
 import EasyVision
 import ImagProc.C.Segments
-import Graphics.UI.GLUT hiding (Matrix, Size, Point,set)
+import Graphics.UI.GLUT hiding (Matrix, Size, Point)
 import Vision
 import Control.Monad(when)
 import Numeric.LinearAlgebra
@@ -86,7 +86,7 @@ worker cam wImage wA4 ratio szA4 classify = do
             let res = blockImage $ take 5 (map return $ seen++zeros szA4)
             drawImage res
 
-text2D' (Point x y) s = do
+text2D' p s = do
     setColor 1 1 1
-    rasterPos (Vertex2 x y)
-    renderString TimesRoman24 s
+    textAtF TimesRoman24 p s
+

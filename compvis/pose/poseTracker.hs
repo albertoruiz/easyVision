@@ -1,6 +1,6 @@
 import EasyVision
 import Vision
-import Graphics.UI.GLUT hiding (Matrix, Size, Point,set)
+import Graphics.UI.GLUT hiding (Matrix, Size, Point)
 import Text.Printf
 import Numeric.LinearAlgebra
 import Control.Monad(when)
