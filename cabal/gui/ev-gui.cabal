@@ -5,13 +5,13 @@ License-file:       LICENSE
 Author:             Alberto Ruiz
 Maintainer:         Alberto Ruiz <aruiz@um.es>
 Stability:          experimental
-Homepage:           http://www.easyvision.googlepages.com/
+Homepage:           http://perception.inf.um.es/easyVision
 Synopsis:           simple gui for image processing and computer vision
 Description:
  simple gui for image processing and and computer vision
 
-Category:           Math
-tested-with:        GHC ==6.10.4, GHC ==6.12.1
+Category:           Graphics
+tested-with:        GHC ==6.10.4, GHC ==6.12.1, GHC ==7.0
 
 cabal-version:      >=1.2
 build-type:         Simple
@@ -37,7 +37,6 @@ library
                         EasyVision.GUI.Draw
                         EasyVision.GUI.GUI
                         EasyVision.GUI.Objects
-                        EasyVision.GUI.Model3DS
                         EasyVision.GUI.Parameters
                         EasyVision.GUI.Trackball
 
@@ -46,9 +45,4 @@ library
     ghc-prof-options:   -auto-all
 
 --    ghc-options:        -Wall
-    
-    extra-libraries:    3ds GLEW
-    
-    C-sources:          lib/EasyVision/GUI/C/model3ds.c
-    CC-options:         -std=c99
 

@@ -15,13 +15,11 @@ True coordinates of several calibration objects and 3D models
 
 module EasyVision.GUI.Objects (
     a4Ref, asymRef, cornerRef, houseModel, block, unitCube, sphere,
-    module EasyVision.GUI.Model3DS
 ) where
 
 import Graphics.UI.GLUT
 import EasyVision.GUI.Util(doubleGL,setColor,setColor')
 import Data.Colour.Names
-import EasyVision.GUI.Model3DS
 
 asymRef = map (map (*0.54))
        [ [ 0, 0]

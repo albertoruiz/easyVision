@@ -12,7 +12,7 @@ import Graphics.UI.GLUT as GL hiding (Point, Size)
 import Data.Colour.Names
 import Control.Monad(when)
 import Data.Maybe(isJust)
-
+import EasyVision.GUI.Model3DS
 
 main = run $ camera ~> grayscale
         >>= wcontours id ~> (id *** contSel)
@@ -53,8 +53,8 @@ showPose = monitor3D "pose" 400 sh
 showThings c = do rec
                     r <- monitorWheel (0,0,30) "misc" (mpSize 10) (sh f) c
                     depthFunc $= Just Less
-                    f <- prepareModel "lunarlandernofoil_carbajal.3ds"
-                    g <- prepareModel "STS.3ds"
+                    f <- prepareModel "../../data/models3ds/lunarlandernofoil_carbajal.3ds"
+                    -- f <- prepareModel "../../data/models3ds/STS.3ds"
                     shadeModel $= Smooth
                     lighting $= Enabled
                     ambient (Light 0) $= Color4 0.1 0.1 0.1 ( 1::GLfloat)

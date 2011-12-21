@@ -182,15 +182,6 @@ drawTexture (F im) [v1,v2,v3,v4] = do
 
 ------------------------------------------------------------
 
-draw2Dwith ortho = do
-    matrixMode $= Projection
-    loadIdentity
-    ortho
-    matrixMode $= Modelview 0
-    loadIdentity
-
-----------------------------------------------------------------------
-
 -- | It shows the outline of a camera and an optional image (texture) in its image plane.
 drawCamera :: Double -> Matrix Double -> Maybe ImageFloat -> IO ()
 drawCamera size cam Nothing = do

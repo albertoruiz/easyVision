@@ -17,6 +17,10 @@
 Lib3dsFile * load3ds(char* name) {
     Lib3dsFile * model;
     model = lib3ds_file_load(name);
+    if(!model) {
+        printf("Error: wrong model3ds file path: %s\n", name);
+        exit(1);
+    }
 //    printf("nmeshes = %d\n", model -> frames);
     return model;
 }

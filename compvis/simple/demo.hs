@@ -4,7 +4,7 @@
 -- ./demo penguin.dv
 -- ./demo webcam0
 
-import EasyVision
+import EasyVision as EV
 import Graphics.UI.GLUT hiding (RGB,Size,minmax,histogram,Point)
 import GHC.Float(float2Double)
 import qualified Data.Colour.Names as Col
@@ -214,7 +214,7 @@ worker wDemo cam param fft = do
                                   d = sqrt32f . powerSpectrum . magnitudePack . fft
                                     $ modifyROI (const p2roi) gsmooth
                                   c@(Pixel r0 c0) = roiCenter (theROI d)
-                              set 0 (roiFrom2Pixels c c) d
+                              EV.set 0 (roiFrom2Pixels c c) d
                               let (m,_) = maxIndx d
                               drawImage $ (1/m) .* d
 
