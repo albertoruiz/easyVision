@@ -11,6 +11,6 @@ clean:
 unregister:
 	ghc-pkg unregister prcv-util --force
 
-gui:
+fromgui:
 	for p in gui ev contrib; do cd $$p; cabal install; cd ..; done
 

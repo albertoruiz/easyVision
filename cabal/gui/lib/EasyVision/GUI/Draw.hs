@@ -328,5 +328,18 @@ renderPolyline :: Polyline -> IO ()
 renderPolyline c@(Closed _) = renderPrimitive LineLoop (vertex c)
 renderPolyline c@(Open _) = renderPrimitive LineStrip (vertex c)
 
-----------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+
+instance Renderable ImageGray where
+    render = (>> pointCoords) . drawImage'
+
+instance Renderable Polyline where
+    render (Closed ps) = renderPrimitive LineLoop (vertex (Closed ps))
+    render (Open ps) = renderPrimitive LineStrip (vertex (Open ps))
+
+instance Renderable (Vector Double) where
+    render v = renderPrimitive LineStrip (vertex $ fromColumns [t,v])
+      where
+        t = linspace (dim v) (0.9,-0.9)
 

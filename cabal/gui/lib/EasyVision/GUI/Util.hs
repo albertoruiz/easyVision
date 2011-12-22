@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FlexibleInstances, ExistentialQuantification, RecordWildCards #-}
 -----------------------------------------------------------------------------
 {- |
 Module      :  EasyVision.GUI.Util
@@ -11,7 +11,12 @@ Stability   :  provisional
 -----------------------------------------------------------------------------
 
 module EasyVision.GUI.Util
-( pointCoordinates, pointCoords
+( 
+-- * Drawing abstraction
+  Renderable(..), Draw(..),
+  color, text, pointSz, lineWd
+-- * Tools
+, pointCoordinates, pointCoords
 , pixelCoordinates, pixelCoords
 , setColor, setColor'
 , text2D, textAt, textAtF
@@ -19,21 +24,12 @@ module EasyVision.GUI.Util
 , floatGL, doubleGL
 ) where
 
-import Graphics.UI.GLUT hiding (RGB, Matrix, Size, Point)
+import Graphics.UI.GLUT hiding (RGB, Matrix, Size, Point,color)
 import qualified Graphics.UI.GLUT as GL
-import ImagProc.Ipp.Core
-import ImagProc(resize,yuvToRGB,toGray)
-import Data.IORef
-import Foreign (touchForeignPtr,castPtr)
+import ImagProc.Base
 import Numeric.LinearAlgebra hiding (step)
-import Vision
-import Util.Rotation
-import Util.Misc(degree)
-import qualified Data.Colour.RGBSpace as Col
-import Data.Colour.SRGB hiding (RGB)
-import Data.Colour
-import Control.Monad(when)
---import Features(Polyline(..))
+import Data.Colour(Colour)
+import Data.Colour.SRGB(RGB(..),toSRGB)
 import GHC.Float(double2Float)
 import Unsafe.Coerce(unsafeCoerce)
 
@@ -45,7 +41,7 @@ setColor r g b = currentColor $= Color4 (floatGL r) (floatGL g) (floatGL b) 1
 
 -- | Sets the current color to the given R, G, and B components.
 setColor' :: Colour Float -> IO ()
-setColor' c = setColor r g b where Col.RGB {Col.channelRed = r, Col.channelGreen = g, Col.channelBlue = b} = toSRGB c
+setColor' = render
 
 -- | Sets ortho2D to draw 2D normalized points in a right handed 3D system (x from -1 (left) to +1 (right) and y from -1 (bottom) to +1 (top)).
 pointCoordinates :: Size -> IO()
@@ -157,4 +153,47 @@ doubleGL = unsafeCoerce -- realToFrac
 
 floatGL :: Float -> GLfloat
 floatGL = unsafeCoerce -- realToFrac
+
+--------------------------------------------------------------------------------
+
+class Renderable x where
+    render :: x -> IO ()
+
+data Draw a = forall a . (Renderable a) => Draw a
+            | forall a . (Renderable a) => DrawPix a
+
+instance Renderable a => Renderable [a] where
+    render = mapM_ render
+
+
+instance Renderable (RGB Float) where
+    render RGB {..} = currentColor $= Color4 (floatGL $ channelRed) (floatGL $ channelGreen) (floatGL $ channelBlue) 1
+
+instance Renderable (Colour Float) where
+    render = render . toSRGB 
+
+color x = Draw (x :: Colour Float)
+
+newtype LineWidth = LineWidth Float
+newtype PointSize = PointSize Float
+data Text2D = Text2D BitmapFont Point String
+
+instance Renderable LineWidth where
+    render (LineWidth l) = lineWidth $= l
+
+lineWd = Draw . LineWidth
+
+instance Renderable PointSize where
+    render (PointSize s) = pointSize $= s
+
+pointSz = Draw . PointSize
+
+instance Renderable Text2D where
+    render (Text2D f p s) = textAtF f p s
+
+text p s = Draw (Text2D Helvetica18 p s)
+
+instance Renderable (Draw a) where
+    render (Draw x) = render x
+    render (DrawPix x) = pixelCoords >> render x >> pointCoords
 

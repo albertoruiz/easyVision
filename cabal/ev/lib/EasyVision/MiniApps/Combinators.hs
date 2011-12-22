@@ -18,6 +18,7 @@ module EasyVision.MiniApps.Combinators (
   withPause,
   monitor, observe,
   monitorWheel,
+  sMonitor,
   monitor3D,
   monitorScanLine, 
   gray,
@@ -385,7 +386,18 @@ monitorWheel (k0,k1,k2) name sz fun cam = do
         st $~ (max k1 . (subtract 1))
     mouse m _ a b c d = m a b c d
 
-----------------------------------------------------------------------
+--------------------------------------------------------------------------------
+
+-- | monitor window in which the info to be displayed is selected with the mouse wheel / (or arrow up/down)
+sMonitor :: Renderable a => String -> (x -> [a]) -> IO x -> IO (IO x)
+sMonitor name g = monitorWheel (0,-100,100) name (mpSize 10) f
+  where
+    f k x = render (r !! j)
+      where
+        r = g x
+        j = k `mod` length r
+
+--------------------------------------------------------------------------------
 
 -- temporary location, and
 -- to be replaced by a new warpBack function
