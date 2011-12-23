@@ -14,7 +14,7 @@ module EasyVision.GUI.Util
 ( 
 -- * Drawing abstraction
   Renderable(..), Draw(..),
-  color, text, pointSz, lineWd
+  color, text, textF, pointSz, lineWd
 -- * Tools
 , pointCoordinates, pointCoords
 , pixelCoordinates, pixelCoords
@@ -161,39 +161,34 @@ class Renderable x where
 
 data Draw a = forall a . (Renderable a) => Draw a
             | forall a . (Renderable a) => DrawPix a
+            | Raw (IO())
+
+instance Renderable (Draw a) where
+    render (Draw x) = render x
+    render (DrawPix x) = pixelCoords >> render x >> pointCoords
+    render (Raw f) = f
 
 instance Renderable a => Renderable [a] where
     render = mapM_ render
 
+--------------------------------------
 
 instance Renderable (RGB Float) where
-    render RGB {..} = currentColor $= Color4 (floatGL $ channelRed) (floatGL $ channelGreen) (floatGL $ channelBlue) 1
+    render RGB {..} = currentColor $= Color4 (floatGL $ channelRed)
+                                             (floatGL $ channelGreen)
+                                             (floatGL $ channelBlue)
+                                             1
 
 instance Renderable (Colour Float) where
     render = render . toSRGB 
 
 color x = Draw (x :: Colour Float)
 
-newtype LineWidth = LineWidth Float
-newtype PointSize = PointSize Float
-data Text2D = Text2D BitmapFont Point String
+lineWd = Raw . (lineWidth $=)
 
-instance Renderable LineWidth where
-    render (LineWidth l) = lineWidth $= l
+pointSz = Raw . (pointSize $=)
 
-lineWd = Draw . LineWidth
+textF f p s = Raw (textAtF f p s)
 
-instance Renderable PointSize where
-    render (PointSize s) = pointSize $= s
-
-pointSz = Draw . PointSize
-
-instance Renderable Text2D where
-    render (Text2D f p s) = textAtF f p s
-
-text p s = Draw (Text2D Helvetica18 p s)
-
-instance Renderable (Draw a) where
-    render (Draw x) = render x
-    render (DrawPix x) = pixelCoords >> render x >> pointCoords
+text = textF Helvetica18
 
