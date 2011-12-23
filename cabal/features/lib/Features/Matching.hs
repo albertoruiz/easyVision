@@ -24,7 +24,7 @@ import ImagProc.Ipp.Core
 import ImagProc.C.Simple(getPoints32f)
 import ImagProc
 import Data.List(zipWith4,(\\))
-import Numeric.LinearAlgebra hiding ((.*))
+import Numeric.LinearAlgebra
 import GHC.Float(float2Double,double2Float)
 import Foreign(unsafePerformIO)
 

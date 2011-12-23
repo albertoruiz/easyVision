@@ -34,7 +34,7 @@ import Data.List(transpose)
 import Util.Rotation(rot3)
 import Util.Misc(unitary)
 import Vision(scaling,desp)
-import Numeric.LinearAlgebra hiding ((.*))
+import Numeric.LinearAlgebra
 import ImagProc.Images
 
 -- | Binarizes a gray level image.

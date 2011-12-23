@@ -150,10 +150,13 @@ camerasFromEssential e = [m1,m2,m3,m4] where
     w = mat [[ 0,1,0],
              [-1,0,0],
              [ 0,0,1]]
-    m1 = u <>       w <> trans v <|>  u3
-    m2 = u <>       w <> trans v <|> -u3
-    m3 = u <> trans w <> trans v <|>  u3
-    m4 = u <> trans w <> trans v <|> -u3
+    m1 = u <>       w <> trans v &  u3
+    m2 = u <>       w <> trans v & -u3
+    m3 = u <> trans w <> trans v &  u3
+    m4 = u <> trans w <> trans v & -u3
+
+infixl 1 &
+m & v = fromBlocks [[m, asColumn v]]
 
 triangulate1 ms ps = x3d where
     eq [[m11, m12, m13, m14],
@@ -214,13 +217,14 @@ epipoles f = (nullspace f, nullspace (trans f)) where
 canonicalCameras :: Mat -> (Mat, Mat)
 canonicalCameras f = (cameraAtOrigin, m2) where
     (_,e') = epipoles f
-    m2 = asMat e' <> f  <|> e'
+    m2 = asMat e' <> f  & e'
 
 fundamentalFromCameras :: Mat -> Mat -> Mat
 fundamentalFromCameras p p' = asMat e' <> p' <> pinv p where
     e' = p' <> c
     c = flatten $ dropColumns 3 v 
-    (_,_,v) = svd (p <-> vec [0,0,0,0])
+    (_,_,v) = svd $ fromBlocks [[p],
+                                [0]]
 
 stereoRectifiers :: Mat -> [[Double]] -> [[Double]] -> (Mat, Mat)
 stereoRectifiers fund pts pts' = (h,h') where    -- HZ p.307
