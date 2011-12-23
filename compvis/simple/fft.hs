@@ -2,7 +2,7 @@
 
 import EasyVision
 import Vision
-import Numeric.LinearAlgebra hiding ((.*))
+import Numeric.LinearAlgebra
 import Util.Rotation(rot3)
 
 fftpow  = 8

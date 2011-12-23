@@ -2,7 +2,7 @@
 
 import Numeric.LinearAlgebra.Exterior
 import qualified Numeric.LinearAlgebra as LA
-import Numeric.LinearAlgebra hiding ((.*), scalar)
+import Numeric.LinearAlgebra hiding (scalar)
 import Numeric.LinearAlgebra.Array.Util as Array
 import Numeric.LinearAlgebra.Array.Decomposition
 import Numeric.LinearAlgebra.Array.Solve

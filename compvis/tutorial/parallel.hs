@@ -2,7 +2,7 @@ import EasyVision hiding (camera, observe, (.&.))
 import Control.Arrow
 import Control.Monad
 import Debug.Trace
-import Numeric.LinearAlgebra hiding ((.*))
+import Numeric.LinearAlgebra
 import Util.Options
 
 camera k = findSize >>= getCam k ~> channels

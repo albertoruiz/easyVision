@@ -3,7 +3,7 @@ import Data.List
 import Data.Function
 import Control.Arrow
 import Vision
-import Numeric.LinearAlgebra hiding ((.*))
+import Numeric.LinearAlgebra
 import qualified Data.Map as M
 import Util.Options
 

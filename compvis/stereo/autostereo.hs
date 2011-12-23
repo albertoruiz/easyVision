@@ -8,7 +8,7 @@ import System.Environment(getArgs)
 import GHC.Float(isDoubleNaN)
 import ImagProc.Ipp.Core
 import Data.List(minimumBy)
-import Numeric.LinearAlgebra hiding ((.*))
+import Numeric.LinearAlgebra
 import Control.Monad(when)
 import Vision
 import GHC.Float(float2Double,double2Float)

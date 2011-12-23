@@ -3,7 +3,7 @@ import Data.List(transpose)
 import Control.Arrow((&&&))
 import Control.Monad(when)
 import Vision
-import Numeric.LinearAlgebra hiding ((.*))
+import Numeric.LinearAlgebra
 import Graphics.UI.GLUT as GL hiding(Point,Matrix)
 import Text.Printf(printf)
 import Util.Options
