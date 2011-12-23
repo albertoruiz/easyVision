@@ -22,7 +22,7 @@ module ImagProc.ImageFold (
 where
 
 import ImagProc.Ipp.Core
-import Numeric.LinearAlgebra hiding ((.*),step)
+import Numeric.LinearAlgebra hiding (step)
 import System.IO.Unsafe(unsafePerformIO)
 import Foreign.Storable
 import Foreign.Ptr

@@ -4,7 +4,7 @@ import Data.Function
 import Control.Arrow
 import Control.Monad
 import Vision
-import Numeric.LinearAlgebra hiding ((.*))
+import Numeric.LinearAlgebra
 import Graphics.UI.GLUT hiding (Size,Point)
 import Debug.Trace
 import Text.Printf

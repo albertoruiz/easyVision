@@ -1,7 +1,7 @@
 
 import EasyVision hiding (shift)
 import Graphics.UI.GLUT hiding (RGB,Size,Point)
-import Numeric.LinearAlgebra hiding ((.*))
+import Numeric.LinearAlgebra
 import qualified Numeric.LinearAlgebra as LA
 import Vision
 import Text.Printf(printf)

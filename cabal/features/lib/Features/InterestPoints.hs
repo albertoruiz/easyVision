@@ -27,7 +27,7 @@ where
 import ImagProc.Images
 import ImagProc.Ipp.Pure
 import ImagProc
-import Numeric.LinearAlgebra hiding ((.*))
+import Numeric.LinearAlgebra
 import Features.ScaleSpace
 import Features.Descriptors
 import GHC.Float(float2Double)

@@ -10,11 +10,10 @@ module Vision.TensorRep(
 
 import Numeric.LinearAlgebra.Exterior
 import qualified Numeric.LinearAlgebra as LA
-import Numeric.LinearAlgebra hiding ((.*),(<|>))
+import Numeric.LinearAlgebra
 import Numeric.LinearAlgebra.Array.Util as Array
 import Graphics.Plot(gnuplotpdf)
 import System.Random
-import Util.Homogeneous
 import Vision.Camera
 import Control.Applicative
 import Control.Monad hiding (join)

@@ -18,7 +18,7 @@ module EasyVision.MiniApps.PoseTracker (
 )where
 
 
-import Graphics.UI.GLUT as GL hiding (Size,Point,Matrix,matrix)
+import Graphics.UI.GLUT as GL hiding (Size,Point,Matrix,matrix,scale)
 import EasyVision.GUI hiding (State)
 import ImagProc hiding ((.*))
 import Contours
@@ -108,7 +108,7 @@ withImproved world = (measure,post,cz,restart) where
         where --segs = map (vector. concat . map pl . fst) . getPolygons Nothing world $ img
               impr = map (vector. concat . map pl. fst) $ polyconsis Nothing 0.6 world $ improve img zprev
     post = concat
-    cz = 1E-5 .* ident (2*length world)
+    cz = 1E-5 `scale` ident (2*length world)
     restart = givemeconts
 
 
@@ -119,7 +119,7 @@ withSegments segments world = (measure,post,cz,restart) where
         where search = foldl1 union (map (roiFromPoint 20) pixs)
               pixs = pointsToPixels (size img) . map lp . toLists . reshape 2 $ zprev
     post = concat
-    cz = 1E-5 .* ident (2*length world)
+    cz = 1E-5 `scale` ident (2*length world)
     restart = givemeconts -- getPolygons
 
 -----------------------------------------------------------------------------------
@@ -128,7 +128,7 @@ withRegion w world = (measure,post,cz,restart) where
     measure img zprev =  map (vector.post.map pl). givemecont zprev $ img
     post = concat . map c2l . flip map [-w..w] . normalizeStart . fourierPL . Closed . map lp
     --cz = 1E-5 .* diagl [1,1,1,1,10,10,50,50,10,10,1,1,1,1]
-    cz = 1E-5 .* ident ((2*w+1)*2)
+    cz = 1E-5 `scale` ident ((2*w+1)*2)
     restart = givemeconts
 
 

@@ -21,7 +21,7 @@ extra-source-files:
 library
     Build-Depends:      base >= 3 && < 5, random, directory,
                         array, containers, process,
-                        hmatrix >= 0.8.3, prcv-util,
+                        hmatrix >= 0.13, prcv-util,
                         hTensor >= 0.5
 
     hs-source-dirs:     lib

@@ -16,7 +16,7 @@ module Vision.Tensorial(
 
 import Numeric.LinearAlgebra.Exterior
 import qualified Numeric.LinearAlgebra as LA
-import Numeric.LinearAlgebra hiding ((.*),(<|>))
+import Numeric.LinearAlgebra
 import Numeric.LinearAlgebra.Array.Util as Array
 import Numeric.LinearAlgebra.Array.Solve
 import System.Random
@@ -296,7 +296,7 @@ relocate p = p { p3d = (p3d p * hi)!>"yx", cam = (cam p * h) !> "yx"} where
     pts = ihPoints3D p
     (m,c) = meanCov . fromRows $ (concat $ replicate (length cens) pts) ++ (concat $ replicate (length pts) cens)
     [x,y,z] = toList m
-    s = sqrt $ vectorMax $ eigenvaluesSH' c 
+    s = sqrt $ maxElement $ eigenvaluesSH' c 
 
 
 ihPoints3D :: VProb -> [Vector Double]
@@ -351,7 +351,7 @@ autoMetric p = frobT (k - fixCal k) / fromIntegral (5 * size "c" k)
      where k = kal . cam $ p
 
 rangecoord :: VProb -> ((Double, Double), (Double, Double))
-rangecoord p = ((vectorMin x, vectorMax x),(vectorMin y, vectorMax y)) where
+rangecoord p = ((minElement x, maxElement x),(minElement y, maxElement y)) where
     [x,y] = toRows $  fibers "v" (inhomogT "v" $ p2d p)
 
 
@@ -360,7 +360,7 @@ normalizeCoords :: (Int, Int) -> VProb -> VProb
 normalizeCoords sz p = p {p2d = p2d p!>"vw" * fromMatrix Contra Co (inv $ knor sz) !"vw"}
 
 signalLevel :: VProb -> Double
-signalLevel = mean . map (sqrt . vectorMin . eigenvaluesSH' . snd . meanCov . asMatrix . (~>"nv")) .  flip parts "c" . inhomogT "v" . p2d
+signalLevel = mean . map (sqrt . minElement . eigenvaluesSH' . snd . meanCov . asMatrix . (~>"nv")) .  flip parts "c" . inhomogT "v" . p2d
 
 signalNoise :: VProb -> Double
 signalNoise p = (quality p / signalLevel p)

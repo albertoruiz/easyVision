@@ -3,7 +3,7 @@
 
 import EasyVision hiding (setROI)
 import Graphics.UI.GLUT hiding (Point,Size,scale,samples,Matrix)
-import Numeric.LinearAlgebra as LA hiding (i,(.*))
+import Numeric.LinearAlgebra as LA hiding (i)
 import Util.Misc(diagl,debug,vec,Mat,degree)
 import Control.Applicative
 import Control.Arrow

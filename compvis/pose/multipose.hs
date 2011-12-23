@@ -5,7 +5,7 @@ import EasyVision hiding ((.*))
 import qualified EasyVision as EV
 import Graphics.UI.GLUT hiding (Matrix, Size, Point, triangulate,scale)
 import Vision
-import Numeric.LinearAlgebra hiding((.*),(<|>))
+import Numeric.LinearAlgebra
 import Control.Monad(when)
 import Util.Quaternion
 import Data.List((\\),sortBy,unzip4)

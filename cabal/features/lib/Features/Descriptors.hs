@@ -27,7 +27,7 @@ import ImagProc.ImageFold
 import Numeric.LinearAlgebra
 --import Graphics.UI.GLUT hiding (Size,Point)
 import Data.Packed.ST
-import ImagProc hiding ((.*))
+import ImagProc
 import Util.Misc(unitary)
 import GHC.Float(float2Double,double2Float)
 import ImagProc.C.Simple(histoDir)
@@ -56,7 +56,7 @@ histodir' :: ImageFloat -- ^ |g|
           -> ImageFloat -- ^ gy
           -> Vector Double -- ^ normalized histogram
 histodir' ga gx gy =  nor $ histo 36 $ map (getBin 36) $ foldImage3 captureDirs [] ga gx gy
-    where nor = (k .*)
+    where nor = (scale k)
           k = recip . fromIntegral . validArea $ ga
 
 --------------------------------------------------------------------------
@@ -66,7 +66,7 @@ histodir :: ImageFloat -- ^ |g|
          -> ImageFloat -- ^ gx
          -> ImageFloat -- ^ gy
          -> Vector Double -- ^ normalized histogram
-histodir ga gx gy = (slavmat <>) $ (k .*) $ runSTVector $ do
+histodir ga gx gy = (slavmat <>) $ (scale k) $ runSTVector $ do
     h <- newVector (0::Double) 36
     let addDir !p0 !p1 !p2 !k = modifyVector h (getBin 36 $ atan2 (uval p2 k) (uval p1 k)) (+ float2Double (uval p0 k))
         {-# INLINE addDir #-}
@@ -90,7 +90,7 @@ slavmat = (fromLists $ take 36 $ iterate rrotate l0)/4
 
 -- | predominant angles in a histogram obtained by 'histodir'
 angles :: Vector Double -> [Double]
-angles oris = [10 * fromIntegral (1+vectorMaxIndex oris) * pi / 180]
+angles oris = [10 * fromIntegral (1+maxIndex oris) * pi / 180]
 
 
 --------------------------------------------------------------------------
