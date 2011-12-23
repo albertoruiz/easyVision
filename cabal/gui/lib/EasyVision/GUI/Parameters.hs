@@ -31,7 +31,7 @@ import qualified Data.Map as Map
 import Data.Map hiding (map)
 import GHC.Float
 import Numeric
-import Data.List(elemIndex,foldl')
+import Data.List as L
 import Control.Monad(ap)
 import Control.Applicative((<$>),(<*>))
 import Util.Options(getOption,optionString)
@@ -90,7 +90,7 @@ createParameters' winname pref ops = do
             let s' = keys m
             let s = (s' !! (fromIntegral y `div` sizePar))
             let v = m!s 
-            let m' = insert s (incre v) m
+            let m' = Map.insert s (incre v) m
             writeIORef opts m'
             postRedisplay Nothing
         kbd (MouseButton WheelDown) Down _ (Position _x y) = do
@@ -98,7 +98,7 @@ createParameters' winname pref ops = do
             let s' = keys m
             let s = (s' !! (fromIntegral y `div` sizePar))
             let v = m!s 
-            let m' = insert s (decre v) m
+            let m' = Map.insert s (decre v) m
             writeIORef opts m'
             postRedisplay Nothing
         kbd (MouseButton LeftButton) Down _ (Position x y) = do
@@ -106,7 +106,7 @@ createParameters' winname pref ops = do
             let s' = keys m
             let s = (s' !! (fromIntegral y `div` sizePar))
             let v = m!s 
-            let m' = insert s (setpo x v) m
+            let m' = Map.insert s (setpo x v) m
             writeIORef opts m'
             postRedisplay Nothing
         kbd a b c d = def a b c d
@@ -323,7 +323,7 @@ autoParam name pref defpar = sequence [
           argname = mkName $ "arg"++name
           winname = name
           retPar = appE (varE 'return) (conE p)
-          f = foldl' appp retPar args
+          f = L.foldl' appp retPar args
           args = map (g.lift.fst) x
           g = appE (appE (varE 'getParam) (varE (mkName "o")))
           x = map s13 defpar
@@ -333,8 +333,8 @@ autoParam name pref defpar = sequence [
           s3 (_a,_b,c) = c
           s1 (a,_b,_c) = a
           crea = (varE 'createParameters') `appE` (lift winname) `appE` (lift pref)
-          defval = foldl' appE (conE p) (map (val.s3) defpar)
-          argval = foldl' appp retPar (zipWith (optfun pref) (map s1 defpar) (map s3 defpar))
+          defval = L.foldl' appE (conE p) (map (val.s3) defpar)
+          argval = L.foldl' appp retPar (zipWith (optfun pref) (map s1 defpar) (map s3 defpar))
 
 appp :: ExpQ -> ExpQ -> ExpQ
 appp f x = appE (appE (varE 'ap) f) x

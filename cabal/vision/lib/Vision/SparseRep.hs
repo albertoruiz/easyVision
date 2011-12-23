@@ -221,7 +221,7 @@ mkEpiObs s = [ prepEpi s (ij, p) | (ij,Just p) <- obs]
     where obs = [((i,j), getPairs s i j) | i <- [0 .. snC s -2], j <- [i+1 .. snC s -1]]
 
 
-selectPos :: (Num a, Enum a) => [a] -> [b] -> [b]
+selectPos :: (Num a, Enum a, Eq a) => [a] -> [b] -> [b]
 selectPos is = map snd . filter (flip elem is . fst) . zip [0 ..]
 
 ptsVisibleBy :: SparseVP -> [Int] -> [Int]

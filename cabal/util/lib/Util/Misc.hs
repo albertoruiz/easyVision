@@ -148,7 +148,7 @@ rep (c,r) f@(x:xs)
 
 
 -- | select elements in a list at given positions
-selectPos :: (Num a, Enum a) => [a] -> [b] -> [b]
+selectPos :: (Num a, Enum a, Eq a) => [a] -> [b] -> [b]
 selectPos is = map snd . filter (flip elem is . fst) . zip [0 ..]
 
 
