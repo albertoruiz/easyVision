@@ -44,26 +44,37 @@ import Util.Options(getOption)
 saveRGB' :: Maybe FilePath -> ImageRGB -> IO ()
 saveRGB' (Just filename) (C im) = do
     handle <- openFile (filename++".rgb") WriteMode
+    putStrLn $ "Writing result file: " ++ filename ++ ".png" 
     let Size h w = isize im
     when (w`rem` 32 /= 0) $ putStrLn "Warning, saveRGB with wrong padding"
     hPutBuf handle (castPtr (ptr im)) (w*h*3)
     hClose handle
     touchForeignPtr (fptr im)
-    system $ "convert -flip -size "++show w++"x"++show h++" -depth 8 rgb:"
-             ++(filename++".rgb ")++(filename++".png")
+    system $ "convert -flip -size " ++ show w ++ "x" ++ show h ++ " -depth 8 rgb:"
+             ++ (filename++".rgb ") ++ (filename++".png")   
     system $ "rm "++(filename++".rgb")
     return ()
 
 saveRGB' Nothing im = do
-    let name = "screenshot"
-    fs <- getDirectoryContents "."
-    let n = 1+ length (filter (name `isPrefixOf`) fs)
-        sn = show n
-        k = 3 - length sn
-        shj = replicate k '0' ++ sn
-    saveRGB' (Just (name ++"-"++ shj)) im
+      fn <- genName "." "screenshot" ".png"
+      saveRGB' (Just fn) im
 
+-- | Generate the next in a sequence of names numbered with suffix "-001" upwards. 
+-- | Will not produce the name of an existing file. Not completely safe, 
+-- | since a name and not an opened handle is generated.     
+genName dir baseName suffix = do 
+    fis <- getDirectoryContents dir 
+    let num = length (filter (baseName `isPrefixOf`) fis) + 1
+        name n = baseName ++ "-" ++ (printf "%03d" n)
+        okNum n = do let nm = name n
+                     isFile <- doesFileExist (nm ++ suffix)
+                     if isFile then do {putStrLn $ nm ++ suffix ++  " already exists."; okNum (n + 1) }
+                      else return n
+    goodnum <- okNum num
+    return $ name goodnum  
+         
 ----------------------------------------------------------------------
+
 
 mat2img :: Matrix Float -> ImageFloat
 mat2img m = unsafePerformIO $ do
