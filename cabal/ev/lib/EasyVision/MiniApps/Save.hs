@@ -46,7 +46,7 @@ saveWin f cam = do
                 save x
         return orig
   where        
-    mouse _ st (MouseButton LeftButton) Down _ _ = st $~ not
+    mouse _ w (MouseButton LeftButton) Down _ _ = updateW w not
     mouse def _ a b c d = def a b c d
 
 

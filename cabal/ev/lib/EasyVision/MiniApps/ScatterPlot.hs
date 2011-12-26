@@ -77,20 +77,20 @@ scatterPlot name sz exs coor colors prefun = do
             scatter exs coord colors prefun
 
         kbd rdesi (SpecialKey KeyUp) Down _ _ = do
-            (i,j) <- get rdesi
-            rdesi $= (i,(j+1) `mod` n)
+            (i,j) <- getW rdesi
+            putW rdesi $ (i,(j+1) `mod` n)
             postRedisplay Nothing
         kbd rdesi (SpecialKey KeyDown) Down _ _ = do
-            (i,j) <- get rdesi
-            rdesi $= (i, (j-1) `mod`n)
+            (i,j) <- getW rdesi
+            putW rdesi $ (i, (j-1) `mod`n)
             postRedisplay Nothing
         kbd rdesi (SpecialKey KeyRight) Down _ _ = do
-            (i,j) <- get rdesi
-            rdesi $= ((i+1)`mod`n,j)
+            (i,j) <- getW rdesi
+            putW rdesi $ ((i+1)`mod`n,j)
             postRedisplay Nothing
         kbd rdesi (SpecialKey KeyLeft) Down _ _ = do
-            (i,j) <- get rdesi
-            rdesi $= ((i-1) `mod` n,j)
+            (i,j) <- getW rdesi
+            putW rdesi $ ((i-1) `mod` n,j)
             postRedisplay Nothing
         kbd _ a b c d = kbdQuit a b c d
 
@@ -150,15 +150,15 @@ scatterPlot3D name sz exs coor colors prefun = do
             coord <- get rdesi
             scatter3D exs coord colors prefun
         kbd rdesi (SpecialKey KeyUp) Down _ _ = do
-            (i,j,k) <- get rdesi
-            rdesi $= (i,(j+1) `mod` n,k)
+            (i,j,k) <- getW rdesi
+            putW rdesi $ (i,(j+1) `mod` n,k)
         kbd rdesi (SpecialKey KeyDown) Down _ _ = do
-            (i,j,k) <- get rdesi
-            rdesi $= (i, (j-1) `mod`n,k)
+            (i,j,k) <- getW rdesi
+            putW rdesi $ (i, (j-1) `mod`n,k)
         kbd rdesi (SpecialKey KeyRight) Down _ _ = do
-            (i,j,k) <- get rdesi
-            rdesi $= ((i+1)`mod`n,j,k)
+            (i,j,k) <- getW rdesi
+            putW rdesi $ ((i+1)`mod`n,j,k)
         kbd rdesi (SpecialKey KeyLeft) Down _ _ = do
-            (i,j,k) <- get rdesi
-            rdesi $= ((i-1) `mod` n,j,k)
+            (i,j,k) <- getW rdesi
+            putW rdesi $ ((i-1) `mod` n,j,k)
         kbd _ a b c d = kbdQuit a b c d

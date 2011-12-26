@@ -15,10 +15,8 @@ Camera combinators: higher order functions which make virtual cameras from other
 module EasyVision.MiniApps.Combinators (
   camera, cameraFolderG,
   run, runFPS,
-  withPause,
-  monitor, observe,
+  monitor,
   monitorWheel,
-  sMonitor,
   monitor3D,
   monitorScanLine, 
   gray,
@@ -58,46 +56,6 @@ import Util.Ellipses
 
 -- deprecated
 gray = grayscale
-
-{- | Adds a pause control to a camera. Commands:
-
-    \"pause\" -> toggles the pause state
-
-    \"step\"  -> toggles the frame by frame state (the next frame is obtained by \"pause\")
-
--}
-withPause :: IO a                       -- ^ original camera
-          -> IO (IO a, String -> IO ()) -- ^ camera and controller
-withPause grab = do
-    paused <- newIORef False
-    frozen <- newIORef undefined
-    step   <- newIORef False
-    pass   <- newIORef False
-
-    let control command = do
-        case command of
-         "pause" -> do modifyIORef paused not
-                       p <- readIORef paused
-                       if p then grab >>= writeIORef frozen
-                            else return ()
-         "step"   -> modifyIORef step not
-         "pass"   -> modifyIORef pass not
-
-    let virtual = do
-        s <- readIORef step
-        p <- readIORef paused
-        g <- readIORef pass
-        let grab' = if g then grab >> readIORef frozen else readIORef frozen
-        if not s && p
-             then grab'
-             else 
-                if s then if p then grab'
-                               else do writeIORef paused True
-                                       grab >>= writeIORef frozen
-                                       readIORef frozen
-             else grab
-
-    return (virtual,control)
 
 ----------------------------------------------------------------------
 
@@ -198,14 +156,8 @@ counter cam = do
 
 ---------------------------------------------------------
 
-observe :: (Drawable b, Image b) => String -> (a -> b) -> IO a -> IO (IO a)
-observe winname f = monitor winname (mpSize 20) (drawImage'.f)
-
 run :: IO (IO a) -> IO ()
-run c = prepare >> (c >>= launch . (>> return ()))
-
-runFPS :: Int -> IO (IO a) -> IO ()
-runFPS n c = prepare >> (c >>= launchFreq n . (>> return ()))
+run = runIdle
 
 -----------------------------------------------------------
 
@@ -353,7 +305,7 @@ clickStatusWindow name sz s0 update display act cam = do
         return (x,s')
   where
     mouse _ st (MouseButton LeftButton) Down _ _ = do
-        st $~ (not *** id)
+        updateW st (not *** id)
     mouse m _ a b c d = m a b c d
 
 ----------------------------------------------------------------------
@@ -377,25 +329,14 @@ monitorWheel (k0,k1,k2) name sz fun cam = do
         return thing
   where
     mouse _ st (MouseButton WheelUp) Down _ _ = do
-        st $~ (min k2 . (+1))
+        updateW st (min k2 . (+1))
     mouse _ st (MouseButton WheelDown) Down _ _ = do
-        st $~ (max k1 . (subtract 1))
+        updateW st (max k1 . (subtract 1))
     mouse _ st (SpecialKey KeyUp) Down _ _ = do
-        st $~ (min k2 . (+1))
+        updateW st (min k2 . (+1))
     mouse _ st (SpecialKey KeyDown) Down _ _ = do
-        st $~ (max k1 . (subtract 1))
+        updateW st (max k1 . (subtract 1))
     mouse m _ a b c d = m a b c d
-
---------------------------------------------------------------------------------
-
--- | monitor window in which the info to be displayed is selected with the mouse wheel / (or arrow up/down)
-sMonitor :: Renderable a => String -> (x -> [a]) -> IO x -> IO (IO x)
-sMonitor name g = monitorWheel (0,-100,100) name (mpSize 10) f
-  where
-    f k x = render (r !! j)
-      where
-        r = g x
-        j = k `mod` length r
 
 --------------------------------------------------------------------------------
 

@@ -35,7 +35,8 @@ library
     Exposed-modules:    EasyVision.GUI
                         EasyVision.GUI.Util
                         EasyVision.GUI.Draw
-                        EasyVision.GUI.GUI
+                        EasyVision.GUI.OldGUI
+                        EasyVision.GUI.Interface
                         EasyVision.GUI.Objects
                         EasyVision.GUI.Parameters
                         EasyVision.GUI.Trackball

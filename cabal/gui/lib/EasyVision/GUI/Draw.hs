@@ -334,6 +334,13 @@ renderPolyline c@(Open _) = renderPrimitive LineStrip (vertex c)
 instance Renderable ImageGray where
     render = (>> pointCoords) . drawImage'
 
+instance Renderable ImageRGB where
+    render = (>> pointCoords) . drawImage'
+
+instance Renderable ImageFloat where
+    render = (>> pointCoords) . drawImage'
+
+
 instance Renderable Polyline where
     render (Closed ps) = renderPrimitive LineLoop (vertex (Closed ps))
     render (Open ps) = renderPrimitive LineStrip (vertex (Open ps))

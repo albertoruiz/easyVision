@@ -178,13 +178,13 @@ shapeCatalog' hide fimg fpoly prepro gprot feat' cam = do
         return (x,prots)
   where
     marker _ st (MouseButton LeftButton) Down _ (Position x y) = do
-        (r,p,_,_) <- readIORef st
+        (r,p,_,_) <- getW st
         let clicked = Pixel (fromIntegral y) (fromIntegral x)
-        writeIORef st (r,p, Just clicked, False)
+        putW st (r,p, Just clicked, False)
 
     marker _ st (Char 'S') Down _ _ = do
-        (r,p,_,_) <- readIORef st
-        writeIORef st (r,p, Nothing, True)
+        (r,p,_,_) <- getW st
+        putW st (r,p, Nothing, True)
 
     marker def _ a b c d = def a b c d
 

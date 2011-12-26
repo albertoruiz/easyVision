@@ -23,8 +23,7 @@ module EasyVision.GUI.Parameters (
 
 import ImagProc.Ipp.Core hiding (r1,c1,r2,c2)
 import EasyVision.GUI.Util
-import EasyVision.GUI.GUI
-import EasyVision.GUI.GUI
+import EasyVision.GUI.Interface
 import Graphics.UI.GLUT hiding (RGB, Matrix, Size)
 import Data.IORef
 import qualified Data.Map as Map
@@ -86,28 +85,28 @@ createParameters' winname pref ops = do
 
     kbdopts def opts = kbd where
         kbd (MouseButton WheelUp) Down _ (Position _x y) = do
-            m <- readIORef opts
+            m <- getW opts
             let s' = keys m
             let s = (s' !! (fromIntegral y `div` sizePar))
             let v = m!s 
             let m' = Map.insert s (incre v) m
-            writeIORef opts m'
+            putW opts m'
             postRedisplay Nothing
         kbd (MouseButton WheelDown) Down _ (Position _x y) = do
-            m <- readIORef opts
+            m <- getW opts
             let s' = keys m
             let s = (s' !! (fromIntegral y `div` sizePar))
             let v = m!s 
             let m' = Map.insert s (decre v) m
-            writeIORef opts m'
+            putW opts m'
             postRedisplay Nothing
         kbd (MouseButton LeftButton) Down _ (Position x y) = do
-            m <- readIORef opts
+            m <- getW opts
             let s' = keys m
             let s = (s' !! (fromIntegral y `div` sizePar))
             let v = m!s 
             let m' = Map.insert s (setpo x v) m
-            writeIORef opts m'
+            putW opts m'
             postRedisplay Nothing
         kbd a b c d = def a b c d
 

@@ -19,7 +19,7 @@ module EasyVision.MiniApps.PoseTracker (
 
 
 import Graphics.UI.GLUT as GL hiding (Size,Point,Matrix,matrix,scale)
-import EasyVision.GUI hiding (State)
+import EasyVision.GUI
 import ImagProc hiding ((.*))
 import Contours
 import Features.Polyline
