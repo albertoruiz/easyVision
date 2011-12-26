@@ -48,7 +48,7 @@ regionMarker g cam = do
               : map ch "1234"
         where ch c = ((Char c, Down, modif), h c)
     f clickedPoint (Closed ps) = Closed (replaceAt [k] [clickedPoint] ps)
-        where 
+        where
           k = posMin $ map (distPoints clickedPoint) ps
     f _ _ = impossible "Open polyline in regionMarker"
 
@@ -57,7 +57,7 @@ regionMarker g cam = do
         | otherwise                     = (Closed ps)
       where k = fromEnum c - fromEnum '1'
 
-    initRegion = transPol (desp (-0.5,-0.5)) $ Closed [Point 1 1,  Point 0 1, Point 0 0, Point 1 0]
+    initRegion = transPol (desp (-0.5,-0.5)) $ Closed [Point 0.1 0.1,  Point 0 0.1, Point 0 0, Point 0.1 0]
 
     shRegion (Closed c) = do
         setColor' orange
@@ -79,8 +79,8 @@ $(autoParam "AspectRatioParam" "ar-"
 
 
 
-rectifyRegion 
-     :: GImg pixel image 
+rectifyRegion
+     :: GImg pixel image
      => (t -> image)                -- ^ selector
      -> Int                         -- ^ width
      -> AspectRatioParam
