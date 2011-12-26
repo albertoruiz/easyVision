@@ -32,11 +32,12 @@ import Control.Monad(when)
 import Control.Arrow((***))
 import System.IO
 import System.Process
-import System.Directory(getDirectoryContents)
+import System.Directory(getDirectoryContents,doesFileExist)
 import Data.List(isPrefixOf)
 import Data.Packed.Development(app1,mat,cmat,createMatrix,MatrixOrder(..))
 import Numeric.LinearAlgebra(Matrix,rows,cols)
 import Util.Options(getOption)
+import Text.Printf
 
 
 -- | Writes to a file (with automatic name if Nothing) a RGB image in png format.
@@ -44,14 +45,14 @@ import Util.Options(getOption)
 saveRGB' :: Maybe FilePath -> ImageRGB -> IO ()
 saveRGB' (Just filename) (C im) = do
     handle <- openFile (filename++".rgb") WriteMode
-    putStrLn $ "Writing result file: " ++ filename ++ ".png" 
+    putStrLn $ "Writing result file: " ++ filename ++ ".png"
     let Size h w = isize im
     when (w`rem` 32 /= 0) $ putStrLn "Warning, saveRGB with wrong padding"
     hPutBuf handle (castPtr (ptr im)) (w*h*3)
     hClose handle
     touchForeignPtr (fptr im)
     system $ "convert -flip -size " ++ show w ++ "x" ++ show h ++ " -depth 8 rgb:"
-             ++ (filename++".rgb ") ++ (filename++".png")   
+             ++ (filename++".rgb ") ++ (filename++".png")
     system $ "rm "++(filename++".rgb")
     return ()
 
@@ -59,11 +60,11 @@ saveRGB' Nothing im = do
       fn <- genName "." "screenshot" ".png"
       saveRGB' (Just fn) im
 
--- | Generate the next in a sequence of names numbered with suffix "-001" upwards. 
--- | Will not produce the name of an existing file. Not completely safe, 
--- | since a name and not an opened handle is generated.     
-genName dir baseName suffix = do 
-    fis <- getDirectoryContents dir 
+-- | Generate the next in a sequence of names numbered with suffix "-001" upwards.
+-- | Will not produce the name of an existing file. Not completely safe,
+-- | since a name and not an opened handle is generated.
+genName dir baseName suffix = do
+    fis <- getDirectoryContents dir
     let num = length (filter (baseName `isPrefixOf`) fis) + 1
         name n = baseName ++ "-" ++ (printf "%03d" n)
         okNum n = do let nm = name n
@@ -71,8 +72,8 @@ genName dir baseName suffix = do
                      if isFile then do {putStrLn $ nm ++ suffix ++  " already exists."; okNum (n + 1) }
                       else return n
     goodnum <- okNum num
-    return $ name goodnum  
-         
+    return $ name goodnum
+
 ----------------------------------------------------------------------
 
 
@@ -83,7 +84,7 @@ mat2img m = unsafePerformIO $ do
         f pS pD k = copyBytes pD (plusPtr pS (c*4*k)) (c*4)
         g r _ p = do
             sequence_ $ zipWith (f p) ps [0..fromIntegral r-1]
-            return 0 
+            return 0
     app1 g mat (cmat m) "mat2img"
     return (F im)
 
@@ -95,7 +96,7 @@ img2mat (F im) = unsafePerformIO $ do
         f pD pS k = copyBytes (plusPtr pD (c*4*k)) pS (c*4)
         g r _ p = do
             sequence_ $ zipWith (f p) ps [0..fromIntegral r-1]
-            return 0 
+            return 0
     m <- createMatrix RowMajor r c
     app1 g mat (cmat m) "img2mat" >> return 0 // checkIPP "img2mat" [im]
     return m
