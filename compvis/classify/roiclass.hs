@@ -10,7 +10,7 @@ $ ./roiclass 'newvideo -benchmark' selectedtest selected1 selected2 etc.
 import EasyVision
 import Graphics.UI.GLUT hiding (histogram)
 import Control.Monad(when)
-import System(getArgs)
+import System.Environment(getArgs)
 import qualified Data.Colour.Names as Col
 import Numeric.LinearAlgebra
 import Classifier

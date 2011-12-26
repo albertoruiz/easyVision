@@ -1,6 +1,6 @@
 import EasyVision
 import Graphics.UI.GLUT
-import System(getArgs)
+import System.Environment(getArgs)
 
 main = do
     sz <- findSize
@@ -24,9 +24,9 @@ watch title f img = evWindow 0 title (size img) (Just disp) (mouse kbdQuit)
         drawImage (f k img)
         text2D 15 15 (show k)
     mouse _ st (MouseButton WheelUp) Down _ _ = do
-        st $~ (+1)
+        updateW st (+1)
         postRedisplay Nothing
     mouse _ st (MouseButton WheelDown) Down _ _ = do
-        st $~ (max 0 . subtract 1)
+        updateW st (max 0 . subtract 1)
         postRedisplay Nothing
     mouse def _ a b c d = def a b c d

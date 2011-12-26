@@ -1,5 +1,6 @@
 
 import EasyVision
+import EasyVision.GUI.OldGUI
 import Graphics.UI.GLUT hiding (RGB,Size,Point)
 import qualified Graphics.UI.GLUT as GL
 import Data.IORef

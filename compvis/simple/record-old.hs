@@ -36,6 +36,6 @@ main = do
 ----------------------------------------
 
 mouse _ st (MouseButton LeftButton) Down _ _ = do
-    st $~ not
+    updateW st not
 
 mouse def _ a b c d = def a b c d

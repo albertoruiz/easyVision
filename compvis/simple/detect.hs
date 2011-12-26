@@ -2,7 +2,6 @@
 
 import EasyVision
 import Graphics.UI.GLUT hiding (Size)
-import System
 import Util.Options
 
 main = do

@@ -93,17 +93,17 @@ findRot a b pi ti ri = fst $ minimize NMSimplex2 1E-3 10 [0.1*degree, 0.1*degree
 
 -- click to adjust
 mouse _ st (MouseButton LeftButton) Down _ _ = do
-    (_,p) <- get st
-    st $= (True,p)
+    (_,p) <- getW st
+    putW st (True,p)
 
 -- restart from identity
 mouse _ st (Char 'z') Down _ _ = do
-    st $= (True,[0,0,0])
+    putW st (True,[0,0,0])
 
 -- end optimization
 mouse _ st (Char 'o') Down _ _ = do
-    (_,p) <- get st
-    st $= (False,p)
+    (_,p) <- getW st
+    putW st (False,p)
 
 
 mouse def _ a b c d = def a b c d

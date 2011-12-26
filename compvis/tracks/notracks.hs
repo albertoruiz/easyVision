@@ -145,10 +145,10 @@ watch = do
 --        when (not $ null l) $ drawImage $ last $ warpAll 0.5 l
 
     mouse _ st (MouseButton WheelUp) Down _ _ = do
-        st $~ \(k,l) -> (min (length l-1) (k+1),l)
+        updateW st $ \(k,l) -> (min (length l-1) (k+1),l)
         postRedisplay Nothing
     mouse _ st (MouseButton WheelDown) Down _ _ = do
-        st $~ \(k,l)-> (max 0 . subtract 1 $ k, l)
+        updateW st $ \(k,l)-> (max 0 . subtract 1 $ k, l)
         postRedisplay Nothing
     mouse def _ a b c d = def a b c d
 

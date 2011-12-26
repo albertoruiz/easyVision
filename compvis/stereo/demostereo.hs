@@ -1,6 +1,6 @@
 -- tracking a blue region
 
-import EasyVision hiding (State)
+import EasyVision
 import Control.Monad((>=>),when)
 import Graphics.UI.GLUT hiding (Point,Matrix,matrix,Size,triangulate)
 import Data.List
@@ -105,12 +105,12 @@ main = do
 
 
 mouse _ st (Char 'x') Down _ _ = do
-    (wasMoving,(c0,pts1,c1,pts2)) <- get st
-    st $= (False, (c0,[], c1,[]))
+    (wasMoving,(c0,pts1,c1,pts2)) <- getW st
+    putW st (False, (c0,[], c1,[]))
 
 mouse _ st (Char 'd') Down _ _ = do
-    (wasMoving,(c0,pts1,c1,pts2)) <- get st
+    (wasMoving,(c0,pts1,c1,pts2)) <- getW st
     when (not (null pts1)) $ do
-        st $= (False, (c0,tail pts1, c1,tail pts2))
+        putW st (False, (c0,tail pts1, c1,tail pts2))
 
 mouse def _ a b c d = def a b c d

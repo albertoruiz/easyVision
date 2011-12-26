@@ -363,8 +363,6 @@ monitorOrient = monitor "contours" (mpSize 20) sh where
 -- show canonic versions of shapes and other interesting info
 
 
-runIt f = prepare >> f >> mainLoop
-
 showpentoR = examplesBrowser "pentominos" (EV.Size 500 500) f pentominos
   where
     f = shcontO . transPol (diagl[0.1,0.1,1])

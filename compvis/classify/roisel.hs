@@ -11,7 +11,7 @@ $ ./roisel selected
 import EasyVision
 import Graphics.UI.GLUT
 import Control.Monad(when)
-import System(getArgs)
+import System.Environment(getArgs)
 import qualified Data.Colour.Names as Col
 import Util.Options
 
@@ -52,7 +52,7 @@ main1 = do
                 putW w False
 
 mouse _ st (Char 's') Down _ _ = do
-    st $~ not
+    updateW st not
 
 mouse def _ a b c d = def a b c d
 
@@ -85,11 +85,11 @@ seeRois imgs rois = evWindow 0 "Selected ROI" (mpSize 20) (Just disp) (mouse kbd
         drawROI (rois!!k)
         text2D 50 50 (show $ k+1)
     mouse _ st (MouseButton WheelUp) Down _ _ = do
-        k <- get st
-        st $= min (k+1) (length imgs -1)
+        k <- getW st
+        putW st $ min (k+1) (length imgs -1)
         postRedisplay Nothing
     mouse _ st (MouseButton WheelDown) Down _ _ = do
-        k <- get st
-        st $= max (k-1) 0
+        k <- getW st
+        putW st $ max (k-1) 0
         postRedisplay Nothing
     mouse def _ a b c d = def a b c d

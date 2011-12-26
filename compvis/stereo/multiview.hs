@@ -1,7 +1,7 @@
 -- triangulation from several views
 -- (calibrated with ../pose/multipose)
 
-import EasyVision hiding (State)
+import EasyVision
 import Control.Monad((>=>),when)
 import Graphics.UI.GLUT hiding (Point,Matrix,matrix,Size,triangulate)
 import Data.List
@@ -86,11 +86,11 @@ main = do
 
 
 mouse _ st (Char ' ') Down _ _ = do
-    (_,l) <- get st
-    st $= (True, l)
+    (_,l) <- getW st
+    putW st (True, l)
 
 mouse _ st (Char 'x') Down _ _ = do
-    (_,l) <- get st
-    st $= (False, if null l then l else tail l)
+    (_,l) <- getW st
+    putW st (False, if null l then l else tail l)
 
 mouse def _ a b c d = def a b c d

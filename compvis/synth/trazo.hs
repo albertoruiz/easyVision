@@ -2,7 +2,7 @@
 
 import EasyVision hiding ((.*))
 import Graphics.UI.GLUT hiding (Point,Matrix)
-import System(getArgs)
+import System.Environment(getArgs)
 import Control.Monad(when)
 import Numeric.LinearAlgebra
 import Numeric.GSL.Fourier
@@ -46,10 +46,10 @@ trazo = do
                 when (h==h && rcond h > 0.001) $  renderPrimitive LineStrip $ mapM_ vertex best'
 
     mouse _ _ _ st (MouseButton WheelUp) Down _ _ = do
-        st $~ (+1)
+        updateW st (+1)
         postRedisplay Nothing
     mouse _ _ _ st (MouseButton WheelDown) Down _ _ = do
-        st $~ (max 0 . subtract 1)
+        updateW st (max 0 . subtract 1)
         postRedisplay Nothing
     mouse rpoly prots _ st (Char 'a') Down _ _ = do
         poly <- readIORef rpoly

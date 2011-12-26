@@ -4,6 +4,7 @@
 module Main where
 
 import EasyVision as EV
+import EasyVision.GUI.OldGUI
 import System.Environment(getArgs)
 import qualified Data.Map as Map
 import Graphics.UI.GLUT hiding (Matrix, Size, Point)

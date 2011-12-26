@@ -22,8 +22,8 @@ main = do
 
 
 mouse _ st (Char 's') Down _ _ = do
-    (_,b) <- get st
-    st $= (True,b)
+    (_,b) <- getW st
+    putW st (True,b)
 
 mouse def _ a b c d = def a b c d
 

@@ -15,5 +15,5 @@ bgDiff cam = do
         inWin w $ drawImage r
         return r
   where
-    mouse _ st (Char 's') Down _ _ = st $= (True,undefined)
+    mouse _ st (Char 's') Down _ _ = putW st (True,undefined)
     mouse def _ a b c d = def a b c d

@@ -70,7 +70,7 @@ worker vcam cam w  p = do
 times n f = (!!n) . iterate f
 
 mouse _ st (MouseButton LeftButton) Down _ _ = do
-    st $= Nothing
+    putW st Nothing
 
 mouse def _ a b c d = def a b c d
 

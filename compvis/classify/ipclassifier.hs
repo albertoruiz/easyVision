@@ -83,8 +83,8 @@ distv a b = norm (a-b)
 
 -- click to add a new object
 mouse _ st (MouseButton LeftButton) Down _ _ = do
-    (_,ps) <- get st
-    st $= (True,ps)
+    (_,ps) <- getW st
+    putW st (True,ps)
 
 mouse def _ a b c d = def a b c d
 

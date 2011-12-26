@@ -13,5 +13,5 @@ main = do
             then putW w (False, img)
             else inWin w $ drawImage $ absDiff8u img bg
 
-mouse _ st (Char 's') Down _ _ = st $= (True,undefined)
+mouse _ st (Char 's') Down _ _ = putW st (True,undefined)
 mouse def _ a b c d = def a b c d

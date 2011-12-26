@@ -2,7 +2,7 @@
 
 import EasyVision
 import Graphics.UI.GLUT hiding (Size)
-import System(getArgs)
+import System.Environment(getArgs)
 import Control.Monad(when)
 import Util.Options
 
@@ -48,5 +48,5 @@ main3 = do
         putW w False
   where
     mouse _ st (MouseButton LeftButton) Down _ _ = do
-        st $= True
+        putW st True
     mouse def _ a b c d = def a b c d

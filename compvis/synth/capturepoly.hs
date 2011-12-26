@@ -35,11 +35,11 @@ capturePolyline title sz other = do
         postRedisplay Nothing
         postRedisplay (Just (evW other))
     mouse _ st (Char '\DEL') Down _ _ = do
-        st $~ tail
+        updateW st tail
         postRedisplay Nothing
         postRedisplay (Just (evW other))
     mouse _ st (Char 'x') Down _ _ = do
-        st $= []
+        putW st []
         postRedisplay Nothing
         postRedisplay (Just (evW other))
     mouse def _ a b c d = def a b c d
@@ -59,10 +59,10 @@ analyze title sz f n0 c = evWindow n0 title sz (Just disp) (mouse kbdQuit)
             shcontP (f n poly)
             text2D 0.9 0.7 (show n)
     mouse _ st (MouseButton WheelUp) Down _ _ = do
-        st $~ (+1)
+        updateW st (+1)
         postRedisplay Nothing
     mouse _ st (MouseButton WheelDown) Down _ _ = do
-        st $~ (max 0 . subtract 1)
+        updateW st $ (max 0 . subtract 1)
         postRedisplay Nothing
     mouse def _ a b c d = def a b c d
 

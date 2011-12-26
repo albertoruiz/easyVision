@@ -1,7 +1,7 @@
 -- experiments on multiview calibration from stabilized pose
 -- ./multipose swebcam0 swebcam1 webcam2 '--focals=[1.7,1.7,2.7]' +RTS -N2 -RTS --alpha=0.95
 
-import EasyVision hiding ((.*),State)
+import EasyVision hiding ((.*))
 import qualified EasyVision as EV
 import Graphics.UI.GLUT hiding (Matrix, Size, Point, triangulate)
 import Vision
@@ -227,24 +227,24 @@ weighted alpha (f1,r1,c1) (f2,r2,c2) = (alpha*f1+(1-alpha)*f2,
 ------------------------------------------------
 
 mouse _ st (MouseButton WheelUp) Down _ _ = do
-    st $~ (+1)
+    updateW st (+1)
 mouse _ st (MouseButton WheelDown) Down _ _ = do
-    st $~ (subtract 1)
+    updateW st (subtract 1)
 mouse def _ a b c d = def a b c d
 
 toSave _ st (Char 's') Down _ _ = do
-    cams <- get st
+    cams <- getW st
     writeFile "cameras.txt" (show cams)
 toSave def _ a b c d = def a b c d
 
 toLock _ st (MouseButton LeftButton) Down _ _ = do
-    st $~ not
+    updateW st not
 toLock def _ a b c d = def a b c d
 
 chView _ st (MouseButton WheelDown) Down _ _ = do
-    st $~ subtract 1
+    updateW st $ subtract 1
 chView _ st (MouseButton WheelUp) Down _ _ = do
-    st $~ (+1)
+    updateW st (+1)
 chView def _ a b c d = def a b c d
 
 -------------------------------------------------

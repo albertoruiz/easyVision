@@ -48,8 +48,6 @@ isBlack x = orientedArea x < 0
 
 ----------------------------------------------------------------------
 
-runIt f = prepare >> f >> mainLoop
-
 showDigits = runIt $ do
     --ds <- return pentominos
     ds <- (read <$> readFile "../../data/shapes/letters.txt")

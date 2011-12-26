@@ -15,6 +15,7 @@
 module Main where
 
 import EasyVision hiding (camera)
+import EasyVision.GUI.OldGUI
 import ImagProc.Ipp.Core(image,ImageFloat(F),fullroi,setData32f)
 import Graphics.UI.GLUT hiding (Matrix, Size, Point)
 import Data.IORef

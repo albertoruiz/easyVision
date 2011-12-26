@@ -30,5 +30,5 @@ main = do
                 appendFile (name++".roi") (show roi++"\n")
                 putW w False
 
-mouse _ st (Char 's') Down _ _ = st $= True
+mouse _ st (Char 's') Down _ _ = putW st True
 mouse def _ a b c d = def a b c d

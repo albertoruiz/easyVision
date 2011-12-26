@@ -1,5 +1,7 @@
-Tested on Ubuntu x86
---------------------
+installation instructions
+-------------------------
+
+(Tested on Ubuntu x86)
 
 1. Install the Haskell Platform (we need ghc and cabal-install) and run:
 

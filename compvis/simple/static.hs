@@ -1,7 +1,7 @@
 -- Detects and optionally saves the static frames in the image sequence
 
 import EasyVision
-import System(system)
+import System.Process(system)
 import Control.Concurrent(forkIO)
 import Util.Options
 

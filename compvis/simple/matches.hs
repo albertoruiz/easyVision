@@ -174,8 +174,8 @@ boxFeat p = do
 
 
 mouse _ st (MouseButton LeftButton) Down _ _ = do
-    (_,_) <- get st
-    st $= ([],undefined)
+    (_,_) <- getW st
+    putW st ([],undefined)
 mouse def _ a b c d = def a b c d
 
 distv a b = pnorm PNorm2 (a-b)

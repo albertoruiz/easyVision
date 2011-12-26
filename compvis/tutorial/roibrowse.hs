@@ -2,7 +2,7 @@
 --   Browses selected.yuv / selected.yuv.roi with mouse wheel
 import EasyVision
 import Graphics.UI.GLUT
-import System(getArgs)
+import System.Environment(getArgs)
 import qualified Data.Colour.Names as Col
 
 main = do
@@ -27,9 +27,9 @@ seeRois imgs rois = evWindow 0 "Selected ROI" (mpSize 20) (Just disp) (mouse kbd
         drawROI (rois!!k)
         text2D 50 50 (show $ k+1)
     mouse _ st (MouseButton WheelUp) Down _ _ = do
-        st $~ (min (length imgs -1) . (+1))
+        updateW st (min (length imgs -1) . (+1))
         postRedisplay Nothing
     mouse _ st (MouseButton WheelDown) Down _ _ = do
-        st $~ (max 0 . subtract 1)
+        updateW st (max 0 . subtract 1)
         postRedisplay Nothing
     mouse def _ a b c d = def a b c d

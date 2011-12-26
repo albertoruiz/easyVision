@@ -2,7 +2,7 @@
 
 import EasyVision
 import Graphics.UI.GLUT hiding (Size, Point)
-import System(getArgs)
+import System.Environment(getArgs)
 import Control.Monad(when)
 import Numeric.LinearAlgebra
 import Util.Misc(splitEvery)
@@ -38,15 +38,15 @@ rightAngles img = do
         pointSize $= 3
         renderPrimitive Points $ mapM_ vertex ps
     mouse wrect _ st (MouseButton LeftButton) Down _ (Position x y) = do
-        st $~ (Pixel (fromIntegral y) (fromIntegral x) :)
-        ps <- get st
+        updateW st (Pixel (fromIntegral y) (fromIntegral x) :)
+        ps <- getW st
         let pts = pixelsToPoints (size img) $ ps
             rec = rectifier pts
         putW wrect (htp rec pts, rec)
         postRedisplay Nothing
         postRedisplay (Just $ evW wrect)
     mouse _ _ st (Char 'x') Down _ _ = do
-        st $~ (\l -> if null l then l else tail l)
+        updateW st (\l -> if null l then l else tail l)
         postRedisplay Nothing
     mouse _ def _ a b c d = def a b c d
 

@@ -95,23 +95,23 @@ virtualLook cam [x,y,z] = rot
 
 
 mouse _ _ st (MouseButton WheelUp) Down Modifiers {shift=Up} _ = do
-    (x,y,d,s) <- get st
-    st $= (x,y,d*1.05,s)
+    (x,y,d,s) <- getW st
+    putW st (x,y,d*1.05,s)
 mouse _ _ st (MouseButton WheelDown) Down Modifiers {shift=Up} _ = do
-    (x,y,d,s) <- get st
-    st $= (x,y,d/1.05,s)
+    (x,y,d,s) <- getW st
+    putW st (x,y,d/1.05,s)
 mouse _ _ st (MouseButton WheelUp) Down Modifiers {shift=Down} _ = do
-    (x,y,d,s) <- get st
-    st $= (x,y,d,s/1.1)
+    (x,y,d,s) <- getW st
+    putW st (x,y,d,s/1.1)
 mouse _ _ st (MouseButton WheelDown) Down Modifiers {shift=Down} _ = do
-    (x,y,d,s) <- get st
-    st $= (x,y,d,s*1.1)
+    (x,y,d,s) <- getW st
+    putW st (x,y,d,s*1.1)
 mouse _ sz st (MouseButton LeftButton) Down _ pos@(Position c r) = do
-    (x,y,d,s) <- get st
+    (x,y,d,s) <- getW st
     let [Point dx dy] = pixelsToPoints sz [Pixel (fromIntegral r) (fromIntegral c)]
-    st $= (dx/s+x,dy/s+y,d,s)
+    putW st (dx/s+x,dy/s+y,d,s)
 mouse _ _ st (Char 'x') Down _ _ = do
-    st $= (0,0,20,1)
+    putW st (0,0,20,1)
 mouse def _ _ a b c d = def a b c d
 
 vector l = fromList l :: Vector Double

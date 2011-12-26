@@ -87,11 +87,11 @@ worker cam w = do
 -----------------------------------------------------
 
 mouse _ st (MouseButton LeftButton) Down _ _ = do
-    (_,ps,m) <- get st
-    st $= (True,ps,m)
+    (_,ps,m) <- getW st
+    putW st (True,ps,m)
 
 mouse _ st (Char 'f') Down _ _ = do
-    (_,ps,_) <- get st
+    (_,ps,_) <- getW st
     sv <- openYUV4Mpeg (size $ rgb $ fst $ head $ ps) "catalog.yuv" Nothing
     mapM_ (sv.yuv.fst) ps
     writeFile "catalog.labels" $ unlines $ [show n ++"\t"++l | (n,l) <- zip [1..length ps] (map snd ps)]

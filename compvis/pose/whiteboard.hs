@@ -59,6 +59,6 @@ worker cam wImage wA4 ratio szA4 = do
 ---------------------------------------------------------
 
 mouse _ st (MouseButton LeftButton) Down _ _ = do
-    st $= ident 3
+    putW st $ ident 3
 
 mouse def _ a b c d = def a b c d

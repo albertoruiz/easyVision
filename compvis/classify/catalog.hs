@@ -1,6 +1,6 @@
 import EasyVision
 import Graphics.UI.GLUT
-import System(getArgs)
+import System.Environment(getArgs)
 import Util.Options
 
 main = do

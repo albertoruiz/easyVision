@@ -164,16 +164,16 @@ weighted alpha (f1,r1,c1) (f2,r2,c2) = (alpha*f1+(1-alpha)*f2,
 ------------------------------------------------
 
 mouse _ st (MouseButton WheelUp) Down _ _ = do
-    st $~ (+1)
+    updateW st (+1)
 mouse _ st (MouseButton WheelDown) Down _ _ = do
-    st $~ (subtract 1)
+    updateW st (subtract 1)
 mouse def _ a b c d = def a b c d
 
 maybeToList Nothing = []
 maybeToList (Just a)  = [a]
 
 toSave _ st (Char 's') Down _ _ = do
-    cams <- get st
+    cams <- getW st
     writeFile "cameras.txt" (show cams)
 toSave def _ a b c d = def a b c d
 

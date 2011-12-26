@@ -4,6 +4,7 @@
 module Main where
 
 import EasyVision as EV
+import EasyVision.GUI.OldGUI
 import ImagProc.C.Segments
 import System.Environment(getArgs)
 import qualified Data.Map as Map
