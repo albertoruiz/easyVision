@@ -12,9 +12,11 @@ Stability   :  provisional
 
 module EasyVision.GUI.Util
 ( 
+-- * Window representation
+   EVWindow(..), MoveStatus(..)
 -- * Drawing abstraction
-  Renderable(..), Draw(..),
-  color, text, textF, pointSz, lineWd
+,  Renderable(..), Draw(..)
+,  color, text, textF, pointSz, lineWd
 -- * Tools
 , pointCoordinates, pointCoords
 , pixelCoordinates, pixelCoords
@@ -32,6 +34,7 @@ import Data.Colour(Colour)
 import Data.Colour.SRGB(RGB(..),toSRGB)
 import GHC.Float(double2Float)
 import Unsafe.Coerce(unsafeCoerce)
+import Data.IORef
 
 ------------------------------------------------------------
 
@@ -156,21 +159,37 @@ floatGL = unsafeCoerce -- realToFrac
 
 --------------------------------------------------------------------------------
 
+data EVWindow st = EVW { evW    :: Window
+                       , evSt   :: IORef st
+                       , evROI  :: IORef ROI
+                       , evMove :: IORef MoveStatus
+                       , evInit :: IO ()
+                       , evZoom :: IORef (GLfloat,Double,Double)
+                       }
+
+data MoveStatus = None | SetROI | MoveZoom GLint GLint
+
+--------------------------------------------------------------------------------
+
+
 class Renderable x where
     render :: x -> IO ()
+    renderIn :: EVWindow st -> x -> IO ()
+    renderIn _ = render
+    render = renderIn undefined
 
 data Draw a = forall a . (Renderable a) => Draw a
             | forall a . (Renderable a) => DrawPix a
             | Raw (IO())
 
 instance Renderable (Draw a) where
-    render (Draw x) = render x
-    render (DrawPix x) = pixelCoords >> render x >> pointCoords
-    render (Raw f) = f
+    renderIn w (Draw x) = renderIn w x
+    renderIn w (DrawPix x) = pixelCoords >> renderIn w x >> pointCoords
+    renderIn w (Raw f) = f
 
 instance Renderable a => Renderable [a] where
-    render = mapM_ render
-
+    renderIn w = mapM_ (renderIn w)
+    
 --------------------------------------
 
 instance Renderable (RGB Float) where

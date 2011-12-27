@@ -329,17 +329,45 @@ renderPolyline c@(Closed _) = renderPrimitive LineLoop (vertex c)
 renderPolyline c@(Open _) = renderPrimitive LineStrip (vertex c)
 
 --------------------------------------------------------------------------------
+
+-- | Draws an image in the current window.
+renderImageIn :: EVWindow st -> Img -> IO ()
+renderImageIn evW m = do
+    matrixMode $= Projection
+    loadIdentity
+    let w = width $ isize m
+    let h = height $ isize m
+    ortho2D (0) (0.0001+fromIntegral w-1::GLdouble) (0) (0.0001+fromIntegral h-1)
+    matrixMode $= Modelview 0
+    loadIdentity
+    let r = fromIntegral $ r1 $ vroi m
+    let c = fromIntegral $ c1 $ vroi m
+    rasterPos (Vertex2 (c+0::GLfloat) (fromIntegral h-r-1.0001))
+    GL.Size vw vh <- get windowSize
+    (z,dx,dy) <- readIORef (evZoom evW)
+    pixelZoom $= (z*fromIntegral vw/ fromIntegral w,- z*fromIntegral vh/ fromIntegral h)
+    --pixelZoom $= (1,-1)
+    myDrawPixels m
+    touchForeignPtr (fptr m)
+    let r = vroi m
+    pixelCoordinates (isize m)
+    setColor 1 1 1
+    lineWidth $= 1
+    drawROI r
+
 --------------------------------------------------------------------------------
 
 instance Renderable ImageGray where
-    render = (>> pointCoords) . drawImage'
+    renderIn w (G im) = renderImageIn w im >> pointCoords
 
 instance Renderable ImageRGB where
-    render = (>> pointCoords) . drawImage'
+    renderIn w (C im) = renderImageIn w im >> pointCoords 
 
 instance Renderable ImageFloat where
-    render = (>> pointCoords) . drawImage'
+    renderIn w = renderIn w . toGray
 
+instance Renderable ImageYUV where
+    renderIn w = renderIn w . yuvToRGB
 
 instance Renderable Polyline where
     render (Closed ps) = renderPrimitive LineLoop (vertex (Closed ps))

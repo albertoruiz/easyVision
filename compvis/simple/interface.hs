@@ -1,6 +1,8 @@
 import EasyVision
+import ImagProc.Ipp.Core(fullroi)
 import Data.Colour.Names
 import Graphics.UI.GLUT.Callbacks.Window as GL
+import qualified Graphics.UI.GLUT as G
 
 main = run $ camera >>= observe "Cosa" (notI . grayscale) >>= sMonitorR "result" f >>= timeMonitor
 
@@ -22,7 +24,7 @@ f roi x = [ msg "grayscale"        [ Draw g]
 
 --------------------------------------------------------------------------------
 
-sMonitorR name f = interface (mpSize 10) name 0 (const.const.const) acts (const.const.const) sv Nothing (const (,)) g
+sMonitorR name f = interface (mpSize 20) name 0 ft (const.const.const) acts (const.const.const) sv Nothing (const (,)) g
   where
     g roi k x = r !! j
       where
@@ -33,4 +35,5 @@ sMonitorR name f = interface (mpSize 10) name 0 (const.const.const) acts (const.
            ,((MouseButton WheelDown, Down, modif), pred)
            ,((SpecialKey  KeyDown,   Down, modif), pred)]
     sv =   [((SpecialKey  KeyF3,     Down, modif), print)]
+    ft w x = evROI w G.$= shrink (50,50) (theROI (grayscale x))
 

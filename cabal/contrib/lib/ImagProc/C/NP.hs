@@ -16,13 +16,18 @@ Interface to the New Paradigm.
 
 module ImagProc.C.NP (   
     npbRaw, npbParse, toPixels, npb,
-    wnpcontours
+    wnpcontours, argNPParam, defNPParam, winNPParam
 )
 where
 
 import ImagProc.Ipp.Core
 import ImagProc
-import Foreign
+import Foreign.Ptr
+import Foreign.ForeignPtr
+import Foreign.Storable
+import Foreign.Marshal
+import System.IO.Unsafe(unsafePerformIO)
+import Foreign.C.Types
 import EasyVision.GUI.Parameters(autoParam,intParam)
 import Contours.Base(douglasPeuckerClosed,douglasPeucker)
 import ImagProc.Util((.@.))
@@ -113,6 +118,10 @@ autoParam "NPParam" ""
 
 wnpcontours :: IO ImageGray ->  IO (IO (ImageGray, ([Polyline],[Polyline])))
 wnpcontours = npcontours .@. winNPParam
+
+argNPParam :: IO NPParam
+defNPParam :: NPParam
+winNPParam :: IO (IO NPParam)
 
 ---------------------------------------
 

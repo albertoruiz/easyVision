@@ -89,13 +89,16 @@ getCam n sz = do
                 else fst (aliases!!n)
         fullUrl = dropWhile (== ' ') $ expand aliases url
         isLive = "--live" `isInfixOf` fullUrl || "--live" `elem` rawargs
+        isChan = "--chan" `isInfixOf` fullUrl || "--chan" `elem` rawargs
         cleanUrl = clean ["--live"] fullUrl
         cam = if "uvc" `isPrefixOf` cleanUrl
                 then uvcCamera ("/dev/video" ++ drop 3 cleanUrl) sz 30
                 else mplayer cleanUrl sz
     if isLive
         then putStrLn "(Live) " >> cam >>= live
-        else cam
+        else if isChan 
+                 then putStrLn "(Channel)" >> cam >>= channel
+                 else cam
 
 clean ws = unwords . filter (not . (`elem` ws)). words
 
@@ -221,6 +224,14 @@ live cam = do
     c <- newEmptySampleVar
     _ <- forkIO $ forever $ cam >>= writeSampleVar c {- >> putStr "." -}
     return $ {- putStrLn "" >> -} readSampleVar c 
+
+
+channel :: IO a -> IO (IO a)
+channel cam = do
+    c <- newChan
+    _ <- forkIO $ forever $ cam >>= writeChan c {- >> putStr "." -}
+    return $ {- putStrLn "" >> -} readChan c 
+
 
 createGrab :: [b] -> IO (IO b)
 createGrab l = do

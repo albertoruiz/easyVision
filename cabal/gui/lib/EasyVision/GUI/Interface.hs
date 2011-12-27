@@ -16,7 +16,7 @@ User interface tools
 
 module EasyVision.GUI.Interface (
   prepare,
-  evWindow, evWindow3D, evWin3D, EVWindow(..)
+  evWindow, evWindow3D, evWin3D
 , launch, launchFreq, runFPS, runIt, runIdle, interface, sMonitor, observe
 , inWin, getW, putW, updateW, getROI
 , kbdcam, kbdQuit, keyAction, mouseGen, mouseGenPt, modif, withPause
@@ -26,7 +26,7 @@ import EasyVision.GUI.Util
 import EasyVision.GUI.Draw
 import ImagProc.Base
 import ImagProc.Ipp(Size(..),ippSetNumThreads,ROI(..),saveRGB')
-import Graphics.UI.GLUT hiding (RGB, Matrix, Size)
+import Graphics.UI.GLUT hiding (RGB, Matrix, Size, None)
 import qualified Graphics.UI.GLUT as GL
 import Data.IORef
 import System.Process(system)
@@ -79,19 +79,22 @@ mouseGenPt acts = keyAction (const.withPoint) acts id []
 
 -----------------------------------------------------------------
 
-interface sz0 name st0 g1 upds g2 acts mbkeyDisp resultFun resultDisp cam = do
+interface sz0 name st0 ft g1 upds g2 acts mbkeyDisp resultFun resultDisp cam = do
     (cam', ctrl) <- withPause cam
+    firstTimeRef <- newIORef True
     w <- evWindow st0 name sz0 mbkeyDisp (keyAction g1 upds g2 acts (kbdcam ctrl))
     return $ do
         thing <- cam'
+        firstTime <- readIORef firstTimeRef
+        when firstTime $ ft w thing >> writeIORef firstTimeRef False
         state <- getW w
         roi <- getROI w
         let (newState, result) = resultFun roi state thing
-        inWin w (render $ resultDisp roi newState result)
+        inWin w (renderIn w $ resultDisp roi newState result)
         putW w newState
         return result
 
-sMonitor name f = interface (Size 240 360) name 0 (const.const.const) acts id [] Nothing (const (,)) g
+sMonitor name f = interface (Size 240 360) name 0 (const.const.return $ ()) (const.const.const) acts id [] Nothing (const (,)) g
   where
     g roi k x = r !! j
       where
@@ -102,7 +105,7 @@ sMonitor name f = interface (Size 240 360) name 0 (const.const.const) acts id []
            ,((MouseButton WheelDown, Down, modif), pred)
            ,((SpecialKey  KeyDown,   Down, modif), pred)]
 
-observe name f = interface (Size 240 360) name () id [] id [] Nothing (const (,)) (const.const $ f)
+observe name f = interface (Size 240 360) name () (const.const.return $ ()) id [] id [] Nothing (const (,)) (const.const $ f)
 
 -----------------------------------------------------------------
 
@@ -140,12 +143,6 @@ runIt f = prepare >> f >> mainLoop
 
 ----------------------------------------------------------------
 
-data EVWindow st = EVW { evW   :: Window
-                       , evSt   :: IORef st
-                       , evROI :: IORef ROI
-                       , evInit :: IO ()
-                       }
-
 evWindow st0 name size mdisp kbd = do
     st <- newIORef st0
     glw <- createWindow name
@@ -163,14 +160,18 @@ evWindow st0 name size mdisp kbd = do
     let Size h w = size
         initROI = ROI {r1=0, r2=h-1, c1=0, c2=w-1}
     r <- newIORef initROI
+    zd <- newIORef (1,0,0)
+    ms <- newIORef None
 
     let w = EVW { evW = glw
                 , evSt = st
                 , evROI = r
+                , evZoom = zd
+                , evMove = ms
                 , evInit = clear [ColorBuffer] }
 
-    keyboardMouseCallback $= Just (kbdroi r initROI (kbd w))
-    motionCallback $= Just (mvroi r)
+    keyboardMouseCallback $= Just (kbdroi w initROI (kbd w))
+    motionCallback $= Just (mvroi w)
 
     return w
 
@@ -231,33 +232,31 @@ redik f a1 a2 a3 a4 a5 = f a1 a2 a3 a4 a5 >> postRedisplay Nothing
 
 minroi = 20
 
-kbdroi r _ _ (MouseButton RightButton) Down Modifiers {shift=Up} pos@(Position x y) =
-    modifyIORef r (\ (ROI _ r2 _ c2) ->
-                        ROI (min (r2-minroi) (fromIntegral y)) r2
-                            (min (c2-minroi) (fromIntegral x)) c2)
-kbdroi r _ _ (MouseButton RightButton) Down Modifiers {shift=Down} pos@(Position x y) =
-    modifyIORef r (\ (ROI r1 _ c1 _) ->
-                        ROI r1 (max (r1+minroi) (fromIntegral y))
-                            c1 (max (c1+minroi) (fromIntegral x)))
-kbdroi r initroi _ (Char 'r') Down _ _ = writeIORef r initroi
+kbdroi w initroi _ (Char 'r') Down _ _ = writeIORef (evROI w) initroi
+kbdroi w _ _ (MouseButton WheelUp) Down Modifiers {ctrl=Down} _ = modifyIORef (evZoom w) (\(z,x,y)->(z*1.1,x*1.1,y*1.1))
+kbdroi w _ _ (MouseButton WheelDown) Down Modifiers {ctrl=Down} _ = modifyIORef (evZoom w) (\(z,x,y)->(z/1.1,x/1.1,y/1.1))
+
+kbdroi w _ _ (MouseButton LeftButton) Down Modifiers {ctrl=Down} (Position x y) = writeIORef (evMove w) (MoveZoom x y)
+kbdroi w _ _ (MouseButton RightButton) Down Modifiers {ctrl=Down} (Position x y) = writeIORef (evMove w) SetROI >> modifyIORef (evROI w) (\ (ROI _ r2 _ c2) -> ROI (min (r2-minroi) (fromIntegral y)) r2 (min (c2-minroi) (fromIntegral x)) c2)
+
+kbdroi w _ _ (MouseButton LeftButton) Up _ _ = writeIORef (evMove w) None
+kbdroi w _ _ (MouseButton RightButton) Up _ _ = writeIORef (evMove w) None
+
+
+kbdroi w _ _ (Char '0') Down Modifiers {ctrl=Down} _ = writeIORef (evZoom w) (1,0,0)
 kbdroi _ _ defaultFunc a b c d = defaultFunc a b c d
 
-mvroi r (Position x y) =
-    modifyIORef r (\ (ROI r1 _ c1 _) ->
-                        ROI r1 (max (r1+minroi) (fromIntegral y))
-                            c1 (max (c1+minroi) (fromIntegral x)))
+mvroi w (Position x1 y1) = do
+    ms <- readIORef (evMove w)
+    case ms of
+        None -> return ()
+        SetROI -> modifyIORef (evROI w) (\ (ROI r1 _ c1 _) -> ROI r1 (max (r1+minroi) (fromIntegral y1)) c1 (max (c1+minroi) (fromIntegral x1)))
+        MoveZoom x0 y0 -> modifyIORef (evZoom w) (\(z,x,y) -> (z, x+fromIntegral (x1-x0), y-fromIntegral (y1-y0))) >> writeIORef (evMove w) (MoveZoom x1 y1)
 
 --------------------------------------------------------------------------------
 
-{- | Adds a pause control to a camera. Commands:
-
-    \"pause\" -> toggles the pause state
-
-    \"step\"  -> toggles the frame by frame state (the next frame is obtained by \"pause\")
-
--}
 withPause :: IO a                          -- ^ original camera
-          -> IO (IO a, (IO(), IO(), IO())) -- ^ camera and controller
+          -> IO (IO a, (IO(), IO(), IO())) -- ^ camera and controller (pause, step, pass)
 withPause grab = do
     paused <- newIORef False
     frozen <- newIORef undefined
