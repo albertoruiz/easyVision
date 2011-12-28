@@ -90,7 +90,7 @@ interface sz0 name st0 ft g1 upds g2 acts mbkeyDisp resultFun resultDisp cam = d
         state <- getW w
         roi <- getROI w
         let (newState, result) = resultFun roi state thing
-        inWin w (renderIn w $ resultDisp roi newState result)
+        inWin w (prepZoom w >> renderIn w (resultDisp roi newState result))
         putW w newState
         return result
 

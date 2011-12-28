@@ -1,4 +1,6 @@
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE RecordWildCards #-}
+
 -----------------------------------------------------------------------------
 {- |
 Module      :  EasyVision.GUI.Draw
@@ -330,38 +332,31 @@ renderPolyline c@(Open _) = renderPrimitive LineStrip (vertex c)
 
 --------------------------------------------------------------------------------
 
--- | Draws an image in the current window.
 renderImageIn :: EVWindow st -> Img -> IO ()
 renderImageIn evW m = do
-    matrixMode $= Projection
-    loadIdentity
+    sz@(GL.Size vw vh) <- get windowSize
+    (z,_,_) <- readIORef (evZoom evW)
     let w = width $ isize m
-    let h = height $ isize m
-    ortho2D (0) (0.0001+fromIntegral w-1::GLdouble) (0) (0.0001+fromIntegral h-1)
-    matrixMode $= Modelview 0
-    loadIdentity
-    let r = fromIntegral $ r1 $ vroi m
-    let c = fromIntegral $ c1 $ vroi m
-    rasterPos (Vertex2 (c+0::GLfloat) (fromIntegral h-r-1.0001))
-    GL.Size vw vh <- get windowSize
-    (z,dx,dy) <- readIORef (evZoom evW)
-    pixelZoom $= (z*fromIntegral vw/ fromIntegral w,- z*fromIntegral vh/ fromIntegral h)
-    --pixelZoom $= (1,-1)
+    let h = height $ isize m 
+    let roipts@(Point x0 y0:_) = pixelsToPoints (evSize sz) [ Pixel r1 c1, Pixel (1+r2) c1,
+                                                              Pixel (1+r2) (1+c2), Pixel r1 (1+c2) ]
+          where
+            ROI {..} = vroi m
+    rasterPos (Vertex2 (doubleGL x0) (doubleGL y0-1E-6))
+    pixelZoom $= (z*fromIntegral vw/ fromIntegral w,- z*fromIntegral vh/ fromIntegral h)   
     myDrawPixels m
     touchForeignPtr (fptr m)
-    let r = vroi m
-    pixelCoordinates (isize m)
     setColor 1 1 1
     lineWidth $= 1
-    drawROI r
+    render . Draw . Closed $ roipts
 
 --------------------------------------------------------------------------------
 
 instance Renderable ImageGray where
-    renderIn w (G im) = renderImageIn w im >> pointCoords
+    renderIn w (G im) = renderImageIn w im
 
 instance Renderable ImageRGB where
-    renderIn w (C im) = renderImageIn w im >> pointCoords 
+    renderIn w (C im) = renderImageIn w im
 
 instance Renderable ImageFloat where
     renderIn w = renderIn w . toGray

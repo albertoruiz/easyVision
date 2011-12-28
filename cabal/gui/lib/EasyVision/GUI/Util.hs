@@ -24,6 +24,7 @@ module EasyVision.GUI.Util
 , text2D, textAt, textAtF
 , evSize, glSize
 , floatGL, doubleGL
+, prepZoom
 ) where
 
 import Graphics.UI.GLUT hiding (RGB, Matrix, Size, Point,color)
@@ -60,7 +61,7 @@ pixelCoordinates (Size h w) = draw2Dwith (ortho2D eps (fromIntegral w -eps) (fro
     where eps = 0.0001
 
 pixelCoords :: IO ()
-pixelCoords = get windowSize >>= pointCoordinates . evSize
+pixelCoords = get windowSize >>= pixelCoordinates . evSize
 
 draw2Dwith ortho = do
     matrixMode $= Projection
@@ -68,6 +69,7 @@ draw2Dwith ortho = do
     ortho
     matrixMode $= Modelview 0
     loadIdentity
+
 
 ----------------------------------------------------------------------
 
@@ -210,4 +212,15 @@ pointSz = Raw . (pointSize $=)
 textF f p s = Raw (textAtF f p s)
 
 text = textF Helvetica18
+
+-----------------------------------------
+
+prepZoom evW = do
+    (Size h w) <- evSize `fmap` get windowSize
+    (z,dx,dy) <- readIORef (evZoom evW)
+    let zx = ( round (fromIntegral w*z) - w ) `div` 2
+    let zy = ( round (fromIntegral h*z) - h ) `div` 2
+    viewport $= (Position (-fromIntegral zx + round dx) (-fromIntegral zy + round dy),
+                 GL.Size (fromIntegral $ w+2*zx) (fromIntegral $ h+2*zy))
+    pointCoords
 
