@@ -15,11 +15,14 @@ User interface tools
 -----------------------------------------------------------------------------
 
 module EasyVision.GUI.Interface (
-  prepare,
-  evWindow, evWindow3D, evWin3D
-, launch, launchFreq, runFPS, runIt, runIdle, interface, sMonitor, observe
-, inWin, getW, putW, updateW, getROI
-, kbdcam, kbdQuit, keyAction, mouseGen, mouseGenPt, modif, withPause
+    -- * Interface
+    runFPS, runIdle, runIt, interface, sMonitor, observe,
+    -- * Tools
+    prepare,
+    evWindow, evWindow3D, evWin3D,
+    launch, launchFreq,
+    inWin, getW, putW, updateW, getROI,
+    kbdcam, kbdQuit, keyAction, mouseGen, mouseGenPt, modif, withPause
 ) where
 
 import EasyVision.GUI.Util
@@ -35,13 +38,14 @@ import Control.Monad(when)
 import System.Environment(getArgs)
 import qualified Data.Map as Map
 import Data.Map
-import EasyVision.GUI.Objects
+--import EasyVision.GUI.Objects
+import Data.Traversable
+import Control.Applicative
 
 
 -- | keyboard callback for camera control and exiting the application with ESC. p or SPACE pauses, s sets frame by frame mode.
 kbdcam :: (IO (),IO(),IO()) -> KeyboardMouseCallback
 kbdcam (pauseC,stepC,passC) = kbd where
-    kbd (Char 'p') Down _ _ = pauseC
     kbd (Char ' ') Down Modifiers {shift=Up} _ = pauseC
     kbd (Char ' ') Down Modifiers {shift=Down} _ = passC
     kbd (Char 's') Down _ _ = stepC
@@ -54,6 +58,7 @@ kbdQuit (Char '\27') Down Modifiers {shift=Down} _ = leaveMainLoop >> system "ki
 kbdQuit (Char '\27') Down Modifiers {ctrl=Down} _ = exitWith ExitSuccess
 kbdQuit (Char '\27') Down _ _ = leaveMainLoop
 kbdQuit (Char   'i') Down _ _ = captureGL >>= saveRGB' Nothing
+kbdQuit a Down m _            = putStrLn (show a ++ " " ++ show m ++ " not defined")
 kbdQuit _ _ _ _               = return ()
 
 
@@ -158,19 +163,23 @@ evWindow st0 name size mdisp kbd = do
     actionOnWindowClose $= ContinueExectuion
 
     let Size h w = size
-        initROI = ROI {r1=0, r2=h-1, c1=0, c2=w-1}
-    r <- newIORef initROI
+
+    r <- newIORef ROI {r1=0, r2=h-1, c1=0, c2=w-1}
     zd <- newIORef (1,0,0)
     ms <- newIORef None
+    po <- newIORef StaticSize
+    ps <- newIORef Nothing
 
     let w = EVW { evW = glw
                 , evSt = st
                 , evROI = r
                 , evZoom = zd
                 , evMove = ms
+                , evPolicy = po
+                , evPrefSize = ps
                 , evInit = clear [ColorBuffer] }
 
-    keyboardMouseCallback $= Just (kbdroi w initROI (kbd w))
+    keyboardMouseCallback $= Just (kbdroi w (kbd w))
     motionCallback $= Just (mvroi w)
 
     return w
@@ -232,26 +241,61 @@ redik f a1 a2 a3 a4 a5 = f a1 a2 a3 a4 a5 >> postRedisplay Nothing
 
 minroi = 20
 
-kbdroi w initroi _ (Char 'r') Down _ _ = writeIORef (evROI w) initroi
-kbdroi w _ _ (MouseButton WheelUp) Down Modifiers {ctrl=Down} _ = modifyIORef (evZoom w) (\(z,x,y)->(z*1.1,x*1.1,y*1.1))
-kbdroi w _ _ (MouseButton WheelDown) Down Modifiers {ctrl=Down} _ = modifyIORef (evZoom w) (\(z,x,y)->(z/1.1,x/1.1,y/1.1))
+nextPolicy UserSize = DynamicSize
+nextPolicy StaticSize = UserSize
+nextPolicy DynamicSize = UserSize
 
-kbdroi w _ _ (MouseButton LeftButton) Down Modifiers {ctrl=Down} (Position x y) = writeIORef (evMove w) (MoveZoom x y)
-kbdroi w _ _ (MouseButton RightButton) Down Modifiers {ctrl=Down} (Position x y) = writeIORef (evMove w) SetROI >> modifyIORef (evROI w) (\ (ROI _ r2 _ c2) -> ROI (min (r2-minroi) (fromIntegral y)) r2 (min (c2-minroi) (fromIntegral x)) c2)
+kbdroi w _ (Char '0') Down Modifiers {alt=Down} _ = do
+    mbsz <- readIORef (evPrefSize w)
+    case mbsz of
+        Nothing -> return ()
+        Just (Size h w') -> writeIORef (evROI w) ROI {r1=0, r2=h-1, c1=0, c2=w'-1}
 
-kbdroi w _ _ (MouseButton LeftButton) Up _ _ = writeIORef (evMove w) None
-kbdroi w _ _ (MouseButton RightButton) Up _ _ = writeIORef (evMove w) None
+kbdroi w _ (MouseButton WheelUp) Down Modifiers {ctrl=Down} _ =
+    modifyIORef (evZoom w) (\(z,x,y)->(z*1.1,x*1.1,y*1.1))
+kbdroi w _ (MouseButton WheelDown) Down Modifiers {ctrl=Down} _ =
+    modifyIORef (evZoom w) (\(z,x,y)->(z/1.1,x/1.1,y/1.1))
+
+kbdroi w _ (SpecialKey KeyUp) Down Modifiers {ctrl=Down} _ =
+    modifyIORef (evZoom w) (\(z,x,y)->(z*1.1,x*1.1,y*1.1))
+kbdroi w _ (SpecialKey KeyDown) Down Modifiers {ctrl=Down} _ =
+    modifyIORef (evZoom w) (\(z,x,y)->(z/1.1,x/1.1,y/1.1))
 
 
-kbdroi w _ _ (Char '0') Down Modifiers {ctrl=Down} _ = writeIORef (evZoom w) (1,0,0)
-kbdroi _ _ defaultFunc a b c d = defaultFunc a b c d
+kbdroi w _ (MouseButton LeftButton) Down Modifiers {ctrl=Down} (Position x y) =
+    writeIORef (evMove w) (MoveZoom x y)
 
-mvroi w (Position x1 y1) = do
+kbdroi w _ (MouseButton RightButton) Down Modifiers {ctrl=Down} (Position x' y') = do
     ms <- readIORef (evMove w)
+    z <- readIORef (evZoom w)
+    vp <- get viewport
+    let (x,y) = unZoom z vp (x',y') 
+    modifyIORef (evROI w) (\ (ROI _ r2 _ c2) -> ROI (min (r2-minroi) y) r2 (min (c2-minroi) x) c2)
+    writeIORef (evMove w) SetROI
+
+kbdroi w _ (MouseButton LeftButton) Up _ _ = writeIORef (evMove w) None
+kbdroi w _ (MouseButton RightButton) Up _ _ = writeIORef (evMove w) None
+
+kbdroi w _ (SpecialKey KeyF3) Down _ _ = modifyIORef (evPolicy w) nextPolicy
+
+kbdroi w _ (Char '0') Down Modifiers {ctrl=Down} _ = writeIORef (evZoom w) (1,0,0)
+
+kbdroi _ defaultFunc a b c d = defaultFunc a b c d
+
+
+mvroi w (Position x1' y1') = do
+    ms <- readIORef (evMove w)
+    z <- readIORef (evZoom w)
+    vp <- get viewport
+    let (x1,y1) = unZoom z vp (x1',y1') 
     case ms of
         None -> return ()
-        SetROI -> modifyIORef (evROI w) (\ (ROI r1 _ c1 _) -> ROI r1 (max (r1+minroi) (fromIntegral y1)) c1 (max (c1+minroi) (fromIntegral x1)))
-        MoveZoom x0 y0 -> modifyIORef (evZoom w) (\(z,x,y) -> (z, x+fromIntegral (x1-x0), y-fromIntegral (y1-y0))) >> writeIORef (evMove w) (MoveZoom x1 y1)
+        SetROI -> modifyIORef (evROI w) $ 
+                    \(ROI r1 _ c1 _) -> ROI r1 (max (r1+minroi) y1) c1 (max (c1+minroi) x1)
+        MoveZoom x0 y0 -> do
+            modifyIORef (evZoom w) $
+                \(z,x,y) -> (z, x+fromIntegral (x1'-x0), y-fromIntegral (y1'-y0))
+            writeIORef (evMove w) (MoveZoom x1' y1')
 
 --------------------------------------------------------------------------------
 

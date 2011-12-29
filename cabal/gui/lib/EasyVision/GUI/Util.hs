@@ -13,7 +13,7 @@ Stability   :  provisional
 module EasyVision.GUI.Util
 ( 
 -- * Window representation
-   EVWindow(..), MoveStatus(..)
+   EVWindow(..), MoveStatus(..), ResizePolicy(..)
 -- * Drawing abstraction
 ,  Renderable(..), Draw(..)
 ,  color, text, textF, pointSz, lineWd
@@ -24,7 +24,7 @@ module EasyVision.GUI.Util
 , text2D, textAt, textAtF
 , evSize, glSize
 , floatGL, doubleGL
-, prepZoom
+, prepZoom, unZoom
 ) where
 
 import Graphics.UI.GLUT hiding (RGB, Matrix, Size, Point,color)
@@ -36,6 +36,7 @@ import Data.Colour.SRGB(RGB(..),toSRGB)
 import GHC.Float(double2Float)
 import Unsafe.Coerce(unsafeCoerce)
 import Data.IORef
+import Util.Misc(debug)
 
 ------------------------------------------------------------
 
@@ -161,15 +162,19 @@ floatGL = unsafeCoerce -- realToFrac
 
 --------------------------------------------------------------------------------
 
-data EVWindow st = EVW { evW    :: Window
-                       , evSt   :: IORef st
-                       , evROI  :: IORef ROI
-                       , evMove :: IORef MoveStatus
-                       , evInit :: IO ()
-                       , evZoom :: IORef (GLfloat,Double,Double)
+data EVWindow st = EVW { evW        :: Window
+                       , evSt       :: IORef st
+                       , evROI      :: IORef ROI
+                       , evMove     :: IORef MoveStatus
+                       , evInit     :: IO ()
+                       , evZoom     :: IORef (Double,Double,Double)
+                       , evPrefSize :: IORef (Maybe Size)
+                       , evPolicy   :: IORef ResizePolicy
                        }
 
 data MoveStatus = None | SetROI | MoveZoom GLint GLint
+
+data ResizePolicy = UserSize | StaticSize | DynamicSize deriving Eq
 
 --------------------------------------------------------------------------------
 
@@ -219,8 +224,18 @@ prepZoom evW = do
     (Size h w) <- evSize `fmap` get windowSize
     (z,dx,dy) <- readIORef (evZoom evW)
     let zx = ( round (fromIntegral w*z) - w ) `div` 2
-    let zy = ( round (fromIntegral h*z) - h ) `div` 2
-    viewport $= (Position (-fromIntegral zx + round dx) (-fromIntegral zy + round dy),
-                 GL.Size (fromIntegral $ w+2*zx) (fromIntegral $ h+2*zy))
-    pointCoords
+        zy = ( round (fromIntegral h*z) - h ) `div` 2
+        sz = GL.Size (fromIntegral $ w+2*zx) (fromIntegral $ h+2*zy) 
+    viewport $= (Position (-fromIntegral zx + round dx) (-fromIntegral zy + round dy), sz)
+    pointCoords -- inates (evSize sz) 
+
+unZoom (z,dx,dy) (Position vpx vpy, sz) (x,y) = (round x', round y')
+  where
+    Size h w = evSize sz
+    rh = fromIntegral h / z
+    rw = fromIntegral w / z
+    oh = (rh- fromIntegral h) / 2 + dy
+    ow = (rw- fromIntegral w) / 2 + dx
+    x' = (fromIntegral x-ow) / z
+    y' = (fromIntegral y-oh) / z
 

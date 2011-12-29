@@ -34,7 +34,7 @@ module EasyVision.GUI.Draw
 , renderPolyline
 ) where
 
-import Graphics.UI.GLUT hiding (RGB, Matrix, Size, Point)
+import Graphics.UI.GLUT hiding (RGB, Matrix, Size, Point,color)
 import qualified Graphics.UI.GLUT as GL
 import ImagProc.Ipp.Core
 import ImagProc(resize,yuvToRGB,toGray)
@@ -43,12 +43,13 @@ import Foreign (touchForeignPtr,castPtr)
 import Numeric.LinearAlgebra hiding (step)
 import Vision
 import Util.Rotation
-import Util.Misc(degree)
+import Util.Misc(degree,debug)
 import EasyVision.GUI.Util
 import EasyVision.GUI.Trackball
 import qualified Data.Colour.RGBSpace as Col
 import Data.Colour.SRGB hiding (RGB)
 import Data.Colour
+import Data.Colour.Names
 import Control.Monad(when)
 --import Features(Polyline(..))
 import GHC.Float(double2Float)
@@ -334,21 +335,29 @@ renderPolyline c@(Open _) = renderPrimitive LineStrip (vertex c)
 
 renderImageIn :: EVWindow st -> Img -> IO ()
 renderImageIn evW m = do
-    sz@(GL.Size vw vh) <- get windowSize
-    (z,_,_) <- readIORef (evZoom evW)
-    let w = width $ isize m
-    let h = height $ isize m 
-    let roipts@(Point x0 y0:_) = pixelsToPoints (evSize sz) [ Pixel r1 c1, Pixel (1+r2) c1,
-                                                              Pixel (1+r2) (1+c2), Pixel r1 (1+c2) ]
-          where
-            ROI {..} = vroi m
-    rasterPos (Vertex2 (doubleGL x0) (doubleGL y0-1E-6))
-    pixelZoom $= (z*fromIntegral vw/ fromIntegral w,- z*fromIntegral vh/ fromIntegral h)   
+    policy <- readIORef (evPolicy evW)
+    prefSize <- readIORef (evPrefSize evW)
+    let imSize@(Size h w) = isize m
+        szI = limitSize 800 imSize
+    when (prefSize == Nothing || policy == DynamicSize) $
+        writeIORef (evPrefSize evW) (Just szI)
+    szW@(GL.Size vw vh) <- get windowSize
+    Just szP <-readIORef (evPrefSize evW)
+    let szT = if policy == UserSize then szW else glSize szP
+    when (szW /= szT) $ windowSize $= szT >> postRedisplay Nothing
+
+    (z',_,_) <- readIORef (evZoom evW)
+    let z = (floatGL . double2Float) z' * fromIntegral vw/ fromIntegral w
+        ROI {..} = vroi m
+        szTe@(Size th tw) = evSize szT
+        roipts@(Point x0 y0:_) = pixelsToPoints szTe [ Pixel r1 c1, Pixel (1+r2) c1,
+                                                       Pixel (1+r2) (1+c2), Pixel r1 (1+c2) ]
+        dy = 0*(fromIntegral th- fromIntegral h * z') / fromIntegral tw * 2
+    rasterPos (Vertex2 (doubleGL x0) (doubleGL y0-1E-6-dy/2))
+    pixelZoom $= (z,-z)   
     myDrawPixels m
     touchForeignPtr (fptr m)
-    setColor 1 1 1
-    lineWidth $= 1
-    render . Draw . Closed $ roipts
+    render $ Draw [color white, lineWd 1, Draw (Closed roipts)]
 
 --------------------------------------------------------------------------------
 
