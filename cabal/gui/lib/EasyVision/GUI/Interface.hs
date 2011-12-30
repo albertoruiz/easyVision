@@ -29,7 +29,7 @@ import EasyVision.GUI.Util
 import EasyVision.GUI.Draw
 import ImagProc.Base
 import ImagProc.Ipp(Size(..),ippSetNumThreads,ROI(..),saveRGB')
-import Graphics.UI.GLUT hiding (RGB, Matrix, Size, None)
+import Graphics.UI.GLUT hiding (RGB, Matrix, Size, None, Point,color)
 import qualified Graphics.UI.GLUT as GL
 import Data.IORef
 import System.Process(system)
@@ -41,6 +41,8 @@ import Data.Map
 --import EasyVision.GUI.Objects
 import Data.Traversable
 import Control.Applicative
+import Data.Colour.Names
+import Contours.Base
 
 
 -- | keyboard callback for camera control and exiting the application with ESC. p or SPACE pauses, s sets frame by frame mode.
@@ -96,8 +98,10 @@ interface sz0 name st0 ft g1 upds g2 acts mbkeyDisp resultFun resultDisp cam = d
         roi <- getROI w
         let (newState, result) = resultFun roi state thing
         visible <- get (evVisible w)
-        when visible $
-            inWin w (prepZoom w >> renderIn w (resultDisp roi newState result))
+        when visible $ do
+            r <- get (evRegion w)
+            inWin w (prepZoom w >> renderIn w (resultDisp roi newState result)
+                                >> render (Draw [color orange, lineWd 3, Draw r]))
         putW w newState
         return result
 
@@ -166,8 +170,12 @@ evWindow st0 name size mdisp kbd = do
     actionOnWindowClose $= ContinueExectuion
 
     let Size h w = size
+        irr = Closed [Point p p, Point n p, Point n n, Point p n]
+          where p = 0.5; n = -0.5    
 
     r <- newIORef ROI {r1=0, r2=h-1, c1=0, c2=w-1}
+    rr <- newIORef irr
+        
     zd <- newIORef (1,0,0)
     ms <- newIORef None
     po <- newIORef StaticSize
@@ -177,6 +185,7 @@ evWindow st0 name size mdisp kbd = do
     let w = EVW { evW = glw
                 , evSt = st
                 , evROI = r
+                , evRegion = rr
                 , evZoom = zd
                 , evMove = ms
                 , evPolicy = po
@@ -272,11 +281,14 @@ kbdroi w _ (MouseButton LeftButton) Down Modifiers {ctrl=Down} (Position x y) =
 
 kbdroi w _ (MouseButton RightButton) Down Modifiers {ctrl=Down} (Position x' y') = do
     ms <- readIORef (evMove w)
-    z <- readIORef (evZoom w)
+    z@(z0,_,dy) <- readIORef (evZoom w)
     vp <- get viewport
     let (x,y) = unZoom z vp (x',y') 
     modifyIORef (evROI w) (\ (ROI _ r2 _ c2) -> ROI (min (r2-minroi) y) r2 (min (c2-minroi) x) c2)
     writeIORef (evMove w) SetROI
+    r <- get (evROI w)
+    Size wh ww <- evSize `fmap` get windowSize
+    evRegion w $= roi2poly (Size (wh - round (4*dy/z0)) ww) r
 
 kbdroi w _ (MouseButton LeftButton) Up _ _ = writeIORef (evMove w) None
 kbdroi w _ (MouseButton RightButton) Up _ _ = writeIORef (evMove w) None
@@ -297,13 +309,17 @@ kbdroi _ defaultFunc a b c d = defaultFunc a b c d
 
 mvroi w (Position x1' y1') = do
     ms <- readIORef (evMove w)
-    z <- readIORef (evZoom w)
+    z@(z0,_,dy) <- readIORef (evZoom w)
     vp <- get viewport
     let (x1,y1) = unZoom z vp (x1',y1') 
     case ms of
         None -> return ()
-        SetROI -> modifyIORef (evROI w) $ 
-                    \(ROI r1 _ c1 _) -> ROI r1 (max (r1+minroi) y1) c1 (max (c1+minroi) x1)
+        SetROI -> do
+            modifyIORef (evROI w) $ 
+                \(ROI r1 _ c1 _) -> ROI r1 (max (r1+minroi) y1) c1 (max (c1+minroi) x1)
+            r <- get (evROI w)
+            Size wh ww <- evSize `fmap` get windowSize
+            evRegion w $= roi2poly (Size (wh - round (4*dy/z0)) ww) r
         MoveZoom x0 y0 -> do
             modifyIORef (evZoom w) $
                 \(z,x,y) -> (z, x+fromIntegral (x1'-x0), y-fromIntegral (y1'-y0))

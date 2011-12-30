@@ -165,6 +165,7 @@ floatGL = unsafeCoerce -- realToFrac
 data EVWindow st = EVW { evW        :: Window
                        , evSt       :: IORef st
                        , evROI      :: IORef ROI
+                       , evRegion   :: IORef Polyline
                        , evMove     :: IORef MoveStatus
                        , evInit     :: IO ()
                        , evZoom     :: IORef (Double,Double,Double)
