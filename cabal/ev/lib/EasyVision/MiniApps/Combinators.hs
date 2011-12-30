@@ -19,7 +19,6 @@ module EasyVision.MiniApps.Combinators (
   monitorWheel,
   monitor3D,
   monitorScanLine, 
-  gray,
   counter, countDown,
   frameRate, compCost, timeMonitor,
   selectROI, selectROIfun,
@@ -53,9 +52,6 @@ import Contours.Normalization(eig2x2Dir)
 import Numeric.LinearAlgebra(inv,single,toList)
 import Vision(pt2hv,cross)
 import Util.Ellipses
-
--- deprecated
-gray = grayscale
 
 ----------------------------------------------------------------------
 

@@ -24,12 +24,13 @@ module Contours.Base (
     asSegments, longestSegments, transPol,
     pentominos,
     bounding,
-    roi2poly, poly2roi,
+    roi2poly, poly2roi, setRegion,
     segmentIntersection
 )
 where
 
 import ImagProc.Base
+import ImagProc.Ipp.Core(size,setROI)
 import Data.List(sortBy, maximumBy, sort,foldl',tails)
 import Numeric.LinearAlgebra
 import Util.Homogeneous
@@ -256,6 +257,8 @@ poly2roi sz p = ROI r1 r2 c1 c2
   where
     (Closed [p1,_,p3,_]) = bounding p
     [Pixel r1 c1, Pixel r2 c2] = pointsToPixels sz [p1,p3]
+
+setRegion p im = setROI (poly2roi (size im) p) im
 
 --------------------------------------------------------------------------------
 

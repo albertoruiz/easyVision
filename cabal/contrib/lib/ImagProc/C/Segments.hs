@@ -20,7 +20,12 @@ module ImagProc.C.Segments (
 where
 
 import Prelude hiding (pi)
-import Foreign
+import Foreign.C.Types
+import Foreign.Ptr
+import Foreign.ForeignPtr
+import Foreign.Marshal
+import Foreign.Storable
+import System.IO.Unsafe(unsafePerformIO)
 import ImagProc.Ipp hiding (r1,c1,r2,c2)
 import GHC.Float(float2Double)
 import Control.Monad (when)

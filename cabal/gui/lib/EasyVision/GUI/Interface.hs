@@ -67,7 +67,7 @@ kbdQuit _ _ _ _               = return ()
 keyAction g1 upds g2 acts def w a b c d = do
     v <- getW w
     sz <- evSize `fmap` get windowSize
-    roi <- getROI w
+    roi <- get (evRegion w)
     case Prelude.lookup (a,b,c) upds of
         Just op -> putW w (g1 op roi sz d v) >> postRedisplay Nothing
         Nothing -> case Prelude.lookup (a,b,c) acts of
@@ -95,13 +95,12 @@ interface sz0 name st0 ft g1 upds g2 acts mbkeyDisp resultFun resultDisp cam = d
         firstTime <- readIORef firstTimeRef
         when firstTime $ ft w thing >> writeIORef firstTimeRef False
         state <- getW w
-        roi <- getROI w
+        roi <- get (evRegion w)
         let (newState, result) = resultFun roi state thing
         visible <- get (evVisible w)
         when visible $ do
             r <- get (evRegion w)
-            inWin w (prepZoom w >> renderIn w (resultDisp roi newState result)
-                                >> render (Draw [color orange, lineWd 3, Draw r]))
+            inWin w (prepZoom w >> renderIn w (resultDisp roi newState result))
         putW w newState
         return result
 

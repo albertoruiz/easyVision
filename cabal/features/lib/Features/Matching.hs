@@ -26,7 +26,7 @@ import ImagProc
 import Data.List(zipWith4,(\\))
 import Numeric.LinearAlgebra
 import GHC.Float(float2Double,double2Float)
-import Foreign(unsafePerformIO)
+import System.IO.Unsafe(unsafePerformIO)
 
 
 -- to do: rewrite all this

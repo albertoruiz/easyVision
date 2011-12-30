@@ -20,7 +20,12 @@ where
 
 import ImagProc.Ipp.Core
 import ImagProc.Generic(clone)
-import Foreign
+import Foreign.C.Types
+import Foreign.Ptr
+import Foreign.ForeignPtr
+import Foreign.Marshal
+import Foreign.Storable
+import System.IO.Unsafe(unsafePerformIO)
 import Util.Misc(splitEvery)
 import Data.Function(on)
 import Data.List(sortBy)

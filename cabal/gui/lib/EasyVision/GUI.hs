@@ -18,6 +18,7 @@ module EasyVision.GUI (
     module EasyVision.GUI.Interface,
     module EasyVision.GUI.Parameters,
     module EasyVision.GUI.Objects,
+    module Data.Colour.Names,
 )where
 
 import EasyVision.GUI.Util
@@ -25,4 +26,5 @@ import EasyVision.GUI.Interface
 import EasyVision.GUI.Parameters
 import EasyVision.GUI.Objects
 import EasyVision.GUI.Draw
+import Data.Colour.Names
 

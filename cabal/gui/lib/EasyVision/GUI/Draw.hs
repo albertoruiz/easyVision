@@ -352,10 +352,11 @@ renderImageIn evW m = do
         z = (floatGL . double2Float) z' * zw
         ROI {..} = vroi m
         szTe@(Size th tw) = evSize szT
-        r0 = r1+ round ((fromIntegral th-fromIntegral h*zw)/2)
-        [Point x0 y0] = pixelsToPoints szTe [Pixel r0 c1]
-        roipts = pixelsToPoints szTe [ Pixel r1 c1, Pixel (1+r2) c1,
-                                                       Pixel (1+r2) (1+c2), Pixel r1 (1+c2) ]
+        r0 = round (fromIntegral r1 * zw + (fromIntegral th-fromIntegral h*zw)/2)
+        c0 = round (fromIntegral c1 * zw)
+        [Point x0 y0] =pixelsToPoints szTe [Pixel r0 c0]
+        roipts = pixelsToPoints (imSize) [ Pixel r1 c1, Pixel (1+r2) c1,
+                                           Pixel (1+r2) (1+c2), Pixel r1 (1+c2) ]
     rasterPos (Vertex2 (doubleGL x0) (doubleGL y0-1E-6))
     pixelZoom $= (z,-z)   
     myDrawPixels m

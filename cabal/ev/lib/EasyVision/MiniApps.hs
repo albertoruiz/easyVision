@@ -50,7 +50,7 @@ import Data.List(transpose)
 import Control.Monad(when)
 import ImagProc.Ipp.Core
 import Foreign.C.Types(CUChar)
-import Foreign
+import System.IO.Unsafe(unsafePerformIO)
 import qualified Data.Map as Map
 import Data.List(sort,nub,sortBy,minimumBy)
 import Numeric.LinearAlgebra

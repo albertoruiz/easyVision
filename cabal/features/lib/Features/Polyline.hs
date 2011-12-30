@@ -23,7 +23,7 @@ import ImagProc.Images
 import ImagProc(cloneClear,maxIndx8u,floodFill8u, floodFill8uGrad, binarize8u, median, notI)
 import ImagProc.Ipp.Core
 import Foreign.C.Types(CUChar)
-import Foreign
+import System.IO.Unsafe(unsafePerformIO)
 import Debug.Trace
 import Data.List(sortBy, maximumBy, zipWith4, sort,foldl', tails)
 import Numeric.LinearAlgebra

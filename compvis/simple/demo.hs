@@ -1,5 +1,4 @@
 import EasyVision
-import Data.Colour.Names
 
 main = run $ camera >>= sMonitor "result" f >>= timeMonitor
 
@@ -9,7 +8,7 @@ f roi x = [ msg "grayscale"        [ Draw g]
           , nothing ]
   where
     img = rgb x 
-    g   = setROI roi (grayscale x)
+    g   = setRegion roi (grayscale x)
     f   = float g
     smooth = gauss Mask5x5 f
     th = 0.5
