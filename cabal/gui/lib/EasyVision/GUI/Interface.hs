@@ -95,7 +95,9 @@ interface sz0 name st0 ft g1 upds g2 acts mbkeyDisp resultFun resultDisp cam = d
         state <- getW w
         roi <- getROI w
         let (newState, result) = resultFun roi state thing
-        inWin w (prepZoom w >> renderIn w (resultDisp roi newState result))
+        visible <- get (evVisible w)
+        when visible $
+            inWin w (prepZoom w >> renderIn w (resultDisp roi newState result))
         putW w newState
         return result
 
@@ -151,6 +153,7 @@ runIt f = prepare >> f >> mainLoop
 evWindow st0 name size mdisp kbd = do
     st <- newIORef st0
     glw <- createWindow name
+    iconTitle $= name
     windowSize $= glSize size
     let draw = case mdisp of
             Nothing -> return ()
@@ -169,6 +172,7 @@ evWindow st0 name size mdisp kbd = do
     ms <- newIORef None
     po <- newIORef StaticSize
     ps <- newIORef Nothing
+    vi <- newIORef True
 
     let w = EVW { evW = glw
                 , evSt = st
@@ -177,11 +181,12 @@ evWindow st0 name size mdisp kbd = do
                 , evMove = ms
                 , evPolicy = po
                 , evPrefSize = ps
+                , evVisible = vi
                 , evInit = clear [ColorBuffer] }
 
     keyboardMouseCallback $= Just (kbdroi w (kbd w))
     motionCallback $= Just (mvroi w)
-
+    -- callback to detect minimization?
     return w
 
 ---------------------------------------------------------------
@@ -276,7 +281,14 @@ kbdroi w _ (MouseButton RightButton) Down Modifiers {ctrl=Down} (Position x' y')
 kbdroi w _ (MouseButton LeftButton) Up _ _ = writeIORef (evMove w) None
 kbdroi w _ (MouseButton RightButton) Up _ _ = writeIORef (evMove w) None
 
+kbdroi w _ (SpecialKey KeyF3) Down Modifiers {ctrl=Down} _ = do
+    vi <- get (evVisible w)
+    if vi
+        then writeIORef (evVisible w) False >> windowStatus $= Iconified
+        else writeIORef (evVisible w) True
+
 kbdroi w _ (SpecialKey KeyF3) Down _ _ = modifyIORef (evPolicy w) nextPolicy
+
 
 kbdroi w _ (Char '0') Down Modifiers {ctrl=Down} _ = writeIORef (evZoom w) (1,0,0)
 

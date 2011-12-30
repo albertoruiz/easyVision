@@ -170,6 +170,7 @@ data EVWindow st = EVW { evW        :: Window
                        , evZoom     :: IORef (Double,Double,Double)
                        , evPrefSize :: IORef (Maybe Size)
                        , evPolicy   :: IORef ResizePolicy
+                       , evVisible  :: IORef Bool
                        }
 
 data MoveStatus = None | SetROI | MoveZoom GLint GLint
