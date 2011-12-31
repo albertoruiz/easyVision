@@ -1,6 +1,6 @@
 import EasyVision hiding (run,camera,observe)
 
-camera = findSize >>= getCam 0 ~> (gray . channels)
+camera = findSize >>= getCam 0 ~> (grayscale . channels)
 
 ignore = (>> return ())
 

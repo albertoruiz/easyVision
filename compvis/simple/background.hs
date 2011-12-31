@@ -18,7 +18,7 @@ main = do
             putW w (False,orig)
         when (not rec) $ inWin w $ do
             let mask = binarize8u 100 $ diffRGB bg orig
-            drawImage $ copyMask32f (float . gray $ orig) mask
+            drawImage $ copyMask32f (float . grayscale $ orig) mask
 
 
 mouse _ st (Char 's') Down _ _ = do

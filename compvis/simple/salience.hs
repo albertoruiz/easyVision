@@ -45,7 +45,7 @@ main = do
         PAR(rad)
         PAR(satur)
 
-        let imgs = float . gray $ orig
+        let imgs = float . grayscale $ orig
 
         let img = (salience sigma1 sigma2) imgs
             s = sum32f img

@@ -13,7 +13,7 @@ sigmas = (take 15 $ getSigmas 1 3)
 
 fun img = (img, fullHessian (surf 2 2) sigmas 50 0.2 img)
 
-g = fun.float.gray
+g = fun.float.grayscale
 
 sh  (img, feats) = do
     drawImage' img

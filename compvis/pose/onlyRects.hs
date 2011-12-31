@@ -20,7 +20,7 @@ main = do
     cam <- getCam 0 (mpSize 20)
            >>= monitor "video" (mpSize 5) drawImage
            ~>  channels
-           >>= onlyRectangles segments szR ratio gray
+           >>= onlyRectangles segments szR ratio grayscale
            ~~> map float . concat
            >>= drift alpha
 

@@ -29,14 +29,14 @@ main = do
         return i
 
 {-
-    p <- panoramic (mpSize 5) 2.8 2.8 2.0 vcam cam (float.gray)
-                                                   (float . resize (mpSize 5) . gray)
-                                                   (float . resize (mpSize 5) . gray)
+    p <- panoramic (mpSize 5) 2.8 2.8 2.0 vcam cam (float.grayscale)
+                                                   (float . resize (mpSize 5) . grayscale)
+                                                   (float . resize (mpSize 5) . grayscale)
                                                    (\a b -> sum32f (abs32f (a |-| b)))
 
 -}
 
-    p <- panoramic (mpSize 5) f f 2.0 vcam cam (float.gray.fst)
+    p <- panoramic (mpSize 5) f f 2.0 vcam cam (float.grayscale.fst)
                                                    (fst.snd)
                                                    (snd.snd)
                                                    (\d e -> sum32f (d |*| e))
@@ -49,7 +49,7 @@ main = do
 edgedist img = (r, float edges) where
     th = 0.3
     smooth = 2
-    gsmooth = smooth `times` gauss Mask5x5 $ float $ resize (mpSize 10) $ gray $ img
+    gsmooth = smooth `times` gauss Mask5x5 $ float $ resize (mpSize 10) $ grayscale $ img
     edges = canny (th/3,th) . gradients $ gsmooth
     r = distanceTransform [1,1.4,2.2] (notI $ edges)
 

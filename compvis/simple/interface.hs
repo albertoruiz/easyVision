@@ -1,9 +1,12 @@
+{-# LANGUAGE NoMonomorphismRestriction #-}
+
 import EasyVision
 import ImagProc.Ipp.Core(fullroi)
 import Graphics.UI.GLUT.Callbacks.Window as GL
 import qualified Graphics.UI.GLUT as G
+import Control.Arrow
 
-main = run $ camera >>= observe "Cosa" (notI . grayscale) >>= sMonitorR1 "result1" f >>= sMonitorR2 "result2" f >>= timeMonitor
+main = run $ camera >>= observe "Cosa" (notI . grayscale) >>= sMonitorR1 "result1" f >>= sMonitorR2 "result2" f >>= monPts >>=  timeMonitor
 
 f roi x = [ msg "grayscale"        [ Draw g, color red, lineWd 2, Draw square]
           , msg "gaussian filter " [ Draw smooth ]
@@ -25,7 +28,7 @@ f roi x = [ msg "grayscale"        [ Draw g, color red, lineWd 2, Draw square]
 
 --------------------------------------------------------------------------------
 
-sMonitorR' name myft f = interface (mpSize 10) name 0 myft (const.const.const) acts (const.const.const) sv Nothing (const (,)) g
+sMonitorR' name myft f = interface (mpSize 10) name 0 myft (c3 acts) (c3 sv) nothingR (const (,)) g
   where
     g roi k x = r !! j
       where
@@ -44,4 +47,17 @@ sMonitorR2 name f = sMonitorR' name ft2 f
 
 ft1 w x = evROI w G.$= shrink (50,50) (theROI (grayscale x))
 ft2 w x = ft1 w x >> evPrefSize w G.$= Just (mpSize 25)
+
+c3 = map (id *** const.const)
+
+--------------------------------------------------------------------------------
+
+monPts = interface (mpSize 10) "pts" [] (\_ _ -> return ()) acts [] nothingR (const (,)) g
+  where
+    g _ pts x = Draw [ Draw (grayscale x), color green, pointSz 3, Draw (Points pts) ]
+    acts = [((MouseButton LeftButton, Down, modif), \_ p st -> p:st)]
+
+newtype Points = Points [Point]
+instance Renderable Points where
+  render (Points ps) = G.renderPrimitive G.Points (mapM_ G.vertex ps)
 

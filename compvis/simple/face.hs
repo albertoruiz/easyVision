@@ -1,7 +1,7 @@
 import OpenCV
 import EasyVision
 
-main = run (camera ~> gray >>= face >>= observe "Face Detector" id >>= timeMonitor)
+main = run (camera ~> grayscale >>= face >>= observe "Face Detector" id >>= timeMonitor)
 
 face cam = do
     detect <- cascadeClassifier "../../data/haarcascades/haarcascade_frontalface_alt.xml"

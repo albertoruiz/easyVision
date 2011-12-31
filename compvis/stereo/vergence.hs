@@ -47,8 +47,8 @@ main = do
         rad <- p_rad
         sig <- p_sig
 
-        im1 <- fmap gray (cams!!0)
-        im2 <- fmap gray (cams!!1)
+        im1 <- fmap grayscale (cams!!0)
+        im2 <- fmap grayscale (cams!!1)
 
         let look = [d*x,d*y,d]
             rec1 = virtualLook (campars!!0) look

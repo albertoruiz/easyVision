@@ -12,7 +12,7 @@ main = do
         ~~> history 2 
         ~>  difs
         >>= hist
-        >>= observe "views" (\imgs -> blockImage [map gray imgs])
+        >>= observe "views" (\imgs -> blockImage [map grayscale imgs])
         >>= timeMonitor
     
 ----------------------------------------------------------------------------
@@ -29,6 +29,6 @@ hist cam = do
 history n = map (take n) . tails
 
 difs imgs = (last imgs, map f (transpose imgs)) where
-    f [x,y] = sum8u $ absDiff8u (gray x) (gray y)
+    f [x,y] = sum8u $ absDiff8u (grayscale x) (grayscale y)
 
 ------------------------------------------------------------------------------

@@ -4,7 +4,7 @@ import EasyVision
 import ImagProc.GPU.SIFT
 import Control.Monad((>=>))
 
-main = run $ camera >>= wsift gray >>= timeMonitor
+main = run $ camera >>= wsift grayscale >>= timeMonitor
 
 wsift f = sift f >=> siftmonitor f
 

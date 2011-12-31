@@ -11,7 +11,7 @@ import Util.Options
 main = do
     corners <- getCornerDetector
     mintrk <- getOption "--mintrk" 20
-    run $ camera ~> float . gray >>= corners >>= cornerTracker mintrk ~> fst
+    run $ camera ~> float . grayscale >>= corners >>= cornerTracker mintrk ~> fst
           ~~> zip [0::Int ..] >>= selectClick (drawImage.fst.snd) ~> extrem >>= showCorresp >>= timeMonitor
 
 pru cam = do

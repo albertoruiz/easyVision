@@ -138,7 +138,7 @@ kltv h e k i = optimize 0 0.5 10 (k i) snd (h,e)
 
 main = testTracker
 
-testTracker = run $ camera ~> float.gray
+testTracker = run $ camera ~> float.grayscale
                   >>= selectROI "select region" id
                   >>= getTemplate ~> (fst *** id)
                   ~~> scanl1 tracker

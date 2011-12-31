@@ -26,7 +26,7 @@ main = do
     undistort <- if not flagurad then return id else flip remap InterpNN `fmap` undistortMap sz 2 urad
 
 
-    run $   camera ~> float . undistort . gray ~~> drop 3
+    run $   camera ~> float . undistort . grayscale ~~> drop 3
         >>= corners -- >>= cornerMonitor "corners" 
         ~>  toPoints ~~> basicLinks mxd (ident 3,undefined)
         ~~> history 2

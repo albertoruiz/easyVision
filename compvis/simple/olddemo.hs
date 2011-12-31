@@ -76,7 +76,7 @@ worker wDemo cam param fft = do
 
     let chan ch = modifyROI (const roi) (ch orig)
 
-        gsmooth = smooth `times` gauss Mask5x5 $ float $ chan gray
+        gsmooth = smooth `times` gauss Mask5x5 $ float $ chan grayscale
 
         edges = canny (th/3,th) . gradients $ gsmooth
 
@@ -84,7 +84,7 @@ worker wDemo cam param fft = do
         drawImage (rgb orig)
         case op of
             "RGB"   -> return () --drawImage $ chan rgb
-            "Gray"  -> drawImage $ chan gray
+            "Gray"  -> drawImage $ chan grayscale
             "Red"   -> drawImage $ chan rCh
             "Green" -> drawImage $ chan gCh
             "Blue"  -> drawImage $ chan bCh
@@ -92,25 +92,25 @@ worker wDemo cam param fft = do
             "S"     -> drawImage $ chan sCh
 
             "NGaussian1" -> drawImage $ gsmooth
-            "Gaussian" -> drawImage $ gaussS sigma (float (chan gray))
-            "Median"   -> drawImage $ smooth `times` median Mask5x5 $ chan gray
-            "HighPass" -> drawImage $ highPass8u Mask5x5 $ smooth `times` median Mask5x5 $ chan gray
+            "Gaussian" -> drawImage $ gaussS sigma (float (chan grayscale))
+            "Median"   -> drawImage $ smooth `times` median Mask5x5 $ chan grayscale
+            "HighPass" -> drawImage $ highPass8u Mask5x5 $ smooth `times` median Mask5x5 $ chan grayscale
 
-            "Threshold" -> drawImage $ binarize8u th2 $ chan gray
-            "OtsuThres" -> drawImage $ binarize8u (otsuThreshold $ chan gray) $ chan gray
+            "Threshold" -> drawImage $ binarize8u th2 $ chan grayscale
+            "OtsuThres" -> drawImage $ binarize8u (otsuThreshold $ chan grayscale) $ chan grayscale
 
             "Laplacian"-> drawImage $ scale32f8u (-1) 1
                                     . laplace Mask5x5
                                     . times smooth (gauss Mask5x5)
                                     . scale8u32f (-1) 1
-                                    $ chan gray
+                                    $ chan grayscale
 
             "Hessian"  -> drawImage $ autoscale
                                     . sqrt32f
                                     . abs32f
                                     . hessian
                                     . gradients
-                                    $ gaussS sigma (float (chan gray))
+                                    $ gaussS sigma (float (chan grayscale))
 
             "Canny"    -> drawImage $ edges
 
@@ -120,48 +120,48 @@ worker wDemo cam param fft = do
                                     . toGray
                                     . thresholdVal32f th 1 IppCmpGreater
                                     . thresholdVal32f th 0 IppCmpLess
-                                    $ float $ chan gray
+                                    $ float $ chan grayscale
 
-            "DCT"      -> drawImage $ sqrt32f . abs32f . dct . float $ chan gray
+            "DCT"      -> drawImage $ sqrt32f . abs32f . dct . float $ chan grayscale
 
-            "Segments" -> do let segs = segments 4 1.5 5 40 20 True (chan gray)
+            "Segments" -> do let segs = segments 4 1.5 5 40 20 True (chan grayscale)
                              drawROI roi
                              --setColor 1 1 0
                              setColor' Col.yellow
                              lineWidth $= 2
-                             pointCoordinates (size (gray orig))
+                             pointCoordinates (size (grayscale orig))
                              renderPrimitive Lines $ mapM_ vertex segs
 
-            "Histogram" -> do drawImage $ chan gray
-                              pointCoordinates (size (gray orig))
+            "Histogram" -> do drawImage $ chan grayscale
+                              pointCoordinates (size (grayscale orig))
                               setColor 1 1 0
                               lineWidth $= 2
-                              renderSignal $ map (*5) $ histogramN [0..256] $ chan gray
+                              renderSignal $ map (*5) $ histogramN [0..256] $ chan grayscale
 
-            "LBP"       -> do let h = lbpN lbpThres (chan gray)
+            "LBP"       -> do let h = lbpN lbpThres (chan grayscale)
                               drawROI roi
-                              pointCoordinates (size (gray orig))
+                              pointCoordinates (size (grayscale orig))
                               setColor 0 0 0
                               renderAxes
                               setColor 1 0 0
                               renderSignal $ map (*0.2) (tail h)
 
-            "Corners"   -> do let ips = getCorners smooth 7 h1 500 $ float (chan gray)
+            "Corners"   -> do let ips = getCorners smooth 7 h1 500 $ float (chan grayscale)
                               drawROI roi
                               setColor 1 0 0
                               pointSize $= 3
                               renderPrimitive Points (mapM_ vertex ips)
                               text2D 10 20 (show $ length ips)
 
-            "Features" -> do let ips = getSaddlePoints smooth 7 h1 500 20 10 $ float (chan gray)
+            "Features" -> do let ips = getSaddlePoints smooth 7 h1 500 20 10 $ float (chan grayscale)
                              drawROI roi
-                             pointCoordinates (size $ chan gray)
+                             pointCoordinates (size $ chan grayscale)
                              setColor 1 0 0
                              pointSize $= 3
                              text2D 0.9 0 (show $ length ips)
                              drawInterestPoints ips
 
-            "InterestPts" -> do let imr = float (chan gray)
+            "InterestPts" -> do let imr = float (chan grayscale)
                                     feats = fullHessian (usurf 2 4) (take (13+2) $ getSigmas 1.0 3) 100 0.3 imr
                                 drawImage (chan rgb)
                                 let boxfeat p = drawROI $ roiFromPixel (ipRawScale p) (ipRawPosition p)
@@ -169,28 +169,28 @@ worker wDemo cam param fft = do
                                 mapM_ boxfeat feats
 
 
-            "Contours" -> do let (Size h w) = size (chan gray)
+            "Contours" -> do let (Size h w) = size (chan grayscale)
                                  pixarea = h*w*area`div`1000
                                  redu = douglasPeuckerClosed fracpix
-                                 cs1 = map (redu.fst3) $ contours 100 pixarea th2 True (chan gray)
-                                 cs2 = map (redu.fst3) $ contours 100 pixarea th2 False (chan gray)
+                                 cs1 = map (redu.fst3) $ contours 100 pixarea th2 True (chan grayscale)
+                                 cs2 = map (redu.fst3) $ contours 100 pixarea th2 False (chan grayscale)
                              drawROI roi
-                             pixelCoordinates (size $ chan gray)
+                             pixelCoordinates (size $ chan grayscale)
                              setColor 1 0 0
                              lineWidth $= 2
                              mapM_ shcont (cs1++cs2)
 
-            "ContourD" -> do let (Size h w) = size (chan gray)
+            "ContourD" -> do let (Size h w) = size (chan grayscale)
                              setColor 1 0 0
                              pointSize $= 5
                              let f = douglasPeucker fracpix . rot . rot . douglasPeucker fracpix
                                  --tc (Closed l) = l
                                  --f = map tc . selectPolygons 0.1 8 . return
-                             --pointCoordinates (size $ chan gray)
-                             case contourAt difpix (chan gray) (Pixel (h`div`2) (w`div`2)) of
+                             --pointCoordinates (size $ chan grayscale)
+                             case contourAt difpix (chan grayscale) (Pixel (h`div`2) (w`div`2)) of
                                 Nothing -> return ()
                                 Just l  -> shcontP $ f l
-                             pointCoordinates (size $ chan gray)
+                             pointCoordinates (size $ chan grayscale)
                              setColor 1 1 1
                              renderAxes
 
@@ -198,14 +198,14 @@ worker wDemo cam param fft = do
                                  $ modifyROI (shrink (1,1))
                                  $ binarize8u th2
                                  $ smooth `times` median Mask5x5 
-                                 $ chan gray
+                                 $ chan grayscale
                               let (Size h w) = size im
                                   start = (Pixel (h `div`2 ) (w `div`2))
                               --(r,a,v) <- floodFill8uGrad im start 5 5 128
                               (r,a,v) <- floodFill8u im start 128
                               --(r,a) <- floodFill8uGrad im (snd $ maxIndx8u im) th2 th2 128
                               drawImage (modifyROI (const r) im)
-                              pointCoordinates (size $ chan gray)
+                              pointCoordinates (size $ chan grayscale)
                               setColor 1 1 0
                               text2D 0.9 0.6 (show (a,v))
                               renderAxes
@@ -225,16 +225,16 @@ worker wDemo cam param fft = do
                               pointCoordinates (size i)
                               renderSignal (map (float2Double.(/(2*last vert))) vert)
 
-            "RecStdDev" -> do let i = rectStdDev radius radius .  sqrIntegral $ chan gray
+            "RecStdDev" -> do let i = rectStdDev radius radius .  sqrIntegral $ chan grayscale
                               drawImage . autoscale $ i
 
-            "FilterBox" -> do let i = filterBox radius radius . float $ chan gray
+            "FilterBox" -> do let i = filterBox radius radius . float $ chan grayscale
                               drawImage i
 
-            "FilterMax" -> do let i = filterMax radius . float $ chan gray
+            "FilterMax" -> do let i = filterMax radius . float $ chan grayscale
                               drawImage i
 
-            "Box vs Gauss"-> do let s = float (chan gray)
+            "Box vs Gauss"-> do let s = float (chan grayscale)
                                     g = gaussS sigma s
                                     b = filterBox radius radius s
                                     ROI r1 r2 c1 c2 = theROI s

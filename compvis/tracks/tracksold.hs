@@ -52,7 +52,7 @@ main = do
         PAR(err)
 
         orig <- cam
-        let img = float . gray $ orig
+        let img = float . grayscale $ orig
 
 --        let mask = thresholdVal32f 0.1 0 IppCmpLess $ abs32f (img|-|bg)
 

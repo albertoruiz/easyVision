@@ -23,9 +23,9 @@ main = do
         (img,pose,(st,cov),obs) <- cam
 
         inWin w $ do
-            drawImage (gray img)
+            drawImage (grayscale img)
 
-            pointCoordinates (size (gray img))
+            pointCoordinates (size (grayscale img))
 
             setColor 1 0 0
             lineWidth $= 3

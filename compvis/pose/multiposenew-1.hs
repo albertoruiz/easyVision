@@ -60,7 +60,7 @@ main = do
       if lock
        then do
          nv <- getW auxWin
-         imgs <- fmap (map gray) (sequence rawcams)
+         imgs <- fmap (map grayscale) (sequence rawcams)
          inWin wm $ drawImage $ blockImage [imgs]
          (s@(State st stc _),tfixed) <- get plstate
          --print (map (round . (*100)) $ toList $ subVector 6 6 (sqrt $ takeDiag stc))
@@ -142,7 +142,7 @@ main = do
             ps    = zipWith (f (<0.2)) eps mbobs
             other = zipWith (f (>=0.2)) eps mbobs
 
-        inWin wm $ drawImage $ blockImage [map gray imgs]
+        inWin wm $ drawImage $ blockImage [map grayscale imgs]
 
         inWin w3D $ do -- reference world
             setColor 0 0 0
@@ -171,13 +171,13 @@ main = do
         inWin w3DSt $ do -- camera reference
             setColor 0 0 0
             lineWidth $= 2
-            let g c im = drawCamera 0.5 c (Just $ extractSquare 128 $ float $ gray im)
+            let g c im = drawCamera 0.5 c (Just $ extractSquare 128 $ float $ grayscale im)
             sequence $ zipWith g st imgs
 
             let axs = inv $ fst $ toCameraSystem (syntheticCamera (eps!!0))
                 f pose = (pose, ht (pose<>axs) (map (++[0]) ref))
                 predicted = map f st
-                g img (p, pts) = (p, improve 10 (gray img) pts)
+                g img (p, pts) = (p, improve 10 (grayscale img) pts)
                 allofthem = zipWith g imgs predicted
             when (length allofthem > 1 && all (not.null.snd) allofthem) $ do
                let pts3D = triangulate allofthem

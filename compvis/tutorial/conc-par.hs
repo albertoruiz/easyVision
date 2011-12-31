@@ -11,7 +11,7 @@ observe winname f a = monitor' winname (mpSize 12) (a >>= f)
 
 run n ws = sequence ws >>= launchFreq n . sequence_
 
-camera k = findSize >>= getCam k ~> float . gray . channels
+camera k = findSize >>= getCam k ~> float . grayscale . channels
 
 (.&.) = liftM2 (liftM2 (,))
 

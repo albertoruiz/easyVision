@@ -8,7 +8,7 @@ interpolate (a:b:xs) = a: (0.5.*a |+| 0.5.*b) :interpolate (b:xs)
 
 main = do
     alpha <- getOption "--alpha" 0.9
-    run $ camera ~> float . gray
+    run $ camera ~> float . grayscale
       ~~> scanl1 (drift alpha)
       >>= observe "drift"
       ~~> interpolate

@@ -28,7 +28,7 @@ import EasyVision.MiniApps.Combinators  (clickStatusWindow)
 import Data.Colour.Names                
 import System.Process                   (system,readProcessWithExitCode)
 import System.IO                        (openTempFile)
-import Foreign                          (unsafePerformIO)
+import System.IO.Unsafe                 (unsafePerformIO)
 
 ----------------------------------------------------------------------
 

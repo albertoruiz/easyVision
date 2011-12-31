@@ -11,7 +11,7 @@ main = do
     prepare
     sz <- findSize
     mbf <- maybeOption "--focal"
-    (cam,ctrl) <- getCam 0 sz ~> gray.channels >>= withPause
+    (cam,ctrl) <- getCam 0 sz ~> grayscale.channels >>= withPause
     wIm <- evWindow () "image" sz Nothing (const $ kbdcam ctrl)
     w3D <- evWindow3D () "3D view" 400 (const (kbdcam ctrl))
     launch $ do

@@ -28,7 +28,7 @@ machine =  minDistance nearestNeighbour `onP` feat
 --machine = detailed (minDistance nearestNeighbour `onP` feat)
 --(distance mahalanobis `onP` (pcaR 0.9 `ofP` feat))
 
-feat1 = vec . lbpN 8 . resize (mpSize 8) . gray
+feat1 = vec . lbpN 8 . resize (mpSize 8) . grayscale
 
 feat2 = vec . dw . histogramN [0..10] . hsvCode 80 85 175 . hsv
                                                        --135

@@ -15,7 +15,7 @@ main = do
     s <- getOption "--stages" =<< uncurry replicate `fmap` getOption "--levels" (20,1)
     putStrLn $ "stages = " ++ show s
 
-    run $   camera ~> float . gray
+    run $   camera ~> float . grayscale
         >>= observe "original" id
         ~~> balance expensive s
         >>= observe "result" id

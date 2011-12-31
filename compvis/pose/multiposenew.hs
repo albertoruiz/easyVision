@@ -66,7 +66,7 @@ main = do
       if lock
        then do
          nv <- getW auxWin
-         imgs <- fmap (map gray) (sequence rawcams)
+         imgs <- fmap (map grayscale) (sequence rawcams)
 
          --print $ env3x3 (imgs!!0) (Pixel 100 100)
          --print $ subPixMean (imgs!!0) (Pixel 100 100)
@@ -117,7 +117,7 @@ main = do
             ps    = zipWith (f (<0.3)) eps mbobs
             other = zipWith (f (>=0.3)) eps mbobs
 
-        inWin wm $ drawImage $ blockImage [map gray imgs]
+        inWin wm $ drawImage $ blockImage [map grayscale imgs]
 
         inWin w3D $ do -- reference world
             setColor 0 0 0
@@ -144,7 +144,7 @@ main = do
         pfs $= fs
 
         let axs = inv $ fst $ toCameraSystem (syntheticCamera (eps!!0))
-        inWin w3DSt (showRec ref st (map gray imgs) axs hv)
+        inWin w3DSt (showRec ref st (map grayscale imgs) axs hv)
 
 
 -----------------------------------------------------------

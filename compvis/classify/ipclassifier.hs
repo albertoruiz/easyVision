@@ -11,7 +11,7 @@ feat = interestPoints 13 0.3
 
 interestPoints n h orig = feats where
     sigmas = take (n+2) $ getSigmas 1 3
-    imr = float $ gray $ orig
+    imr = float $ grayscale $ orig
     feats = take 200 $ fullHessian (surf 2 3) sigmas 100 h imr
     sel = filter (inROI roi . ipRawPosition) feats
     Size he wi = size imr
@@ -36,8 +36,8 @@ worker cam w r = do
 
     orig <- cam
 
-    let Size he wi = size (gray $ orig)
-        roi = shrink (he`div`4 ,wi`div`4) (theROI $ gray orig)
+    let Size he wi = size (grayscale $ orig)
+        roi = shrink (he`div`4 ,wi`div`4) (theROI $ grayscale orig)
 
         v   = feat orig
         img = (orig, v)
@@ -46,17 +46,17 @@ worker cam w r = do
     when click $ putW w (False, img : pats)
 
     inWin w $ do
-        drawImage (gray orig)
+        drawImage (grayscale orig)
         setColor 0 0 0
         drawROI roi
         setColor 1 0 0
-        pointCoordinates (size $ gray orig)
+        pointCoordinates (size $ grayscale orig)
         drawInterestPoints $ map ip v
 
     when (not (null pats) && not (null v)) $ inWin r $ do
         let x = minimumBy (compare `on` dist img) pats
             d = dist x img
-        drawImage $ gray $ fst x
+        drawImage $ grayscale $ fst x
         pointCoordinates (mpSize 5)
         text2D 0.9 0.6 (show $ round d)
         when (d>10) $ do -- low confidence in the classification

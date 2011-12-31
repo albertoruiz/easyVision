@@ -27,7 +27,7 @@ regs (Size h w) =
 
 main = do
     sz <- findSize
-    run $ camera ~> gray -- ~> float >>= drift 0.5 ~> toGray
+    run $ camera ~> grayscale -- ~> float >>= drift 0.5 ~> toGray
 --        >>= monitorROI "orig" sz pruprof
       ~>  profiles (regs $ mpSize 20)
 --      >>= monitor "profiles" (mpSize 5) sh

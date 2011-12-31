@@ -48,7 +48,7 @@ main = do
         let sigmas = take (n+2) $ getSigmas sigma steps
 
         orig <- cam
-        let imr = float $ gray $ orig
+        let imr = float $ grayscale $ orig
 
             descrip = if mode == 0 then usurf else surf
             feats = take tot $ fullHessian (descrip 2 3) sigmas 100 h imr

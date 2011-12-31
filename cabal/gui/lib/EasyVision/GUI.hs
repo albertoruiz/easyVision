@@ -1,13 +1,11 @@
 -----------------------------------------------------------------------------
 {- |
 Module      :  EasyVision.GUI
-Copyright   :  (c) Alberto Ruiz 2007
-License     :  GPL-style
+Copyright   :  (c) Alberto Ruiz 2007-11
+License     :  GPL
 
 Maintainer  :  Alberto Ruiz (aruiz at um dot es)
-Stability   :  very provisional
-Portability :  hmm...
-
+Stability   :  provisional
 
 -}
 -----------------------------------------------------------------------------

@@ -3,7 +3,7 @@ import EasyVision
 import Graphics.UI.GLUT
 import Control.Arrow
 
-main = run $ camera ~> gray
+main = run $ camera ~> grayscale
            >>= mserRaw .@. winMSERParams
            ~> (fst &&& mser.snd) >>= monitor "MSER" (mpSize 20) sh >>= timeMonitor
 

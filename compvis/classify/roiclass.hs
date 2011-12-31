@@ -11,7 +11,6 @@ import EasyVision
 import Graphics.UI.GLUT hiding (histogram)
 import Control.Monad(when)
 import System.Environment(getArgs)
-import qualified Data.Colour.Names as Col
 import Numeric.LinearAlgebra
 import Classifier
 import Data.List(maximumBy,isPrefixOf)
@@ -22,10 +21,10 @@ import Util.Probability(evidence)
 genrois = roiGridStep 50 200 25 25
 -- genrois = roiGridStep 100 100 25 25
 
-commonproc im = (chan, highPass8u  Mask5x5 . median Mask5x5 .  gray $ chan)
+commonproc im = (chan, highPass8u  Mask5x5 . median Mask5x5 .  grayscale $ chan)
     where chan = channels im
 
-feat = [ (vec. map fromIntegral . lbp 4, gray.fst)
+feat = [ (vec. map fromIntegral . lbp 4, grayscale.fst)
        , (histov [0,8 .. 256], snd)
        ]
 -- machine =  distance gaussian `onP` mef (NewDimension 15)
@@ -58,7 +57,7 @@ main = do
     -- evaluation required in "two places" to avoid
     -- relearning the classifier in each frame (!!??)
 
-    (camtest,ctrl) <- mplayer video sz >>= detectStatic 0.01 5 5 (gray.channels) id >>= withPause
+    (camtest,ctrl) <- mplayer video sz >>= detectStatic 0.01 5 5 (grayscale.channels) id >>= withPause
     w <- evWindow () "Plates detection" sz Nothing  (const (kbdcam ctrl))
     t <- evWindow () "threshold" sz Nothing  (const (kbdcam ctrl))
     launch $ do
@@ -66,7 +65,7 @@ main = do
         let imgproc = commonproc img
             candis = map (\r -> (r,imgproc)) (genrois (theROI img))
         lineWidth $= 1
-        setColor' Col.gray
+        setColor' gray
         let pos = filter ((=="+"). mode . classifier. features feat) candis
             best = maximumBy (compare `on` (evidence "+" . classifier) . features feat) pos
         mapM_ (drawROI.fst) pos
@@ -75,14 +74,14 @@ main = do
             drawImage img
             when (not.null $ pos) $ do
                 lineWidth $= 3
-                setColor' Col.red
+                setColor' red
                 drawROI (fst best)
 --             lineWidth $= 1
---             setColor' Col.white
+--             setColor' white
 --             drawVector 100 400 $ features feat best
 
         inWin t $ when (not.null $ pos) $ do
-            drawImage (binarize (gray $ channels img) (fst best))
+            drawImage (binarize (grayscale $ channels img) (fst best))
 
 binarize img roi = binarize8u t img where
     t = otsuThreshold (modifyROI (const roi) img)

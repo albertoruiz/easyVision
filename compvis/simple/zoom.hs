@@ -22,7 +22,7 @@ main1 = do
     prepare
     cam <- mplayer ("mf://"++file) sz
     img <- cam
-    zoomer "Image" 600 (gray $ channels img)
+    zoomer "Image" 600 (grayscale $ channels img)
     mainLoop
 
 -- live zoom from a video
@@ -30,7 +30,7 @@ main2 = do
     sz <- findSize
     prepare
     cam <- getCam 0 sz ~> channels
-                       >>= zoomWindow "Zoom" 600 gray
+                       >>= zoomWindow "Zoom" 600 grayscale
                        >>= monitor "Video" sz (drawImage.rgb)
     launch $ cam >> return ()
 
@@ -42,9 +42,9 @@ main3 = do
     w <- evWindow False "Video" sz Nothing (mouse kbdQuit)
     launch $ inWin w $ do
         img <- cam
-        drawImage (gray img)
+        drawImage (grayscale img)
         st <- getW w
-        when st $ zoomer "zoom" 600 (gray img) >> return ()
+        when st $ zoomer "zoom" 600 (grayscale img) >> return ()
         putW w False
   where
     mouse _ st (MouseButton LeftButton) Down _ _ = do

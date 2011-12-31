@@ -16,7 +16,7 @@ main = do
 
     mintrk <- getOption "--mintrk" 20
 
-    run $   camera ~> float . gray ~~> drop 3
+    run $   camera ~> float . grayscale ~~> drop 3
 --        >>= zoomWindow "zoom" 600 toGray
         >>= corners >>= cornerTracker mintrk -- >>= board >>= cornerMonitor "best"
 

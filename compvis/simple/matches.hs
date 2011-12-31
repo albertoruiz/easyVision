@@ -16,7 +16,7 @@ import Util.Options
 
 interestPoints n h orig = feats where
     sigmas = take (n+2) $ getSigmas 1 3
-    imr = float $ gray $ orig
+    imr = float $ grayscale $ orig
     feats = take 200 $ fullHessian (usurf 2 4) sigmas 100 h imr
 
 -----------------------------------------------------------
@@ -61,7 +61,7 @@ main2 = do
         let matches = basicMatches (feats0, feats1) distFeat err
 
         inWin wm $  do
-            let pair = blockImage [[gray orig0, gray orig1]]
+            let pair = blockImage [[grayscale orig0, grayscale orig1]]
             drawImage pair
             pointCoordinates (size pair)
             when (length matches > 0) $ do
@@ -116,7 +116,7 @@ main1 = do
 
         (vs, prev) <- getW w
         when (null vs && not (null sel)) $ do
-            putW w (sel,gray orig)
+            putW w (sel,grayscale orig)
 
         let matches = basicMatches (vs, map ip $ feats) distFeat err
 
@@ -136,7 +136,7 @@ main1 = do
                 drawInterestPoints (map snd matches)
 
         when ok $ inWin wm $ do
-            let pair = blockImage [[prev,gray orig]]
+            let pair = blockImage [[prev,grayscale orig]]
             drawImage pair
             pointCoordinates (size pair)
             when (length matches > 0) $ do

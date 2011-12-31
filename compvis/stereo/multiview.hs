@@ -56,7 +56,7 @@ main = do
        setColor 0 0 0
        lineWidth $= 1.5
 
-       let f c im = drawCamera 0.4 c (Just $ extractSquare 256 $ float $ gray im)
+       let f c im = drawCamera 0.4 c (Just $ extractSquare 256 $ float $ grayscale im)
        sequence $ zipWith f campars imgs
 
        let multi = [ (c,[[x,y]]) | (c,(l,(Point x y),_)) <- zip campars points, abs x < 0.95 && abs y < 0.65, l < 10]

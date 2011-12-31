@@ -8,11 +8,11 @@ $(autoParam "Param" ""
     ("thres","Float", realParam 0.01 0 0.1)]
  )
 
-main = run $ (camera ~> gray ~> pyramid .&. winParam )
+main = run $ (camera ~> grayscale ~> pyramid .&. winParam )
            >>= disp
            >>= timeMonitor
 
---main = run (camera>>= observe "kk" gray >>= timeMonitor)
+--main = run (camera>>= observe "kk" grayscale >>= timeMonitor)
 
 harris th im = pixelsToPoints (size im)
              $ getPoints32f 1000

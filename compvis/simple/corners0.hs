@@ -3,4 +3,4 @@ import EasyVision
 main = do
     corners <- getCornerDetector
 
-    run $ camera ~> float . gray >>= corners >>= cornerMonitor "corners"
+    run $ camera ~> float . grayscale >>= corners >>= cornerMonitor "corners"

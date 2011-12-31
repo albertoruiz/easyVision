@@ -23,8 +23,8 @@ main = do
     prepare
 
     cam <- findSize >>= getCam 0 >>= async ~> channels
-    x <- (float . gray , hz 2) -< cam
-    s <- (float.highPass8u Mask5x5 . gray , hz 30) -< cam
+    x <- (float . grayscale , hz 2) -< cam
+    s <- (float.highPass8u Mask5x5 . grayscale , hz 30) -< cam
     dif <- (\(u,v) -> (0.8 .* u |+| 0.2 .* v), hz 25) -< x .&. s
 
     run 20 [ observe "cam" rgb cam

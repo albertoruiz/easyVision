@@ -10,7 +10,7 @@ main = do
     th <- getOption "--sensi" 0.01
 
     (cam,ctrl) <- getCam 0 sz
-                  >>= addSmall (Size 90 120) (gray.channels)
+                  >>= addSmall (Size 90 120) (grayscale.channels)
                   >>= detectMotion (th*255*90*120<)
                   >>= withPause
 

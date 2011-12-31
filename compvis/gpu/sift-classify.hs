@@ -25,7 +25,7 @@ main = do
     o <- createParameters [("inlier_thres", intParam 3 0 20) ]
 
     sp <- os
-    let proc (img,roi) = ((ch,roi), filter (inroi sz roi) (sift sp (gray ch)) )
+    let proc (img,roi) = ((ch,roi), filter (inroi sz roi) (sift sp (grayscale ch)) )
             where ch = channels img
 
     db <- case mbdb of
@@ -50,10 +50,10 @@ worker cam w r sift os matcher o = do
 
     inlier_thres <- getParam o "inlier_thres"
 
-    let Size he wi = size (gray $ orig)
-        v   = sift sp (gray orig)
+    let Size he wi = size (grayscale $ orig)
+        v   = sift sp (grayscale orig)
         img = (orig, v)
-        sz = size (gray orig)
+        sz = size (grayscale orig)
 
     (click,pats) <- getW w
     when click $ putW w (False, ((orig,roi), filter (inroi sz roi) v) : pats)
@@ -69,11 +69,11 @@ worker cam w r sift os matcher o = do
         li = length inl
 
     inWin w $ do
-        drawImage (gray orig)
+        drawImage (grayscale orig)
         setColor 0 0 0
         drawROI roi
         setColor 1 1 0
-        pointCoordinates (size (gray orig))
+        pointCoordinates (size (grayscale orig))
         drawInterestPoints v
         setColor 1 0 0
         lineWidth $= 2
@@ -81,7 +81,7 @@ worker cam w r sift os matcher o = do
 
 
     inWin r $ when ok $ do
-        drawImage $ gray $ fst $ fst x
+        drawImage $ grayscale $ fst $ fst x
         setColor 1 1 1
         drawROI $ snd $ fst x
         pointCoordinates (mpSize 5)

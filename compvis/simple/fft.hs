@@ -29,7 +29,7 @@ main = do
 
     launch $ do
         img <- cam
-        let imf = float . gray $ img
+        let imf = float . grayscale $ img
         inWin w $ do
             drawImage imf
             drawROI p2roi

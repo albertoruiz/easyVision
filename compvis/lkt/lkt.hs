@@ -133,7 +133,7 @@ kltv h e k i = optimize 0 0.5 10 (k i) snd (h,e)
 
 main = testTracker
 
-testTracker = run $ camera ~> float.gray
+testTracker = run $ camera ~> float.grayscale
                   >>= selectROI "select region" id
                   >>= getTemplate ~> (fst *** id)
                   ~~> scanl1 tracker
@@ -197,7 +197,7 @@ setROI = modifyROI (const (roiFromPixel 80 (Pixel 200 250)))
 
 
 test = do
-    x' <- float . gray . channelsFromRGB <$> loadRGB "hz.png"
+    x' <- float . grayscale . channelsFromRGB <$> loadRGB "hz.png"
     --x' <- loadRGB "hz.png"
     let t = setROI x'
         i = warp 0 (size x') (desp (5/640, -5/640)) x'
@@ -233,7 +233,7 @@ lkStepF t i' ps = ps'
     ps' = ps - dps
 
 conver = do
-    x' <- float . gray . channelsFromRGB <$> loadRGB "hz.png"
+    x' <- float . grayscale . channelsFromRGB <$> loadRGB "hz.png"
     let t = setROI x'
         i = warp 0 (size x') h0 x'
         hs = map (double . mkt . toList) $ iterate (lkStepF t i) (constant 0 6)
@@ -244,7 +244,7 @@ conver = do
 
 
 conver3 = do
-    x' <- float . gray . channelsFromRGB <$> loadRGB "hz.png"
+    x' <- float . grayscale . channelsFromRGB <$> loadRGB "hz.png"
     let t = setROI x'
         klt = lkStep t
         i = warp 0 (size x') h0 x'

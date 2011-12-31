@@ -20,8 +20,8 @@ main = do
     cam1 <- camera 0
     cam2 <- camera 1
 
-    feat1 <- fun . float . gray -< cam1
-    feat2 <- fun . float . gray -< cam2
+    feat1 <- fun . float . grayscale -< cam1
+    feat2 <- fun . float . grayscale -< cam2
 
     run 20 [ observe "cam1" (drawImage.rgb) cam1
            , observe "cam2" (drawImage.rgb) cam2

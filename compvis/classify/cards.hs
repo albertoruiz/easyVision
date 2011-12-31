@@ -25,7 +25,7 @@ classi feat = normalizeAttr `ofP` pcaR 0.95 `ofP` distancesToAll `ofP` const fea
 
 machine = minDistance nearestNeighbour `onP` feat
 
-feat1 = vec . lbpN 8 . resize (mpSize 8) . gray
+feat1 = vec . lbpN 8 . resize (mpSize 8) . grayscale
 
 feat2 = vec . dw . histogramN [0..10] . hsvCode 80 85 135 . hsv
                                                        --175

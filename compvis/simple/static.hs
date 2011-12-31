@@ -11,7 +11,7 @@ main = do
     env <- getOption "--env" 5
     
     run   $ camera 
-        >>= detectStatic th thf env gray rgb
+        >>= detectStatic th thf env grayscale rgb
         >>= monitor "Snapshot" (mpSize 20) f
         >>= saveWin yuv
 

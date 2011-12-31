@@ -27,7 +27,7 @@ main = do
 
         inWin w1 $ drawImage (rgb x)
         case mode of
-            "none"    -> inWin w2 $ drawImage (gray x)
-            "compute"  -> inWin w2 $ drawImage $ uradial 2 k (gray x)
-            "table"    -> inWin w2 $ drawImage $ remap umap InterpLinear (gray x)
-            "nn"       -> inWin w2 $ drawImage $ remap umap InterpNN (gray x)
+            "none"    -> inWin w2 $ drawImage (grayscale x)
+            "compute"  -> inWin w2 $ drawImage $ uradial 2 k (grayscale x)
+            "table"    -> inWin w2 $ drawImage $ remap umap InterpLinear (grayscale x)
+            "nn"       -> inWin w2 $ drawImage $ remap umap InterpNN (grayscale x)

@@ -56,7 +56,7 @@ mask ((im,_),lk) = (im,mk)
 
 shMask (im,mk) = float mk |*| float g
   where
-    g = resize (size mk) $ gray im
+    g = resize (size mk) $ grayscale im
 
 ----------------------------------------------------------------------
 

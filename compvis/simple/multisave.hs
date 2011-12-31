@@ -15,11 +15,11 @@ main = do
     multicam <- getMulticam sz n ~~> history 2 ~> difs
     wm <- evWindow () "views" (Size 150 (200*n)) Nothing (const kbdQuit)
 
-    hist <- signalMonitor "Sync" 50 100 (printf "%.0f gray levels") (0,640*480*255/10)
+    hist <- signalMonitor "Sync" 50 100 (printf "%.0f grayscale levels") (0,640*480*255/10)
 
     launch $ do
         (imgs,ds) <- multicam
-        let x = blockImage [map gray imgs]
+        let x = blockImage [map grayscale imgs]
         hist ds
         inWin wm $ do
             drawImage x
@@ -30,6 +30,6 @@ main = do
 history n = map (take n) . tails
 
 difs imgs = (last imgs, map f (transpose imgs)) where
-    f [x,y] = sum8u $ absDiff8u (gray x) (gray y)
+    f [x,y] = sum8u $ absDiff8u (grayscale x) (grayscale y)
 
 ------------------------------------------------------------------------------

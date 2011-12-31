@@ -120,7 +120,7 @@ worker cam op mbf (getPos,setAccel) inWindow st = do
     (img,pose,_,_) <- cam
 
     let camObs = Just (syntheticCamera pose)
-        orig = gray img
+        orig = grayscale img
 
         camera = fromMaybe (rprev st) $ camObs
 
