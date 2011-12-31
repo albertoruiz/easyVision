@@ -5,12 +5,12 @@ import OpenCV
 import Control.Monad(when)
 import Util.Misc(degree)
 
-main' = run (camera ~> gray >>= face' >>= monitor "Face" (mpSize 20) f >>= timeMonitor)
+main' = run (camera ~> grayscale >>= face' >>= monitor "Face" (mpSize 20) f >>= timeMonitor)
     where f (im,r) = do
                drawImage im
                mapM_ drawROI r
 
-main = run (camera ~> gray >>= face >>= observe "Face" id >>= virtual >>= timeMonitor)
+main = run (camera ~> grayscale >>= face >>= observe "Face" id >>= virtual >>= timeMonitor)
 
 pini = syntheticCamera $ easyCamera (60*degree) (0.5,0.5,0.5) (0.5,0.5,5)  0
 

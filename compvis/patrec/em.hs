@@ -23,8 +23,6 @@ disp = putStr . dispf 2
 
 colors = [red,blue,orange,green]++repeat Col.lightgray
 
-runIt f = prepare >> f >> mainLoop
-
 scw title p mix = scatterPlot title (Size 400 400) p (0,1) colors (shMix mix)
 
 shMix mix = (lineWidth $= 3 >> setColor' black >> mapM_ drawGaussian (map snd mix))

@@ -1,6 +1,7 @@
 import Numeric.LinearAlgebra
 import Vision
-import Features.Polyline
+import ImagProc.Base(Polyline(..))
+import Contours
 import EasyVision(Segment(..),contours,grayscale,readFolder')
 import Util.Rotation(rot3)
 import Util.Misc(degree,vec,debug,pairsWith)

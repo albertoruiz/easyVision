@@ -27,8 +27,6 @@ improveMedian vs m = m'
 
 colors = [red,blue,orange,green]++repeat Col.lightgray
 
-runIt f = prepare >> f >> mainLoop
-
 scw title p = scatterPlot title (Size 400 400) p (0,1) colors (return ())
 
 scwmedian title p = scatterPlot title (Size 400 400) p (0,1) colors f

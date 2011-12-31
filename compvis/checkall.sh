@@ -32,6 +32,19 @@ make ghci
 cd ../gpu
 make ghci
 
+cd ../multilin
+make ghci
+
+cd ../gea
+make ghci
+
+cd ../patrec
+make ghci
+
+cd ../vision
+make ghci
+
+
 # cd ../experiments
 # make ghci
 

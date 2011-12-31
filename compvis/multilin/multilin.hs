@@ -28,7 +28,7 @@ import System.CPUTime
 --import System.IO
 --import Util.Sparse
 --import Data.Maybe
-import Foreign(unsafePerformIO)
+import System.IO.Unsafe(unsafePerformIO)
 import System.IO
 import Util.Misc(splitEvery,median,degree)
 

@@ -5,8 +5,7 @@ module Main where
 import Vision
 import Numeric.LinearAlgebra
 import Data.List(genericLength)
-import System(system)
-import System
+import System.Process(system)
 import Graphics.Plot
 import Text.Printf(printf)
 
