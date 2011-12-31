@@ -16,7 +16,8 @@ User interface tools
 
 module EasyVision.GUI.Interface (
     -- * Interface
-    runFPS, runIdle, runIt, interface, sMonitor, observe,
+    Interface, Command, WinInit, WinRegion, VC,
+    runFPS, runIdle, runIt, interface, observe, sMonitor,
     -- * Tools
     prepare,
     evWindow, evWindow3D, evWin3D,
@@ -41,55 +42,55 @@ import Data.Map
 --import EasyVision.GUI.Objects
 import Data.Traversable
 import Control.Applicative
+import Control.Arrow
 import Data.Colour.Names
 import Contours.Base
 
 
--- | keyboard callback for camera control and exiting the application with ESC. p or SPACE pauses, s sets frame by frame mode.
-kbdcam :: (IO (),IO(),IO()) -> KeyboardMouseCallback
-kbdcam (pauseC,stepC,passC) = kbd where
-    kbd (Char ' ') Down Modifiers {shift=Up} _ = pauseC
-    kbd (Char ' ') Down Modifiers {shift=Down} _ = passC
-    kbd (Char 's') Down _ _ = stepC
-    kbd a b c d = kbdQuit a b c d
-
--- | keyboard callback for exiting the application with ESC or q, useful as default callback.
--- Also, pressing i saves a screenshot of the full opengl window contents.
-kbdQuit :: KeyboardMouseCallback
-kbdQuit (Char '\27') Down Modifiers {shift=Down} _ = leaveMainLoop >> system "killall mplayer" >> return ()
-kbdQuit (Char '\27') Down Modifiers {ctrl=Down} _ = exitWith ExitSuccess
-kbdQuit (Char '\27') Down _ _ = leaveMainLoop
-kbdQuit (Char   'i') Down _ _ = captureGL >>= saveRGB' Nothing
-kbdQuit a Down m _            = putStrLn (show a ++ " " ++ show m ++ " not defined")
-kbdQuit _ _ _ _               = return ()
-
-
-keyAction g1 upds g2 acts def w a b c d = do
-    v <- getW w
-    sz <- evSize `fmap` get windowSize
+keyAction upds acts def w a b c d = do
+    st <- getW w
+    gp <- unZoomPoint w
     roi <- get (evRegion w)
     case Prelude.lookup (a,b,c) upds of
-        Just op -> putW w (g1 op roi sz d v) >> postRedisplay Nothing
+        Just op -> putW w (withPoint op roi gp d st) >> postRedisplay Nothing
         Nothing -> case Prelude.lookup (a,b,c) acts of
-                        Just op -> g2 op roi sz d v
+                        Just op -> withPoint op roi gp d st
                         Nothing -> def a b c d
-
-withPoint f sz (Position c r) = f p
   where
-   [p] = pixelsToPoints sz [Pixel (fromIntegral r) (fromIntegral c)]
+    withPoint f roi gp pos = f roi (gp pos)
 
 modif = Modifiers {ctrl = Up, shift = Up, alt = Up }
 
-mouseGen acts = keyAction (const.const) acts id []
+--------------------------------------------------------------------------------
 
-mouseGenPt acts = keyAction (const.withPoint) acts id []
+type Interface s a b x y = Size -> String -> s 
+                    -> WinInit s a -> [Command s s] -> [Command s (IO())]
+                    -> Maybe (s->y)
+                    -> (WinRegion -> s -> a -> (s,b))
+                    -> (WinRegion -> s -> b -> x) 
+                    -> VC a b
 
------------------------------------------------------------------
+type Command state result = ((Key,KeyState,Modifiers), WinRegion -> Point -> state -> result)
+type WinInit state input = EVWindow state -> input -> IO()
+type WinRegion = Polyline
+type PreCommand t state result = (t -> result) -> Command state result
 
-interface sz0 name st0 ft g1 upds g2 acts mbkeyDisp resultFun resultDisp cam = do
+type VC a b = IO a -> IO (IO b)
+
+interface :: (Renderable x, Renderable y) => Interface s a b x y 
+interface sz0 name st0 ft upds acts mbkeyDisp resultFun resultDisp cam = do
     (cam', ctrl) <- withPause cam
     firstTimeRef <- newIORef True
-    w <- evWindow st0 name sz0 mbkeyDisp (keyAction g1 upds g2 acts (kbdcam ctrl))
+    w <- evWindow st0 name sz0 Nothing (keyAction upds acts (kbdcam ctrl))
+    let draw = case mbkeyDisp of
+            Nothing -> return ()
+            Just fun -> do
+                clear [ColorBuffer]
+                st <- getW w
+                renderIn w (fun st)
+                swapBuffers
+    displayCallback $= draw
+
     return $ do
         thing <- cam'
         firstTime <- readIORef firstTimeRef
@@ -104,7 +105,8 @@ interface sz0 name st0 ft g1 upds g2 acts mbkeyDisp resultFun resultDisp cam = d
         putW w newState
         return result
 
-sMonitor name f = interface (Size 240 360) name 0 (const.const.return $ ()) (const.const.const) acts id [] Nothing (const (,)) g
+sMonitor :: Renderable x => String -> (WinRegion -> b -> [x]) -> VC b b
+sMonitor name f = interface (Size 240 360) name 0 (const.const.return $ ()) (c2 acts) [] nothingR (const (,)) g
   where
     g roi k x = r !! j
       where
@@ -114,8 +116,11 @@ sMonitor name f = interface (Size 240 360) name 0 (const.const.return $ ()) (con
            ,((SpecialKey  KeyUp,     Down, modif), (+1))
            ,((MouseButton WheelDown, Down, modif), pred)
            ,((SpecialKey  KeyDown,   Down, modif), pred)]
+    c2 = Prelude.map (id *** const.const)
 
-observe name f = interface (Size 240 360) name () (const.const.return $ ()) id [] id [] Nothing (const (,)) (const.const $ f)
+
+observe :: Renderable x => String -> (b -> x) -> VC b b
+observe name f = interface (Size 240 360) name () (const.const.return $ ()) [] [] nothingR (const (,)) (const.const $ f)
 
 -----------------------------------------------------------------
 
@@ -158,6 +163,8 @@ evWindow st0 name size mdisp kbd = do
     glw <- createWindow name
     iconTitle $= name
     windowSize $= glSize size
+
+    -- provisionally kept for compatibility
     let draw = case mdisp of
             Nothing -> return ()
             Just fun -> do
@@ -258,6 +265,27 @@ nextPolicy UserSize = DynamicSize
 nextPolicy StaticSize = UserSize
 nextPolicy DynamicSize = UserSize
 
+
+-- | keyboard callback for camera control and exiting the application with ESC. p or SPACE pauses, s sets frame by frame mode.
+kbdcam :: (IO (),IO(),IO()) -> KeyboardMouseCallback
+kbdcam (pauseC,stepC,passC) = kbd where
+    kbd (Char ' ') Down Modifiers {shift=Up} _ = pauseC
+    kbd (Char ' ') Down Modifiers {shift=Down} _ = passC
+    kbd (Char 's') Down _ _ = stepC
+    kbd a b c d = kbdQuit a b c d
+
+
+-- | keyboard callback for exiting the application with ESC or q, useful as default callback.
+-- Also, pressing i saves a screenshot of the full opengl window contents.
+kbdQuit :: KeyboardMouseCallback
+kbdQuit (Char '\27') Down Modifiers {shift=Down} _ = leaveMainLoop >> system "killall mplayer" >> return ()
+kbdQuit (Char '\27') Down Modifiers {ctrl=Down} _ = exitWith ExitSuccess
+kbdQuit (Char '\27') Down _ _ = leaveMainLoop
+kbdQuit (Char   'i') Down _ _ = captureGL >>= saveRGB' Nothing
+kbdQuit a Down m _            = putStrLn (show a ++ " " ++ show m ++ " not defined")
+kbdQuit _ _ _ _               = return ()
+
+
 kbdroi w _ (Char '0') Down Modifiers {alt=Down} _ = do
     mbsz <- readIORef (evPrefSize w)
     case mbsz of
@@ -324,6 +352,17 @@ mvroi w (Position x1' y1') = do
                 \(z,x,y) -> (z, x+fromIntegral (x1'-x0), y-fromIntegral (y1'-y0))
             writeIORef (evMove w) (MoveZoom x1' y1')
 
+
+unZoomPoint w = do
+    z@(z0,_,dy) <- readIORef (evZoom w)
+    vp <- get viewport
+    Size wh ww <- evSize `fmap` get windowSize
+    let f (Position x y) = pt
+          where
+            (x',y') = unZoom z vp (x,y) 
+            [pt] = pixelsToPoints (Size (wh - round (4*dy/z0)) ww) [Pixel y' x'] 
+    return f
+
 --------------------------------------------------------------------------------
 
 withPause :: IO a                          -- ^ original camera
@@ -360,4 +399,24 @@ withPause grab = do
              else grab
 
     return (virtual,control)
+
+-----------------------------------------------------------------
+-- (for compatibility, to be removed)
+
+keyAction' g1 upds def w a b c d = do
+    v <- getW w
+    sz <- evSize `fmap` get windowSize
+    case Prelude.lookup (a,b,c) upds of
+        Just op -> putW w (g1 op sz d v) >> postRedisplay Nothing
+        Nothing -> def a b c d
+
+mouseGen acts = keyAction' (const) acts
+
+mouseGenPt acts = keyAction' (withPoint') acts
+  where
+    withPoint' f sz (Position c r) = f p
+      where
+       [p] = pixelsToPoints sz [Pixel (fromIntegral r) (fromIntegral c)]
+
+-----------------------------------------------------------------
 

@@ -16,7 +16,7 @@ module EasyVision.GUI.Util
    EVWindow(..), MoveStatus(..), ResizePolicy(..)
 -- * Drawing abstraction
 ,  Renderable(..), Draw(..)
-,  color, text, textF, pointSz, lineWd
+,  color, text, textF, pointSz, lineWd, nothingR
 -- * Tools
 , pointCoordinates, pointCoords
 , pixelCoordinates, pixelCoords
@@ -219,6 +219,11 @@ pointSz = Raw . (pointSize $=)
 textF f p s = Raw (textAtF f p s)
 
 text = textF Helvetica18
+
+instance Renderable () where
+    render = return
+
+nothingR = Nothing :: Maybe (x->())
 
 -----------------------------------------
 
