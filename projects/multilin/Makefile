@@ -1,1 +1,0 @@
-/home/brutus/Desktop/projects/easyVision/compvis/Makefile
