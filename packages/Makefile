@@ -1,5 +1,5 @@
 packages = util patrec vision imagproc      \
-           camera gui contours features ev  \
+           camera contours gui features ev  \
            contrib gpu opencv models3ds
 
 all:
