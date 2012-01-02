@@ -27,7 +27,8 @@ extra-source-files:     lib/ImagProc/C/Segments/mycv.h
 extra-tmp-files:
 
 library
-    Build-Depends:      base >= 3 && < 5, imagproc >= 0.1, prcv-util >= 0.1, ev-gui, contours, camera
+    Build-Depends:      base >= 3 && < 5, imagproc >= 0.1, prcv-util >= 0.1,
+                        ev-gui, contours, camera, hmatrix, time
 
     hs-source-dirs:     lib
 

@@ -54,10 +54,7 @@ c3 = map (id *** const.const)
 
 monPts = interface (mpSize 10) "pts" [] (\_ _ -> return ()) acts [] nothingR (const (,)) g
   where
-    g _ pts x = Draw [ Draw (grayscale x), color green, pointSz 3, Draw (Points pts) ]
+    g _ pts x = Draw [ Draw (grayscale x), color green, pointSz 3, points pts ]
     acts = [((MouseButton LeftButton, Down, modif), \_ p st -> p:st)]
 
-newtype Points = Points [Point]
-instance Renderable Points where
-  render (Points ps) = G.renderPrimitive G.Points (mapM_ G.vertex ps)
 

@@ -188,12 +188,10 @@ class Renderable x where
     render = renderIn undefined
 
 data Draw a = forall a . (Renderable a) => Draw a
-            | forall a . (Renderable a) => DrawPix a
             | Raw (IO())
 
 instance Renderable (Draw a) where
     renderIn w (Draw x) = renderIn w x
-    renderIn w (DrawPix x) = pixelCoords >> renderIn w x >> pointCoords
     renderIn w (Raw f) = f
 
 instance Renderable a => Renderable [a] where

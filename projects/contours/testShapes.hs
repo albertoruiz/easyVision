@@ -31,7 +31,7 @@ main = main1
 main1 = run $ camera  ~> grayscale
 --       >>= detectStatic 0.02 1.5 5 grayscale rgb ~> grayscale
 --         >>= wcontours id ~> (id *** contSel)
-         >>= wnpcontours ~> (id *** filter isBlack . fst)
+         >>= wnpcontours ~> (id *** fst.fst)
          ~>  id *** filter (not . elongated 8) . map shape
          >>= injectPrototypes boxShape catalog
 --         >>= showCanonical
@@ -40,11 +40,6 @@ main1 = run $ camera  ~> grayscale
 --         ~>  matchShapesSimple 0.3
          >>= showAlign
          >>= timeMonitor
-
-
-----------------------------------------------------------------------
-
-isBlack x = orientedArea x < 0
 
 ----------------------------------------------------------------------
 

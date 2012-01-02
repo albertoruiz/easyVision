@@ -32,6 +32,7 @@ module EasyVision.GUI.Draw
 , captureGL
 , limitSize
 , renderPolyline
+, points
 ) where
 
 import Graphics.UI.GLUT hiding (RGB, Matrix, Size, Point,color)
@@ -380,6 +381,13 @@ instance Renderable ImageYUV where
 instance Renderable Polyline where
     render (Closed ps) = renderPrimitive LineLoop (vertex (Closed ps))
     render (Open ps) = renderPrimitive LineStrip (vertex (Open ps))
+
+newtype SinglePoints = SinglePoints [Point]
+
+instance Renderable SinglePoints where
+  render (SinglePoints ps) = renderPrimitive Points (mapM_ vertex ps)
+
+points = Draw . SinglePoints
 
 instance Renderable (Vector Double) where
     render v = renderPrimitive LineStrip (vertex $ fromColumns [t,v])

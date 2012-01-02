@@ -1,6 +1,5 @@
 import EasyVision
 
-main = run c 
+pipeline = camera >>= observe "image" rgb
 
-c = camera >>= observe "image" rgb
-
+main = run pipeline
