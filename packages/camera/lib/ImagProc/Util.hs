@@ -52,6 +52,7 @@ import Control.Concurrent
 import Data.IORef
 import ImagProc.C.UVC
 import Util.Options
+import System.Exit
 
 timing :: IO a -> IO a
 timing act = do
@@ -237,9 +238,11 @@ createGrab :: [b] -> IO (IO b)
 createGrab l = do
     pl <- newIORef l
     return $ do
-        h:t <- readIORef pl
-        writeIORef pl t
-        return h
+        r <- readIORef pl
+        case r of
+          h:t -> do writeIORef pl t
+                    return h
+          []  -> exitWith ExitSuccess
 
 grabAll :: IO t -> IO [t]
 grabAll grab = do
