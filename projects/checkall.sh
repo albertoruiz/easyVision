@@ -1,8 +1,7 @@
-
-cd classify
+cd contours
 make ghci
 
-cd ../contours
+cd ../tour
 make ghci
 
 cd ../lkt
@@ -32,9 +31,6 @@ make ghci
 cd ../gpu
 make ghci
 
-cd ../multilin
-make ghci
-
 cd ../gea
 make ghci
 
@@ -44,6 +40,8 @@ make ghci
 cd ../vision
 make ghci
 
+cd ../classify
+make ghci
 
 # cd ../experiments
 # make ghci

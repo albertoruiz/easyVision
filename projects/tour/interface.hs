@@ -45,8 +45,8 @@ sMonitorR1 name f = sMonitorR' name ft1 f
 sMonitorR2 name f = sMonitorR' name ft2 f
 
 
-ft1 w x = evROI w G.$= shrink (50,50) (theROI (grayscale x))
-ft2 w x = ft1 w x >> evPrefSize w G.$= Just (mpSize 25)
+ft1 w x = evRegion w G.$= Closed [Point 0 1, Point (-1) (-1)]
+ft2 w x = evPrefSize w G.$= Just (mpSize 25)
 
 c3 = map (id *** const.const)
 

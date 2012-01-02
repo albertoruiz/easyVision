@@ -28,8 +28,8 @@ main = do
 
     w <- evWindow [] "Interest Points" sz Nothing  (mouse (kbdcam ctrl))
 
-    roi <- getROI w
-    evROI w $= roiFromPixel (roiRadius roi `div`2) (roiCenter roi)
+--    roi <- getROI w
+--    setEVROI w $ roiFromPixel (roiRadius roi `div`2) (roiCenter roi)
 
     launch $ do
 

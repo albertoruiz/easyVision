@@ -26,7 +26,7 @@ library
                         vision >= 0.1, hmatrix >= 0.8.3,
                         prcv-util, patrec, ev-gui >= 0.1,
                         GLUT, containers, process, old-time, colour,
-                        parallel <2
+                        parallel, deepseq
 
     hs-source-dirs:     lib
 

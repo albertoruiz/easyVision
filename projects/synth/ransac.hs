@@ -18,7 +18,7 @@ main = prepare >> procCircle >> mainLoop
 
 sz = (Size 400 400) 
 
-points sigma m n = do
+gpoints sigma m n = do
     seed <- randomIO
     let --inliers = toLists $ noisy seed sigma ( linspace m (-0.5,0.5) `outer` fromList[1,1] )
         inliers = toLists $ noisy seed sigma (circle m)
@@ -58,7 +58,7 @@ estimateCircle = ransac estimator inlier 3 0.99
 
 
 procLine = do
-    pts <- points 0.02 50 500
+    pts <- gpoints 0.02 50 500
     let okmodel = estimateLine pts
     evWindow () "Data" sz (Just $ disp0 (pts)) (const kbdQuit)
     clearColor $= Color4 1 1 1 1
@@ -66,7 +66,7 @@ procLine = do
     clearColor $= Color4 1 1 1 1
 
 procCircle = do
-    pts <- points 0.02 100 500
+    pts <- gpoints 0.02 100 500
     let okmodel = estimateCircle pts
     print $ fst okmodel
     evWindow () "Data" sz (Just $ disp0 (pts)) (const kbdQuit)
@@ -76,7 +76,7 @@ procCircle = do
 
 
 main' = do
-    pts <- points 0.02 50 500
+    pts <- gpoints 0.02 50 500
     print $ fst $ estimateLine pts
 
 ----------------------------------------------------------------------

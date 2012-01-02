@@ -113,7 +113,7 @@ monitorROI name sz fun cam = do
     (cam', ctrl) <- withPause cam
     w <- evWindow () name sz Nothing (const (kbdcam ctrl))
     let d = 10
-    evROI w $= ROI d (height sz-d) d (width sz-d)
+    setEVROI w $ ROI d (height sz-d) d (width sz-d)
     return $ do
         thing <- cam'
         roi <- getROI w

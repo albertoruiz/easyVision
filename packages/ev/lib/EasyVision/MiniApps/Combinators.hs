@@ -203,10 +203,10 @@ selectROIfun name sel mon result cam = do
     let sz = mpSize 20
     w <- evWindow () name sz Nothing (const (kbdcam ctrl))
     let d = 50
-    evROI w $= ROI d (height sz-d) d (width sz-d)
     return $ do
         x <- cam'
-        r <- getROI w
+        r' <- get (evRegion w)
+        let r = poly2roi (sz) r'
         inWin w $ do drawImage'' 640 (sel x)
                      sz <- evSize `fmap` get windowSize
                      pixelCoordinates sz

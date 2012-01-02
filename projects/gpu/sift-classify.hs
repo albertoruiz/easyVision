@@ -33,8 +33,8 @@ main = do
         Just name -> map proc `fmap` readSelectedRois sz name
 
     w <- evWindow (False,db) "video" sz Nothing  (mouse (kbdcam ctrl))
-    let d = height sz `div` 10
-    evROI w $= ROI d (height sz-d) d (width sz-d)
+    --let d = height sz `div` 10
+    --setEVROI w $ ROI d (height sz-d) d (width sz-d)
 
     r <- evWindow () "category" sz  Nothing  (const (kbdcam ctrl))
 

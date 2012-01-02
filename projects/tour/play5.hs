@@ -1,5 +1,5 @@
 import EasyVision
-import Data.Time(getCurrentTime)
+import Data.Time(getCurrentTime, UTCTime)
  
 main = run $ clock >>= f >>= timeMonitor
 

@@ -56,7 +56,7 @@ main2 = do
         orig0 <- cam0
         orig1 <- cam1
 
-        let [feats0,feats1] = parMap rnf (map ip . interestPoints n h) [orig0,orig1]
+        let [feats0,feats1] = parMap rdeepseq (map ip . interestPoints n h) [orig0,orig1]
 
         let matches = basicMatches (feats0, feats1) distFeat err
 
@@ -94,9 +94,6 @@ main1 = do
 
     w <- evWindow ([],undefined) "Interest Points" sz Nothing  (mouse (kbdcam ctrl))
     wm <- evWindow () "Matches" (Size r (2*c)) Nothing  (const (kbdcam ctrl))
-
-    roi <- getROI w
-    evROI w $= roiFromPixel (roiRadius roi `div`2) (roiCenter roi)
 
     launchFreq 15 $ do
 

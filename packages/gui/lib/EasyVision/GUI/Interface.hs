@@ -22,7 +22,7 @@ module EasyVision.GUI.Interface (
     prepare,
     evWindow, evWindow3D, evWin3D,
     launch, launchFreq,
-    inWin, getW, putW, updateW, getROI,
+    inWin, getW, putW, updateW, getROI, setEVROI,
     kbdcam, kbdQuit, keyAction, mouseGen, mouseGenPt, modif, withPause
 ) where
 
@@ -39,7 +39,7 @@ import Control.Monad(when)
 import System.Environment(getArgs)
 import qualified Data.Map as Map
 import Data.Map
---import EasyVision.GUI.Objects
+--import Util.Misc(debug)
 import Data.Traversable
 import Control.Applicative
 import Control.Arrow
@@ -158,6 +158,9 @@ runIt f = prepare >> f >> mainLoop
 
 ----------------------------------------------------------------
 
+irr = Closed [Point p p, Point n n]
+  where p = 0.5; n = -0.5    
+
 evWindow st0 name size mdisp kbd = do
     st <- newIORef st0
     glw <- createWindow name
@@ -176,10 +179,7 @@ evWindow st0 name size mdisp kbd = do
     actionOnWindowClose $= ContinueExectuion
 
     let Size h w = size
-        irr = Closed [Point p p, Point n p, Point n n, Point p n]
-          where p = 0.5; n = -0.5    
 
-    r <- newIORef ROI {r1=0, r2=h-1, c1=0, c2=w-1}
     rr <- newIORef irr
         
     zd <- newIORef (1,0,0)
@@ -190,7 +190,7 @@ evWindow st0 name size mdisp kbd = do
 
     let w = EVW { evW = glw
                 , evSt = st
-                , evROI = r
+        --        , evROI = r
                 , evRegion = rr
                 , evZoom = zd
                 , evMove = ms
@@ -218,7 +218,7 @@ getW = get . evSt
 putW w x = evSt w $= x
 updateW w f = evSt w $~ f
 
-getROI = get . evROI
+-- getROI = get . evROI
 
 ----------------------------------------------------------------
 
@@ -290,7 +290,7 @@ kbdroi w _ (Char '0') Down Modifiers {alt=Down} _ = do
     mbsz <- readIORef (evPrefSize w)
     case mbsz of
         Nothing -> return ()
-        Just (Size h w') -> writeIORef (evROI w) ROI {r1=0, r2=h-1, c1=0, c2=w'-1}
+        Just (Size h w') -> writeIORef (evRegion w) irr
 
 kbdroi w _ (MouseButton WheelUp) Down Modifiers {ctrl=Down} _ =
     modifyIORef (evZoom w) (\(z,x,y)->(z*1.1,x*1.1,y*1.1))
@@ -306,16 +306,11 @@ kbdroi w _ (SpecialKey KeyDown) Down Modifiers {ctrl=Down} _ =
 kbdroi w _ (MouseButton LeftButton) Down Modifiers {ctrl=Down} (Position x y) =
     writeIORef (evMove w) (MoveZoom x y)
 
-kbdroi w _ (MouseButton RightButton) Down Modifiers {ctrl=Down} (Position x' y') = do
-    ms <- readIORef (evMove w)
-    z@(z0,_,dy) <- readIORef (evZoom w)
-    vp <- get viewport
-    let (x,y) = unZoom z vp (x',y') 
-    modifyIORef (evROI w) (\ (ROI _ r2 _ c2) -> ROI (min (r2-minroi) y) r2 (min (c2-minroi) x) c2)
+kbdroi w _ (MouseButton RightButton) Down Modifiers {ctrl=Down} p = do
+    gp <- unZoomPoint w
+    let pt = gp p
+    modifyIORef (evRegion w) $ \(Closed[_,b]) -> (Closed [pt,b])
     writeIORef (evMove w) SetROI
-    r <- get (evROI w)
-    Size wh ww <- evSize `fmap` get windowSize
-    evRegion w $= roi2poly (Size (wh - round (4*dy/z0)) ww) r
 
 kbdroi w _ (MouseButton LeftButton) Up _ _ = writeIORef (evMove w) None
 kbdroi w _ (MouseButton RightButton) Up _ _ = writeIORef (evMove w) None
@@ -337,16 +332,11 @@ kbdroi _ defaultFunc a b c d = defaultFunc a b c d
 mvroi w (Position x1' y1') = do
     ms <- readIORef (evMove w)
     z@(z0,_,dy) <- readIORef (evZoom w)
-    vp <- get viewport
-    let (x1,y1) = unZoom z vp (x1',y1') 
+    gp <- unZoomPoint w
+    let pt = gp (Position x1' y1') 
     case ms of
         None -> return ()
-        SetROI -> do
-            modifyIORef (evROI w) $ 
-                \(ROI r1 _ c1 _) -> ROI r1 (max (r1+minroi) y1) c1 (max (c1+minroi) x1)
-            r <- get (evROI w)
-            Size wh ww <- evSize `fmap` get windowSize
-            evRegion w $= roi2poly (Size (wh - round (4*dy/z0)) ww) r
+        SetROI -> modifyIORef (evRegion w) $ \(Closed[p,_]) -> Closed [p,pt]
         MoveZoom x0 y0 -> do
             modifyIORef (evZoom w) $
                 \(z,x,y) -> (z, x+fromIntegral (x1'-x0), y-fromIntegral (y1'-y0))
@@ -417,6 +407,18 @@ mouseGenPt acts = keyAction' (withPoint') acts
     withPoint' f sz (Position c r) = f p
       where
        [p] = pixelsToPoints sz [Pixel (fromIntegral r) (fromIntegral c)]
+
+
+getROI w = do
+    r <- get (evRegion w)
+    sz <- evSize `fmap` get windowSize 
+    return (poly2roi sz r)
+
+setEVROI w r = do
+    sz <- evSize `fmap` get windowSize
+    let Closed [a,b,c,d] = roi2poly sz r
+    (evRegion w) $= Closed [a,d]
+
 
 -----------------------------------------------------------------
 

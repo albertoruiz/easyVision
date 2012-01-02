@@ -37,8 +37,7 @@ main = do
 
 
     let d = height sz `div` 10
-    evROI w $= ROI d (height sz-d) d (width sz-d)
-
+    
     let mode m = MenuEntry m $ do { putW w m; windowTitle $= "Demo: "++m }
 
     attachMenu LeftButton $ Menu $ map mode
