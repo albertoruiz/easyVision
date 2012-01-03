@@ -31,7 +31,7 @@ main = main1
 main1 = run $ camera  ~> grayscale
 --       >>= detectStatic 0.02 1.5 5 grayscale rgb ~> grayscale
 --         >>= wcontours id ~> (id *** contSel)
-         >>= wnpcontours ~> (id *** fst.fst)
+         >>= wnpcontours id ~> (id *** fst.fst)
          ~>  id *** filter (not . elongated 8) . map shape
          >>= injectPrototypes boxShape catalog
 --         >>= showCanonical

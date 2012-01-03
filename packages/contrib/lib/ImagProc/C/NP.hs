@@ -64,8 +64,8 @@ autoParam "NPParam" ""
     , ("minlen", "Int", intParam 50 0 200)
     , ("wAlloca", "Int", intParam 0 0 1)]
 
-wnpcontours :: IO ImageGray ->  IO (IO (ImageGray, (([Polyline],[Polyline]),[Polyline])))
-wnpcontours = npcontours .@. winNPParam
+wnpcontours :: (x -> ImageGray) -> IO x -> IO (IO (x, (([Polyline],[Polyline]),[Polyline])))
+wnpcontours f = (\p -> npcontours p . f) .@. winNPParam
 
 argNPParam :: IO NPParam
 defNPParam :: NPParam
