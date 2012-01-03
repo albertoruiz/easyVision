@@ -1,0 +1,48 @@
+Name:               models3ds
+Version:            0.1
+License:            GPL
+License-file:       LICENSE
+Author:             Alberto Ruiz
+Maintainer:         Alberto Ruiz <aruiz@um.es>
+Stability:          experimental
+Homepage:           http://perception.inf.um.es/easyVision
+Synopsis:           load and render 3ds models
+Description:
+ load and render 3ds models
+
+Category:           Graphics
+tested-with:        GHC ==6.10.4, GHC ==6.12.1, GHC ==7.0
+
+cabal-version:      >=1.2
+build-type:         Simple
+
+extra-source-files:
+
+library
+    Build-Depends:      ev-gui >= 0.2,
+                        -- imagproc >= 0.1,
+                        -- camera >= 0.1,
+                        -- vision >= 0.1,
+                        -- hmatrix >= 0.8.3,
+                        -- prcv-util,
+                        base >= 3 && < 5
+                        -- colour >= 2.2,
+                        -- OpenGL, GLUT,
+                        -- containers, process,
+                        -- template-haskell, ghc-prim
+
+    hs-source-dirs:     src
+
+    Exposed-modules:    EasyVision.GUI.Model3DS
+
+    other-modules:
+
+    ghc-prof-options:   -auto-all
+
+--    ghc-options:        -Wall
+    
+    extra-libraries:    3ds GLEW
+    
+    C-sources:          src/EasyVision/GUI/C/model3ds.c
+    CC-options:         -std=c99
+

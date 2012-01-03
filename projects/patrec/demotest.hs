@@ -29,8 +29,6 @@ main = do
 
 colors = [red,blue,orange,green]++repeat Col.lightgray
 
-runIt f = prepare >> f >> mainLoop
-
 scw title p = scatterPlot title (Size 400 400) p (0,1) colors (return ())
 
 scwc title p clasif = scatterPlot title (Size 400 400) p (0,1) colors (drawRegion clasif p colors)

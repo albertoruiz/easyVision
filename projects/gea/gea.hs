@@ -9,7 +9,7 @@ import ShowReco
 
 import Text.Printf
 
-import System(getArgs)
+import System.Environment(getArgs)
 
 ----------------------------------------------------------------------
 

@@ -45,8 +45,6 @@ readCam [k11, k12, k13,
                  r21, r22, r23, t2,
                  r31, r32, r33, t3]
 
-runIt f = prepare >> f >> mainLoop
-
 shReco cis = do
     let cts = map (id *** extractSquare 128 . float . grayscale. channelsFromRGB) cis
     evWin3D cts "Reco" 500 (Just $ disp cts) (const kbdQuit)

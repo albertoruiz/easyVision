@@ -34,7 +34,7 @@ lno n cost method prob = mean cases where
 
 line msg = putStrLn $ replicate 5 '-' ++ msg ++ replicate 30 '-'
 
-study met = forM_ [1..5] $ \n -> printf "%d: %.3f\n" n $ lno 10 msError (withNormalized (met n)) prob
+study met = forM_ [1..5] $ \n -> (printf "%d: %.3f\n" n $ lno 10 msError (withNormalized (met n)) prob :: IO ())
 
 main = do
     line ""
