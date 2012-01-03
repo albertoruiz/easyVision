@@ -346,21 +346,23 @@ renderImageIn evW m = do
     Just szP <-readIORef (evPrefSize evW)
     let szT = if policy == UserSize then szW else glSize szP
     when (szW /= szT) $ windowSize $= szT >> postRedisplay Nothing
-
+    when (prefSize == Nothing && policy == StaticSize) $
+       writeIORef (evPolicy evW) (UserSize)
+    
     (z',_,_) <- readIORef (evZoom evW)
     
     let zw = fromIntegral vw/ fromIntegral w
         z = (floatGL . double2Float) z' * zw
-        ROI {..} = vroi m
+        r@ROI {..} = vroi m
         szTe@(Size th tw) = evSize szT
         r0 = round (fromIntegral r1 * zw + (fromIntegral th-fromIntegral h*zw)/2)
         c0 = round (fromIntegral c1 * zw)
-        [Point x0 y0] =pixelsToPoints szTe [Pixel r0 c0]
+        [Point x0 y0] =pixelsToPoints szTe [Pixel (max 0 r0) c0]
         roipts = pixelsToPoints (imSize) [ Pixel r1 c1, Pixel (1+r2) c1,
                                            Pixel (1+r2) (1+c2), Pixel r1 (1+c2) ]
     rasterPos (Vertex2 (doubleGL x0) (doubleGL y0-1E-6))
     pixelZoom $= (z,-z)   
-    myDrawPixels m
+    myDrawPixels m { vroi = r { r1 = r1 - min 0 (round $ (fromIntegral r0)/zw) } }
     touchForeignPtr (fptr m)
     render $ Draw [color white, lineWd 1, Draw (Closed roipts)]
 

@@ -190,7 +190,6 @@ evWindow st0 name size mdisp kbd = do
 
     let w = EVW { evW = glw
                 , evSt = st
-        --        , evROI = r
                 , evRegion = rr
                 , evZoom = zd
                 , evMove = ms
@@ -217,8 +216,6 @@ inWin w f = do
 getW = get . evSt
 putW w x = evSt w $= x
 updateW w f = evSt w $~ f
-
--- getROI = get . evROI
 
 ----------------------------------------------------------------
 
@@ -418,7 +415,6 @@ setEVROI w r = do
     sz <- evSize `fmap` get windowSize
     let Closed [a,b,c,d] = roi2poly sz r
     (evRegion w) $= Closed [a,d]
-
 
 -----------------------------------------------------------------
 

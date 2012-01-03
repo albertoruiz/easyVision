@@ -1,5 +1,3 @@
-{-# LANGUAGE NoMonomorphismRestriction #-}
-
 import EasyVision
 import ImagProc.Ipp.Core(fullroi)
 import Graphics.UI.GLUT.Callbacks.Window as GL
@@ -38,7 +36,7 @@ sMonitorR' name myft f = interface (mpSize 10) name 0 myft (c3 acts) (c3 sv) not
            ,((SpecialKey  KeyUp,     Down, modif), (+1))
            ,((MouseButton WheelDown, Down, modif), pred)
            ,((SpecialKey  KeyDown,   Down, modif), pred)]
-    sv =   [((SpecialKey KeyF12,              Down, modif), print)]
+    sv =   [((SpecialKey KeyF12,     Down, modif), print)]
 
 sMonitorR name f = sMonitorR' name (\_ _ ->  return ()) f
 sMonitorR1 name f = sMonitorR' name ft1 f
