@@ -1,4 +1,4 @@
-{-# LANGUAGE NoMonomorphismRestriction #-}
+{-# LANGUAGE NoMonomorphismRestriction, BangPatterns #-}
 
 ---------------------------------------------------------------------------
 {- |
@@ -17,7 +17,7 @@ User interface tools
 module EasyVision.GUI.Interface (
     -- * Interface
     Interface, Command, WinInit, WinRegion, VC,
-    runFPS, runIdle, runIt, interface, observe, sMonitor,
+    runFPS, runIdle, runIt, run, interface, observe, sMonitor,
     -- * Tools
     prepare,
     evWindow, evWindow3D, evWin3D,
@@ -35,7 +35,7 @@ import qualified Graphics.UI.GLUT as GL
 import Data.IORef
 import System.Process(system)
 import System.Exit
-import Control.Monad(when)
+import Control.Monad(when,forever)
 import System.Environment(getArgs)
 import qualified Data.Map as Map
 import Data.Map
@@ -45,17 +45,18 @@ import Control.Applicative
 import Control.Arrow
 import Data.Colour.Names
 import Contours.Base
-
+import Control.Concurrent
 
 keyAction upds acts def w a b c d = do
     st <- getW w
     gp <- unZoomPoint w
     roi <- get (evRegion w)
     case Prelude.lookup (a,b,c) upds of
-        Just op -> putW w (withPoint op roi gp d st) >> postRedisplay Nothing
+        Just op -> putW w (withPoint op roi gp d st)
         Nothing -> case Prelude.lookup (a,b,c) acts of
                         Just op -> withPoint op roi gp d st
                         Nothing -> def a b c d
+    postRedisplay Nothing
   where
     withPoint f roi gp pos = f roi (gp pos)
 
@@ -63,11 +64,10 @@ modif = Modifiers {ctrl = Up, shift = Up, alt = Up }
 
 --------------------------------------------------------------------------------
 
-type Interface s a b x y = Size -> String -> s 
+type Interface s a b = Size -> String -> s 
                     -> WinInit s a -> [Command s s] -> [Command s (IO())]
-                    -> Maybe (s->y)
                     -> (WinRegion -> s -> a -> (s,b))
-                    -> (WinRegion -> s -> b -> x) 
+                    -> (WinRegion -> s -> b -> Drawing) 
                     -> VC a b
 
 type Command state result = ((Key,KeyState,Modifiers), WinRegion -> Point -> state -> result)
@@ -77,19 +77,23 @@ type PreCommand t state result = (t -> result) -> Command state result
 
 type VC a b = IO a -> IO (IO b)
 
-interface :: (Renderable x, Renderable y) => Interface s a b x y 
-interface sz0 name st0 ft upds acts mbkeyDisp resultFun resultDisp cam = do
+interface :: Interface s a b 
+interface sz0 name st0 ft upds acts resultFun resultDisp cam = do
     (cam', ctrl) <- withPause cam
     firstTimeRef <- newIORef True
     w <- evWindow st0 name sz0 Nothing (keyAction upds acts (kbdcam ctrl))
-    let draw = case mbkeyDisp of
-            Nothing -> return ()
-            Just fun -> do
-                clear [ColorBuffer]
-                st <- getW w
-                renderIn w (fun st)
-                swapBuffers
-    displayCallback $= draw
+
+    displayCallback $= do
+        evInit w
+        prepZoom w
+        dr <- readIORef (evDraw w)
+        renderIn w dr
+        swapBuffers
+
+    callbackFreq 25 $ do
+        visible <- get (evVisible w)
+        ready <- get (evReady w)
+        when (visible && ready) $ postRedisplay (Just (evW w)) >> (evReady w) $= False
 
     return $ do
         thing <- cam'
@@ -98,15 +102,14 @@ interface sz0 name st0 ft upds acts mbkeyDisp resultFun resultDisp cam = do
         state <- getW w
         roi <- get (evRegion w)
         let (newState, result) = resultFun roi state thing
-        visible <- get (evVisible w)
-        when visible $ do
-            r <- get (evRegion w)
-            inWin w (prepZoom w >> renderIn w (resultDisp roi newState result))
         putW w newState
+        (evDraw w)  $= resultDisp roi newState result
+        (evReady w) $= True
         return result
+        
 
-sMonitor :: Renderable x => String -> (WinRegion -> b -> [x]) -> VC b b
-sMonitor name f = interface (Size 240 360) name 0 (const.const.return $ ()) (c2 acts) [] nothingR (const (,)) g
+sMonitor :: String -> (WinRegion -> b -> [Drawing]) -> VC b b
+sMonitor name f = interface (Size 240 360) name 0 (const.const.return $ ()) (c2 acts) [] (const (,)) g
   where
     g roi k x = r !! j
       where
@@ -120,7 +123,7 @@ sMonitor name f = interface (Size 240 360) name 0 (const.const.return $ ()) (c2 
 
 
 observe :: Renderable x => String -> (b -> x) -> VC b b
-observe name f = interface (Size 240 360) name () (const.const.return $ ()) [] [] nothingR (const (,)) (const.const $ f)
+observe name f = interface (Size 240 360) name () (const.const.return $ ()) [] [] (const (,)) (const.const $ Draw . f)
 
 -----------------------------------------------------------------
 
@@ -140,13 +143,13 @@ launch worker = do
 
 -- | Starts the application with a worker function which runs at the desired frequency (in Hz).
 launchFreq :: Int -> IO () -> IO ()
-launchFreq freq worker = do
+launchFreq freq worker = callbackFreq freq worker >> mainLoop
+
+callbackFreq freq worker = do
     let callback = do
         addTimerCallback (1000 `div` freq) callback
         worker
-    addTimerCallback 1000 callback
-    mainLoop
-
+    addTimerCallback 10 callback
 
 runIdle :: IO (IO a) -> IO ()
 runIdle c = prepare >> (c >>= launch . (>> return ()))
@@ -155,6 +158,14 @@ runFPS :: Int -> IO (IO a) -> IO ()
 runFPS n c = prepare >> (c >>= launchFreq n . (>> return ()))
 
 runIt f = prepare >> f >> mainLoop
+
+run c = do
+    prepare
+    f <- c
+    forkIO (forever $ f >>= g )
+    mainLoop
+  where
+    g !x = putStr ""
 
 ----------------------------------------------------------------
 
@@ -187,9 +198,13 @@ evWindow st0 name size mdisp kbd = do
     po <- newIORef StaticSize
     ps <- newIORef Nothing
     vi <- newIORef True
+    re <- newIORef True
+    dr <- newIORef (Draw ())
 
     let w = EVW { evW = glw
                 , evSt = st
+                , evDraw = dr
+                , evReady = re
                 , evRegion = rr
                 , evZoom = zd
                 , evMove = ms
@@ -199,7 +214,7 @@ evWindow st0 name size mdisp kbd = do
                 , evInit = clear [ColorBuffer] }
 
     keyboardMouseCallback $= Just (kbdroi w (kbd w))
-    motionCallback $= Just (mvroi w)
+    motionCallback $= Just (\ p -> mvroi w p >> postRedisplay Nothing)
     -- callback to detect minimization?
     return w
 

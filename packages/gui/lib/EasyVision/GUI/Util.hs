@@ -15,8 +15,8 @@ module EasyVision.GUI.Util
 -- * Window representation
    EVWindow(..), MoveStatus(..), ResizePolicy(..)
 -- * Drawing abstraction
-,  Renderable(..), Draw(..)
-,  color, text, textF, pointSz, lineWd, nothingR
+,  Renderable(..), Drawing(..)
+,  color, text, textF, pointSz, lineWd
 -- * Tools
 , pointCoordinates, pointCoords
 , pixelCoordinates, pixelCoords
@@ -37,6 +37,7 @@ import GHC.Float(double2Float)
 import Unsafe.Coerce(unsafeCoerce)
 import Data.IORef
 import Util.Misc(debug)
+import Control.Concurrent
 
 ------------------------------------------------------------
 
@@ -164,7 +165,8 @@ floatGL = unsafeCoerce -- realToFrac
 
 data EVWindow st = EVW { evW        :: Window
                        , evSt       :: IORef st
-                   --    , evROI      :: IORef ROI
+                       , evReady    :: IORef Bool
+                       , evDraw     :: IORef Drawing
                        , evRegion   :: IORef Polyline
                        , evMove     :: IORef MoveStatus
                        , evInit     :: IO ()
@@ -187,10 +189,10 @@ class Renderable x where
     renderIn _ = render
     render = renderIn undefined
 
-data Draw a = forall a . (Renderable a) => Draw a
-            | Raw (IO())
+data Drawing = forall a . (Renderable a) => Draw a
+             | Raw (IO())
 
-instance Renderable (Draw a) where
+instance Renderable Drawing where
     renderIn w (Draw x) = renderIn w x
     renderIn w (Raw f) = f
 
@@ -220,8 +222,6 @@ text = textF Helvetica18
 
 instance Renderable () where
     render = return
-
-nothingR = Nothing :: Maybe (x->())
 
 -----------------------------------------
 

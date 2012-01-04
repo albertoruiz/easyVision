@@ -14,7 +14,7 @@ Camera combinators: higher order functions which make virtual cameras from other
 
 module EasyVision.MiniApps.Combinators (
   camera, cameraFolderG,
-  run, runFPS,
+  runFPS,
   monitor,
   monitorWheel,
   monitor3D,
@@ -152,11 +152,6 @@ counter cam = do
 
 ---------------------------------------------------------
 
-run :: IO (IO a) -> IO ()
-run = runIdle
-
------------------------------------------------------------
-
 frameRate cam = do
     t0 <- getClockTime
     t <- newIORef (t0,40)
@@ -185,10 +180,10 @@ compCost cam = do
 
 
 timeMonitor :: IO b -> IO (IO b)
-timeMonitor = compCost >=> frameRate >=> monitor "Timing"  (Size 50 230) f >~> (fst.fst) where
-    f ((_,t1),t2) = do
-        pixelCoordinates (Size 50 230)
-        text2D 15 30 $ printf " %3.0f ms CPU  / %4.0f Hz   /   %3.0f%%" (t1::Double) (1000/t2::Double) (100*t1/t2)
+timeMonitor = compCost >=> frameRate >=> g >~> (fst.fst) where
+    f _ _ ((_,t1),t2) = text (Point 0.9 0) $ 
+                        printf " %3.0f ms CPU  / %4.0f Hz   /   %3.0f%%" (t1::Double) (1000/t2::Double) (100*t1/t2)
+    g = interface (Size 60 300) "Timing" () (\_ _ ->  return ()) [] [] (const (,)) f
 
 
 ----------------------------------------------------------------------
