@@ -16,10 +16,12 @@ module EasyVision.GUI (
     module EasyVision.GUI.Interface,
     module EasyVision.GUI.Parameters,
     module EasyVision.GUI.Objects,
+    module EasyVision.GUI.Types,
     module Data.Colour.Names,
 )where
 
 import EasyVision.GUI.Util
+import EasyVision.GUI.Types
 import EasyVision.GUI.Interface
 import EasyVision.GUI.Parameters
 import EasyVision.GUI.Objects

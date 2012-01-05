@@ -1,12 +1,11 @@
 -----------------------------------------------------------------------------
 {- |
-Module      :  EasyVision.Objects
+Module      :  EasyVision.GUI.Objects
 Copyright   :  (c) Alberto Ruiz 2007
-License     :  GPL-style
+License     :  GPL
 
 Maintainer  :  Alberto Ruiz (aruiz at um dot es)
-Stability   :  very provisional
-Portability :  hmm...
+Stability   :  provisional
 
 True coordinates of several calibration objects and 3D models
 
@@ -18,7 +17,7 @@ module EasyVision.GUI.Objects (
 ) where
 
 import Graphics.UI.GLUT
-import EasyVision.GUI.Util(doubleGL,setColor,setColor')
+import EasyVision.GUI.Types(doubleGL,setColor,setColor')
 import Data.Colour.Names
 
 asymRef = map (map (*0.54))

@@ -16,8 +16,8 @@ User interface tools
 
 module EasyVision.GUI.Interface (
     -- * Interface
-    Interface, Command, WinInit, WinRegion, VC,
-    runFPS, runIdle, runIt, run, interface, observe, sMonitor,
+    Interface, Command, WinInit, WinRegion, VC, Standalone,
+    runFPS, runIdle, runIt, run, interface, standalone,
     -- * Tools
     prepare,
     evWindow, evWindow3D, evWin3D,
@@ -26,7 +26,7 @@ module EasyVision.GUI.Interface (
     kbdcam, kbdQuit, keyAction, mouseGen, mouseGenPt, modif, withPause
 ) where
 
-import EasyVision.GUI.Util
+import EasyVision.GUI.Types
 import EasyVision.GUI.Draw
 import ImagProc.Base
 import ImagProc.Ipp(Size(..),ippSetNumThreads,ROI(..),saveRGB')
@@ -56,7 +56,6 @@ keyAction upds acts def w a b c d = do
         Nothing -> case Prelude.lookup (a,b,c) acts of
                         Just op -> withPoint op roi gp d st
                         Nothing -> def a b c d
-    postRedisplay Nothing
   where
     withPoint f roi gp pos = f roi (gp pos)
 
@@ -69,6 +68,7 @@ type Interface s a b = Size -> String -> s
                     -> (WinRegion -> s -> a -> (s,b))
                     -> (WinRegion -> s -> b -> Drawing) 
                     -> VC a b
+
 
 type Command state result = ((Key,KeyState,Modifiers), WinRegion -> Point -> state -> result)
 type WinInit state input = EVWindow state -> input -> IO()
@@ -106,24 +106,23 @@ interface sz0 name st0 ft upds acts resultFun resultDisp cam = do
         (evDraw w)  $= resultDisp roi newState result
         (evReady w) $= True
         return result
-        
 
-sMonitor :: String -> (WinRegion -> b -> [Drawing]) -> VC b b
-sMonitor name f = interface (Size 240 360) name 0 (const.const.return $ ()) (c2 acts) [] (const (,)) g
-  where
-    g roi k x = r !! j
-      where
-        r = f roi x
-        j = k `mod` length r
-    acts = [((MouseButton WheelUp,   Down, modif), (+1))
-           ,((SpecialKey  KeyUp,     Down, modif), (+1))
-           ,((MouseButton WheelDown, Down, modif), pred)
-           ,((SpecialKey  KeyDown,   Down, modif), pred)]
-    c2 = Prelude.map (id *** const.const)
+----------------------------------------
 
+type Standalone s = Size -> String -> s -> [Command s s] -> [Command s (IO ())] -> (s -> Drawing) -> IO (EVWindow s)
 
-observe :: Renderable x => String -> (b -> x) -> VC b b
-observe name f = interface (Size 240 360) name () (const.const.return $ ()) [] [] (const (,)) (const.const $ Draw . f)
+standalone :: Standalone s
+standalone sz0 name st0 upds acts disp = do
+    w <- evWindow st0 name sz0 Nothing (keyAction upds acts kbdQuit)
+
+    displayCallback $= do
+        evInit w
+        prepZoom w
+        st <- getW w
+        renderIn w (disp st)
+        swapBuffers
+
+    return w
 
 -----------------------------------------------------------------
 
@@ -157,13 +156,13 @@ runIdle c = prepare >> (c >>= launch . (>> return ()))
 runFPS :: Int -> IO (IO a) -> IO ()
 runFPS n c = prepare >> (c >>= launchFreq n . (>> return ()))
 
+runIt :: IO a -> IO ()
 runIt f = prepare >> f >> mainLoop
 
-run c = do
-    prepare
+run :: IO (IO a) -> IO ()
+run c = runIt $ do
     f <- c
     forkIO (forever $ f >>= g )
-    mainLoop
   where
     g !x = putStr ""
 
@@ -213,8 +212,8 @@ evWindow st0 name size mdisp kbd = do
                 , evVisible = vi
                 , evInit = clear [ColorBuffer] }
 
-    keyboardMouseCallback $= Just (kbdroi w (kbd w))
-    motionCallback $= Just (\ p -> mvroi w p >> postRedisplay Nothing)
+    keyboardMouseCallback $= Just (\k d m p -> kbdroi w (kbd w) k d m p >> postRedisplay Nothing)
+    motionCallback $= Just (\p -> mvroi w p >> postRedisplay Nothing)
     -- callback to detect minimization?
     return w
 
@@ -409,7 +408,7 @@ keyAction' g1 upds def w a b c d = do
     v <- getW w
     sz <- evSize `fmap` get windowSize
     case Prelude.lookup (a,b,c) upds of
-        Just op -> putW w (g1 op sz d v) >> postRedisplay Nothing
+        Just op -> putW w (g1 op sz d v)
         Nothing -> def a b c d
 
 mouseGen acts = keyAction' (const) acts

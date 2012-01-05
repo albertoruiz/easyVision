@@ -34,6 +34,7 @@ library
     hs-source-dirs:     lib
 
     Exposed-modules:    EasyVision.GUI
+                        EasyVision.GUI.Types
                         EasyVision.GUI.Util
                         EasyVision.GUI.Draw
                         EasyVision.GUI.OldGUI

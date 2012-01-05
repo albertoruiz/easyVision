@@ -45,7 +45,7 @@ import Numeric.LinearAlgebra hiding (step)
 import Vision
 import Util.Rotation
 import Util.Misc(degree,debug)
-import EasyVision.GUI.Util
+import EasyVision.GUI.Types
 import EasyVision.GUI.Trackball
 import qualified Data.Colour.RGBSpace as Col
 import Data.Colour.SRGB hiding (RGB)

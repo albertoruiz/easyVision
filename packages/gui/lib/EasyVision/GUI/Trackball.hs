@@ -2,7 +2,7 @@
 
 module EasyVision.GUI.Trackball (newTrackball) where
 
-import EasyVision.GUI.Util
+import EasyVision.GUI.Types
 import Util.Quaternion
 import Util.Homogeneous(cross)
 import Numeric.LinearAlgebra
