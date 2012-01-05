@@ -15,8 +15,9 @@ common interfaces
 module EasyVision.GUI.Util (
     observe,
     sMonitor,
-    editor,
     browser,
+    editor,
+    updateItem
 ) where
 
 import Graphics.UI.GLUT hiding (Point,Size)
@@ -24,6 +25,7 @@ import EasyVision.GUI.Types
 import EasyVision.GUI.Interface
 import Control.Arrow((***))
 import ImagProc.Base
+import Util.Misc(replaceAt)
 
 editor :: [Command (Int,[x]) (Int,[x])] -> [Command (Int,[x]) (IO())]
        -> String -> [x] -> (Int -> x -> Drawing) -> IO (EVWindow (Int,[x]))
@@ -41,6 +43,10 @@ editor upds acts name xs drw = standalone (Size 300 300) name (0,xs) (upds ++ mo
 
 --    g1 = map (id *** const.const.(snd.))
 --    g3 = map (id *** const.const)
+
+
+--updateItem :: key -> (a -> a) -> (key, roi -> pt -> (Int, [a]) -> (Int, [a]))
+updateItem key f = (key, \roi pt (k,xs) -> (k, replaceAt [k] [f roi pt (xs!!k)] xs))
 
 --------------------------------------------------------------------------------
 
