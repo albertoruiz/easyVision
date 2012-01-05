@@ -270,12 +270,9 @@ redik f a1 a2 a3 a4 a5 = f a1 a2 a3 a4 a5 >> postRedisplay Nothing
 
 ----------------------------------------------------------------
 
-minroi = 20
-
 nextPolicy UserSize = DynamicSize
 nextPolicy StaticSize = UserSize
 nextPolicy DynamicSize = UserSize
-
 
 -- | keyboard callback for camera control and exiting the application with ESC. p or SPACE pauses, s sets frame by frame mode.
 kbdcam :: (IO (),IO(),IO()) -> KeyboardMouseCallback
