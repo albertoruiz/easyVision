@@ -14,4 +14,4 @@ rnd = return (threadDelay 1000 >> fmap (flip mod 10) randomIO)
 avg = map (mean . map fromIntegral) . splitEvery 100
 
 f :: [Int] -> [(Int,Double)]
-f = zip [1..1000] . avg
+f = zip [1..20] . avg
