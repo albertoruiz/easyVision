@@ -86,15 +86,20 @@ interface sz0 name st0 ft upds acts resultFun resultDisp cam = do
     displayCallback $= do
         evInit w
         prepZoom w
-        dr <- readIORef (evDraw w)
+        dr <- readMVar (evDraw w)
         renderIn w dr
         swapBuffers
+        --putStrLn "  D"
 
-    callbackFreq 25 $ do
+    callbackFreq 5 $ do
         visible <- get (evVisible w)
-        ready <- get (evReady w)
-        when (visible && ready) $ postRedisplay (Just (evW w)) >> (evReady w) $= False
-
+        sync <- readIORef (evSync w)
+        ready <- readMVar (evReady w)
+        when (visible && ready && not sync) $ do
+            postRedisplay (Just (evW w))
+            swapMVar (evReady w) False
+            return ()
+        
     return $ do
         thing <- cam'
         firstTime <- readIORef firstTimeRef
@@ -103,8 +108,11 @@ interface sz0 name st0 ft upds acts resultFun resultDisp cam = do
         roi <- get (evRegion w)
         let (newState, result) = resultFun roi state thing
         putW w newState
-        (evDraw w)  $= resultDisp roi newState result
-        (evReady w) $= True
+        swapMVar (evDraw w) (resultDisp roi newState result)
+        swapMVar(evReady w) True
+        --putStrLn "W"
+        sync <- readIORef (evSync w)
+        when sync $ postRedisplay (Just (evW w))
         return result
 
 ----------------------------------------
@@ -197,12 +205,14 @@ evWindow st0 name size mdisp kbd = do
     po <- newIORef StaticSize
     ps <- newIORef Nothing
     vi <- newIORef True
-    re <- newIORef True
-    dr <- newIORef (Draw ())
+    re <- newMVar True
+    dr <- newMVar (Draw ())
+    sy <- newIORef True
 
     let w = EVW { evW = glw
                 , evSt = st
                 , evDraw = dr
+                , evSync = sy
                 , evReady = re
                 , evRegion = rr
                 , evZoom = zd
@@ -331,6 +341,7 @@ kbdroi w _ (SpecialKey KeyF3) Down Modifiers {ctrl=Down} _ = do
 
 kbdroi w _ (SpecialKey KeyF3) Down _ _ = modifyIORef (evPolicy w) nextPolicy
 
+kbdroi w _ (SpecialKey KeyF10) Down _ _ = modifyIORef (evSync w) not
 
 kbdroi w _ (Char '0') Down Modifiers {ctrl=Down} _ = writeIORef (evZoom w) (1,0,0)
 
