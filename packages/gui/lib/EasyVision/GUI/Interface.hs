@@ -72,7 +72,6 @@ type Interface s a b = Size -> String -> s
 
 type Command state result = ((Key,KeyState,Modifiers), WinRegion -> Point -> state -> result)
 type WinInit state input = EVWindow state -> input -> IO()
-type WinRegion = Polyline
 type PreCommand t state result = (t -> result) -> Command state result
 
 type VC a b = IO a -> IO (IO b)
@@ -88,6 +87,7 @@ interface sz0 name st0 ft upds acts resultFun resultDisp cam = do
         prepZoom w
         dr <- readMVar (evDraw w)
         renderIn w dr
+        drawRegion w
         swapBuffers
         --putStrLn "  D"
 
@@ -115,6 +115,14 @@ interface sz0 name st0 ft upds acts resultFun resultDisp cam = do
         when sync $ postRedisplay (Just (evW w))
         return result
 
+drawRegion w = do
+    ok <- readIORef (evDrReg w)
+    (Point x1 y1, Point x2 y2) <- readIORef (evRegion w)
+    when ok $ render $ Draw [ color white, lineWd 1
+                            , (Draw . Closed) [ Point x1 y1, Point x2 y1
+                                              , Point x2 y2, Point x1 y2] ]
+
+
 ----------------------------------------
 
 type Standalone s = Size -> String -> s -> [Command s s] -> [Command s (IO ())] -> (s -> Drawing) -> IO (EVWindow s)
@@ -128,6 +136,7 @@ standalone sz0 name st0 upds acts disp = do
         prepZoom w
         st <- getW w
         renderIn w (disp st)
+        drawRegion w
         swapBuffers
 
     return w
@@ -176,7 +185,7 @@ run c = runIt $ do
 
 ----------------------------------------------------------------
 
-irr = Closed [Point p p, Point n n]
+irr = (Point p p, Point n n)
   where p = 0.5; n = -0.5    
 
 evWindow st0 name size mdisp kbd = do
@@ -199,6 +208,7 @@ evWindow st0 name size mdisp kbd = do
     let Size h w = size
 
     rr <- newIORef irr
+    drr <- newIORef False
         
     zd <- newIORef (1,0,0)
     ms <- newIORef None
@@ -215,6 +225,7 @@ evWindow st0 name size mdisp kbd = do
                 , evSync = sy
                 , evReady = re
                 , evRegion = rr
+                , evDrReg = drr
                 , evZoom = zd
                 , evMove = ms
                 , evPolicy = po
@@ -327,7 +338,8 @@ kbdroi w _ (MouseButton LeftButton) Down Modifiers {ctrl=Down} (Position x y) =
 kbdroi w _ (MouseButton RightButton) Down Modifiers {ctrl=Down} p = do
     gp <- unZoomPoint w
     let pt = gp p
-    modifyIORef (evRegion w) $ \(Closed[_,b]) -> (Closed [pt,b])
+    modifyIORef (evRegion w) $ \(_,b) -> (pt,b)
+    writeIORef (evDrReg w) True
     writeIORef (evMove w) SetROI
 
 kbdroi w _ (MouseButton LeftButton) Up _ _ = writeIORef (evMove w) None
@@ -342,6 +354,7 @@ kbdroi w _ (SpecialKey KeyF3) Down Modifiers {ctrl=Down} _ = do
 kbdroi w _ (SpecialKey KeyF3) Down _ _ = modifyIORef (evPolicy w) nextPolicy
 
 kbdroi w _ (SpecialKey KeyF10) Down _ _ = modifyIORef (evSync w) not
+kbdroi w _ (SpecialKey KeyF11) Down _ _ = modifyIORef (evDrReg w) not
 
 kbdroi w _ (Char '0') Down Modifiers {ctrl=Down} _ = writeIORef (evZoom w) (1,0,0)
 
@@ -355,7 +368,8 @@ mvroi w (Position x1' y1') = do
     let pt = gp (Position x1' y1') 
     case ms of
         None -> return ()
-        SetROI -> modifyIORef (evRegion w) $ \(Closed[p,_]) -> Closed [p,pt]
+        SetROI -> do modifyIORef (evRegion w) $ \(p,_) -> (p,pt)
+                     writeIORef (evDrReg w) True
         MoveZoom x0 y0 -> do
             modifyIORef (evZoom w) $
                 \(z,x,y) -> (z, x+fromIntegral (x1'-x0), y-fromIntegral (y1'-y0))
@@ -429,14 +443,14 @@ mouseGenPt acts = keyAction' (withPoint') acts
 
 
 getROI w = do
-    r <- get (evRegion w)
+    (p1,p2) <- get (evRegion w)
     sz <- evSize `fmap` get windowSize 
-    return (poly2roi sz r)
+    return (poly2roi sz (Closed[p1,p2]))
 
 setEVROI w r = do
     sz <- evSize `fmap` get windowSize
     let Closed [a,b,c,d] = roi2poly sz r
-    (evRegion w) $= Closed [a,d]
+    (evRegion w) $= (a,d)
 
 -----------------------------------------------------------------
 

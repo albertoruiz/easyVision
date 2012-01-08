@@ -13,7 +13,7 @@ Stability   :  provisional
 module EasyVision.GUI.Types
 ( 
 -- * Window representation
-   EVWindow(..), MoveStatus(..), ResizePolicy(..)
+   EVWindow(..), MoveStatus(..), ResizePolicy(..), WinRegion
 -- * Drawing abstraction
 ,  Renderable(..), Drawing(..)
 ,  color, text, textF, pointSz, lineWd, winTitle
@@ -168,7 +168,8 @@ data EVWindow st = EVW { evW        :: Window
                        , evReady    :: MVar Bool
                        , evDraw     :: MVar Drawing
                        , evSync     :: IORef Bool
-                       , evRegion   :: IORef Polyline
+                       , evRegion   :: IORef WinRegion
+                       , evDrReg    :: IORef Bool
                        , evMove     :: IORef MoveStatus
                        , evInit     :: IO ()
                        , evZoom     :: IORef (Double,Double,Double)
@@ -180,6 +181,8 @@ data EVWindow st = EVW { evW        :: Window
 data MoveStatus = None | SetROI | MoveZoom GLint GLint
 
 data ResizePolicy = UserSize | StaticSize | DynamicSize deriving Eq
+
+type WinRegion = (Point,Point)
 
 --------------------------------------------------------------------------------
 

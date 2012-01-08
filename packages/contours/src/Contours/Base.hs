@@ -259,7 +259,7 @@ poly2roi sz p = ROI r1 (max (r1+d) r2) c1 (max (c1+d) c2)
     [Pixel r1 c1, Pixel r2 c2] = pointsToPixels sz [p1,p3]
     d = 32
 
-setRegion p im = setROI (poly2roi (size im) p) im
+setRegion (p1,p2) im = setROI (poly2roi (size im) (Closed[p1,p2])) im
 
 --------------------------------------------------------------------------------
 

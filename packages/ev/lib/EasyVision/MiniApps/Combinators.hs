@@ -200,8 +200,8 @@ selectROIfun name sel mon result cam = do
     let d = 50
     return $ do
         x <- cam'
-        r' <- get (evRegion w)
-        let r = poly2roi (sz) r'
+        (pt1,pt2) <- get (evRegion w)
+        let r = poly2roi (sz) (Closed[pt1,pt2])
         inWin w $ do drawImage'' 640 (sel x)
                      sz <- evSize `fmap` get windowSize
                      pixelCoordinates sz

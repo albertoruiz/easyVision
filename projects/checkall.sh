@@ -4,6 +4,9 @@ make ghci
 cd ../tour
 make ghci
 
+cd ../demos
+make ghci
+
 cd ../lkt
 make ghci
 
