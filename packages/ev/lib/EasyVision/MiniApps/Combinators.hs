@@ -13,7 +13,7 @@ Camera combinators: higher order functions which make virtual cameras from other
 -----------------------------------------------------------------------------
 
 module EasyVision.MiniApps.Combinators (
-  camera, cameraFolderG,
+  camera,
   runFPS,
   monitor,
   monitorWheel,
@@ -66,18 +66,6 @@ cameraFolder = do
     return $ do
         k <- getW w    
         return (channels $ imgs!!k)
-
-cameraFolderG = do
-    path <- optionString "--photos" "."
-    imgs <- readFolder' path
-    let disp rk = do
-           k <- get rk  
-           drawImage'' 320 (fst $ imgs!!k)
-    w <- evWindow 0 ("Folder: "++path) (mpSize 10) (Just disp) (mouseGen (cfacts (length imgs -1)) kbdQuit)               
-    return $ do
-        k <- getW w    
-        return (channelsFromRGB $ fst $ imgs!!k)
-
 
 cfacts n = [((MouseButton WheelUp,   Down, modif), \_ k -> min (k+1) n)
            ,((SpecialKey  KeyUp,     Down, modif), \_ k -> min (k+1) n)

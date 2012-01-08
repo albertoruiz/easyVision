@@ -17,15 +17,20 @@ module EasyVision.GUI.Util (
     sMonitor,
     browser,
     editor,
-    updateItem
+    updateItem,
+    cameraFolderG
 ) where
 
-import Graphics.UI.GLUT hiding (Point,Size)
+import Graphics.UI.GLUT hiding (Point,Size,color)
 import EasyVision.GUI.Types
 import EasyVision.GUI.Interface
 import Control.Arrow((***))
-import ImagProc.Base
+import ImagProc
+import ImagProc.Util(readFolder')
 import Util.Misc(replaceAt)
+import Util.Options
+import Control.Concurrent(threadDelay)
+import Data.Colour.Names
 
 editor :: [Command (Int,[x]) (Int,[x])] -> [Command (Int,[x]) (IO())]
        -> String -> [x] -> (Int -> x -> Drawing) -> IO (EVWindow (Int,[x]))
@@ -72,4 +77,30 @@ sMonitor name f = interface (Size 240 360) name 0 (const.const.return $ ()) (c2 
 
 observe :: Renderable x => String -> (b -> x) -> VC b b
 observe name f = interface (Size 240 360) name () (const.const.return $ ()) [] [] (const (,)) (const.const $ Draw . f)
+
+--------------------------------------------------------------------------------
+
+cameraFolderG = dummy >>= cam
+  where
+    cam c = do
+        path <- optionString "--photos" "."
+        imgs <- readFolder' path
+        interface (Size 240 320) "photos" (0,imgs) ft (keys imgs) [] r sh c
+      where
+        keys xs = acts (length xs -1)
+        acts n = [ ((MouseButton WheelUp,   Down, modif), \_ _ (k,xs) -> (min (k+1) n,xs))
+                 , ((SpecialKey  KeyUp,     Down, modif), \_ _ (k,xs) -> (min (k+1) n,xs))
+                 , ((MouseButton WheelDown, Down, modif), \_ _ (k,xs) -> (max (k-1) 0,xs))
+                 , ((SpecialKey  KeyDown,   Down, modif), \_ _ (k,xs) -> (max (k-1) 0,xs))]
+        r _ (k,xs) _ = ((k,xs), channelsFromRGB $ fst $ xs!!k)
+        sh _ (k,xs) x = Draw [Draw (rgb x), info (k,xs) ]
+        ft w _ = evPrefSize w $= Just (Size 240 320)
+        info (k,xs) = Draw [color black, textF Helvetica12 (Point 0.9 0.6)
+                            (show w ++ "x" ++ show h ++ " " ++snd ( xs!!k)) ]
+          where
+            Size h w = size (fst $ xs!!k)
+
+dummy :: IO (IO ())
+dummy = return (threadDelay 100000 >> return ())
+
 
