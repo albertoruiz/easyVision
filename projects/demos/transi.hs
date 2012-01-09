@@ -42,12 +42,12 @@ editR2 sz@(Size h w) dir sv xs = editor upds save "transition" xs sh
 main = do
     dir:_ <- getArgs
     sz <- findSize
-    x <- readFolder' dir
+    x <- readFolderIM dir
     let fn = dir ++ "/regions.txt"
     ok <- doesFileExist fn
     when (not ok) $ writeFile fn "[]"
     s <- read <$> readFile fn
-    let g (im, f) = ((im, maybe def id (lookup f s) ),f)
+    let g (im, f) = ((rgb im, maybe def id (lookup f s) ),f)
         y = map g x
     sv <- openYUV4Mpeg sz (dir++"/video.y4m") Nothing
     runIt $ editR2 sz dir sv y

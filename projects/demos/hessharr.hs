@@ -8,7 +8,7 @@ import Control.Arrow((&&&))
 main = run $ camera ~> f
            >>= observe "Hessian" hess 
            >>= observe "Harris"  harr
-           >>= timeMonitor
+           >>= freqMonitor
 
 f = (id &&& gradients . gaussS 2 . float) . resize (mpSize 10) . grayscale
 

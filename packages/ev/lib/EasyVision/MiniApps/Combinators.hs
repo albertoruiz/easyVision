@@ -135,7 +135,7 @@ compCost cam = do
             writeIORef t av'
             return (r,av')
 
-
+{-# DEPRECATED timeMonitor "use freqMonitor instead" #-}
 timeMonitor :: IO b -> IO (IO b)
 timeMonitor = compCost >=> frameRate >=> g >~> (fst.fst) where
     f _ _ ((_,t1),t2) = text (Point 0.9 0) $ 

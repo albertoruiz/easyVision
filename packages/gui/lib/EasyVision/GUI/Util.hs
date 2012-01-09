@@ -18,19 +18,25 @@ module EasyVision.GUI.Util (
     browser,
     editor,
     updateItem,
-    camera
+    camera,
+    freqMonitor
 ) where
 
 import Graphics.UI.GLUT hiding (Point,Size,color)
 import EasyVision.GUI.Types
 import EasyVision.GUI.Interface
 import Control.Arrow((***))
+import Control.Monad((>=>))
 import ImagProc
-import ImagProc.Util(findSize,readFolderMP,readFolderIM,getCam,(~>))
+import ImagProc.Util(findSize,readFolderMP,readFolderIM,getCam,(~>),(>~>))
 import Util.Misc(replaceAt)
 import Util.Options
 import Control.Concurrent(threadDelay)
 import Data.Colour.Names
+import Data.Time
+import System.CPUTime
+import Text.Printf(printf)
+import Data.IORef
 
 editor :: [Command (Int,[x]) (Int,[x])] -> [Command (Int,[x]) (IO())]
        -> String -> [x] -> (Int -> x -> Drawing) -> IO (EVWindow (Int,[x]))
@@ -79,26 +85,6 @@ observe :: Renderable x => String -> (b -> x) -> VC b b
 observe name f = interface (Size 240 360) name () (const.const.return $ ()) [] [] (const (,)) (const.const $ Draw . f)
 
 --------------------------------------------------------------------------------
-{-
-cameraFolder = do
-    path <- optionString "--photos" "."
-    sz <- findSize
-    imgs <- readFolder path (Just sz)
-    let disp rk = do
-           k <- get rk  
-           drawImage (imgs!!k)
-    w <- evWindow 0 ("Folder: "++path) (mpSize 10) (Just disp) (mouseGen (cfacts (length imgs -1)) kbdQuit)               
-    return $ do
-        k <- getW w    
-        return (channels $ imgs!!k)
-
-cfacts n = [((MouseButton WheelUp,   Down, modif), \_ k -> min (k+1) n)
-           ,((SpecialKey  KeyUp,     Down, modif), \_ k -> min (k+1) n)
-           ,((MouseButton WheelDown, Down, modif), \_ k -> max (k-1) 0)
-           ,((SpecialKey  KeyDown,   Down, modif), \_ k -> max (k-1) 0)]
-
--}
-
 
 -- | returns the camera 0. (It also admits --photos=path/to/folder/ with images, and --variable-size, to read images of
 -- different arbitrary sizes.)
@@ -140,4 +126,31 @@ camG readf c = do
 
 dummy :: IO (IO ())
 dummy = return (threadDelay 100000 >> return ())
+
+--------------------------------------------------------------------------------
+
+frameRate cam = do
+    t0 <- getCurrentTime
+    rt <- newIORef (t0,(1/20,0.01))
+    return $ do
+            (t0,(av,cav)) <- readIORef rt
+            ct0 <- getCPUTime
+            r <- cam
+            ct1 <- getCPUTime
+            t1 <- getCurrentTime
+            let dt = realToFrac $ diffUTCTime t1 t0 :: Double
+                av' = av *0.99 + 0.01* dt
+                cdt = fromIntegral (ct1-ct0) / (10**9 :: Double)
+                cav' = cav *0.99 + 0.01* cdt
+            writeIORef rt (t1,(av',cav'))
+            return (r,(av',cav'))
+
+
+freqMonitor :: VC x x
+freqMonitor = frameRate >=> g where
+    g = interface (Size 60 300) "Frame Rate" (1/20,0.1) (const . const . return $ ()) [] [] f sh
+    f _roi _state (t,x) = (x,t)
+    sh _roi (t2,t1) _result = text (Point 0.9 0) $
+                               printf " %3.0f ms CPU  / %4.0f Hz   /   %3.0f%%"
+                               (t1::Double) (1/t2::Double) (t1/t2/10)
 

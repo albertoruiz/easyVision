@@ -1,6 +1,6 @@
 import EasyVision
  
-main = run $ camera >>= f >>= timeMonitor
+main = run $ camera >>= f >>= freqMonitor
  
 f :: VC Channels ImageRGB
 f cam = return $ do

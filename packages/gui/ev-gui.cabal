@@ -25,7 +25,7 @@ library
                         hmatrix >= 0.8.3,
                         prcv-util,
                         contours,
-                        base >= 3 && < 5,
+                        base >= 3 && < 5, time,
                         colour >= 2.2,
                         OpenGL, GLUT,
                         containers, process,

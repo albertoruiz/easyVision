@@ -1,6 +1,6 @@
 import EasyVision
 
-main = run $ camera >>= sMonitor "result" f >>= timeMonitor
+main = run $ camera >>= sMonitor "result" f >>= freqMonitor
 
 f roi x =  [  msg "grayscale"         [  Draw g ]
            ,  msg "gaussian filter "  [  Draw smooth ]
