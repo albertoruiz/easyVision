@@ -13,7 +13,6 @@ Camera combinators: higher order functions which make virtual cameras from other
 -----------------------------------------------------------------------------
 
 module EasyVision.MiniApps.Combinators (
-  camera,
   runFPS,
   monitor,
   monitorWheel,
@@ -55,36 +54,6 @@ import Util.Ellipses
 
 ----------------------------------------------------------------------
 
-cameraFolder = do
-    path <- optionString "--photos" "."
-    sz <- findSize
-    imgs <- readFolder path (Just sz)
-    let disp rk = do
-           k <- get rk  
-           drawImage (imgs!!k)
-    w <- evWindow 0 ("Folder: "++path) (mpSize 10) (Just disp) (mouseGen (cfacts (length imgs -1)) kbdQuit)               
-    return $ do
-        k <- getW w    
-        return (channels $ imgs!!k)
-
-cfacts n = [((MouseButton WheelUp,   Down, modif), \_ k -> min (k+1) n)
-           ,((SpecialKey  KeyUp,     Down, modif), \_ k -> min (k+1) n)
-           ,((MouseButton WheelDown, Down, modif), \_ k -> max (k-1) 0)
-           ,((SpecialKey  KeyDown,   Down, modif), \_ k -> max (k-1) 0)]
-
-
-cameraV = findSize >>= getCam 0 ~> channels
-
--- | returns the camera 0. (It also admits --photos=path/to/folder/ with images, and --variable-size, to read images of
--- different arbitrary sizes.)
-camera :: IO (IO Channels)
-camera = do
-    f <- hasValue "--photos"
-    g <- getFlag "--variable-size"
-    if f then if g then cameraFolderG else cameraFolder
-         else cameraV
-
----------------------------------------------------------
 
 -- | Generic display function for a camera combinator. The monitor function is invoked in the window with the grabbed object.
 --   The window includes a withPause controller.

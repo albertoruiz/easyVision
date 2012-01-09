@@ -21,6 +21,7 @@ module ImagProc.Util(
     getMulticam,
     readFrames,
     readFolder, readFolder',
+    readFolderMP, readFolderIM,
     -- * Video output
     writeFrames,
     optionalSaver,
@@ -35,7 +36,7 @@ module ImagProc.Util(
 
 import ImagProc.Ipp.Core
 import ImagProc.Ipp.Convert(loadRGB)
-import ImagProc.Generic(Channels,channels,GImg,toYUV)
+import ImagProc.Generic(Channels,channels,GImg,toYUV,channelsFromRGB)
 import ImagProc.Camera
 import System.IO.Unsafe(unsafeInterleaveIO)
 import Data.List(isPrefixOf,foldl',tails,findIndex,isInfixOf,isSuffixOf)
@@ -59,7 +60,7 @@ timing act = do
     t0 <- getCPUTime
     r <- act
     t1 <- getCPUTime
-    _ <- printf "%4.0f ms CPU\n" $ (fromIntegral (t1 - t0) / (10^9 :: Double))
+    _ <- printf "%4.0f ms CPU\n" $ (fromIntegral (t1 - t0) / (10**9 :: Double))
     return r
 
 -----------------------------------------------------------------------------------
@@ -91,6 +92,7 @@ getCam n sz = do
         fullUrl = dropWhile (== ' ') $ expand aliases url
         isLive = "--live" `isInfixOf` fullUrl || "--live" `elem` rawargs
         isChan = "--chan" `isInfixOf` fullUrl || "--chan" `elem` rawargs
+        clean ws = unwords . filter (not . (`elem` ws)). words
         cleanUrl = clean ["--live"] fullUrl
         cam = if "uvc" `isPrefixOf` cleanUrl
                 then uvcCamera ("/dev/video" ++ drop 3 cleanUrl) sz 30
@@ -101,7 +103,6 @@ getCam n sz = do
                  then putStrLn "(Channel)" >> cam >>= channel
                  else cam
 
-clean ws = unwords . filter (not . (`elem` ws)). words
 
 ----------------------------------------------
 
@@ -120,26 +121,27 @@ lazyRead get = do
 
 -----------------------------------------------
 
--- | returns a lazy list with all the frames produced by an image source.
 readFrames :: Int  -- ^ n-th camera url supplied by the user (or defined in cameras.def)
            -> IO [ImageYUV]
-readFrames n = fmap (map fromJust . takeWhile isJust) (readFrames' n)
+-- | returns a lazy list with all the frames produced by an image source.
+readFrames = fmap (map fromJust . takeWhile isJust) . readFrames'
+  where
+    readFrames' n = do
+        args <- cleanOpts `fmap` getArgs
+        aliases <- getAliases
+        sz <- findSize
+        let url = if n < length args
+                    then args!!n
+                    else fst (aliases!!n)
+        mplayer' (expand aliases url) sz >>= lazyRead
 
-readFrames' n = do
-    args <- cleanOpts `fmap` getArgs
-    aliases <- getAliases
-    sz <- findSize
-    let url = if n < length args
-                then args!!n
-                else fst (aliases!!n)
-    mplayer' (expand aliases url) sz >>= lazyRead
 
-
--- | writes a list of frames in a file with the yuv4mpeg format understood by mplayer.
+writeFrames :: FilePath -> [ImageYUV] -> IO ()
+-- ^ writes a list of frames in a file with the yuv4mpeg format understood by mplayer.
 -- If the output filename is /dev/stdout you can pipe the result to mencoder like this:
 --
 -- ./prog | mencoder - -o result.avi -ovc lavc -fps 125 [other options]
-writeFrames :: FilePath -> [ImageYUV] -> IO ()
+writeFrames _ [] = return ()
 writeFrames filename fs@(f0:_) = do
     let sz = size f0
     sv <- openYUV4Mpeg sz filename Nothing
@@ -150,29 +152,29 @@ writeFrames filename fs@(f0:_) = do
 numCams :: IO Int
 numCams = (length . cleanOpts) `fmap` getArgs
 
+getAliases :: IO [(String, String)]
 getAliases = do
     env <- getEnvironment
     let ev = lookup "EASYVISION" env
-        Just path' = ev
-        path = path' ++ "/"
     okHere <- doesFileExist "cameras.def"
     okThere <- case ev of
         Nothing   -> return False
-        Just path -> doesFileExist (path++"cameras.def")
+        Just pth -> doesFileExist (pth++"/cameras.def")
     fmap prepareAlias $
         if okHere
                 then readFile "cameras.def"
                 else if okThere
-                        then let Just path = ev in readFile (path++"cameras.def")
+                        then let Just pth = ev in readFile (pth++"/cameras.def")
                         else return []
+  where
+    prepareAlias = filter (uncurry (/=)) . map (break (==' ')) . lines
 
-prepareAlias = filter (uncurry (/=)) . map (break (==' ')) . lines
-
+expand :: Eq a => [([a], [a])] -> [a] -> [a]
 expand ali s = foldl' (flip replace) s ali
-
-replace (a,b) c = case findIndex (isPrefixOf a) (tails c) of
-    Nothing -> c
-    Just i  -> take i c ++ b ++ replace (a,b) (drop (i+length a) c)
+  where
+    replace (a,b) c = case findIndex (isPrefixOf a) (tails c) of
+        Nothing -> c
+        Just i  -> take i c ++ b ++ replace (a,b) (drop (i+length a) c)
 
 ----------------------------------------------
 
@@ -308,8 +310,39 @@ saveFrame f cam = do
         return x
 
 ----------------------------------------------------------------------
+ 
+isImage :: FilePath -> Bool
+isImage name = any g [".png",".jpg",".JPG"]
+  where
+    g e = e `isSuffixOf` name
+
+
+readFolderIM :: FilePath -> IO [(Channels,String)]
+-- ^ reads a list of images from a folder. Variable size, using imageMagick
+readFolderIM path = do
+    fs <- filter isImage <$> getDirectoryContents path
+    imgs <- mapM (loadRGB.((path++"/")++)) fs
+    putStrLn $ show (length imgs) ++ " images in " ++ path
+    --print $ unwords fs
+    return (zip (map channelsFromRGB imgs) fs)
+
+
+readFolderMP :: FilePath -> Maybe Size -> IO [(Channels,String)]
+-- ^ reads a list of images from a folder. Fixed size using mplayer
+readFolderMP path mbsz = do
+    let sz = maybe (Size 600 800) id mbsz -- TO DO: remove fixed size
+    fs <- getDirectoryContents path
+    let nframes = length (filter isImage fs)
+    cam <- mplayer ("mf://"++path++" -benchmark -loop 1") sz
+    imgs <- sequence (replicate nframes cam)
+    putStrLn $ show (length imgs) ++ " images in " ++ path
+    return $ zip (map channels imgs) (map show [(1::Int)..])
+
+----------------------------------------------------------------------
+
 
 -- | reads a list of images from a folder. Fixed size using mplayer
+{-# DEPRECATED readFolder "use readFolderMP instead" #-}
 readFolder :: FilePath -> Maybe Size -> IO [ImageYUV]
 readFolder path mbsz = do
     let sz = maybe (Size 600 800) id mbsz -- TO DO: remove fixed size
@@ -320,19 +353,15 @@ readFolder path mbsz = do
     putStrLn $ show (length imgs) ++ " images in " ++ path
     return imgs
 
-----------------------------------------------------------------------
 
 -- | reads a list of images from a folder. Variable size, using imageMagick
+{-# DEPRECATED readFolder' "use readFolderIM instead" #-}
 readFolder' :: FilePath -> IO [(ImageRGB,String)]
 readFolder' path = do
     fs <- filter isImage <$> getDirectoryContents path
-    let nframes = length fs
     imgs <- mapM (loadRGB.((path++"/")++)) fs
     putStrLn $ show (length imgs) ++ " images in " ++ path
     --print $ unwords fs
     return (zip imgs fs)
-  where
-    isImage name = any g [".png",".jpg",".JPG"]
-      where
-        g e = e `isSuffixOf` name
+
 
