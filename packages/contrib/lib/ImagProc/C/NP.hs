@@ -62,7 +62,8 @@ autoParam "NPParam" ""
     [ ("redu", "Double", realParam 1.5 0 10)
     , ("th","Int",intParam 10 0 100)
     , ("minlen", "Int", intParam 50 0 200)
-    , ("wAlloca", "Int", intParam 0 0 1)]
+--  , ("wAlloca", "Int", intParam 0 0 1)
+    ]
 
 wnpcontours :: (x -> ImageGray) -> IO x -> IO (IO (x, (([Polyline],[Polyline]),[Polyline])))
 wnpcontours f = (\p -> npcontours p . f) .@. winNPParam
@@ -154,4 +155,4 @@ npcontours NPParam{..} x = ((map proc1 clb, map proc1 clw), map proc2 op)
     (op,clb,clw) = npbParse . npbRaw th minlen wAlloca $ modifyROI (shrink (5,5)) x
     proc1 = Closed . pixelsToPoints (size x) . douglasPeuckerClosed redu
     proc2 = Open . pixelsToPoints (size x) . douglasPeucker redu
-
+    wAlloca = 0 -- TO DO: change to auto
