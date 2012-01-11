@@ -12,6 +12,7 @@ Stability   :  provisional
 
 module EasyVision.GUI (
     module EasyVision.GUI.Util,
+    module EasyVision.GUI.Combinators,
     module EasyVision.GUI.Draw,
     module EasyVision.GUI.Interface,
     module EasyVision.GUI.Parameters,
@@ -21,6 +22,7 @@ module EasyVision.GUI (
 )where
 
 import EasyVision.GUI.Util
+import EasyVision.GUI.Combinators
 import EasyVision.GUI.Types
 import EasyVision.GUI.Interface
 import EasyVision.GUI.Parameters

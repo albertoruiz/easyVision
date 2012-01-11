@@ -24,7 +24,6 @@ module EasyVision.MiniApps.Contours (
 import EasyVision.MiniApps.Combinators
 import EasyVision.GUI
 import ImagProc
-import ImagProc.Util
 import ImagProc.Camera
 import Graphics.UI.GLUT hiding (Size,Point)
 import Contours hiding(area)

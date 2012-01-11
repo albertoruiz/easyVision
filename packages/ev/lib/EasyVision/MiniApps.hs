@@ -43,7 +43,6 @@ import EasyVision.GUI
 import EasyVision.GUI.Parameters
 import ImagProc hiding ((.*))
 import ImagProc.Camera
-import ImagProc.Util
 import Features(contours)
 import Contours(momentsContour)
 import Data.List(transpose)

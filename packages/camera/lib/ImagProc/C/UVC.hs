@@ -18,7 +18,7 @@ module ImagProc.C.UVC (uvcCamera)
 where
 
 import Foreign
-import Foreign.C.Types(CChar)
+import Foreign.C.Types
 import Foreign.C.String(newCString)
 import ImagProc.Ipp hiding (r1,c1,r2,c2)
 

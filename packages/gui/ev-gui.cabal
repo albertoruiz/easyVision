@@ -28,7 +28,7 @@ library
                         base >= 3 && < 5, time,
                         colour >= 2.2,
                         OpenGL, GLUT,
-                        containers, process,
+                        containers, process, directory,
                         template-haskell, ghc-prim
 
     hs-source-dirs:     lib
@@ -42,6 +42,7 @@ library
                         EasyVision.GUI.Objects
                         EasyVision.GUI.Parameters
                         EasyVision.GUI.Trackball
+                        EasyVision.GUI.Combinators
 
     other-modules:
 

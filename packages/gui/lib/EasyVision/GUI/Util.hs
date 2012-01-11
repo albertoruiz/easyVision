@@ -28,7 +28,7 @@ import EasyVision.GUI.Interface
 import Control.Arrow((***))
 import Control.Monad((>=>))
 import ImagProc
-import ImagProc.Util(findSize,readFolderMP,readFolderIM,getCam,(~>),(>~>))
+import EasyVision.GUI.Combinators(findSize,readFolderMP,readFolderIM,getCam,(~>),(>~>))
 import Util.Misc(replaceAt)
 import Util.Options
 import Control.Concurrent(threadDelay)

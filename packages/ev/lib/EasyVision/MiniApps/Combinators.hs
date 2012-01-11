@@ -31,7 +31,6 @@ module EasyVision.MiniApps.Combinators (
 
 import ImagProc.Ipp.Core
 import ImagProc
-import ImagProc.Util
 import Data.IORef
 import System.Exit
 import EasyVision.GUI

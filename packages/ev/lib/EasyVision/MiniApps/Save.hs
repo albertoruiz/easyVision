@@ -23,7 +23,6 @@ import Control.Monad(when)
 import EasyVision.GUI
 import ImagProc.Ipp.Core
 import ImagProc.Camera
-import ImagProc.Util(autoSaver)
 import Util.Options
 
 

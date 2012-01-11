@@ -1,18 +1,17 @@
 -----------------------------------------------------------------------------
 {- |
-Module      :  ImagProc.Util
-Copyright   :  (c) Alberto Ruiz 2006-8
-License     :  GPL-style
+Module      :  EasyVision.GUI.Combinators
+Copyright   :  (c) Alberto Ruiz 2006-12
+License     :  GPL
 
 Maintainer  :  Alberto Ruiz (aruiz at um dot es)
-Stability   :  provisional
 
 General utilities.
 
 -}
 -----------------------------------------------------------------------------
 
-module ImagProc.Util(
+module EasyVision.GUI.Combinators(
     -- * Combinators
     virtualCamera, (~~>), (~>), (>~~>), (>~>), (.&.), (.@.),
     -- * Camera selection

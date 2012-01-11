@@ -28,7 +28,6 @@ import EasyVision.MiniApps.Combinators(monitor)
 import Data.List(tails)
 import ImagProc.Camera(mpSize)
 import ImagProc
-import ImagProc.Util
 
 
 -- | Motion detector with a desired condition on the absolute pixel difference in the roi of two consecutive images (computed with help of 'addSmall').

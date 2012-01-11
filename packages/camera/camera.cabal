@@ -36,14 +36,14 @@ flag uvc
 library
 
 
-    Build-Depends:      base >= 3 && < 5, prcv-util, imagproc >= 0.1,
-                        directory, process
+    Build-Depends:      base >= 3 && < 5, process,
+                        prcv-util, imagproc >= 0.1
+                        
 
     hs-source-dirs:     lib
 
     Exposed-modules:    ImagProc.C.UVC
                         ImagProc.Camera
-                        ImagProc.Util
 
 
 
