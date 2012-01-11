@@ -15,7 +15,7 @@ General utilities.
 
 module EasyVision.GUI.Combinators(
     -- * Arrow Interface
-    runT_, runT, Trans(..), transUI, (-->), (<--), (.>), (<.),
+    run, Trans(..), transUI, (-->), (<--), (.>), (<.), (@@@),
     -- * Old Combinators
     virtualCamera, (~~>), (~>), (>~~>), (>~>), (.&.), (.@.),
     -- * Camera selection
@@ -97,9 +97,9 @@ transUI ui = Trans $ source . (createGrab >=> ui)
 
 
 
-runT_ :: IO (IO a) -> Trans a b -> IO ()
+run :: IO (IO a) -> Trans a b -> IO ()
 -- ^ run a camera generator on a transformer
-runT_ gcam (Trans t) = runIt $ do
+run gcam (Trans t) = runIt $ do
     as <- source gcam
     bs <- t as
     f <- createGrab bs
@@ -108,7 +108,7 @@ runT_ gcam (Trans t) = runIt $ do
     g !x = putStr ""
 
 
-
+{-
 runT :: IO (IO a) -> Trans a b -> IO [b]
 -- ^ run a camera generator on a transformer, returning the results
 -- TO DO: FIXME
@@ -120,13 +120,13 @@ runT gcam (Trans t) = do
         f <- createGrab bs
         forkIO $ forever (f >>= writeChan rbs)
     getChanContents rbs
-    
+-}    
 
 
-infixr 1 -->
+infixr 2 -->
 f --> g = f >>> arrL g
 
-infixl 1 <--
+infixl 2 <--
 (<--) = flip (-->)
 
 -- different precedence from that of >>^ 
@@ -135,6 +135,10 @@ f .> g = f >>> arr g
 
 infixr 2 <.
 (<.) g f = (.>) f g
+
+
+infixl 3 @@@
+f @@@ p = (arr snd &&& arr (uncurry f)) <<< (transUI (const p) &&& Cat.id)
 
 --------------------------------------------------------------------------------
 

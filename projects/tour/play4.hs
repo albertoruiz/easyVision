@@ -1,4 +1,5 @@
-import EasyVision
- 
-main = run $ camera >>= observe "RGB" rgb >>= freqMonitor
+import EasyVision.GUI
+import ImagProc
+
+main = run camera $ observe "RGB" rgb >>> freqMonitor
 

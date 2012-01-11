@@ -1,6 +1,8 @@
-import EasyVision
+import EasyVision.GUI
+import Contours.Base
+import ImagProc
 
-main = run $ camera >>= sMonitor "result" f >>= freqMonitor
+main = run camera (sMonitor "result" f >>> freqMonitor)
 
 f roi x =  [  msg "grayscale"         [  Draw g ]
            ,  msg "gaussian filter "  [  Draw smooth ]

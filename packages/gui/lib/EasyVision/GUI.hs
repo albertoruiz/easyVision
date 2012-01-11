@@ -19,6 +19,7 @@ module EasyVision.GUI (
     module EasyVision.GUI.Objects,
     module EasyVision.GUI.Types,
     module Data.Colour.Names,
+    module Control.Arrow
 )where
 
 import EasyVision.GUI.Util
@@ -29,4 +30,5 @@ import EasyVision.GUI.Parameters
 import EasyVision.GUI.Objects
 import EasyVision.GUI.Draw
 import Data.Colour.Names
+import Control.Arrow
 

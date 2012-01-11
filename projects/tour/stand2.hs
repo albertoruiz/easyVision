@@ -1,4 +1,5 @@
-import EasyVision
+import EasyVision.GUI
+import ImagProc
 
 main = runIt win
 

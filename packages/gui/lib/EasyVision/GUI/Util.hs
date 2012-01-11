@@ -25,6 +25,7 @@ module EasyVision.GUI.Util (
 import Graphics.UI.GLUT hiding (Point,Size,color)
 import EasyVision.GUI.Types
 import EasyVision.GUI.Interface
+import EasyVision.GUI.Combinators
 import Control.Arrow((***))
 import Control.Monad((>=>))
 import ImagProc
@@ -66,8 +67,8 @@ browser = editor [] []
 
 --------------------------------------------------------------------------------
 
-sMonitor :: String -> (WinRegion -> b -> [Drawing]) -> VC b b
-sMonitor name f = interface (Size 240 360) name 0 (const.const.return $ ()) (c2 acts) [] (const (,)) g
+sMonitor :: String -> (WinRegion -> b -> [Drawing]) -> Trans b b
+sMonitor name f = transUI $ interface (Size 240 360) name 0 (const.const.return $ ()) (c2 acts) [] (const (,)) g
   where
     g roi k x = r !! j
       where
@@ -81,8 +82,8 @@ sMonitor name f = interface (Size 240 360) name 0 (const.const.return $ ()) (c2 
 
 --------------------------------------------------------------------------------
 
-observe :: Renderable x => String -> (b -> x) -> VC b b
-observe name f = interface (Size 240 360) name () (const.const.return $ ()) [] [] (const (,)) (const.const $ Draw . f)
+observe :: Renderable x => String -> (b -> x) -> Trans b b
+observe name f = transUI $ interface (Size 240 360) name () (const.const.return $ ()) [] [] (const (,)) (const.const $ Draw . f)
 
 --------------------------------------------------------------------------------
 
@@ -146,8 +147,9 @@ frameRate cam = do
             return (r,(av',cav'))
 
 
-freqMonitor :: VC x x
-freqMonitor = frameRate >=> g where
+freqMonitor :: Trans x x
+freqMonitor = transUI (frameRate >=> g)
+  where
     g = interface (Size 60 300) "Frame Rate" (1/20,0.1) (const . const . return $ ()) [] [] f sh
     f _roi _state (t,x) = (x,t)
     sh _roi (t2,t1) _result = text (Point 0.9 0) $

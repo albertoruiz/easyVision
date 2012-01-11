@@ -1,12 +1,15 @@
 {-# LANGUAGE TemplateHaskell, RecordWildCards #-}
 
-import EasyVision
+import EasyVision.GUI
+import ImagProc
 
 autoParam "Param" "g-"  [  ("sigma","Float",realParam 3 0 20)
                         ,  ("scale","Float",realParam 1 0 5) ]
 
-main = run  $    camera ~> grayscale
-            >>=  g .@. winParam
-            >>=  observe "gauss" snd
+main = run camera  $    arr grayscale
+                   >>>  g @@@ winParam
+                   >>>  observe "gauss" snd
 
 g Param{..} = (scale .*) . gaussS sigma . float
+
+

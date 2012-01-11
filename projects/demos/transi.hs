@@ -1,4 +1,7 @@
-import EasyVision
+import EasyVision.GUI
+import ImagProc
+import ImagProc.Camera(openYUV4Mpeg)
+import Contours.Base(setRegion)
 import Graphics.UI.GLUT.Callbacks
 import Control.Applicative((<$>))
 import System.Environment(getArgs)

@@ -1,16 +1,16 @@
 {-# LANGUAGE RecordWildCards #-}
 
-import EasyVision
-import Control.Arrow((&&&))
+import EasyVision.GUI
+import ImagProc
 
 ----------------------------------------------------------------------
 
-main = run $ camera ~> f
-           >>= observe "Hessian" hess 
-           >>= observe "Harris"  harr
-           >>= freqMonitor
+main = run camera  $   arr f
+                  >>>  observe "Hessian" hess 
+                  >>>  observe "Harris"  harr
+                  >>>  freqMonitor
 
-f = (id &&& gradients . gaussS 2 . float) . resize (mpSize 10) . grayscale
+f = (id &&& gradients . gaussS 2 . float) . resize (Size 240 320) . grayscale
 
 ----------------------------------------------------------------------
 

@@ -1,6 +1,7 @@
 {-# LANGUAGE TemplateHaskell, RecordWildCards #-}
 
-import EasyVision
+import EasyVision.GUI
+import ImagProc
 import Numeric.LinearAlgebra ((<>))
 import Vision(ht,desp,scaling,kgen)
 import Util.Rotation
@@ -15,9 +16,9 @@ autoParam "CGParam" "cg-"
     , ("focal",  "Double", listParam 2.8 [0.5, 0.7, 1, 2, 2.6, 2.8, 5, 5.5, 9,10])
     , ("scale",  "Double", listParam 1 [1.05**k|k<-[-20..20]])]
 
-main = run $   camera ~> rgb
-           >>= deskew .@. winCGParam
-           >>= observe "output" snd
+main = run camera  $    arr rgb
+                   >>>  deskew @@@ winCGParam
+                   >>>  observe "output" snd
 
 deskew par@CGParam{..} img = warp (80,0,0) (size img) r img
   where

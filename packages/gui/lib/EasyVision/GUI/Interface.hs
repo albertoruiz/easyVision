@@ -17,7 +17,7 @@ User interface tools
 module EasyVision.GUI.Interface (
     -- * Interface
     Interface, Command, WinInit, WinRegion, VC, Standalone,
-    runFPS, runIdle, runIt, run, interface, standalone,
+    runFPS, runIdle, runIt, run', interface, standalone,
     -- * Tools
     prepare,
     evWindow, evWindow3D, evWin3D,
@@ -176,8 +176,8 @@ runFPS n c = prepare >> (c >>= launchFreq n . (>> return ()))
 runIt :: IO a -> IO ()
 runIt f = prepare >> f >> mainLoop
 
-run :: IO (IO a) -> IO ()
-run c = runIt $ do
+run' :: IO (IO a) -> IO ()
+run' c = runIt $ do
     f <- c
     forkIO (forever $ f >>= g )
   where

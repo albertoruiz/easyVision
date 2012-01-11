@@ -1,4 +1,5 @@
-import EasyVision
+import EasyVision.GUI
+import ImagProc
 import Graphics.UI.GLUT.Callbacks
 
 main = runIt win
