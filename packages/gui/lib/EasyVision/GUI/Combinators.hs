@@ -1,3 +1,5 @@
+{-# LANGUAGE Arrows, BangPatterns #-}
+
 -----------------------------------------------------------------------------
 {- |
 Module      :  EasyVision.GUI.Combinators
@@ -12,7 +14,9 @@ General utilities.
 -----------------------------------------------------------------------------
 
 module EasyVision.GUI.Combinators(
-    -- * Combinators
+    -- * Arrow Interface
+    runT_, runT, Trans(..), transUI, (-->), (<--), (.>), (<.),
+    -- * Old Combinators
     virtualCamera, (~~>), (~>), (>~~>), (>~>), (.&.), (.@.),
     -- * Camera selection
     findSize,
@@ -53,6 +57,86 @@ import Data.IORef
 import ImagProc.C.UVC
 import Util.Options
 import System.Exit
+
+import EasyVision.GUI.Interface
+
+import qualified Control.Category as Cat
+import Control.Arrow
+import Control.Monad
+
+--------------------------------------------------------------------------------
+
+newtype Trans a b = Trans { trans :: [a] -> IO [b] }
+
+instance Cat.Category Trans
+  where
+    id = Trans return 
+    Trans f . Trans g = Trans ( g >=> f )
+
+instance Arrow Trans
+  where
+    arr f = Trans (return . map f)
+    first f = f *** Cat.id
+    (***) (Trans s) (Trans t) = Trans r
+      where
+        r = g . (s *** t) . unzip
+        g (a,b) = do
+            as <- a
+            bs <- b
+            return (zip as bs)
+
+
+arrL :: ([a]->[b]) -> Trans a b
+-- ^ pure function on the whole list of results
+arrL f = Trans (return . f)
+
+
+transUI :: VC a b -> Trans a b
+-- ^ convert IO interface to a transformer of lazy lists
+transUI ui = Trans $ source . (createGrab >=> ui)
+
+
+
+runT_ :: IO (IO a) -> Trans a b -> IO ()
+-- ^ run a camera generator on a transformer
+runT_ gcam (Trans t) = runIt $ do
+    as <- source gcam
+    bs <- t as
+    f <- createGrab bs
+    forkIO (forever $ f >>= g )
+  where
+    g !x = putStr ""
+
+
+
+runT :: IO (IO a) -> Trans a b -> IO [b]
+-- ^ run a camera generator on a transformer, returning the results
+-- TO DO: FIXME
+runT gcam (Trans t) = do
+    rbs <- newChan
+    forkIO $ runIt $ do
+        as <- source gcam
+        bs <- t as
+        f <- createGrab bs
+        forkIO $ forever (f >>= writeChan rbs)
+    getChanContents rbs
+    
+
+
+infixr 1 -->
+f --> g = f >>> arrL g
+
+infixl 1 <--
+(<--) = flip (-->)
+
+-- different precedence from that of >>^ 
+infixr 2 .>
+f .> g = f >>> arr g
+
+infixr 2 <.
+(<.) g f = (.>) f g
+
+--------------------------------------------------------------------------------
 
 timing :: IO a -> IO a
 timing act = do
@@ -250,6 +334,17 @@ grabAll grab = do
     im <- grab
     rest <- unsafeInterleaveIO (grabAll grab)
     return (im:rest)
+
+
+source :: IO (IO x) -> IO [x]
+-- ^ convert a camera generator into a lazy list
+source gencam = do
+    cam <- gencam
+    xs <- grabAll cam
+    return xs
+
+
+
 
 -- | Creates a virtual camera by some desired processing of the infinite list of images produced by another camera.
 virtualCamera :: ([a]-> [b]) -> IO a -> IO (IO b)
