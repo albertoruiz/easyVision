@@ -15,7 +15,7 @@ General utilities.
 
 module EasyVision.GUI.Combinators(
     -- * Arrow Interface
-    run, Trans(..), transUI, (-->), (<--), (.>), (<.), (@@@),
+    run, Trans, transUI, (-->), (<--), (.>), (<.), (@@@),
     -- * Old Combinators
     virtualCamera, (~~>), (~>), (>~~>), (>~>), (.&.), (.@.),
     -- * Camera selection

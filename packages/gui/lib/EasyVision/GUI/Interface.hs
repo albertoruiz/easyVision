@@ -99,7 +99,7 @@ interface sz0 name st0 ft upds acts resultFun resultDisp cam = do
             postRedisplay (Just (evW w))
             swapMVar (evReady w) False
             return ()
-        
+
     return $ do
         thing <- cam'
         firstTime <- readIORef firstTimeRef
@@ -411,15 +411,23 @@ withPause grab = do
         s <- readIORef step
         p <- readIORef paused
         g <- readIORef pass
-        let grab' = if g then grab >> readIORef frozen else readIORef frozen
+        let grab' | g         = grab              >> readIORef frozen -- discard input
+                  | otherwise = threadDelay 100000 >> readIORef frozen -- wait
         if not s && p
-             then grab'
-             else 
-                if s then if p then grab'
-                               else do writeIORef paused True
-                                       grab >>= writeIORef frozen
-                                       readIORef frozen
-             else grab
+          then
+            grab' -- normal pause, without step
+          else
+            if s  -- step by step
+              then
+                if p
+                  then
+                    grab' -- in pause mode
+                  else
+                    writeIORef paused True     >>   -- set pause again
+                    grab >>= writeIORef frozen >>   -- with the next frame
+                    readIORef frozen
+              else
+                grab
 
     return (virtual,control)
 
