@@ -18,8 +18,9 @@ module EasyVision.GUI.Util (
     browser,
     editor,
     updateItem,
-    camera,
-    freqMonitor
+    camera, run,
+    freqMonitor,
+    browseLabeled
 ) where
 
 import Graphics.UI.GLUT hiding (Point,Size,color)
@@ -47,10 +48,10 @@ editor upds acts name xs drw = standalone (Size 300 300) name (0,xs) (upds ++ mo
              | otherwise = drw j (xs !! j)
                  where
                    j = k `mod` (length xs)   
-    move = g2 [((MouseButton WheelUp,   Down, modif), (+1))
-              ,((SpecialKey  KeyUp,     Down, modif), (+1))
-              ,((MouseButton WheelDown, Down, modif), pred)
-              ,((SpecialKey  KeyDown,   Down, modif), pred)]
+    move = g2 [ ( key (MouseButton WheelUp),   (+1) )
+              , ( key (SpecialKey  KeyUp),     (+1) )
+              , ( key (MouseButton WheelDown), pred )
+              , ( key (SpecialKey  KeyDown),   pred ) ]
     g2 = map (id *** const.const.(***id))
 
 --    g1 = map (id *** const.const.(snd.))
@@ -63,7 +64,15 @@ updateItem key f = (key, \roi pt (k,xs) -> (k, replaceAt [k] [f roi pt (xs!!k)] 
 --------------------------------------------------------------------------------
 
 browser :: String -> [x] -> (Int -> x -> Drawing) -> IO (EVWindow (Int,[x]))
-browser = editor [] [] 
+browser = editor [] []
+
+--------------------------------------------------------------------------------
+
+browseLabeled :: String -> [(x,String)] -> (x -> Drawing)
+              -> IO (EVWindow (Int, [(x,String)] ))
+browseLabeled name examples disp = browser name examples f
+  where
+    f k (x,lab) = Draw [ disp x , winTitle (name++" #"++show (k+1)++ ": "++lab) ]
 
 --------------------------------------------------------------------------------
 
@@ -74,10 +83,10 @@ sMonitor name f = transUI $ interface (Size 240 360) name 0 (const.const.return 
       where
         r = f roi x
         j = k `mod` length r
-    acts = [((MouseButton WheelUp,   Down, modif), (+1))
-           ,((SpecialKey  KeyUp,     Down, modif), (+1))
-           ,((MouseButton WheelDown, Down, modif), pred)
-           ,((SpecialKey  KeyDown,   Down, modif), pred)]
+    acts = [ ( key (MouseButton WheelUp),   (+1) )
+           , ( key (SpecialKey  KeyUp),     (+1) )
+           , ( key (MouseButton WheelDown), pred )
+           , ( key (SpecialKey  KeyDown),   pred ) ]
     c2 = Prelude.map (id *** const.const)
 
 --------------------------------------------------------------------------------
@@ -113,10 +122,10 @@ camG readf c = do
     interface (Size 240 320) "photos" (0,imgs) ft (keys imgs) [] r sh c
   where
     keys xs = acts (length xs -1)
-    acts n = [ ((MouseButton WheelUp,   Down, modif), \_ _ (k,xs) -> (min (k+1) n,xs))
-             , ((SpecialKey  KeyUp,     Down, modif), \_ _ (k,xs) -> (min (k+1) n,xs))
-             , ((MouseButton WheelDown, Down, modif), \_ _ (k,xs) -> (max (k-1) 0,xs))
-             , ((SpecialKey  KeyDown,   Down, modif), \_ _ (k,xs) -> (max (k-1) 0,xs))]
+    acts n = [ (key (MouseButton WheelUp),   \_ _ (k,xs) -> (min (k+1) n,xs))
+             , (key (SpecialKey  KeyUp),     \_ _ (k,xs) -> (min (k+1) n,xs))
+             , (key (MouseButton WheelDown), \_ _ (k,xs) -> (max (k-1) 0,xs))
+             , (key (SpecialKey  KeyDown),   \_ _ (k,xs) -> (max (k-1) 0,xs))]
     r _ (k,xs) _ = ((k,xs), fst $ xs!!k)
     sh _ (k,xs) x = Draw [Draw (rgb x), info (k,xs) ]
     -- ft w _ = evPrefSize w $= Just (Size 240 320)
@@ -128,6 +137,8 @@ camG readf c = do
 
 dummy :: IO (IO ())
 dummy = return (threadDelay 100000 >> return ())
+
+run = runT_ camera
 
 --------------------------------------------------------------------------------
 

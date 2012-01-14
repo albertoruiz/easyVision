@@ -16,14 +16,15 @@ User interface tools
 
 module EasyVision.GUI.Interface (
     -- * Interface
-    Interface, Command, WinInit, WinRegion, VC, Standalone,
+    Command, WinInit, WinRegion, VC,
     runFPS, runIdle, runIt, run', interface, standalone,
     -- * Tools
     prepare,
     evWindow, evWindow3D, evWin3D,
     launch, launchFreq,
     inWin, getW, putW, updateW, getROI, setEVROI,
-    kbdcam, kbdQuit, keyAction, mouseGen, mouseGenPt, modif, withPause
+    kbdcam, kbdQuit, keyAction, mouseGen, mouseGenPt, withPause,
+    Key(..), SpecialKey(..), MouseButton(..), key, kUp, kCtrl, kShift, kAlt, BitmapFont(..)
 ) where
 
 import EasyVision.GUI.Types
@@ -61,22 +62,24 @@ keyAction upds acts def w a b c d = do
 
 modif = Modifiers {ctrl = Up, shift = Up, alt = Up }
 
+kCtrl (k,s,m)  = (k, s, m {ctrl = Down})
+kShift (k,s,m) = (k, s, m {shift = Down})
+kAlt (k,s,m)   = (k, s, m {alt = Down})
+kUp (k,s,m)    = (k, Up, m)
+key k          = (k, Down, modif)
+
 --------------------------------------------------------------------------------
-
-type Interface s a b = Size -> String -> s 
-                    -> WinInit s a -> [Command s s] -> [Command s (IO())]
-                    -> (WinRegion -> s -> a -> (s,b))
-                    -> (WinRegion -> s -> b -> Drawing) 
-                    -> VC a b
-
 
 type Command state result = ((Key,KeyState,Modifiers), WinRegion -> Point -> state -> result)
 type WinInit state input = EVWindow state -> input -> IO()
-type PreCommand t state result = (t -> result) -> Command state result
 
 type VC a b = IO a -> IO (IO b)
 
-interface :: Interface s a b 
+interface :: Size -> String -> s 
+          -> WinInit s a -> [Command s s] -> [Command s (IO())]
+          -> (WinRegion -> s -> a -> (s,b))
+          -> (WinRegion -> s -> b -> Drawing) 
+          -> VC a b
 interface sz0 name st0 ft upds acts resultFun resultDisp cam = do
     (cam', ctrl) <- withPause cam
     firstTimeRef <- newIORef True
@@ -125,9 +128,10 @@ drawRegion w = do
 
 ----------------------------------------
 
-type Standalone s = Size -> String -> s -> [Command s s] -> [Command s (IO ())] -> (s -> Drawing) -> IO (EVWindow s)
-
-standalone :: Standalone s
+standalone :: Size -> String -> s
+           -> [Command s s] -> [Command s (IO ())]
+           -> (s -> Drawing)
+           -> IO (EVWindow s)
 standalone sz0 name st0 upds acts disp = do
     w <- evWindow st0 name sz0 Nothing (keyAction upds acts kbdQuit)
 

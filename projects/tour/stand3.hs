@@ -1,6 +1,5 @@
 import EasyVision.GUI
 import ImagProc
-import Graphics.UI.GLUT.Callbacks
 import Util.Misc(replaceAt)
 
 main = runIt win
@@ -12,5 +11,6 @@ win = editor update save "editor" [2,4 .. 10] sh
     update =  [  op (Char '+') succ
               ,  op (Char '-') pred ]
     save = [(ctrlS, \_roi _pt (_k,xs) -> print xs)]
-    ctrlS = (Char '\DC3', Down, modif {ctrl=Down})
-    op c f = updateItem (c,Down,modif) (const.const $ f)
+    ctrlS = kCtrl (key (Char '\DC3'))
+    op c f = updateItem (key c) (const.const $ f)
+

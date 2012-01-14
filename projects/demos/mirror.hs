@@ -1,7 +1,7 @@
 import EasyVision.GUI
 import ImagProc
 
-main = run camera $ observe "Mirror" (mirror.grayscale)
+main = run $ observe "Mirror" (mirror.grayscale)
 
 mirror im = blockImage [[im1, mirror8u 1 im1]] where
     Size h w = size im

@@ -21,8 +21,8 @@ editR2 sz@(Size h w) dir sv xs = editor upds save "transition" xs sh
     sh k ((img,(p,q)),f) = Draw [ Draw img, lineWd 3, color red, drReg p, color blue, drReg q
                                  , text (Point 0.9 0) (show (1+k) ++ " " ++ f)]
 
-    upds = [ updateItem (Char 'a', Down, modif) initial
-           , updateItem (Char 'b', Down, modif) final ]
+    upds = [ updateItem (key (Char 'a')) initial
+           , updateItem (key (Char 'a')) final ]
 
     initial r _ ((im, (_,q)),f) = ((im, (fixAR ar r,q)),f)
     final   r _ ((im, (p,_)),f) = ((im, (p,fixAR ar r)),f)
@@ -38,8 +38,8 @@ editR2 sz@(Size h w) dir sv xs = editor upds save "transition" xs sh
                 putStrLn "Ok!")
            ]
 
-    ctrlS = (Char '\DC3', Down, modif {ctrl=Down})
-    f5 = (SpecialKey KeyF5, Down, modif)
+    ctrlS = kCtrl . key . Char $ '\DC3'
+    f5 = key (SpecialKey KeyF5)
     fsv = \((im,x),f)->(f,x)
 
 main = do

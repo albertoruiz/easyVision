@@ -15,7 +15,7 @@ General utilities.
 
 module EasyVision.GUI.Combinators(
     -- * Arrow Interface
-    run, Trans, transUI, (-->), (<--), (.>), (<.), (@@@),
+    runT_, Trans, transUI, idT, (-->), (<--), (>--), (--<), (.>), (<.), (>.), (.<), (@@@),
     -- * Old Combinators
     virtualCamera, (~~>), (~>), (>~~>), (>~>), (.&.), (.@.),
     -- * Camera selection
@@ -90,6 +90,9 @@ arrL :: ([a]->[b]) -> Trans a b
 -- ^ pure function on the whole list of results
 arrL f = Trans (return . f)
 
+idT :: Trans a a
+-- ^ identity Trans ( @idT = Control.Category.id@ )
+idT = Cat.id
 
 transUI :: VC a b -> Trans a b
 -- ^ convert IO interface to a transformer of lazy lists
@@ -97,9 +100,9 @@ transUI ui = Trans $ source . (createGrab >=> ui)
 
 
 
-run :: IO (IO a) -> Trans a b -> IO ()
+runT_ :: IO (IO a) -> Trans a b -> IO ()
 -- ^ run a camera generator on a transformer
-run gcam (Trans t) = runIt $ do
+runT_ gcam (Trans t) = runIt $ do
     as <- source gcam
     bs <- t as
     f <- createGrab bs
@@ -126,15 +129,30 @@ runT gcam (Trans t) = do
 infixr 2 -->
 f --> g = f >>> arrL g
 
+infixr 2 >--
+f >-- g = arrL f >>> g
+
 infixl 2 <--
 (<--) = flip (-->)
 
--- different precedence from that of >>^ 
+infixl 2 --<
+(--<) = flip (>--)
+
+
+--  different precedence from that of >>^ 
 infixr 2 .>
 f .> g = f >>> arr g
 
+infixr 2 >.
+f >. g = arr f >>> g
+
+
 infixr 2 <.
 (<.) g f = (.>) f g
+
+infixr 2 .<
+(.<) g f = (>.) f g
+
 
 
 infixl 3 @@@

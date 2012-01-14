@@ -3,10 +3,10 @@
 import EasyVision.GUI
 import ImagProc
 
-main = run camera  $    observe "orig" rgb
-                   .>   grayscale
-                   >>>  f
-                   >>>  observe "result"  (5.*)
+main = run $    observe "orig" rgb
+           .>   grayscale
+           >>>  f
+           >>>  observe "result"  (5.*)
 
 f = proc x -> do
     let f = float x

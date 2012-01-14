@@ -1,6 +1,7 @@
-import EasyVision
+import EasyVision.GUI
+import ImagProc
  
-main = run $ camera >>= f >>= freqMonitor
+main = run $ transUI f >>> freqMonitor
  
 f :: VC Channels ImageRGB
 f cam = return $ do

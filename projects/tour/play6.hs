@@ -1,11 +1,11 @@
-import EasyVision
+import EasyVision.GUI
+import ImagProc
 import System.Random(randomIO)
 import Util.Misc(mean,splitEvery)
 import Control.Concurrent(threadDelay)
  
-main = run  $    rnd
-            >>=  see "x" ~~> f >>= see "mean"
-            >>=  freqMonitor
+main = runT_ rnd  $    see "x" --> f >>> see "mean"
+                  >>>  freqMonitor
 
 see name = observe name (text (Point 0.9 0) . show)
 

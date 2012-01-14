@@ -3,7 +3,7 @@ import ImagProc.Base
 import Data.Time(getCurrentTime, UTCTime)
 import Control.Concurrent(threadDelay)
  
-main = run clock see
+main = runT_ clock see
 
 see :: Show x => Trans x x
 see = observe "time" (text (Point 0.9 0) . show)

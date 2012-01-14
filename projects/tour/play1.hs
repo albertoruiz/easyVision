@@ -1,7 +1,7 @@
 import EasyVision.GUI
 import ImagProc
 
-main = run camera p
+main = run p
 
 p = observe "RGB" rgb .> grayscale >>> observe "inverted" notI
 

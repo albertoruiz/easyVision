@@ -1,8 +1,8 @@
 import EasyVision.GUI
 import ImagProc
 
-main = run camera  $    arr (grayscale >>> id &&& corners)
-                   >>>  observe "Corners" sh
+main = run  $    arr (grayscale >>> id &&& corners)
+            >>>  observe "Corners" sh
 
 sh (im, pts) = [ Draw im, pointSz 5, color red, drw pts ]
   where

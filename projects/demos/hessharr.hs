@@ -5,10 +5,10 @@ import ImagProc
 
 ----------------------------------------------------------------------
 
-main = run camera  $   arr f
-                  >>>  observe "Hessian" hess 
-                  >>>  observe "Harris"  harr
-                  >>>  freqMonitor
+main = run  $    f
+            >.   observe "Hessian" hess 
+            >>>  observe "Harris"  harr
+            >>>  freqMonitor
 
 f = (id &&& gradients . gaussS 2 . float) . resize (Size 240 320) . grayscale
 
