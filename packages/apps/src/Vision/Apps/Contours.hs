@@ -31,14 +31,14 @@ contours = transUI (wnpcontours id) .> (id *** fst.fst)
 contours' :: Trans ImageGray (ImageGray, [Polyline])
 contours' = transUI (wcontours id) .> (id *** contSel)
 
-catalog :: IO (Sample Polyline)
-catalog = (read <$> readFile "../../data/shapes/all.txt") >>= optionFromFile "--catalog"
+catalog :: FilePath -> IO (Sample Polyline)
+catalog defaultdb = (read <$> readFile defaultdb) >>= optionFromFile "--catalog"
 
 
-injectPrototypes :: Renderable t => Trans (t, [Shape]) ((t, [Shape]), [(Shape, String)])
-injectPrototypes = transUI inject where 
+injectPrototypes :: Renderable t => FilePath -> Trans (t, [Shape]) ((t, [Shape]), [(Shape, String)])
+injectPrototypes defaultdb = transUI inject where 
   inject cam = do
-    c <- catalog
+    c <- catalog defaultdb
     let prepro = id
         disp = Draw . transPol (diagl [0.8, 0.8, 1]) . boxShape . shapeContour
     b <- browseLabeled "Shapes" (map (shape *** id) c) disp
