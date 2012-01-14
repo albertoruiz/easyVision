@@ -79,7 +79,8 @@ browseLabeled name examples disp = browser name examples f
 sMonitor :: String -> (WinRegion -> b -> [Drawing]) -> Trans b b
 sMonitor name f = transUI $ interface (Size 240 360) name 0 (const.const.return $ ()) (c2 acts) [] (const (,)) g
   where
-    g roi k x = r !! j
+    g roi k x | null r    = Draw ()
+              | otherwise = r !! j
       where
         r = f roi x
         j = k `mod` length r

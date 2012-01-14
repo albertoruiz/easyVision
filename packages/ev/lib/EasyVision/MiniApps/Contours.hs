@@ -52,7 +52,7 @@ autoParam "ContourParam" "contour-" [
     ("area",   "Int",    percent 10),
     ("fracpix","Double", realParam (1.5) 0 10),
     ("mode",   "String", stringParam "black" ["white", "black", "both"]),
-    ("auto",   "Int",    intParam 0 0 1),
+    ("auto",   "Int",    intParam 1 0 1),
     ("smooth", "Int",    intParam 1 0 10),
     ("asmooth", "Int",    intParam 0 0 10),
     ("thresDelta", "Int",    intParam 16 0 255),
