@@ -1,10 +1,11 @@
 {-# LANGUAGE RecordWildCards, NamedFieldPuns #-}
 
-module Tools (
-    contours,
+module Vision.Apps.Contours (
+    contours, contours',
     injectPrototypes,
     showCanonical,
-    showAlignment
+    showAlignment,
+    module Contours
 ) where
 
 import EasyVision.GUI
@@ -12,7 +13,6 @@ import ImagProc
 import Contours
 import Control.Arrow((***),(&&&))
 import Control.Applicative
-import Data.Colour.Names
 import Numeric.LinearAlgebra((<>),fromList,inv)
 import Text.Printf(printf)
 import Util.Misc(diagl,mean,vec,debug)
@@ -22,12 +22,14 @@ import Vision(desp,inHomog,hv2pt)
 import Classifier(Sample)
 import Control.Monad(when)
 import Data.List(minimumBy,sortBy)
-import ImagProc.C.NP
+import ImagProc.C.NP(wnpcontours)
+import EasyVision.MiniApps.Contours(wcontours, ContourInfo(..))
 
 contours :: Trans ImageGray (ImageGray, [Polyline])
 contours = transUI (wnpcontours id) .> (id *** fst.fst)
---         >>> transUI (wcontours id) .> (id *** contSel)
 
+contours' :: Trans ImageGray (ImageGray, [Polyline])
+contours' = transUI (wcontours id) .> (id *** contSel)
 
 catalog :: IO (Sample Polyline)
 catalog = (read <$> readFile "../../data/shapes/all.txt") >>= optionFromFile "--catalog"

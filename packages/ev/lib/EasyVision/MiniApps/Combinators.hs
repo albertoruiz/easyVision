@@ -53,6 +53,7 @@ import Util.Ellipses
 
 ----------------------------------------------------------------------
 
+modif = Modifiers Up Up Up
 
 -- | Generic display function for a camera combinator. The monitor function is invoked in the window with the grabbed object.
 --   The window includes a withPause controller.

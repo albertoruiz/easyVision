@@ -1,7 +1,6 @@
 import EasyVision.GUI
 import ImagProc
-import Tools
-import Contours
+import Vision.Apps.Contours
 
 main = run  $   grayscale
             >.  contours

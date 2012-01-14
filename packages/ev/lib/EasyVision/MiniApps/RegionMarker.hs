@@ -32,6 +32,8 @@ import GHC.Float
 import Vision(desp,estimateHomographyRaw)
 import Data.Colour.Names as Col hiding (gray)
 
+modif = Modifiers Up Up Up
+
 regionMarker :: (Image a, Drawable a) => (t -> a) -> IO t -> IO (IO (t, Polyline))
 regionMarker g cam = do
     w <- evWindow initRegion "Region Marker" (mpSize 10) Nothing (mouseGenPt acts kbdQuit)

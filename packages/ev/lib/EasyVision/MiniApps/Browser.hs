@@ -28,6 +28,8 @@ import Util.Misc(replaceAt)
 
 ----------------------------------------------------------------------
 
+modif = Modifiers Up Up Up
+
 -- | a window to display a list of labeled objects
 examplesBrowser :: String -> Size -> (t -> IO ()) -> Sample t -> IO (EVWindow (Int, Sample t))
 examplesBrowser name sz f es =
