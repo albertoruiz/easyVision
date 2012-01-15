@@ -3,15 +3,15 @@
 import EasyVision.GUI
 import ImagProc
 
-main = run $    observe "orig" rgb
-           >>>  arr grayscale
-           >>>  f
-           >>>  observe "result"  (5.*)
+main = run  $    observe "source" rgb
+            >>>  arr grayscale
+            >>>  f
+            >>>  observe "result"  (5.*)
 
-f = proc x -> do
-    let f = float x
-    s0 <- observe "s0" id -< f
-    s1 <- (observe "s1" id <<^ gaussS 5) -< f
-    z <- observe "negated (not used)" notI -< x
-    returnA -< s0 |-| s1
+f = proc g -> do
+    let f = float g
+    x <- observe "x" id -< f
+    s <- (observe "s" id <<^ gaussS 5) -< f
+    z <- observe "inverted" notI -< g
+    returnA -< x |-| s
 
