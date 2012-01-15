@@ -4,7 +4,7 @@ import EasyVision.GUI
 import ImagProc
 
 main = run $    observe "orig" rgb
-           .>   grayscale
+           >>>  arr grayscale
            >>>  f
            >>>  observe "result"  (5.*)
 

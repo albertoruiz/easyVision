@@ -26,10 +26,10 @@ import ImagProc.C.NP(wnpcontours)
 import EasyVision.MiniApps.Contours(wcontours, ContourInfo(..))
 
 contours :: Trans ImageGray (ImageGray, [Polyline])
-contours = transUI (wnpcontours id) .> (id *** fst.fst)
+contours = transUI (wnpcontours id) >>> arr (id *** fst.fst)
 
 contours' :: Trans ImageGray (ImageGray, [Polyline])
-contours' = transUI (wcontours id) .> (id *** contSel)
+contours' = transUI (wcontours id) >>> arr (id *** contSel)
 
 catalog :: FilePath -> IO (Sample Polyline)
 catalog defaultdb = (read <$> readFile defaultdb) >>= optionFromFile "--catalog"

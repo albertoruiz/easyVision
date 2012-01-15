@@ -5,8 +5,8 @@ import ImagProc
 
 ----------------------------------------------------------------------
 
-main = run  $    f
-            >.   observe "Hessian" hess 
+main = run  $    arr f
+            >>>  observe "Hessian" hess 
             >>>  observe "Harris"  harr
             >>>  freqMonitor
 

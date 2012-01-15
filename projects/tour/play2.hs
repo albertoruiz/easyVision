@@ -1,5 +1,5 @@
 import EasyVision.GUI
 import ImagProc
 
-main = run $ grayscale >. observe "invert" notI
+main = run $ arr grayscale >>> observe "invert" notI
 

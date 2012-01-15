@@ -3,5 +3,5 @@ import ImagProc
 
 main = run p
 
-p = observe "RGB" rgb .> grayscale >>> observe "inverted" notI
+p = observe "RGB" rgb >>> arr grayscale >>> observe "inverted" notI
 

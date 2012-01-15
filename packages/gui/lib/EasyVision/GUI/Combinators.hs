@@ -15,7 +15,7 @@ General utilities.
 
 module EasyVision.GUI.Combinators(
     -- * Arrow Interface
-    runT_, Trans, transUI, idT, (-->), (<--), (>--), (--<), (.>), (<.), (>.), (.<), (@@@),
+    runT_, Trans, transUI, idT, arrL, (@@@),
     -- * Old Combinators
     virtualCamera, (~~>), (~>), (>~~>), (>~>), (.&.), (.@.),
     -- * Camera selection
@@ -66,6 +66,7 @@ import Control.Monad
 
 --------------------------------------------------------------------------------
 
+-- | transformation of a sequence
 newtype Trans a b = Trans { trans :: [a] -> IO [b] }
 
 instance Cat.Category Trans
@@ -126,6 +127,7 @@ runT gcam (Trans t) = do
 -}    
 
 
+{-
 infixr 2 -->
 f --> g = f >>> arrL g
 
@@ -152,11 +154,12 @@ infixr 2 <.
 
 infixr 2 .<
 (.<) g f = (>.) f g
+-}
 
-
-
+(@@@) :: (p -> x -> y) -> IO (IO p) -> Trans x y
+-- ^ apply a pure function with parameters taken from the UI
 infixl 3 @@@
-f @@@ p = (arr snd &&& arr (uncurry f)) <<< (transUI (const p) &&& Cat.id)
+f @@@ p = arr (uncurry f) <<< (transUI (const p) &&& Cat.id)
 
 --------------------------------------------------------------------------------
 
