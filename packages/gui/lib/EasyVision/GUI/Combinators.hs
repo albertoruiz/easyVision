@@ -47,8 +47,6 @@ import Data.Maybe
 import System.Directory(doesFileExist, getDirectoryContents)
 import System.CPUTime
 import Text.Printf
-import Control.Monad
-import Control.Arrow((&&&))
 import Control.Applicative((<$>))
 import System.Environment(getArgs,getEnvironment)
 import Data.Function(on)
@@ -63,11 +61,12 @@ import EasyVision.GUI.Interface
 import qualified Control.Category as Cat
 import Control.Arrow
 import Control.Monad
+import Data.Either(lefts,rights)
 
 --------------------------------------------------------------------------------
 
 -- | transformation of a sequence
-newtype Trans a b = Trans { trans :: [a] -> IO [b] }
+newtype Trans a b = Trans ( [a] -> IO [b] )
 
 instance Cat.Category Trans
   where
@@ -109,7 +108,7 @@ runT_ gcam (Trans t) = runIt $ do
     f <- createGrab bs
     forkIO (forever $ f >>= g )
   where
-    g !x = putStr ""
+    g !_x = putStr ""
 
 
 {-
@@ -127,41 +126,31 @@ runT gcam (Trans t) = do
 -}    
 
 
-{-
-infixr 2 -->
-f --> g = f >>> arrL g
-
-infixr 2 >--
-f >-- g = arrL f >>> g
-
-infixl 2 <--
-(<--) = flip (-->)
-
-infixl 2 --<
-(--<) = flip (>--)
-
-
---  different precedence from that of >>^ 
-infixr 2 .>
-f .> g = f >>> arr g
-
-infixr 2 >.
-f >. g = arr f >>> g
-
-
-infixr 2 <.
-(<.) g f = (.>) f g
-
-infixr 2 .<
-(.<) g f = (>.) f g
--}
-
 (@@@) :: (p -> x -> y) -> IO (IO p) -> Trans x y
 -- ^ apply a pure function with parameters taken from the UI
 infixl 3 @@@
 f @@@ p = arr (uncurry f) <<< (transUI (const p) &&& Cat.id)
 
---------------------------------------------------------------------------------
+------------------------------------------------------------------
+
+
+instance ArrowChoice Trans where
+    left f = f +++ arr id
+    Trans f +++ Trans g = Trans $ \xs -> do
+        ls <- f (lefts xs)
+        rs <- g (rights xs)
+        return (merge ls rs xs)
+
+merge :: [a] -> [b] -> [Either x y] -> [Either a b]
+merge _  _ [] = []
+merge ls rs (x:xs) =
+    case x of
+         Right _ -> Right (head rs): merge ls (tail rs) xs
+         Left  _ -> Left  (head ls): merge (tail ls) rs xs
+
+
+------------------------------------------------------------------
+------------------------------------------------------------------
 
 timing :: IO a -> IO a
 timing act = do
