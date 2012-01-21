@@ -11,14 +11,14 @@ autoParam "CGParam" "cg-"
     [ ("pan",  "Double",   realParam (0) (-40) (40))
     , ("dx",  "Double",    realParam (0) (-1) (1))
     , ("dy",  "Double",    realParam (0) (-1) (1))
-    , ("tilt", "Double",   realParam (0) (-30) (30))
-    , ("roll",  "Double",  realParam  0 (-40) (40))
+    , ("tilt", "Double",   realParam (15) (-30) (30))
+    , ("roll",  "Double",  realParam  20 (-40) (40))
     , ("focal",  "Double", listParam 2.8 [0.5, 0.7, 1, 2, 2.6, 2.8, 5, 5.5, 9,10])
-    , ("scale",  "Double", listParam 1 [1.05**k|k<-[-20..20]])]
+    , ("scale",  "Double", listParam 0.8 [1.05**k|k<-[-20..20]])]
 
 main = run $    arr rgb
            >>>  deskew @@@ winCGParam
-           >>>  observe "output" id
+           >>>  observe "warped" id
 
 deskew par@CGParam{..} img = warp (80,0,0) (size img) r img
   where

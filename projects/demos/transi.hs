@@ -22,7 +22,7 @@ editR2 sz@(Size h w) dir sv xs = editor upds save "transition" xs sh
                                  , text (Point 0.9 0) (show (1+k) ++ " " ++ f)]
 
     upds = [ updateItem (key (Char 'a')) initial
-           , updateItem (key (Char 'a')) final ]
+           , updateItem (key (Char 'b')) final ]
 
     initial r _ ((im, (_,q)),f) = ((im, (fixAR ar r,q)),f)
     final   r _ ((im, (p,_)),f) = ((im, (p,fixAR ar r)),f)
@@ -34,8 +34,12 @@ editR2 sz@(Size h w) dir sv xs = editor upds save "transition" xs sh
                 putStrLn "Creating video... "
                 mapM_ sv (concatMap (segment ar sz (9*fps) . fst) xs)
                 putStrLn "Encoding video... "
-                system $ "mencoder "++dir++"/video.y4m -vc rawi420 -fps "++show fps ++ " -ovc lavc -o "++dir++"/video.avi"
-                putStrLn "Ok!")
+                system $ "mencoder "++dir++"/video.y4m -vc rawi420 -fps "++show fps
+                          ++ " -ovc lavc -lavcopts vcodec=mpeg4:mbd=2:trell:v4mv:turbo -o "
+                          ++dir++"/video.avi"
+                putStrLn "Ok!"
+                system $ "mplayer "++dir++"/video.avi"
+                return ())
            ]
 
     ctrlS = kCtrl . key . Char $ '\DC3'
@@ -54,6 +58,8 @@ main = do
         y = map g x
     sv <- openYUV4Mpeg sz (dir++"/video.y4m") Nothing
     runIt $ editR2 sz dir sv y
+    system $ "rm "++dir++"/video.y4m"
+                
 
 def = ( (Point 0.6 0.6, Point 0.1 0.1)
       , (Point (-0.1) (-0.1), Point (-0.6) (-0.6)))
