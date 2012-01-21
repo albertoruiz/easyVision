@@ -1,6 +1,6 @@
 {-# LANGUAGE TemplateHaskell, RecordWildCards #-}
 
-import EasyVision.GUI
+import Vision.GUI
 import ImagProc
 
 autoParam "Param" "g-"  [  ("sigma","Float",realParam 3 0 20)

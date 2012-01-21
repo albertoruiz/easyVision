@@ -1,6 +1,6 @@
 {-# LANGUAGE RecordWildCards #-}
 
-import EasyVision.GUI
+import Vision.GUI
 import ImagProc
 
 ----------------------------------------------------------------------

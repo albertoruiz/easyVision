@@ -1,20 +1,19 @@
 {-# LANGUAGE TypeSynonymInstances, TemplateHaskell, FlexibleInstances #-}
 -----------------------------------------------------------------------------
 {- |
-Module      :  EasyVision.GUI.Parameters
-Copyright   :  (c) Alberto Ruiz 2006
+Module      :  Vision.GUI.Parameters
+Copyright   :  (c) Alberto Ruiz 2006-12
 License     :  GPL-style
 
 Maintainer  :  Alberto Ruiz (aruiz at um dot es)
-Stability   :  very provisional
-Portability :  hmm...
+Stability   :  provisional
 
 A \'global\' parameter list with its own control window. See the example warp.hs.
 
 -}
 -----------------------------------------------------------------------------
 
-module EasyVision.GUI.Parameters (
+module Vision.GUI.Parameters (
    Parameters,
    createParameters, createParameters', autoParam,
    listParam, realParam, floatParam, percent, intParam, stringParam,
@@ -22,8 +21,8 @@ module EasyVision.GUI.Parameters (
 ) where
 
 import ImagProc.Ipp.Core hiding (r1,c1,r2,c2)
-import EasyVision.GUI.Types
-import EasyVision.GUI.Interface
+import Vision.GUI.Types
+import Vision.GUI.Interface
 import Graphics.UI.GLUT hiding (RGB, Matrix, Size)
 import Data.IORef
 import qualified Data.Map as Map

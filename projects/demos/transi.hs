@@ -1,4 +1,4 @@
-import EasyVision.GUI
+import Vision.GUI
 import ImagProc
 import ImagProc.Camera(openYUV4Mpeg)
 import Contours.Base(setRegion)

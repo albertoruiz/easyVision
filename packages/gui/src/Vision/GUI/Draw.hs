@@ -3,20 +3,19 @@
 
 -----------------------------------------------------------------------------
 {- |
-Module      :  EasyVision.GUI.Draw
-Copyright   :  (c) Alberto Ruiz 2006
-License     :  GPL-style
+Module      :  Vision.GUI.Draw
+Copyright   :  (c) Alberto Ruiz 2006-12
+License     :  GPL
 
 Maintainer  :  Alberto Ruiz (aruiz at um dot es)
-Stability   :  very provisional
-Portability :  hmm...
+Stability   :  provisional
 
-HOpenGL drawing utilities.
+Drawing utilities.
 
 -}
 -----------------------------------------------------------------------------
 
-module EasyVision.GUI.Draw
+module Vision.GUI.Draw
 ( Drawable(..), drawImage', drawImage''
 , drawTexture
 , renderSignal
@@ -45,8 +44,8 @@ import Numeric.LinearAlgebra hiding (step)
 import Vision
 import Util.Rotation
 import Util.Misc(degree,debug)
-import EasyVision.GUI.Types
-import EasyVision.GUI.Trackball
+import Vision.GUI.Types
+import Vision.GUI.Trackball
 import qualified Data.Colour.RGBSpace as Col
 import Data.Colour.SRGB hiding (RGB)
 import Data.Colour

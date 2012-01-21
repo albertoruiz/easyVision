@@ -1,4 +1,4 @@
-import EasyVision.GUI
+import Vision.GUI
 import ImagProc
 import System.Random(randomIO)
 import Util.Misc(mean,splitEvery)

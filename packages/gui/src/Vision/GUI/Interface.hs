@@ -1,20 +1,20 @@
-{-# LANGUAGE NoMonomorphismRestriction, BangPatterns #-}
+{-# LANGUAGE BangPatterns #-}
 
 ---------------------------------------------------------------------------
 {- |
-Module      :  EasyVision.GUI.Interface
-Copyright   :  (c) Alberto Ruiz 2006-11
+Module      :  Vision.GUI.Interface
+Copyright   :  (c) Alberto Ruiz 2006-12
 License     :  GPL
 
 Maintainer  :  Alberto Ruiz (aruiz at um dot es)
 Stability   :  provisional
 
-User interface tools
+User interface tools.
 
 -}
 -----------------------------------------------------------------------------
 
-module EasyVision.GUI.Interface (
+module Vision.GUI.Interface (
     -- * Interface
     Command, WinInit, WinRegion, VC,
     runFPS, runIdle, runIt, run', interface, standalone,
@@ -27,8 +27,8 @@ module EasyVision.GUI.Interface (
     Key(..), SpecialKey(..), MouseButton(..), key, kUp, kCtrl, kShift, kAlt, BitmapFont(..)
 ) where
 
-import EasyVision.GUI.Types
-import EasyVision.GUI.Draw
+import Vision.GUI.Types
+import Vision.GUI.Draw
 import ImagProc.Base
 import ImagProc.Ipp(Size(..),ippSetNumThreads,ROI(..),saveRGB')
 import Graphics.UI.GLUT hiding (RGB, Matrix, Size, None, Point,color)

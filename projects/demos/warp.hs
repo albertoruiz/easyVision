@@ -1,6 +1,6 @@
 {-# LANGUAGE TemplateHaskell, RecordWildCards #-}
 
-import EasyVision.GUI
+import Vision.GUI
 import ImagProc
 import Numeric.LinearAlgebra ((<>))
 import Vision(ht,desp,scaling,kgen)

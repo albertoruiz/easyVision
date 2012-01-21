@@ -1,4 +1,4 @@
-import EasyVision.GUI
+import Vision.GUI
 import ImagProc.Base
 import Data.Time(getCurrentTime, UTCTime)
 import Control.Concurrent(threadDelay)

@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleInstances, ExistentialQuantification, RecordWildCards #-}
 -----------------------------------------------------------------------------
 {- |
-Module      :  EasyVision.GUI.Types
+Module      :  Vision.GUI.Types
 Copyright   :  (c) Alberto Ruiz 2006-12
 License     :  GPL
 
@@ -10,7 +10,7 @@ Stability   :  provisional
 -}
 -----------------------------------------------------------------------------
 
-module EasyVision.GUI.Types
+module Vision.GUI.Types
 ( 
 -- * Window representation
    EVWindow(..), MoveStatus(..), ResizePolicy(..), WinRegion

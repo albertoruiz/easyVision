@@ -1,6 +1,6 @@
 -----------------------------------------------------------------------------
 {- |
-Module      :  EasyVision.GUI.Util
+Module      :  Vision.GUI.Util
 Copyright   :  (c) Alberto Ruiz 2012
 License     :  GPL
 
@@ -12,7 +12,7 @@ common interfaces
 -}
 -----------------------------------------------------------------------------
 
-module EasyVision.GUI.Util (
+module Vision.GUI.Util (
     observe,
     sMonitor,
     browser,
@@ -24,13 +24,13 @@ module EasyVision.GUI.Util (
 ) where
 
 import Graphics.UI.GLUT hiding (Point,Size,color)
-import EasyVision.GUI.Types
-import EasyVision.GUI.Interface
-import EasyVision.GUI.Combinators
+import Vision.GUI.Types
+import Vision.GUI.Interface
 import Control.Arrow((***))
 import Control.Monad((>=>))
 import ImagProc
-import EasyVision.GUI.Combinators(findSize,readFolderMP,readFolderIM,getCam,(~>),(>~>))
+import Vision.GUI.Source(findSize,readFolderMP,readFolderIM,getCam)
+import Vision.GUI.Arrow((~>),(>~>),Trans,transUI,runT_)
 import Util.Misc(replaceAt)
 import Util.Options
 import Control.Concurrent(threadDelay)

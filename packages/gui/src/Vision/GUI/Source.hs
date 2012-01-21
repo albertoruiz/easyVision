@@ -1,42 +1,29 @@
-{-# LANGUAGE Arrows #-}
-{-# LANGUAGE DoRec #-}
-{-# LANGUAGE BangPatterns #-}
-
 -----------------------------------------------------------------------------
 {- |
-Module      :  EasyVision.GUI.Combinators
+Module      :  Vision.GUI.Source
 Copyright   :  (c) Alberto Ruiz 2006-12
 License     :  GPL
 
 Maintainer  :  Alberto Ruiz (aruiz at um dot es)
 
-General utilities.
+Video sources
 
 -}
 -----------------------------------------------------------------------------
 
-module EasyVision.GUI.Combinators(
-    -- * Arrow Interface
-    runT_, Trans(..), transUI, idT, arrL, (@@@),
-    -- * Old Combinators
-    virtualCamera, (~~>), (~>), (>~~>), (>~>), (.&.), (.@.),
+module Vision.GUI.Source(
     -- * Camera selection
     findSize,
     getCam, numCams,
     getMulticam,
     readFrames,
-    readFolder, readFolder',
     readFolderMP, readFolderIM,
-    -- * Video output
+    -- * Video I/O
     writeFrames,
     optionalSaver,
     autoSaver,
     process,
-    saveFrame,
-    -- * Other
-    timing,
-    on,
-    lazyRead
+    saveFrame
 )where
 
 import ImagProc.Ipp.Core
@@ -50,6 +37,7 @@ import System.Directory(doesFileExist, getDirectoryContents)
 import System.CPUTime
 import Text.Printf
 import Control.Applicative((<$>))
+import Control.Arrow((&&&))
 import System.Environment(getArgs,getEnvironment)
 import Data.Function(on)
 import Control.Concurrent
@@ -57,111 +45,8 @@ import Data.IORef
 import ImagProc.C.UVC
 import Util.Options
 import System.Exit
-
-import EasyVision.GUI.Interface
-
-import qualified Control.Category as Cat
-import Control.Arrow
 import Control.Monad
-import Data.Either(lefts,rights)
-
---------------------------------------------------------------------------------
-
--- | transformation of a sequence
-newtype Trans a b = Trans ( [a] -> IO [b] )
-
-instance Cat.Category Trans
-  where
-    id = Trans return 
-    Trans f . Trans g = Trans ( g >=> f )
-
-instance Arrow Trans
-  where
-    arr f = Trans (return . map f)
-    first f = f *** Cat.id
-    (***) (Trans s) (Trans t) = Trans r
-      where
-        r = g . (s *** t) . unzip
-        g (a,b) = do
-            as <- a
-            bs <- b
-            return (zip as bs)
-
-
-arrL :: ([a]->[b]) -> Trans a b
--- ^ pure function on the whole list of results
-arrL f = Trans (return . f)
-
-idT :: Trans a a
--- ^ identity Trans ( @idT = Control.Category.id@ )
-idT = Cat.id
-
-transUI :: VC a b -> Trans a b
--- ^ convert IO interface to a transformer of lazy lists
-transUI ui = Trans $ source . (createGrab >=> ui)
-
-
-
-runT_ :: IO (IO a) -> Trans a b -> IO ()
--- ^ run a camera generator on a transformer
-runT_ gcam (Trans t) = runIt $ do
-    as <- source gcam
-    bs <- t as
-    f <- createGrab bs
-    forkIO (forever $ f >>= g )
-  where
-    g !_x = putStr ""
-
-
-{-
-runT :: IO (IO a) -> Trans a b -> IO [b]
--- ^ run a camera generator on a transformer, returning the results
--- TO DO: FIXME
-runT gcam (Trans t) = do
-    rbs <- newChan
-    forkIO $ runIt $ do
-        as <- source gcam
-        bs <- t as
-        f <- createGrab bs
-        forkIO $ forever (f >>= writeChan rbs)
-    getChanContents rbs
--}    
-
-
-(@@@) :: (p -> x -> y) -> IO (IO p) -> Trans x y
--- ^ apply a pure function with parameters taken from the UI
-infixl 3 @@@
-f @@@ p = arr (uncurry f) <<< (transUI (const p) &&& Cat.id)
-
-------------------------------------------------------------------
-
-
-instance ArrowChoice Trans where
-    left f = f +++ arr id
-    Trans f +++ Trans g = Trans $ \xs -> do
-        ls <- f (lefts xs)
-        rs <- g (rights xs)
-        return (merge ls rs xs)
-
-merge :: [a] -> [b] -> [Either x y] -> [Either a b]
-merge _  _ [] = []
-merge ls rs (x:xs) =
-    case x of
-         Right _ -> Right (head rs): merge ls (tail rs) xs
-         Left  _ -> Left  (head ls): merge (tail ls) rs xs
-
-
-
-------------------------------------------------------------------
-------------------------------------------------------------------
-
-timing :: IO a -> IO a
-timing act = do
-    t0 <- getCPUTime
-    r <- act
-    t1 <- getCPUTime
-    _ <- printf "%4.0f ms CPU\n" $ (fromIntegral (t1 - t0) / (10**9 :: Double))
-    return r
+import Vision.GUI.Arrow((>~>),grabAll)
 
 -----------------------------------------------------------------------------------
 
@@ -211,13 +96,6 @@ getMulticam sz n = do
     cams <- mapM (flip getCam sz >~> channels) [0..n-1]
     return (sequence cams)
 
------------------------------------------------
-
-lazyRead :: IO a -> IO [a]
-lazyRead get = do
-    a  <- get
-    as <- unsafeInterleaveIO (lazyRead get)
-    return (a:as)
 
 -----------------------------------------------
 
@@ -233,7 +111,7 @@ readFrames = fmap (map fromJust . takeWhile isJust) . readFrames'
         let url = if n < length args
                     then args!!n
                     else fst (aliases!!n)
-        mplayer' (expand aliases url) sz >>= lazyRead
+        mplayer' (expand aliases url) sz >>= grabAll
 
 
 writeFrames :: FilePath -> [ImageYUV] -> IO ()
@@ -336,68 +214,6 @@ channel cam = do
     return $ {- putStrLn "" >> -} readChan c 
 
 
-createGrab :: [b] -> IO (IO b)
-createGrab l = do
-    pl <- newIORef l
-    return $ do
-        r <- readIORef pl
-        case r of
-          h:t -> do writeIORef pl t
-                    return h
-          []  -> exitWith ExitSuccess
-
-grabAll :: IO t -> IO [t]
-grabAll grab = do
-    im <- grab
-    rest <- unsafeInterleaveIO (grabAll grab)
-    return (im:rest)
-
-
-source :: IO (IO x) -> IO [x]
--- ^ convert a camera generator into a lazy list
-source gencam = do
-    cam <- gencam
-    xs <- grabAll cam
-    return xs
-
-
-
-
--- | Creates a virtual camera by some desired processing of the infinite list of images produced by another camera.
-virtualCamera :: ([a]-> [b]) -> IO a -> IO (IO b)
-virtualCamera filt grab = filt `fmap` grabAll grab >>= createGrab
-
--- | shortcut for @>>= virtualCamera f@
-(~~>) :: IO (IO a) -> ([a]-> [b]) -> IO (IO b)
-infixl 1 ~~>
-gencam ~~> f = (gencam >>= virtualCamera f)
-
--- | shortcut for @>>= virtualCamera (map f)@, or equivalently, @>>= return . fmap f@.
-(~>) :: IO (IO a) -> (a-> b) -> IO (IO b)
-infixl 1 ~>
-gencam ~> f = gencam >>= return . fmap f
-
--- | composition version of @~>@
-(>~>) :: (t -> IO (IO a)) -> (a -> b) -> t -> IO (IO b)
-infixr 2 >~>
-f >~> g = \x -> f x ~> g
-
--- | composition version of @~~>@
-(>~~>) :: (t -> IO (IO a)) -> ([a] -> [b]) -> t -> IO (IO b)
-infixr 2 >~~>
-f >~~> g = \x -> f x ~~> g
-
--- | \"union\" of virtual cameras
-(.&.) :: IO (IO a) -> IO (IO b) -> IO (IO (a, b))
-infixl 0 .&.
-(.&.) = liftM2 (liftM2 (,))
-
-
--- | a combinator which is useful to compute a pure function on the input stream, 
---     with parameters taken from an interactive window.
-(.@.) :: (a -> b -> c) -> IO (IO a) -> IO b -> IO (IO (b, c))
-f .@. wp = (wp .&. ) . return >~> snd &&& uncurry f
-
 -----------------------------------------------------------
 
 -- | offline video processing. The input is the camera 0 and the output
@@ -448,31 +264,5 @@ readFolderMP path mbsz = do
     imgs <- sequence (replicate nframes cam)
     putStrLn $ show (length imgs) ++ " images in " ++ path
     return $ zip (map channels imgs) (map show [(1::Int)..])
-
-----------------------------------------------------------------------
-
-
--- | reads a list of images from a folder. Fixed size using mplayer
-{-# DEPRECATED readFolder "use readFolderMP instead" #-}
-readFolder :: FilePath -> Maybe Size -> IO [ImageYUV]
-readFolder path mbsz = do
-    let sz = maybe (Size 600 800) id mbsz -- TO DO: remove fixed size
-    fs <- getDirectoryContents path
-    let nframes = length fs - 2  -- we assume there are only image files
-    cam <- mplayer ("mf://"++path++" -benchmark -loop 1") sz
-    imgs <- sequence (replicate nframes cam)
-    putStrLn $ show (length imgs) ++ " images in " ++ path
-    return imgs
-
-
--- | reads a list of images from a folder. Variable size, using imageMagick
-{-# DEPRECATED readFolder' "use readFolderIM instead" #-}
-readFolder' :: FilePath -> IO [(ImageRGB,String)]
-readFolder' path = do
-    fs <- filter isImage <$> getDirectoryContents path
-    imgs <- mapM (loadRGB.((path++"/")++)) fs
-    putStrLn $ show (length imgs) ++ " images in " ++ path
-    --print $ unwords fs
-    return (zip imgs fs)
 
 

@@ -1,6 +1,6 @@
 -----------------------------------------------------------------------------
 {- |
-Module      :  EasyVision.GUI.Objects
+Module      :  Vision.GUI.Objects
 Copyright   :  (c) Alberto Ruiz 2007
 License     :  GPL
 
@@ -12,12 +12,12 @@ True coordinates of several calibration objects and 3D models
 -}
 -----------------------------------------------------------------------------
 
-module EasyVision.GUI.Objects (
+module Vision.GUI.Objects (
     a4Ref, asymRef, cornerRef, houseModel, block, unitCube, sphere,
 ) where
 
 import Graphics.UI.GLUT
-import EasyVision.GUI.Types(doubleGL,setColor,setColor')
+import Vision.GUI.Types(doubleGL,setColor,setColor')
 import Data.Colour.Names
 
 asymRef = map (map (*0.54))

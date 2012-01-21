@@ -1,6 +1,6 @@
 {-# LANGUAGE Arrows #-}
 
-import EasyVision.GUI
+import Vision.GUI
 import ImagProc
 
 main = run  $    arrL (zip [0..])

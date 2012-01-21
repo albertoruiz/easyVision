@@ -1,4 +1,4 @@
-import EasyVision.GUI
+import Vision.GUI
 import ImagProc
 
 main = run clickPoints

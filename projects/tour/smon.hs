@@ -1,4 +1,4 @@
-import EasyVision.GUI
+import Vision.GUI
 import Contours.Base
 import ImagProc
 

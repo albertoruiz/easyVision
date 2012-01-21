@@ -1,8 +1,6 @@
--- #hide
+module Vision.GUI.Trackball (newTrackball) where
 
-module EasyVision.GUI.Trackball (newTrackball) where
-
-import EasyVision.GUI.Types
+import Vision.GUI.Types
 import Util.Quaternion
 import Util.Homogeneous(cross)
 import Numeric.LinearAlgebra
