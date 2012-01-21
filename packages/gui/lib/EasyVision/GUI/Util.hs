@@ -19,7 +19,7 @@ module EasyVision.GUI.Util (
     editor,
     updateItem,
     camera, run,
-    freqMonitor,
+    freqMonitor, wait,
     browseLabeled
 ) where
 
@@ -168,4 +168,11 @@ freqMonitor = transUI (frameRate >=> g)
     sh _roi (t2,t1) _result = text (Point 0.9 0) $
                                printf " %3.0f ms CPU  / %4.0f Hz   /   %3.0f%%"
                                (t1::Double) (1/t2::Double) (t1/t2/10)
+
+--------------------------------------------------------------------------------
+
+wait n = transUI $ \cam -> return $ do
+    x <- cam
+    threadDelay (n*1000)
+    return x
 

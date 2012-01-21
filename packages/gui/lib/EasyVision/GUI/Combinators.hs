@@ -1,4 +1,6 @@
-{-# LANGUAGE Arrows, BangPatterns #-}
+{-# LANGUAGE Arrows #-}
+{-# LANGUAGE DoRec #-}
+{-# LANGUAGE BangPatterns #-}
 
 -----------------------------------------------------------------------------
 {- |
@@ -15,7 +17,7 @@ General utilities.
 
 module EasyVision.GUI.Combinators(
     -- * Arrow Interface
-    runT_, Trans, transUI, idT, arrL, (@@@),
+    runT_, Trans(..), transUI, idT, arrL, (@@@),
     -- * Old Combinators
     virtualCamera, (~~>), (~>), (>~~>), (>~>), (.&.), (.@.),
     -- * Camera selection
@@ -147,6 +149,7 @@ merge ls rs (x:xs) =
     case x of
          Right _ -> Right (head rs): merge ls (tail rs) xs
          Left  _ -> Left  (head ls): merge (tail ls) rs xs
+
 
 
 ------------------------------------------------------------------

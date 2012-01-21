@@ -11,7 +11,7 @@ main = run  $    observe "source" rgb
 f = proc g -> do
     let f = float g
     x <- observe "x" id -< f
-    s <- (observe "s" id <<^ gaussS 5) -< f
+    s <- (observe "s" id <<< arr (gaussS 5)) -< f
     z <- observe "inverted" notI -< g
     returnA -< x |-| s
 
