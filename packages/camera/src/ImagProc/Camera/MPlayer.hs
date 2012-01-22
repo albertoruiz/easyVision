@@ -2,23 +2,23 @@
 
 -----------------------------------------------------------------------------
 {- |
-Module      :  ImagProc.Camera
-Copyright   :  (c) Alberto Ruiz 2006-2008
-License     :  GPL-style
+Module      :  ImagProc.Camera.Mplayer
+Copyright   :  (c) Alberto Ruiz 2006-2012
+License     :  GPL
 
 Maintainer  :  Alberto Ruiz (aruiz at um dot es)
 Stability   :  provisional
-Portability :  ghc
 
 Image acquisition from real cameras and other video sources using MPlayer.
 
 -}
 -----------------------------------------------------------------------------
 
-module ImagProc.Camera (
+module ImagProc.Camera.MPlayer (
   -- * MPlayer interface
   -- | This camera works with any kind of video source accepted by MPlayer.
-  mplayer, mplayer', mpSize, openYUV4Mpeg
+  mplayer, mplayer', mpSize,
+ saveYUV4Mpeg, yuvHeader, openYUV4Mpeg
 )where
 
 import ImagProc.Ipp.Core
@@ -111,6 +111,7 @@ mplayer url sz = f `fmap` mplayer' url sz where
 
 ------------------------------------------------
 
+saveYUV4Mpeg :: Handle -> ImageYUV -> IO ()
 saveYUV4Mpeg handle (Y im) = do
     let Size h w = isize im
     hPutStrLn handle "FRAME"
@@ -118,7 +119,7 @@ saveYUV4Mpeg handle (Y im) = do
     hFlush handle
     touchForeignPtr (fptr im)
 
-
+yuvHeader :: Int -> Int -> FilePath -> IO Handle
 yuvHeader h w filename = do
     handle <- openFile filename WriteMode
     hPutStrLn handle $ "YUV4MPEG2 W"++show w++" H"++show h++" F25000000:1000000 Ip A0:0"
@@ -142,3 +143,4 @@ openYUV4Mpeg (Size h w) filename (Just limit) = do
         fs <- readIORef framesSaved
         if fs < limit then writeIORef framesSaved (fs+1)
                       else exitWith ExitSuccess
+

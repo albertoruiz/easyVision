@@ -13,7 +13,7 @@ module EasyVision.MiniApps.SignalMonitor (
     signalMonitor
 ) where
 
-import Graphics.UI.GLUT hiding (Matrix, Size, Point, triangulate)
+import Graphics.UI.GLUT hiding (Matrix, Size, Point,set,triangulate)
 import Text.Printf
 import Control.Applicative
 import EasyVision.GUI

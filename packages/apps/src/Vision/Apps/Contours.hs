@@ -27,7 +27,8 @@ import Data.List(minimumBy,sortBy)
 import ImagProc.C.NP(wnpcontours)
 import qualified Features.Polyline as Feat
 import Data.Function(on)
--- import EasyVision.MiniApps.Contours(wcontours, ContourInfo(..))
+import Util.LazyIO((.@.))
+
 
 autoParam "ContourParam" "contour-" [
     ("athres",  "Int",    intParam 1 (-20) 10),

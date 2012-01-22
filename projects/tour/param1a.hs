@@ -2,6 +2,7 @@
 
 import Vision.GUI
 import ImagProc
+import Util.LazyIO((.&.))
 
 autoParam "Param" "" [("sigma","Float",realParam 3 0 20)]
 

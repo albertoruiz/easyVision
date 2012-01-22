@@ -39,10 +39,11 @@ module EasyVision.MiniApps (
 )where
 
 import Graphics.UI.GLUT as GL hiding (Size,Point,Matrix,matrix)
-import EasyVision.GUI
+import EasyVision.GUI hiding (State)
 import EasyVision.GUI.Parameters
 import ImagProc hiding ((.*))
-import ImagProc.Camera
+import ImagProc.Camera.MPlayer(mpSize,mplayer)
+--import ImagProc.Util
 import Features(contours)
 import Contours(momentsContour)
 import Data.List(transpose)
@@ -139,12 +140,12 @@ catalogBrowser n catalog name sz =
         drawImage img
         windowTitle $= name++" #"++show (k+1)++ ": "++label
     mouse _ st (MouseButton WheelUp) Down _ _ = do
-        (k,catalog) <- getW st
-        putW st (min (k+1) (length catalog -1), catalog)
+        (k,catalog) <- get st
+        st $= (min (k+1) (length catalog -1), catalog)
         postRedisplay Nothing
     mouse _ st (MouseButton WheelDown) Down _ _ = do
-        (k,catalog) <- getW st
-        putW st (max (k-1) 0, catalog)
+        (k,catalog) <- get st
+        st $= (max (k-1) 0, catalog)
         postRedisplay Nothing
     mouse def _ a b c d = def a b c d
 
@@ -164,16 +165,16 @@ hsvPalette = evWindow (128,128,255) "HSV" (Size 256 256) (Just disp) (mouse kbdQ
             [Pixel (r-2) (c-2), Pixel (r-2) (c+2), Pixel (r+2) (c+2), Pixel (r+2) (c-2)]
         text2D 20 20 (show (c,r,k))
     mouse _ st (MouseButton WheelUp) Down m _ = do
-        (r,c,k) <- getW st
-        putW st (r,c,k + if GL.shift m == Down then 10 else 1)
+        (r,c,k) <- get st
+        st $= (r,c,k + if GL.shift m == Down then 10 else 1)
         postRedisplay Nothing
     mouse _ st (MouseButton WheelDown) Down m _ = do
-        (r,c,k) <- getW st
-        putW st (r,c,k- if GL.shift m == Down then 10 else 1)
+        (r,c,k) <- get st
+        st $= (r,c,k- if GL.shift m == Down then 10 else 1)
         postRedisplay Nothing
     mouse _ st (MouseButton LeftButton) Down m (Position x y) = do
-        (_,_,k) <- getW st
-        putW st (fromIntegral y, fromIntegral x,k)
+        (_,_,k) <- get st
+        st $= (fromIntegral y, fromIntegral x,k)
         postRedisplay Nothing
     mouse def _ a b c d = def a b c d
 
@@ -367,17 +368,17 @@ panoramic sz fi1 fi2 fo camBase camAdj sel fa fb simil = do
   where
     -- click to adjust
     mouse _ st (MouseButton LeftButton) Down _ _ = do
-        (_,p) <- getW st
-        putW st (True,p)
+        (_,p) <- get st
+        st $= (True,p)
 
     -- restart from identity
     mouse _ st (Char 'z') Down _ _ = do
-        putW st (True,[0,0,0])
+        st $= (True,[0,0,0])
 
     -- end optimization
     mouse _ st (Char 'o') Down _ _ = do
-        (_,p) <- getW st
-        putW st (False,p)
+        (_,p) <- get st
+        st $= (False,p)
 
     mouse def _ a b c d = def a b c d
 

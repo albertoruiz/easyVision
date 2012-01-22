@@ -1,6 +1,6 @@
 -----------------------------------------------------------------------------
 {- |
-Module      :  Vision.GUI.Source
+Module      :  ImagProc.Camera
 Copyright   :  (c) Alberto Ruiz 2006-12
 License     :  GPL
 
@@ -11,7 +11,7 @@ Video sources
 -}
 -----------------------------------------------------------------------------
 
-module Vision.GUI.Source(
+module ImagProc.Camera(
     -- * Camera selection
     findSize,
     getCam, numCams,
@@ -23,13 +23,14 @@ module Vision.GUI.Source(
     optionalSaver,
     autoSaver,
     process,
-    saveFrame
+    saveFrame,
+    module ImagProc.Camera.MPlayer
 )where
 
 import ImagProc.Ipp.Core
 import ImagProc.Ipp.Convert(loadRGB)
 import ImagProc.Generic(Channels,channels,GImg,toYUV,channelsFromRGB)
-import ImagProc.Camera
+import ImagProc.Camera.MPlayer
 import System.IO.Unsafe(unsafeInterleaveIO)
 import Data.List(isPrefixOf,foldl',tails,findIndex,isInfixOf,isSuffixOf)
 import Data.Maybe
@@ -42,11 +43,11 @@ import System.Environment(getArgs,getEnvironment)
 import Data.Function(on)
 import Control.Concurrent
 import Data.IORef
-import ImagProc.C.UVC
+import ImagProc.Camera.UVC
 import Util.Options
 import System.Exit
 import Control.Monad
-import Vision.GUI.Arrow((>~>),grabAll)
+import Util.LazyIO((>~>),grabAll)
 
 -----------------------------------------------------------------------------------
 

@@ -1,6 +1,6 @@
 import Vision.GUI
 import ImagProc
-import ImagProc.Camera(openYUV4Mpeg)
+import ImagProc.Camera
 import Contours.Base(setRegion)
 import Graphics.UI.GLUT.Callbacks
 import Control.Applicative((<$>))

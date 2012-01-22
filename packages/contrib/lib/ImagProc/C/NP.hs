@@ -29,7 +29,7 @@ import System.IO.Unsafe(unsafePerformIO)
 import Foreign.C.Types
 import Vision.GUI.Parameters(autoParam,intParam,realParam)
 import Contours.Base(douglasPeuckerClosed,douglasPeucker)
-import Vision.GUI((.@.))
+import Util.LazyIO((.@.))
 import Control.Monad(when)
 import Data.Packed.Development(createVector, app1, vec)
 import Data.Packed(dim,toList,takesV,Vector,(@>))

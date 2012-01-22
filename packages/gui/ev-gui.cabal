@@ -41,7 +41,6 @@ library
                         Vision.GUI.Objects
                         Vision.GUI.Parameters
                         Vision.GUI.Trackball
-                        Vision.GUI.Source
                         Vision.GUI.Arrow
 
     other-modules:

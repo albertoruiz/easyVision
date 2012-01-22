@@ -24,7 +24,7 @@ module EasyVision.MiniApps.Misc (
 import ImagProc.Ipp.Core
 import ImagProc
 import Contours.Base
-import System.IO.Unsafe(unsafePerformIO)
+import Foreign
 import EasyVision.GUI
 import Graphics.UI.GLUT hiding (Size,Point)
 import Vision

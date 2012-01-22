@@ -23,6 +23,7 @@ module EasyVision (
     module Features,
     module Contours,
     module ImagProc.Camera,
+    module Util.LazyIO
 ) where
 
 import EasyVision.GUI
@@ -31,3 +32,4 @@ import ImagProc
 import Features
 import Contours
 import ImagProc.Camera
+import Util.LazyIO

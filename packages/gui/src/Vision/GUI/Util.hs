@@ -29,8 +29,9 @@ import Vision.GUI.Interface
 import Control.Arrow((***))
 import Control.Monad((>=>))
 import ImagProc
-import Vision.GUI.Source(findSize,readFolderMP,readFolderIM,getCam)
-import Vision.GUI.Arrow((~>),(>~>),Trans,transUI,runT_)
+import ImagProc.Camera(findSize,readFolderMP,readFolderIM,getCam)
+import Vision.GUI.Arrow(Trans,transUI,runT_)
+import Util.LazyIO((~>),(>~>))
 import Util.Misc(replaceAt)
 import Util.Options
 import Control.Concurrent(threadDelay)

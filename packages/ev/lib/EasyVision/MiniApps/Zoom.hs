@@ -69,21 +69,21 @@ zoomer title szz img0 = do
             renderPrimitive Lines $ sequence_ [vertex (Pixel 0 (c-c1)) >> vertex (Pixel (r2-r1+1) (c-c1)) |c<-[c1..c2]]
             setColor 0 0 0.7
             sequence_ [text2D' (fromIntegral (c-c1) +dx) (fromIntegral (r-r1) +dy) (show $ imgz `val8u` (Pixel r c)) |r<-[r1..r2],c<-[c1..c2]]
-    mouse _ evw (MouseButton WheelUp) Down _ _ = do
-        (im,p,z,ok) <- getW evw
-        putW evw $ clip (im,p,z+(max 1 $ z`div`10),ok)
+    mouse _ st (MouseButton WheelUp) Down _ _ = do
+        (im,p,z,ok) <- get st
+        st $= clip (im,p,z+(max 1 $ z`div`10),ok)
         postRedisplay Nothing
-    mouse _ evw (MouseButton WheelDown) Down _ _ = do
-        (im,p,z,ok) <- getW evw
-        putW evw $ clip (im,p,z-(max 1 $ z`div`10),ok)
+    mouse _ st (MouseButton WheelDown) Down _ _ = do
+        (im,p,z,ok) <- get st
+        st $= clip (im,p,z-(max 1 $ z`div`10),ok)
         postRedisplay Nothing
-    mouse _ evw (MouseButton LeftButton) Down _ (Position x y) = do
-        (im,Pixel r c,z,ok) <- getW evw
-        putW evw $ clip (im, Pixel (r+(fromIntegral y-s2)*z`div`s2) (c+(fromIntegral x-s2)*z`div`s2) ,z, ok)
+    mouse _ st (MouseButton LeftButton) Down _ (Position x y) = do
+        (im,Pixel r c,z,ok) <- get st
+        st $= clip (im, Pixel (r+(fromIntegral y-s2)*z`div`s2) (c+(fromIntegral x-s2)*z`div`s2) ,z, ok)
         postRedisplay Nothing
-    mouse _ evw (Char ' ') Down _ _ = do
-        (im,Pixel r c,z,ok) <- getW evw
-        putW evw (im,Pixel r c,z, not ok)
+    mouse _ st (Char ' ') Down _ _ = do
+        (im,Pixel r c,z,ok) <- get st
+        st $= (im,Pixel r c,z, not ok)
         postRedisplay Nothing
     mouse _ _ (Char 'q') Down _ _ = do
         Just ww <- get currentWindow

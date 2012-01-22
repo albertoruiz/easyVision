@@ -23,7 +23,6 @@ module EasyVision.MiniApps.Concurrent (
 import Control.Concurrent
 import Control.Monad
 import Control.Parallel.Strategies
-import Control.DeepSeq
 import ImagProc.Ipp.Core
 import Features
 --import Numeric.LinearAlgebra(Vector, (@>))
@@ -32,7 +31,7 @@ import Data.IORef
 import Debug.Trace
 
 instance NFData ImageYUV where
-    rnf = (`seq` ()) . rseq
+    rnf = rwhnf
 
 instance NFData ImageFloat where
     rnf = rnf . (`fval` (Pixel 0 0))
@@ -42,11 +41,11 @@ instance NFData ImageGray where
 
 
 instance NFData DetailedInterestPoint where
-    rnf = rnf . ip
+    rnf = rwhnf . ip
 --    rnf = rnf . ipRawPosition
 
 instance NFData InterestPoint where
-     rnf = (`seq` ()) . rseq . ipDescriptor
+     rnf = rwhnf . ipDescriptor
 
 --instance (NFData a, Storable a) => NFData (Vector a) where
 --     rnf = rnf . (@>0)
@@ -63,7 +62,7 @@ asyncFun d f n = do
     forkIO $ forever $ do 
         when (d>0) (threadDelay d)
         x <- n
-        let y = f x `using` rdeepseq
+        let y = f x `using` rnf
         y `seq` swapMVar v y
     return (readMVar v)
 
@@ -73,7 +72,7 @@ syncFun f k n = do
     o:vs <- replicateM (k+1) (newMVar x)
     forkIO $ forever $ do
         x <- n
-        let y = f x `using` rdeepseq
+        let y = f x `using` rnf
             r:rs = vs
             put z = swapMVar o z >> mapM_ (forkIO . flip putMVar z) rs >> putMVar r z
         y `seq` put y
@@ -97,10 +96,10 @@ mkWatch gencam = do
 -----------------------------------------------------
 
 f |***| g = h where
-    h (x,y) = (f x, g y) `using` parPair rdeepseq rdeepseq
+    h (x,y) = (f x, g y) `using` parPair rnf rnf
 
 -----------------------------------------------------
 
 pipeline f (a:b:rest) = fa : pipeline f (b':rest) where
-    (fa, b') = (f a, b) `using` parPair rdeepseq rdeepseq 
+    (fa, b') = (f a, b) `using` parPair rnf rnf
 

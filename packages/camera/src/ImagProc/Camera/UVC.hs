@@ -1,7 +1,7 @@
 {-# LANGUAGE ForeignFunctionInterface, CPP #-}
 -----------------------------------------------------------------------------
 {- |
-Module      :  ImagProc.C.UVC
+Module      :  ImagProc.Camera.UVC
 Copyright   :  (c) Alberto Ruiz 2010
 License     :  GPL-style
 
@@ -14,7 +14,7 @@ Interface to uvc cameras stolen from luvcview.
 -}
 -----------------------------------------------------------------------------
 
-module ImagProc.C.UVC (uvcCamera)
+module ImagProc.Camera.UVC (uvcCamera)
 where
 
 import Foreign

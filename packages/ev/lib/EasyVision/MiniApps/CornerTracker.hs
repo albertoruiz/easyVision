@@ -14,7 +14,7 @@ module EasyVision.MiniApps.CornerTracker (
 ) where
 
 import ImagProc
-import ImagProc.Camera
+import ImagProc.Camera.MPlayer(mpSize)
 import Features.Matching
 import EasyVision.MiniApps.Combinators
 import EasyVision.GUI

@@ -12,7 +12,6 @@ Stability   :  provisional
 
 module Vision.GUI (
     module Vision.GUI.Util,
-    module Vision.GUI.Source,
     module Vision.GUI.Arrow,
     module Vision.GUI.Draw,
     module Vision.GUI.Interface,
@@ -24,7 +23,6 @@ module Vision.GUI (
 )where
 
 import Vision.GUI.Util
-import Vision.GUI.Source
 import Vision.GUI.Arrow
 import Vision.GUI.Types
 import Vision.GUI.Interface

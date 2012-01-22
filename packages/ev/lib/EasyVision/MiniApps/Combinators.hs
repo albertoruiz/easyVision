@@ -13,11 +13,14 @@ Camera combinators: higher order functions which make virtual cameras from other
 -----------------------------------------------------------------------------
 
 module EasyVision.MiniApps.Combinators (
-  runFPS,
-  monitor,
+  camera, cameraFolderG,
+  run, runFPS,
+  withPause,
+  monitor, observe,
   monitorWheel,
   monitor3D,
   monitorScanLine, 
+  gray,
   counter, countDown,
   frameRate, compCost, timeMonitor,
   selectROI, selectROIfun,
@@ -31,12 +34,14 @@ module EasyVision.MiniApps.Combinators (
 
 import ImagProc.Ipp.Core
 import ImagProc
+import Util.LazyIO
+import ImagProc.Camera
 import Data.IORef
 import System.Exit
 import EasyVision.GUI
 import Graphics.UI.GLUT hiding (Size,Point,ctrl)
 import Control.Monad(when,(>=>))
-import ImagProc.Camera(mpSize)
+import ImagProc.Camera.MPlayer(mpSize)
 import System.CPUTime
 import System.Time
 import Text.Printf
@@ -51,9 +56,93 @@ import Numeric.LinearAlgebra(inv,single,toList)
 import Vision(pt2hv,cross)
 import Util.Ellipses
 
+-- deprecated
+gray = grayscale
+
+{- | Adds a pause control to a camera. Commands:
+
+    \"pause\" -> toggles the pause state
+
+    \"step\"  -> toggles the frame by frame state (the next frame is obtained by \"pause\")
+
+-}
+withPause :: IO a                       -- ^ original camera
+          -> IO (IO a, String -> IO ()) -- ^ camera and controller
+withPause grab = do
+    paused <- newIORef False
+    frozen <- newIORef undefined
+    step   <- newIORef False
+    pass   <- newIORef False
+
+    let control command = do
+        case command of
+         "pause" -> do modifyIORef paused not
+                       p <- readIORef paused
+                       if p then grab >>= writeIORef frozen
+                            else return ()
+         "step"   -> modifyIORef step not
+         "pass"   -> modifyIORef pass not
+
+    let virtual = do
+        s <- readIORef step
+        p <- readIORef paused
+        g <- readIORef pass
+        let grab' = if g then grab >> readIORef frozen else readIORef frozen
+        if not s && p
+             then grab'
+             else 
+                if s then if p then grab'
+                               else do writeIORef paused True
+                                       grab >>= writeIORef frozen
+                                       readIORef frozen
+             else grab
+
+    return (virtual,control)
+
 ----------------------------------------------------------------------
 
-modif = Modifiers Up Up Up
+cameraFolder = do
+    path <- optionString "--photos" "."
+    sz <- findSize
+    imgs <- readFolderMP path (Just sz)
+    let disp rk = do
+           k <- get rk  
+           drawImage (rgb $ fst $ imgs!!k)
+    w <- evWindow 0 ("Folder: "++path) (mpSize 10) (Just disp) (mouseGen (cfacts (length imgs -1)) kbdQuit)               
+    return $ do
+        k <- getW w    
+        return (fst $ imgs!!k)
+
+cameraFolderG = do
+    path <- optionString "--photos" "."
+    imgs <- readFolderIM path
+    let disp rk = do
+           k <- get rk  
+           drawImage'' 320 (rgb $ fst $ imgs!!k)
+    w <- evWindow 0 ("Folder: "++path) (mpSize 10) (Just disp) (mouseGen (cfacts (length imgs -1)) kbdQuit)               
+    return $ do
+        k <- getW w    
+        return (fst $ imgs!!k)
+
+
+cfacts n = [((MouseButton WheelUp,   Down, modif), \_ k -> min (k+1) n)
+           ,((SpecialKey  KeyUp,     Down, modif), \_ k -> min (k+1) n)
+           ,((MouseButton WheelDown, Down, modif), \_ k -> max (k-1) 0)
+           ,((SpecialKey  KeyDown,   Down, modif), \_ k -> max (k-1) 0)]
+
+
+cameraV = findSize >>= getCam 0 ~> channels
+
+-- | returns the camera 0. (It also admits --photos=path/to/folder/ with images, and --variable-size, to read images of
+-- different arbitrary sizes.)
+camera :: IO (IO Channels)
+camera = do
+    f <- hasValue "--photos"
+    g <- getFlag "--variable-size"
+    if f then if g then cameraFolderG else cameraFolder
+         else cameraV
+
+---------------------------------------------------------
 
 -- | Generic display function for a camera combinator. The monitor function is invoked in the window with the grabbed object.
 --   The window includes a withPause controller.
@@ -109,6 +198,17 @@ counter cam = do
 
 ---------------------------------------------------------
 
+observe :: (Drawable b, Image b) => String -> (a -> b) -> IO a -> IO (IO a)
+observe winname f = monitor winname (mpSize 20) (drawImage'.f)
+
+run :: IO (IO a) -> IO ()
+run c = prepare >> (c >>= launch . (>> return ()))
+
+runFPS :: Int -> IO (IO a) -> IO ()
+runFPS n c = prepare >> (c >>= launchFreq n . (>> return ()))
+
+-----------------------------------------------------------
+
 frameRate cam = do
     t0 <- getClockTime
     t <- newIORef (t0,40)
@@ -137,10 +237,10 @@ compCost cam = do
 
 
 timeMonitor :: IO b -> IO (IO b)
-timeMonitor = compCost >=> frameRate >=> g >~> (fst.fst) where
-    f _ _ ((_,t1),t2) = text (Point 0.9 0) $ 
-                        printf " %3.0f ms CPU  / %4.0f Hz   /   %3.0f%%" (t1::Double) (1000/t2::Double) (100*t1/t2)
-    g = interface (Size 60 300) "Timing" () (\_ _ ->  return ()) [] [] (const (,)) f
+timeMonitor = compCost >=> frameRate >=> monitor "Timing"  (Size 50 230) f >~> (fst.fst) where
+    f ((_,t1),t2) = do
+        pixelCoordinates (Size 50 230)
+        text2D 15 30 $ printf " %3.0f ms CPU  / %4.0f Hz   /   %3.0f%%" (t1::Double) (1000/t2::Double) (100*t1/t2)
 
 
 ----------------------------------------------------------------------
@@ -155,10 +255,10 @@ selectROIfun name sel mon result cam = do
     let sz = mpSize 20
     w <- evWindow () name sz Nothing (const (kbdcam ctrl))
     let d = 50
+    evROI w $= ROI d (height sz-d) d (width sz-d)
     return $ do
         x <- cam'
-        (pt1,pt2) <- get (evRegion w)
-        let r = poly2roi (sz) (Closed[pt1,pt2])
+        r <- getROI w
         inWin w $ do drawImage'' 640 (sel x)
                      sz <- evSize `fmap` get windowSize
                      pixelCoordinates sz
@@ -253,7 +353,7 @@ clickStatusWindow name sz s0 update display act cam = do
         return (x,s')
   where
     mouse _ st (MouseButton LeftButton) Down _ _ = do
-        updateW st (not *** id)
+        st $~ (not *** id)
     mouse m _ a b c d = m a b c d
 
 ----------------------------------------------------------------------
@@ -277,16 +377,16 @@ monitorWheel (k0,k1,k2) name sz fun cam = do
         return thing
   where
     mouse _ st (MouseButton WheelUp) Down _ _ = do
-        updateW st (min k2 . (+1))
+        st $~ (min k2 . (+1))
     mouse _ st (MouseButton WheelDown) Down _ _ = do
-        updateW st (max k1 . (subtract 1))
+        st $~ (max k1 . (subtract 1))
     mouse _ st (SpecialKey KeyUp) Down _ _ = do
-        updateW st (min k2 . (+1))
+        st $~ (min k2 . (+1))
     mouse _ st (SpecialKey KeyDown) Down _ _ = do
-        updateW st (max k1 . (subtract 1))
+        st $~ (max k1 . (subtract 1))
     mouse m _ a b c d = m a b c d
 
---------------------------------------------------------------------------------
+----------------------------------------------------------------------
 
 -- temporary location, and
 -- to be replaced by a new warpBack function
