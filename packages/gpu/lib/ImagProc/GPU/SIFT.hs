@@ -28,7 +28,7 @@ import Numeric.LinearAlgebra hiding (step)
 import Data.Packed.Development
 import Graphics.UI.GLUT hiding (Point)
 import Control.Monad(when)
-import EasyVision.GUI.Parameters
+import Vision.GUI.Parameters
 
 -----------------------------------------------------------------
 

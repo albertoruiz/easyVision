@@ -27,9 +27,9 @@ import Foreign.Storable
 import Foreign.Marshal
 import System.IO.Unsafe(unsafePerformIO)
 import Foreign.C.Types
-import EasyVision.GUI.Parameters(autoParam,intParam,realParam)
+import Vision.GUI.Parameters(autoParam,intParam,realParam)
 import Contours.Base(douglasPeuckerClosed,douglasPeucker)
-import EasyVision.GUI((.@.))
+import Vision.GUI((.@.))
 import Control.Monad(when)
 import Data.Packed.Development(createVector, app1, vec)
 import Data.Packed(dim,toList,takesV,Vector,(@>))

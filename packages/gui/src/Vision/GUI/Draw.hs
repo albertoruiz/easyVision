@@ -30,8 +30,8 @@ module Vision.GUI.Draw
 , newTrackball
 , captureGL
 , limitSize
-, renderPolyline
 , points
+, drawContourLabeled
 ) where
 
 import Graphics.UI.GLUT hiding (RGB, Matrix, Size, Point,color)
@@ -327,12 +327,6 @@ captureGL = do
 
 ----------------------------------------------------------------
 
-renderPolyline :: Polyline -> IO ()
-renderPolyline c@(Closed _) = renderPrimitive LineLoop (vertex c)
-renderPolyline c@(Open _) = renderPrimitive LineStrip (vertex c)
-
---------------------------------------------------------------------------------
-
 renderImageIn :: EVWindow st -> Img -> IO ()
 renderImageIn evW m = do
     policy <- readIORef (evPolicy evW)
@@ -394,4 +388,14 @@ instance Renderable (Vector Double) where
     render v = renderPrimitive LineStrip (vertex $ fromColumns [t,v])
       where
         t = linspace (dim v) (0.9,-0.9)
+
+
+drawContourLabeled cont = Draw [
+      lineWd 1, color green, Draw cont,
+      color red, pointSz 5, points (take 1 c),
+      color orange, pointSz 3, points (tail c),
+      color blue, Draw (zipWith text c (map show [(0::Int)..])) 
+    ]
+  where
+    c = polyPts cont
 
