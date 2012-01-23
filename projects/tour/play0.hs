@@ -3,8 +3,8 @@ import ImagProc
  
 main = run $ transUI f >>> freqMonitor
  
-f :: VC Channels ImageRGB
-f cam = return $ do
+f :: VCN Channels ImageRGB
+f = return $ \cam -> do
     x <- cam
     let r = rgb x
     print (size r)

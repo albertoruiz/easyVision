@@ -13,7 +13,7 @@ common interfaces
 -----------------------------------------------------------------------------
 
 module Vision.GUI.Util (
-    observe, observe',
+    observe, camG, cameraFolderIM,
     sMonitor,
     browser,
     editor,
@@ -28,6 +28,7 @@ import Vision.GUI.Types
 import Vision.GUI.Interface
 import Control.Arrow((***),(>>>))
 import Control.Monad((>=>))
+import Control.Applicative((<*>))
 import ImagProc
 import ImagProc.Camera(findSize,readFolderMP,readFolderIM,getCam)
 import Vision.GUI.Arrow--(ITrans, Trans,transUI,transUI2,runT_)
@@ -77,8 +78,8 @@ browseLabeled name examples disp = browser name examples f
 
 --------------------------------------------------------------------------------
 
-sMonitor :: String -> (WinRegion -> b -> [Drawing]) -> Trans b b
-sMonitor name f = transUI2 $ interface (Size 240 360) name 0 (const.const.return $ ()) (c2 acts) [] (const (,)) g
+sMonitor :: String -> (WinRegion -> b -> [Drawing]) -> ITrans b b
+sMonitor name f = transUI $ interface (Size 240 360) name 0 (const.const.return $ ()) (c2 acts) [] (const (,)) g
   where
     g roi k x | null r    = Draw ()
               | otherwise = r !! j
@@ -93,39 +94,28 @@ sMonitor name f = transUI2 $ interface (Size 240 360) name 0 (const.const.return
 
 --------------------------------------------------------------------------------
 
-observe :: Renderable x => String -> (b -> x) -> Trans b b
-observe name f = transUI2 $ interface (Size 240 360) name () (const.const.return $ ()) [] [] (const (,)) (const.const $ Draw . f)
-
-
-observe' :: Renderable x => String -> (b -> x) -> ITrans b b
-observe' name f = transUI3 $ interface (Size 240 360) name () (const.const.return $ ()) [] [] (const (,)) (const.const $ Draw . f)
+observe :: Renderable x => String -> (b -> x) -> ITrans b b
+observe name f = transUI $ interface (Size 240 360) name () (const.const.return $ ()) [] [] (const (,)) (const.const $ Draw . f)
 
 --------------------------------------------------------------------------------
 
 -- | returns the camera 0. (It also admits --photos=path/to/folder/ with images, and --variable-size, to read images of
 -- different arbitrary sizes.)
 camera :: IO (IO Channels)
-camera = cameraV {-do
+camera = do
     f <- hasValue "--photos"
     g <- getFlag "--variable-size"
     if f then if g then cameraFolderIM else cameraFolderMP
          else cameraV
--}
 
 cameraV = findSize >>= getCam 0 ~> channels
 
 
-cameraFolderIM = dummy =>>= camG r
+cameraFolderIM = camG r <*> dummy
   where
     r p _ = readFolderIM p
 
-cameraFolderMP = dummy =>>= camG readFolderMP
-
-  
-gc =>>= gf = do
-    c <- gc
-    f <- gf
-    f c
+cameraFolderMP = camG readFolderMP <*> dummy
 
 camG readf = do
     path <- optionString "--photos" "."
@@ -155,10 +145,10 @@ run = runT_ camera
 
 --------------------------------------------------------------------------------
 
-frameRate cam = do
+frameRate = do
     t0 <- getCurrentTime
     rt <- newIORef (t0,(1/20,0.01))
-    return $ do
+    return $ \cam -> do
             (t0,(av,cav)) <- readIORef rt
             ct0 <- getCPUTime
             r <- cam
@@ -172,8 +162,8 @@ frameRate cam = do
             return (r,(av',cav'))
 
 
-freqMonitor :: Trans x x
-freqMonitor = transUI frameRate >>> transUI2 g
+freqMonitor :: ITrans x x
+freqMonitor = transUI frameRate >>> transUI g
   where
     g = interface (Size 60 300) "Frame Rate" (1/20,0.1) (const . const . return $ ()) [] [] f sh
     f _roi _state (t,x) = (x,t)
@@ -183,7 +173,7 @@ freqMonitor = transUI frameRate >>> transUI2 g
 
 --------------------------------------------------------------------------------
 
-wait n = transUI $ \cam -> return $ do
+wait n = transUI $ return $ \cam -> do
     x <- cam
     threadDelay (n*1000)
     return x

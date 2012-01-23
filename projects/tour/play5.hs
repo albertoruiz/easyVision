@@ -5,7 +5,7 @@ import Control.Concurrent(threadDelay)
  
 main = runT_ clock see
 
-see :: Show x => Trans x x
+see :: Show x => ITrans x x
 see = observe "time" (text (Point 0.9 0) . show)
 
 clock :: IO (IO UTCTime)

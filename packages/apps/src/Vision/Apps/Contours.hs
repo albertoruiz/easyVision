@@ -24,10 +24,10 @@ import Vision(desp,inHomog,hv2pt)
 import Classifier(Sample)
 import Control.Monad(when)
 import Data.List(minimumBy,sortBy)
-import ImagProc.C.NP(wnpcontours)
+import ImagProc.C.NP(npcontours, winNPParam)
 import qualified Features.Polyline as Feat
 import Data.Function(on)
-import Util.LazyIO((.@.))
+
 
 
 autoParam "ContourParam" "contour-" [
@@ -44,30 +44,28 @@ autoParam "ContourParam" "contour-" [
     ("radius", "Int",    intParam 10 0 30)]
 
 
-
 autoParam "PolygonParam" "polygon-"
   [( "eps","Double" ,realParam 10 0 50),
    ( "sides","Int" ,intParam 4 3 10),
    ( "tol","Double" ,realParam 10 0 45)]
 
 
-contours :: Trans ImageGray (ImageGray, [Polyline])
-contours = transUI (wnpcontours id) >>> arr (id *** fst.fst)
+contours :: ITrans ImageGray (ImageGray, [Polyline])
+contours = arr id &&& (npcontours @@@ winNPParam >>> arr (fst.fst))
 
-contours' :: Trans ImageGray (ImageGray, [Polyline])
-contours' = transUI (wcontours id) >>> arr (id *** contSel)
+contours' :: ITrans ImageGray (ImageGray, [Polyline])
+contours' = arr id &&& (smartContours id @@@ winContourParam >>> arr contSel) 
 
 catalog :: FilePath -> IO (Sample Polyline)
 catalog defaultdb = (read <$> readFile defaultdb) >>= optionFromFile "--catalog"
 
 
-injectPrototypes :: Renderable t => FilePath -> Trans (t, [Shape]) ((t, [Shape]), [(Shape, String)])
-injectPrototypes defaultdb = transUI inject where 
-  inject cam = do
+injectPrototypes :: Renderable t => FilePath -> ITrans (t, [Shape]) ((t, [Shape]), [(Shape, String)])
+injectPrototypes defaultdb = transUI $ do
     c <- catalog defaultdb
     let prepro = id
         disp = Draw . transPol (diagl [0.8, 0.8, 1]) . boxShape . shapeContour
-    b <- browseLabeled "Shapes" (map (shape *** id) c) disp
+    bro <- browseLabeled "Shapes" (map (shape *** id) c) disp
 
     let ft _ _  = return ()
         result _r _s (x,cs) = (ss,(x,ss))  -- save contours in the state
@@ -76,15 +74,15 @@ injectPrototypes defaultdb = transUI inject where
         display _r _s (im,conts) = Draw [ Draw im, color orange
                                         , Draw [map (Draw . shapeContour) conts] ]
         add _r _p [] = return ()
-        add _r p cs = updateW b (id *** ((c,"new"):))  -- add contour to b state
+        add _r p cs = updateW bro (id *** ((c,"new"):))  -- add contour to b state
           where
             c = closestTo p cs
         acts = [(key (MouseButton LeftButton), add)]
-    r1 <- interface (Size 300 300) "Raw Contours" [] ft [] acts result display cam
+    r1 <- interface (Size 300 300) "Raw Contours" [] ft [] acts result display
 
-    return $ do
-        a <- r1
-        b <- getW b
+    return $ \c -> do
+        a <- r1 c
+        b <- getW bro
         return (a,snd b)
 
 
@@ -95,7 +93,7 @@ closestTo pt = minimumBy (compare `on` (d pt))
 
 --------------------------------------------------------------------------------
 
-showCanonical :: Trans (ImageGray, [Shape]) (ImageGray, [Shape])
+showCanonical :: ITrans (ImageGray, [Shape]) (ImageGray, [Shape])
 showCanonical = sMonitor "canonical" disp 
   where
     disp _ (x,ss) = [fun h white 1, fun g yellow 3] 
@@ -117,7 +115,7 @@ showCanonical = sMonitor "canonical" disp
 
 ----------------------------------------------------------------------
 
-showAlignment :: Trans (ImageGray,[[ShapeMatch]]) (ImageGray,[[ShapeMatch]])
+showAlignment :: ITrans (ImageGray,[[ShapeMatch]]) (ImageGray,[[ShapeMatch]])
 showAlignment = sMonitor "Detected" disp
   where
     disp _ (im,oks) = [ msgM 1 "Invariant"
@@ -195,9 +193,6 @@ defContourParam :: ContourParam
 argContourParam :: IO ContourParam
 winContourParam :: IO (IO ContourParam)
 
--- | find closed contours
-wcontours :: (x -> ImageGray) -> IO x ->  IO (IO (x, ContourInfo))
-wcontours g = smartContours g .@. winContourParam
 
 smartContours :: (x -> ImageGray) -> ContourParam -> x -> ContourInfo
 smartContours g ContourParam{..} x = r

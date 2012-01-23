@@ -15,7 +15,7 @@ Interface to the New Paradigm.
 -----------------------------------------------------------------------------
 
 module ImagProc.C.NP (   
-    wnpcontours, argNPParam, defNPParam, winNPParam
+    wnpcontours, npcontours, argNPParam, defNPParam, winNPParam
 )
 where
 

@@ -15,7 +15,7 @@ Arrow interface.
 -----------------------------------------------------------------------------
 
 module Vision.GUI.Arrow(
-    runT2_, runT_, runT, ITrans, Trans(Trans), transUI, transUI2, transUI3, arrL, arrL2, (@@@)
+    runT_, runT, ITrans(ITrans), transUI, arrL, (@@@)
 )where
 
 import Control.Concurrent   (forkIO)
@@ -45,12 +45,6 @@ instance Cat.Category ITrans
     id = ITrans $ return (arr id)
     ITrans gf . ITrans gg = ITrans (liftM2 (>>>) gg gf)
 
---ITrans $ do
---        g <- gg
---        f <- gf
---        return (g >>> f)
-
-
 instance Arrow Trans
   where
     arr f = Trans (return . map f)
@@ -69,14 +63,11 @@ instance Arrow ITrans
     first f = f *** Cat.id
     ITrans f *** ITrans g = ITrans $ liftM2 (***) f g
 
-arrL :: ([a]->[b]) -> Trans a b
--- ^ pure function on the whole list of results
-arrL f = Trans (return . f)
 
 
-arrL2 :: ([a]->[b]) -> ITrans a b
+arrL :: ([a]->[b]) -> ITrans a b
 -- ^ pure function on the whole list of results
-arrL2 f = ITrans (return (arrL f))
+arrL f = ITrans (return (Trans (return . f)))
 
 
 --------------------------------------------------------------------------------
@@ -89,23 +80,9 @@ source gencam = do
     return xs
 
 
-transUI :: VC a b -> Trans a b
--- ^ convert IO interface to a transformer of lazy lists
-transUI ui = Trans $ source . (createGrab >=> ui)
 
-
-transUI2 :: VCN a b -> Trans a b
--- ^ convert IO interface generator to a transformer of lazy lists
-transUI2 gf = Trans r
-  where
-    r as = do
-        f <- gf
-        ga <- createGrab as
-        grabAll (f ga)
-
-
-transUI3 :: VCN a b -> ITrans a b
-transUI3 gf = ITrans $ do
+transUI :: VCN a b -> ITrans a b
+transUI gf = ITrans $ do
     f <- gf
     return $ Trans $ \as -> do
         ga <- createGrab as
@@ -113,39 +90,11 @@ transUI3 gf = ITrans $ do
 
 
 
-runT_ :: IO (IO a) -> Trans a b -> IO ()
--- ^ run a camera generator on a transformer
-runT_ gcam (Trans t) = runIt $ do
-    as <- source gcam
-    bs <- t as
-    f <- createGrab bs
-    forkIO (forever $ f >>= g )
-  where
-    g !_x = putStr ""
 
-
-
-runT :: IO (IO a) -> Trans a b -> IO [b]
--- ^ run a camera generator on a transformer, returning the results
-runT = error "not yet implemented"
-
-{-
--- TO DO: FIXME
-runT gcam (Trans t) = do
-    rbs <- newChan
-    forkIO $ runIt $ do
-        as <- source gcam
-        bs <- t as
-        f <- createGrab bs
-        forkIO $ forever (f >>= writeChan rbs)
-    getChanContents rbs
--}    
-
-
-(@@@) :: (p -> x -> y) -> IO (IO p) -> Trans x y
+(@@@) :: (p -> x -> y) -> IO (IO p) -> ITrans x y
 -- ^ apply a pure function with parameters taken from the UI
 infixl 3 @@@
-f @@@ p = arr (uncurry f) <<< (transUI (const p) &&& Cat.id)
+f @@@ p = arr (uncurry f) <<< (transUI (fmap const p) &&& arr id)
 
 ------------------------------------------------------------------
 
@@ -171,9 +120,9 @@ instance ArrowChoice ITrans where
 
 --------------------------------------------------------------------------------
 
-runT2_ :: IO (IO a) -> ITrans a b -> IO ()
+runT_ :: IO (IO a) -> ITrans a b -> IO ()
 -- ^ run a camera generator on a transformer
-runT2_ gcam (ITrans gt) = runIt $ do
+runT_ gcam (ITrans gt) = runIt $ do
     as <- source gcam
     Trans t <- gt
     forkIO $ do
@@ -182,4 +131,22 @@ runT2_ gcam (ITrans gt) = runIt $ do
         forever $ f >>= g 
   where
     g !_x = putStr ""
+
+
+runT :: IO (IO a) -> Trans a b -> IO [b]
+-- ^ run a camera generator on a transformer, returning the results
+runT = error "not yet implemented"
+
+{-
+-- TO DO: FIXME
+runT gcam (Trans t) = do
+    rbs <- newChan
+    forkIO $ runIt $ do
+        as <- source gcam
+        bs <- t as
+        f <- createGrab bs
+        forkIO $ forever (f >>= writeChan rbs)
+    getChanContents rbs
+-}    
+
 

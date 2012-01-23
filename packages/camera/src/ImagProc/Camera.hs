@@ -261,7 +261,7 @@ readFolderMP path mbsz = do
     let sz = maybe (Size 600 800) id mbsz -- TO DO: remove fixed size
     fs <- getDirectoryContents path
     let nframes = length (filter isImage fs)
-    cam <- mplayer ("mf://"++path++" -benchmark -loop 1") sz
+    cam <- mplayer ("mf://"++path++"/ -benchmark -loop 1") sz
     imgs <- sequence (replicate nframes cam)
     putStrLn $ show (length imgs) ++ " images in " ++ path
     return $ zip (map channels imgs) (map show [(1::Int)..])

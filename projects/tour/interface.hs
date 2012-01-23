@@ -3,7 +3,7 @@ import ImagProc
 
 main = run clickPoints
 
-clickPoints :: Trans Channels ([Point], ImageGray)
+clickPoints :: ITrans Channels ([Point], ImageGray)
 clickPoints = transUI $ interface (Size 240 320) "pts" [] ft updt [] r sh
   where
     r _ pts input = (pts, (pts, notI . grayscale $ input))
