@@ -13,7 +13,7 @@ common interfaces
 -----------------------------------------------------------------------------
 
 module Vision.GUI.Util (
-    observe,
+    observe, observe',
     sMonitor,
     browser,
     editor,
@@ -26,11 +26,11 @@ module Vision.GUI.Util (
 import Graphics.UI.GLUT hiding (Point,Size,color)
 import Vision.GUI.Types
 import Vision.GUI.Interface
-import Control.Arrow((***))
+import Control.Arrow((***),(>>>))
 import Control.Monad((>=>))
 import ImagProc
 import ImagProc.Camera(findSize,readFolderMP,readFolderIM,getCam)
-import Vision.GUI.Arrow(Trans,transUI,runT_)
+import Vision.GUI.Arrow--(ITrans, Trans,transUI,transUI2,runT_)
 import Util.LazyIO((~>),(>~>))
 import Util.Misc(replaceAt)
 import Util.Options
@@ -78,7 +78,7 @@ browseLabeled name examples disp = browser name examples f
 --------------------------------------------------------------------------------
 
 sMonitor :: String -> (WinRegion -> b -> [Drawing]) -> Trans b b
-sMonitor name f = transUI $ interface (Size 240 360) name 0 (const.const.return $ ()) (c2 acts) [] (const (,)) g
+sMonitor name f = transUI2 $ interface (Size 240 360) name 0 (const.const.return $ ()) (c2 acts) [] (const (,)) g
   where
     g roi k x | null r    = Draw ()
               | otherwise = r !! j
@@ -94,34 +94,44 @@ sMonitor name f = transUI $ interface (Size 240 360) name 0 (const.const.return 
 --------------------------------------------------------------------------------
 
 observe :: Renderable x => String -> (b -> x) -> Trans b b
-observe name f = transUI $ interface (Size 240 360) name () (const.const.return $ ()) [] [] (const (,)) (const.const $ Draw . f)
+observe name f = transUI2 $ interface (Size 240 360) name () (const.const.return $ ()) [] [] (const (,)) (const.const $ Draw . f)
+
+
+observe' :: Renderable x => String -> (b -> x) -> ITrans b b
+observe' name f = transUI3 $ interface (Size 240 360) name () (const.const.return $ ()) [] [] (const (,)) (const.const $ Draw . f)
 
 --------------------------------------------------------------------------------
 
 -- | returns the camera 0. (It also admits --photos=path/to/folder/ with images, and --variable-size, to read images of
 -- different arbitrary sizes.)
 camera :: IO (IO Channels)
-camera = do
+camera = cameraV {-do
     f <- hasValue "--photos"
     g <- getFlag "--variable-size"
     if f then if g then cameraFolderIM else cameraFolderMP
          else cameraV
+-}
 
 cameraV = findSize >>= getCam 0 ~> channels
 
 
-cameraFolderIM = dummy >>= camG r
+cameraFolderIM = dummy =>>= camG r
   where
     r p _ = readFolderIM p
 
-cameraFolderMP = dummy >>= camG readFolderMP
+cameraFolderMP = dummy =>>= camG readFolderMP
 
   
-camG readf c = do
+gc =>>= gf = do
+    c <- gc
+    f <- gf
+    f c
+
+camG readf = do
     path <- optionString "--photos" "."
     sz <- findSize
     imgs <- readf path (Just sz)
-    interface (Size 240 320) "photos" (0,imgs) ft (keys imgs) [] r sh c
+    interface (Size 240 320) "photos" (0,imgs) ft (keys imgs) [] r sh
   where
     keys xs = acts (length xs -1)
     acts n = [ (key (MouseButton WheelUp),   \_ _ (k,xs) -> (min (k+1) n,xs))
@@ -139,6 +149,7 @@ camG readf c = do
 
 dummy :: IO (IO ())
 dummy = return (threadDelay 100000 >> return ())
+
 
 run = runT_ camera
 
@@ -162,7 +173,7 @@ frameRate cam = do
 
 
 freqMonitor :: Trans x x
-freqMonitor = transUI (frameRate >=> g)
+freqMonitor = transUI frameRate >>> transUI2 g
   where
     g = interface (Size 60 300) "Frame Rate" (1/20,0.1) (const . const . return $ ()) [] [] f sh
     f _roi _state (t,x) = (x,t)

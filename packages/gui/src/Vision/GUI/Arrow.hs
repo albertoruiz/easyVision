@@ -15,27 +15,41 @@ Arrow interface.
 -----------------------------------------------------------------------------
 
 module Vision.GUI.Arrow(
-    runT_, runT, Trans(Trans), transUI, arrL, (@@@)
+    runT2_, runT_, runT, ITrans, Trans(Trans), transUI, transUI2, transUI3, arrL, arrL2, (@@@)
 )where
 
 import Control.Concurrent   (forkIO)
 import Util.LazyIO          (createGrab, grabAll)
-import Vision.GUI.Interface (runIt,VC)
+import Vision.GUI.Interface (runIt,VC,VCN)
 
 import qualified Control.Category as Cat
 import Control.Arrow
 import Control.Monad
 import Data.Either(lefts,rights)
+import System.IO.Unsafe(unsafeInterleaveIO)
 
 --------------------------------------------------------------------------------
 
 -- | transformation of a sequence
 newtype Trans a b = Trans ( [a] -> IO [b] )
 
+newtype ITrans a b = ITrans (IO (Trans a b))
+
 instance Cat.Category Trans
   where
     id = Trans return 
     Trans f . Trans g = Trans ( g >=> f )
+
+instance Cat.Category ITrans
+  where
+    id = ITrans $ return (arr id)
+    ITrans gf . ITrans gg = ITrans (liftM2 (>>>) gg gf)
+
+--ITrans $ do
+--        g <- gg
+--        f <- gf
+--        return (g >>> f)
+
 
 instance Arrow Trans
   where
@@ -49,10 +63,20 @@ instance Arrow Trans
             bs <- b
             return (zip as bs)
 
+instance Arrow ITrans
+  where
+    arr f = ITrans (return (arr f))
+    first f = f *** Cat.id
+    ITrans f *** ITrans g = ITrans $ liftM2 (***) f g
 
 arrL :: ([a]->[b]) -> Trans a b
 -- ^ pure function on the whole list of results
 arrL f = Trans (return . f)
+
+
+arrL2 :: ([a]->[b]) -> ITrans a b
+-- ^ pure function on the whole list of results
+arrL2 f = ITrans (return (arrL f))
 
 
 --------------------------------------------------------------------------------
@@ -68,6 +92,24 @@ source gencam = do
 transUI :: VC a b -> Trans a b
 -- ^ convert IO interface to a transformer of lazy lists
 transUI ui = Trans $ source . (createGrab >=> ui)
+
+
+transUI2 :: VCN a b -> Trans a b
+-- ^ convert IO interface generator to a transformer of lazy lists
+transUI2 gf = Trans r
+  where
+    r as = do
+        f <- gf
+        ga <- createGrab as
+        grabAll (f ga)
+
+
+transUI3 :: VCN a b -> ITrans a b
+transUI3 gf = ITrans $ do
+    f <- gf
+    return $ Trans $ \as -> do
+        ga <- createGrab as
+        grabAll (f ga)
 
 
 
@@ -110,8 +152,8 @@ f @@@ p = arr (uncurry f) <<< (transUI (const p) &&& Cat.id)
 instance ArrowChoice Trans where
     left f = f +++ arr id
     Trans f +++ Trans g = Trans $ \xs -> do
-        ls <- f (lefts xs)
-        rs <- g (rights xs)
+        ls <- unsafeInterleaveIO $ f (lefts xs)
+        rs <- unsafeInterleaveIO $ g (rights xs)
         return (merge ls rs xs)
 
 merge :: [a] -> [b] -> [Either x y] -> [Either a b]
@@ -122,4 +164,22 @@ merge ls rs (x:xs) =
          Left  _ -> Left  (head ls): merge (tail ls) rs xs
 
 --------------------------------------------------------------------------------
+
+instance ArrowChoice ITrans where
+   left f = f +++ arr id
+   ITrans f +++ ITrans g = ITrans $ liftM2 (+++) f g
+
+--------------------------------------------------------------------------------
+
+runT2_ :: IO (IO a) -> ITrans a b -> IO ()
+-- ^ run a camera generator on a transformer
+runT2_ gcam (ITrans gt) = runIt $ do
+    as <- source gcam
+    Trans t <- gt
+    forkIO $ do
+        bs <- t as
+        f <- createGrab bs    
+        forever $ f >>= g 
+  where
+    g !_x = putStr ""
 

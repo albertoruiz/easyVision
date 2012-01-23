@@ -16,7 +16,7 @@ User interface tools.
 
 module Vision.GUI.Interface (
     -- * Interface
-    Command, WinInit, WinRegion, VC,
+    Command, WinInit, WinRegion, VC, VCN,
     runFPS, runIdle, runIt, run', interface, standalone,
     -- * Tools
     prepare,
@@ -75,15 +75,17 @@ type WinInit state input = EVWindow state -> input -> IO()
 
 type VC a b = IO a -> IO (IO b)
 
+type VCN a b = IO (IO a -> IO b)
+
 interface :: Size -> String -> s 
           -> WinInit s a -> [Command s s] -> [Command s (IO())]
           -> (WinRegion -> s -> a -> (s,b))
           -> (WinRegion -> s -> b -> Drawing) 
-          -> VC a b
-interface sz0 name st0 ft upds acts resultFun resultDisp cam = do
-    (cam', ctrl) <- withPause cam
+          -> VCN a b
+interface sz0 name st0 ft upds acts resultFun resultDisp = do
+--    (cam', ctrl) <- withPause cam
     firstTimeRef <- newIORef True
-    w <- evWindow st0 name sz0 Nothing (keyAction upds acts (kbdcam ctrl))
+    w <- evWindow st0 name sz0 Nothing (keyAction upds acts kbdQuit)
 
     displayCallback $= do
         evInit w
@@ -103,8 +105,8 @@ interface sz0 name st0 ft upds acts resultFun resultDisp cam = do
             swapMVar (evReady w) False
             return ()
 
-    return $ do
-        thing <- cam'
+    return $ \cam -> do
+        thing <- cam
         firstTime <- readIORef firstTimeRef
         when firstTime $ ft w thing >> writeIORef firstTimeRef False
         state <- getW w
