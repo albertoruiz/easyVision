@@ -10,6 +10,8 @@
 ./play
 ./play1
 ./play3
+./play3 '../../data/videos/rot4.avi -fps 30' --live
+./play3 '../../data/videos/rot4.avi -fps 30' --chan
 ./play4
 ./play5
 ./play6

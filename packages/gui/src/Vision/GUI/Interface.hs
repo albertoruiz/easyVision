@@ -23,7 +23,7 @@ module Vision.GUI.Interface (
     evWindow, evWindow3D, evWin3D,
     launch, launchFreq,
     inWin, getW, putW, updateW, getROI, setEVROI,
-    kbdcam, kbdQuit, keyAction, mouseGen, mouseGenPt, withPause,
+    kbdcam, kbdQuit, keyAction, mouseGen, mouseGenPt,
     Key(..), SpecialKey(..), MouseButton(..), key, kUp, kCtrl, kShift, kAlt, BitmapFont(..)
 ) where
 
@@ -83,7 +83,7 @@ interface :: Size -> String -> s
           -> (WinRegion -> s -> b -> Drawing) 
           -> VCN a b
 interface sz0 name st0 ft upds acts resultFun resultDisp = do
---    (cam', ctrl) <- withPause cam
+
     firstTimeRef <- newIORef True
     w <- evWindow st0 name sz0 Nothing (keyAction upds acts kbdQuit)
 
@@ -105,15 +105,18 @@ interface sz0 name st0 ft upds acts resultFun resultDisp = do
             swapMVar (evReady w) False
             return ()
 
+    pauser <- newPauser (evPause w)
+
     return $ \cam -> do
-        thing <- cam
+        thing <- pauser cam
         firstTime <- readIORef firstTimeRef
         when firstTime $ ft w thing >> writeIORef firstTimeRef False
         state <- getW w
         roi <- get (evRegion w)
         let (newState, result) = resultFun roi state thing
         putW w newState
-        swapMVar (evDraw w) (resultDisp roi newState result)
+        pause <- readIORef (evPause w)
+        when (not (pause==PauseDraw)) $ swapMVar (evDraw w) (resultDisp roi newState result) >> return ()
         swapMVar(evReady w) True
         --putStrLn "W"
         sync <- readIORef (evSync w)
@@ -224,6 +227,7 @@ evWindow st0 name size mdisp kbd = do
     re <- newMVar True
     dr <- newMVar (Draw ())
     sy <- newIORef True
+    pa <- newIORef NoPause
 
     let w = EVW { evW = glw
                 , evSt = st
@@ -237,6 +241,7 @@ evWindow st0 name size mdisp kbd = do
                 , evPolicy = po
                 , evPrefSize = ps
                 , evVisible = vi
+                , evPause = pa
                 , evInit = clear [ColorBuffer] }
 
     keyboardMouseCallback $= Just (\k d m p -> kbdroi w (kbd w) k d m p >> postRedisplay Nothing)
@@ -301,6 +306,13 @@ nextPolicy UserSize = DynamicSize
 nextPolicy StaticSize = UserSize
 nextPolicy DynamicSize = UserSize
 
+nextPauseDraw NoPause = PauseDraw
+nextPauseDraw _ = NoPause
+
+nextPauseCam NoPause = PauseCam
+nextPauseCam _ = NoPause
+
+
 -- | keyboard callback for camera control and exiting the application with ESC. p or SPACE pauses, s sets frame by frame mode.
 kbdcam :: (IO (),IO(),IO()) -> KeyboardMouseCallback
 kbdcam (pauseC,stepC,passC) = kbd where
@@ -364,6 +376,11 @@ kbdroi w _ (SpecialKey KeyF11) Down _ _ = modifyIORef (evDrReg w) not
 
 kbdroi w _ (Char '0') Down Modifiers {ctrl=Down} _ = writeIORef (evZoom w) (1,0,0)
 
+kbdroi w _ (Char ' ') Down Modifiers {shift=Up} _ = modifyIORef (evPause w) nextPauseCam
+kbdroi w _ (Char ' ') Down Modifiers {shift=Down} _ = modifyIORef (evPause w) nextPauseDraw
+kbdroi w _ (Char 's') Down _ _ = writeIORef (evPause w) PauseStep
+
+
 kbdroi _ defaultFunc a b c d = defaultFunc a b c d
 
 
@@ -394,49 +411,23 @@ unZoomPoint w = do
 
 --------------------------------------------------------------------------------
 
-withPause :: IO a                          -- ^ original camera
-          -> IO (IO a, (IO(), IO(), IO())) -- ^ camera and controller (pause, step, pass)
-withPause grab = do
-    paused <- newIORef False
-    frozen <- newIORef undefined
-    step   <- newIORef False
-    pass   <- newIORef False
-
-    let pauseC = do
-            modifyIORef paused not
-            p <- readIORef paused
-            if p then grab >>= writeIORef frozen
-                 else return ()
-
-        stepC = modifyIORef step not
-        passC = modifyIORef pass not
-
-        control = (pauseC,stepC,passC)
-
-    let virtual = do
-        s <- readIORef step
-        p <- readIORef paused
-        g <- readIORef pass
-        let grab' | g         = grab              >> readIORef frozen -- discard input
-                  | otherwise = threadDelay 100000 >> readIORef frozen -- wait
-        if not s && p
-          then
-            grab' -- normal pause, without step
-          else
-            if s  -- step by step
-              then
-                if p
-                  then
-                    grab' -- in pause mode
-                  else
-                    writeIORef paused True     >>   -- set pause again
-                    grab >>= writeIORef frozen >>   -- with the next frame
-                    readIORef frozen
-              else
-                grab
-
-    return (virtual,control)
-
+newPauser refPau = do
+    frozen <- newIORef Nothing
+    return $ \cam -> do
+        pau <- readIORef refPau
+        when (pau == PauseStep) (writeIORef refPau PauseCam >> writeIORef frozen Nothing)
+        old  <- readIORef frozen
+        if (pau == PauseCam || pau == PauseStep)
+          then do
+            case old of
+                Nothing -> do {x <- cam; writeIORef frozen (Just x); return x}
+                Just x   -> threadDelay 100000 >> return x
+          else do
+            case old of
+                Just _ -> writeIORef frozen Nothing
+                _      -> return ()
+            cam   
+        
 -----------------------------------------------------------------
 -- (for compatibility, to be removed)
 

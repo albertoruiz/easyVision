@@ -13,7 +13,7 @@ Stability   :  provisional
 module Vision.GUI.Types
 ( 
 -- * Window representation
-   EVWindow(..), MoveStatus(..), ResizePolicy(..), WinRegion
+   EVWindow(..), MoveStatus(..), ResizePolicy(..), PauseStatus(..), WinRegion
 -- * Drawing abstraction
 ,  Renderable(..), Drawing(..)
 ,  color, text, textF, pointSz, lineWd, winTitle
@@ -176,11 +176,14 @@ data EVWindow st = EVW { evW        :: Window
                        , evPrefSize :: IORef (Maybe Size)
                        , evPolicy   :: IORef ResizePolicy
                        , evVisible  :: IORef Bool
+                       , evPause    :: IORef PauseStatus
                        }
 
 data MoveStatus = None | SetROI | MoveZoom GLint GLint
 
 data ResizePolicy = UserSize | StaticSize | DynamicSize deriving Eq
+
+data PauseStatus = NoPause | PauseCam | PauseDraw | PauseStep deriving Eq
 
 type WinRegion = (Point,Point)
 
