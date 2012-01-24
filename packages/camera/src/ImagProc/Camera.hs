@@ -35,17 +35,13 @@ import System.IO.Unsafe(unsafeInterleaveIO)
 import Data.List(isPrefixOf,foldl',tails,findIndex,isInfixOf,isSuffixOf)
 import Data.Maybe
 import System.Directory(doesFileExist, getDirectoryContents)
-import System.CPUTime
-import Text.Printf
 import Control.Applicative((<$>))
-import Control.Arrow((&&&))
 import System.Environment(getArgs,getEnvironment)
-import Data.Function(on)
 import Control.Concurrent
 import Data.IORef
 import ImagProc.Camera.UVC
 import Util.Options
-import System.Exit
+import Util.Misc(debug)
 import Control.Monad
 import Util.LazyIO((>~>),grabAll)
 
@@ -249,10 +245,12 @@ readFolderIM :: FilePath -> IO [(Channels,String)]
 -- ^ reads a list of images from a folder. Variable size, using imageMagick
 readFolderIM path = do
     fs <- filter isImage <$> getDirectoryContents path
-    imgs <- mapM (loadRGB.((path++"/")++)) fs
-    putStrLn $ show (length imgs) ++ " images in " ++ path
-    --print $ unwords fs
-    return (zip (map channelsFromRGB imgs) fs)
+    putStrLn $ show (length fs) ++ " images in " ++ path
+    let f p = fmap (\x-> (channelsFromRGB x,p))
+            . unsafeInterleaveIO . loadRGB
+            . debug "loading" (const p)
+            $ path++"/"++p
+    mapM f fs
 
 
 readFolderMP :: FilePath -> Maybe Size -> IO [(Channels,String)]
