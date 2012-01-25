@@ -12,5 +12,3 @@ f = proc img -> do
     p <- delay' -< x
     returnA -< x |-| p
 
-delay' = arrL (\l -> head l : l)
-

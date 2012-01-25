@@ -13,11 +13,11 @@ sp0 = (0,[(Point (-0.25 + 0.25*cos(pi/4)) (0+0.25*sin(pi/4)), 1, -pi/4),
           (Point 0 0.5, 1, 0),
           (Point 0 (-0.5), 1, pi)])
 
-splineWin = standalone (Size 400 400) "spline" sp0 updts [] sh
+splineWin = standalone (Size 600 600) "spline" sp0 updts [] sh
   where
     x0 = 7
-    sh (k,seg) = Draw [ Draw (map drSeg (zip seg (tail seg))),
-                        color blue, pointSz 3, points [fst3 $ seg!!k],
+    sh (k,seg) = Draw [ color gray, pointSz 11, points [fst3 $ seg!!k],
+                        Draw (map drSeg (zip seg (tail seg))),
                         lineWd 1, color yellow, 
                         Draw $ circle (Point 0 0) 0.5,
                         Draw $ circle (Point (-0.25) 0) 0.25 ]      
@@ -63,9 +63,23 @@ mkSpline (Spline a b c d) = \t -> a + b*t + c*t**2 + d*t**3
 interpolate ((p1@(Point x1 y1),v1,a1), (p2@(Point x2 y2),v2,a2)) =
     [Point (x t) (y t) | t <- toList (linspace 100 (0,1)) ]
   where
-    x = mkSpline (spline (x1) (d*v1*cos a1) (x2) (d*v2*cos a2))
-    y = mkSpline (spline (y1) (d*v1*sin a1) (y2) (d*v2*sin a2))
+    (x,y) = spline3 (x1) (d*v1*cos a1) (x2) (d*v2*cos a2)
+                    (y1) (d*v1*sin a1) (y2) (d*v2*sin a2)
     d = distPoints p1 p2
 
 circle (Point cx cy) r = Closed [Point (cx+r*cos t) (cy+r*sin t) | t <- toList (linspace 360 (0,359*degree)) ]
+
+spline3 x0 u0 x1 u1 y0 v0 y1 v1 = (mkSpline $ spline x0 u0 x1 u1, mkSpline $ spline y0 v0 y1 v1)
+
+spline2 x0 u0 x1 u1 y0 v0 y1 v1 = (mkSpline $ Spline ax bx cx 0, mkSpline $ Spline ay by cy 0)
+  where
+    ax = x0
+    ay = y0
+    bx = s*u0
+    by = s*v0
+    den = u1 * v0 - u0 * v1
+    s = 2*(v1*x0-v1*x1-u1*y0+u1*y1)/den
+    t = 2*(v0*x1+u0*y0-v0*x0-u0*y1)/den
+    cx = x1-x0-s*u0
+    cy = y1-y0-s*v0
 

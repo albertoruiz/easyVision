@@ -15,7 +15,7 @@ Arrow interface.
 -----------------------------------------------------------------------------
 
 module Vision.GUI.Arrow(
-    runT_, runT, ITrans(ITrans), transUI, arrL, (@@@)
+    runT_, runT, ITrans(ITrans), transUI, arrL, (@@@), delay'
 )where
 
 import Control.Concurrent   (forkIO)
@@ -119,6 +119,16 @@ instance ArrowChoice ITrans where
    ITrans f +++ ITrans g = ITrans $ liftM2 (+++) f g
 
 --------------------------------------------------------------------------------
+
+delay' :: ITrans a a
+-- ^ similar to delay from ArrowCircuit, initialized with the first element
+delay' = arrL f
+  where
+    f [] = []
+    f (a:as) = a:a:as
+
+--------------------------------------------------------------------------------
+
 
 runT_ :: IO (IO a) -> ITrans a b -> IO ()
 -- ^ run a camera generator on a transformer
