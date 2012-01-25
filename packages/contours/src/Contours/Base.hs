@@ -253,12 +253,13 @@ roi2poly sz (ROI r1 r2 c1 c2) = Closed $ pixelsToPoints sz p
     p = [Pixel r1 c1, Pixel r1 c2, Pixel r2 c2, Pixel r2 c1]
 
 poly2roi :: Size -> Polyline -> ROI
-poly2roi sz p = ROI r1 r2 c1 c2
+poly2roi sz p = ROI r1 (max (r1+d) r2) c1 (max (c1+d) c2)
   where
     (Closed [p1,_,p3,_]) = bounding p
     [Pixel r1 c1, Pixel r2 c2] = pointsToPixels sz [p1,p3]
+    d = 32
 
-setRegion p im = setROI (poly2roi (size im) p) im
+setRegion (p1,p2) im = setROI (poly2roi (size im) (Closed[p1,p2])) im
 
 --------------------------------------------------------------------------------
 

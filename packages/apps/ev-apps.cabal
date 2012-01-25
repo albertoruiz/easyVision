@@ -1,0 +1,33 @@
+Name:               ev-apps
+Version:            0.1.0
+License:            GPL
+License-file:       LICENSE
+Author:             Alberto Ruiz
+Maintainer:         Alberto Ruiz <aruiz@um.es>
+Stability:          experimental
+Homepage:           http://perception.inf.um.es/easyVision
+Synopsis:           high level tools
+Description:
+                    high level tools
+
+Category:           Math
+
+cabal-version:      >=1.2
+build-type:         Simple
+
+extra-source-files:
+
+library
+    Build-Depends:      base >= 3 && < 5,
+                        hmatrix, vision, imagproc,
+                        patrec, prcv-util, ev-gui, contours,
+                        features, imagproc-contrib
+
+    hs-source-dirs:     src
+
+    Exposed-modules:    Vision.Apps.Contours
+
+    ghc-prof-options:   -auto-all
+
+--  ghc-options:        -Wall
+

@@ -1,4 +1,7 @@
-import EasyVision
- 
-main = run $ camera ~> rgb >>= observe "RGB" id
+import Vision.GUI
+import ImagProc
+
+main = run p
+
+p = observe "RGB" rgb >>> arr grayscale >>> observe "inverted" notI
 

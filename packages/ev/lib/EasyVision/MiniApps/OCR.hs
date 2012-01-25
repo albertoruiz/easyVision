@@ -23,7 +23,7 @@ module EasyVision.MiniApps.OCR (
 
 import ImagProc                         (ImageGray,saveGray,size)
 import EasyVision.GUI                   (drawImage',setColor',text2D,pixelCoordinates)
-import ImagProc.Camera                  (mpSize)
+import ImagProc.Camera.MPlayer          (mpSize)
 import EasyVision.MiniApps.Combinators  (clickStatusWindow)
 import Data.Colour.Names                
 import System.Process                   (system,readProcessWithExitCode)

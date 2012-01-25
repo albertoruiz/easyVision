@@ -36,27 +36,29 @@ flag uvc
 library
 
 
-    Build-Depends:      base >= 3 && < 5, prcv-util, imagproc >= 0.1,
-                        directory, process
+    Build-Depends:      base >= 3 && < 5,
+                        process, directory,
+                        prcv-util, imagproc >= 0.1
+                        
 
-    hs-source-dirs:     lib
+    hs-source-dirs:     src
 
-    Exposed-modules:    ImagProc.C.UVC
-                        ImagProc.Camera
-                        ImagProc.Util
+    Exposed-modules:    ImagProc.Camera
+                        ImagProc.Camera.UVC
+                        ImagProc.Camera.MPlayer
 
 
 
     if flag(uvc)
         if ! os(OSX)
             cpp-options: -DHASUVC
-            c-sources:          lib/ImagProc/C/UVC/avilib.c
-                                lib/ImagProc/C/UVC/color.c
-                                lib/ImagProc/C/UVC/utils.c
-                                lib/ImagProc/C/UVC/v4l2uvc.c
-                                lib/ImagProc/C/UVC/capture.c
+            c-sources:          src/ImagProc/Camera/UVC/avilib.c
+                                src/ImagProc/Camera/UVC/color.c
+                                src/ImagProc/Camera/UVC/utils.c
+                                src/ImagProc/Camera/UVC/v4l2uvc.c
+                                src/ImagProc/Camera/UVC/capture.c
 
-    include-dirs:       lib/ImagProc/C/UVC/
+    include-dirs:       src/ImagProc/Camera/UVC/
 
     cc-options:         -O4
 

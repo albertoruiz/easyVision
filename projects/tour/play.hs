@@ -1,5 +1,4 @@
-import EasyVision
+import Vision.GUI  (observe, run)
+import ImagProc        (rgb)
 
-c = camera >>= observe "image" rgb
-
-main = run c
+main = run (observe "image" rgb)

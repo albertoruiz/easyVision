@@ -1,4 +1,3 @@
-uvc1           uvc1
 logitech       uvc0 --live
 webcam0        tv:// -tv driver=v4l2:device=/dev/video0:fps=25 --live
 webcam1        tv:// -tv driver=v4l2:device=/dev/video1:fps=25 --live

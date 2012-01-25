@@ -26,7 +26,7 @@ import Contours.Base
 import EasyVision.GUI
 import ImagProc.Ipp.Core(Size(..),Image,Point(..),Pixel(..),distPoints,pixelsToPoints,Polyline(..))
 import ImagProc(GImg(..),warp)
-import ImagProc.Camera(mpSize)
+import ImagProc.Camera.MPlayer(mpSize)
 import Util.Misc(replaceAt,posMin,impossible)
 import GHC.Float
 import Vision(desp,estimateHomographyRaw)

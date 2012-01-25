@@ -27,6 +27,7 @@ library
 
     Exposed-modules:    Util.Misc
                         Util.Options
+                        Util.LazyIO
                         Util.Rotation
                         Util.Estimation
                         Util.Homogeneous

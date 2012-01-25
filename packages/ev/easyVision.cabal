@@ -24,9 +24,9 @@ library
                         imagproc >= 0.1,
                         camera >= 0.1,
                         vision >= 0.1, hmatrix >= 0.8.3,
-                        prcv-util, patrec, ev-gui >= 0.1,
+                        prcv-util, patrec, old-gui,
                         GLUT, containers, process, old-time, colour,
-                        parallel, deepseq
+                        parallel <2
 
     hs-source-dirs:     lib
 

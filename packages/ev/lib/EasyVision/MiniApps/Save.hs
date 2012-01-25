@@ -23,7 +23,6 @@ import Control.Monad(when)
 import EasyVision.GUI
 import ImagProc.Ipp.Core
 import ImagProc.Camera
-import ImagProc.Util(autoSaver)
 import Util.Options
 
 
@@ -33,7 +32,7 @@ saveWin f cam = do
     ok <- hasValue "--save"
     wait <- getFlag "--wait"
     let title = "Click to start/stop recording"
-    w <- evWindow (not wait && ok) title (mpSize 10) Nothing (mouse kbdQuit)
+    w <- evWindow (not wait && ok) title (Size 240 320) Nothing (mouse kbdQuit)
     return $ do
         orig <- cam
         rec <- getW w
@@ -46,7 +45,7 @@ saveWin f cam = do
                 save x
         return orig
   where        
-    mouse _ w (MouseButton LeftButton) Down _ _ = updateW w not
+    mouse _ st (MouseButton LeftButton) Down _ _ = st $~ not
     mouse def _ a b c d = def a b c d
 
 

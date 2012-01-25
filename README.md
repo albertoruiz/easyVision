@@ -64,17 +64,18 @@ installation instructions
         $ make
 
     The optional packages (imagproc-gpu, contrib, or opencv) may fail, but the
-    basic system will be correctly installed if "easyVision-0.1.0" is shown by 
+    basic system will be correctly installed if "ev-apps-0.1.0" is shown by 
 
         $ ghc-pkg list
 
-8. Try a simple program, for instance:
+8. Run the demos:
 
-        $ cd ../projects/tour
-        $ runhaskell play.hs tv://
-        $ cd ../simple
-        $ runhaskell gradient.hs uvc0
-        $ runhaskell demo.hs yourvideo.avi
+        $ cd ../projects/demos
+        $ make
+        $ ./demo.sh
+        $ cd ../tour
+        $ make
+        $ ./demo.sh
 
 9. Enjoy!
 

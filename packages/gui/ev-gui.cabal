@@ -25,22 +25,23 @@ library
                         hmatrix >= 0.8.3,
                         prcv-util,
                         contours,
-                        base >= 3 && < 5,
+                        base >= 3 && < 5, time,
                         colour >= 2.2,
                         OpenGL, GLUT,
-                        containers, process,
+                        containers, process, directory,
                         template-haskell, ghc-prim
 
-    hs-source-dirs:     lib
+    hs-source-dirs:     src
 
-    Exposed-modules:    EasyVision.GUI
-                        EasyVision.GUI.Util
-                        EasyVision.GUI.Draw
-                        EasyVision.GUI.OldGUI
-                        EasyVision.GUI.Interface
-                        EasyVision.GUI.Objects
-                        EasyVision.GUI.Parameters
-                        EasyVision.GUI.Trackball
+    Exposed-modules:    Vision.GUI
+                        Vision.GUI.Types
+                        Vision.GUI.Util
+                        Vision.GUI.Draw
+                        Vision.GUI.Interface
+                        Vision.GUI.Objects
+                        Vision.GUI.Parameters
+                        Vision.GUI.Trackball
+                        Vision.GUI.Arrow
 
     other-modules:
 

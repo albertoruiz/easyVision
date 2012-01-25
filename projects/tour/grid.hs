@@ -1,10 +1,11 @@
-import EasyVision
+import Vision.GUI
+import ImagProc
 import Util.Misc(splitEvery)
 import Data.List(tails)
 
 grid n = map (blockImage . splitEvery n . take (n*n)) . tails
 
-main = run  $    camera ~> resize (mpSize 4) . rgb
-            ~~>  grid 6
-            >>=  observe "grid" id >>= timeMonitor
+main = run  $    arr (resize (Size 96 120) . rgb)
+            >>>  arrL (grid 5)
+            >>>  observe "grid" id
 

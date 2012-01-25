@@ -24,8 +24,8 @@ module EasyVision.MiniApps.Contours (
 import EasyVision.MiniApps.Combinators
 import EasyVision.GUI
 import ImagProc
-import ImagProc.Util
-import ImagProc.Camera
+import Util.LazyIO
+import ImagProc.Camera.MPlayer(mpSize)
 import Graphics.UI.GLUT hiding (Size,Point)
 import Contours hiding(area)
 import Features.Polyline
@@ -39,6 +39,7 @@ import Data.Maybe(isJust)
 import Control.Arrow((***))
 import Data.List(minimumBy)
 import Data.Colour.Names as Col
+import Data.Function(on)
 
 data ContourInfo = ContourInfo {
     contWhite :: [Polyline],
@@ -178,13 +179,13 @@ shapeCatalog' hide fimg fpoly prepro gprot feat' cam = do
         return (x,prots)
   where
     marker _ st (MouseButton LeftButton) Down _ (Position x y) = do
-        (r,p,_,_) <- getW st
+        (r,p,_,_) <- readIORef st
         let clicked = Pixel (fromIntegral y) (fromIntegral x)
-        putW st (r,p, Just clicked, False)
+        writeIORef st (r,p, Just clicked, False)
 
     marker _ st (Char 'S') Down _ _ = do
-        (r,p,_,_) <- getW st
-        putW st (r,p, Nothing, True)
+        (r,p,_,_) <- readIORef st
+        writeIORef st (r,p, Nothing, True)
 
     marker def _ a b c d = def a b c d
 

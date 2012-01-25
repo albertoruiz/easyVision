@@ -47,7 +47,7 @@ scatter examples (i,j) colornames prefun = do
     clear [ColorBuffer]
     matrixMode $= Projection
     loadIdentity
-    ortho2D (doubleGL $ a1-da) (doubleGL $ a2+da) (doubleGL $ b1-db) (doubleGL $ b2+db)
+    ortho2D (a1-da) (a2+da) (b1-db) (b2+db)
     matrixMode $= Modelview 0
     loadIdentity
     let f pts col = do
@@ -63,9 +63,13 @@ scatter examples (i,j) colornames prefun = do
     pointSize $= 3
     sequence_ $ zipWith f (reverse gs) (reverse colors)
 
+    let text2D x y s = do
+        rasterPos (Vertex2 x (y::GLdouble))
+        renderString Helvetica12 s
+
     setColor 0.5 0.5 0.5
-    textAt (Point a2 b1) (show i)
-    textAt (Point a1 b2) (show j)
+    text2D a2 b1 (show i)
+    text2D a1 b2 (show j)
 
 
 scatterPlot name sz exs coor colors prefun = do
@@ -77,20 +81,20 @@ scatterPlot name sz exs coor colors prefun = do
             scatter exs coord colors prefun
 
         kbd rdesi (SpecialKey KeyUp) Down _ _ = do
-            (i,j) <- getW rdesi
-            putW rdesi $ (i,(j+1) `mod` n)
+            (i,j) <- get rdesi
+            rdesi $= (i,(j+1) `mod` n)
             postRedisplay Nothing
         kbd rdesi (SpecialKey KeyDown) Down _ _ = do
-            (i,j) <- getW rdesi
-            putW rdesi $ (i, (j-1) `mod`n)
+            (i,j) <- get rdesi
+            rdesi $= (i, (j-1) `mod`n)
             postRedisplay Nothing
         kbd rdesi (SpecialKey KeyRight) Down _ _ = do
-            (i,j) <- getW rdesi
-            putW rdesi $ ((i+1)`mod`n,j)
+            (i,j) <- get rdesi
+            rdesi $= ((i+1)`mod`n,j)
             postRedisplay Nothing
         kbd rdesi (SpecialKey KeyLeft) Down _ _ = do
-            (i,j) <- getW rdesi
-            putW rdesi $ ((i-1) `mod` n,j)
+            (i,j) <- get rdesi
+            rdesi $= ((i-1) `mod` n,j)
             postRedisplay Nothing
         kbd _ a b c d = kbdQuit a b c d
 
@@ -138,7 +142,7 @@ scatter3D examples (i,j,k) colornames prefun = do
         Vertex3 0 0 0,
         Vertex3 0 1 0,
         Vertex3 0 0 0,
-        Vertex3 0 0 (1::GLfloat)]
+        Vertex3 0 0 (1::Float)]
 
 
 
@@ -150,15 +154,15 @@ scatterPlot3D name sz exs coor colors prefun = do
             coord <- get rdesi
             scatter3D exs coord colors prefun
         kbd rdesi (SpecialKey KeyUp) Down _ _ = do
-            (i,j,k) <- getW rdesi
-            putW rdesi $ (i,(j+1) `mod` n,k)
+            (i,j,k) <- get rdesi
+            rdesi $= (i,(j+1) `mod` n,k)
         kbd rdesi (SpecialKey KeyDown) Down _ _ = do
-            (i,j,k) <- getW rdesi
-            putW rdesi $ (i, (j-1) `mod`n,k)
+            (i,j,k) <- get rdesi
+            rdesi $= (i, (j-1) `mod`n,k)
         kbd rdesi (SpecialKey KeyRight) Down _ _ = do
-            (i,j,k) <- getW rdesi
-            putW rdesi $ ((i+1)`mod`n,j,k)
+            (i,j,k) <- get rdesi
+            rdesi $= ((i+1)`mod`n,j,k)
         kbd rdesi (SpecialKey KeyLeft) Down _ _ = do
-            (i,j,k) <- getW rdesi
-            putW rdesi $ ((i-1) `mod` n,j,k)
+            (i,j,k) <- get rdesi
+            rdesi $= ((i-1) `mod` n,j,k)
         kbd _ a b c d = kbdQuit a b c d

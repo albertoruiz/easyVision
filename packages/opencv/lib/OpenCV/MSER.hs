@@ -8,7 +8,7 @@ module OpenCV.MSER(
 import ImagProc.Ipp.Core
 import ImagProc.Generic
 import Foreign
-import EasyVision.GUI.Parameters
+import Vision.GUI.Parameters
 
 ------------------------------------------------------------------
 
