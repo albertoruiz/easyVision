@@ -65,6 +65,7 @@ int ippiMinEvery_32f_C1IRx(float*, int, float*, int, void*);
 int ippiAnd_8u_C1Rx(unsigned char*, int, unsigned char*, int, unsigned char*, int, void*);
 int ippiOr_8u_C1Rx(unsigned char*, int, unsigned char*, int, unsigned char*, int, void*);
 int ippiNot_8u_C1Rx(unsigned char*, int, unsigned char*, int, void*);
+int ippiCompare_8u_C1Rx(unsigned char*, int, unsigned char*, int, unsigned char*, int, void*, int);
 int ippiCompareC_8u_C1Rx(unsigned char*, int, unsigned char, unsigned char*, int, void*, int);
 int ippiCompare_32f_C1Rx(float*, int, float*, int, unsigned char*, int, void*, int);
 int ippiErode3x3_8u_C1Rx(unsigned char*, int, unsigned char*, int, void*);

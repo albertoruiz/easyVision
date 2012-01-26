@@ -262,6 +262,10 @@ int ippiNot_8u_C1Rx(Ipp8u* pSrc, int srcStep, Ipp8u* pDst, int dstStep, IppiSize
     return ippiNot_8u_C1R(pSrc, srcStep, pDst, dstStep, *roiSize);
 }
 
+int ippiCompare_8u_C1Rx(Ipp8u* pSrc1, int src1Step, Ipp8u* pSrc2, int src2Step, Ipp8u* pDst, int dstStep, IppiSize* roiSize, IppCmpOp ippCmpOp) {
+    return ippiCompare_8u_C1R(pSrc1, src1Step, pSrc2, src2Step, pDst, dstStep, *roiSize, ippCmpOp);
+}
+
 int ippiCompareC_8u_C1Rx(Ipp8u* pSrc, int srcStep, Ipp8u value, Ipp8u* pDst, int dstStep, IppiSize* roiSize, IppCmpOp ippCmpOp) {
     return ippiCompareC_8u_C1R(pSrc, srcStep, value, pDst, dstStep, *roiSize, ippCmpOp);
 }

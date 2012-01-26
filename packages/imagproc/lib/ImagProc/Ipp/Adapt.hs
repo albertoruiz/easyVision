@@ -569,6 +569,14 @@ ippiNot_8u_C1R pSrc srcStep pDst dstStep roiSize = do
     free proiSize
     return r
 
+foreign import ccall "adapt.h ippiCompare_8u_C1Rx"
+    ippiCompare_8u_C1Rx :: Ptr CUChar -> Int -> Ptr CUChar -> Int -> Ptr CUChar -> Int -> Ptr IppiSize -> CInt -> IO Int
+ippiCompare_8u_C1R pSrc1 src1Step pSrc2 src2Step pDst dstStep roiSize ippCmpOp = do
+    proiSize <- new roiSize
+    r <- ippiCompare_8u_C1Rx pSrc1 src1Step pSrc2 src2Step pDst dstStep proiSize ippCmpOp
+    free proiSize
+    return r
+
 foreign import ccall "adapt.h ippiCompareC_8u_C1Rx"
     ippiCompareC_8u_C1Rx :: Ptr CUChar -> Int -> CUChar -> Ptr CUChar -> Int -> Ptr IppiSize -> CInt -> IO Int
 ippiCompareC_8u_C1R pSrc srcStep value pDst dstStep roiSize ippCmpOp = do

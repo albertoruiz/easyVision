@@ -21,7 +21,7 @@ module ImagProc.Ipp.Pure (
     float, toGray, scale32f8u, scale8u32f,
     rgbToHSV, hsvToRGB,
     thresholdVal32f, thresholdVal8u,
-    compareC8u,
+    compareC8u, compare8u,
     filterMax, filterMin, filterMax8u, filterMin8u,
     filterBox, filterBox8u,
     maxEvery, minEvery,
@@ -116,6 +116,11 @@ sub8uRel k = flip (mkRel (ioSub_8u_C1RSfs k))
 -- | compare with a constant
 compareC8u :: CUChar -> IppCmp -> ImageGray -> ImageGray
 compareC8u v cmp = mkId (ioCompareC_8u_C1R v (codeCmp cmp))
+
+
+-- | compare 8u images
+compare8u :: IppCmp -> ImageGray -> ImageGray -> ImageGray
+compare8u cmp = mkInt (ioCompare_8u_C1R (codeCmp cmp))
 
 
 -- | conversion from discrete gray level images (0-255) to floating point (0->0, 255->)
