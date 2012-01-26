@@ -3,7 +3,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 
 module Vision.Apps.Contours (
-    contours, contours',
+    contours,
     injectPrototypes,
     showCanonical,
     showAlignment,
@@ -24,24 +24,8 @@ import Vision(desp,inHomog,hv2pt)
 import Classifier(Sample)
 import Control.Monad(when)
 import Data.List(minimumBy,sortBy)
-import ImagProc.C.NP(npcontours, winNPParam)
 import qualified Features.Polyline as Feat
 import Data.Function(on)
-
-
-
-autoParam "ContourParam" "contour-" [
-    ("athres",  "Int",    intParam 1 (-20) 10),
-    ("thres",  "Int",    intParam 128 1 255),
-    ("area",   "Int",    percent 10),
-    ("fracpix","Double", realParam (1.5) 0 10),
-    ("mode",   "String", stringParam "black" ["white", "black", "both"]),
-    ("auto",   "Int",    intParam 1 0 1),
-    ("smooth", "Int",    intParam 1 0 10),
-    ("asmooth", "Int",    intParam 0 0 10),
-    ("thresDelta", "Int",    intParam 16 0 255),
-    ("thresRange", "Int",    intParam 0 0 10),
-    ("radius", "Int",    intParam 10 0 30)]
 
 
 autoParam "PolygonParam" "polygon-"
@@ -49,15 +33,21 @@ autoParam "PolygonParam" "polygon-"
    ( "sides","Int" ,intParam 4 3 10),
    ( "tol","Double" ,realParam 10 0 45)]
 
+--------------------------------------------------------------------------------
+
+polygonalize PolygonParam {..} = id *** selectPolygons (eps/1000) sides . map (cleanPol (cos $ tol*degree))
+
+--------------------------------------------------------------------------------
 
 contours :: ITrans ImageGray (ImageGray, [Polyline])
-contours = arr id &&& (npcontours @@@ winNPParam >>> arr (fst.fst))
+--contours = arr id &&& (npcontours @@@ winNPParam >>> arr (fst.fst))
+contours = arr id &&& (arr otsuContours >>> arr (fst.fst))
 
-contours' :: ITrans ImageGray (ImageGray, [Polyline])
-contours' = arr id &&& (smartContours id @@@ winContourParam >>> arr contSel) 
+
 
 catalog :: FilePath -> IO (Sample Polyline)
 catalog defaultdb = (read <$> readFile defaultdb) >>= optionFromFile "--catalog"
+
 
 
 injectPrototypes :: Renderable t => FilePath -> ITrans (t, [Shape]) ((t, [Shape]), [(Shape, String)])
@@ -166,67 +156,22 @@ centerOf Shape { shapeMoments = (ox,oy,_,_,_) } = Point ox oy
 
 --------------------------------------------------------------------------------
 
-polygonalize PolygonParam {..} = id *** selectPolygons (eps/1000) sides . map (cleanPol (cos $ tol*degree))
-
-----------------------------------------------------------------------
-
-autoThres r x = sh d
+otsuContours :: ImageGray -> (([Polyline],[Polyline]),[Polyline])
+otsuContours g = ((concatMap subcont subims,[]),[])
   where
-    f = float x
-    s = filterBox r r f
-    d = f |-| s
-    sh = scale32f8u (-1) 1
+    regs = map region $ Feat.contours 100 30 128 True sal
+      where
+        region (_,_,roi) = shrink (-10,-10) . poly2roi (size g) . roi2poly (size sal) $ roi    
+    
+    gp = resize (Size 240 320) g
+    b = filterBox8u 5 5 gp    
+    sal = compare8u IppCmpGreaterEq b gp
 
-
-
-
-data ContourInfo = ContourInfo {
-    contWhite :: [Polyline],
-    contBlack :: [Polyline],
-    contBoth  :: [Polyline],
-    contSel   :: [Polyline]
-    }
-
-
-
-defContourParam :: ContourParam
-argContourParam :: IO ContourParam
-winContourParam :: IO (IO ContourParam)
-
-
-smartContours :: (x -> ImageGray) -> ContourParam -> x -> ContourInfo
-smartContours g ContourParam{..} x = r
-    where pre 0 = (smooth `times` median Mask3x3) . g
-          pre 1 = (asmooth `times` median Mask3x3) . autoThres radius . g
-          z = pre auto x
-          pixarea = h*w*area`div`10000 where Size h w = size z
-              
-          rawg 1 True y = map fst3 $ contours 100 pixarea (128-fromIntegral athres) True y
-          rawg 1 False y = map fst3 $ contours 100 pixarea (128+fromIntegral athres) False y
-
-          rawg 0 b y = concatMap (\th -> map fst3 $ contours 100 pixarea (fromIntegral th) b y)
-                     [thres-thresDelta*thresRange,
-                      thres-thresDelta*(thresRange-1) .. 
-                      thres+thresDelta*thresRange]
-
-          cw = post $ rawg auto True z
-          cb = post $ rawg auto False z
-          cwb = cw ++ cb
-          cs = case mode of
-                    "white" -> cw
-                    "black" -> cb
-                    "both"  -> cwb
-                    _ -> error "smartContours unknown mode"
-          redu | fracpix > 0.01 = douglasPeuckerClosed fracpix
-               | otherwise   = id
-          clo  = Closed . pixelsToPoints (size z)
-          times n f = (!!n) . iterate f
-          fst3 (a,_,_) = a
-          post = map (clo . redu)
-          r = ContourInfo { contWhite = cw
-                          , contBlack = cb
-                          , contBoth  = cwb
-                          , contSel   = cs }
-          contours = Feat.contours
-
+    subims = map (\r -> setROI r g) regs
+    
+    subcont x = map (Closed . pixelsToPoints (size g) . douglasPeuckerClosed 1.0 . fst3)
+              $ Feat.contours 1 100 128 False
+              $ compareC8u (otsuThreshold x) IppCmpGreaterEq x
+      where
+        fst3 (a,_,_) = a
 

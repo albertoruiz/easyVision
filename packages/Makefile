@@ -1,7 +1,7 @@
 packages = util patrec vision imagproc       \
            camera contours gui features      \
-           contrib apps 
-#           old-gui ev gpu opencv models3ds                      \
+           apps 
+#          contrib old-gui ev gpu opencv models3ds                      \
 
 fastinstall = cabal install --disable-library-profiling --disable-documentation
 

@@ -21,7 +21,7 @@ library
     Build-Depends:      base >= 3 && < 5,
                         hmatrix, vision, imagproc,
                         patrec, prcv-util, ev-gui, contours,
-                        features, imagproc-contrib
+                        features
 
     hs-source-dirs:     src
 

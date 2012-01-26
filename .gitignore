@@ -8,4 +8,6 @@ dist
 *.hi
 misc
 experiments
+findFiles.sh
+packages/contrib
 
