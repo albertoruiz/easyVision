@@ -20,13 +20,14 @@ module Vision.GUI.Util (
     updateItem,
     camera, run,
     freqMonitor, wait,
-    browseLabeled
+    browseLabeled,
+    choose, optDo, optDont
 ) where
 
 import Graphics.UI.GLUT hiding (Point,Size,color)
 import Vision.GUI.Types
 import Vision.GUI.Interface
-import Control.Arrow((***),(>>>))
+import Control.Arrow((***),(>>>),arr)
 import Control.Monad((>=>))
 import Control.Applicative((<*>))
 import ImagProc
@@ -79,7 +80,10 @@ browseLabeled name examples disp = browser name examples f
 --------------------------------------------------------------------------------
 
 sMonitor :: String -> (WinRegion -> b -> [Drawing]) -> ITrans b b
-sMonitor name f = transUI $ interface (Size 240 360) name 0 (const.const.return $ ()) (c2 acts) [] (const (,)) g
+sMonitor name f = optDont ("--no-"++name)
+                $ transUI 
+                $ interface (Size 240 360) name 0 (const.const.return $ ()) 
+                            (c2 acts) [] (const (,)) g
   where
     g roi k x | null r    = Draw ()
               | otherwise = r !! j
@@ -95,7 +99,10 @@ sMonitor name f = transUI $ interface (Size 240 360) name 0 (const.const.return 
 --------------------------------------------------------------------------------
 
 observe :: Renderable x => String -> (b -> x) -> ITrans b b
-observe name f = transUI $ interface (Size 240 360) name () (const.const.return $ ()) [] [] (const (,)) (const.const $ Draw . f)
+observe name f = optDont ("--no-"++name)
+               $ transUI 
+               $ interface (Size 240 360) name () (const.const.return $ ())
+                           [] [] (const (,)) (const.const $ Draw . f)
 
 --------------------------------------------------------------------------------
 
@@ -177,4 +184,24 @@ wait n = transUI $ return $ \cam -> do
     x <- cam
     threadDelay (n*1000)
     return x
+
+--------------------------------------------------------------------------------
+
+choose :: IO Bool -> ITrans a b -> ITrans a b -> ITrans a b
+-- ^ select process depending on something (e.g. a command line flag)
+choose q (ITrans a1) (ITrans a2) = ITrans $ do
+    yes <- q
+    if yes then do {a<-a1; return a} else do {a<-a2; return a}
+
+optDo :: String -> ITrans a a -> ITrans a a
+optDo flag trans = choose (getFlag (fixFlag flag)) trans (arr id)
+
+optDont :: String -> ITrans a a -> ITrans a a
+optDont flag trans = choose (getFlag (fixFlag flag)) (arr id) trans
+
+fixFlag = map sp
+  where
+    sp ' ' = '_'
+    sp x = x
+
 
