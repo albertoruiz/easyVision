@@ -41,7 +41,7 @@ polygonalize PolygonParam {..} = id *** selectPolygons (eps/1000) sides . map (c
 
 contours :: ITrans ImageGray (ImageGray, [Polyline])
 --contours = arr id &&& (npcontours @@@ winNPParam >>> arr (fst.fst))
-contours = arr id &&& (arr otsuContours >>> arr (fst.fst))
+contours = arr id &&& (arr (Feat.localOtsuContours 1.0) >>> arr (fst.fst))
 
 
 
@@ -155,24 +155,4 @@ textAtShape s = textF Helvetica10 (centerOf s)
 centerOf Shape { shapeMoments = (ox,oy,_,_,_) } = Point ox oy
 
 --------------------------------------------------------------------------------
-
-otsuContours :: ImageGray -> (([Polyline],[Polyline]),[Polyline])
-otsuContours g = ((concatMap subcont subims,[]),[])
-  where
-    regs = map region $ Feat.contours 1000 30 128 True sal
-      where
-        region (_,_,roi) = shrink (-10,-10) . poly2roi (size g) . roi2poly (size sal) $ roi    
-    
-    Size h w = size g
-    gp = resize (Size (h`div`2) (w`div`2)) g
-    b = filterBox8u 5 5 gp    
-    sal = compare8u IppCmpGreaterEq b gp
-
-    subims = map (\r -> setROI r g) regs
-    
-    subcont x = map (Closed . pixelsToPoints (size g) . douglasPeuckerClosed 1.0 . fst3)
-              $ Feat.contours 3 100 128 False
-              $ compareC8u (otsuThreshold x) IppCmpGreaterEq x
-      where
-        fst3 (a,_,_) = a
 

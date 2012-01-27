@@ -13,14 +13,16 @@ Contour Extraction.
 -----------------------------------------------------------------------------
 
 module Features.Polyline (
-    rawContour,
+    otsuContours,
+    localOtsuContours,
     contours,
+    rawContour,
     contourAt
 )
 where
 
-import ImagProc.Images
-import ImagProc(cloneClear,maxIndx8u,floodFill8u, floodFill8uGrad, binarize8u, median, notI)
+import ImagProc
+import Contours
 import ImagProc.Ipp.Core
 import Foreign.C.Types(CUChar)
 import System.IO.Unsafe(unsafePerformIO)
@@ -30,7 +32,7 @@ import Numeric.LinearAlgebra
 import Util.Homogeneous
 import Util.Misc(diagl)
 import Util.Rotation
-import Util.Misc(degree)
+import Util.Misc(degree,debug)
 import Numeric.GSL.Polynomials(polySolve)
 import Numeric.GSL.Fourier(ifft)
 
@@ -141,4 +143,38 @@ left (Pixel r c) = Pixel r (c-1)
 
 fixp f p = if s == p then p else fixp f s
     where s = f p
+
+--------------------------------------------------------------------------------
+
+localOtsuContours :: Double -> ImageGray -> (([Polyline],[Polyline]),[Polyline])
+localOtsuContours fracPix g = ((concatMap subcont subims,[]),[])
+  where
+    regs = filter (big.roiSize) $ map region $ map lst3 $ contours 1000 30 128 True sal
+      where
+        region = shrink (-10,-10) . poly2roi (size g) . roi2poly (size sal)
+
+    lst3 (_,_,a) = a
+    fst3 (a,_,_) = a
+    big (Size h w) = w > 32 && h > 32 
+    gp = g
+    b = filterBox8u 5 5 gp    
+    sal = compare8u IppCmpGreaterEq b gp
+
+    redu = if fracPix < 0.1 then id else douglasPeuckerClosed fracPix
+
+    subims = map (\r -> setROI r g) regs
+    
+    subcont x = map (Closed . pixelsToPoints (size g) . redu . fst3)
+              $ contours 3 100 128 False
+              $ compareC8u (otsuThreshold x) IppCmpGreaterEq x
+
+--------------------------------------------------------------------------------
+
+otsuContours :: Double -> ImageGray -> (([Polyline],[Polyline]),[Polyline])
+otsuContours fracPix x = ((res,[]),[])
+  where
+    fst3 (a,_,_) = a
+    redu = if fracPix < 0.1 then id else douglasPeuckerClosed fracPix
+    res = map (Closed . pixelsToPoints (size x) . redu . fst3) $ contours 1000 100 128 False otsu
+    otsu = compareC8u (otsuThreshold x) IppCmpGreater x
 

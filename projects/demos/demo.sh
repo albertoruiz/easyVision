@@ -4,8 +4,9 @@
 ./hessharr
 ./warp
 ./points
+./imagproc
 ./spline
 ./transi ../../data/images/transi
-./mirror --photos=../../data/images/transi
-./mirror --photos=../../data/images/transi --variable-size
+./imagproc --photos=../../data/images/transi
+./imagproc --photos=../../data/images/transi --variable-size
 
