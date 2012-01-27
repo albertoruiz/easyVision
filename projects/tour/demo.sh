@@ -17,8 +17,7 @@
 ./play6
 ./play0
 
-./param1a
-./param1b
+./param
 
 ./stand1
 ./stand2
