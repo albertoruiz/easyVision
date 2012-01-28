@@ -14,7 +14,6 @@ Several kind of geometric primitives
 -----------------------------------------------------------------------------
 
 module Features (
-    module Features.Polyline,
     module Features.Segments,
     module Features.InterestPoints,
     module Features.Matching
@@ -22,5 +21,4 @@ module Features (
 
 import Features.Matching
 import Features.Segments
-import Features.Polyline
 import Features.InterestPoints

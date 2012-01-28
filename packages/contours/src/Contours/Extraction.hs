@@ -1,7 +1,7 @@
 -----------------------------------------------------------------------------
 {- |
-Module      :  Features.Polyline
-Copyright   :  (c) Alberto Ruiz 2007-11
+Module      :  Contours.Extraction
+Copyright   :  (c) Alberto Ruiz 2007-12
 License     :  GPL
 
 Maintainer  :  Alberto Ruiz (aruiz at um dot es)
@@ -12,7 +12,7 @@ Contour Extraction.
 -}
 -----------------------------------------------------------------------------
 
-module Features.Polyline (
+module Contours.Extraction (
     otsuContours,
     localOtsuContours,
     contours,
@@ -22,7 +22,7 @@ module Features.Polyline (
 where
 
 import ImagProc
-import Contours
+import Contours.Base
 import ImagProc.Ipp.Core
 import Foreign.C.Types(CUChar)
 import System.IO.Unsafe(unsafePerformIO)

@@ -30,6 +30,7 @@ library
                         Contours.Fourier
                         Contours.Orientation
                         Contours.Matching
+                        Contours.Extraction
 
     ghc-prof-options:   -auto-all
 

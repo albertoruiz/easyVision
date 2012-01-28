@@ -12,7 +12,7 @@ module Vision.Apps.Contours (
 
 import Vision.GUI
 import ImagProc
-import Contours
+import Contours hiding (contours)
 import Control.Arrow((***),(&&&))
 import Control.Applicative
 import Numeric.LinearAlgebra((<>),fromList,inv)
@@ -24,7 +24,6 @@ import Vision(desp,inHomog,hv2pt)
 import Classifier(Sample)
 import Control.Monad(when)
 import Data.List(minimumBy,sortBy)
-import qualified Features.Polyline as Feat
 import Data.Function(on)
 
 
@@ -41,7 +40,7 @@ polygonalize PolygonParam {..} = id *** selectPolygons (eps/1000) sides . map (c
 
 contours :: ITrans ImageGray (ImageGray, [Polyline])
 --contours = arr id &&& (npcontours @@@ winNPParam >>> arr (fst.fst))
-contours = arr id &&& (arr (Feat.localOtsuContours 1.0) >>> arr (fst.fst))
+contours = arr id &&& (arr (localOtsuContours 1.0) >>> arr (fst.fst))
 
 
 

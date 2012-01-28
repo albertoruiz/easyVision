@@ -20,14 +20,13 @@ extra-source-files:
 
 library
     Build-Depends:      base >= 3 && < 5,
-                        containers, array, contours,
+                        containers, array,
                         hmatrix >= 0.8.3, vision >= 0.1,
                         imagproc >= 0.1, prcv-util
 
     hs-source-dirs:     lib
 
     Exposed-modules:    Features
-                        Features.Polyline
                         Features.Descriptors
                         Features.InterestPoints
                         Features.Matching

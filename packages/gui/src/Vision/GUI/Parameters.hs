@@ -17,7 +17,8 @@ module Vision.GUI.Parameters (
    Parameters,
    createParameters, createParameters', autoParam,
    listParam, realParam, floatParam, percent, intParam, stringParam,
-   getParam, info, posi, incre, decre, setpo
+   getParam, info, posi, incre, decre, setpo,
+   ParamRecord(..)
 ) where
 
 import ImagProc.Ipp.Core hiding (r1,c1,r2,c2)
@@ -336,3 +337,11 @@ autoParam name pref defpar = sequence [
 
 appp :: ExpQ -> ExpQ -> ExpQ
 appp f x = appE (appE (varE 'ap) f) x
+
+--------------------------------------------------------------------------------
+
+class ParamRecord r where
+    defParam :: r           -- ^ default value
+    argParam :: IO r        -- ^ default value modified by command line arguments
+    winParam :: IO (IO r)   -- ^ parameter window
+
