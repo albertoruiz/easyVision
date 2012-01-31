@@ -62,6 +62,8 @@ rev (Open ps) = Open (reverse ps)
 
 ----------------------------------------------------------------------
 
+{-# DEPRECATED douglasPeuckerClosed "use reduceDP instead" #-}
+
 -- | Removes nodes in closed polyline such that the orthogonal distance 
 --   from the remaining line is less than a given epsilon
 douglasPeuckerClosed :: Double -> [Pixel] -> [Pixel]
@@ -71,6 +73,8 @@ douglasPeuckerClosed eps (a:b:ls) = b : case criticalPoint (eps^2) b a ls of
         (l,_:r) = break (==c) ls
         left = douglasPeucker' (eps^2) b c l
         right = douglasPeucker' (eps^2) c a r
+
+{-# DEPRECATED douglasPeucker "use reduceDP instead" #-}
 
 -- | Removes nodes in an open polyline such that the orthogonal distance 
 --   from the remaining line is less than a given epsilon

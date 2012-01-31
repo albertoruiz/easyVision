@@ -31,6 +31,7 @@ library
                         Contours.Orientation
                         Contours.Matching
                         Contours.Extraction
+                        Contours.Reduction
 
     ghc-prof-options:   -auto-all
 
