@@ -21,15 +21,17 @@ module Vision.GUI.Util (
     camera, run,
     freqMonitor, wait,
     browseLabeled,
-    choose, optDo, optDont
+    choose, optDo, optDont,
+    withParam
 ) where
 
 import Graphics.UI.GLUT hiding (Point,Size,color)
 import Vision.GUI.Types
 import Vision.GUI.Interface
+import Vision.GUI.Parameters(ParamRecord(..))
 import Control.Arrow((***),(>>>),arr)
 import Control.Monad((>=>))
-import Control.Applicative((<*>))
+import Control.Applicative((<*>),(<$>))
 import ImagProc
 import ImagProc.Camera(findSize,readFolderMP,readFolderIM,getCam)
 import Vision.GUI.Arrow--(ITrans, Trans,transUI,transUI2,runT_)
@@ -204,4 +206,10 @@ fixFlag = map sp
     sp ' ' = '_'
     sp x = x
 
+withParam :: ParamRecord p => (p -> a -> b) -> ITrans a b
+-- ^ get the first argument from an interactive window, unless the command line options
+-- --no-gui or --default are given, in which case the function takes the default parameters.
+withParam f = choose c (arr $ f defParam) (f @@@ winParam) 
+  where
+    c = (||) <$> getFlag "--no-gui" <*> getFlag "--default"
 

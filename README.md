@@ -63,8 +63,7 @@ installation instructions
         $ cd easyVision/packages
         $ make
 
-    The optional packages (imagproc-gpu, contrib, or opencv) may fail, but the
-    basic system will be correctly installed if "ev-apps-0.1.0" is shown by 
+    The basic system will be correctly installed if "ev-apps-0.1.0" is shown by 
 
         $ ghc-pkg list
 
