@@ -24,3 +24,5 @@
 ./stand3
 ./interface
 
+./nogui '../../data/videos/rot4.avi -fps 30 -benchmark'
+

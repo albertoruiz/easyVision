@@ -15,7 +15,7 @@ Arrow interface.
 -----------------------------------------------------------------------------
 
 module Vision.GUI.Arrow(
-    runT_, runT, ITrans(ITrans), transUI, arrL, (@@@), delay'
+    runT_, runT, runS, ITrans(ITrans), transUI, arrL, (@@@), delay'
 )where
 
 import Control.Concurrent   (forkIO)
@@ -27,6 +27,7 @@ import Control.Arrow
 import Control.Monad
 import Data.Either(lefts,rights)
 import System.IO.Unsafe(unsafeInterleaveIO)
+import Control.Concurrent
 
 --------------------------------------------------------------------------------
 
@@ -143,20 +144,22 @@ runT_ gcam (ITrans gt) = runIt $ do
     g !_x = putStr ""
 
 
-runT :: IO (IO a) -> Trans a b -> IO [b]
--- ^ run a camera generator on a transformer, returning the results
-runT = error "not yet implemented"
-
-{-
--- TO DO: FIXME
-runT gcam (Trans t) = do
+runT :: IO (IO a) -> ITrans a b -> IO [b]
+-- ^ run a camera generator on a transformer, returning the results in a lazy list
+runT gcam (ITrans gt) = do
     rbs <- newChan
     forkIO $ runIt $ do
         as <- source gcam
+        Trans t <- gt
         bs <- t as
-        f <- createGrab bs
-        forkIO $ forever (f >>= writeChan rbs)
+        forkIO $ mapM_ (writeChan rbs) bs
     getChanContents rbs
--}    
 
+
+runS :: IO (IO a) -> ITrans a b -> IO [b]
+-- ^ runT without the GUI (run silent) 
+runS gcam (ITrans gt) = do
+    xs <- source gcam
+    Trans t <- gt
+    t xs
 
