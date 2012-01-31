@@ -13,7 +13,9 @@ Contour Reduction
 -----------------------------------------------------------------------------
 
 module Contours.Reduction (
-    reduceDP
+    reduceDP,
+    smoothPolyline,
+    reducePolyline
 )
 where
 
@@ -21,6 +23,7 @@ import ImagProc.Base
 import Contours.Base
 import Data.List(maximumBy)
 import Data.Function(on)
+import Util.Misc(splitEvery,mean)
 
 
 reduceDP :: Double -> Polyline -> Polyline
@@ -79,3 +82,17 @@ criticalPoint eps p1 p2 p3s = r where
         else Nothing
 
 --------------------------------------------------------------------------------
+
+smoothPolyline k (Closed p) = Closed (smooth k p)
+smoothPolyline k (Open   p) = Closed (smooth k p)
+
+smooth k = map meanPoint . splitEvery k
+  where
+    meanPoint pts = Point (mean $ map px pts) (mean $ map py pts)
+
+--------------------------------------------------------------------------------
+
+reducePolyline :: Polyline -> Polyline
+-- ^ a reasonable default: @reduceDP 1/500 . smoothPolyline 3@
+reducePolyline = reduceDP (1/500) . smoothPolyline 3
+

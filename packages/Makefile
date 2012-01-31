@@ -1,5 +1,5 @@
-stage3   = gui apps
-stage2   = imagproc camera contours $(stage3)
+stage3   = contours gui apps
+stage2   = imagproc camera $(stage3)
 packages = util patrec vision $(stage2)
 optional = gpu opencv models3ds
 all      = $(packages) $(optional)

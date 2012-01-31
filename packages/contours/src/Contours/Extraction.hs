@@ -84,7 +84,7 @@ rawContour im start v = clean $ iterate (nextPos im v) (start, ToRight)
     where clean ((a,_):rest) = a : clean' a rest
           clean' p ((v1,s1):rest@((v2,s2):_))
             | p  == v1  = []
-            | s1 == s2  = clean' p rest
+  --          | s1 == s2  = clean' p rest
             | otherwise = v1: clean' p rest
 
 
@@ -146,8 +146,8 @@ fixp f p = if s == p then p else fixp f s
 
 --------------------------------------------------------------------------------
 
-localOtsuContours :: Double -> ImageGray -> (([Polyline],[Polyline]),[Polyline])
-localOtsuContours fracPix g = ((concatMap subcont subims,[]),[])
+localOtsuContours :: ImageGray -> (([Polyline],[Polyline]),[Polyline])
+localOtsuContours g = ((concatMap subcont subims,[]),[])
   where
     regs = filter (big.roiSize) $ map region $ map lst3 $ contours 1000 30 128 True sal
       where
@@ -160,21 +160,19 @@ localOtsuContours fracPix g = ((concatMap subcont subims,[]),[])
     b = filterBox8u 5 5 gp    
     sal = compare8u IppCmpGreaterEq b gp
 
-    redu = if fracPix < 0.1 then id else douglasPeuckerClosed fracPix
-
     subims = map (\r -> setROI r g) regs
     
-    subcont x = map (Closed . pixelsToPoints (size g) . redu . fst3)
+    subcont x = map (Closed . pixelsToPoints (size g) . fst3)
               $ contours 3 100 128 False
               $ compareC8u (otsuThreshold x) IppCmpGreaterEq x
 
 --------------------------------------------------------------------------------
 
-otsuContours :: Double -> ImageGray -> (([Polyline],[Polyline]),[Polyline])
-otsuContours fracPix x = ((res,[]),[])
+otsuContours :: ImageGray -> (([Polyline],[Polyline]),[Polyline])
+-- ^ extract contours with Otsu threshold
+otsuContours x = ((res,[]),[])
   where
     fst3 (a,_,_) = a
-    redu = if fracPix < 0.1 then id else douglasPeuckerClosed fracPix
-    res = map (Closed . pixelsToPoints (size x) . redu . fst3) $ contours 1000 100 128 False otsu
+    res = map (Closed . pixelsToPoints (size x) . fst3) $ contours 1000 100 128 False otsu
     otsu = compareC8u (otsuThreshold x) IppCmpGreater x
 

@@ -40,7 +40,7 @@ polygonalize PolygonParam {..} = id *** selectPolygons (eps/1000) sides . map (c
 
 contours :: ITrans ImageGray (ImageGray, [Polyline])
 --contours = arr id &&& (npcontours @@@ winNPParam >>> arr (fst.fst))
-contours = arr id &&& (arr (localOtsuContours 1.0) >>> arr (fst.fst))
+contours = arr id &&& (arr (localOtsuContours) >>> arr (map reducePolyline . fst . fst))
 
 
 
