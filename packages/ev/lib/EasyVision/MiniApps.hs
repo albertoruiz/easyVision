@@ -44,8 +44,7 @@ import EasyVision.GUI.Parameters
 import ImagProc hiding ((.*))
 import ImagProc.Camera.MPlayer(mpSize,mplayer)
 --import ImagProc.Util
-import Features(contours)
-import Contours(momentsContour)
+import Contours
 import Data.List(transpose)
 import Control.Monad(when)
 import ImagProc.Ipp.Core

@@ -22,7 +22,6 @@ import Graphics.UI.GLUT as GL hiding (Size,Point,Matrix,matrix,scale)
 import EasyVision.GUI hiding (State)
 import ImagProc hiding ((.*))
 import Contours
-import Features.Polyline
 import qualified ImagProc as IP
 import Control.Monad(when)
 import Data.List(sort,nub,sortBy,minimumBy)

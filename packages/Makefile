@@ -11,6 +11,12 @@ fullinstall = cabal install --enable-library-profiling  --enable-documentation
 all:
 	for p in $(packages); do cd $$p; $(fullinstall) ; cd ..; done
 
+optional:
+	for p in $(optional); do cd $$p; $(fastinstall) ; cd ..; done
+
+old:
+	for p in $(old); do cd $$p; $(fastinstall) ; cd ..; done
+
 fast3:
 	for p in $(stage3); do cd $$p; $(fastinstall) ; cd ..; done
 

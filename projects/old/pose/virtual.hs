@@ -13,6 +13,7 @@ import Data.Colour.Names
 import Control.Monad(when)
 import Data.Maybe(isJust)
 import EasyVision.GUI.Model3DS
+import Data.Function(on)
 
 main = run $ camera ~> grayscale
         >>= wcontours id ~> (id *** contSel)
@@ -21,7 +22,7 @@ main = run $ camera ~> grayscale
         >>= showPolygons
         ~>  id *** rectifier . sortBy (compare `on` negate.area)
         >>= showPose
-        >>= showThings
+--        >>= showThings
         >>= timeMonitor
 
 ----------------------------------------------------------------------
@@ -38,7 +39,7 @@ showPolygons = monitor "Polygon" (mpSize 10) sh
 showPose = monitor3D "pose" 400 sh
   where
     sh (im,rectif) = do
-        let okrec = diagl[1,1,1] <> rectif
+        let okrec = diagl[1,1,1] <> (rectif::Mat)
             fim = float im
             floor = warp 1 (Size 256 256) okrec fim
         drawTexture floor $ map (++[-0.01]) [[1,1],[-1,1],[-1,-1],[1,-1]]
@@ -53,7 +54,7 @@ showPose = monitor3D "pose" 400 sh
 showThings c = do rec
                     r <- monitorWheel (0,0,30) "misc" (mpSize 10) (sh f) c
                     depthFunc $= Just Less
-                    f <- prepareModel "../../data/models3ds/lunarlandernofoil_carbajal.3ds"
+                    f <- prepareModel "../../../data/models3ds/lunarlandernofoil_carbajal.3ds"
                     -- f <- prepareModel "../../data/models3ds/STS.3ds"
                     shadeModel $= Smooth
                     lighting $= Enabled

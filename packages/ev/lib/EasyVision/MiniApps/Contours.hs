@@ -28,7 +28,6 @@ import Util.LazyIO
 import ImagProc.Camera.MPlayer(mpSize)
 import Graphics.UI.GLUT hiding (Size,Point)
 import Contours hiding(area)
-import Features.Polyline
 import EasyVision.MiniApps.Browser(examplesBrowser)
 import Util.Misc(diagl,impossible,degree)
 import Classifier(Sample)
