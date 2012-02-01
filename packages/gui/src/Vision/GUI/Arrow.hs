@@ -15,11 +15,11 @@ Arrow interface.
 -----------------------------------------------------------------------------
 
 module Vision.GUI.Arrow(
-    runT_, runT, runS, ITrans(ITrans), transUI, arrL, (@@@), delay'
+    runITrans, runT_, runT, runS, ITrans(ITrans), transUI, arrL, (@@@), delay'
 )where
 
 import Control.Concurrent   (forkIO)
-import Util.LazyIO          (createGrab, grabAll)
+import Util.LazyIO          (mkGenerator, lazyList, grabAll, createGrab)
 import Vision.GUI.Interface (runIt,VC,VCN)
 
 import qualified Control.Category as Cat
@@ -73,14 +73,6 @@ arrL f = ITrans (return (Trans (return . f)))
 
 --------------------------------------------------------------------------------
 
-source :: IO (IO x) -> IO [x]
--- ^ convert a camera generator into a lazy list
-source gencam = do
-    cam <- gencam
-    xs <- grabAll cam
-    return xs
-
-
 
 transUI :: VCN a b -> ITrans a b
 transUI gf = ITrans $ do
@@ -88,8 +80,6 @@ transUI gf = ITrans $ do
     return $ Trans $ \as -> do
         ga <- createGrab as
         grabAll (f ga)
-
-
 
 
 (@@@) :: (p -> x -> y) -> IO (IO p) -> ITrans x y
@@ -130,36 +120,32 @@ delay' = arrL f
 
 --------------------------------------------------------------------------------
 
+runITrans :: ITrans a b -> [a] -> IO [b]
+runITrans (ITrans gt) as = do
+    Trans t <- gt
+    t as
+
 
 runT_ :: IO (IO a) -> ITrans a b -> IO ()
 -- ^ run a camera generator on a transformer
-runT_ gcam (ITrans gt) = runIt $ do
-    as <- source gcam
-    Trans t <- gt
-    forkIO $ do
-        bs <- t as
-        f <- createGrab bs    
-        forever $ f >>= g 
+runT_ gcam gt = runIt $ do
+    bs <- runS gcam gt
+    forkIO $ mapM_ g bs
   where
     g !_x = putStr ""
 
 
 runT :: IO (IO a) -> ITrans a b -> IO [b]
 -- ^ run a camera generator on a transformer, returning the results in a lazy list
-runT gcam (ITrans gt) = do
+runT gcam gt = do
     rbs <- newChan
     forkIO $ runIt $ do
-        as <- source gcam
-        Trans t <- gt
-        bs <- t as
+        bs <- runS gcam gt
         forkIO $ mapM_ (writeChan rbs) bs
     getChanContents rbs
 
 
 runS :: IO (IO a) -> ITrans a b -> IO [b]
 -- ^ runT without the GUI (run silent) 
-runS gcam (ITrans gt) = do
-    xs <- source gcam
-    Trans t <- gt
-    t xs
+runS gcam gt = gcam >>= grabAll >>= runITrans gt
 

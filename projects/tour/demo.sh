@@ -25,4 +25,6 @@
 ./interface
 
 ./nogui '../../data/videos/rot4.avi -fps 30 -benchmark'
+./single ../../data/images/transi/dscn2070.jpg \
+         ../../data/images/transi/dscn2070.jpg
 

@@ -9,6 +9,7 @@ Maintainer  :  Alberto Ruiz (aruiz at um dot es)
 -----------------------------------------------------------------------------
 
 module Util.LazyIO (
+    mkGenerator, lazyList,
     virtualCamera,  grabAll, createGrab,
     (~~>), (~>), (>~~>), (>~>), (.&.), (.@.),
 ) where
@@ -19,34 +20,28 @@ import Data.IORef
 import System.Exit       (exitWith, ExitCode(ExitSuccess))
 import System.IO.Unsafe  (unsafeInterleaveIO)
 
+--------------------------------------------------------------------------------
 
-{-
-import ImagProc.Ipp.Core
-import ImagProc.Ipp.Convert(loadRGB)
-import ImagProc.Generic(Channels,channels,GImg,toYUV,channelsFromRGB)
-import ImagProc.Camera
-import System.IO.Unsafe(unsafeInterleaveIO)
-import Data.List(isPrefixOf,foldl',tails,findIndex,isInfixOf,isSuffixOf)
-import Data.Maybe
-import System.Directory(doesFileExist, getDirectoryContents)
-import System.CPUTime
-import Text.Printf
-import Control.Applicative((<$>))
-import System.Environment(getArgs,getEnvironment)
-import Data.Function(on)
-import Control.Concurrent
-import Data.IORef
-import ImagProc.C.UVC
-import Util.Options
-import System.Exit
+mkGenerator :: [x] -> IO (IO (Maybe x))
+mkGenerator l = do
+    pl <- newIORef l
+    return $ do
+        r <- readIORef pl
+        case r of
+          h:t -> do writeIORef pl t
+                    return (Just h)
+          []  -> return Nothing
 
-import Vision.GUI.Interface
 
-import qualified Control.Category as Cat
-import Control.Arrow
-import Control.Monad
-import Data.Either(lefts,rights)
--}
+lazyList :: IO (Maybe t) -> IO [t]
+lazyList grab = do
+    x <- grab
+    case x of
+        Just im -> do rest <- unsafeInterleaveIO (lazyList grab)
+                      return (im:rest)
+        Nothing -> return []
+
+--------------------------------------------------------------------------------
 
 createGrab :: [b] -> IO (IO b)
 createGrab l = do

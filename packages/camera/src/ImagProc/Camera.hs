@@ -17,7 +17,7 @@ module ImagProc.Camera(
     getCam, numCams,
     getMulticam,
     readFrames,
-    readFolderMP, readFolderIM,
+    readImages, readFolderMP, readFolderIM,
     -- * Video I/O
     writeFrames,
     optionalSaver,
@@ -250,6 +250,16 @@ readFolderIM path = do
             . unsafeInterleaveIO . loadRGB
             . debug "loading" (const p)
             $ path++"/"++p
+    mapM f fs
+
+
+readImages :: [FilePath] -> IO [Channels]
+-- ^ reads a list of images (variable size, using imageMagick)
+readImages fs = do
+    let f p = fmap channelsFromRGB
+            . unsafeInterleaveIO . loadRGB
+            . debug "loading" (const p)
+            $ p
     mapM f fs
 
 
