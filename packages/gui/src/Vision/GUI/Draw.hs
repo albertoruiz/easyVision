@@ -389,13 +389,11 @@ instance Renderable (Vector Double) where
       where
         t = linspace (dim v) (0.9,-0.9)
 
-
-drawContourLabeled cont = Draw [
-      lineWd 1, color green, Draw cont,
-      color red, pointSz 5, points (take 1 c),
-      color orange, pointSz 3, points (tail c),
-      color blue, Draw (zipWith text c (map show [(0::Int)..])) 
+drawContourLabeled :: Colour Float -> Colour Float -> Colour Float -> GLfloat -> GLfloat -> Polyline -> Drawing
+drawContourLabeled cl cp ct wd sz cont = Draw [
+      lineWd wd, color cl, Draw cont,
+      color cp, pointSz sz, points c,
+      color ct, Draw (zipWith (textF Helvetica10) c (map show [(0::Int)..])) 
     ]
   where
     c = polyPts cont
-

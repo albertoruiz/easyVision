@@ -7,6 +7,7 @@ module Vision.Apps.Contours (
     injectPrototypes,
     showCanonical,
     showAlignment,
+    polygonalize, PolygonParam(..),
     module Contours
 ) where
 
@@ -32,9 +33,14 @@ autoParam "PolygonParam" "polygon-"
    ( "sides","Int" ,intParam 4 3 10),
    ( "tol","Double" ,realParam 10 0 45)]
 
+instance ParamRecord PolygonParam where
+    defParam = defPolygonParam
+    argParam = argPolygonParam
+    winParam = winPolygonParam
+
 --------------------------------------------------------------------------------
 
-polygonalize PolygonParam {..} = id *** selectPolygons (eps/1000) sides . map (cleanPol (cos $ tol*degree))
+polygonalize PolygonParam {..} = selectPolygons (eps/1000) sides . map (cleanPol (cos $ tol*degree))
 
 --------------------------------------------------------------------------------
 
