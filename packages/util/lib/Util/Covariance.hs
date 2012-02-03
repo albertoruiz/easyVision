@@ -31,7 +31,7 @@ module Util.Covariance (
 ) where
 
 import Numeric.LinearAlgebra hiding (eigenvalues)
-import Util.Misc(Vec,Mat,sqr, unliftRow, debug, diagl,mean,norm)
+import Util.Misc(Vec,Mat,sqr, unliftRow, diagl,mean,norm)
 
 meanRow :: Mat -> Vec
 meanRow m = ones <> m

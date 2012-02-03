@@ -23,7 +23,7 @@ module ImagProc.Ipp.Pure (
     thresholdVal32f, thresholdVal8u,
     compareC8u, compare8u,
     filterMax, filterMin, filterMax8u, filterMin8u,
-    filterBox, filterBox8u,
+    filterBox, filterBox8u, filterMedian,
     maxEvery, minEvery,
     sobelVert, sobelHoriz,
     gauss, gauss8u, laplace, median, highPass8u,
@@ -38,7 +38,8 @@ where
 
 import ImagProc.Ipp.Core
 import ImagProc.Ipp.Auto
-import Foreign hiding (shift)
+import System.IO.Unsafe
+import Foreign.Ptr
 import Debug.Trace
 
 debug x = trace (show x) x
@@ -250,6 +251,16 @@ median mask = mkShrink (s,s) (ioFilterMedian_8u_C1R m p) where
                 Mask3x3 -> IppiSize 3 3
                 Mask5x5 -> IppiSize 5 5
     p = IppiPoint (fi s) (fi s)
+
+-- | Median Filter of given window radius
+filterMedian :: Int -> ImageGray -> ImageGray
+filterMedian r im | r <= 0    = im
+                  | otherwise = mkShrink (r,r) (ioFilterMedian_8u_C1R s p) im
+  where
+    m = 2*r+1
+    s = IppiSize (fi m) (fi m)
+    p = IppiPoint (fi r) (fi r)
+    
 
 -- | High pass filter
 highPass8u :: Mask -> ImageGray -> ImageGray

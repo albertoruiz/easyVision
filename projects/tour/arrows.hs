@@ -5,10 +5,10 @@ import ImagProc
 
 main = run  $    observe "source" rgb
             >>>  arr grayscale
-            >>>  f
+            >>>  p
             >>>  observe "result"  (5.*)
 
-f = proc g -> do
+p = proc g -> do
     let f = float g
     x <- observe "x" id -< f
     s <- (observe "s" id <<< arr (gaussS 5)) -< f

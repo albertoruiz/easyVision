@@ -13,19 +13,15 @@ Basic operations with polylines.
 -----------------------------------------------------------------------------
 
 module Contours.Base (
--- * Reduction
-    douglasPeucker, douglasPeuckerClosed,
-    selectPolygons, cleanPol,
--- * Convex Hull
     convexHull,
--- * Tools
     perimeter,
-    area, orientedArea, rev,
-    asSegments, longestSegments, transPol,
+    area, orientedArea, rev, 
+    asSegments, transPol,
     pentominos,
     bounding,
     roi2poly, poly2roi, setRegion,
-    segmentIntersection
+    segmentIntersection,
+    bisector
 )
 where
 
@@ -34,7 +30,7 @@ import ImagProc.Ipp.Core(size,setROI)
 import Data.List(sortBy, maximumBy, sort,foldl',tails)
 import Numeric.LinearAlgebra
 import Util.Homogeneous
-import Util.Misc(diagl)
+import Util.Misc(diagl,Vec)
 
 
 
@@ -151,42 +147,17 @@ areaTriang p1 p2 p3 = sqrt $ p * (p-d1) * (p-d2) * (p-d3)
     d3 = distPoints p2 p3
     p = (d1+d2+d3)/2
 
-----------------------------------------------------------------------
 
-cleanPol tol (Closed ps) = Closed r
+bisector :: Segment -> Vec
+-- ^ TO DO: use homog line
+bisector (Segment (Point x0 y0) (Point x1 y1)) = cross dir cen
   where
-    n = length ps
-    r = map snd . filter ((<tol).abs.fst) . map go . take n . tails $ ps++ps
-    go (p1:p2:p3:_) = (cang p1 p2 p3, p2)
-
-longestSegments k poly = filter ok ss
-    where ss = asSegments poly
-          th = last $ take k $ sort $ map (negate.segmentLength) ss
-          ok s = segmentLength s >= -th
-
-reducePolygonTo n poly = Closed $ segsToPoints $ longestSegments n poly
-
-
-segsToPoints p = stp $ map segToHomogLine $ p ++ [head p]
-  where
-    segToHomogLine s = cross (fromList [px $ extreme1 $ s, py $ extreme1 $ s, 1])
-                             (fromList [px $ extreme2 $ s, py $ extreme2 $ s, 1])
-
-    stp [] = []
-    stp [_] = []
-    stp (a:b:rest) = inter a b : stp (b:rest)
-
-    inter l1 l2 = Point x y where [x,y] = toList $ inHomog (cross l1 l2)
-
-tryPolygon eps n poly = if length (polyPts r) == n && abs((a1-a2)/a1) < eps && ok then [r] else []
-    where r = reducePolygonTo n poly
-          a1 = orientedArea poly
-          a2 = orientedArea r
-          p = perimeter r
-          l = minimum $ map segmentLength (asSegments r)
-          ok = l > p / fromIntegral n / 10
-
-selectPolygons eps n = concatMap (tryPolygon eps n)
+    dx = x1-x0
+    dy = y1-y0
+    cx = (x0+x1)/2
+    cy = (y0+y1)/2
+    dir = fromList [-dy,dx,0]
+    cen = fromList [cx,cy,1]
 
 ----------------------------------------------------------------------
 

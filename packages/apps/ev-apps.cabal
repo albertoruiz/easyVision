@@ -25,6 +25,8 @@ library
     hs-source-dirs:     src
 
     Exposed-modules:    Vision.Apps.Contours
+                        Vision.Apps.Contours.Matching
+                        Vision.Apps.Contours.Polygons
 
     ghc-prof-options:   -auto-all
 

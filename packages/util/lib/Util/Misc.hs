@@ -291,3 +291,14 @@ slidingPeriodic k xs = take n . sliding k . cycle $ xs
   where
     n = length xs
 
+----------------------------------------------------------------------
+
+subListsBy :: (a -> Bool) -> [a] -> [[a]]
+-- ^ split a list into parts of consecutive elements satisfying a predicate
+subListsBy _ [] = []
+subListsBy p xs = case ok of
+    [] -> subListsBy p (snd $ span (not.p) xs)
+    _  -> ok : subListsBy p rest
+  where
+    (ok,rest) = span p xs
+

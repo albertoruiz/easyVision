@@ -32,6 +32,7 @@ module Vision.GUI.Draw
 , limitSize
 , points
 , drawContourLabeled
+, viewPoint
 ) where
 
 import Graphics.UI.GLUT hiding (RGB, Matrix, Size, Point,color)
@@ -43,7 +44,7 @@ import Foreign (touchForeignPtr,castPtr)
 import Numeric.LinearAlgebra hiding (step)
 import Vision
 import Util.Rotation
-import Util.Misc(degree,debug)
+import Util.Misc(degree,debug,Mat)
 import Vision.GUI.Types
 import Vision.GUI.Trackball
 import qualified Data.Colour.RGBSpace as Col
@@ -389,6 +390,7 @@ instance Renderable (Vector Double) where
       where
         t = linspace (dim v) (0.9,-0.9)
 
+
 drawContourLabeled :: Colour Float -> Colour Float -> Colour Float -> GLfloat -> GLfloat -> Polyline -> Drawing
 drawContourLabeled cl cp ct wd sz cont = Draw [
       lineWd wd, color cl, Draw cont,
@@ -397,3 +399,16 @@ drawContourLabeled cl cp ct wd sz cont = Draw [
     ]
   where
     c = polyPts cont
+
+
+viewPoint :: (Image im, Renderable im, Renderable x) => Mat -> Maybe im -> x -> Drawing
+-- ^ draw 3D objects as seen from a given camera matrix, with an optional image background
+viewPoint cam mbimg things = Draw [
+    Raw (depthFunc $= Just Less >> clear [DepthBuffer]),
+    case mbimg of
+        Just img -> Draw [Draw img, Raw $ clear [DepthBuffer]]
+        Nothing  -> Draw (),
+    Raw $ cameraView cam (4/3) 0.1 100,
+    Draw things,
+    Raw $ depthFunc $= Nothing ]
+
