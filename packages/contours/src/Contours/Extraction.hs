@@ -13,9 +13,12 @@ Contour Extraction.
 -----------------------------------------------------------------------------
 
 module Contours.Extraction (
+    -- * Extraction
+    contours, 
     otsuContours,
-    localOtsuContours,
-    contours,
+    -- * Devel
+    rawContours,
+    contours',
     rawContour,
     contourAt
 )
@@ -90,14 +93,25 @@ rawContour im start v = clean $ iterate (nextPos im v) (start, ToRight)
 
 
 -- | extracts a list of contours in the image
-contours :: Int       -- ^ maximum number of contours
+contours' :: Int       -- ^ maximum number of contours
          -> Int       -- ^ minimum area (in pixels) of the admissible contours
          -> CUChar    -- ^ binarization threshold
          -> Bool      -- ^ binarization mode (True/False ->detect white/black regions)
          -> ImageGray -- ^ image source
          -> [([Pixel],Int,ROI)]  -- ^ list of contours, with area and ROI
-contours n d th mode im = unsafePerformIO $ do
+contours' n d th mode im = unsafePerformIO $ do
     aux <- cloneClear $ (if mode then id else notI) (binarize8u th im)
+    r <- auxCont n d aux
+    return r
+
+
+-- | extracts a list of white contours from a binary image
+rawContours :: Int       -- ^ maximum number of contours
+         -> Int       -- ^ minimum area (in pixels) of the admissible contours
+         -> ImageGray -- ^ image source
+         -> [([Pixel],Int,ROI)]  -- ^ list of contours, with area and ROI
+rawContours n d im = unsafePerformIO $ do
+    aux <- cloneClear im
     r <- auxCont n d aux
     return r
 
@@ -146,33 +160,23 @@ fixp f p = if s == p then p else fixp f s
 
 --------------------------------------------------------------------------------
 
-localOtsuContours :: ImageGray -> (([Polyline],[Polyline]),[Polyline])
-localOtsuContours g = ((concatMap subcont subims,[]),[])
-  where
-    regs = filter (big.roiSize) $ map region $ map lst3 $ contours 1000 30 128 True sal
-      where
-        region = shrink (-10,-10) . poly2roi (size g) . roi2poly (size sal)
-
-    lst3 (_,_,a) = a
-    fst3 (a,_,_) = a
-    big (Size h w) = w > 32 && h > 32 
-    gp = g
-    b = filterBox8u 5 5 gp    
-    sal = compare8u IppCmpGreaterEq b gp
-
-    subims = map (\r -> setROI r g) regs
-    
-    subcont x = map (Closed . pixelsToPoints (size g) . fst3)
-              $ contours 3 100 128 False
-              $ compareC8u (otsuThreshold x) IppCmpGreaterEq x
-
---------------------------------------------------------------------------------
-
 otsuContours :: ImageGray -> (([Polyline],[Polyline]),[Polyline])
 -- ^ extract contours with Otsu threshold
 otsuContours x = ((res,[]),[])
   where
     fst3 (a,_,_) = a
-    res = map (Closed . pixelsToPoints (size x) . fst3) $ contours 1000 100 128 False otsu
+    res = map (Closed . pixelsToPoints (size x) . fst3) $ contours' 1000 100 128 False otsu
     otsu = compareC8u (otsuThreshold x) IppCmpGreater x
+
+--------------------------------------------------------------------------------
+
+-- | extracts a list of white contours from a binary image
+contours :: Int         -- ^ maximum number of contours
+         -> Int         -- ^ minimum area (in pixels) of the admissible contours
+         -> ImageGray   -- ^ image source
+         -> [Polyline]  -- ^ list of contours
+contours nc ma x = map proc . rawContours nc ma $ x
+  where
+    fst3 (a,_,_) = a
+    proc = Closed . pixelsToPoints (size x) . fst3
 

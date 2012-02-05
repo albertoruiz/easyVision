@@ -23,7 +23,7 @@ f roi x =  [  msg "grayscale"          [ Draw g ]
     med    = median Mask5x5 g
     edges  = canny (0.1,0.3) . gradients $ smooth
     otsu   = compareC8u (otsuThreshold g) IppCmpGreater g
-    ((rawconts,_),_)  = localOtsuContours g
+    ((rawconts,_),_)  = otsuContours g
     conts  = map reducePolyline rawconts
     disTra = (1/60) .* distanceTransform [1,1.4,2.2] (notI edges)
 

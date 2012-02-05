@@ -1,7 +1,6 @@
 {-# LANGUAGE RecordWildCards #-}
 
 module Vision.Apps.Contours.Matching (
-    contours,
     injectPrototypes,
     showCanonical,
     showAlignment
@@ -9,7 +8,7 @@ module Vision.Apps.Contours.Matching (
 
 import Vision.GUI
 import ImagProc
-import Contours hiding (contours)
+import Contours
 import Control.Arrow((***),(&&&))
 import Control.Applicative
 import Numeric.LinearAlgebra((<>),fromList,inv)
@@ -24,12 +23,6 @@ import Data.List(minimumBy,sortBy)
 import Data.Function(on)
 
 --------------------------------------------------------------------------------
-
-contours :: ITrans ImageGray (ImageGray, [Polyline])
---contours = arr id &&& (npcontours @@@ winNPParam >>> arr (fst.fst))
-contours = arr id &&& (arr (localOtsuContours) >>> arr (map reducePolyline . fst . fst))
-
-
 
 catalog :: FilePath -> IO (Sample Polyline)
 catalog defaultdb = (read <$> readFile defaultdb) >>= optionFromFile "--catalog"
