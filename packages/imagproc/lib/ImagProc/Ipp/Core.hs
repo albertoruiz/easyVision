@@ -44,7 +44,11 @@ module ImagProc.Ipp.Core
 import ImagProc.Base
 import ImagProc.ROI
 import ImagProc.Ipp.Structs
-import Foreign hiding (shift)
+import Foreign.ForeignPtr.Unsafe
+import Foreign.Ptr
+import Foreign.ForeignPtr(ForeignPtr,touchForeignPtr)
+import Foreign.Marshal
+import Foreign.Storable
 import Control.Monad(when)
 import ImagProc.Ipp.Wrappers
 import Foreign.C.String(peekCString)

@@ -22,17 +22,14 @@ module ImagProc.ImageFold (
 where
 
 import ImagProc.Ipp.Core
-import Numeric.LinearAlgebra hiding (step)
-import System.IO.Unsafe(unsafePerformIO)
 import Foreign.Storable
 import Foreign.Ptr
 import Foreign.ForeignPtr
 import Foreign.Marshal.Array
-import Control.Monad(when)
 import GHC.Prim
 
 import GHC.Base
-import GHC.IOBase
+import GHC.IO
 
 inlinePerformIO :: IO a -> a
 inlinePerformIO (IO m) = case m realWorld# of (# _, r #) -> r

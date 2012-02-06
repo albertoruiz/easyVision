@@ -20,7 +20,11 @@ import ImagProc.Ipp.Core
 import ImagProc.Ipp.Adapt
 import ImagProc.Ipp.Auto
 import ImagProc.Ipp.Wrappers
-import Foreign hiding (shift)
+import System.IO.Unsafe(unsafePerformIO)
+import Foreign.Ptr
+import Foreign.ForeignPtr
+import Foreign.Marshal
+import Foreign.Storable
 
 -- | Writes into a existing image a desired value in a specified roi.
 set32f :: Float      -- ^ desired value
@@ -65,6 +69,14 @@ copyROI8u (G im) r1 (G r) r2 = ippiCopy_8u_C1R // src im r1 // dst r r2 // check
 -- | Copies the roi of the input image into the roi of the destination image.
 copyROI8u3 :: ImageRGB -> ROI -> ImageRGB -> ROI -> IO ()
 copyROI8u3 (C im) r1 (C r) r2 = ippiCopy_8u_C3R // src im r1 // dst r r2 // checkIPP "copyROI8u3'" [im]
+
+shiftROI8u :: (Int,Int) -> ImageGray -> ImageGray
+shiftROI8u dxy im = unsafePerformIO $ do
+    r <- image (size im)
+    let roi1 = theROI im
+        roi2 = shift dxy roi1
+    copyROI8u im roi1 r roi2
+    return (modifyROI (const roi2) r)
 
 --------------------------------------------------------------------
 data InterpolationMode = InterpNN

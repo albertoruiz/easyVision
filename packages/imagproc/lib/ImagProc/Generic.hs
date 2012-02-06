@@ -23,7 +23,7 @@ module ImagProc.Generic (
 where
 
 import ImagProc.Ipp
-import Foreign hiding (shift)
+import System.IO.Unsafe(unsafePerformIO)
 import Numeric.LinearAlgebra
 
 class Image image => GImg pixel image | pixel -> image, image -> pixel where

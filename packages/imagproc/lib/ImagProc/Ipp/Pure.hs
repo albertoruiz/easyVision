@@ -16,7 +16,7 @@ Purely functional image processing.
 module ImagProc.Ipp.Pure (
     (.*),
     (|+|),(|-|),absDiff,(|*|),
-    andI,orI,notI,
+    andI,orI,notI,xorI,
     add8u, absDiff8u, sub8u, sub8uRel,
     float, toGray, scale32f8u, scale8u32f,
     rgbToHSV, hsvToRGB,
@@ -97,6 +97,11 @@ orI  = mkInt ioOr_8u_C1R
 -- | image NOT, pixel by pixel
 notI :: ImageGray -> ImageGray
 notI = mkId ioNot_8u_C1R
+
+-- | image OR, pixel by pixel
+xorI :: ImageGray -> ImageGray -> ImageGray
+xorI  = mkInt ioXor_8u_C1R
+
 
 -- | image sum, pixel by pixel
 add8u :: Int -> ImageGray -> ImageGray -> ImageGray

@@ -24,18 +24,14 @@ module ImagProc.Tools (
 ) where
 
 import ImagProc.Ipp.Core
-import ImagProc.Ipp.Convert
 import ImagProc.Ipp.AdHoc
 import ImagProc.Ipp.Pure
-import ImagProc.Ipp.Structs
 import ImagProc.Generic
 import ImagProc.C.Simple
 import Data.List(transpose)
 import Util.Rotation(rot3)
-import Util.Misc(unitary)
-import Vision(scaling,desp)
+import Vision(desp)
 import Numeric.LinearAlgebra
-import ImagProc.Images
 
 -- | Binarizes a gray level image.
 binarize8u :: CUChar    -- ^ threshold

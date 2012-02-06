@@ -17,13 +17,11 @@ module ImagProc.Moments (
     momentsImage
 ) where
 
-import ImagProc.Generic
 import ImagProc.Ipp.Pure
 import ImagProc.Ipp.AdHoc
 import ImagProc.Ipp.Convert(mat2img)
 import ImagProc.Images
 import Numeric.LinearAlgebra
-import Vision(cross,pt2hv)
 
 data ImageBasis = ImageBasis { zeroIb, oneIb, xIb, yIb, x2Ib, y2Ib, xyIb :: ImageFloat }
 

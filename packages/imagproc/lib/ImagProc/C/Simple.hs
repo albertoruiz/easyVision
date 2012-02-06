@@ -20,9 +20,11 @@ module ImagProc.C.Simple where
 
 import ImagProc.Ipp.Core
 import ImagProc.Generic(clone,set)
-import Foreign
-import Foreign.C.Types
-import Numeric.LinearAlgebra hiding (step)
+import Foreign.Ptr
+import Foreign.ForeignPtr
+import Foreign.Marshal
+import Foreign.Storable
+import System.IO.Unsafe(unsafePerformIO)
 
 -- | Explores an image and returns a list of pixels (as [row,column]) where the image is greater than 0.0.
 getPoints32f :: Int -> ImageFloat -> [Pixel]

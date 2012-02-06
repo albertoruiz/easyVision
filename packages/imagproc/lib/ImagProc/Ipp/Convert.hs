@@ -27,7 +27,10 @@ module ImagProc.Ipp.Convert (
 ) where
 
 import ImagProc.Ipp.Core
-import Foreign hiding (shift)
+import Foreign.Ptr
+import Foreign.ForeignPtr
+import Foreign.Marshal
+import System.IO.Unsafe(unsafePerformIO)
 import Control.Monad(when)
 import Control.Arrow((***))
 import System.IO

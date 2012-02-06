@@ -39,6 +39,7 @@ ippi.h  ippiErode3x3_8u_C1R
 ippi.h  ippiNot_8u_C1R
 ippi.h  ippiAnd_8u_C1R
 ippi.h  ippiOr_8u_C1R
+ippi.h  ippiXor_8u_C1R
 ippi.h  ippiMul_32f_C1R
 ippi.h  ippiAdd_32f_C1R
 ippi.h  ippiSub_32f_C1R

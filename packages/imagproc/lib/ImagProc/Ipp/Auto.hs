@@ -340,6 +340,12 @@ ioAnd_8u_C1R  = {-# SCC "ippiAnd_8u_C1R" #-} auto_2_8u_C1R f "ippiAnd_8u_C1R"
 ioOr_8u_C1R  = {-# SCC "ippiOr_8u_C1R" #-} auto_2_8u_C1R f "ippiOr_8u_C1R"
     where f pSrc1 src1Step pSrc2 src2Step pDst dstStep roiSize = ippiOr_8u_C1R pSrc1 src1Step pSrc2 src2Step pDst dstStep roiSize
 
+{- |         Performs corresponding bitwise logical operation between pixels of two image
+                  (AndC/OrC/XorC  - between pixel of the source image and a constant)
+ -}
+ioXor_8u_C1R  = {-# SCC "ippiXor_8u_C1R" #-} auto_2_8u_C1R f "ippiXor_8u_C1R"
+    where f pSrc1 src1Step pSrc2 src2Step pDst dstStep roiSize = ippiXor_8u_C1R pSrc1 src1Step pSrc2 src2Step pDst dstStep roiSize
+
 {- |   Compares pixel values of two images, or pixel values of an image to a constant -}
 ioCompare_8u_C1R ippCmpOp = {-# SCC "ippiCompare_8u_C1R" #-} auto_2_8u_C1R (f ippCmpOp) "ippiCompare_8u_C1R"
     where f ippCmpOp pSrc1 src1Step pSrc2 src2Step pDst dstStep roiSize = ippiCompare_8u_C1R pSrc1 src1Step pSrc2 src2Step pDst dstStep roiSize ippCmpOp
