@@ -46,7 +46,7 @@ import ImagProc.Base
 import ImagProc.ROI
 import ImagProc.Ipp.Structs
 
-#if __GLASGOW_HASKELL__ >= 7
+#if __GLASGOW_HASKELL__ >= 700
 import Foreign.ForeignPtr.Unsafe
 import Foreign.ForeignPtr(ForeignPtr,touchForeignPtr)
 #else
