@@ -98,7 +98,7 @@ orI  = mkInt ioOr_8u_C1R
 notI :: ImageGray -> ImageGray
 notI = mkId ioNot_8u_C1R
 
--- | image OR, pixel by pixel
+-- | image XOR, pixel by pixel
 xorI :: ImageGray -> ImageGray -> ImageGray
 xorI  = mkInt ioXor_8u_C1R
 
