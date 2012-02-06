@@ -1,7 +1,8 @@
 {-# LANGUAGE ForeignFunctionInterface,
              MagicHash,
              UnboxedTuples,
-             BangPatterns #-}
+             BangPatterns,
+             CPP #-}
 
 -----------------------------------------------------------------------------
 {- |
@@ -44,9 +45,15 @@ module ImagProc.Ipp.Core
 import ImagProc.Base
 import ImagProc.ROI
 import ImagProc.Ipp.Structs
+
+#if __GLASGOW_HASKELL__ >= 7
 import Foreign.ForeignPtr.Unsafe
-import Foreign.Ptr
 import Foreign.ForeignPtr(ForeignPtr,touchForeignPtr)
+#else
+import Foreign.ForeignPtr
+#endif
+
+import Foreign.Ptr
 import Foreign.Marshal
 import Foreign.Storable
 import Control.Monad(when)
