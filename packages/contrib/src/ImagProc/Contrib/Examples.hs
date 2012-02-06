@@ -30,14 +30,15 @@ import System.IO.Unsafe(unsafePerformIO)
 
 foreign import ccall "customSum"
     c_customSum :: Ptr () -> CInt -> CInt -> CInt -> CInt -> CInt
-                -> Ptr (CInt)
-                -> IO (CInt)
+                -> Ptr CInt
+                -> IO CInt
 
 sumInC :: ImageGray -> Int
 sumInC (G x) = ti . unsafePerformIO $ do
     presult <- malloc
     _ok <- app1G c_customSum (G x) presult
     result <- peek presult
+    free presult
     touchForeignPtr . fptr $ x
     return result 
 
@@ -46,7 +47,7 @@ sumInC (G x) = ti . unsafePerformIO $ do
 foreign import ccall "customInvert"
     c_customInvert :: Ptr () -> CInt -> CInt -> CInt -> CInt -> CInt
                    -> Ptr () -> CInt -> CInt -> CInt -> CInt -> CInt
-                   -> IO (CInt)
+                   -> IO CInt
 
 invertInC :: ImageGray -> ImageGray
 invertInC (G x) = unsafePerformIO $ do
