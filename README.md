@@ -1,7 +1,7 @@
 installation instructions
 -------------------------
 
-(Tested on Ubuntu x86)
+(Tested on Ubuntu)
 
 1. Install the Haskell Platform (we need ghc and cabal-install) and run:
 
@@ -9,29 +9,15 @@ installation instructions
 
 2. Install IPP. You can download a noncomercial version for Linux:
 
-    http://software.intel.com/en-us/articles/non-commercial-software-download/
+        http://software.intel.com/en-us/articles/non-commercial-software-download/
+
+    Install using sudo in default location.
 
     Add to .bahsrc:
 
-    For IPP 7.0, 32 bit:
-
         export IPP_INC=/opt/intel/composerxe/ipp/include
-        export IPP_SHARED="/opt/intel/composerxe/ipp/lib/ia32:/opt/intel/compilerpro-12.0.2.137/compiler/lib/ia32/"
+        export IPP_SHARED="/opt/intel/ipp/lib/ia32/:/opt/intel/lib/ia32/"
         export IPP_LIBS="ippcore ippi ipps ippcc ippvc ippcv iomp5"
-        export IPP_LINK=-pthread 
-
-    For IPP 5.3, 32 bit:
-
-        export IPP_INC=/path/to/your/ipp/path/ia32/include
-        export IPP_SHARED=/path/to/your/ipp/path/ia32/sharedlib
-        export IPP_LIBS=guide ippcore ippi ipps ippcc ippvc ippcv
-        export IPP_LINK=
-
-    For IPP 5.3, 64 bit:
-
-        export IPP_INC=/path/to/your/ipp/path/ia32/include
-        export IPP_SHARED=/path/to/your/ipp/path/ia32/sharedlib
-        export IPP_LIBS=guide ippcoreem64t ippiem64t ippsem64t ippccem64t ippvcem64t ippcvem64t
         export IPP_LINK=-pthread
 
 3. Get the source code:
