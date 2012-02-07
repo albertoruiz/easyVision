@@ -2,7 +2,7 @@ import Vision.GUI
 import Contours.Base
 import ImagProc
 
-main = run (sMonitor "result" f >>> freqMonitor)
+main = run $ sMonitor "result" f 
 
 f roi x =  [  msg "grayscale"         [  Draw g ]
            ,  msg "gaussian filter "  [  Draw smooth ]

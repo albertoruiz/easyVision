@@ -150,7 +150,7 @@ dummy :: IO (IO ())
 dummy = return (threadDelay 100000 >> return ())
 
 
-run = runT_ camera
+run t = runT_ camera (t >>> optDo "--freq" freqMonitor) 
 
 --------------------------------------------------------------------------------
 

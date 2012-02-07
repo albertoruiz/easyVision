@@ -121,16 +121,22 @@ interface sz0 name st0 ft upds acts resultFun resultDisp = do
         --putStrLn "W"
         sync <- readIORef (evSync w)
         when sync $ postRedisplay (Just (evW w))
+        modifyIORef (evStats w) (\s -> s { evNCall = evNCall s + 1 })
         return result
 
 drawRegion w = do
     ok <- readIORef (evDrReg w)
-    (Point x1 y1, Point x2 y2) <- readIORef (evRegion w)
-    when ok $ render $ Draw [ color white, lineWd 1
-                            , (Draw . Closed) [ Point x1 y1, Point x2 y1
-                                              , Point x2 y2, Point x1 y2] ]
-
-
+    modifyIORef (evStats w) (\s -> s { evNDraw = evNDraw s + 1 })
+    when ok $ do 
+        (Point x1 y1, Point x2 y2) <- readIORef (evRegion w)
+        stats <- readIORef (evStats w)
+        let info = show (evNCall stats) ++ " frames / " ++ show (evNDraw stats) ++ " draws"
+        render $ Draw [ color white, lineWd 1
+                      , (Draw . Closed) [ Point x1 y1, Point x2 y1
+                                        , Point x2 y2, Point x1 y2]
+                      , textF Helvetica10 (Point 0.95 (-0.7)) info
+                      ]
+        
 ----------------------------------------
 
 standalone :: Size -> String -> s
@@ -228,6 +234,7 @@ evWindow st0 name size mdisp kbd = do
     dr <- newMVar (Draw ())
     sy <- newIORef True
     pa <- newIORef NoPause
+    dc <- newIORef (WStatus 0 0)
 
     let w = EVW { evW = glw
                 , evSt = st
@@ -242,6 +249,7 @@ evWindow st0 name size mdisp kbd = do
                 , evPrefSize = ps
                 , evVisible = vi
                 , evPause = pa
+                , evStats = dc
                 , evInit = clear [ColorBuffer] }
 
     keyboardMouseCallback $= Just (\k d m p -> kbdroi w (kbd w) k d m p >> postRedisplay Nothing)
