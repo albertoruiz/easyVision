@@ -68,5 +68,5 @@ adaptiveThreshold ATParam{..} x = blk
     blk = compareC8u 127 IppCmpLess enh
 
 autoContours :: ITrans ImageGray [Polyline]
-autoContours = withParam adaptiveThreshold >>> arr (map reducePolyline . Contours.contours 1000 100)
+autoContours = withParam adaptiveThreshold >>> arr (map reducePolyline . Contours.contours 1000 50)
 

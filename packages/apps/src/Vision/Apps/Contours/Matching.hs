@@ -1,6 +1,7 @@
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TemplateHaskell, RecordWildCards #-}
 
 module Vision.Apps.Contours.Matching (
+    winMatching,
     injectPrototypes,
     showCanonical,
     showAlignment
@@ -11,9 +12,9 @@ import ImagProc
 import Contours
 import Control.Arrow((***),(&&&))
 import Control.Applicative
-import Numeric.LinearAlgebra((<>),fromList,inv)
+import Numeric.LinearAlgebra((<>),fromList,inv,eigenvalues,magnitude,toList,subMatrix)
 import Text.Printf(printf)
-import Util.Misc(diagl,mean,vec,debug,degree)
+import Util.Misc(diagl,mean,vec,debug,degree,median)
 import Util.Rotation(rot3)
 import Util.Options
 import Vision(desp,inHomog,hv2pt)
@@ -23,6 +24,48 @@ import Data.List(minimumBy,sortBy)
 import Data.Function(on)
 
 --------------------------------------------------------------------------------
+
+autoParam "MatchingPar" "m" [ ("errInvar", "Double", realParam 0.3 0 1),
+                              ("errAlign", "Double", realParam 0.25 0 1),
+                              ("tolRot",   "Double", realParam 30 0 90),
+                              ("vertical", "Int",    intParam  0  0 1) ]
+
+instance ParamRecord MatchingPar where
+    defParam = defMatchingPar
+    argParam = argMatchingPar
+    winParam = winMatchingPar
+
+winMatching :: ITrans ((t, [Shape]), Sample Shape) (t, [[ShapeMatch]])
+winMatching = withParam f
+  where
+    f MatchingPar{..} =   matchShapes errInvar errAlign 
+                      >>> (id *** consistent tolRot mode)
+      where
+        mode = if vertical == 1 then Just 0 else Nothing
+
+
+asym = map return "12347¢ABCDEFGJKLPQRTUVY" :: [String]
+sym  = map return "HNXZ" :: [String]
+ambi = map return "0OI" :: [String]
+rounded = map return "0O" :: [String]
+
+consistent tr Nothing ms = consistent tr (Just dir) ms
+  where
+    -- wrong!
+    dir = Util.Misc.median . (++[0]) . concatMap (map waRot . take 1 . filter ((`elem` asym).label)) $ ms
+
+consistent tolRot (Just dir) ms = map (filter ok) ms
+  where
+    opos x = if x > 0 then x - pi else x + pi
+    angdif x y = min (abs (x-y)) (abs (opos x - opos y))
+    ok m = ( angdif (waRot m) dir < tolRot * degree
+             || (label m `elem` sym && angdif (opos (waRot m)) dir < tolRot * degree)
+             || label m `elem` ambi )
+           && waScaleRat m > 0.3 && waScaleRat m < 3
+           && (not (label m `elem` ambi) || alignDist m < 0.1)
+
+--------------------------------------------------------------------------------
+
 
 catalog :: FilePath -> IO (Sample Polyline)
 catalog defaultdb = (read <$> readFile defaultdb) >>= optionFromFile "--catalog"
@@ -87,7 +130,9 @@ showCanonical = sMonitor "canonical" disp
 showAlignment :: ITrans (ImageGray,[[ShapeMatch]]) (ImageGray,[[ShapeMatch]])
 showAlignment = sMonitor "Detected" disp
   where
-    disp _ (im,oks) = [ msgM 1 "Invariant"
+    disp _ (im,oks) = [ msgM 3 "Best Match"
+                      , msgM 4 "align info "
+                      , msgM 1 "Invariant"
                       , msgM 0 "Invariant"
                       , msgM 2 "Alignment"
                       ]
@@ -129,6 +174,15 @@ showAlignment = sMonitor "Detected" disp
                                           , color white, textAtShape target info ]
             where
               info = printf "%.f" (100*alignDist)
+
+        sh 3 (ShapeMatch {..} : _) = Draw [ color orange
+                                           , Draw (transPol wa $ bounding (shapeContour proto))
+                                           , color yellow, textAtShape target label ]
+        sh 4 (ShapeMatch {..} : _) = Draw [ color orange
+                                           , Draw (transPol wa $ bounding (shapeContour proto))
+                                           , color yellow, textAtShape target info ]
+          where
+            info = label ++ printf " %.0f %.0f %.2f" (waRot/degree) (waSkew/degree) (waScaleRat)
 
 textAtShape s = textF Helvetica10 (centerOf s)
 centerOf Shape { shapeMoments = (ox,oy,_,_,_) } = Point ox oy

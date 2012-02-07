@@ -91,6 +91,8 @@ data ShapeMatch = ShapeMatch
     , alignDist  :: Double
     , wt, wp, wa :: Mat
     , waRot      :: Double
+    , waSkew     :: Double
+    , waScaleRat :: Double  
     }
 
 shapeMatch :: Sample Shape -> Shape -> [ShapeMatch]
@@ -106,14 +108,21 @@ shapeMatch prots c = map (match c) prots
         (alignDist,((ft,wt),(fp,wp))) = minimumBy (compare `on` fst) [ (d ht hp, (ht,hp)) | hp <- take 8 (kHyps proto), ht <- kHyps target]
         d (u,_) (v,_) = pnorm PNorm2 (u-v)
         wa = inv (wt <> shapeWhitener target) <> wp <> shapeWhitener proto
-        waRot = rotTrans wa
+        (waRot, waSkew, waScaleRat) = rotTrans wa
         
-rotTrans w = rho
+        
+rotTrans w = (rho,skew,rat)
   where
-    [[a1,a2],[b1,b2]] = ht w [[0,0],[0,1]]
+    [[a1,a2],[b1,b2],[c1,c2]] = ht w [[0,0],[0,1],[1,0]]
     dx = b1-a1
     dy = b2-a2
+    d  = max eps $ sqrt $ abs (dx*dx + dy*dy)
     rho = atan2 dx dy
+    ex = c1-a1
+    ey = c2-a2
+    e  = max eps $ sqrt $ abs (ex*ex + ey*ey)
+    rat = d / e
+    skew = abs (pi/2 - (abs $ acos $ (dx*ex + dy*ey) / (e*d)))
   
 ----------------------------------------------------------------------  
   
