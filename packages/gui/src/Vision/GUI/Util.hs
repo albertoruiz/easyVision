@@ -108,26 +108,33 @@ observe name f = optDont ("--no-"++name)
 
 --------------------------------------------------------------------------------
 
--- | returns the camera 0. (It also admits --photos=path/to/folder/ with images, and --variable-size, to read images of
--- different arbitrary sizes.)
+{- |
+Returns the first image source given in the command line.
+
+By default it uses the first alias in cameras.def.
+
+It also admits --photos=path/to/folder/ containing separate image files (.jpg or .png), currently read using imagemagick (slower, lazy),
+and --photosmp=path/to/folder, to read images of the same type and size using mplayer (faster, strict).
+-}
 camera :: IO (IO Channels)
 camera = do
     f <- hasValue "--photos"
-    g <- getFlag "--variable-size"
-    if f then if g then cameraFolderIM else cameraFolderMP
-         else cameraV
+    g <- hasValue "--photosmp"
+    if f then cameraFolderIM
+         else if g then cameraFolderMP
+                   else cameraV
 
 cameraV = findSize >>= getCam 0 ~> channels
 
 
-cameraFolderIM = camG r <*> dummy
+cameraFolderIM = camG "--photos" r <*> dummy
   where
     r p _ = readFolderIM p
 
-cameraFolderMP = camG readFolderMP <*> dummy
+cameraFolderMP = camG "--photosmp" readFolderMP <*> dummy
 
-camG readf = do
-    path <- optionString "--photos" "."
+camG opt readf = do
+    path <- optionString opt "."
     sz <- findSize
     imgs <- readf path (Just sz)
     interface (Size 240 320) "photos" (0,imgs) ft (keys imgs) [] r sh
