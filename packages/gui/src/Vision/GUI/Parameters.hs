@@ -52,12 +52,14 @@ createParameters' :: String -- ^ window name
                   -> IO (EVWindow (Map String Parameter))
 createParameters' winname pref ops = do
     ops' <- zip (map fst ops) `fmap` mapM (uncurry (defcomlin pref)) ops
+    let sz@(Size ih iw) = Size (2+length ops * sizePar) 200
+        nops = length ops - 1
+        which h y = (fromIntegral y `div` round (fromIntegral sizePar * fromIntegral h / fromIntegral ih)) `min` nops
     evWindow (Map.fromList ops') 
              winname 
-             (Size (2+length ops * sizePar) 200)
+             sz
              (Just f)
-             (kbdopts kbdQuit)
-
+             (kbdopts which kbdQuit)
   where
 
     f o = do
@@ -83,29 +85,32 @@ createParameters' winname pref ops = do
             c2 = 2*k
             k = posi e
 
-    kbdopts def opts = kbd where
+    kbdopts which def opts = kbd where
         kbd (MouseButton WheelUp) Down _ (Position _x y) = do
+            Size h w <- evSize <$> get windowSize
             m <- getW opts
             let s' = keys m
-            let s = (s' !! (fromIntegral y `div` sizePar))
+            let s = (s' !! which h y)
             let v = m!s 
             let m' = Map.insert s (incre v) m
             putW opts m'
             postRedisplay Nothing
         kbd (MouseButton WheelDown) Down _ (Position _x y) = do
+            Size h w <- evSize <$> get windowSize
             m <- getW opts
             let s' = keys m
-            let s = (s' !! (fromIntegral y `div` sizePar))
+            let s = (s' !! which h y)
             let v = m!s 
             let m' = Map.insert s (decre v) m
             putW opts m'
             postRedisplay Nothing
         kbd (MouseButton LeftButton) Down _ (Position x y) = do
+            Size h w <- evSize <$> get windowSize
             m <- getW opts
             let s' = keys m
-            let s = (s' !! (fromIntegral y `div` sizePar))
+            let s = (s' !! which h y)
             let v = m!s 
-            let m' = Map.insert s (setpo x v) m
+            let m' = Map.insert s (setpo (round (fromIntegral x * 200 / fromIntegral w)) v) m
             putW opts m'
             postRedisplay Nothing
         kbd a b c d = def a b c d
