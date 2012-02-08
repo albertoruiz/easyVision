@@ -10,4 +10,5 @@
 ./transi ../../data/images/transi
 ./imagproc --photos=../../data/images/transi
 ./imagproc --photos=../../data/images/transi --variable-size
+# ./zbar --photos=../../data/images/barcode --variable-size
 

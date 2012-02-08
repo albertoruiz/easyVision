@@ -33,7 +33,7 @@ installation instructions
 
         $ sudo apt-get install libgsl0-dev liblapack-dev libglpk-dev
         $ sudo apt-get install libghc6-glut-dev
-        $ sudo apt-get install mplayer imagemagick libglew1.5-dev lib3ds-dev
+        $ sudo apt-get install mplayer imagemagick libglew1.5-dev libzbar-dev lib3ds-dev
 
     OPENCV (Optional):
 

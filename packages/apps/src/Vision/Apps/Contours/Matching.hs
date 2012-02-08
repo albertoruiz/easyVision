@@ -67,14 +67,15 @@ consistent tolRot (Just dir) ms = map (filter ok) ms
 --------------------------------------------------------------------------------
 
 
-catalog :: FilePath -> IO (Sample Polyline)
-catalog defaultdb = (read <$> readFile defaultdb) >>= optionFromFile "--catalog"
+catalog :: [FilePath] -> IO (Sample Polyline)
+catalog defaultdbs = concat <$> mapM r defaultdbs >>= optionFromFile "--catalog"
+  where
+    r x = read <$> readFile x
 
 
-
-injectPrototypes :: Renderable t => FilePath -> ITrans (t, [Shape]) ((t, [Shape]), [(Shape, String)])
-injectPrototypes defaultdb = transUI $ do
-    c <- catalog defaultdb
+injectPrototypes :: Renderable t => [FilePath] -> ITrans (t, [Shape]) ((t, [Shape]), [(Shape, String)])
+injectPrototypes defaultdbs = transUI $ do
+    c <- catalog defaultdbs
     let prepro = id
         disp = Draw . transPol (diagl [0.8, 0.8, 1]) . boxShape . shapeContour
     bro <- browseLabeled "Shapes" (map (shape *** id) c) disp
@@ -128,13 +129,13 @@ showCanonical = sMonitor "canonical" disp
 ----------------------------------------------------------------------
 
 showAlignment :: ITrans (ImageGray,[[ShapeMatch]]) (ImageGray,[[ShapeMatch]])
-showAlignment = sMonitor "Detected" disp
+showAlignment = sMonitor "detected" disp
   where
-    disp _ (im,oks) = [ msgM 3 "Best Match"
+    disp _ (im,oks) = [ msgM 3 "best match"
                       , msgM 4 "align info "
-                      , msgM 1 "Invariant"
-                      , msgM 0 "Invariant"
-                      , msgM 2 "Alignment"
+                      , msgM 1 "invariant"
+                      , msgM 0 "invariant"
+                      , msgM 2 "alignment"
                       ]
       where
         msgM k name = msg name (map (sh k) oks)

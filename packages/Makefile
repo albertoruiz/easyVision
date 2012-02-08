@@ -1,7 +1,7 @@
-stage3   = gui apps contrib
+stage3   = gui apps
 stage2   = imagproc camera contours $(stage3)
 packages = util patrec vision $(stage2)
-optional = gpu opencv models3ds
+optional = gpu opencv models3ds examples zbar
 all      = $(packages) $(optional)
 old      = features old-gui ev 
 
@@ -12,7 +12,7 @@ all:
 	for p in $(packages); do cd $$p; $(fullinstall) ; cd ..; done
 
 optional:
-	for p in $(optional); do cd $$p; $(fastinstall) ; cd ..; done
+	cd contrib; for p in $(optional); do cd $$p; $(fastinstall) ; cd ..; done; cd ..
 
 old:
 	for p in $(old); do cd $$p; $(fastinstall) ; cd ..; done
