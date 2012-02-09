@@ -67,6 +67,7 @@ getCam :: Int  -- ^ n-th camera url supplied by the user (or defined in cameras.
 getCam n sz = do
     rawargs <- getArgs
     aliases <- getAliases
+    dbg <- when <$> getFlag "-v"
     let args = cleanOpts rawargs
         url = if n < length args
                 then args!!n
@@ -76,13 +77,14 @@ getCam n sz = do
         isChan = "--chan" `isInfixOf` fullUrl || "--chan" `elem` rawargs
         clean ws = unwords . filter (not . (`elem` ws)). words
         cleanUrl = clean ["--live"] fullUrl
+        uvcdev = "/dev/video" ++ drop 3 cleanUrl
         cam = if "uvc" `isPrefixOf` cleanUrl
-                then uvcCamera ("/dev/video" ++ drop 3 cleanUrl) sz 30
-                else mplayer cleanUrl sz
+                then dbg (putStrLn uvcdev) >> uvcCamera uvcdev sz 30
+                else dbg (putStrLn cleanUrl) >> mplayer cleanUrl sz
     if isLive
-        then putStrLn "(Live) " >> cam >>= live
+        then dbg (putStrLn "Live") >> cam >>= live
         else if isChan 
-                 then putStrLn "(Channel)" >> cam >>= channel
+                 then dbg (putStrLn "Channel") >> cam >>= channel
                  else cam
 
 

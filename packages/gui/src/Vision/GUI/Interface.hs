@@ -334,8 +334,8 @@ kbdcam (pauseC,stepC,passC) = kbd where
 -- Also, pressing i saves a screenshot of the full opengl window contents.
 kbdQuit :: KeyboardMouseCallback
 kbdQuit (Char '\27') Down Modifiers {shift=Down} _ = leaveMainLoop >> system "killall mplayer" >> return ()
-kbdQuit (Char '\27') Down Modifiers {ctrl=Down} _ = exitWith ExitSuccess
-kbdQuit (Char '\27') Down _ _ = leaveMainLoop
+kbdQuit (Char '\27') Down Modifiers {ctrl=Down} _ = leaveMainLoop
+kbdQuit (Char '\27') Down _ _ = exitWith ExitSuccess
 kbdQuit (Char   'i') Down _ _ = captureGL >>= saveRGB' Nothing
 kbdQuit a Down m _            = putStrLn (show a ++ " " ++ show m ++ " not defined")
 kbdQuit _ _ _ _               = return ()
