@@ -4,7 +4,7 @@
 
 #include <zbar.h>
 
-int c_zbar(IMG(x), int*m, const char ** result) {
+int c_zbar(IMG(x), int*m, TBarcode* result) {
     
     //printf("hello\n");
     /* create a reader */
@@ -39,10 +39,31 @@ int c_zbar(IMG(x), int*m, const char ** result) {
     for(; symbol; symbol = zbar_symbol_next(symbol)) {
         /* do something useful with results */
         zbar_symbol_type_t typ = zbar_symbol_get_type(symbol);
-        result[k++] = zbar_get_symbol_name(typ);
+        result[k].symbol_type = zbar_get_symbol_name(typ);
         const char *data = zbar_symbol_get_data(symbol);
-        result[k++] = data;
+        result[k].symbol_value = data;
         // printf("decoded %s symbol \"%s\"\n",zbar_get_symbol_name(typ), data);
+
+        int np = zbar_symbol_get_loc_size(symbol);
+        //printf("np=%d\n",np);
+        int j,x,y,r1,c1,r2,c2;
+        c1 = c2 = zbar_symbol_get_loc_x(symbol,0);
+        r1 = r2 = zbar_symbol_get_loc_y(symbol,0);
+        for (j=1; j<np; j++) {
+            x = zbar_symbol_get_loc_x(symbol,j);
+            y = zbar_symbol_get_loc_y(symbol,j);
+            if (y<r1) r1 = y;
+            if (y>r2) r2 = y;
+            if (x<c1) c1 = x;
+            if (x>c2) c2 = x;
+            //printf("j=%d\n",j);
+        }
+        result[k].bbr1 = r1;
+        result[k].bbr2 = r2;
+        result[k].bbc1 = c1;
+        result[k].bbc2 = c2;
+        k++;
+        if(k>=50) break;
     }
 
     /* clean up */

@@ -5,3 +5,9 @@
 #define MAX(a,b) ((a)>(b)?(a):(b))
 #define MIN(a,b) ((a)<(b)?(a):(b))
 
+typedef struct {
+    const char * symbol_type;
+    const char * symbol_value;
+    int bbr1, bbr2, bbc1, bbc2;  // bounding box
+} TBarcode;
+
