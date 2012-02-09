@@ -25,5 +25,5 @@ import ImagProc.Base
 
 clip :: Polyline -> Polyline -> [Polyline]
 -- ^ compute the intersection of two polygons
-clip = undefined
+clip a b = []
 
