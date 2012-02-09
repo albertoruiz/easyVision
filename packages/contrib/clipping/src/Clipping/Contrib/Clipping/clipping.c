@@ -33,8 +33,9 @@ void createList(double *polygon, int n, struct vertex **l)
     current->x = polygon[i];
     current->y = polygon[i+1];
     current->prev = prev;
-    current->next = NULL;
-    current->nextVertex = NULL;
+    current->next = list;
+    current->nextVertex = list;
+    list->prev = current;
 
     *l = list;
 }
@@ -45,12 +46,33 @@ void createList(double *polygon, int n, struct vertex **l)
 void deleteList(struct vertex *l)
 {
     struct vertex *aux = l->next;
+    l->prev->next = NULL;
     while (aux) {
         free(l);
         l = aux;
         aux = aux->next;
     }
     free(l);
+}
+
+void deletePolygons(struct vertex *poly)
+{
+    struct vertex *aux, *l;
+    struct vertex *paux;
+
+    paux = poly;
+    while (paux) {
+        l = paux;
+        paux = paux->nextPoly;
+        
+        aux = l->next;
+        while (aux) {
+            free(l);
+            l = aux;
+            aux = aux->next;
+        }
+        free(l);
+    }
 }
 
 
@@ -86,8 +108,8 @@ int findIntersections(struct vertex *lclip, struct vertex *lsubject)
     double a, b;
     int intersections = 0;
     struct vertex *aux, *v, *w, *sort;
-    for (v = lsubject; v && v->nextVertex; v = v->nextVertex)
-        for (w = lclip; w && w->nextVertex; w = w->nextVertex)
+    for (v = lsubject; v; v = v->nextVertex == lsubject ? NULL : v->nextVertex)
+        for (w = lclip; w; w = w->nextVertex == lclip ? NULL : w->nextVertex)
             if (!DISCARD_INTER(v->x, v->y, v->nextVertex->x, v->nextVertex->y,
                                 MIN(w->x, w->nextVertex->x), MIN(w->y, w->nextVertex->y), 
                                 MAX(w->x, w->nextVertex->x), MAX(w->y, w->nextVertex->y))
@@ -153,7 +175,7 @@ int isInside(struct vertex *p, struct vertex *polygon)
     const double y = p->y;
     struct vertex *node1, *node2, *q;
 
-    for (q = polygon; q; q = q->next)
+    for (q = polygon; q; q = q->nextVertex == polygon ? NULL : q->nextVertex)
     {
         node1 = q;
         
@@ -189,12 +211,14 @@ void markEntries(struct vertex *p, struct vertex *q)
         status = STATUS_ENTRY;
 
     struct vertex *pi;
-    for (pi = p; pi; pi = pi->next)
+    for (pi = p->next; pi != p; pi = pi->next)
+    {
         if (pi->intersect)
         {
             pi->entry_exit = status;
             status = !status;
         }
+    }
 }
 
 /**
@@ -236,17 +260,17 @@ void newVertex(struct vertex *last, struct vertex *p)
 int createClippedPolygon(struct vertex *lclip, struct vertex *lsubject, 
             struct vertex **polygons, int *total)
 {
-    struct vertex *isubject = lsubject, *current;
+    struct vertex *isubject = lsubject->next, *current;
     struct vertex *poly = NULL, *first = NULL;
     int npolys = 0;
     int nvertex = 0;
 
     while (isubject)
     {
-        for (; isubject && !(isubject->intersect && !isubject->processed); 
+        for (; isubject != lsubject && !(isubject->intersect && !isubject->processed); 
                 isubject = isubject->next);
 
-        if (!isubject) 
+        if (isubject == lsubject) 
             break;
         
         isubject->processed = 1;
@@ -362,8 +386,7 @@ int clip(double *clip, int nc, double *subject, int ns, double **polys, int **le
     // free memory
     deleteList(lclip);
     deleteList(lsubject);
-    if (polygons)
-        deleteList(polygons);
+    deletePolygons(polygons);
 
     return 0;
 }
