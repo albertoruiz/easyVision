@@ -108,9 +108,9 @@ quatkbd st _ _ (MouseButton WheelDown) _ (Modifiers{shift=Down}) _ = do
     modifyIORef st $ \s -> s { vertAngle = vertAngle s - 1 }
 
 quatkbd st _ _ (MouseButton WheelUp) _ _ _ = do
-    modifyIORef st $ \s -> s { dist = dist s *1.1}
-quatkbd st _ _ (MouseButton WheelDown) _ _ _ = do
     modifyIORef st $ \s -> s { dist = dist s /1.1}
+quatkbd st _ _ (MouseButton WheelDown) _ _ _ = do
+    modifyIORef st $ \s -> s { dist = dist s *1.1}
 
 
 quatkbd _ k st b s m p = k st b s m p

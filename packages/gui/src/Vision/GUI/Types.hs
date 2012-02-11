@@ -209,6 +209,10 @@ instance Renderable Drawing where
 instance Renderable a => Renderable [a] where
     renderIn w = mapM_ (renderIn w)
     
+instance Renderable a => Renderable (Maybe a) where
+    renderIn w (Just x) = renderIn w x
+    renderIn _ Nothing = return ()
+
 --------------------------------------
 
 instance Renderable (RGB Float) where

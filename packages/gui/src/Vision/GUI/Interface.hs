@@ -17,7 +17,7 @@ User interface tools.
 module Vision.GUI.Interface (
     -- * Interface
     Command, WinInit, WinRegion, VC, VCN,
-    runFPS, runIdle, runIt, run', interface, standalone,
+    runFPS, runIdle, runIt, run', interface, standalone, interface3D,
     -- * Tools
     prepare,
     evWindow, evWindow3D, evWin3D,
@@ -82,14 +82,25 @@ interface :: Size -> String -> s
           -> (WinRegion -> s -> a -> (s,b))
           -> (WinRegion -> s -> b -> Drawing) 
           -> VCN a b
-interface sz0 name st0 ft upds acts resultFun resultDisp = do
+
+interface = interfaceG False
+
+interface3D :: Size -> String -> s 
+          -> WinInit s a -> [Command s s] -> [Command s (IO())]
+          -> (WinRegion -> s -> a -> (s,b))
+          -> (WinRegion -> s -> b -> Drawing) 
+          -> VCN a b
+
+interface3D = interfaceG True
+
+interfaceG threeD sz0 name st0 ft upds acts resultFun resultDisp = do
 
     firstTimeRef <- newIORef True
-    w <- evWindow st0 name sz0 Nothing (keyAction upds acts kbdQuit)
+    let evWin = if threeD then evWin3D' else evWindow
+    w <- evWin st0 name sz0 Nothing (keyAction upds acts kbdQuit)
 
     displayCallback $= do
         evInit w
-        prepZoom w
         dr <- readMVar (evDraw w)
         renderIn w dr
         drawRegion w
@@ -250,12 +261,28 @@ evWindow st0 name size mdisp kbd = do
                 , evVisible = vi
                 , evPause = pa
                 , evStats = dc
-                , evInit = clear [ColorBuffer] }
+                , evInit = clear [ColorBuffer] >> prepZoom w }
 
     keyboardMouseCallback $= Just (\k d m p -> kbdroi w (kbd w) k d m p >> postRedisplay Nothing)
     motionCallback $= Just (\p -> mvroi w p >> postRedisplay Nothing)
     -- callback to detect minimization?
     return w
+
+
+evWin3D' ist name sz mdisp kbd = do
+    (trackball,kc,mc,auto) <- newTrackball
+    w <- evWindow ist name sz Nothing (kc kbd)
+    motionCallback $= Just mc
+    depthFunc $= Just Less
+    textureFilter Texture2D $= ((Nearest, Nothing), Nearest)
+    textureFunction $= Replace
+    let callback = do
+        addTimerCallback 50 callback
+        ok <- auto
+        when ok $ postRedisplay (Just (evW w))
+    addTimerCallback 1000 callback
+    return w { evInit = clear [ColorBuffer, DepthBuffer] >> trackball}
+
 
 ---------------------------------------------------------------
 

@@ -159,8 +159,8 @@ drawROI r = renderPrimitive LineLoop $ mapM_ vertex
 --------------------------------------------------------------------------------
 
 -- | Draws an image 32f as a texture in the current window, in the desired 3D coordinates corresponding to (0,0), (1,0), (1,1), (0,1). (Drawing is very fast if the sizes are powers of 2.)
-drawTexture :: ImageFloat -> [[Double]] -> IO ()
-drawTexture (F im) [v1,v2,v3,v4] = do
+drawTexture' :: ImageFloat -> [[Double]] -> IO ()
+drawTexture' (F im) [v1,v2,v3,v4] = do
     texImage2D  Nothing
                 NoProxy
                 0
@@ -187,19 +187,19 @@ drawTexture (F im) [v1,v2,v3,v4] = do
 ------------------------------------------------------------
 
 -- | It shows the outline of a camera and an optional image (texture) in its image plane.
-drawCamera :: Double -> Matrix Double -> Maybe ImageFloat -> IO ()
-drawCamera size cam Nothing = do
+drawCamera' :: Double -> Matrix Double -> Maybe ImageFloat -> IO ()
+drawCamera' size cam Nothing = do
     let (invcam,f) = toCameraSystem cam
     let m = invcam<>diag (fromList[1,1,1,1/size])
     let outline = ht m (cameraOutline f)
     renderPrimitive LineLoop $ mapM_ vertex outline
 
-drawCamera size cam (Just imgtext) = do
+drawCamera' size cam (Just imgtext) = do
     let (invcam,f) = toCameraSystem cam
     let m = invcam<>diag (fromList[1,1,1,1/size])
     let outline = ht m (cameraOutline f)
     let q = 0.95 --0.75                     TO DO: fix this
-    drawTexture imgtext $ ht m
+    drawTexture' imgtext $ ht m
               [[ q,  q, f],
                [-q,  q, f],
                [-q, -q, f],
@@ -411,4 +411,13 @@ viewPoint cam mbimg things = Draw [
     Raw $ cameraView cam (4/3) 0.1 100,
     Draw things,
     Raw $ depthFunc $= Nothing ]
+
+
+drawTexture :: ImageFloat -> [[Double]] -> Drawing
+-- ^ provisional
+drawTexture x ps = Raw (drawTexture' x ps)
+
+drawCamera :: Double -> Matrix Double -> Maybe ImageFloat -> Drawing
+-- ^ provisional
+drawCamera sz cam mbt = Raw (drawCamera' sz cam mbt)
 

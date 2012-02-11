@@ -13,7 +13,7 @@ common interfaces
 -----------------------------------------------------------------------------
 
 module Vision.GUI.Util (
-    observe, camG, cameraFolderIM,
+    observe, observe3D, camG, cameraFolderIM,
     sMonitor,
     browser,
     editor,
@@ -105,6 +105,13 @@ observe name f = optDont ("--no-"++name)
                $ transUI 
                $ interface (Size 240 360) name () (const.const.return $ ())
                            [] [] (const (,)) (const.const $ Draw . f)
+
+
+observe3D :: Renderable x => String -> (b -> x) -> ITrans b b
+observe3D name f = optDont ("--no-"++name)
+               $ transUI 
+               $ interface3D (Size 400 400) name () (const.const.return $ ())
+                             [] [] (const (,)) (const.const $ Draw . f)
 
 --------------------------------------------------------------------------------
 
