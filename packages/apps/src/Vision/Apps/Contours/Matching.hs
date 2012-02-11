@@ -39,7 +39,7 @@ winMatching = withParam f
         mode = if vertical == 1 then Just 0 else Nothing
 
 
-asym = map return "12347¢ABCDEFGJKLPQRTUVY" :: [String]
+asym = map return "12347¢ABCDEFGJKLMPQRTUVYW" :: [String]
 sym  = map return "HNXZ" :: [String]
 ambi = map return "0OI" :: [String]
 rounded = map return "0O" :: [String]
@@ -49,7 +49,7 @@ consistent tr Nothing ms = consistent tr (Just dir) ms
     -- wrong!
     dir = Util.Misc.median . (++[0]) . concatMap (map waRot . take 1 . filter ((`elem` asym).label)) $ ms
 
-consistent tolRot (Just dir) ms = map (filter ok) ms
+consistent tolRot (Just dir) ms = map (map fixambig . filter ok) ms
   where
     opos x = if x > 0 then x - pi else x + pi
     angdif x y = min (abs (x-y)) (abs (opos x - opos y))
@@ -58,6 +58,15 @@ consistent tolRot (Just dir) ms = map (filter ok) ms
              || label m `elem` ambi )
            && waScaleRat m > 0.3 && waScaleRat m < 3
            && (not (label m `elem` ambi) || alignDist m < 0.1)
+    fixambig s@ShapeMatch {..} | label `elem` sym = s { wa = r <> wa }
+                               | label `elem` rounded = s { wa = rr <> wa }
+                               | otherwise = s -- TODO
+      where
+        r = if angdif waRot dir > 90 * degree then rotAround cx cy pi else rot3 0
+        rr = if angdif waRot dir > tolRot * degree then rotAround cx cy (dir - waRot) else rot3 0
+        (cx,cy,_,_,_) = momentsContour $ polyPts $ shapeContour $ target
+
+rotAround x y a = desp (x,y) <> rot3 a <> desp (-x,-y)
 
 --------------------------------------------------------------------------------
 
@@ -72,8 +81,8 @@ injectPrototypes :: Renderable t => [FilePath] -> ITrans (t, [Shape]) ((t, [Shap
 injectPrototypes defaultdbs = transUI $ do
     c <- catalog defaultdbs
     let prepro = id
-        disp = Draw . transPol (diagl [0.8, 0.8, 1]) . boxShape . shapeContour
-    bro <- browseLabeled "Shapes" (map (shape *** id) c) disp
+        disp = Draw . transPol (diagl [0.8, 0.8, 1]) . shapeContour
+    bro <- browseLabeled "Shapes" (map (shape.boxShape *** id) c) disp
 
     let ft _ _  = return ()
         result _r _s (x,cs) = (ss,(x,ss))  -- save contours in the state
@@ -174,11 +183,13 @@ showAlignment = sMonitor "detected" disp
         sh 3 (ShapeMatch {..} : _) = Draw [ color orange
                                            , Draw (transPol wa $ bounding (shapeContour proto))
                                            , color yellow, textAtShape target label ]
-        sh 4 (ShapeMatch {..} : _) = Draw [ color orange
-                                           , Draw (transPol wa $ bounding (shapeContour proto))
-                                           , color yellow, textAtShape target info ]
+        sh 4 (ShapeMatch {..} : _) = Draw [ color orange, Draw bb
+                                          , color red, Draw axes
+                                          , color yellow, textAtShape target info ]
           where
             info = label ++ printf " %.0f %.0f %.2f" (waRot/degree) (waSkew/degree) (waScaleRat)
+            bb = (transPol wa $ bounding (shapeContour proto))
+            axes = Open $ take 2 (drop 2 $ polyPts bb)
 
 textAtShape s = textF Helvetica10 (centerOf s)
 centerOf Shape { shapeMoments = (ox,oy,_,_,_) } = Point ox oy
