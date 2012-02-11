@@ -106,10 +106,19 @@ quatkbd st _ _ (MouseButton WheelUp) _ (Modifiers{shift=Down}) _ = do
     modifyIORef st $ \s -> s { vertAngle = vertAngle s + 1 }
 quatkbd st _ _ (MouseButton WheelDown) _ (Modifiers{shift=Down}) _ = do
     modifyIORef st $ \s -> s { vertAngle = vertAngle s - 1 }
+quatkbd st _ _ (SpecialKey KeyUp) _ (Modifiers{shift=Down}) _ = do
+    modifyIORef st $ \s -> s { vertAngle = vertAngle s + 1 }
+quatkbd st _ _ (SpecialKey KeyDown) _ (Modifiers{shift=Down}) _ = do
+    modifyIORef st $ \s -> s { vertAngle = vertAngle s - 1 }
 
-quatkbd st _ _ (MouseButton WheelUp) _ _ _ = do
+
+quatkbd st _ _ (MouseButton WheelUp) _ (Modifiers{ctrl=Down}) _ = do
     modifyIORef st $ \s -> s { dist = dist s /1.1}
-quatkbd st _ _ (MouseButton WheelDown) _ _ _ = do
+quatkbd st _ _ (MouseButton WheelDown) _ (Modifiers{ctrl=Down}) _ = do
+    modifyIORef st $ \s -> s { dist = dist s *1.1}
+quatkbd st _ _ (SpecialKey KeyUp) _ (Modifiers{ctrl=Down}) _ = do
+    modifyIORef st $ \s -> s { dist = dist s /1.1}
+quatkbd st _ _ (SpecialKey KeyDown) _ (Modifiers{ctrl=Down}) _ = do
     modifyIORef st $ \s -> s { dist = dist s *1.1}
 
 
