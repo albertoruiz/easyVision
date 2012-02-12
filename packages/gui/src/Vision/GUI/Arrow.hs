@@ -15,7 +15,7 @@ Arrow interface.
 -----------------------------------------------------------------------------
 
 module Vision.GUI.Arrow(
-    runITrans, runT_, runT, runS, ITrans(ITrans), transUI, arrL, (@@@), delay'
+    runITrans, runT_, runT, runS, ITrans(ITrans), transUI, arrL, (@@@), delay', arrIO
 )where
 
 import Control.Concurrent   (forkIO)
@@ -73,7 +73,6 @@ arrL f = ITrans (return (Trans (return . f)))
 
 --------------------------------------------------------------------------------
 
-
 transUI :: VCN a b -> ITrans a b
 transUI gf = ITrans $ do
     f <- gf
@@ -81,6 +80,12 @@ transUI gf = ITrans $ do
         ga <- createGrab as
         grabAll (f ga)
 
+
+arrIO :: (a -> IO b) -> ITrans a b
+-- ^ lift an IO action to the ITrans arrow
+arrIO f = transUI . return $ \c -> c >>= f
+
+--------------------------------------------------------------------------------
 
 (@@@) :: (p -> x -> y) -> IO (IO p) -> ITrans x y
 -- ^ apply a pure function with parameters taken from the UI
