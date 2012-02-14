@@ -15,7 +15,7 @@ optional:
 	cd contrib; for p in $(optional); do cd $$p; $(fastinstall) ; cd ..; done; cd ..
 
 old:
-	for p in $(old); do cd $$p; $(fastinstall) ; cd ..; done
+	cd contrib; for p in $(old); do cd $$p; $(fastinstall) ; cd ..; done; cd ..
 
 fast3:
 	for p in $(stage3); do cd $$p; $(fastinstall) ; cd ..; done
