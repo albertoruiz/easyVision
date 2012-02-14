@@ -229,7 +229,7 @@ evWindow st0 name size mdisp kbd = do
                 swapBuffers
     displayCallback $= draw
 
-    actionOnWindowClose $= ContinueExectuion
+    -- actionOnWindowClose $= ContinueExectuion
 
     let Size h w = size
 
