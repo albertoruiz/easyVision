@@ -319,7 +319,12 @@ autoParam name pref defpar = sequence [
 
         valD (varP defname) (normalB defval) [],
 
-        valD (varP argname) (normalB argval) []
+        valD (varP argname) (normalB argval) [],
+
+        instanceD (cxt []) (appT (conT (mkName "ParamRecord")) (conT (mkName name))) [
+            (valD (varP (mkName "defParam")) (normalB (varE defname)) []),
+            (valD (varP (mkName "argParam")) (normalB (varE argname)) []),
+            (valD (varP (mkName "winParam")) (normalB (varE funname)) [])]
       ]
     where p = mkName name 
           funname = mkName $ "win"++name

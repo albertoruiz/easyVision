@@ -1,4 +1,4 @@
-{-# LANGUAGE ForeignFunctionInterface #-}
+{-# LANGUAGE RecordWildCards, ForeignFunctionInterface #-}
 -----------------------------------------------------------------------------
 {- |
 Module      :  ImagProc.Contrib.ZBar
@@ -14,7 +14,7 @@ Simple interface to zbar barcode reader.
 -----------------------------------------------------------------------------
 
 module ImagProc.Contrib.ZBar (
-    zbar
+    zbar, Barcode(..)
 )
 where
 
@@ -26,30 +26,38 @@ import Foreign.ForeignPtr
 import Foreign.Marshal
 import Foreign.Storable
 import System.IO.Unsafe(unsafePerformIO)
-import Util.Misc(splitEvery,impossible)
+
+import ImagProc.Contrib.ZBar.Structs
 
 ----------------------------------------------------
 
 foreign import ccall "c_zbar"
     c_zbar :: Ptr () -> CInt -> CInt -> CInt -> CInt -> CInt
-           -> Ptr CInt -> Ptr CString
+           -> Ptr CInt -> Ptr TBarcode
            -> IO CInt
 
-zbar :: ImageGray -> [(String,String)]
+data Barcode = Barcode { bcType  :: String
+                       , bcValue :: String
+                       , bcROI   :: ROI
+                       } deriving Show
+
+zbar :: ImageGray -> [Barcode]
 zbar (G x) = unsafePerformIO $ do
     presult <- malloc
-    pstrings <- mallocArray 100 :: IO (Ptr CString)
+    pstrings <- mallocArray 50 -- FIXME
     _ok <- app1G c_zbar (G x) presult pstrings
     result <- peek presult
     css <- peekArray (ti result) pstrings
-    ss <- mapM peekCString css
+    bs <- mapM mkBarcode css
     free presult
     free pstrings
     touchForeignPtr . fptr $ x
-    return (map tup $ splitEvery 2 ss)
+    return bs
   where
-    tup [a,b] = (a,b)
-    tup _ = impossible "zbar/tup"
+    mkBarcode TBarcode {..} = do
+        t <- peekCString bcSymbolType
+        v <- peekCString bcSymbolValue
+        return $ Barcode t v (ROI (ti bbR1) (ti bbR2) (ti bbC1) (ti bbC2))
 
 ----------------------------------------------------
 

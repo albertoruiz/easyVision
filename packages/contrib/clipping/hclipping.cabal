@@ -1,13 +1,13 @@
-Name:               imagproc-contrib
-Version:            0.2.0
+Name:               hclipping
+Version:            0.1.0
 License:            GPL
 License-file:       LICENSE
-Author:             Alberto Ruiz
+Author:             PARP Research Group <http://perception.inf.um.es>, University of Murcia, Spain.
 Maintainer:         Alberto Ruiz <aruiz@um.es>
 Stability:          experimental
 Homepage:           http://perception.inf.um.es/easyVision/
-Synopsis:           additional low level image processing functions
-Description:        additional low level image processing functions
+Synopsis:           polygon clipping
+Description:        polygon clipping
 
 Category:           Math
 tested-with:        GHC ==6.10.4, GHC ==6.12.1, GHC ==7.4
@@ -15,7 +15,7 @@ tested-with:        GHC ==6.10.4, GHC ==6.12.1, GHC ==7.4
 cabal-version:      >=1.2
 build-type:         Simple
 
-extra-source-files:     src/ImagProc/Contrib/wrappers.h
+extra-source-files:     src/Contours/wrappers.h
 
 extra-tmp-files:
 
@@ -24,13 +24,13 @@ library
 
     hs-source-dirs:     src
 
-    Exposed-modules:    ImagProc.Contrib.Examples
+    Exposed-modules:    Contours.Clipping
 
     other-modules:
 
-    c-sources:          src/ImagProc/Contrib/Examples/examples.c
+    c-sources:          src/Contours/Clipping/clipping.c
                         
-    include-dirs:       src/ImagProc/Contrib
+    include-dirs:       src/Contours
 
     cc-options:         -O3 -msse2
 

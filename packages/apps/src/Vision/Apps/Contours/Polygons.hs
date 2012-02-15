@@ -29,11 +29,6 @@ autoParam "PolygonParam" "polygon-"
    ("minSides","Int" , intParam 4 3 12),
    ("maxSides","Int", intParam 6 3 12) ]
 
-instance ParamRecord PolygonParam where
-    defParam = defPolygonParam
-    argParam = argPolygonParam
-    winParam = winPolygonParam
-
 --------------------------------------------------------------------------------
 
 polygonalize PolygonParam {..} = polygons maxCurv maxAng (minSides,maxSides)

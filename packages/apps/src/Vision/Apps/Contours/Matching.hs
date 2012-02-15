@@ -30,11 +30,6 @@ autoParam "MatchingPar" "m" [ ("errInvar", "Double", realParam 0.3 0 1),
                               ("tolRot",   "Double", realParam 30 0 90),
                               ("vertical", "Int",    intParam  0  0 1) ]
 
-instance ParamRecord MatchingPar where
-    defParam = defMatchingPar
-    argParam = argMatchingPar
-    winParam = winMatchingPar
-
 winMatching :: ITrans ((t, [Shape]), Sample Shape) (t, [[ShapeMatch]])
 winMatching = withParam f
   where

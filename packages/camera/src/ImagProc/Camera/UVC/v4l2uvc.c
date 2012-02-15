@@ -32,6 +32,7 @@
 #define FOURCC_FORMAT		"%c%c%c%c"
 #define FOURCC_ARGS(c)		(c) & 0xFF, ((c) >> 8) & 0xFF, ((c) >> 16) & 0xFF, ((c) >> 24) & 0xFF
 	
+#define NODEBUG
 
 static int debug = 0;
 
@@ -118,8 +119,10 @@ init_videoIn(struct vdIn *vd, char *device, int width, int height, float fps,
     vd->status = (char *) calloc(1, 100 * sizeof(char));
     vd->pictName = (char *) calloc(1, 80 * sizeof(char));
     snprintf(vd->videodevice, 12, "%s", device);
+#ifndef NODEBUG
 	printf("Device information:\n");
 	printf("  Device path:  %s\n", vd->videodevice);
+#endif
     vd->toggleAvi = 0;
     vd->avifile = NULL;
     vd->avifilename = avifilename;
@@ -378,7 +381,9 @@ static int init_v4l2(struct vdIn *vd)
 		}
 	}
 
+#ifndef NODEBUG
 	printf("Stream settings:\n");
+#endif
 
 	// Enumerate the supported formats to check whether the requested one
 	// is available. If not, we try to fall back to YUYV.
@@ -398,7 +403,9 @@ static int init_v4l2(struct vdIn *vd)
 	}
 	if(requested_format_found) {
 		// The requested format is supported
+#ifndef NODEBUG
 		printf("  Frame format: "FOURCC_FORMAT"\n", FOURCC_ARGS(vd->formatIn));
+#endif
 	}
 	else if(fallback_format >= 0) {
 		// The requested format is not supported but there's a fallback format
@@ -436,7 +443,9 @@ static int init_v4l2(struct vdIn *vd)
 		//vd->formatIn = vd->fmt.fmt.pix.pixelformat;
 	}
 	else {
+#ifndef NODEBUG
 		printf("  Frame size:   %dx%d\n", vd->width, vd->height);
+#endif
 	}
 
 	/* set framerate */
@@ -467,7 +476,9 @@ static int init_v4l2(struct vdIn *vd)
 			vd->fps = confirmed_fps;
 		}
 		else {
+#ifndef NODEBUG
 			printf("  Frame rate:   %g fps\n", vd->fps);
+#endif
 		}
 	}
 	else {
