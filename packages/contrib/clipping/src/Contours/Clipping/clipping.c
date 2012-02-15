@@ -8,6 +8,11 @@
 #define MIN(a,b) ( (a) < (b) ? (a) : (b) )
 #define MAX(a,b) ( (a) > (b) ? (a) : (b) )
 
+
+/**
+  * Create a new linked lyst from floating points values pointed by @polygon
+  * of size @n and return it into a pointer pointed by @l
+  */
 void createList(double *polygon, int n, struct vertex **l)
 {
     int i;
@@ -28,15 +33,20 @@ void createList(double *polygon, int n, struct vertex **l)
     current->x = polygon[i];
     current->y = polygon[i+1];
     current->prev = prev;
-    current->next = NULL;
-    current->nextVertex = NULL;
+    current->next = list;
+    current->nextVertex = list;
+    list->prev = current;
 
     *l = list;
 }
 
+/**
+  * Delete linked-list
+  */
 void deleteList(struct vertex *l)
 {
     struct vertex *aux = l->next;
+    l->prev->next = NULL;
     while (aux) {
         free(l);
         l = aux;
@@ -45,8 +55,28 @@ void deleteList(struct vertex *l)
     free(l);
 }
 
+void deletePolygons(struct vertex *poly)
+{
+    struct vertex *aux, *l;
+    struct vertex *paux;
 
-// TODO: añadir perturbaciones en el caso de que alphaP o alphaQ = 0
+    paux = poly;
+    while (paux) {
+        l = paux;
+        paux = paux->nextPoly;
+        
+        aux = l->next;
+        while (aux) {
+            free(l);
+            l = aux;
+            aux = aux->next;
+        }
+        free(l);
+    }
+}
+
+
+// TODO: add perturbations in case alphaP or alphaQ = 0
 int intersect(struct vertex *p1, struct vertex *p2, 
     struct vertex *q1, struct vertex *q2, double *alphaP, double *alphaQ)
 {
@@ -70,13 +100,16 @@ int intersect(struct vertex *p1, struct vertex *p2,
     return 0;
 }
 
+/**
+  * Find and add intersection points between @lclip and @lsubject
+  */
 int findIntersections(struct vertex *lclip, struct vertex *lsubject)
 {
     double a, b;
     int intersections = 0;
     struct vertex *aux, *v, *w, *sort;
-    for (v = lsubject; v && v->nextVertex; v = v->nextVertex)
-        for (w = lclip; w && w->nextVertex; w = w->nextVertex)
+    for (v = lsubject; v; v = v->nextVertex == lsubject ? NULL : v->nextVertex)
+        for (w = lclip; w; w = w->nextVertex == lclip ? NULL : w->nextVertex)
             if (!DISCARD_INTER(v->x, v->y, v->nextVertex->x, v->nextVertex->y,
                                 MIN(w->x, w->nextVertex->x), MIN(w->y, w->nextVertex->y), 
                                 MAX(w->x, w->nextVertex->x), MAX(w->y, w->nextVertex->y))
@@ -132,7 +165,9 @@ int findIntersections(struct vertex *lclip, struct vertex *lsubject)
     return intersections;
 }
 
-
+/**
+  * Determine whether point @p is inside of polygon @polygon or not
+  */
 int isInside(struct vertex *p, struct vertex *polygon)
 {
     int oddNodes = 0;
@@ -140,7 +175,7 @@ int isInside(struct vertex *p, struct vertex *polygon)
     const double y = p->y;
     struct vertex *node1, *node2, *q;
 
-    for (q = polygon; q; q = q->next)
+    for (q = polygon; q; q = q->nextVertex == polygon ? NULL : q->nextVertex)
     {
         node1 = q;
         
@@ -161,24 +196,37 @@ int isInside(struct vertex *p, struct vertex *polygon)
     return oddNodes;
 }
 
-void markEntries(struct vertex *p, struct vertex *q)
+/**
+  * Mark intersection points in polygon @p 
+  * depending on whether it's an entry or exit point
+  * with respect the @interior_exterior of polygon @q
+  */
+void markEntries(struct vertex *p, struct vertex *q, int interior_exterior)
 {
     int status;
 
     if (isInside(p, q))
-        status = STATUS_EXIT;
+        status = interior_exterior == POLYGON_INTERIOR ? 
+                                STATUS_EXIT : STATUS_ENTRY;
     else
-        status = STATUS_ENTRY;
+        status = interior_exterior == POLYGON_INTERIOR ? 
+                                STATUS_ENTRY : STATUS_EXIT;
 
     struct vertex *pi;
-    for (pi = p; pi; pi = pi->next)
+    for (pi = p->next; pi != p; pi = pi->next)
+    {
         if (pi->intersect)
         {
             pi->entry_exit = status;
             status = !status;
         }
+    }
 }
 
+/**
+  * Adds a new polygon to a previous one pointed by @lastPoly
+  * with starting vertex @p
+  */
 struct vertex * newPolygon(struct vertex *lastPoly, struct vertex *p)
 {
     struct vertex *poly = (struct vertex *) malloc (sizeof(struct vertex));
@@ -192,6 +240,9 @@ struct vertex * newPolygon(struct vertex *lastPoly, struct vertex *p)
 
 }
 
+/**
+  * Adds new vertex to a previous one pointed by @last
+  */
 void newVertex(struct vertex *last, struct vertex *p)
 {
     struct vertex *point = 
@@ -204,20 +255,24 @@ void newVertex(struct vertex *last, struct vertex *p)
 }
 
 
+/**
+  * Intersect the subject polygon using clip polygon and store into
+  * polygons structure, returns the total number of polygons.
+  */
 int createClippedPolygon(struct vertex *lclip, struct vertex *lsubject, 
             struct vertex **polygons, int *total)
 {
-    struct vertex *isubject = lsubject, *current;
+    struct vertex *isubject = lsubject->next, *current;
     struct vertex *poly = NULL, *first = NULL;
     int npolys = 0;
     int nvertex = 0;
 
     while (isubject)
     {
-        for (; isubject && !(isubject->intersect && !isubject->processed); 
+        for (; isubject != lsubject && !(isubject->intersect && !isubject->processed); 
                 isubject = isubject->next);
 
-        if (!isubject) 
+        if (isubject == lsubject) 
             break;
         
         isubject->processed = 1;
@@ -273,6 +328,13 @@ int createClippedPolygon(struct vertex *lclip, struct vertex *lsubject,
 }
 
 
+/**
+  * Copy the polygons structure into an array of double-precision floats
+  * containing the coordinates of each point from the resulting clipped polygon
+  * return parameters are:
+  * @polys: array of vertex for all the polygons
+  * @lengths: array of lengths for each polygon
+  */
 void copy(struct vertex *polygons, int npolys, int nvertex, double **polys, int **lengths)
 {
     double *ps = (double *) malloc (nvertex * 2 * sizeof(double));
@@ -313,8 +375,8 @@ int clip(double *clip, int nc, double *subject, int ns, double **polys, int **le
     findIntersections(lclip, lsubject);
 
     // phase two of the algorithm
-    markEntries(lclip, lsubject);
-    markEntries(lsubject, lclip);
+    markEntries(lclip, lsubject, POLYGON_EXTERIOR);
+    markEntries(lsubject, lclip, POLYGON_EXTERIOR);
 
     // phase three of the algorithm
     npolys = createClippedPolygon(lclip, lsubject, &polygons, &nvertex);
@@ -326,8 +388,7 @@ int clip(double *clip, int nc, double *subject, int ns, double **polys, int **le
     // free memory
     deleteList(lclip);
     deleteList(lsubject);
-    if (polygons)
-        deleteList(polygons);
+    deletePolygons(polygons);
 
     return 0;
 }
@@ -351,7 +412,7 @@ void readFromStdin(double **vclip, double **vsubject, int *lclip, int *lsubject)
 }
 
 
-int main(void)
+int main2(void)
 {
     double *clipp, *subject;
     int lclip, lsubject;

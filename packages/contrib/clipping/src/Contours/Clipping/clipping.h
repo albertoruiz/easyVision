@@ -9,6 +9,9 @@
 
 #define STATUS_ENTRY 1
 #define STATUS_EXIT 0
+#define POLYGON_INTERIOR 1
+#define POLYGON_EXTERIOR 0
+
 #include <stdlib.h>
 
 struct vertex {
