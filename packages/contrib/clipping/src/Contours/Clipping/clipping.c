@@ -13,16 +13,16 @@
   * Create a new linked lyst from floating points values pointed by @polygon
   * of size @n and return it into a pointer pointed by @l
   */
-void createList(double *polygon, int n, struct vertex **l)
+void createList(double *polyx, double *polyy, int n, struct vertex **l)
 {
     int i;
     struct vertex *list = (struct vertex *) malloc (sizeof(struct vertex));
     struct vertex *prev = NULL;
     struct vertex *current = list;
 
-    for (i = 0; i < ((n-1) << 1); i+=2) {
-        current->x = polygon[i];
-        current->y = polygon[i+1];
+    for (i = 0; i < n-1; i++) {
+        current->x = polyx[i];
+        current->y = polyy[i];
         current->prev = prev;
         current->next = (struct vertex *) malloc (sizeof(struct vertex));
         current->nextVertex = current->next;
@@ -30,8 +30,8 @@ void createList(double *polygon, int n, struct vertex **l)
         current = current->next;
     }
 
-    current->x = polygon[i];
-    current->y = polygon[i+1];
+    current->x = polyx[i];
+    current->y = polyy[i];
     current->prev = prev;
     current->next = list;
     current->nextVertex = list;
@@ -335,9 +335,11 @@ int createClippedPolygon(struct vertex *lclip, struct vertex *lsubject,
   * @polys: array of vertex for all the polygons
   * @lengths: array of lengths for each polygon
   */
-void copy(struct vertex *polygons, int npolys, int nvertex, double **polys, int **lengths)
+void copy(struct vertex *polygons, int npolys, int nvertex, 
+                double **polysx, double **polysy, int **lengths)
 {
-    double *ps = (double *) malloc (nvertex * 2 * sizeof(double));
+    double *px = (double *) malloc (nvertex * sizeof(double));
+    double *py = (double *) malloc (nvertex * sizeof(double));
     int *ls = (int *) malloc (npolys * sizeof(int));
     int polycount = 0, vertexcount = 0;
     struct vertex *ipoly, *ivertex;
@@ -348,12 +350,13 @@ void copy(struct vertex *polygons, int npolys, int nvertex, double **polys, int 
         for (ivertex = ipoly; ivertex; ivertex = ivertex->next)
         {
             ls[polycount]++;
-            ps[vertexcount++] = ivertex->x;
-            ps[vertexcount++] = ivertex->y;
+            px[vertexcount] = ivertex->x;
+            py[vertexcount++] = ivertex->y;
         }
         polycount++;
     }
-    *polys = ps;
+    *polysx = px;
+    *polysy = py;
     *lengths = ls;
 }
 
@@ -361,28 +364,34 @@ void copy(struct vertex *polygons, int npolys, int nvertex, double **polys, int 
 // Perform clipping of the polygon clip with nc points against 
 // a subject with ns points. Returns a set of nl polygons with specified lengths
 // in an array of coordinates polys.
-int clip(double *clip, int nc, double *subject, int ns, double **polys, int **lengths, int *nl)
+int clip(double *clipx, double *clipy, int nc, 
+            double *subjectx, double *subjecty, int ns, 
+                double **polysx, double **polysy, int **lengths, int *nl, int op)
 {
     struct vertex *lclip, *lsubject;
     struct vertex *polygons = NULL;
+    int cIntExt, sIntExt;
     int nvertex, npolys;
 
     // create data structures
-    createList(clip, nc, &lclip);
-    createList(subject, ns, &lsubject);
+    createList(clipx, clipy, nc, &lclip);
+    createList(subjectx, subjecty, ns, &lsubject);
 
     // phase one of the algorithm
     findIntersections(lclip, lsubject);
 
     // phase two of the algorithm
-    markEntries(lclip, lsubject, POLYGON_EXTERIOR);
-    markEntries(lsubject, lclip, POLYGON_EXTERIOR);
+    cIntExt = op & (POLYGON_INTERSECTION | POLYGON_DIFF) ? 
+                POLYGON_INTERIOR : POLYGON_EXTERIOR;
+    sIntExt = op & POLYGON_INTERSECTION ? POLYGON_INTERIOR : POLYGON_EXTERIOR;
+    markEntries(lclip, lsubject, sIntExt);
+    markEntries(lsubject, lclip, cIntExt);
 
     // phase three of the algorithm
     npolys = createClippedPolygon(lclip, lsubject, &polygons, &nvertex);
 
     // copy polygons into polys array
-    copy(polygons, npolys, nvertex, polys, lengths);
+    copy(polygons, npolys, nvertex, polysx, polysy, lengths);
     *nl = npolys;
 
     // free memory
@@ -393,47 +402,56 @@ int clip(double *clip, int nc, double *subject, int ns, double **polys, int **le
     return 0;
 }
 
-void readFromStdin(double **vclip, double **vsubject, int *lclip, int *lsubject)
+void readFromStdin(double **vclipx, double **vclipy, double **vsubjectx, 
+                double **vsubjecty, int *lclip, int *lsubject)
 {
     scanf("%d %d\n", lclip, lsubject);
     int i;
-    double *clip = (double *) malloc ((*lclip) *2*sizeof(double));
-    double *subject = (double *) malloc ((*lsubject) *2*sizeof(double));
+    double *clipx = (double *) malloc ((*lclip)*sizeof(double));
+    double *clipy = (double *) malloc ((*lclip)*sizeof(double));
+    double *subjectx = (double *) malloc ((*lsubject)*sizeof(double));
+    double *subjecty = (double *) malloc ((*lsubject)*sizeof(double));
 
-    for (i = 0; i < (*lclip) << 1; i+=2)
-        scanf("%lf %lf", &clip[i], &clip[i+1]);
+    for (i = 0; i < (*lclip); i++)
+        scanf("%lf %lf", &clipx[i], &clipy[i]);
 
-    for (i = 0; i < (*lsubject) << 1; i+=2)
-        scanf("%lf %lf", &subject[i], &subject[i+1]);
+    for (i = 0; i < (*lsubject); i++)
+        scanf("%lf %lf", &subjectx[i], &subjecty[i]);
 
-    *vclip = clip;
-    *vsubject = subject;
-
+    *vclipx = clipx;
+    *vclipy = clipy;
+    *vsubjectx = subjectx;
+    *vsubjecty = subjecty;
 }
 
 
 int main2(void)
 {
-    double *clipp, *subject;
+    double *clipx, *clipy, *subjectx, *subjecty;
     int lclip, lsubject;
 
-    readFromStdin(&clipp, &subject, &lclip, &lsubject);
+    readFromStdin(&clipx, &clipy, &subjectx, &subjecty, &lclip, &lsubject);
 
-    double *polys;
+    double *polysx, *polysy;
     int *lengths, nl, i,j;
-    clip(clipp, lclip, subject, lsubject, &polys, &lengths, &nl);
+    clip(clipx, clipy, lclip, subjectx, subjecty, lsubject, 
+            &polysx, &polysy, &lengths, &nl, POLYGON_DIFF);
     int v = 0;
     for (i = 0; i < nl; i++) {
         printf("Polígono %d\n", i+1);
         printf("--------------------------\n");
         for (j = 0; j < lengths[i]; j++) {
-            printf("x=%.5f, y=%.5f\n", polys[v], polys[v+1]);
-            v+=2;
+            printf("x=%.5f, y=%.5f\n", polysx[v], polysy[v]);
+            v++;
         }
     }
     
-    free(clipp);
-    free(subject);
+    free(clipx);
+    free(clipy);
+    free(subjectx);
+    free(subjecty);
+    free(polysx);
+    free(polysy);
     return 0;
 }
 
