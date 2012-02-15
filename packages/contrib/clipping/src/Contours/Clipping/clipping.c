@@ -20,12 +20,17 @@ void createList(double *polyx, double *polyy, int n, struct vertex **l)
     struct vertex *prev = NULL;
     struct vertex *current = list;
 
+    // ignore last point which must be equal to the first point
+    n = n-1;
+
     for (i = 0; i < n-1; i++) {
         current->x = polyx[i];
         current->y = polyy[i];
         current->prev = prev;
         current->next = (struct vertex *) malloc (sizeof(struct vertex));
         current->nextVertex = current->next;
+        current->nextPoly = NULL;
+        current->intersect = 0;
         prev = current;
         current = current->next;
     }
@@ -34,6 +39,8 @@ void createList(double *polyx, double *polyy, int n, struct vertex **l)
     current->y = polyy[i];
     current->prev = prev;
     current->next = list;
+    current->nextPoly = NULL;
+    current->intersect = 0;
     current->nextVertex = list;
     list->prev = current;
 
@@ -233,6 +240,7 @@ struct vertex * newPolygon(struct vertex *lastPoly, struct vertex *p)
     poly->x = p->x;
     poly->y = p->y;
     poly->nextPoly = NULL;
+    poly->next = NULL;
     
     if (lastPoly)
         lastPoly->nextPoly = poly;
@@ -251,6 +259,7 @@ void newVertex(struct vertex *last, struct vertex *p)
     point->y = p->y;
 
     point->next = NULL;
+    point->nextPoly = NULL;
     
 }
 
@@ -405,18 +414,18 @@ int clip(double *clipx, double *clipy, int nc,
 void readFromStdin(double **vclipx, double **vclipy, double **vsubjectx, 
                 double **vsubjecty, int *lclip, int *lsubject)
 {
-    scanf("%d %d\n", lclip, lsubject);
+    int nread = scanf("%d %d\n", lclip, lsubject);
     int i;
     double *clipx = (double *) malloc ((*lclip)*sizeof(double));
     double *clipy = (double *) malloc ((*lclip)*sizeof(double));
     double *subjectx = (double *) malloc ((*lsubject)*sizeof(double));
     double *subjecty = (double *) malloc ((*lsubject)*sizeof(double));
 
-    for (i = 0; i < (*lclip); i++)
-        scanf("%lf %lf", &clipx[i], &clipy[i]);
+    for (i = 0; i < (*lclip) && nread == 2; i++)
+        nread = scanf("%lf %lf", &clipx[i], &clipy[i]);
 
-    for (i = 0; i < (*lsubject); i++)
-        scanf("%lf %lf", &subjectx[i], &subjecty[i]);
+    for (i = 0; i < (*lsubject) && nread == 2; i++)
+        nread = scanf("%lf %lf", &subjectx[i], &subjecty[i]);
 
     *vclipx = clipx;
     *vclipy = clipy;
@@ -434,8 +443,10 @@ int main2(void)
 
     double *polysx, *polysy;
     int *lengths, nl, i,j;
+
     clip(clipx, clipy, lclip, subjectx, subjecty, lsubject, 
-            &polysx, &polysy, &lengths, &nl, POLYGON_DIFF);
+            &polysx, &polysy, &lengths, &nl, POLYGON_INTERSECTION);
+
     int v = 0;
     for (i = 0; i < nl; i++) {
         printf("Polígono %d\n", i+1);
