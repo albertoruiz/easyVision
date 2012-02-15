@@ -6,13 +6,17 @@ all      = $(packages) $(optional)
 old      = features old-gui ev 
 
 fastinstall = cabal install --disable-library-profiling --disable-documentation
-fullinstall = cabal install --enable-library-profiling  --enable-documentation
+normalinstall = cabal install --enable-documentation
+fullinstall = cabal install --enable-library-profiling
 
 all:
-	for p in $(packages); do cd $$p; $(fullinstall) ; cd ..; done
+	for p in $(packages); do cd $$p; $(normalinstall) ; cd ..; done
 
 optional:
-	cd contrib; for p in $(optional); do cd $$p; $(fastinstall) ; cd ..; done; cd ..
+	cd contrib; for p in $(optional); do cd $$p; $(normalinstall) ; cd ..; done; cd ..
+
+prof:
+	for p in $(packages); do cd $$p; $(fullinstall) ; cd ..; done
 
 old:
 	cd contrib; for p in $(old); do cd $$p; $(fastinstall) ; cd ..; done; cd ..
