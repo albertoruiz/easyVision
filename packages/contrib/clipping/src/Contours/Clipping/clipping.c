@@ -386,8 +386,13 @@ int clip(double *clipx, double *clipy, int nc,
     createList(clipx, clipy, nc, &lclip);
     createList(subjectx, subjecty, ns, &lsubject);
 
+    printf("created lists\n");
+
     // phase one of the algorithm
     findIntersections(lclip, lsubject);
+
+
+    printf("found intersections\n");
 
     // phase two of the algorithm
     cIntExt = op & (POLYGON_INTERSECTION | POLYGON_DIFF) ? 
@@ -396,12 +401,19 @@ int clip(double *clipx, double *clipy, int nc,
     markEntries(lclip, lsubject, sIntExt);
     markEntries(lsubject, lclip, cIntExt);
 
+
+    printf("marked entries\n");
+
     // phase three of the algorithm
     npolys = createClippedPolygon(lclip, lsubject, &polygons, &nvertex);
+
+    printf("clip polygon\n");
 
     // copy polygons into polys array
     copy(polygons, npolys, nvertex, polysx, polysy, lengths);
     *nl = npolys;
+
+    printf("copied\n");
 
     // free memory
     deleteList(lclip);
