@@ -199,16 +199,18 @@ int isInside(struct vertex *p, struct vertex *polygon)
 /**
   * Mark intersection points in polygon @p 
   * depending on whether it's an entry or exit point
-  * with respect to polygon @q
+  * with respect the @interior_exterior of polygon @q
   */
-void markEntries(struct vertex *p, struct vertex *q)
+void markEntries(struct vertex *p, struct vertex *q, int interior_exterior)
 {
     int status;
 
     if (isInside(p, q))
-        status = STATUS_EXIT;
+        status = interior_exterior == POLYGON_INTERIOR ? 
+                                STATUS_EXIT : STATUS_ENTRY;
     else
-        status = STATUS_ENTRY;
+        status = interior_exterior == POLYGON_INTERIOR ? 
+                                STATUS_ENTRY : STATUS_EXIT;
 
     struct vertex *pi;
     for (pi = p->next; pi != p; pi = pi->next)
@@ -365,55 +367,28 @@ int clip(double *clip, int nc, double *subject, int ns, double **polys, int **le
     struct vertex *polygons = NULL;
     int nvertex, npolys;
 
-    printf("entering clip\n");
-
-    int k;
-    printf("clip (%d)\n",nc);
-    for (k=0; k<2*nc; k++) {
-        printf("%f\n",clip[k]);
-    }
-    printf("subject (%d)\n",ns);
-    for (k=0; k<2*ns; k++) {
-        printf("%f\n",subject[k]);
-    }
-
-    //exit(0);
     // create data structures
     createList(clip, nc, &lclip);
     createList(subject, ns, &lsubject);
 
-    printf("lists created\n");
-
-
     // phase one of the algorithm
     findIntersections(lclip, lsubject);
 
-
-    printf("intersections found\n");
-
     // phase two of the algorithm
-    markEntries(lclip, lsubject);
-    markEntries(lsubject, lclip);
-
-    printf("entries created\n");
+    markEntries(lclip, lsubject, POLYGON_EXTERIOR);
+    markEntries(lsubject, lclip, POLYGON_EXTERIOR);
 
     // phase three of the algorithm
     npolys = createClippedPolygon(lclip, lsubject, &polygons, &nvertex);
-
-    printf("created clipped polygon\n");
 
     // copy polygons into polys array
     copy(polygons, npolys, nvertex, polys, lengths);
     *nl = npolys;
 
-    printf("copied to output array\n");
-
     // free memory
     deleteList(lclip);
     deleteList(lsubject);
     deletePolygons(polygons);
-
-    printf("memory freed and exit\n");
 
     return 0;
 }
@@ -437,7 +412,7 @@ void readFromStdin(double **vclip, double **vsubject, int *lclip, int *lsubject)
 }
 
 
-int main_clipping(void)
+int main2(void)
 {
     double *clipp, *subject;
     int lclip, lsubject;
