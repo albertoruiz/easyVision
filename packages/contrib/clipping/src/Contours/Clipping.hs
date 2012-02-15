@@ -30,32 +30,44 @@ import Foreign.Storable
 import System.IO.Unsafe(unsafePerformIO)
 
 foreign import ccall "clip" c_clip
-    :: Ptr Double -> CInt -> Ptr Double -> CInt
-    -> Ptr (Ptr Double) -> Ptr (Ptr (CInt)) -> Ptr (CInt)
-    -> IO CInt
+    :: Ptr Double -> Ptr Double -> CInt
+    -> Ptr Double -> Ptr Double -> CInt
+    -> Ptr (Ptr Double) -> Ptr (Ptr Double) -> Ptr (Ptr (CInt)) 
+    -> Ptr (CInt) -> CInt -> IO CInt
 
 
 clip :: Polyline -> Polyline -> [Polyline]
 -- ^ compute the intersection of two polygons
 clip a b = unsafePerformIO $ do
-    pps <- malloc
+    ppsx <- malloc
+    ppsy <- malloc
     ppl <- malloc
     pn  <- malloc
-    let p2l (Point x y) = [x,y]
-        rep l = l -- ++ [head l]
-        la = concatMap p2l (rep $ polyPts a)
-        lb = concatMap p2l (rep $ polyPts b)
-        na = length la `div` 2
-        nb = length lb `div` 2
-    aa <- newArray la
-    ab <- newArray lb
-    peekArray (2*na) aa >>= print
-    peekArray (2*nb) ab >>= print
-    ok <- c_clip aa (fi na)  ab (fi nb) pps ppl pn
+    let p2lx (Point x y) = [x]
+        p2ly (Point x y) = [y]
+        rep l = l ++ [head l]
+        lax = concatMap p2lx (rep $ polyPts a)
+        lay = concatMap p2ly (rep $ polyPts a)
+        lbx = concatMap p2lx (rep $ polyPts b)
+        lby = concatMap p2ly (rep $ polyPts b)
+        na = length lax
+        nb = length lbx
+    aax <- newArray lax
+    aay <- newArray lay
+    abx <- newArray lbx
+    aby <- newArray lby
+    peekArray (na) aax >>= print
+    peekArray (na) aay >>= print
+    peekArray (nb) abx >>= print
+    peekArray (nb) aby >>= print
+    ok <- c_clip aax aay (fi na) abx aby (fi nb) ppsx ppsy ppl pn (fi 1)
     n <- peek pn
     print n
-    free pps
+    --polysx <- splitPlaces (peekArray (5) ppl) (peekArray (5) ppsx)
+    --polysy <- splitPlaces (peekArray (5) ppl) (peekArray (5) ppsy)
+    free ppsx
+    free ppsy
     free ppl
     free pn
-    return []
+    return [] --zip (polysx polysy)
 
