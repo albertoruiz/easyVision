@@ -20,7 +20,7 @@ extra-source-files:     src/Contours/wrappers.h
 extra-tmp-files:
 
 library
-    Build-Depends:      base >= 3 && < 5, imagproc
+    Build-Depends:      base >= 3 && < 5, hmatrix, imagproc, contours
 
     hs-source-dirs:     src
 
