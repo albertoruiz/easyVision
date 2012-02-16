@@ -13,7 +13,7 @@ installation instructions
 
     Install using sudo in the default location.
 
-3. Add the following environment variables to .bahsrc (modify as required in 64bit machines):
+3. Add the following environment variables to .bahsrc:
 
         export IPP_INC=/opt/intel/composerxe/ipp/include
         export IPP_SHARED="/opt/intel/ipp/lib/ia32/:/opt/intel/lib/ia32/"
@@ -22,12 +22,19 @@ installation instructions
         export EASYVISION=/your/path/to/easyVision/
         export LD_LIBRARY_PATH=$IPP_SHARED:$EASYVISION/lib
 
-    (continue installation in a new terminal)
+    Make sure that the IPP .h headers are in IPP_INC and the corresponding .so
+    libs are in IPP_SHARED (modify as required in 64bit machines). Directory
+    structure and required auxiliary libs frequently change in different IPP versions.
+
+    Continue installation in a new terminal.
 
 4. Install the Haskell Platform:
 
         $ sudo apt-get install haskell-platform
         $ cabal update
+
+    You will probably get the message that a new version of cabal-install is available.
+    Don't worry about that now.
 
 5. Install the required libraries:
 
@@ -40,7 +47,7 @@ installation instructions
 
         $ sudo apt-get install libcv-dev libcvaux-dev libhighgui-dev
 
-    CUDA (currently only for i386):
+    SIFTGPU (currently only for i386):
 
         $ sudo apt-get install nvidia-current nvidia-cg-toolkit libdevil-dev g++
 
@@ -62,14 +69,19 @@ installation instructions
 
         $ ghc-pkg list
 
+    You can also install the optional packages:
+
+        $ make optional
+
+    (Dont' worry if you get any error here)
+
 8. Run the demos:
 
         $ cd ../projects/demos
         $ make
         $ ./demo.sh
-        $ cd ../tour
-        $ make
-        $ ./demo.sh
 
-9. Enjoy!
+9. Read the tutorial.
+
+10. Enjoy!
 

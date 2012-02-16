@@ -63,7 +63,7 @@ mkSpline (Spline a b c d) = \t -> a + b*t + c*t**2 + d*t**3
 interpolate ((p1@(Point x1 y1),v1,a1), (p2@(Point x2 y2),v2,a2)) =
     [Point (x t) (y t) | t <- toList (linspace 100 (0,1)) ]
   where
-    (x,y) = spline3 (x1) (d*v1*cos a1) (x2) (d*v2*cos a2)
+    (x,y) = spline2 (x1) (d*v1*cos a1) (x2) (d*v2*cos a2)
                     (y1) (d*v1*sin a1) (y2) (d*v2*sin a2)
     d = distPoints p1 p2
 
