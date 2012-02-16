@@ -186,8 +186,8 @@ int isInside(struct vertex *p, struct vertex *polygon)
     {
         node1 = q;
         
-        if (q->next)
-            node2 = q->next;
+        if (q->nextVertex)
+            node2 = q->nextVertex;
         else
             node2 = polygon;
 
@@ -214,15 +214,10 @@ void markEntries(struct vertex *p, struct vertex *q, int interior_exterior)
 
     if (isInside(p, q))
         status = interior_exterior == POLYGON_INTERIOR ? 
-                                STATUS_EXIT : STATUS_ENTRY;
+                                STATUS_ENTRY : STATUS_EXIT;
     else
         status = interior_exterior == POLYGON_INTERIOR ? 
-                                STATUS_ENTRY : STATUS_EXIT;
-
-    printf("status %d, interior_exterior %d\n", status, interior_exterior);
-    printf("%f %f\n", p->x, p->y);
-
-
+                                STATUS_EXIT : STATUS_ENTRY;
     struct vertex *pi;
     for (pi = p->next; pi != p; pi = pi->next)
     {
