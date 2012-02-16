@@ -219,6 +219,10 @@ void markEntries(struct vertex *p, struct vertex *q, int interior_exterior)
         status = interior_exterior == POLYGON_INTERIOR ? 
                                 STATUS_ENTRY : STATUS_EXIT;
 
+    printf("status %d, interior_exterior %d\n", status, interior_exterior);
+    printf("%f %f\n", p->x, p->y);
+
+
     struct vertex *pi;
     for (pi = p->next; pi != p; pi = pi->next)
     {
