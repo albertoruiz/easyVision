@@ -1,8 +1,8 @@
 -----------------------------------------------------------------------------
 {- |
 Module      :  ImagProc.Base
-Copyright   :  (c) Alberto Ruiz 2006-8
-License     :  GPL-style
+Copyright   :  (c) Alberto Ruiz 2006-12
+License     :  GPL
 
 Maintainer  :  Alberto Ruiz (aruiz at um dot es)
 Stability   :  provisional
@@ -21,7 +21,8 @@ module ImagProc.Base
   Segment(..),
   segmentLength,
   InterestPoint(..),
-  Polyline(..)
+  Polyline(..),
+  HLine(..)
 ) where
 
 import qualified Numeric.LinearAlgebra as LA

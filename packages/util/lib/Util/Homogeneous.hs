@@ -16,7 +16,7 @@ Projective geometry utilities.
 module Util.Homogeneous
 (
   -- * Basic Types
-  Point(..),
+  Point(..), HLine(..),
   HPoint2, getHPoint2, IsHPoint2(..),
   HPoint3, getHPoint3, IsHPoint3(..),
 -- * Transformation utilities
@@ -42,6 +42,7 @@ module Util.Homogeneous
 , similarFrom2Points
 , adjustRectifier
 , pt2hv, hv2pt
+, ln2hv, hv2ln
 ) where
 
 import Numeric.LinearAlgebra
@@ -50,7 +51,9 @@ import Util.Misc(vec,Vec,mat,Mat,(#),unitary,norm,impossible)
 
 ----------------------------------------------------------------------
 
-data Point = Point { px :: !Double, py :: !Double} deriving (Eq, Show, Read)
+data Point = Point {px :: !Double, py :: !Double} deriving (Eq, Show, Read)
+
+data HLine = HLine {aLn, bLn, cLn :: !Double} deriving (Eq, Show, Read)
 
 ----------------------------------------------------------------------
 
@@ -240,4 +243,10 @@ pt2hv (Point x y) = vec [x,y,1]
 
 hv2pt :: Vec -> Point
 hv2pt v = Point x y where [x,y] = toList (inHomog v)
+
+ln2hv :: HLine -> Vec
+ln2hv (HLine a b c) = vec [a,b,c]
+
+hv2ln :: Vec -> HLine
+hv2ln v = HLine a b c where [a,b,c] = toList v
 
