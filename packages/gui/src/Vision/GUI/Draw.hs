@@ -387,6 +387,7 @@ instance Renderable HLine where
     render (HLine a b c) = render $ Open [ p (-2), p 2 ]
       where p x = Point x ((-a*x-c)/b)
 
+
 newtype Segments = Segments [Segment]
 
 instance Renderable Segments where
