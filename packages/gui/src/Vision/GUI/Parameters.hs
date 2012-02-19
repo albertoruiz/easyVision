@@ -314,7 +314,7 @@ autoParam name pref defpar = sequence [
 
         valD (varP funname)
              (normalB (doE [ bindS (varP (mkName "o")) (appE crea (lift x)) 
-                           , noBindS (appE (varE 'return) f)
+                           , noBindS (appE (varE 'return) (tupE [varE (mkName "o"), f]))
                            ])) [],
 
         valD (varP defname) (normalB defval) [],
@@ -324,10 +324,10 @@ autoParam name pref defpar = sequence [
         instanceD (cxt []) (appT (conT (mkName "ParamRecord")) (conT (mkName name))) [
             (valD (varP (mkName "defParam")) (normalB (varE defname)) []),
             (valD (varP (mkName "argParam")) (normalB (varE argname)) []),
-            (valD (varP (mkName "winParam")) (normalB (varE funname)) [])]
+            (valD (varP (mkName "mkParam")) (normalB (varE funname)) [])]
       ]
     where p = mkName name 
-          funname = mkName $ "win"++name
+          funname = mkName $ "mk"++name
           defname = mkName $ "def"++name
           argname = mkName $ "arg"++name
           winname = name
@@ -345,6 +345,8 @@ autoParam name pref defpar = sequence [
           defval = L.foldl' appE (conE p) (map (val.s3) defpar)
           argval = L.foldl' appp retPar (zipWith (optfun pref) (map s1 defpar) (map s3 defpar))
 
+-- (varE 'fmap) `appE` (varE 'snd) `appE`
+
 appp :: ExpQ -> ExpQ -> ExpQ
 appp f x = appE (appE (varE 'ap) f) x
 
@@ -353,5 +355,7 @@ appp f x = appE (appE (varE 'ap) f) x
 class ParamRecord r where
     defParam :: r           -- ^ default value
     argParam :: IO r        -- ^ default value modified by command line arguments
-    winParam :: IO (IO r)   -- ^ parameter window
+    mkParam :: IO (EVWindow (Map String Parameter), IO r)   -- ^ parameter window with window control
+    winParam :: IO (IO r)   -- ^ parameter window constructor
+    winParam = snd <$> mkParam    
 

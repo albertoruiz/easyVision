@@ -22,7 +22,8 @@ module Vision.GUI.Util (
     freqMonitor, wait,
     browseLabeled,
     choose, optDo, optDont,
-    withParam
+    withParam,
+    drawParam
 ) where
 
 import Graphics.UI.GLUT hiding (Point,Size,color)
@@ -226,4 +227,17 @@ withParam :: ParamRecord p => (p -> a -> b) -> ITrans a b
 withParam f = choose c (arr $ f defParam) (f @@@ winParam) 
   where
     c = (||) <$> getFlag "--no-gui" <*> getFlag "--default"
+
+--------------------------------------------------------------------------------
+
+drawParam :: ParamRecord t => String -> (t -> [Drawing]) -> IO ()
+-- ^ drawing window with interactive parameters
+drawParam title f = do
+    (wp,gp) <- mkParam
+    b <- browser title [] (const id)
+    (evAfterD wp) $= do
+        p <- gp
+        (k,_) <- getW b
+        putW b (k, f p)
+        postRedisplay (Just (evW b))
 

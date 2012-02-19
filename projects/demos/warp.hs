@@ -17,7 +17,7 @@ autoParam "CGParam" "cg-"
     , ("scale",  "Double", listParam 0.8 [1.05**k|k<-[-20..20]])]
 
 main = run $    arr rgb
-           >>>  deskew @@@ winCGParam
+           >>>  deskew @@@ winParam
            >>>  observe "warped" id
 
 deskew par@CGParam{..} img = warp (80,0,0) (size img) r img

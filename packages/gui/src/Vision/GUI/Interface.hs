@@ -36,7 +36,7 @@ import qualified Graphics.UI.GLUT as GL
 import Data.IORef
 import System.Process(system)
 import System.Exit
-import Control.Monad(when,forever)
+import Control.Monad(when,forever,join)
 import System.Environment(getArgs)
 import qualified Data.Map as Map
 import Data.Map
@@ -105,6 +105,7 @@ interfaceG threeD sz0 name st0 ft upds acts resultFun resultDisp = do
         renderIn w dr
         drawRegion w
         swapBuffers
+        join . get . evAfterD $ w
         --putStrLn "  D"
 
     callbackFreq 5 $ do
@@ -164,6 +165,7 @@ standalone sz0 name st0 upds acts disp = do
         renderIn w (disp st)
         drawRegion w
         swapBuffers
+        join . get . evAfterD $ w
 
     return w
 
@@ -220,15 +222,6 @@ evWindow st0 name size mdisp kbd = do
     iconTitle $= name
     windowSize $= glSize size
 
-    -- provisionally kept for compatibility
-    let draw = case mdisp of
-            Nothing -> return ()
-            Just fun -> do
-                clear [ColorBuffer]
-                fun st
-                swapBuffers
-    displayCallback $= draw
-
     -- actionOnWindowClose $= ContinueExectuion
 
     let Size h w = size
@@ -246,10 +239,12 @@ evWindow st0 name size mdisp kbd = do
     sy <- newIORef True
     pa <- newIORef NoPause
     dc <- newIORef (WStatus 0 0)
+    ad <- newIORef (return ())
 
     let w = EVW { evW = glw
                 , evSt = st
                 , evDraw = dr
+                , evAfterD = ad
                 , evSync = sy
                 , evReady = re
                 , evRegion = rr
@@ -266,6 +261,17 @@ evWindow st0 name size mdisp kbd = do
     keyboardMouseCallback $= Just (\k d m p -> kbdroi w (kbd w) k d m p >> postRedisplay Nothing)
     motionCallback $= Just (\p -> mvroi w p >> postRedisplay Nothing)
     -- callback to detect minimization?
+
+    -- provisionally kept for compatibility
+    let draw = case mdisp of
+            Nothing -> return ()
+            Just fun -> do
+                clear [ColorBuffer]
+                fun st
+                swapBuffers
+                join . get . evAfterD $ w
+    displayCallback $= draw
+
     return w
 
 

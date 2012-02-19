@@ -25,12 +25,11 @@ module Vision.GUI.Draw
 , cameraView
 , drawInterestPoints
 , drawVector
-, shLine
 , extractSquare
 , newTrackball
 , captureGL
 , limitSize
-, points
+, points, segments
 , drawContourLabeled
 , viewPoint
 ) where
@@ -52,7 +51,6 @@ import Data.Colour.SRGB hiding (RGB)
 import Data.Colour
 import Data.Colour.Names
 import Control.Monad(when)
---import Features(Polyline(..))
 import GHC.Float(double2Float)
 
 
@@ -258,13 +256,6 @@ shIP' (IP (Point x y) s o _) = do
 
 -----------------------------------------------------
 
--- | Draw a 2D line [a,b,c]
-shLine :: [Double] -> IO ()
-shLine [a,b,c] = renderPrimitive Lines $ mapM_ f [-1,1]
-    where f x = vertex $ Point x ((-a*x-c)/b)
-
-------------------------------------------------------------
-
 -- | sets the opengl view of a given camera matrix
 cameraView :: Matrix Double -- ^ 3x4 camera matrix (with K=diag f f 1)
            -> Double        -- ^ aspect ratio of the window (e.g., 4\/3)
@@ -389,6 +380,21 @@ instance Renderable (Vector Double) where
     render v = renderPrimitive LineStrip (vertex $ fromColumns [t,v])
       where
         t = linspace (dim v) (0.9,-0.9)
+
+instance Renderable HLine where
+    render (HLine a 0 c) = render $ Open [Point x (-3), Point x 3]
+      where x = -c/a
+    render (HLine a b c) = render $ Open [ p (-2), p 2 ]
+      where p x = Point x ((-a*x-c)/b)
+
+newtype Segments = Segments [Segment]
+
+instance Renderable Segments where
+  render (Segments ss) = renderPrimitive Lines . mapM_ vertex $ ss
+
+segments = Draw . Segments
+
+------------------------------------------------------------
 
 
 drawContourLabeled :: Colour Float -> Colour Float -> Colour Float -> GLfloat -> GLfloat -> Polyline -> Drawing
