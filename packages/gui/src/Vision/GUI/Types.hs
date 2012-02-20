@@ -207,7 +207,7 @@ instance Renderable Drawing where
     renderIn w (Draw x) = renderIn w x
     renderIn w (Raw f) = f
 
-instance Renderable a => Renderable [a] where
+instance Renderable [Drawing] where
     renderIn w = mapM_ (renderIn w)
     
 instance Renderable a => Renderable (Maybe a) where

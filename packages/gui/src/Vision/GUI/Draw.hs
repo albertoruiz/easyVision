@@ -29,7 +29,6 @@ module Vision.GUI.Draw
 , newTrackball
 , captureGL
 , limitSize
-, points, segments
 , drawContourLabeled
 , viewPoint
 ) where
@@ -369,12 +368,8 @@ instance Renderable Polyline where
     render (Closed ps) = renderPrimitive LineLoop (vertex (Closed ps))
     render (Open ps) = renderPrimitive LineStrip (vertex (Open ps))
 
-newtype SinglePoints = SinglePoints [Point]
-
-instance Renderable SinglePoints where
-  render (SinglePoints ps) = renderPrimitive Points (mapM_ vertex ps)
-
-points = Draw . SinglePoints
+instance Renderable [Point] where
+  render = renderPrimitive Points . mapM_ vertex
 
 instance Renderable (Vector Double) where
     render v = renderPrimitive LineStrip (vertex $ fromColumns [t,v])
@@ -387,13 +382,8 @@ instance Renderable HLine where
     render (HLine a b c) = render $ Open [ p (-2), p 2 ]
       where p x = Point x ((-a*x-c)/b)
 
-
-newtype Segments = Segments [Segment]
-
-instance Renderable Segments where
-  render (Segments ss) = renderPrimitive Lines . mapM_ vertex $ ss
-
-segments = Draw . Segments
+instance Renderable [Segment] where
+  render = renderPrimitive Lines . mapM_ vertex
 
 ------------------------------------------------------------
 
@@ -401,7 +391,7 @@ segments = Draw . Segments
 drawContourLabeled :: Colour Float -> Colour Float -> Colour Float -> GLfloat -> GLfloat -> Polyline -> Drawing
 drawContourLabeled cl cp ct wd sz cont = Draw [
       lineWd wd, color cl, Draw cont,
-      color cp, pointSz sz, points c,
+      color cp, pointSz sz, Draw c,
       color ct, Draw (zipWith (textF Helvetica10) c (map show [(0::Int)..])) 
     ]
   where

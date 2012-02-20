@@ -12,7 +12,7 @@ import ImagProc
 import Contours
 import Control.Arrow((***),(&&&))
 import Control.Applicative
-import Numeric.LinearAlgebra((<>),fromList,inv,eigenvalues,magnitude,toList,subMatrix)
+import Numeric.LinearAlgebra((<>),fromList,inv,eigenvalues,magnitude,toList,subMatrix,meanCov, fromRows)
 import Text.Printf(printf)
 import Util.Misc(diagl,mean,vec,debug,degree,median)
 import Util.Rotation(rot3)
@@ -25,48 +25,72 @@ import Data.Function(on)
 
 --------------------------------------------------------------------------------
 
-autoParam "MatchingPar" "m" [ ("errInvar", "Double", realParam 0.3 0 1),
-                              ("errAlign", "Double", realParam 0.25 0 1),
-                              ("tolRot",   "Double", realParam 30 0 90),
-                              ("vertical", "Int",    intParam  0  0 1) ]
+autoParam "MatchingPar" "match"
+    [ ("errInvar", "Double", realParam 0.3 0 1)
+    , ("errAlign", "Double", realParam 0.3 0 1)
+    , ("tolRot",   "Double", realParam 30 0 90)
+    , ("vertical", "Int",    intParam  0  0 1)
+    , ("minRat",   "Double", realParam  0.3  0 1)
+    , ("maxRat",   "Double", realParam  2  1 5)]
 
 winMatching :: ITrans ((t, [Shape]), Sample Shape) (t, [[ShapeMatch]])
 winMatching = withParam f
   where
-    f MatchingPar{..} =   matchShapes errInvar errAlign 
-                      >>> (id *** consistent tolRot mode)
+    f mp@MatchingPar{..} =   matchShapes errInvar errAlign
+                         >>> (id *** consistent mp mode)
       where
         mode = if vertical == 1 then Just 0 else Nothing
 
+--------------------------------------------------------------------------------
 
 asym = map return "12347¢ABCDEFGJKLMPQRTUVYW" :: [String]
-sym  = map return "HNXZ" :: [String]
+sym  = map return "SHNXZ" :: [String]
 ambi = map return "0OI" :: [String]
-rounded = map return "0O" :: [String]
+
 
 consistent tr Nothing ms = consistent tr (Just dir) ms
   where
-    -- wrong!
-    dir = Util.Misc.median . (++[0]) . concatMap (map waRot . take 1 . filter ((`elem` asym).label)) $ ms
+    dir = vmed . (++[0]) . concatMap (map waRot . filter ((`elem` asym).label). take 1) $ ms
+    vmed = (\[x,y]->atan2 y x) . toList . fst . meanCov . fromRows . map (\a -> fromList[cos a, sin a])
 
-consistent tolRot (Just dir) ms = map (map fixambig . filter ok) ms
+
+consistent MatchingPar{..} (Just dir) ms = fixambig2 $ map (map fixambig1 . filter ok) ms
   where
     opos x = if x > 0 then x - pi else x + pi
     angdif x y = min (abs (x-y)) (abs (opos x - opos y))
     ok m = ( angdif (waRot m) dir < tolRot * degree
              || (label m `elem` sym && angdif (opos (waRot m)) dir < tolRot * degree)
              || label m `elem` ambi )
-           && waScaleRat m > 0.3 && waScaleRat m < 3
+           && waScaleRat m > minRat && waScaleRat m < maxRat
            && (not (label m `elem` ambi) || alignDist m < 0.1)
-    fixambig s@ShapeMatch {..} | label `elem` sym = s { wa = r <> wa }
-                               | label `elem` rounded = s { wa = rr <> wa }
-                               | otherwise = s -- TODO
+    fixambig1 s@ShapeMatch {..} | label `elem` sym = s { wa = r <> wa }
+                                | otherwise = s
       where
-        r = if angdif waRot dir > 90 * degree then rotAround cx cy pi else rot3 0
-        rr = if angdif waRot dir > tolRot * degree then rotAround cx cy (dir - waRot) else rot3 0
-        (cx,cy,_,_,_) = momentsContour $ polyPts $ shapeContour $ target
+        r = if angdif waRot dir > 90 * degree then rotAround (centerOf target) pi else rot3 0
 
-rotAround x y a = desp (x,y) <> rot3 a <> desp (-x,-y)
+    fixambig2 ms | null oks = ms
+                 | otherwise = map (map f) ms
+      where
+        oks = concatMap (filter (not . (`elem` ambi) . label). take 1) ms
+        closestTo s = minimumBy (compare `on` g s) oks
+          where
+            g s1 s2 = distPoints (centerOf (target s1)) (centerOf (target s2))
+        f s | label s `elem` ambi = s { wa = {-debug "closest" (const $ label t) $  -} d <> wa t
+                                      , waRot = waRot t
+                                      , waSkew = waSkew t
+                                      , waScaleRat = waScaleRat t }
+            | otherwise = s
+          where
+            t = closestTo s
+            d = desp (dx,dy)
+            dx = x2-x1
+            dy = y2-y1
+            Point x1 y1 = centerOf (shape $ inducedBounding t)
+            Point x2 y2 = centerOf (shape $ inducedBounding s)
+
+inducedBounding ShapeMatch {..} = transPol wa $ bounding (shapeContour proto)
+
+rotAround (Point x y) a = desp (x,y) <> rot3 a <> desp (-x,-y)
 
 --------------------------------------------------------------------------------
 
@@ -77,7 +101,7 @@ catalog defaultdbs = concat <$> mapM r defaultdbs >>= optionFromFile "--catalog"
     r x = read <$> readFile x
 
 
-injectPrototypes :: Renderable t => [FilePath] -> ITrans (t, [Shape]) ((t, [Shape]), [(Shape, String)])
+--injectPrototypes :: Renderable [t] => [FilePath] -> ITrans (t, [Shape]) ((t, [Shape]), [(Shape, String)])
 injectPrototypes defaultdbs = transUI $ do
     c <- catalog defaultdbs
     let prepro = id
@@ -89,7 +113,7 @@ injectPrototypes defaultdbs = transUI $ do
           where
             ss = map prepro cs
         display _r _s (im,conts) = Draw [ Draw im, color orange
-                                        , Draw [map (Draw . shapeContour) conts] ]
+                                        , Draw $ map (Draw . shapeContour) conts ]
         add _r _p [] = return ()
         add _r p cs = updateW bro (id *** ((c,"new"):))  -- add contour to b state
           where
@@ -136,6 +160,7 @@ showAlignment :: ITrans (ImageGray,[[ShapeMatch]]) (ImageGray,[[ShapeMatch]])
 showAlignment = sMonitor "detected" disp
   where
     disp _ (im,oks) = [ msgM 3 "best match"
+                      , msgM 5 "inverse bounding box"
                       , msgM 4 "align info "
                       , msgM 1 "invariant"
                       , msgM 0 "invariant"
@@ -181,8 +206,16 @@ showAlignment = sMonitor "detected" disp
               info = printf "%.f" (100*alignDist)
 
         sh 3 (ShapeMatch {..} : _) = Draw [ color orange
-                                           , Draw (transPol wa $ bounding (shapeContour proto))
-                                           , color yellow, textAtShape target label ]
+                                          , Draw bb2
+                                          , color yellow, textAtShape target label ]
+          where
+            bb2 = transPol wa $ bounding (shapeContour proto)
+        sh 5 (ShapeMatch {..} : _) = Draw [ color green, Draw bb2
+                                          , color lightgreen, Draw axes
+                                          , color yellow, textAtShape target label ]
+          where
+            bb2 = transPol wa . bounding . transPol (inv wa) . shapeContour $ target
+            axes = Open $ take 2 (drop 2 $ polyPts bb2)
         sh 4 (ShapeMatch {..} : _) = Draw [ color orange, Draw bb
                                           , color red, Draw axes
                                           , color yellow, textAtShape target info ]

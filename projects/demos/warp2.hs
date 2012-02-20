@@ -26,8 +26,8 @@ main = runIt $ drawParam "conjugate rotation" drws
 
 drws p = [ Draw [ pointSz 3, lineWd 1
                 , color darkgray, Draw l1, Draw l2
-                , color green, segments segs
-                , color lightgreen, points ps' 
+                , color green, Draw segs
+                , color lightgreen, Draw ps' 
                 ]
          ]
   where

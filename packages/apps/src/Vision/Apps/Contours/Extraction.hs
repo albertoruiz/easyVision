@@ -49,8 +49,8 @@ autoContoursOtsu = localOtsuContours >>> map reducePolyline . fst . fst
 
 --------------------------------------------------------------------------------
 
-autoParam "ATParam" "at-"  [  ("radMed","Int",intParam 2 0 10)
-                           ,  ("radBox","Int",intParam 10 1 20)
+autoParam "ATParam" "at-"  [  ("radMed","Int",intParam 0 0 10)
+                           ,  ("radBox","Int",intParam 20 1 20)
                            ,  ("scale","Float",realParam 2 0 10) ]
 
 adaptiveThreshold ATParam{..} x = blk
