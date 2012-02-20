@@ -6,9 +6,7 @@ main = runIt $ browser "points & lines" xs (const id)
     xs = [drawing1]
 
 drawing1 :: Drawing
-drawing1 = Draw [ color yellow, Draw (HLine 0.1 1 0)
-                , color red, pointSz 5, Draw [p1, p2] ]
-
-p1 = Point 0.5 0.5
-p2 = Point 0 (-0.2)
+drawing1 = Draw  [  color yellow (HLine 0.1 1 0)
+                 ,  pointSz 5 [Point 0.5 0.5,  Point 0 (-0.2)]
+                 ]
 

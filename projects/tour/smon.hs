@@ -13,5 +13,5 @@ f roi x =  [  msg "grayscale"         [  Draw g ]
     smooth  =  gauss Mask5x5 . float $ g
     edges  =  canny (0.1,0.3) . gradients $ smooth
 
-    msg s t  =  Draw [ Draw img, Draw t , color yellow, text (Point 0.9 0.65) s ]
+    msg s t  =  Draw [ Draw img, Draw t , color yellow $ text (Point 0.9 0.65) s ]
 

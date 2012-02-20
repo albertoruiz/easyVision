@@ -348,7 +348,7 @@ renderImageIn evW m = do
     pixelZoom $= (z,-z)   
     myDrawPixels m { vroi = r { r1 = r1 - min 0 (round $ (fromIntegral r0)/zw) } }
     touchForeignPtr (fptr m)
-    render $ Draw [color white, lineWd 1, Draw (Closed roipts)]
+    render $ Draw [color white . lineWd 1 $ (Closed roipts)]
 
 --------------------------------------------------------------------------------
 
@@ -368,8 +368,14 @@ instance Renderable Polyline where
     render (Closed ps) = renderPrimitive LineLoop (vertex (Closed ps))
     render (Open ps) = renderPrimitive LineStrip (vertex (Open ps))
 
+instance Renderable [Polyline] where
+    render = mapM_ render
+
 instance Renderable [Point] where
   render = renderPrimitive Points . mapM_ vertex
+
+instance Renderable Point where
+  render p = render [p]
 
 instance Renderable (Vector Double) where
     render v = renderPrimitive LineStrip (vertex $ fromColumns [t,v])
@@ -382,17 +388,23 @@ instance Renderable HLine where
     render (HLine a b c) = render $ Open [ p (-2), p 2 ]
       where p x = Point x ((-a*x-c)/b)
 
+instance Renderable [HLine] where
+    render = mapM_ render
+
 instance Renderable [Segment] where
   render = renderPrimitive Lines . mapM_ vertex
+
+instance Renderable Segment where
+  render s = render [s]
 
 ------------------------------------------------------------
 
 
 drawContourLabeled :: Colour Float -> Colour Float -> Colour Float -> GLfloat -> GLfloat -> Polyline -> Drawing
 drawContourLabeled cl cp ct wd sz cont = Draw [
-      lineWd wd, color cl, Draw cont,
-      color cp, pointSz sz, Draw c,
-      color ct, Draw (zipWith (textF Helvetica10) c (map show [(0::Int)..])) 
+      lineWd wd . color cl $ cont,
+      color cp . pointSz sz $ c,
+      color ct $ (zipWith (textF Helvetica10) c (map show [(0::Int)..])) 
     ]
   where
     c = polyPts cont

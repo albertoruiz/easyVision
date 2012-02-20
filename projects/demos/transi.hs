@@ -18,8 +18,10 @@ fps = 25
 editR2 sz@(Size h w) dir sv xs = editor upds save "transition" xs sh
   where
     ar = fromIntegral w / fromIntegral h
-    sh k ((img,(p,q)),f) = Draw [ Draw img, lineWd 3, color red, drReg p, color blue, drReg q
-                                 , text (Point 0.9 0) (show (1+k) ++ " " ++ f)]
+    sh k ((img,(p,q)),f) = Draw [ Draw img,
+                                  lineWd 3 [ color red  $ drReg p
+                                           , color blue $ drReg q ]
+                                , text (Point 0.9 0) (show (1+k) ++ " " ++ f)]
 
     upds = [ updateItem (key (Char 'a')) initial
            , updateItem (key (Char 'b')) final ]

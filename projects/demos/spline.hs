@@ -16,17 +16,17 @@ sp0 = (0,[(Point (-0.25 + 0.25*cos(pi/4)) (0+0.25*sin(pi/4)), 1, -pi/4),
 splineWin = standalone (Size 600 600) "spline" sp0 updts [] sh
   where
     x0 = 7
-    sh (k,seg) = Draw [ color gray, pointSz 11, Draw [fst3 $ seg!!k],
+    sh (k,seg) = Draw [ color gray . pointSz 11 $ [fst3 $ seg!!k],
                         Draw (map drSeg (zip seg (tail seg))),
-                        lineWd 1, color yellow, 
-                        Draw $ circle (Point 0 0) 0.5,
-                        Draw $ circle (Point (-0.25) 0) 0.25 ]      
+                        lineWd 1 . color yellow $ [ 
+                            circle (Point 0 0) 0.5,
+                            circle (Point (-0.25) 0) 0.25 ] ]      
     fst3(a,_,_) = a
 
     drSeg (s1@(p1@(Point x1 y1),v1,a1), s2@(p2@(Point x2 y2),v2,a2)) =
-            Draw [ color white, pointSz 5, Draw [p1,p2],
-                   color red, lineWd 1, dirs,
-                   color white, Draw $ Open $ interpolate (s1,s2) ]
+            Draw [ color white . pointSz 5 $ [p1,p2],
+                   color red . lineWd 1 $ dirs,
+                   color white $ Open $ interpolate (s1,s2) ]
       where        
         vsc = 1/4
         d1x = x1+vsc*v1*cos a1

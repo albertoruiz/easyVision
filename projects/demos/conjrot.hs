@@ -6,13 +6,13 @@ import Numeric.LinearAlgebra ((<>),toList,linspace)
 import Vision(kgen)
 import Util.Rotation
 import Util.Misc(degree)
-import Contours
+import Contours(transPol) -- provisional
 
 autoParam "ConjRotP" "cg-"
     [ ("pan",  "Double",   realParam (0) (-40) (40))
     , ("tilt", "Double",   realParam (0) (-30) (30))
-    , ("roll",  "Double",  realParam  0 (-40) (40))
-    , ("focal",  "Double", listParam 1.7 [0.5, 0.7, 1, 1.4, 1.7, 2, 2.5, 3, 4, 6, 10])
+    , ("roll", "Double",  realParam  0 (-40) (40))
+    , ("focal","Double", listParam 1.7 [0.5, 0.7, 1, 1.4, 1.7, 2, 2.5, 3, 4, 6, 10])
     ]
 
 conjugateRotation ConjRotP{..} =
@@ -24,10 +24,9 @@ conjugateRotation ConjRotP{..} =
 
 main = runIt $ drawParam "conjugate rotation" drws
 
-drws p = [ Draw [ pointSz 3, lineWd 1
-                , color darkgray, Draw l1, Draw l2
-                , color green, Draw segs
-                , color lightgreen, Draw ps' 
+drws p = [ Draw [ color darkgray [l1, l2]
+                , color green segs
+                , pointSz 3 . color lightgreen $ ps' 
                 ]
          ]
   where

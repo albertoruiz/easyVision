@@ -156,7 +156,7 @@ camG opt readf = do
     sh _ (k,xs) x = Draw [Draw (rgb x), info (k,xs) ]
     -- ft w _ = evPrefSize w $= Just (Size 240 320)
     ft _ _ = return ()
-    info (k,xs) = Draw [color black, textF Helvetica12 (Point 0.9 0.6)
+    info (k,xs) = Draw [color black $ textF Helvetica12 (Point 0.9 0.6)
                         (show w ++ "x" ++ show h ++ " " ++snd ( xs!!k)) ]
       where
         Size h w = size (grayscale $ fst $ xs!!k)

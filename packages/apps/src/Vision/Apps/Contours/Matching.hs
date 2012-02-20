@@ -112,8 +112,8 @@ injectPrototypes defaultdbs = transUI $ do
         result _r _s (x,cs) = (ss,(x,ss))  -- save contours in the state
           where
             ss = map prepro cs
-        display _r _s (im,conts) = Draw [ Draw im, color orange
-                                        , Draw $ map (Draw . shapeContour) conts ]
+        display _r _s (im,conts) = Draw [ Draw im,
+                                          color orange $ map (Draw . shapeContour) conts ]
         add _r _p [] = return ()
         add _r p cs = updateW bro (id *** ((c,"new"):))  -- add contour to b state
           where
@@ -140,7 +140,7 @@ showCanonical = sMonitor "canonical" disp
     disp _ (x,ss) = [fun h white 1, fun g yellow 3] 
       where
         fun t col w = Draw [ Draw x
-                           , lineWd w, color col, Draw (map (Draw .t) ss) ]
+                           , lineWd w . color col $ (map (Draw .t) ss) ]
 
     g Shape {..}  = transPol t (head kShapes)
       where
@@ -171,8 +171,10 @@ showAlignment = sMonitor "detected" disp
         msg name x = Draw [ Draw im
                           , Draw x
                           , color lightgreen
-                          , text (Point 0.9 (-0.65)) info
-                          , text (Point 0.9 0.65) name ]
+                              [ text (Point 0.9 (-0.65)) info
+                              , text (Point 0.9 0.65) name
+                              ]
+                          ]
         e = (100*) $ mean $ map (invDist.head) $ filter (not.null) oks
         -- mean classification error x100
         np = mean $ map (fromIntegral.length.polyPts.shapeContour.target.head)
@@ -183,14 +185,14 @@ showAlignment = sMonitor "detected" disp
         sh _ [] = Draw ()
 
         sh 0 (ShapeMatch {..} : ps) = Draw [ color white
-                                           , textAtShape target info ]
+                                           $ textAtShape target info ]
           where
             info = printf "[%d] %s (%.0f) %s" (length $ polyPts $ shapeContour target)
                                               label (invDist*100) (labs ps)
 
         sh 1 (ShapeMatch {..} : ps) = Draw [ color (col invDist)
-                                           , Draw (bounding (shapeContour target))
-                                           , color yellow, textAtShape target zs ]
+                                           $ (bounding (shapeContour target))
+                                           , color yellow $ textAtShape target zs ]
           where
             zs = if (invDist*100 < 20)
                     then printf "%s" (label++labs ps)
@@ -199,26 +201,25 @@ showAlignment = sMonitor "detected" disp
                   | d < 0.2 = red
                   | otherwise = black
 
-        sh 2 (ShapeMatch {..} : _) = Draw [ color yellow, Draw (shapeContour target)
-                                          , color red, Draw (transPol wa $ shapeContour proto)
-                                          , color white, textAtShape target info ]
+        sh 2 (ShapeMatch {..} : _) = Draw [ color yellow (shapeContour target)
+                                          , color red (transPol wa $ shapeContour proto)
+                                          , color white $ textAtShape target info ]
             where
               info = printf "%.f" (100*alignDist)
 
-        sh 3 (ShapeMatch {..} : _) = Draw [ color orange
-                                          , Draw bb2
-                                          , color yellow, textAtShape target label ]
+        sh 3 (ShapeMatch {..} : _) = Draw [ color orange bb2
+                                          , color yellow $ textAtShape target label ]
           where
             bb2 = transPol wa $ bounding (shapeContour proto)
-        sh 5 (ShapeMatch {..} : _) = Draw [ color green, Draw bb2
-                                          , color lightgreen, Draw axes
-                                          , color yellow, textAtShape target label ]
+        sh 5 (ShapeMatch {..} : _) = Draw [ color green bb2
+                                          , color lightgreen axes
+                                          , color yellow $ textAtShape target label ]
           where
             bb2 = transPol wa . bounding . transPol (inv wa) . shapeContour $ target
             axes = Open $ take 2 (drop 2 $ polyPts bb2)
-        sh 4 (ShapeMatch {..} : _) = Draw [ color orange, Draw bb
-                                          , color red, Draw axes
-                                          , color yellow, textAtShape target info ]
+        sh 4 (ShapeMatch {..} : _) = Draw [ color orange  bb
+                                          , color red  axes
+                                          , color yellow $ textAtShape target info ]
           where
             info = label ++ printf " %.0f %.0f %.2f" (waRot/degree) (waSkew/degree) (waScaleRat)
             bb = (transPol wa $ bounding (shapeContour proto))

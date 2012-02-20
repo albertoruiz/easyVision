@@ -143,9 +143,9 @@ drawRegion w = do
         (Point x1 y1, Point x2 y2) <- readIORef (evRegion w)
         stats <- readIORef (evStats w)
         let info = show (evNCall stats) ++ " frames / " ++ show (evNDraw stats) ++ " draws"
-        render $ Draw [ color white, lineWd 1
-                      , (Draw . Closed) [ Point x1 y1, Point x2 y1
-                                        , Point x2 y2, Point x1 y2]
+        render $ Draw [ color white . lineWd 1 $
+                        Closed [ Point x1 y1, Point x2 y1
+                               , Point x2 y2, Point x1 y2]
                       , textF Helvetica10 (Point 0.95 (-0.7)) info
                       ]
         

@@ -16,7 +16,7 @@ module Vision.GUI.Types
    EVWindow(..), MoveStatus(..), ResizePolicy(..), PauseStatus(..), WinRegion, WStatus(..)
 -- * Drawing abstraction
 ,  Renderable(..), Drawing(..)
-,  color, text, textF, pointSz, lineWd, winTitle
+,  color, text, textF, pointSz, lineWd, winTitle, draws
 -- * Tools
 , pointCoordinates, pointCoords
 , pixelCoordinates, pixelCoords
@@ -214,6 +214,9 @@ instance Renderable a => Renderable (Maybe a) where
     renderIn w (Just x) = renderIn w x
     renderIn _ Nothing = return ()
 
+draws :: Renderable a => [a] -> Drawing
+draws = Draw . map Draw
+
 --------------------------------------
 
 instance Renderable (RGB Float) where
@@ -225,11 +228,26 @@ instance Renderable (RGB Float) where
 instance Renderable (Colour Float) where
     render = render . toSRGB 
 
-color x = Draw (x :: Colour Float)
+color :: Renderable x => Colour Float -> x -> Drawing
+color c d = Raw $ do
+    c' <- get currentColor
+    render c
+    render d
+    currentColor $= c'
 
-lineWd = Raw . (lineWidth $=)
+lineWd :: Renderable x => Float -> x -> Drawing
+lineWd w d = Raw $ do
+    w' <- get lineWidth
+    lineWidth $= floatGL w
+    render d
+    lineWidth $= w'
 
-pointSz = Raw . (pointSize $=)
+pointSz :: Renderable x => Float -> x -> Drawing
+pointSz s d = Raw $ do
+    s' <- get pointSize
+    pointSize $= floatGL s
+    render d
+    pointSize $= s'
 
 textF f p s = Raw (textAtF f p s)
 

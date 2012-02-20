@@ -9,13 +9,12 @@ f roi x =  [  msg "grayscale"          [ Draw g ]
            ,  msg "median filter"      [ Draw med ]
            ,  msg "canny edges"        [ Draw (notI edges) ]
            ,  msg "Otsu threshold"     [ Draw otsu ]
-           ,  msg "raw dark contours"  [ color blue, lineWd 2, draws rawconts ]
-           ,  msg "reduced contours"   [ color blue, lineWd 2, draws conts ]
+           ,  msg "raw dark contours"  [ color blue . lineWd 2 $ draws rawconts ]
+           ,  msg "reduced contours"   [ color blue . lineWd 2 $ draws conts ]
            ,  msg "distance transform" [ Draw disTra ]
            ]
   where
     msg s x  =  Draw [ Draw img, Draw x , winTitle s ]
-    draws  = Draw . map Draw
 
     img    = rgb x 
     g      = setRegion roi (grayscale x)
