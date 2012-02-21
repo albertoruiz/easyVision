@@ -400,7 +400,7 @@ instance Renderable Segment where
 ------------------------------------------------------------
 
 
-drawContourLabeled :: Colour Float -> Colour Float -> Colour Float -> GLfloat -> GLfloat -> Polyline -> Drawing
+drawContourLabeled :: Colour Float -> Colour Float -> Colour Float -> Float -> Float -> Polyline -> Drawing
 drawContourLabeled cl cp ct wd sz cont = Draw [
       lineWd wd . color cl $ cont,
       color cp . pointSz sz $ c,
