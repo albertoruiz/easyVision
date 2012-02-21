@@ -31,6 +31,7 @@ module Vision.GUI.Draw
 , limitSize
 , drawContourLabeled
 , viewPoint
+, points'
 ) where
 
 import Graphics.UI.GLUT hiding (RGB, Matrix, Size, Point,color)
@@ -396,6 +397,9 @@ instance Renderable [Segment] where
 
 instance Renderable Segment where
   render s = render [s]
+
+points' :: [Point] -> Drawing
+points' = Draw
 
 ------------------------------------------------------------
 

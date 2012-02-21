@@ -25,6 +25,7 @@ module Vision.GUI.Types
 , evSize, glSize
 , floatGL, doubleGL
 , prepZoom, unZoom
+, color', pointSz', lineWd'
 ) where
 
 import Graphics.UI.GLUT hiding (RGB, Matrix, Size, Point,color)
@@ -278,4 +279,13 @@ unZoom (z,dx,dy) (Position vpx vpy, sz) (x,y) = (round x', round y')
     ow = (rw- fromIntegral w) / 2 + dx
     x' = (fromIntegral x-ow) / z
     y' = (fromIntegral y-oh) / z
+
+
+---------------------------------------------------------------
+
+color' x = Draw (x :: Colour Float)
+
+lineWd' = Raw . (lineWidth $=)
+
+pointSz' = Raw . (pointSize $=)
 
