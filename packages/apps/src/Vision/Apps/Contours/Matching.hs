@@ -100,9 +100,16 @@ catalog defaultdbs = concat <$> mapM r defaultdbs >>= optionFromFile "--catalog"
   where
     r x = read <$> readFile x
 
+injectPrototypes dbs = choose (getFlag "--see-prototypes") (injectUI dbs) (injectSilent dbs)
 
---injectPrototypes :: Renderable [t] => [FilePath] -> ITrans (t, [Shape]) ((t, [Shape]), [(Shape, String)])
-injectPrototypes defaultdbs = transUI $ do
+injectSilent defaultdbs = transUI $ do
+    c <- catalog defaultdbs
+    let p = map (shape.boxShape *** id) c
+    return $ \cam -> do
+        x <- cam
+        return (x,p)
+
+injectUI defaultdbs = transUI $ do
     c <- catalog defaultdbs
     let prepro = id
         disp = Draw . transPol (diagl [0.8, 0.8, 1]) . shapeContour

@@ -36,7 +36,7 @@ import Control.Applicative((<*>),(<$>))
 import ImagProc
 import ImagProc.Camera(findSize,readFolderMP,readFolderIM,getCam)
 import Vision.GUI.Arrow--(ITrans, Trans,transUI,transUI2,runT_)
-import Util.LazyIO((~>),(>~>))
+import Util.LazyIO((~>),(>~>),createGrab)
 import Util.Misc(replaceAt)
 import Util.Options
 import Control.Concurrent(threadDelay)
@@ -128,9 +128,17 @@ camera :: IO (IO Channels)
 camera = do
     f <- hasValue "--photos"
     g <- hasValue "--photosmp"
+    h <- hasValue "--sphotos"
     if f then cameraFolderIM
          else if g then cameraFolderMP
-                   else cameraV
+                   else if h then cameraP
+                             else cameraV
+
+cameraP = do
+    hp <- optionString "--sphotos" "."
+    g <- readFolderIM hp
+    c <- createGrab g
+    return (fst <$> c)
 
 cameraV = findSize >>= getCam 0 ~> channels
 
