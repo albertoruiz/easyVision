@@ -16,7 +16,7 @@ module Vision.GUI.Types
    EVWindow(..), MoveStatus(..), ResizePolicy(..), PauseStatus(..), WinRegion, WStatus(..)
 -- * Drawing abstraction
 ,  Renderable(..), Drawing(..)
-,  color, text, textF, pointSz, lineWd, winTitle, draws
+,  color, text, textF, pointSz, lineWd, winTitle, clearColor, draws
 -- * Tools
 , pointCoordinates, pointCoords
 , pixelCoordinates, pixelCoords
@@ -28,7 +28,7 @@ module Vision.GUI.Types
 , color', pointSz', lineWd'
 ) where
 
-import Graphics.UI.GLUT hiding (RGB, Matrix, Size, Point,color)
+import Graphics.UI.GLUT hiding (RGB, Matrix, Size, Point,color,clearColor)
 import qualified Graphics.UI.GLUT as GL
 import ImagProc.Base
 import Numeric.LinearAlgebra hiding (step)
@@ -255,6 +255,8 @@ textF f p s = Raw (textAtF f p s)
 text = textF Helvetica18
 
 winTitle = Raw . (windowTitle $=)
+
+clearColor col d = color col [Raw (get currentColor >>= (GL.clearColor $=)), Draw d]
 
 instance Renderable () where
     render = return
