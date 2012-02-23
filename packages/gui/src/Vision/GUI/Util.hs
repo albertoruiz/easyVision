@@ -48,7 +48,7 @@ import Data.IORef
 
 editor :: [Command (Int,[x]) (Int,[x])] -> [Command (Int,[x]) (IO())]
        -> String -> [x] -> (Int -> x -> Drawing) -> IO (EVWindow (Int,[x]))
-editor upds acts name xs drw = standalone (Size 300 300) name (0,xs) (upds ++ move) acts f
+editor upds acts name xs drw = standalone (Size 400 400) name (0,xs) (upds ++ move) acts f
   where
     f (k,xs) | null xs = text (Point 0 0) "empty list!"
              | otherwise = drw j (xs !! j)

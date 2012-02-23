@@ -22,9 +22,8 @@ import ScatterPlot
 
 rawmnist = loadExamples "../../data/ml/mnist.txt"
 
-
 main = do
-    democlas moon
+    democlas sshape
     checkpca
 --    scatters (map return "0123")
 --    allDigits
@@ -39,11 +38,13 @@ colors = [red,blue,orange,green]++repeat lightgray
 
 scw title p = scatterPlot title (Size 400 400) p (0,1) colors (Draw ())
 
-scwc title p clasif = scatterPlot title (Size 400 400) p (0,1) colors (drawDecisionRegion 51 clasif p colors)
+scwc title p clasif = scatterPlot title (Size 400 400) p (0,1) colors (drawDecisionRegion 51 p colors clasif)
 
 scwm title p met = scwc title p (mode . met p)
 
 scwme title evi p met = scwc title p (maybe "REJECT" id . reject evi . met p)
+
+rej evi = maybe "REJECT" id . reject evi
 
 {-
 
@@ -56,16 +57,18 @@ scw3 title p = scatterPlot3D title 400 p (0,1,2) colors (return ())
 democlas x = do
     seed <- randomIO
     let p = addNoise seed 0.1 $ x 500
-    runIt $ scw "examples" p
-         >> scwm "D euc" p (minDistance euclidean)
-         >> scwme "lsc 1db" 1 p lsc
-         >> scwm "D Mah" p (minDistance mahalanobis)
-         >> scwm "Gaussian" p (bayes gaussian)
-         >> scwme "Gaussian, 3db" 3 p (bayes gaussian)
-         >> scwm "Naive Gaussian" p (bayes naiveGaussian)
-         >> scwme "Gaussian Mixture, 15db" 15 p (bayes gmm)
-         >> scwme "NN [5] 3db" 3 p (neural 0.1 0.05 100 [10])
-         >> scwme "NN [20,10,5] 5db" 5 p (neural 0.05 0.05 200 [20,10,5])
+    runIt $ scatterPlots "" p
+        [ (mode   . minDistance euclidean p,   "min euc dist")
+        , (rej 1  . minDistance euclidean p,   "min euc dist, 1db")
+        , (rej 1  . lsc p,                     "lsc, 1db")
+        , (mode   . minDistance mahalanobis p, "Mahalanobis dist")
+        , (mode   . bayes gaussian p,          "gaussian model")
+        , (rej 3  . bayes gaussian p,          "gaussian, 3db")
+        , (mode   . bayes naiveGaussian p,     "naive gaussian")
+        , (rej 15 . bayes gmm p,               "gaussian mixture, 15db")
+        , (rej 3 .  neural 0.1 0.05 100 [5] p, "NN [5], 3db")
+        , (rej 5 .  neural 0.05 0.05 200 [20,10,5] p, "NN [20,10,5], 5db")
+        ] 
 
 ----------------------------------------------------------------------
 

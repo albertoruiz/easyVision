@@ -13,6 +13,7 @@ Show distribution of labeled vectors in space
 -----------------------------------------------------------------------------
 
 module ScatterPlot (
+    scatterPlots,
     scatterPlot, drawDecisionRegion, scatter,
     scatterPlot3D,
 )where
@@ -21,17 +22,23 @@ import Vision.GUI
 import Classifier
 import Numeric.LinearAlgebra
 import ImagProc
-import Graphics.UI.GLUT as GL hiding (Point,color,Size,clearColor)
+import Graphics.UI.GLUT as GL hiding (Point,color,Size,clearColor,windowTitle)
 import Control.Monad(forM_)
 import Util.Misc(debug)
 
 scatterPlot3D = undefined
 
+scatterPlots name exs mets = browser name xs (const id)
+  where
+    xs = map f mets
+    f (met, name) = scatter exs (0,1) [] (windowTitle name $ drawDecisionRegion 71 exs colors met) (Draw ())
+    colors = [pink,lightblue,lightgreen]++repeat white
+
 scatterPlot name sz exs coor colors prefun = browser name xs (const id)
   where
-    xs = [scatter exs (0,1) [] (prefun)]
+    xs = [scatter exs (0,1) [] prefun (Draw ())]
 
-scatter examples (i,j) colornames prefun = clearColor white . prep $ [ prefun, pointSz 5 things ]
+scatter examples (i,j) colornames prefun postfun = clearColor white . prep $ [ prefun, pointSz 5 things, postfun ]
   where
     (gs,lbs) = group examples
     things = zipWith f gs colors
@@ -50,7 +57,7 @@ scatter examples (i,j) colornames prefun = clearColor white . prep $ [ prefun, p
 
 
 
-drawDecisionRegion n clasif prob colors = pointSz 2 vals
+drawDecisionRegion n prob colors clasif = pointSz 7 vals
   where
     xs = map ((@>0).fst) prob
     ys = map ((@>1).fst) prob
@@ -62,7 +69,7 @@ drawDecisionRegion n clasif prob colors = pointSz 2 vals
     rany = toList $ linspace n (b1,b2)
     dom = sequence [ranx,rany]
     themap = zip (labels . snd . group $  prob) colors
-    colorOf lab = maybe lightgray id (lookup lab themap)
+    colorOf lab = maybe white id (lookup lab themap)
     vals = map d dom
     d p = color (colorOf $ clasif $ fromList $ p) ((\[x,y]->Point x y) p)
 
