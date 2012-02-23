@@ -13,9 +13,8 @@ Show distribution of labeled vectors in space
 -----------------------------------------------------------------------------
 
 module ScatterPlot (
-    scatterPlot, drawRegion,
+    scatterPlot, drawDecisionRegion, scatter,
     scatterPlot3D,
-    scatter'
 )where
 
 import Vision.GUI
@@ -26,22 +25,18 @@ import Graphics.UI.GLUT as GL hiding (Point,color,Size,clearColor)
 import Control.Monad(forM_)
 import Util.Misc(debug)
 
---scatterPlot = undefined
---drawRegion = undefined
 scatterPlot3D = undefined
 
-scatterPlot name sz exs coor colors prefun = browser "ScatterPlot" xs (const id)
+scatterPlot name sz exs coor colors prefun = browser name xs (const id)
   where
-    xs = [scatter' exs (0,1) [] (prefun)]
+    xs = [scatter exs (0,1) [] (prefun)]
 
-
-scatter' examples (i,j) colornames prefun = clearColor white [ prep, prefun, pointSz 5 things ]
+scatter examples (i,j) colornames prefun = clearColor white . prep $ [ prefun, pointSz 5 things ]
   where
     (gs,lbs) = group examples
     things = zipWith f gs colors
     f g c = color c (plot g)
     plot = map (\v-> Point (v@>i) (v@>j))
-
     xs = map ((@>i).fst) examples
     ys = map ((@>j).fst) examples
     a1 = minimum xs
@@ -50,19 +45,12 @@ scatter' examples (i,j) colornames prefun = clearColor white [ prep, prefun, poi
     b2 = maximum ys
     da = 0.05*(a2-a1)
     db = 0.05*(b2-b1)
+    prep = withOrtho2D (a1-da) (a2+da) (b1-db) (b2+db)
     colors = take (length gs) (colornames ++ [red,blue,green,yellow,orange]++ repeat white)
-    prep = Raw $ do
-        --clear [ColorBuffer]
-        --clearColor $= Color4 1 1 1 1
-        --windowSize $= glSize (Size 400 400)
-        matrixMode $= Projection
-        loadIdentity
-        ortho2D (a1-da) (a2+da) (b1-db) (b2+db)
-        matrixMode $= Modelview 0
-        loadIdentity        
 
 
-drawRegion n clasif prob colors = pointSz 2 vals
+
+drawDecisionRegion n clasif prob colors = pointSz 2 vals
   where
     xs = map ((@>0).fst) prob
     ys = map ((@>1).fst) prob

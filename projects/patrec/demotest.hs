@@ -39,7 +39,7 @@ colors = [red,blue,orange,green]++repeat lightgray
 
 scw title p = scatterPlot title (Size 400 400) p (0,1) colors (Draw ())
 
-scwc title p clasif = scatterPlot title (Size 400 400) p (0,1) colors (drawRegion 51 clasif p colors)
+scwc title p clasif = scatterPlot title (Size 400 400) p (0,1) colors (drawDecisionRegion 51 clasif p colors)
 
 scwm title p met = scwc title p (mode . met p)
 
