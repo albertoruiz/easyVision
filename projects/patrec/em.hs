@@ -6,9 +6,11 @@ import Util.Rotation(rot3)
 import Util.Homogeneous(ht)
 import Util.Optimize(optimize)
 
-import EasyVision
-import Data.Colour.Names as Col
-import Graphics.UI.GLUT hiding (Size,scale)
+import Vision.GUI
+import ScatterPlot
+import ImagProc
+import Contours.Base
+
 import Data.Maybe(maybe)
 import System.Random(randomIO)
 import Text.Printf(printf)
@@ -21,21 +23,21 @@ import Data.Function(on)
 
 disp = putStr . dispf 2
 
-colors = [red,blue,orange,green]++repeat Col.lightgray
+colors = [red,blue,orange,green]++repeat lightgray
 
 scw title p mix = scatterPlot title (Size 400 400) p (0,1) colors (shMix mix)
 
-shMix mix = (lineWidth $= 3 >> setColor' black >> mapM_ drawGaussian (map snd mix))
+shMix mix = lineWd 3 . color black . map (drawGaussian.snd) $ mix
 
-drawGaussian g = renderPrimitive LineLoop (mapM_ vertex (ellipCov g))
+drawGaussian g = Draw (ellipCov g)
   where
-    ellipCov (N m c) = ht ((3><3)[1,0,(m@>0),0,1,(m@>1),0,0,1] <> rot3 (-angle)) circle
+    ellipCov (N m c) = transPol ((3><3)[1,0,(m@>0),0,1,(m@>1),0,0,1] <> rot3 (-angle)) circle
       where
         angle = atan2 vy vx
         (l,v) = eigSH' c
         [d1,d2] = toList (sqrt l)
         [vx,vy] = toList $ head (toColumns v)
-        circle = [[2*d1*cos(t*degree), 2*d2*sin(t*degree)] | t <- [ 0, 10 .. 350 ]]
+        circle = Closed [Point (2*d1*cos(t*degree)) (2*d2*sin(t*degree)) | t <- [ 0, 10 .. 350 ]]
 
 ----------------------------------------------------------------------
 
