@@ -1,3 +1,36 @@
+Haskell packages for Computer Vision
+====================================
+
+This is an experimental [Haskell][haskell] framework for fast prototyping of computer vision and image processing applications. We take advantage of the expressive power of functional programming to write elegant programs supported by standard low level specialized libraries.
+
+help
+----
+
+- Tutorial (coming soon)
+
+- [Blog][blog]
+
+- Obsolete [tutorial][tutorial]
+
+related work
+------------
+
+- There is an [early approach][yale] by the Yale Haskell Group.
+
+- Computer Vision packages by [Noam Lewis][lewis] and [Ville Tirronen][tirronen] in Hackage.
+
+- [Repa][repa]
+
+
+[haskell]: http://www.haskell.org
+[tutorial]: http://perception.inf.um.es/easyVision/easyVision.pdf
+[blog]: http://covector.blogspot.com/
+[yale]: http://haskell.cs.yale.edu/?post_type=publication&p=196
+[lewis]: http://hackage.haskell.org/package/HOpenCV
+[tirronen]: http://hackage.haskell.org/package/CV
+[repa]: http://hackage.haskell.org/package/repa-examples
+
+
 installation instructions
 -------------------------
 
