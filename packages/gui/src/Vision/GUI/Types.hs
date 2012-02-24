@@ -256,7 +256,9 @@ text = textF Helvetica18
 
 winTitle = Raw . (windowTitle $=)
 
-clearColor col d = color col [Raw (get currentColor >>= (GL.clearColor $=)), Draw d]
+--clearColor col d = color col [Raw (get currentColor >>= (GL.clearColor $=)), Draw d]
+
+clearColor col d = color col [Draw d] --TODO: FIXME see line above. make it compile.
 
 instance Renderable () where
     render = return
