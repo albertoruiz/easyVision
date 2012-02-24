@@ -3,6 +3,7 @@
 module Vision.Apps.Contours.Matching (
     winMatching,
     injectPrototypes,
+    injectPrototypes',
     showCanonical,
     showAlignment
 ) where
@@ -18,7 +19,7 @@ import Util.Misc(diagl,mean,vec,debug,degree,median)
 import Util.Rotation(rot3)
 import Util.Options
 import Vision(desp,inHomog,hv2pt)
-import Classifier(Sample)
+import Classifier(Sample,Label())
 import Control.Monad(when)
 import Data.List(minimumBy,sortBy)
 import Data.Function(on)
@@ -100,8 +101,11 @@ catalog defaultdbs = concat <$> mapM r defaultdbs >>= optionFromFile "--catalog"
   where
     r x = read <$> readFile x
 
+injectPrototypes  :: Renderable t =>
+     [FilePath] -> ITrans (t, [Shape]) ((t, [Shape]), [(Shape, String)])
 injectPrototypes dbs = choose (getFlag "--see-prototypes") (injectUI dbs) (injectSilent dbs)
 
+injectSilent  :: [FilePath] -> ITrans a (a, [(Shape, Label)])
 injectSilent defaultdbs = transUI $ do
     c <- catalog defaultdbs
     let p = map (shape.boxShape *** id) c
@@ -109,6 +113,8 @@ injectSilent defaultdbs = transUI $ do
         x <- cam
         return (x,p)
 
+injectUI  :: Renderable t => [FilePath] 
+             -> ITrans (t, [Shape]) ((t, [Shape]), [(Shape, String)])
 injectUI defaultdbs = transUI $ do
     c <- catalog defaultdbs
     let prepro = id
@@ -133,6 +139,43 @@ injectUI defaultdbs = transUI $ do
         b <- getW bro
         return (a,snd b)
 
+injectPrototypes'  :: Renderable t => [FilePath] -> ITrans (t, [Shape]) [(Shape, String)]
+injectPrototypes' dbs = choose (getFlag "--see-prototypes") (injectUI' dbs) (injectSilent' dbs)
+
+injectSilent'  :: [FilePath] -> ITrans a [(Shape, Label)]
+injectSilent' defaultdbs = transUI $ do
+    c <- catalog defaultdbs
+    let p = map (shape.boxShape *** id) c
+    return $ \cam -> do
+        --x <- cam
+        return p
+
+injectUI'  :: Renderable t => [FilePath] -> ITrans (t, [Shape]) [(Shape, String)]
+injectUI' defaultdbs = transUI $ do
+    c <- catalog defaultdbs
+    let prepro = id
+        disp = Draw . transPol (diagl [0.8, 0.8, 1]) . shapeContour
+    bro <- browseLabeled "Shapes" (map (shape.boxShape *** id) c) disp
+
+    let ft _ _  = return ()
+        result _r _s (x,cs) = (ss,(x,ss))  -- save contours in the state
+          where
+            ss = map prepro cs
+        display _r _s (im,conts) = 
+          Draw [ Draw im, 
+                 lineWd 2 $ color orange $ 
+                 map (Draw . shapeContour) conts ]
+        add _r _p [] = return ()
+        add _r p cs = updateW bro (id *** ((c,"new"):))  -- add contour to b state
+          where
+            c = closestTo p cs
+        acts = [(key (MouseButton LeftButton), add)]
+    r1 <- interface (Size 300 300) "Raw Contours" [] ft [] acts result display
+
+    return $ \c -> do
+        r1 c --NOTE: was "a <- r1 c". TODO: Is this now correct? 
+        b <- getW bro
+        return $ snd b
 
 closestTo pt = minimumBy (compare `on` (d pt))
       where

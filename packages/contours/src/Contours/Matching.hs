@@ -4,7 +4,9 @@ module Contours.Matching(
     Shape(..), ShapeMatch(..),
     shape,
     elongated, isEllipse,
-    matchShapes, matchShapesSimple
+    matchShapes, 
+    matchShapes', --TEMPORARY
+    matchShapesSimple
 ) where
 
 import Control.Arrow((***),(&&&))
@@ -125,11 +127,20 @@ rotTrans w = (rho,skew,rat)
     skew = abs (pi/2 - (abs $ acos $ (dx*ex + dy*ey) / (e*d)))
   
 ----------------------------------------------------------------------  
-  
+matchShapes  :: Double -> Double -> 
+                ((t, [Shape]), Sample Shape) -> (t, [[ShapeMatch]])  
 matchShapes th1 th2 ((x,cs),prots) = (x, map (filterGood . shapeMatch prots) cs)
   where
     filterGood = sortBy (compare `on` alignDist) . filter good
     good m = invDist m < th1 && alignDist m < th2
+             
+matchShapes'  :: Double -> Double -> 
+                 ((t, [Shape]), Sample Shape) ->  [[ShapeMatch]]
+matchShapes' th1 th2 ((x,cs),prots) =  map (filterGood . shapeMatch prots) cs
+  where
+    filterGood = sortBy (compare `on` alignDist) . filter good
+    good m = invDist m < th1 && alignDist m < th2
+
 
 matchShapesSimple th ((x,cs),prots) = (x, map (filterGood . shapeMatch prots) cs)
   where
