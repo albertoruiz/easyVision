@@ -31,8 +31,14 @@ main = do
 
 ---------------------------------------------------------------------------
 
+scatterPlots name exs mets = browser name xs (const id)
+  where
+    xs = map f mets
+    f (met, name) = scatter exs (0,1) [] (windowTitle name $ drawDecisionRegion 71 exs [] met)
 
-
+scatterPlot name sz exs coor colors prefun = browser name xs (const id)
+  where
+    xs = [scatter exs (0,1) [] prefun]
 
 colors = [red,blue,orange,green]++repeat lightgray
 

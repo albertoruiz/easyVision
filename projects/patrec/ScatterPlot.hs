@@ -13,9 +13,8 @@ Show distribution of labeled vectors in space
 -----------------------------------------------------------------------------
 
 module ScatterPlot (
-    scatterPlots,
-    scatterPlot, drawDecisionRegion, scatter,
-    scatterPlot3D,
+    scatter, drawDecisionRegion
+--    scatterPlot3D,
 )where
 
 import Vision.GUI
@@ -26,19 +25,8 @@ import Graphics.UI.GLUT as GL hiding (Point,color,Size,clearColor,windowTitle)
 import Control.Monad(forM_)
 import Util.Misc(debug)
 
-scatterPlot3D = undefined
 
-scatterPlots name exs mets = browser name xs (const id)
-  where
-    xs = map f mets
-    f (met, name) = scatter exs (0,1) [] (windowTitle name $ drawDecisionRegion 71 exs colors met) (Draw ())
-    colors = [pink,lightblue,lightgreen]++repeat white
-
-scatterPlot name sz exs coor colors prefun = browser name xs (const id)
-  where
-    xs = [scatter exs (0,1) [] prefun (Draw ())]
-
-scatter examples (i,j) colornames prefun postfun = clearColor white . prep $ [ prefun, pointSz 5 things, postfun ]
+scatter examples (i,j) colornames prefun = clearColor white . prep $ [ prefun, pointSz 5 things]
   where
     (gs,lbs) = group examples
     things = zipWith f gs colors
@@ -56,7 +44,6 @@ scatter examples (i,j) colornames prefun postfun = clearColor white . prep $ [ p
     colors = take (length gs) (colornames ++ [red,blue,green,yellow,orange]++ repeat white)
 
 
-
 drawDecisionRegion n prob colors clasif = pointSz 7 vals
   where
     xs = map ((@>0).fst) prob
@@ -68,7 +55,7 @@ drawDecisionRegion n prob colors clasif = pointSz 7 vals
     ranx = toList $ linspace n (a1,a2)
     rany = toList $ linspace n (b1,b2)
     dom = sequence [ranx,rany]
-    themap = zip (labels . snd . group $  prob) colors
+    themap = zip (labels . snd . group $  prob) (colors ++ [pink, lightblue, lightgreen, yellow, orange] ++ repeat white)
     colorOf lab = maybe white id (lookup lab themap)
     vals = map d dom
     d p = color (colorOf $ clasif $ fromList $ p) ((\[x,y]->Point x y) p)

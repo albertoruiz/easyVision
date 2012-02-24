@@ -23,9 +23,13 @@ import Data.Function(on)
 
 disp = putStr . dispf 2
 
-colors = [red,blue,orange,green]++repeat lightgray
+scw title p mix = browser title xs (const id)
+  where
+    xs = [scatter p (0,1) [] (shMix mix) ]
 
-scw title p mix = scatterPlot title (Size 400 400) p (0,1) colors (shMix mix)
+scws title p mixs = browser title xs (const id)
+  where
+    xs = map (\m -> scatter p (0,1) [] (shMix m) ) mixs
 
 shMix mix = lineWd 3 . color black . map (drawGaussian.snd) $ mix
 
@@ -50,15 +54,14 @@ m = [(0.25,cl1), (0.25,cl2), (0.25,cl3), (0.25,cl4)]
 
 dt = sampleMixture [7000,8000 ..] 1000 m
 
-main = testEM
+main = runIt $ testEM >> testEMSeq
 
 testEMSeq = do
-    let f m = scw ("EM "++show (length m)) (map (id&&&const"1") (toRows dt)) m
-        ms = emSeq dt
+    let ms = emSeq dt
     mapM_ (print.snd) (take 10 ms)
-    runIt $ mapM_ (f.fst) (take 10 ms)
+    scws "EM" (map (id&&&const"1") (toRows dt)) (map fst $ take 10 ms)
 
 testEM = do
     let f m = scw ("EM MDL "++show (length m)) (map (id&&&const"1") (toRows dt)) m
-    runIt $ f (findMixture dt)
+    f (findMixture dt)
 
