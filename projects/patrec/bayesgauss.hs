@@ -6,6 +6,8 @@ import Util.Misc(vec,mat)
 
 ----------------------------------------------------------------------
 
+main = test
+
 disp = putStr . dispf 2
 
 z = N me co

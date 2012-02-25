@@ -8,9 +8,9 @@ import Data.List as L
 import qualified Data.Map as M
 import Data.Maybe(fromMaybe)
 import Control.Arrow((&&&))
-import System.Environment (getArgs)
 import Text.Printf(printf)
 import Util.Misc(splitEvery, randomPermutation, Vec, Seed)
+import Util.Options
 
 
 study prob meth = do
@@ -23,11 +23,9 @@ study prob meth = do
 
 
 main = do
-    m <- fromFile "../../../data/mnist.txt" (5000,785)
-    args <- map read `fmap` getArgs
-    let [n,s] = case args of
-            [] -> error "usage: ./ferns <ferns number (e.g. 100)> <ferns size (e.g. 10) >"
-            [n,s]->[n,s]
+    m <- fromFile "../../data/ml/mnist.txt" (5000,785)
+    n <- getOption "--n" 100 -- number of ferns
+    s <- getOption "--s" 10 -- size of each fern
     let vs = toRows (takeColumns 784 m)
     let ls = map (show.round) $ toList $ flatten $ dropColumns 784 m
     seed <- randomIO
