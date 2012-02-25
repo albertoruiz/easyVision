@@ -1,4 +1,3 @@
-
 import Classifier
 import Classifier.ToyProblems
 import Util.Stat
@@ -13,54 +12,42 @@ import Data.Maybe(maybe)
 import System.Random(randomIO)
 import Text.Printf(printf)
 import Control.Monad((>=>))
-import ImagProc(Size(..))
+import ImagProc(Size(..),mat2img,resize)
 
 import ScatterPlot
-
 
 ---------------------------------------------------------------------------
 
 rawmnist = loadExamples "../../data/ml/mnist.txt"
 
+-- FIXME separate demos
+
 main = do
-    scatters (map return "0123")
     democlas sshape
-    checkpca
     demoQuality moon
-    
---    
---    testBrowser 20 ["0","1"]
+    scatters (map return "0123")
+    testBrowser 20 ["0","1"]
+    checkpca
 
 ---------------------------------------------------------------------------
+
+scw title p = browser title xs (const id)
+  where
+    xs = [scatter p (0,1) [] (Draw())]
 
 scatterPlots name exs mets = browser name xs (const id)
   where
     xs = map f mets
     f (met, name) = scatter exs (0,1) [] (windowTitle name $ drawDecisionRegion 71 exs [] met)
 
-scatterPlot name sz exs coor colors prefun = browser name xs (const id)
-  where
-    xs = [scatter exs (0,1) [] prefun]
-
-colors = [red,blue,orange,green]++repeat lightgray
-
-scw title p = scatterPlot title (Size 400 400) p (0,1) colors (Draw ())
-
-scwc title p clasif = scatterPlot title (Size 400 400) p (0,1) colors (drawDecisionRegion 51 p colors clasif)
-
-scwm title p met = scwc title p (mode . met p)
-
-scwme title evi p met = scwc title p (maybe "REJECT" id . reject evi . met p)
-
-rej evi = maybe "REJECT" id . reject evi
-
-
-
 scw3 name ps = browser3D name xs (const id)
   where
     xs = map (\p-> scatter3D p (0,1,2) [] (Draw())) ps
 
 ---------------------------------------------------------------------------
+
+rej evi = maybe "REJECT" id . reject evi
+
 
 democlas x = do
     seed <- randomIO
@@ -127,38 +114,20 @@ checkpca = do
 
 ---------------------------------------------------------------------------
 
-{-
-
-examplesBrowser :: String -> Size -> (t -> IO a) -> Sample t -> IO (EVWindow (Int, Sample t))
-examplesBrowser name sz f exs =
-    evWindow (0,exs) name sz (Just disp) (mouseGen acts kbdQuit)
-  where
-    n = length exs - 1
-    disp st = do
-        (k,exs) <- get st
-        let (x,label) = exs!!k
-        f x
-        windowTitle $= name++" #"++show (k+1)++ ": "++label
-    acts = [((MouseButton WheelUp,   Down, modif), \_ (k,exs) -> (min (k+1) n, exs))
-           ,((MouseButton WheelDown, Down, modif), \_ (k,exs) -> (max (k-1) 0, exs))]
-
-showImage name img = evWindow img name (size img) (Just (get>=>drawImage)) (const kbdQuit)
-
-shDigRaw v = drawImage $ mat2img . single $ (reshape 28 v)
-
---mat2img = fromListsF . toLists . single
+shDigRaw v = Draw . resize (Size 200 200).  mat2img . single $ (reshape 28 v)
 
 shDig = shDigRaw . autoscale
+
+showImage name img = browser name [Draw img] (const id)
 
 autoscale v = (v - scalar b) / scalar (a-b)
   where a = maxElement v
         b = minElement v
 
-testBrowser n c = do
+testBrowser n c = runIt $ do
     mnist <- rawmnist
-    prepare
     let zeros = selectClasses c mnist
-    examplesBrowser "MNIST" (Size 300 300) shDig zeros
+    browseLabeled (concat c) zeros shDig
     let x = fromRows $ map fst zeros
         st = stat x
         med = meanVector st
@@ -171,22 +140,23 @@ testBrowser n c = do
         ica = fst . debug "err: " snd . icaTrans 50 (ica2 0.01) $ wd
         icaorig = toRows $ decodeMatrix codec (ica <> inv w) - asRow med
         icab = toRows $ ica <> (takeRows n $ eigenvectors st)
-    examplesBrowser "IC" (Size 300 300) shDig (aux icaorig)
+    browseLabeled "IC" (aux icaorig) shDig
+    
     let p = preprocess (mef (NewDimension n) zeros) zeros
     scw "PCA" p
-    scw3 "PCA" $ boxAttr p `preprocess` p
+    scw3 "PCA" [ boxAttr p `preprocess` p ]
     let pw = aux $ toRows $ wd
-    scw3 "Whitened" $ boxAttr pw `preprocess` pw
+    scw3 "Whitened" [boxAttr pw `preprocess` pw]
     let pica = aux $ toRows $ wd <> trans ica
     scw "ICA" pica
-    scw3 "ICA" pica
+    scw3 "ICA" [pica]
     showImage "PCA vs ICA" $ mat2img . single $ fromBlocks $ map (\x->map (reshape 28 . autoscale) (take n x)) [pc,icab]
     let expca k  = expand (fst $ zeros!!k) med (take n pc)
     showImage "Expansion PCA " $ mat2img . single $ autoscale $ fromBlocks $ map (\t->map (reshape 28 ) (take (n+3) t)) (map expca [0..9])
     let exica k  = expand (fst $ zeros!!k) med icab
     showImage "Expansion ICA " $ mat2img .single $ autoscale $ fromBlocks $ map (\t->map (reshape 28 ) (take (n+3) t)) (map exica [0..9])
-    mainLoop
     --return $ fromRows icab <> trans (fromRows icab)
+
 
 expand x m bs = x : r : map (scale 1) cs'  where
     ys = map (<.>(x - m)) bs
@@ -201,11 +171,7 @@ expand' x m bs = x : r : m : cs where
     cs = zipWith scale ys bs
     r = sum (m : cs)
 
-
--}
-
 ---------------------------------------------------------
-
 
 scatters s = runIt $ do
     raw <- rawmnist
