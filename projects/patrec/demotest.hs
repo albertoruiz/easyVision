@@ -23,10 +23,12 @@ import ScatterPlot
 rawmnist = loadExamples "../../data/ml/mnist.txt"
 
 main = do
+    scatters (map return "0123")
     democlas sshape
     checkpca
---    scatters (map return "0123")
---    allDigits
+    demoQuality moon
+    
+--    
 --    testBrowser 20 ["0","1"]
 
 ---------------------------------------------------------------------------
@@ -52,11 +54,11 @@ scwme title evi p met = scwc title p (maybe "REJECT" id . reject evi . met p)
 
 rej evi = maybe "REJECT" id . reject evi
 
-{-
 
-scw3 title p = scatterPlot3D title 400 p (0,1,2) colors (return ())
 
--}
+scw3 name ps = browser3D name xs (const id)
+  where
+    xs = map (\p-> scatter3D p (0,1,2) [] (Draw())) ps
 
 ---------------------------------------------------------------------------
 
@@ -78,7 +80,7 @@ democlas x = do
 
 ----------------------------------------------------------------------
 
-{-
+
 
 study msg prob meth pred = do
     let (train,test) = prob
@@ -102,18 +104,6 @@ demoQuality x = do
     study "Multilayer Perceptron [5] 3db" p (neural 0.1 0.05 100 [10]) (reject 3)
     study "Multilayer Perceptron [20,10,5] 5db" p (neural 0.05 0.05 200 [20,10,5]) (reject 5)
 
-{-
-         >> scwme "lsc 1db" 1 p lsc
-         >> scwm "D Mah" p (minDistance mahalanobis)
-         >> scwm "Gaussian" p (bayes gaussian)
-         >> scwme "Gaussian, 3db" 3 p (bayes gaussian)
-         >> scwm "Naive Gaussian" p (bayes naiveGaussian)
-         >> scwme "Gaussian Mixture, 15db" 15 p (bayes gmm)
-         >> scwme "NN [5] 3db" 3 p (neural 0.1 0.05 100 [10])
-         >> scwme "NN [20,10,5] 5db" 5 p (neural 0.05 0.05 200 [20,10,5])
--}
-
--}
 
 ---------------------------------------------------------------------------
 -- check PCA reconstruction quality measured in sigma units
@@ -212,31 +202,23 @@ expand' x m bs = x : r : m : cs where
     r = sum (m : cs)
 
 
+-}
 
 ---------------------------------------------------------
 
-scatters s = do
-    prepare
+
+scatters s = runIt $ do
     raw <- rawmnist
     let sel = filter ((`elem` s) . snd) raw
-    scw3 "PCA All" $ (boxAttr `ofP` mef (NewDimension 3)) raw `preprocess` raw
-    scw3 ("PCA " ++ concat s) $ (boxAttr `ofP` mef (NewDimension 3)) sel `preprocess` sel
+    scw3 "PCA All" [ (boxAttr `ofP` mef (NewDimension 3)) raw `preprocess` raw ]
+    scw3 ("PCA " ++ concat s) [ (boxAttr `ofP` mef (NewDimension 3)) sel `preprocess` sel ]
 
     let redu = mef (NewDimension 40) raw `preprocess` raw
         sel = filter ((`elem` s) . snd) redu
         sep = (boxAttr `ofP` mdf) sel `preprocess` sel
-    scw3 "MDF "sep
-    mainLoop
+    scw3 "MDF " [sep]
 
-allDigits = do
-    prepare
-    raw <- rawmnist
-    let dig d = do
-           let they = filter ((`elem` [d]) . snd) raw
-           scw3 (show d) $  (boxAttr `ofP` mef (NewDimension 3)) they `preprocess` they
-
-    mapM_ dig (map return "0123456789")
-    mainLoop
-
--}
+    let dig d =  (boxAttr `ofP` mef (NewDimension 3)) they `preprocess` they
+          where they = filter ((`elem` [d]) . snd) raw
+    scw3 "PCA each" (map (dig.return) "0123456789")
 

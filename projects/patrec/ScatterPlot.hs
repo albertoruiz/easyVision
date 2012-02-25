@@ -13,8 +13,8 @@ Show distribution of labeled vectors in space
 -----------------------------------------------------------------------------
 
 module ScatterPlot (
-    scatter, drawDecisionRegion
---    scatterPlot3D,
+    scatter, drawDecisionRegion,
+    scatter3D
 )where
 
 import Vision.GUI
@@ -28,7 +28,7 @@ import Util.Misc(debug)
 
 scatter examples (i,j) colornames prefun = clearColor white . prep $ [ prefun, pointSz 5 things]
   where
-    (gs,lbs) = group examples
+    (gs,_) = group examples
     things = zipWith f gs colors
     f g c = color c (plot g)
     plot = map (\v-> Point (v@>i) (v@>j))
@@ -60,6 +60,26 @@ drawDecisionRegion n prob colors clasif = pointSz 7 vals
     vals = map d dom
     d p = color (colorOf $ clasif $ fromList $ p) ((\[x,y]->Point x y) p)
 
+
+scatter3D examples (i,j,k) colornames prefun = clearColor white $ [ prefun, pointSz 3 things, lineWd 1 . color black $ axes]
+  where
+    (gs,_) = group examples
+    things = zipWith f gs colors
+    f g c = color c (plot g)
+    plot = Raw . GL.renderPrimitive GL.Points . mapM_ (\v-> vertex (Vertex3 (doubleGL $ v@>i) (doubleGL $ v@>j) (doubleGL $ v@>k))) -- FIXME using Point3D
+    
+    colors = take (length gs) (colornames++defaultColors)
+    
+    axes = Raw $     
+        GL.renderPrimitive GL.Lines $ mapM_ vertex [  -- FIXME using Point3D
+            Vertex3 0 0 0,
+            Vertex3 1 0 0,
+            Vertex3 0 0 0,
+            Vertex3 0 1 0,
+            Vertex3 0 0 0,
+            Vertex3 0 0 (1::Float)]
+
+defaultColors = [red, blue, green, orange, brown ] ++ repeat gray
 
 
 
