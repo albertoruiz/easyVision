@@ -20,9 +20,11 @@ import Control.Arrow
 import Data.List(sort,groupBy)
 import Data.Function(on)
 
+import Vision.GUI
+
 ----------------------------------------------------------------
 
-tracksPath = "../../data/tracks/"
+tracksPath = "../../../data/tracks/"
 
 ----------------------------------------------------------------
 
@@ -77,6 +79,8 @@ relocate p = p { pts = newPts, cams = newCams }
   where (newCams, newPts) = relocateReco (cams p, pts p)
 
 ----------------------------------------------------------------------
+
+main = test "dinosaur"
 
 test name = loadProblem name >>= testGo name
 
