@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleInstances, ExistentialQuantification, RecordWildCards #-}
+{-# LANGUAGE FlexibleInstances, ExistentialQuantification, RecordWildCards, ViewPatterns #-}
 -----------------------------------------------------------------------------
 {- |
 Module      :  Vision.GUI.Types
@@ -162,6 +162,9 @@ doubleGL = unsafeCoerce -- realToFrac
 floatGL :: Float -> GLfloat
 floatGL = unsafeCoerce -- realToFrac
 
+clampfGL :: Float -> GLclampf
+clampfGL = unsafeCoerce -- realToFrac
+
 --------------------------------------------------------------------------------
 
 data EVWindow st = EVW { evW        :: Window
@@ -226,6 +229,12 @@ instance Renderable (RGB Float) where
                                              (floatGL $ channelBlue)
                                              1
 
+clampfColor :: Colour Float -> Color4 GLclampf
+clampfColor (toSRGB->RGB{..}) = Color4 (clampfGL $ channelRed)
+                                       (clampfGL $ channelGreen)
+                                       (clampfGL $ channelBlue)
+                                       1
+
 instance Renderable (Colour Float) where
     render = render . toSRGB 
 
@@ -256,9 +265,7 @@ text = textF Helvetica18
 
 winTitle = Raw . (windowTitle $=)
 
---clearColor col d = color col [Raw (get currentColor >>= (GL.clearColor $=)), Draw d]
-
-clearColor col d = color col [Draw d] --TODO: FIXME see line above. make it compile.
+clearColor col d = Draw [ Raw $ GL.clearColor $= clampfColor col, Draw d ]
 
 instance Renderable () where
     render = return
