@@ -22,6 +22,8 @@ import Data.Function(on)
 
 import Vision.GUI
 
+import Util.Options
+
 ----------------------------------------------------------------
 
 tracksPath = "../../../data/tracks/"
@@ -80,9 +82,14 @@ relocate p = p { pts = newPts, cams = newCams }
 
 ----------------------------------------------------------------------
 
-main = test "dinosaur"
+main = do
+    name <- optionString "--tracks" "dinosaur"
+    full <- liftA2 (||) (getFlag "--full") (getFlag "-f")
+    if full then testF name
+            else testS name
 
-test name = loadProblem name >>= testGo name
+testF name = loadProblem name >>= testGo name
+testS name = loadProblem name >>= testGoSmall name
 
 testCal1Optim name = do
     p <- loadProblem name
@@ -109,13 +116,15 @@ testCalManyGo name p = do
         p' = recalibrate fs p
     testGoSmall name p'
 
+-- bootstrap' ?
 testGoSmall name p = do
-    let b = bootstrap' p
+    let b = bootstrap p
     printf "boot rmse (x1000): %.2f\n" $ krms b
     
     let g = gea b
     printf "GEA calibrated rmse (x1000): %.2f\n" $ krms g
-    runIt $ shRecos name (map relocate [b,g])
+    runIt $ shRecos name (map (relocate***id) [ (g,"GEA "++name)
+                                              , (b,"bootstrap "++name) ])
 
 
 testGo name p = do
@@ -136,16 +145,20 @@ testGo name p = do
 
     let b0 = bootFromRots (initRots (epi p)) p
     printf "boot with init rots rmse (x1000): %.2f\n" $ krms b0
-    
-    let b = bootstrap p
-    printf "boot rmse (x1000): %.2f\n" $ krms b
-    
+
     let s'' = bootFromRots' 10 (map rotOfCam (cams s)) p
     printf "c+p 10 with optimal rots rmse (x1000): %.2f\n" $ krms s''
     
-    let g = gea p
+    let b = bootstrap p
+    printf "boot rmse (x1000): %.2f\n" $ krms b
+        
+    let g = gea b
     printf "GEA calibrated rmse (x1000): %.2f\n" $ krms g
-    runIt $ shRecos name (map relocate [s,s',g])
+    
+    
+    runIt $ shRecos name (map (relocate***id) [(s,  "SBA "++name)
+                                              ,(s', "boot opt rots "++name)
+                                              ,(g,  "GEA "++name)])
    
 
 test2 name = do
@@ -162,7 +175,7 @@ test2 name = do
     
     disp 6 $ fromBlocks [[tcn,(fromRows $ map cencam (cams s'))]]
     
-    runIt $ shRecos name (map relocate [p,s'])
+    runIt $ shRecos name (map (relocate***id) [(p,name++" test-a"),(s',name++" test-b")])
 
 
 disp k = putStr . dispf k
@@ -212,7 +225,7 @@ exper = do
     
     let g = gea b
     printf "GEA calibrated rmse (x1000): %.2f\n" $ krms g
-    runIt $ shRecos "synth" (map relocate [b,g])
+    runIt $ shRecos "synth" (map (relocate***id) [(b,"synth boot"),(g,"synt gea")])
 
 
 bootstrap' p = bootFromRots rs p

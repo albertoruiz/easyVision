@@ -33,10 +33,10 @@ import Control.Monad((>=>))
 
 shRecosG fc fp name ss = browser3D name (map x ss) (const id)
   where
-    x s =  clearColor white [ color black $ (map $ flip (drawCamera 0.1) Nothing) (fc s)
-                            , color blue $ Raw $ renderPrimitive Points $ mapM_ (vertex.toList.inHomog) (fp s) ] -- FIXME
-
-
+    x (s,tit) = clearColor white
+                    [ winTitle tit , color black $ (map $ flip (drawCamera 0.1) Nothing) (fc s)
+                    , color blue $ Raw $ renderPrimitive Points $ mapM_ (vertex.toList.inHomog) (fp s) -- FIXME
+                    ]
 
 {-
 shRecoG fc fp name s = do
