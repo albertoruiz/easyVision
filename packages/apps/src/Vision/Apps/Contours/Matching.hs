@@ -1,11 +1,19 @@
-{-# LANGUAGE TemplateHaskell, RecordWildCards #-}
+{-# LANGUAGE TemplateHaskell, RecordWildCards, ViewPatterns #-}
 
 module Vision.Apps.Contours.Matching (
+    Matchings,
+    matchings,
+    showCanonical,
+    showAlignment,
+    catalog,
+--------------------------------
     winMatching,
     injectPrototypes,
     injectPrototypes',
-    showCanonical,
-    showAlignment
+    injectPrototypesP,
+    matchShapes, 
+    matchShapes', --TEMPORARY
+    matchShapesSimple
 ) where
 
 import Vision.GUI
@@ -29,10 +37,32 @@ import Data.Function(on)
 autoParam "MatchingPar" "match"
     [ ("errInvar", "Double", realParam 0.3 0 1)
     , ("errAlign", "Double", realParam 0.3 0 1)
-    , ("tolRot",   "Double", realParam 30 0 90)
+    , ("tolRot",   "Double", realParam 40 0 90)
     , ("vertical", "Int",    intParam  0  0 1)
     , ("minRat",   "Double", realParam  0.3  0 1)
     , ("maxRat",   "Double", realParam  2  1 5)]
+
+--------------------------------------------------------------------------------
+
+matchShapes  :: Double -> Double -> 
+                ((t, [Shape]), Sample Shape) -> (t, [[ShapeMatch]])  
+matchShapes th1 th2 ((x,cs),prots) = (x, map (filterGood . shapeMatch prots) cs)
+  where
+    filterGood = sortBy (compare `on` alignDist) . filter good
+    good m = invDist m < th1 && alignDist m < th2
+             
+matchShapes'  :: Double -> Double -> 
+                 ((t, [Shape]), Sample Shape) ->  [[ShapeMatch]]
+matchShapes' th1 th2 ((x,cs),prots) =  map (filterGood . shapeMatch prots) cs
+  where
+    filterGood = sortBy (compare `on` alignDist) . filter good
+    good m = invDist m < th1 && alignDist m < th2
+
+
+matchShapesSimple th ((x,cs),prots) = (x, map (filterGood . shapeMatch prots) cs)
+  where
+    filterGood = sortBy (compare `on` invDist) . filter ((<th).invDist)
+
 
 winMatching :: ITrans ((t, [Shape]), Sample Shape) (t, [[ShapeMatch]])
 winMatching = withParam f
@@ -42,12 +72,32 @@ winMatching = withParam f
       where
         mode = if vertical == 1 then Just 0 else Nothing
 
+----------------------------------------------------------------------
+
+type Matchings = [(Shape,[ShapeMatch])]
+
+matchings :: Sample Shape -> MatchingPar -> [Shape] -> Matchings
+matchings protos = f
+  where
+    f mp@MatchingPar{..} cs = consistent' mp mode . zip cs . map (matchShapes'' protos errInvar errAlign) $ cs
+      where
+        mode = if vertical == 1 then Just 0 else Nothing
+
+matchShapes''  :: Sample Shape -> Double -> Double ->  Shape -> [ShapeMatch]
+matchShapes'' protos th1 th2 = filterGood . shapeMatch protos
+  where
+    filterGood = sortBy (compare `on` alignDist) . filter good
+    good m = invDist m < th1 && alignDist m < th2
+
 --------------------------------------------------------------------------------
 
 asym = map return "12347¢ABCDEFGJKLMPQRTUVYW" :: [String]
 sym  = map return "SHNXZ" :: [String]
-ambi = map return "0OI" :: [String]
+ambi = map return "?0OI" :: [String]
 
+
+consistent' :: MatchingPar -> Maybe Double -> Matchings -> Matchings
+consistent' mp mbd ms = zip (map fst ms) (consistent mp mbd (map snd ms))
 
 consistent tr Nothing ms = consistent tr (Just dir) ms
   where
@@ -101,30 +151,34 @@ catalog defaultdbs = concat <$> mapM r defaultdbs >>= optionFromFile "--catalog"
   where
     r x = read <$> readFile x
 
-injectPrototypes  :: Renderable t =>
-     [FilePath] -> ITrans (t, [Shape]) ((t, [Shape]), [(Shape, String)])
-injectPrototypes dbs = choose (getFlag "--see-prototypes") (injectUI dbs) (injectSilent dbs)
 
-injectSilent  :: [FilePath] -> ITrans a (a, [(Shape, Label)])
-injectSilent defaultdbs = transUI $ do
+-- we could 
+
+--injectPrototypes  :: Renderable t =>
+--     [FilePath] -> ITrans (t, [Shape]) ((t, [Shape]), [(Shape, String)])
+injectPrototypesP prepro dbs = choose (getFlag "--see-prototypes") (injectUI prepro dbs) (injectSilent prepro dbs)
+
+injectPrototypes dbs = injectPrototypesP shape dbs
+
+--injectSilent  :: [FilePath] -> ITrans a (a, [(Shape, Label)])
+injectSilent prepro defaultdbs = transUI $ do
     c <- catalog defaultdbs
-    let p = map (shape.boxShape *** id) c
+    let p = map (prepro.boxShape *** id) c
     return $ \cam -> do
         x <- cam
         return (x,p)
 
-injectUI  :: Renderable t => [FilePath] 
-             -> ITrans (t, [Shape]) ((t, [Shape]), [(Shape, String)])
-injectUI defaultdbs = transUI $ do
+--injectUI  :: Renderable t => [FilePath] 
+--             -> ITrans (t, [Shape]) ((t, [Shape]), [(Shape, String)])
+injectUI prepro defaultdbs = transUI $ do
     c <- catalog defaultdbs
-    let prepro = id
-        disp = Draw . transPol (diagl [0.8, 0.8, 1]) . shapeContour
-    bro <- browseLabeled "Shapes" (map (shape.boxShape *** id) c) disp
+    let disp = Draw . transPol (diagl [0.8, 0.8, 1]) . shapeContour
+    bro <- browseLabeled "Shapes" (map (prepro.boxShape *** id) c) disp
 
     let ft _ _  = return ()
         result _r _s (x,cs) = (ss,(x,ss))  -- save contours in the state
           where
-            ss = map prepro cs
+            ss = cs
         display _r _s (im,conts) = Draw [ Draw im,
                                           color orange $ map (Draw . shapeContour) conts ]
         add _r _p [] = return ()
@@ -187,7 +241,7 @@ closestTo pt = minimumBy (compare `on` (d pt))
 showCanonical :: ITrans (ImageGray, [Shape]) (ImageGray, [Shape])
 showCanonical = sMonitor "canonical" disp 
   where
-    disp _ (x,ss) = [fun h white 1, fun g yellow 3] 
+    disp _ (x,ss) = [fun h white 1, fun g yellow 3, fun ks orange 1]
       where
         fun t col w = Draw [ Draw x
                            , lineWd w . color col $ (map (Draw .t) ss) ]
@@ -203,6 +257,11 @@ showCanonical = sMonitor "canonical" disp
         dirs = Closed $ concatMap ((\x->[Point ox oy, x]) 
                                    . hv2pt.(<> vec [2,0,1])
                                    . inv .  (<> shapeWhitener). snd) kHyps
+
+    ks s@Shape {..}  = textAtShape s (f invKS)
+      where f (toList->[a,b,c,d,s1,s2,s3,s4]) =
+                printf "%.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f" a b c d s1 s2 s3 s4
+            f v = show v
 
 ----------------------------------------------------------------------
 
