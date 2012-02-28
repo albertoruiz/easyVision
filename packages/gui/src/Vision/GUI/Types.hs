@@ -16,7 +16,7 @@ module Vision.GUI.Types
    EVWindow(..), MoveStatus(..), ResizePolicy(..), PauseStatus(..), WinRegion, WStatus(..)
 -- * Drawing abstraction
 ,  Renderable(..), Drawing(..)
-,  color, text, textF, pointSz, lineWd, winTitle, clearColor, draws
+,  color, text, textF, pointSz, lineWd, windowTitle , clearColor, draws
 -- * Tools
 , pointCoordinates, pointCoords
 , pixelCoordinates, pixelCoords
@@ -25,10 +25,11 @@ module Vision.GUI.Types
 , evSize, glSize
 , floatGL, doubleGL
 , prepZoom, unZoom
-, color', pointSz', lineWd'
+, withOrtho2D
+, color', pointSz', lineWd', winTitle
 ) where
 
-import Graphics.UI.GLUT hiding (RGB, Matrix, Size, Point,color,clearColor)
+import Graphics.UI.GLUT hiding (RGB, Matrix, Size, Point,color,clearColor,windowTitle)
 import qualified Graphics.UI.GLUT as GL
 import ImagProc.Base
 import Numeric.LinearAlgebra hiding (step)
@@ -263,12 +264,22 @@ textF f p s = Raw (textAtF f p s)
 
 text = textF Helvetica18
 
-winTitle = Raw . (windowTitle $=)
+winTitle = Raw . (GL.windowTitle $=)
+
+windowTitle name f = Draw [ winTitle name, Draw f ]
 
 clearColor col d = Draw [ Raw $ GL.clearColor $= clampfColor col, Draw d ]
 
 instance Renderable () where
     render = return
+
+withOrtho2D x1 x2 y1 y2 f = Draw [g, Draw f] 
+  where g = Raw $ do
+                matrixMode $= Projection
+                loadIdentity
+                ortho2D x1 x2 y1 y2
+                matrixMode $= Modelview 0
+                loadIdentity        
 
 -----------------------------------------
 

@@ -17,7 +17,7 @@ User interface tools.
 module Vision.GUI.Interface (
     -- * Interface
     Command, WinInit, WinRegion, VC, VCN,
-    runFPS, runIdle, runIt, run', interface, standalone, interface3D,
+    runFPS, runIdle, runIt, run', interface, standalone, interface3D, standalone3D,
     -- * Tools
     prepare,
     evWindow, evWindow3D, evWin3D,
@@ -155,12 +155,21 @@ standalone :: Size -> String -> s
            -> [Command s s] -> [Command s (IO ())]
            -> (s -> Drawing)
            -> IO (EVWindow s)
-standalone sz0 name st0 upds acts disp = do
-    w <- evWindow st0 name sz0 Nothing (keyAction upds acts kbdQuit)
+standalone = standaloneG False
+
+standalone3D :: Size -> String -> s
+             -> [Command s s] -> [Command s (IO ())]
+             -> (s -> Drawing)
+             -> IO (EVWindow s)
+standalone3D = standaloneG True
+
+standaloneG threeD sz0 name st0 upds acts disp = do
+    let evWin = if threeD then evWin3D' else evWindow
+    w <- evWin st0 name sz0 Nothing (keyAction upds acts kbdQuit)
 
     displayCallback $= do
         evInit w
-        prepZoom w
+        --prepZoom w
         st <- getW w
         renderIn w (disp st)
         drawRegion w

@@ -15,7 +15,7 @@ common interfaces
 module Vision.GUI.Util (
     observe, observe3D, camG, cameraFolderIM,
     sMonitor,
-    browser,
+    browser, browser3D,
     editor,
     updateItem,
     camera, run,
@@ -48,7 +48,7 @@ import Data.IORef
 
 editor :: [Command (Int,[x]) (Int,[x])] -> [Command (Int,[x]) (IO())]
        -> String -> [x] -> (Int -> x -> Drawing) -> IO (EVWindow (Int,[x]))
-editor upds acts name xs drw = standalone (Size 300 300) name (0,xs) (upds ++ move) acts f
+editor upds acts name xs drw = standalone (Size 400 400) name (0,xs) (upds ++ move) acts f
   where
     f (k,xs) | null xs = text (Point 0 0) "empty list!"
              | otherwise = drw j (xs !! j)
@@ -71,6 +71,22 @@ updateItem key f = (key, \roi pt (k,xs) -> (k, replaceAt [k] [f roi pt (xs!!k)] 
 
 browser :: String -> [x] -> (Int -> x -> Drawing) -> IO (EVWindow (Int,[x]))
 browser = editor [] []
+
+-- editor 3D?
+
+browser3D :: String -> [x] -> (Int -> x -> Drawing) -> IO (EVWindow (Int,[x]))
+browser3D name xs drw = standalone3D (Size 400 400) name (0,xs) move [] f
+  where
+    f (k,xs) | null xs = text (Point 0 0) "empty list!"
+             | otherwise = drw j (xs !! j)
+                 where
+                   j = k `mod` (length xs)   
+    move = g2 [ ( key (MouseButton WheelUp),   (+1) )
+              , ( key (SpecialKey  KeyUp),     (+1) )
+              , ( key (MouseButton WheelDown), pred )
+              , ( key (SpecialKey  KeyDown),   pred ) ]
+    g2 = map (id *** const.const.(***id))
+
 
 --------------------------------------------------------------------------------
 
