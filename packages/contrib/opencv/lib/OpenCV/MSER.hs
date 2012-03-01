@@ -2,7 +2,7 @@
 
 module OpenCV.MSER(
   mserRaw,
-  MSERParams(..), defMSERParams, winMSERParams, argMSERParams
+  MSERParams(..)
 ) where
 
 import ImagProc.Ipp.Core

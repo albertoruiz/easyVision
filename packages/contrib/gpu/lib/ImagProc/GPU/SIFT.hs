@@ -17,7 +17,7 @@ Interface to the SiftGPU library by Changchang Wu, <http://www.cs.unc.edu/~ccwu>
 
 module ImagProc.GPU.SIFT(
     getSift,
-    SIFTParams(..), defSIFTParams, winSIFTParams, argSIFTParams,
+    SIFTParams(..),
     getMatchGPU
 ) where
 
