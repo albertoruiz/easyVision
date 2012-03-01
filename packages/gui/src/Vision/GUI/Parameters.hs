@@ -14,11 +14,8 @@ A \'global\' parameter list with its own control window. See the example warp.hs
 -----------------------------------------------------------------------------
 
 module Vision.GUI.Parameters (
-   Parameters,
-   createParameters, createParameters', autoParam,
-   listParam, realParam, floatParam, percent, intParam, stringParam,
-   getParam, info, posi, incre, decre, setpo,
-   ParamRecord(..)
+     listParam, realParam, floatParam, percent, intParam, stringParam,
+     autoParam, MkParam, ParamRecord(..)
 ) where
 
 import ImagProc.Ipp.Core hiding (r1,c1,r2,c2)
@@ -352,10 +349,14 @@ appp f x = appE (appE (varE 'ap) f) x
 
 --------------------------------------------------------------------------------
 
+type MkParam p = IO(EVWindow(Map String Parameter),IO p)
+
 class ParamRecord r where
     defParam :: r           -- ^ default value
     argParam :: IO r        -- ^ default value modified by command line arguments
-    mkParam :: IO (EVWindow (Map String Parameter), IO r)   -- ^ parameter window with window control
+    mkParam :: MkParam r    -- ^ parameter window with window control
     winParam :: IO (IO r)   -- ^ parameter window constructor
-    winParam = snd <$> mkParam    
+    winParam = snd <$> mkParam
+
+
 
