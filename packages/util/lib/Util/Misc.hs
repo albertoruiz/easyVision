@@ -302,3 +302,12 @@ subListsBy p xs = case ok of
   where
     (ok,rest) = span p xs
 
+----------------------------------------------------------------------
+
+-- FIXME
+angleDiff :: (Floating a, Ord a) => a -> a -> a
+-- ^ absolute difference between two angles
+angleDiff x y = min (abs (x-y)) (abs (opos x - opos y))
+  where
+    opos z = if z > 0 then z - pi else z + pi
+

@@ -10,7 +10,7 @@ import Control.Arrow((***),(&&&))
 import Numeric.LinearAlgebra
 import Text.Printf(printf)
 import Data.List(minimumBy,sortBy,groupBy)
-import Util.Misc(Mat,Vec,norm,degree,diagl,debug,posMax,norm)
+import Util.Misc(Mat,Vec,norm,degree,diagl,debug,posMax,norm,angleDiff)
 import Util.Rotation
 import Classifier(Sample)
 import Vision
@@ -58,9 +58,10 @@ analyzeShape mW (p,(mx,my,cxx,cyy,cxy)) = Shape {..}
     whiteShape = transPol shapeWhitener p
     fou = fourierPL whiteShape
     invAffine = fromList $ map (magnitude.fou) [-mW .. mW]
-    invKS = 0 --FIXME
+
+--  kAngles = icaAngles whiteShape >>= (\a -> [a,a+pi])
+    (invKS,kAngles) = impang whiteShape
     
-    kAngles = icaAngles whiteShape >>= (\a -> [a,a+pi])
     kFeats = map f kAngles
       where
         f a = g $ normalizeStart $ (*cis (-a)) . fou
@@ -81,6 +82,15 @@ analyzeShape mW (p,(mx,my,cxx,cyy,cxy)) = Shape {..}
        where
          f = fouSimil
          s = f 1 + f (-1)
+
+    impang wshape = (feat, ias)
+      where
+        (as,ks) = unzip (anglesKurt wshape)
+
+        feat = fromList $ map (subtract (-25.1)) (take 2 ks) ++ [abs (da/degree - 90)]
+        ias = take 2 as >>= (\a->[a,a+pi])
+
+        da = angleDiff (as!!0) (as!!1)
 
 ----------------------------------------------------------------------
 

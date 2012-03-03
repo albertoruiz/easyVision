@@ -13,7 +13,7 @@ K orientation experiments.
 -----------------------------------------------------------------------------
 
 module Contours.Orientation (
-    icaAngles,
+    icaAngles, anglesKurt,
     kurtCoefs, kurtAlpha, kurtosisX,
     skewX
 )
@@ -27,6 +27,7 @@ import Util.Homogeneous(Point(..))
 import Util.Misc(degree)
 import Numeric.GSL.Polynomials(polySolve)
 import Data.Function(on)
+import Control.Arrow((&&&))
 
 
 auxKurt k seg@(Segment (Point x1 y1) (Point x2 y2)) =
@@ -208,9 +209,15 @@ derivCoefs [c0,c1,c2,c3,c4,c5,c6] =
     , 2*c4-6*c6
     ,   c5      ]
 
-icaAngles w = sortBy (compare `on` (negate.kur)) angs
+icaAngles = map fst . anglesKurt
+
+anglesKurt w = sortBy (compare `on` (negate.snd)) angs
   where
-    angs = map realPart . filter ((<(0.1*degree)).abs.imagPart) . map (atan.recip) . polySolve . derivCoefs $ coefs
+    angs = map (id &&& kur)
+         . map realPart
+         . filter ((<(0.1*degree)).abs.imagPart)
+         . map (atan.recip)
+         . polySolve . derivCoefs $ coefs
     coefs = kurtCoefs w
     kur = kurtAlpha coefs
 
