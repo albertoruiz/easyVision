@@ -16,7 +16,7 @@ module Vision.GUI.Types
    EVWindow(..), MoveStatus(..), ResizePolicy(..), PauseStatus(..), WinRegion, WStatus(..)
 -- * Drawing abstraction
 ,  Renderable(..), Drawing(..)
-,  color, text, textF, pointSz, lineWd, windowTitle , clearColor, draws
+,  color, text, textF, pointSz, lineWd, windowTitle , clearColor, draws, colorAlpha, blend
 -- * Tools
 , pointCoordinates, pointCoords
 , pixelCoordinates, pixelCoords
@@ -29,7 +29,7 @@ module Vision.GUI.Types
 , color', pointSz', lineWd', winTitle
 ) where
 
-import Graphics.UI.GLUT hiding (RGB, Matrix, Size, Point,color,clearColor,windowTitle)
+import Graphics.UI.GLUT hiding (RGB, Matrix, Size, Point,color,clearColor,windowTitle,blend)
 import qualified Graphics.UI.GLUT as GL
 import ImagProc.Base
 import Numeric.LinearAlgebra hiding (step)
@@ -40,6 +40,7 @@ import Unsafe.Coerce(unsafeCoerce)
 import Data.IORef
 import Util.Misc(debug)
 import Control.Concurrent
+import Util.Geometry(HPoint(..),Point3D(..),HPoint3D(..))
 
 ------------------------------------------------------------
 
@@ -97,6 +98,20 @@ instance Vertex Pixel where
 instance Vertex Point where
     vertex (Point x y) = vertex (Vertex2 (doubleGL x) (doubleGL y))
     vertexv = undefined
+
+instance Vertex HPoint where
+    vertex (HPoint x y w) = vertex (HPoint3D x y 0 w)
+    vertexv = undefined
+
+instance Vertex Point3D where
+    vertex (Point3D x y z) = vertex (Vertex3 (doubleGL x) (doubleGL y) (doubleGL z))
+    vertexv = undefined
+
+instance Vertex HPoint3D where -- FIXME !??
+    vertex (HPoint3D x y z w) | w > 0     = vertex (Vertex4 (doubleGL x) (doubleGL y) (doubleGL z) (doubleGL w))
+                              | otherwise = vertex (Vertex4 (-doubleGL x) (-doubleGL y) (-doubleGL z) (-doubleGL w))
+    vertexv = undefined
+
 
 instance Vertex [Double] where
     vertex [x,y]   = vertex (Vertex2 (doubleGL x) (doubleGL y))
@@ -273,13 +288,27 @@ clearColor col d = Draw [ Raw $ GL.clearColor $= clampfColor col, Draw d ]
 instance Renderable () where
     render = return
 
-withOrtho2D x1 x2 y1 y2 f = Draw [g, Draw f] 
+withOrtho2D x1 x2 y1 y2 f = Draw [g, Draw f]
   where g = Raw $ do
                 matrixMode $= Projection
                 loadIdentity
                 ortho2D x1 x2 y1 y2
                 matrixMode $= Modelview 0
-                loadIdentity        
+                loadIdentity
+
+
+colorAlpha col alpha d = color col $ Raw $ do
+    GL.Color4 r g b a <- GL.get GL.currentColor
+    GL.currentColor GL.$= GL.Color4 r g b alpha
+    render d
+    GL.currentColor GL.$= GL.Color4 r g b a
+
+
+blend d = Raw $ do
+    GL.blend GL.$= GL.Enabled
+    GL.blendFunc   GL.$= (GL.SrcAlpha, GL.OneMinusSrcAlpha)
+    render d
+    GL.blend GL.$= GL.Disabled
 
 -----------------------------------------
 

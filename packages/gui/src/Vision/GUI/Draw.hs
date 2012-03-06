@@ -32,6 +32,8 @@ module Vision.GUI.Draw
 , drawContourLabeled
 , viewPoint
 , points'
+, lineStrip, axes3D, text3DAtF
+, drawPolygon
 ) where
 
 import Graphics.UI.GLUT hiding (RGB, Matrix, Size, Point,color)
@@ -52,7 +54,7 @@ import Data.Colour
 import Data.Colour.Names
 import Control.Monad(when)
 import GHC.Float(double2Float)
-
+import Util.Geometry(HPoint(..),Point3D(..),HPoint3D(..),HLine3D(..),HPlane(..),Meet(..))
 
 -- | Types of images that can be shown in a window
 class Drawable a where
@@ -372,16 +374,34 @@ instance Renderable Polyline where
 instance Renderable [Polyline] where
     render = mapM_ render
 
+instance Renderable (Vector Double) where
+    render v = renderPrimitive LineStrip (vertex $ fromColumns [t,v])
+      where
+        t = linspace (dim v) (0.9,-0.9)
+
 instance Renderable [Point] where
   render = renderPrimitive Points . mapM_ vertex
 
 instance Renderable Point where
   render p = render [p]
 
-instance Renderable (Vector Double) where
-    render v = renderPrimitive LineStrip (vertex $ fromColumns [t,v])
-      where
-        t = linspace (dim v) (0.9,-0.9)
+instance Renderable [HPoint] where
+  render = renderPrimitive Points . mapM_ vertex
+
+instance Renderable HPoint where
+  render p = render [p]
+
+instance Renderable [Point3D] where
+  render = renderPrimitive Points . mapM_ vertex
+
+instance Renderable Point3D where
+  render p = render [p]
+
+instance Renderable [HPoint3D] where
+  render = renderPrimitive Points . mapM_ vertex
+
+instance Renderable HPoint3D where
+  render p = render [p]
 
 instance Renderable HLine where
     render (HLine a 0 c) = render $ Open [Point x (-3), Point x 3]
@@ -392,6 +412,16 @@ instance Renderable HLine where
 instance Renderable [HLine] where
     render = mapM_ render
 
+instance Renderable HLine3D where
+  render l = render $ lineStrip [p1,p2]
+    where
+      p1 = meet l (HPlane 1 0.1   0   20)
+      p2 = meet l (HPlane 1 0   0.2 (-20))
+
+instance Renderable [HLine3D] where
+    render = mapM_ render
+
+
 instance Renderable [Segment] where
   render = renderPrimitive Lines . mapM_ vertex
 
@@ -401,8 +431,32 @@ instance Renderable Segment where
 points' :: [Point] -> Drawing
 points' = Draw
 
+lineStrip :: Vertex a => [a] -> Drawing
+lineStrip = Raw . GL.renderPrimitive GL.LineStrip . mapM_ GL.vertex
+
+drawPolygon :: Vertex a => [a] -> Drawing
+drawPolygon = Raw . GL.renderPrimitive GL.Polygon . mapM_ GL.vertex
+
 ------------------------------------------------------------
 
+axes3D l = Draw [ lineStrip
+                    [ Point3D 0 0 0
+                    , Point3D l 0 0
+                    , Point3D 0 0 0
+                    , Point3D 0 l 0
+                    , Point3D 0 0 0
+                    , Point3D 0 0 l ]
+                , text3DAtF Helvetica12 (Point3D 5.5 0 0) "x"
+                , text3DAtF Helvetica12 (Point3D 0 5.5 0) "y"
+                , text3DAtF Helvetica12 (Point3D 0 0 5.5) "z"
+                ]
+
+
+text3DAtF f (Point3D x y z) s = Raw $ do
+    GL.rasterPos (GL.Vertex3 (doubleGL x) (doubleGL y) (doubleGL z))
+    GL.renderString f s
+
+------------------------------------------------------------
 
 drawContourLabeled :: Colour Float -> Colour Float -> Colour Float -> Float -> Float -> Polyline -> Drawing
 drawContourLabeled cl cp ct wd sz cont = Draw [

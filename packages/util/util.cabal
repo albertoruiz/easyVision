@@ -19,7 +19,7 @@ build-type:         Simple
 extra-source-files:
 
 library
-    Build-Depends:      base >= 4 && < 5, hmatrix >= 0.10.1,
+    Build-Depends:      base >= 4 && < 5, hmatrix >= 0.10.1, hTensor,
                         process, array, random, containers, directory,
                         hmatrix-glpk
 
@@ -31,6 +31,7 @@ library
                         Util.Rotation
                         Util.Estimation
                         Util.Homogeneous
+                        Util.Geometry
                         Util.Covariance
                         Util.Probability
                         Util.Kalman
@@ -47,5 +48,5 @@ library
 
 --    ghc-prof-options:   -auto-all
 
-    ghc-options:        -Wall
+    ghc-options:        -Wall -funbox-strict-fields
 

@@ -48,12 +48,7 @@ module Util.Homogeneous
 import Numeric.LinearAlgebra
 import Util.Rotation(rot3)
 import Util.Misc(vec,Vec,mat,Mat,(#),unitary,norm,impossible)
-
-----------------------------------------------------------------------
-
-data Point = Point {px :: !Double, py :: !Double} deriving (Eq, Show, Read)
-
-data HLine = HLine {aLn, bLn, cLn :: !Double} deriving (Eq, Show, Read)
+import Util.Geometry(Point(..),HLine(..))
 
 ----------------------------------------------------------------------
 

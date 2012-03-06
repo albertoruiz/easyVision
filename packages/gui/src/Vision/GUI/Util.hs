@@ -23,7 +23,7 @@ module Vision.GUI.Util (
     browseLabeled,
     choose, optDo, optDont,
     withParam,
-    drawParam
+    drawParam, draw3DParam
 ) where
 
 import Graphics.UI.GLUT hiding (Point,Size,color)
@@ -259,6 +259,19 @@ drawParam :: ParamRecord t => String -> (t -> [Drawing]) -> IO ()
 drawParam title f = do
     (wp,gp) <- mkParam
     b <- browser title [] (const id)
+    (evAfterD wp) $= do
+        p <- gp
+        (k,_) <- getW b
+        putW b (k, f p)
+        postRedisplay (Just (evW b))
+
+--------------------------------------------------------------------------------
+
+draw3DParam :: ParamRecord t => String -> (t -> [Drawing]) -> IO ()
+-- ^ 3D drawing window with interactive parameters
+draw3DParam title f = do
+    (wp,gp) <- mkParam
+    b <- browser3D title [] (const id)
     (evAfterD wp) $= do
         p <- gp
         (k,_) <- getW b
