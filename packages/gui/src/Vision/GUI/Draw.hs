@@ -30,6 +30,7 @@ module Vision.GUI.Draw
 , captureGL
 , limitSize
 , drawContourLabeled
+, drawPointsLabeled
 , viewPoint
 , points'
 , lineStrip, axes3D, text3DAtF
@@ -466,6 +467,12 @@ drawContourLabeled cl cp ct wd sz cont = Draw [
     ]
   where
     c = polyPts cont
+
+
+drawPointsLabeled :: [Point] -> Drawing
+drawPointsLabeled pts = pointSz 3 $
+    [ Draw pts
+    , draws $ zipWith (textF Helvetica10) pts (map ((' ':).show) [(0::Int)..])]
 
 
 viewPoint :: (Image im, Renderable im, Renderable x) => Mat -> Maybe im -> x -> Drawing

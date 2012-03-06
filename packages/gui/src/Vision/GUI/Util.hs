@@ -23,7 +23,9 @@ module Vision.GUI.Util (
     browseLabeled,
     choose, optDo, optDont,
     withParam,
-    drawParam, draw3DParam
+    drawParam, draw3DParam,
+    connectWith,
+    clickPoints
 ) where
 
 import Graphics.UI.GLUT hiding (Point,Size,color)
@@ -37,7 +39,7 @@ import ImagProc
 import ImagProc.Camera(findSize,readFolderMP,readFolderIM,getCam)
 import Vision.GUI.Arrow--(ITrans, Trans,transUI,transUI2,runT_)
 import Util.LazyIO((~>),(>~>),createGrab)
-import Util.Misc(replaceAt)
+import Util.Misc(replaceAt,posMin)
 import Util.Options
 import Control.Concurrent(threadDelay)
 import Data.Colour.Names
@@ -277,4 +279,33 @@ draw3DParam title f = do
         (k,_) <- getW b
         putW b (k, f p)
         postRedisplay (Just (evW b))
+
+--------------------------------------------------------------------------------
+
+connectWith :: (s2 -> s1 -> s2) -> EVWindow s1 -> EVWindow s2 -> IO ()
+connectWith f w1 w2 =
+    (evAfterD w1) $= do
+        s1 <- getW w1
+        s2 <- getW w2
+        putW w2 (f s2 s1)
+        postRedisplay (Just (evW w2))
+
+--------------------------------------------------------------------------------
+
+clickPoints :: ([Point] -> Drawing) -> IO (EVWindow [Point])
+clickPoints = standalone (Size 400 400) "click points" [] updts acts
+  where
+
+    updts = [ (key (MouseButton LeftButton), const new)
+            , (key (MouseButton RightButton), const move)
+            , (key (Char '\DEL'), \_ _ ps -> if null ps then ps else init ps)]
+
+    acts = [(ctrlS, \_ _ ps -> print ps)]
+    ctrlS = kCtrl (key (Char '\DC3'))
+
+    new p ps = (ps++[p])
+
+    move p ps = replaceAt [j] [p] ps
+      where
+        j = posMin (map (distPoints p) ps)
 
