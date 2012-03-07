@@ -145,7 +145,7 @@ isoDistTransf z st = fromBlocks [[ w, -wm]
                                 ,[ 0,  1 ]]
   where
     m = meanV st
-    w = diagl [d,d]
+    w = diagl (replicate (dim m) d)
     wm = asColumn (w <> m)
     
     d = recip . (/sqrt 2) . mean . map norm . toRows $ z- asRow m
