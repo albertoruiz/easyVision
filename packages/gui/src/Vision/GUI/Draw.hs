@@ -31,6 +31,8 @@ module Vision.GUI.Draw
 , limitSize
 , drawContourLabeled
 , drawPointsLabeled
+, drawPoints3DLabeled
+, drawPointCoords
 , viewPoint
 , points'
 , lineStrip, axes3D, text3DAtF
@@ -56,6 +58,7 @@ import Data.Colour.Names
 import Control.Monad(when)
 import GHC.Float(double2Float)
 import Util.Geometry(HPoint(..),Point3D(..),HPoint3D(..),HLine3D(..),HPlane(..),Meet(..))
+import Text.Printf(printf)
 
 -- | Types of images that can be shown in a window
 class Drawable a where
@@ -447,9 +450,9 @@ axes3D l = Draw [ lineStrip
                     , Point3D 0 l 0
                     , Point3D 0 0 0
                     , Point3D 0 0 l ]
-                , text3DAtF Helvetica12 (Point3D 5.5 0 0) "x"
-                , text3DAtF Helvetica12 (Point3D 0 5.5 0) "y"
-                , text3DAtF Helvetica12 (Point3D 0 0 5.5) "z"
+                , text3DAtF Helvetica12 (Point3D (l*1.1) 0 0) "x"
+                , text3DAtF Helvetica12 (Point3D 0 (l*1.1) 0) "y"
+                , text3DAtF Helvetica12 (Point3D 0 0 (l*1.1)) "z"
                 ]
 
 
@@ -458,6 +461,8 @@ text3DAtF f (Point3D x y z) s = Raw $ do
     GL.renderString f s
 
 ------------------------------------------------------------
+
+-- FIXME function names
 
 drawContourLabeled :: Colour Float -> Colour Float -> Colour Float -> Float -> Float -> Polyline -> Drawing
 drawContourLabeled cl cp ct wd sz cont = Draw [
@@ -474,6 +479,20 @@ drawPointsLabeled pts = pointSz 3 $
     [ Draw pts
     , draws $ zipWith (textF Helvetica10) pts (map ((' ':).show) [(0::Int)..])]
 
+drawPoints3DLabeled :: [Point3D] -> Drawing
+drawPoints3DLabeled pts = pointSz 3 $
+    [ Draw pts
+    , draws $ zipWith (text3DAtF Helvetica10) pts (map ((' ':).show) [(0::Int)..])]
+
+drawPointCoords :: [Point] -> Drawing
+drawPointCoords ps = Draw [ --Raw (logicOp $= (Just Xor)),
+                            Draw (map g ps), pointSz 3 ps
+                          --, Raw (logicOp $= (Just Copy))
+                          ]
+  where
+    g p@(Point x y) = textF Helvetica10 p (printf "  (%.2f,  %.2f)" x y)
+
+--------------------------------------------------------------------------------
 
 viewPoint :: (Image im, Renderable im, Renderable x) => Mat -> Maybe im -> x -> Drawing
 -- ^ draw 3D objects as seen from a given camera matrix, with an optional image background
