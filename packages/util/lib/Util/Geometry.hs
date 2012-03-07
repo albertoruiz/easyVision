@@ -286,15 +286,71 @@ instance Transformable Homography [HPoint]
     type TResult Homography [HPoint] = [HPoint]
     apTrans = apMat id
 
+instance Transformable Homography HPoint
+  where
+    type TResult Homography HPoint = HPoint
+    apTrans t x = let [y] = apTrans t [x] in y
+
+
 instance Transformable Homography [Point]
   where
     type TResult Homography [Point] = [Point]
     apTrans h = map inhomog . apTrans h . map homog -- FIXME
 
+instance Transformable Homography Point
+  where
+    type TResult Homography Point = Point
+    apTrans t x = let [y] = apTrans t [x] in y
+
+
 instance Transformable Homography [HLine]
   where
     type TResult Homography [HLine] = [HLine]
     apTrans = apMat (inv.trans)
+
+instance Transformable Homography HLine
+  where
+    type TResult Homography HLine = HLine
+    apTrans t x = let [y] = apTrans t [x] in y
+
+
+instance Transformable Homography3D [HPoint3D]
+  where
+    type TResult Homography3D [HPoint3D] = [HPoint3D]
+    apTrans = apMat id
+
+instance Transformable Homography3D HPoint3D
+  where
+    type TResult Homography3D HPoint3D = HPoint3D
+    apTrans t x = let [y] = apTrans t [x] in y
+
+
+instance Transformable Homography3D [Point3D]
+  where
+    type TResult Homography3D [Point3D] = [Point3D]
+    apTrans h = map inhomog . apTrans h . map homog -- FIXME
+
+instance Transformable Homography3D Point3D
+  where
+    type TResult Homography3D Point3D = Point3D
+    apTrans t x = let [y] = apTrans t [x] in y
+
+
+
+
+instance Transformable InvCamera HPoint
+  where
+    type TResult InvCamera HPoint = HLine3D
+    apTrans (InvCamera t) p = HLine3D (UT.asMatrix r)
+      where
+        r = t T.! "rjk" * toTensor p T.! "r"
+
+instance Transformable InvCamera [HPoint]
+  where
+    type TResult InvCamera [HPoint] = [HLine3D]
+    apTrans t = map (apTrans t)
+
+
 
 ---------------------------------------------------------------------
 

@@ -1,7 +1,7 @@
 stage3   = contours gui apps
 stage2   = imagproc camera $(stage3)
 packages = util patrec vision $(stage2)
-optional = gpu opencv models3ds examples zbar
+optional = gpu opencv models3ds examples zbar clipping
 all      = $(packages) $(optional)
 old      = features old-gui ev 
 
