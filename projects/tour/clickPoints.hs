@@ -15,5 +15,5 @@ main = do
 sh mbimg pts = Draw [ Draw mbimg
                     , color yellow . drawPointsLabeled $ pts]
 
-g (k,_) ps = (k, [Draw ps, Draw (Closed ps)])
+g (k,_) ps = (k, [pointSz 5 ps, Draw (Closed ps)])
 

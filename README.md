@@ -76,6 +76,10 @@ installation instructions
 
 6. Install optional libraries:
 
+    ATLAS (optimized LAPACK):
+
+        $ sudo apt-get install libatlas-base-dev
+
     OPENCV:
 
         $ sudo apt-get install libcv-dev libcvaux-dev libhighgui-dev
@@ -83,6 +87,10 @@ installation instructions
     SIFTGPU (currently only for i386):
 
         $ sudo apt-get install nvidia-current nvidia-cg-toolkit libdevil-dev g++
+
+    tesseract:
+
+        $ sudo apt-get install tesseract-orc-dev
 
     zbar:
         
