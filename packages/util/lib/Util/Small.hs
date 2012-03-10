@@ -184,8 +184,13 @@ instance (Shaped x, Storable (Shape x)) => Storable x where
 --------------------------------------------------------------------------------
 
 class Matrixlike a where
+    type MatrixShape (m :: *)
     toMatrix :: a -> Mat
     unsafeFromMatrix :: Mat -> a
+    mkTrans :: Matrixlike (MatrixShape a) => MatrixShape a -> a
+    mkTrans = unsafeFromMatrix . toMatrix
+    toStatic :: Matrixlike (MatrixShape a) => a -> MatrixShape a
+    toStatic = unsafeFromMatrix . toMatrix
 
 ----------------------------------------------------------------------
 
@@ -196,6 +201,7 @@ type Dim4x4 = Dim4 (Dim4 Double)
 
 
 instance Matrixlike Dim2x2 where
+    type MatrixShape Dim2x2 = Dim2x2
     toMatrix (D2 (D2 x1 x2)
                  (D2 x3 x4) ) = (2><2) [x1,x2,
                                         x3,x4]
@@ -205,6 +211,7 @@ instance Matrixlike Dim2x2 where
         [x1,x2,x3,x4] = toList (flatten m)
 
 instance Matrixlike Dim3x3 where
+    type MatrixShape Dim3x3 = Dim3x3
     toMatrix (D3 (D3 x1 x2 x3)
                  (D3 x4 x5 x6)
                  (D3 x7 x8 x9) ) = (3><3) [x1,x2,x3,
@@ -218,6 +225,7 @@ instance Matrixlike Dim3x3 where
  
  
 instance Matrixlike Dim3x4 where
+    type MatrixShape Dim3x4 = Dim3x4
     toMatrix (D3 r1 r2 r3) = fromRows (map toVector [r1,r2,r3])
     unsafeFromMatrix m = (D3 d1 d2 d3)
        where
@@ -225,15 +233,28 @@ instance Matrixlike Dim3x4 where
 
 
 instance Matrixlike Dim4x4 where
+    type MatrixShape Dim4x4 = Dim4x4
     toMatrix (D4 r1 r2 r3 r4) = fromRows (map toVector [r1,r2,r3,r4])
     unsafeFromMatrix m = (D4 d1 d2 d3 d4)
        where
          [d1,d2,d3,d4] = map unsafeFromVector (toRows m)
 
+{-
+instance (Matrixlike x, Matrixlike (MatrixShape x)) => Shaped x where
+    type Shape x = MatrixShape x
+    fromDim = unsafeFromMatrix . toMatrix
+    toDim = unsafeFromMatrix . toMatrix
+-}
 
+--mkTrans x = unsafeFromMatrix . toMatrix $ x
+
+{-
 instance (Shaped x, Matrixlike (Shape x)) => Matrixlike x where
     toMatrix = toMatrix . toDim
     unsafeFromMatrix = fromDim . unsafeFromMatrix
+-}
+
+
 
 {-
 class MatrixElem t where

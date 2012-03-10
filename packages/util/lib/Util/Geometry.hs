@@ -44,7 +44,7 @@ module Util.Geometry
 
 import Util.Small
 import Util.Misc(Mat,Vec)
-import Numeric.LinearAlgebra(fromList,(@>),(><),toRows,fromRows,(<>),trans,inv)
+import Numeric.LinearAlgebra((@>),(><),toRows,fromRows,(<>),trans,inv)
 import Data.Function(on)
 import qualified Numeric.LinearAlgebra.Tensor as T
 import qualified Numeric.LinearAlgebra.Array.Util as UT
@@ -55,41 +55,53 @@ import qualified Numeric.LinearAlgebra.Exterior as E
 -- | inhomogenous 2D point
 data Point = Point {px :: !Double, py :: !Double} deriving (Eq, Show, Read)
 
+instance Shaped Point where
+    type Shape Point = Dim2 Double
+    toDim (Point x y) = D2 x y
+    fromDim (D2 x y) = Point x y
+ 
+{-
+-- more specific overlapped instance, more efficient? fusion rule?
+-- DimX polymorphic no UNPACK
 instance Vectorlike Point where
     toVector (Point x y) = fromList [x,y]
     unsafeFromVector v = Point (v@>0) (v@>1)
-
+-}
 
 -- | inhomogenous 2D point
 data HPoint = HPoint !Double !Double !Double deriving (Eq, Show, Read)
 
-instance Vectorlike HPoint where
-    toVector (HPoint x y w) = fromList [x,y,w]
-    unsafeFromVector v = HPoint (v@>0) (v@>1) (v@>2)
+instance Shaped HPoint where
+    type Shape HPoint = Dim3 Double
+    toDim (HPoint x y w) = D3 x y w
+    fromDim (D3 x y w) = HPoint x y w
 
 
 -- | inhomogenous 3D point
 data Point3D = Point3D !Double !Double !Double deriving (Eq, Show, Read)
 
-instance Vectorlike Point3D where
-    toVector (Point3D x y z) = fromList [x,y,z]
-    unsafeFromVector v = Point3D (v@>0) (v@>1) (v@>2)
+instance Shaped Point3D where
+    type Shape Point3D = Dim3 Double
+    toDim (Point3D x y z) = D3 x y z
+    fromDim (D3 x y z) = Point3D x y z
 
 
 -- | homogenous 3D point
 data HPoint3D = HPoint3D !Double !Double !Double !Double deriving (Eq, Show, Read)
 
-instance Vectorlike HPoint3D where
-    toVector (HPoint3D x y z w) = fromList [x,y,z,w]
-    unsafeFromVector v = HPoint3D (v@>0) (v@>1) (v@>2) (v@>3)
+instance Shaped HPoint3D where
+    type Shape HPoint3D = Dim4 Double
+    toDim (HPoint3D x y z w) = D4 x y z w
+    fromDim (D4 x y z w) = HPoint3D x y z w
 
 
 -- | 2D line
 data HLine = HLine {aLn, bLn, cLn :: !Double} deriving (Eq, Show, Read)
 
-instance Vectorlike HLine where
-    toVector (HLine a b c) = fromList [a,b,c]
-    unsafeFromVector v = HLine (v@>0) (v@>1) (v@>2)
+instance Shaped HLine where
+    type Shape HLine = Dim3 Double
+    toDim (HLine a b c) = D3 a b c
+    fromDim (D3 a b c) = HLine a b c
 
 
 -- | 3D line (provisional)
@@ -100,12 +112,14 @@ instance Matrixlike HLine3D where
     toMatrix (HLine3D m) = m
     unsafeFromMatrix = HLine3D
 
+
 -- | 3D plane
 data HPlane = HPlane !Double !Double !Double !Double deriving (Eq, Show, Read)
 
-instance Vectorlike HPlane where
-    toVector (HPlane a b c d) = fromList [a,b,c,d]
-    unsafeFromVector v = HPlane (v@>0) (v@>1) (v@>2) (v@>3)
+instance Shaped HPlane where
+    type Shape HPlane = Dim4 Double
+    toDim (HPlane a b c d) = D4 a b c d
+    fromDim (D4 a b c d) = HPlane a b c d
 
 
 --------------------------------------------------------------------------------
