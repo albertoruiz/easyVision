@@ -1,47 +1,87 @@
-{-# LANGUAGE FlexibleInstances, FlexibleContexts #-}
---{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE FunctionalDependencies #-}
---{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE OverlappingInstances #-}
 -----------------------------------------------------------------------------
 {- |
 Module      :  Util.Small
-Copyright   :  (c) Alberto Ruiz 2006-12
+Copyright   :  (c) Alberto Ruiz 2012
 License     :  GPL
 
 Maintainer  :  Alberto Ruiz (aruiz at um dot es)
 Stability   :  provisional
 
-Small vectors.
+Type safe small arrays.
 
 -}
 -----------------------------------------------------------------------------
 
 module Util.Small
-(
-    GVectorlike(..), Vectorlike(..),
+(   Shaped(..),
     Dim2(..),Dim3(..),Dim4(..), Build, (!), (#),
-    Shaped(..),
-    Matrixlike(..),
-    Dim2x2,Dim3x3,Dim4x4,Dim3x4
+    Dim2x2,Dim3x3,Dim4x4,Dim3x4,
+    vec2,vec3,vec4,
+    Vectorlike(..), Matrixlike(..)
+--    , v,m, KK(..)
 ) where
 
-import Numeric.LinearAlgebra(Vector,fromList,(@>),(><),fromRows,toRows,toList,flatten)
+import Numeric.LinearAlgebra(Vector,(@>),(><),fromRows,toRows,toList,flatten)
 import Foreign.Storable
 import Foreign.Ptr
 import Util.Misc(Mat,Vec)
+import Data.Packed.ST(runSTVector,newUndefinedVector,writeVector)
 
 --------------------------------------------------------------------------------
 
-class Shaped x where
-    type Shape (m :: *)
-    toDim :: x -> Shape x
-    fromDim :: Shape x -> x
+class (Shaped x, Array x ~ Mat) => Matrixlike x where
+    toMatrix         :: (Shaped x, Array x ~ Mat) => x -> Mat
+    unsafeFromMatrix :: (Shaped x, Array x ~ Mat) => Mat -> x
+    toMatrix = toArray
+    unsafeFromMatrix = unsafeFromArray
 
+instance (Shaped x, Array x ~ Mat) => Matrixlike x
+
+class (Shaped x, Array x ~ Vec) => Vectorlike x where
+    toVector         :: (Shaped x, Array x ~ Vec) => x -> Vec
+    unsafeFromVector :: (Shaped x, Array x ~ Vec) => Vec -> x
+    toVector = toArray
+    unsafeFromVector = unsafeFromArray
+
+instance (Shaped x, Array x ~ Vec) => Vectorlike x
+
+--------------------------------------------------------------------------------
+
+vec2 :: Double -> Double -> Vector Double
+vec2 a b = runSTVector $ do
+    v <- newUndefinedVector 2
+    writeVector v 0 a
+    writeVector v 1 b
+    return v
+
+vec3 :: Double -> Double -> Double -> Vector Double
+vec3 a b c = runSTVector $ do
+    v <- newUndefinedVector 3
+    writeVector v 0 a
+    writeVector v 1 b
+    writeVector v 2 c
+    return v
+
+
+vec4 :: Double -> Double -> Double -> Double -> Vector Double
+vec4 a b c d = runSTVector $ do
+    v <- newUndefinedVector 4
+    writeVector v 0 a
+    writeVector v 1 b
+    writeVector v 2 c
+    writeVector v 3 d
+    return v
+
+--------------------------------------------------------------------------------
 
 data Dim2 a = D2 !a !a        deriving (Eq, Show, Read)
 data Dim3 a = D3 !a !a !a     deriving (Eq, Show, Read)
@@ -69,61 +109,85 @@ instance Build (Dim2 a) a (Dim3 a) where
 instance Build (Dim3 a) a (Dim4 a) where
     build (D3 x y z) a = D4 x y z a
 
+--------------------------------------------------------------------------------
+
+type Dim2x2 = Dim2 (Dim2 Double)
+type Dim3x3 = Dim3 (Dim3 Double)
+type Dim3x4 = Dim3 (Dim4 Double)
+type Dim4x4 = Dim4 (Dim4 Double)
 
 --------------------------------------------------------------------------------
 
-
-class GVectorlike a
-  where
-    toVectorG :: Storable t => a t -> Vector t
-    unsafeFromVectorG :: Storable t => Vector t -> a t
-
-instance GVectorlike Dim2 where
-    toVectorG (D2 x1 x2) = fromList [x1,x2]
-    unsafeFromVectorG v = D2 (v@>0) (v@>1)
-
-instance GVectorlike Dim3 where
-    toVectorG (D3 x1 x2 x3) = fromList [x1,x2,x3]
-    unsafeFromVectorG v = D3 (v@>0) (v@>1) (v@>2)
-
-instance GVectorlike Dim4 where
-    toVectorG (D4 x1 x2 x3 x4) = fromList [x1,x2,x3,x4]
-    unsafeFromVectorG v = D4 (v@>0) (v@>1) (v@>2) (v@>3)
+class Shaped a where
+    type Shape (m :: *)
+    type Array (m :: *)
+    toArray         :: a -> Array a
+    unsafeFromArray :: Array a -> a
+    toDim           :: (Array a ~ Array (Shape a), Shaped (Shape a)) => a -> Shape a
+    fromDim         :: (Array a ~ Array (Shape a), Shaped (Shape a)) => Shape a -> a
+    toDim = unsafeFromArray . toArray
+    fromDim = unsafeFromArray . toArray
 
 
-class Vectorlike a
-  where
-    toVector :: a -> Vec
-    unsafeFromVector :: Vec -> a
+instance Shaped (Dim2 Double) where
+    type Shape (Dim2 Double) = Dim2 Double
+    type Array (Dim2 Double) = Vec
+    toArray (D2 x1 x2) = vec2 x1 x2
+    unsafeFromArray v = D2 (v@>0) (v@>1)
 
-instance GVectorlike a => Vectorlike (a Double)
-   where
-     toVector = toVectorG
-     unsafeFromVector = unsafeFromVectorG
+instance Shaped (Dim3 Double) where
+    type Shape (Dim3 Double) = Dim3 Double
+    type Array (Dim3 Double) = Vec
+    toArray (D3 x1 x2 x3) = vec3 x1 x2 x3
+    unsafeFromArray v = D3 (v@>0) (v@>1) (v@>2)
 
-instance (Shaped x, Vectorlike (Shape x)) => Vectorlike x where
-    toVector = toVector . toDim
-    unsafeFromVector = fromDim . unsafeFromVector
+instance Shaped (Dim4 Double) where
+    type Shape (Dim4 Double) = Dim4 Double
+    type Array (Dim4 Double) = Vec
+    toArray (D4 x1 x2 x3 x4) = vec4 x1 x2 x3 x4
+    unsafeFromArray v = D4 (v@>0) (v@>1) (v@>2) (v@>3)
 
---------------------------------------------------------------------------------
+instance Shaped Dim2x2 where
+    type Shape Dim2x2 = Dim2x2
+    type Array Dim2x2 = Mat
+    toArray (D2 (D2 x1 x2)
+                (D2 x3 x4) ) = (2><2) [x1,x2,
+                                       x3,x4]
+    unsafeFromArray m = (D2 (D2 x1 x2)
+                            (D2 x3 x4) )
+      where
+        [x1,x2,x3,x4] = toList (flatten m)
 
-{-
-class Listable t where
-    toList :: t a -> [a]
-    unsafeFromList :: [a] -> t a
+instance Shaped Dim3x3 where
+    type Shape Dim3x3 = Dim3x3
+    type Array Dim3x3 = Mat
+    toArray (D3 (D3 x1 x2 x3)
+                (D3 x4 x5 x6)
+                (D3 x7 x8 x9) ) = (3><3) [x1,x2,x3,
+                                          x4,x5,x6,
+                                          x7,x8,x9]
+    unsafeFromArray m = (D3 (D3 x1 x2 x3)
+                            (D3 x4 x5 x6)
+                            (D3 x7 x8 x9) )
+      where
+        [x1,x2,x3,x4,x5,x6,x7,x8,x9] = toList (flatten m)
 
-instance Listable Dim2 where
-    toList (Dim2 x y) = [x,y]
-    unsafeFromList [x,y] = Dim2 x y
+instance Shaped Dim3x4 where
+    type Shape Dim3x4 = Dim3x4
+    type Array Dim3x4 = Mat
+    toArray (D3 r1 r2 r3) = fromRows (map toArray [r1,r2,r3])
+    unsafeFromArray m = (D3 d1 d2 d3)
+       where
+         [d1,d2,d3] = map unsafeFromArray (toRows m)
 
-instance Listable Dim3 where
-    toList (Dim3 x y z) = [x,y,z]
-    unsafeFromList [x,y,z] = Dim3 x y z
 
-instance Listable Dim4 where
-    toList (Dim4 x y z w) = [x,y,z,w]
-    unsafeFromList [x,y,z,w] = Dim4 x y z w
--}
+instance Shaped Dim4x4 where
+    type Shape Dim4x4 = Dim4x4
+    type Array Dim4x4 = Mat
+    toArray (D4 r1 r2 r3 r4) = fromRows (map toArray [r1,r2,r3,r4])
+    unsafeFromArray m = (D4 d1 d2 d3 d4)
+       where
+         [d1,d2,d3,d4] = map unsafeFromArray (toRows m)
 
 --------------------------------------------------------------------------------
 
@@ -175,114 +239,30 @@ instance Storable t => Storable (Dim4 t) where
         pokeElemOff q 3 d
 
 
-instance (Shaped x, Storable (Shape x)) => Storable x where
+instance (Array x ~ Array (Shape x),
+          Shaped x, 
+          Shaped (Shape x),
+          Storable (Shape x)) => Storable x where
     sizeOf = sizeOf . toDim
     alignment = alignment . toDim
     peek = fmap fromDim . peek . castPtr
     poke p = poke (castPtr p) . toDim
 
 --------------------------------------------------------------------------------
+{- tests
 
-class Matrixlike a where
-    type MatrixShape (m :: *)
-    toMatrix :: a -> Mat
-    unsafeFromMatrix :: Mat -> a
-    mkTrans :: Matrixlike (MatrixShape a) => MatrixShape a -> a
-    mkTrans = unsafeFromMatrix . toMatrix
-    toStatic :: Matrixlike (MatrixShape a) => a -> MatrixShape a
-    toStatic = unsafeFromMatrix . toMatrix
+v = 2 ! 3 :: Dim2 Double
 
-----------------------------------------------------------------------
+m = 1 ! 2 ! 3
+  # 3 ! 4 ! 0
+  # 5 ! 6 ! 0 :: Dim3x3
 
-type Dim2x2 = Dim2 (Dim2 Double)
-type Dim3x3 = Dim3 (Dim3 Double)
-type Dim3x4 = Dim3 (Dim4 Double)
-type Dim4x4 = Dim4 (Dim4 Double)
+data KK = KK Double Double deriving Show
 
-
-instance Matrixlike Dim2x2 where
-    type MatrixShape Dim2x2 = Dim2x2
-    toMatrix (D2 (D2 x1 x2)
-                 (D2 x3 x4) ) = (2><2) [x1,x2,
-                                        x3,x4]
-    unsafeFromMatrix m = (D2 (D2 x1 x2)
-                             (D2 x3 x4) )
-      where
-        [x1,x2,x3,x4] = toList (flatten m)
-
-instance Matrixlike Dim3x3 where
-    type MatrixShape Dim3x3 = Dim3x3
-    toMatrix (D3 (D3 x1 x2 x3)
-                 (D3 x4 x5 x6)
-                 (D3 x7 x8 x9) ) = (3><3) [x1,x2,x3,
-                                           x4,x5,x6,
-                                           x7,x8,x9]
-    unsafeFromMatrix m = (D3 (D3 x1 x2 x3)
-                             (D3 x4 x5 x6)
-                             (D3 x7 x8 x9) )
-      where
-        [x1,x2,x3,x4,x5,x6,x7,x8,x9] = toList (flatten m)
- 
- 
-instance Matrixlike Dim3x4 where
-    type MatrixShape Dim3x4 = Dim3x4
-    toMatrix (D3 r1 r2 r3) = fromRows (map toVector [r1,r2,r3])
-    unsafeFromMatrix m = (D3 d1 d2 d3)
-       where
-         [d1,d2,d3] = map unsafeFromVector (toRows m)
-
-
-instance Matrixlike Dim4x4 where
-    type MatrixShape Dim4x4 = Dim4x4
-    toMatrix (D4 r1 r2 r3 r4) = fromRows (map toVector [r1,r2,r3,r4])
-    unsafeFromMatrix m = (D4 d1 d2 d3 d4)
-       where
-         [d1,d2,d3,d4] = map unsafeFromVector (toRows m)
-
-{-
-instance (Matrixlike x, Matrixlike (MatrixShape x)) => Shaped x where
-    type Shape x = MatrixShape x
-    fromDim = unsafeFromMatrix . toMatrix
-    toDim = unsafeFromMatrix . toMatrix
+instance Shaped KK where
+    type Shape KK = Dim2 Double
+    type Array KK = Vec
+    toArray (KK x1 x2) = vec2 x1 x2
+    unsafeFromArray v = KK (v@>0) (v@>1)
 -}
-
---mkTrans x = unsafeFromMatrix . toMatrix $ x
-
-{-
-instance (Shaped x, Matrixlike (Shape x)) => Matrixlike x where
-    toMatrix = toMatrix . toDim
-    unsafeFromMatrix = fromDim . unsafeFromMatrix
--}
-
-
-
-{-
-class MatrixElem t where
-    fromElements :: t -> Mat
-
-
-instance MatrixElem Dim2x2 where
-    fromElements (D2 (D2 x1 x2)
-                     (D2 x3 x4) ) = (2><2) [x1,x2,
-                                            x3,x4]
-
-instance MatrixElem Dim3x3 where
-    fromElements (D3 (D3 x1 x2 x3)
-                     (D3 x4 x5 x6)
-                     (D3 x7 x8 x9) ) = (3><3) [x1,x2,x3,
-                                               x4,x5,x6,
-                                               x7,x8,x9]
- 
-instance MatrixElem Dim3x4 where
-    fromElements (D3 r1 r2 r3) = fromRows (map toVector [r1,r2,r3])
-
-
-instance MatrixElem Dim4x4 where
-    fromElements (D4 r1 r2 r3 r4) = fromRows (map toVector [r1,r2,r3,r4])
--}
-
-
---mkTrans :: (MatrixElem (MatrixShape a)) => MatrixShape a -> a
---mkTrans = unsafeFromMatrix . fromElements
---type family MatrixShape  (m :: *)
 
