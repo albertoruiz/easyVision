@@ -57,7 +57,6 @@ data Point = Point {px :: !Double, py :: !Double} deriving (Eq, Show, Read)
 
 instance Shaped Point where
     type Shape Point = Dim2 Double
-    type Array Point = Vec
     toArray (Point x1 x2) = vec2 x1 x2
     unsafeFromArray v = Point (v@>0) (v@>1)
  
@@ -67,7 +66,6 @@ data HPoint = HPoint !Double !Double !Double deriving (Eq, Show, Read)
 
 instance Shaped HPoint where
     type Shape HPoint = Dim3 Double
-    type Array HPoint = Vec
     toArray (HPoint x y w) = vec3 x y w
     unsafeFromArray v = HPoint (v@>0) (v@>1) (v@>2)
 
@@ -77,7 +75,6 @@ data Point3D = Point3D !Double !Double !Double deriving (Eq, Show, Read)
 
 instance Shaped Point3D where
     type Shape Point3D = Dim3 Double
-    type Array Point3D = Vec
     toArray (Point3D x y w) = vec3 x y w
     unsafeFromArray v = Point3D (v@>0) (v@>1) (v@>2)
 
@@ -87,7 +84,6 @@ data HPoint3D = HPoint3D !Double !Double !Double !Double deriving (Eq, Show, Rea
 
 instance Shaped HPoint3D where
     type Shape HPoint3D = Dim4 Double
-    type Array HPoint3D = Vec
     toArray (HPoint3D x y z w) = vec4 x y z w
     unsafeFromArray v = HPoint3D (v@>0) (v@>1) (v@>2) (v@>3)
 
@@ -98,7 +94,6 @@ data HLine = HLine !Double !Double !Double deriving (Eq, Show, Read)
 
 instance Shaped HLine where
     type Shape HLine = Dim3 Double
-    type Array HLine = Vec
     toArray (HLine a b c) = vec3 a b c
     unsafeFromArray v = HLine(v@>0) (v@>1) (v@>2)
 
@@ -108,7 +103,6 @@ newtype HLine3D = HLine3D Mat deriving (Eq, Show, Read)
 
 instance Shaped HLine3D where
     type Shape HLine3D = Dim4x4
-    type Array HLine3D = Mat
     toArray (HLine3D m) = m
     unsafeFromArray = HLine3D
 
@@ -118,7 +112,6 @@ data HPlane = HPlane !Double !Double !Double !Double deriving (Eq, Show, Read)
 
 instance Shaped HPlane where
     type Shape HPlane = Dim4 Double
-    type Array HPlane = Vec
     toArray (HPlane a b c d) = vec4 a b c d
     unsafeFromArray v = HPlane (v@>0) (v@>1) (v@>2) (v@>3)
 
@@ -130,7 +123,6 @@ newtype Homography = Homography Mat deriving (Eq, Show, Read)
 
 instance Shaped Homography where
     type Shape Homography = Dim3x3
-    type Array Homography = Mat
     toArray (Homography m) = m
     unsafeFromArray = Homography
 
@@ -139,7 +131,6 @@ newtype Camera = Camera Mat deriving (Eq, Show, Read)
 
 instance Shaped Camera where
     type Shape Camera = Dim3x4
-    type Array Camera = Mat
     toArray (Camera m) = m
     unsafeFromArray = Camera
 
@@ -148,7 +139,6 @@ newtype Homography3D = Homography3D Mat deriving (Eq, Show, Read)
 
 instance Shaped Homography3D where
     type Shape Homography3D = Dim4x4
-    type Array Homography3D = Mat
     toArray (Homography3D m) = m
     unsafeFromArray = Homography3D
 
@@ -160,7 +150,6 @@ newtype Conic = Conic Mat deriving (Eq, Show, Read)
 
 instance Shaped Conic where
     type Shape Conic = Dim3x3
-    type Array Conic = Mat
     toArray (Conic m) = m
     unsafeFromArray = Conic
 
@@ -169,7 +158,6 @@ newtype Quadric = Quadric Mat deriving (Eq, Show, Read)
 
 instance Shaped Quadric where
     type Shape Quadric = Dim4x4
-    type Array Quadric = Mat
     toArray (Quadric m) = m
     unsafeFromArray = Quadric
 
@@ -177,7 +165,6 @@ newtype DualConic = DualConic Mat deriving (Eq, Show, Read)
 
 instance Shaped DualConic where
     type Shape DualConic = Dim3x3
-    type Array DualConic = Mat
     toArray (DualConic m) = m
     unsafeFromArray = DualConic
 
@@ -185,7 +172,6 @@ newtype DualQuadric = DualQuadric Mat deriving (Eq, Show, Read)
 
 instance Shaped DualQuadric where
     type Shape DualQuadric = Dim4x4
-    type Array DualQuadric = Mat
     toArray (DualQuadric m) = m
     unsafeFromArray = DualQuadric
 

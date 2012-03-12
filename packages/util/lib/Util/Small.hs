@@ -38,24 +38,6 @@ import Data.Packed.ST(runSTVector,newUndefinedVector,writeVector)
 
 --------------------------------------------------------------------------------
 
-class (Shaped x, Array x ~ Mat) => Matrixlike x where
-    toMatrix         :: (Shaped x, Array x ~ Mat) => x -> Mat
-    unsafeFromMatrix :: (Shaped x, Array x ~ Mat) => Mat -> x
-    toMatrix = toArray
-    unsafeFromMatrix = unsafeFromArray
-
-instance (Shaped x, Array x ~ Mat) => Matrixlike x
-
-class (Shaped x, Array x ~ Vec) => Vectorlike x where
-    toVector         :: (Shaped x, Array x ~ Vec) => x -> Vec
-    unsafeFromVector :: (Shaped x, Array x ~ Vec) => Vec -> x
-    toVector = toArray
-    unsafeFromVector = unsafeFromArray
-
-instance (Shaped x, Array x ~ Vec) => Vectorlike x
-
---------------------------------------------------------------------------------
-
 vec2 :: Double -> Double -> Vector Double
 vec2 a b = runSTVector $ do
     v <- newUndefinedVector 2
@@ -118,9 +100,21 @@ type Dim4x4 = Dim4 (Dim4 Double)
 
 --------------------------------------------------------------------------------
 
+type family DArray (m :: *)
+
+type instance DArray (Dim2 Double) = Vec
+type instance DArray (Dim3 Double) = Vec
+type instance DArray (Dim4 Double) = Vec
+type instance DArray Dim2x2        = Mat
+type instance DArray Dim3x4        = Mat
+type instance DArray Dim3x3        = Mat
+type instance DArray Dim4x4        = Mat
+
+type family Array (m :: *)
+type instance Array a = DArray (Shape a)
+
 class Shaped a where
     type Shape (m :: *)
-    type Array (m :: *)
     toArray         :: a -> Array a
     unsafeFromArray :: Array a -> a
     toDim           :: (Array a ~ Array (Shape a), Shaped (Shape a)) => a -> Shape a
@@ -131,25 +125,21 @@ class Shaped a where
 
 instance Shaped (Dim2 Double) where
     type Shape (Dim2 Double) = Dim2 Double
-    type Array (Dim2 Double) = Vec
     toArray (D2 x1 x2) = vec2 x1 x2
     unsafeFromArray v = D2 (v@>0) (v@>1)
 
 instance Shaped (Dim3 Double) where
     type Shape (Dim3 Double) = Dim3 Double
-    type Array (Dim3 Double) = Vec
     toArray (D3 x1 x2 x3) = vec3 x1 x2 x3
     unsafeFromArray v = D3 (v@>0) (v@>1) (v@>2)
 
 instance Shaped (Dim4 Double) where
     type Shape (Dim4 Double) = Dim4 Double
-    type Array (Dim4 Double) = Vec
     toArray (D4 x1 x2 x3 x4) = vec4 x1 x2 x3 x4
     unsafeFromArray v = D4 (v@>0) (v@>1) (v@>2) (v@>3)
 
 instance Shaped Dim2x2 where
     type Shape Dim2x2 = Dim2x2
-    type Array Dim2x2 = Mat
     toArray (D2 (D2 x1 x2)
                 (D2 x3 x4) ) = (2><2) [x1,x2,
                                        x3,x4]
@@ -160,7 +150,6 @@ instance Shaped Dim2x2 where
 
 instance Shaped Dim3x3 where
     type Shape Dim3x3 = Dim3x3
-    type Array Dim3x3 = Mat
     toArray (D3 (D3 x1 x2 x3)
                 (D3 x4 x5 x6)
                 (D3 x7 x8 x9) ) = (3><3) [x1,x2,x3,
@@ -174,7 +163,6 @@ instance Shaped Dim3x3 where
 
 instance Shaped Dim3x4 where
     type Shape Dim3x4 = Dim3x4
-    type Array Dim3x4 = Mat
     toArray (D3 r1 r2 r3) = fromRows (map toArray [r1,r2,r3])
     unsafeFromArray m = (D3 d1 d2 d3)
        where
@@ -183,11 +171,28 @@ instance Shaped Dim3x4 where
 
 instance Shaped Dim4x4 where
     type Shape Dim4x4 = Dim4x4
-    type Array Dim4x4 = Mat
     toArray (D4 r1 r2 r3 r4) = fromRows (map toArray [r1,r2,r3,r4])
     unsafeFromArray m = (D4 d1 d2 d3 d4)
        where
          [d1,d2,d3,d4] = map unsafeFromArray (toRows m)
+
+--------------------------------------------------------------------------------
+
+class (Shaped x, Array x ~ Mat) => Matrixlike x where
+    toMatrix         :: (Shaped x, Array x ~ Mat) => x -> Mat
+    unsafeFromMatrix :: (Shaped x, Array x ~ Mat) => Mat -> x
+    toMatrix = toArray
+    unsafeFromMatrix = unsafeFromArray
+
+instance (Shaped x, Array x ~ Mat) => Matrixlike x
+
+class (Shaped x, Array x ~ Vec) => Vectorlike x where
+    toVector         :: (Shaped x, Array x ~ Vec) => x -> Vec
+    unsafeFromVector :: (Shaped x, Array x ~ Vec) => Vec -> x
+    toVector = toArray
+    unsafeFromVector = unsafeFromArray
+
+instance (Shaped x, Array x ~ Vec) => Vectorlike x
 
 --------------------------------------------------------------------------------
 
@@ -249,7 +254,8 @@ instance (Array x ~ Array (Shape x),
     poke p = poke (castPtr p) . toDim
 
 --------------------------------------------------------------------------------
-{- tests
+ -- tests
+{-
 
 v = 2 ! 3 :: Dim2 Double
 
@@ -261,7 +267,6 @@ data KK = KK Double Double deriving Show
 
 instance Shaped KK where
     type Shape KK = Dim2 Double
-    type Array KK = Vec
     toArray (KK x1 x2) = vec2 x1 x2
     unsafeFromArray v = KK (v@>0) (v@>1)
 -}
