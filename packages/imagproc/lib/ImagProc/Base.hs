@@ -13,7 +13,7 @@ General types.
 -----------------------------------------------------------------------------
 
 module ImagProc.Base
-( Size(..),
+( Size(..), limitSize,
   ROI (..),
   Point(..), distPoints,
   Pixel(..),
@@ -29,6 +29,18 @@ import qualified Numeric.LinearAlgebra as LA
 import Vision
 
 data Size  = Size  {height :: !Int, width :: !Int} deriving (Show, Eq)
+
+
+limitSize :: Int -> Size -> Size
+limitSize mx (Size h w)
+    | s <= mx = (Size h w)
+    | otherwise = (Size h' w')
+  where
+    s = max h w
+    r = fromIntegral w /  fromIntegral h
+    (h',w') | w > h     = (round (fromIntegral mx/r), mx)
+            | otherwise = (mx, round (fromIntegral mx*r))
+
 
 
 

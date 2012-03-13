@@ -22,7 +22,6 @@ module Vision.GUI.Draw
 , drawInterestPoints
 , extractSquare
 , captureGL
-, limitSize
 , drawContourLabeled
 , drawPointsLabeled
 , drawPoints3DLabeled
@@ -52,17 +51,6 @@ import Control.Monad(when)
 import GHC.Float(double2Float)
 import Util.Geometry(HPoint(..),Point3D(..),HPoint3D(..),HLine3D(..),HPlane(..),Meet(..))
 import Text.Printf(printf)
-
--- FIXME move to imagproc
-limitSize :: Int -> Size -> Size
-limitSize mx (Size h w)
-    | s <= mx = (Size h w)
-    | otherwise = (Size h' w')
-  where
-    s = max h w
-    r = fromIntegral w /  fromIntegral h
-    (h',w') | w > h     = (round (fromIntegral mx/r), mx)
-            | otherwise = (mx, round (fromIntegral mx*r))
 
 
 pstart im = starting im (vroi im)

@@ -20,7 +20,8 @@ module ImagProc.Tools (
     filter32f, filter8u,
     gaussS, gaussS',
     rotateROI,
-    pyramid
+    pyramid,
+    resizeIfGT
 ) where
 
 import ImagProc.Ipp.Core
@@ -176,3 +177,11 @@ dec x = resize8u InterpLinear sz2 . f . gauss8u Mask3x3 $  x
           forceROI r (G im) = G im { vroi = r }
 
 ----------------------------------------------------------------------
+
+-- FIXME assumes full ROI
+resizeIfGT :: GImg pixel image => Int -> image -> image
+-- ^ resize image preserving aspect ratio if any dimension is greater than given size
+resizeIfGT sz x = if (size x) == sz' then x else resize sz' x
+  where
+    sz' = limitSize sz (size x)
+
