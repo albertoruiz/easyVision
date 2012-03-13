@@ -7,7 +7,7 @@ import Util.Homogeneous(ht)
 import Util.Optimize(optimize)
 
 import Vision.GUI
-import ScatterPlot
+import Util.ScatterPlot
 import ImagProc
 import Contours.Base
 

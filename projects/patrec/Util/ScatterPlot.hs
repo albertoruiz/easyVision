@@ -12,7 +12,7 @@ Show distribution of labeled vectors in space
 -}
 -----------------------------------------------------------------------------
 
-module ScatterPlot (
+module Util.ScatterPlot (
     scatter, drawDecisionRegion,
     scatter3D
 )where
