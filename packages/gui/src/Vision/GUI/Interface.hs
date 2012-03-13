@@ -29,6 +29,7 @@ module Vision.GUI.Interface (
 
 import Vision.GUI.Types
 import Vision.GUI.Draw
+import Vision.GUI.Trackball
 import ImagProc.Base
 import ImagProc.Ipp(Size(..),ippSetNumThreads,ROI(..),saveRGB')
 import Graphics.UI.GLUT hiding (RGB, Matrix, Size, None, Point,color)

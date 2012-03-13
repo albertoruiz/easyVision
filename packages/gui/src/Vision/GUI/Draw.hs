@@ -16,17 +16,11 @@ Drawing utilities.
 -----------------------------------------------------------------------------
 
 module Vision.GUI.Draw
-( Drawable(..), drawImage', drawImage''
-, drawTexture
-, renderSignal
-, renderAxes
-, drawROI
+( drawTexture
 , drawCamera
 , cameraView
 , drawInterestPoints
-, drawVector
 , extractSquare
-, newTrackball
 , captureGL
 , limitSize
 , drawContourLabeled
@@ -50,7 +44,6 @@ import Vision
 import Util.Rotation
 import Util.Misc(degree,debug,Mat)
 import Vision.GUI.Types
-import Vision.GUI.Trackball
 import qualified Data.Colour.RGBSpace as Col
 import Data.Colour.SRGB hiding (RGB)
 import Data.Colour
@@ -60,39 +53,7 @@ import GHC.Float(double2Float)
 import Util.Geometry(HPoint(..),Point3D(..),HPoint3D(..),HLine3D(..),HPlane(..),Meet(..))
 import Text.Printf(printf)
 
--- | Types of images that can be shown in a window
-class Drawable a where
-    -- | Draws an image in the current window (showing the ROI)
-    drawImage :: a -> IO ()
-
-instance Drawable ImageGray where
-    drawImage = drawImageGray
-
-instance Drawable ImageRGB where
-    drawImage = drawImageRGB
-
-instance Drawable ImageFloat where
-    drawImage = drawImageFloat
-
-instance Drawable ImageYUV where
-    drawImage = drawImageYUV
-
--- | The same as 'drawImage', but adapting window size to that of the image
-drawImage' :: (Drawable a, Image a) => a -> IO ()
-drawImage' im = do
-    szW <- get windowSize
-    let szI = glSize (size im)
-    when (szW /= szI) $ windowSize $= szI >> postRedisplay Nothing
-    drawImage im
-
--- | The same as 'drawImage'', but with a maximum window size
-drawImage'' :: (Drawable a, Image a) => Int -> a -> IO ()
-drawImage'' mx im = do
-    szW <- get windowSize
-    let szI = glSize (limitSize mx $ size im)
-    when (szW /= szI) $ windowSize $= szI >> postRedisplay Nothing
-    drawImage im
-
+-- FIXME move to imagproc
 limitSize :: Int -> Size -> Size
 limitSize mx (Size h w)
     | s <= mx = (Size h w)
@@ -107,9 +68,6 @@ limitSize mx (Size h w)
 pstart im = starting im (vroi im)
 
 szgl = glSize .roiSize . vroi
-
--- GL.Size (fromIntegral $ step im `quot` (datasize im * layers im))
---                  (fromIntegral $ height $ isize im)
 
 
 myDrawPixels m@Img{itype=RGB} = do
@@ -126,39 +84,6 @@ myDrawPixels m@Img{itype=I32f} = do
 
 myDrawPixels m@Img{itype=YUV} = error "myDrawPixels undefined for YUV"
 
-
--- | Draws an image in the current window.
-drawImageAux :: Img -> IO ()
-drawImageAux m = do
-    matrixMode $= Projection
-    loadIdentity
-    let w = width $ isize m
-    let h = height $ isize m
-    ortho2D (0) (0.0001+fromIntegral w-1::GLdouble) (0) (0.0001+fromIntegral h-1)
-    matrixMode $= Modelview 0
-    loadIdentity
-    let r = fromIntegral $ r1 $ vroi m
-    let c = fromIntegral $ c1 $ vroi m
-    rasterPos (Vertex2 (c+0::GLfloat) (fromIntegral h-r-1.0001))
-    GL.Size vw vh <- get windowSize
-    pixelZoom $= (fromIntegral vw/ fromIntegral w,- fromIntegral vh/ fromIntegral h)
-    --pixelZoom $= (1,-1)
-    myDrawPixels m
-    touchForeignPtr (fptr m)
-    let r = vroi m
-    pixelCoordinates (isize m)
-    setColor 1 1 1
-    lineWidth $= 1
-    drawROI r
-
-drawImageFloat (F im) = drawImageGray $ toGray (F im) -- drawImageAux im
-drawImageGray (G im) = drawImageAux im
-drawImageRGB (C im) = drawImageAux im
-drawImageYUV (Y im) = drawImageRGB $ yuvToRGB (Y im)  -- drawImageAux im
-
-drawROI r = renderPrimitive LineLoop $ mapM_ vertex
-    [ Pixel (r1 r) (c1 r), Pixel (1+r2 r) (c1 r),
-      Pixel (1+r2 r) (1+c2 r), Pixel (r1 r) (1+c2 r) ]
 
 --------------------------------------------------------------------------------
 
@@ -284,6 +209,7 @@ cameraView m ar near far = do
 
 ------------------------------------------------------
 
+{-
 renderSignal ls = do
     let delta = 1.8/fromIntegral (length ls-1)
     let points = zipWith Point [0.9, 0.9-delta ..] ls
@@ -292,8 +218,6 @@ renderSignal ls = do
 renderAxes = 
     GL.renderPrimitive GL.Lines $ mapM_ GL.vertex
         [Point (-1) 0, Point 1 0, Point 0 (-1), Point 0 1]
-
---------------------------------------------------------------------------
 
 -- | representation of the elements of a vector as vertical bars from a starting position
 drawVector :: Int -- ^ column
@@ -309,6 +233,7 @@ drawVector x y v = do
     renderPrimitive Lines $ do
         mapM_ f [0..dim v -1]
         vertex (Pixel y x) >> vertex (Pixel y (x+dim v -1))
+-}
 
 --------------------------------------------------------------------------------
 
