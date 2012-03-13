@@ -1,4 +1,4 @@
-import Vision.GUI
+import Vision.GUI hiding (clickPoints)
 import ImagProc
 
 main = run clickPoints

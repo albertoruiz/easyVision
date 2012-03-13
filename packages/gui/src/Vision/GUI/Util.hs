@@ -25,7 +25,8 @@ module Vision.GUI.Util (
     withParam,
     drawParam, draw3DParam,
     connectWith,
-    clickPoints
+    clickPoints,
+    interactive3D
 ) where
 
 import Graphics.UI.GLUT hiding (Point,Size,color)
@@ -41,7 +42,7 @@ import Vision.GUI.Arrow--(ITrans, Trans,transUI,transUI2,runT_)
 import Util.LazyIO((~>),(>~>),createGrab)
 import Util.Misc(replaceAt,posMin)
 import Util.Options
-import Control.Concurrent(threadDelay)
+import Control.Concurrent(threadDelay,forkIO)
 import Data.Colour.Names
 import Data.Time
 import System.CPUTime
@@ -308,4 +309,22 @@ clickPoints = standalone (Size 400 400) "click points" [] updts acts
     move p ps = replaceAt [j] [p] ps
       where
         j = posMin (map (distPoints p) ps)
+
+--------------------------------------------------------------------------------
+
+interactive3D :: String -> IO (Drawing -> IO (), Drawing -> IO ())
+-- ^ interactive 3D drawing, useful for ghci
+interactive3D name = do
+        prepare
+        b <- browser3D name [] (const id)
+        forkIO mainLoop
+        return (resetDrawing b, addDrawing b)
+  where
+    resetDrawing w d = putW w (0,[d]) >> p
+      where
+        p = postRedisplay (Just (evW w))
+
+    addDrawing w d = do
+        (0,[x]) <- getW w
+        resetDrawing w (Draw [x,d])
 
