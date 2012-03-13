@@ -41,13 +41,14 @@ import Control.Monad(when,forever,join)
 import System.Environment(getArgs)
 import qualified Data.Map as Map
 import Data.Map
---import Util.Misc(debug)
+import Util.Misc(debug)
 import Data.Traversable
 import Control.Applicative
 import Control.Arrow
 import Data.Colour.Names
 import Contours.Base
 import Control.Concurrent
+import Text.Printf(printf)
 
 keyAction upds acts def w a b c d = do
     st <- getW w
@@ -140,10 +141,18 @@ interfaceG threeD sz0 name st0 ft upds acts resultFun resultDisp = do
 drawRegion w = do
     ok <- readIORef (evDrReg w)
     modifyIORef (evStats w) (\s -> s { evNDraw = evNDraw s + 1 })
-    when ok $ do 
+    when ok $ do
         (Point x1 y1, Point x2 y2) <- readIORef (evRegion w)
         stats <- readIORef (evStats w)
-        let info = show (evNCall stats) ++ " frames / " ++ show (evNDraw stats) ++ " draws"
+        psz <- readIORef (evPrefSize w)
+        (z,a,b) <- readIORef (evZoom w)
+        wsz <- get windowSize
+        let shpsz = case psz of
+                Nothing -> "  "
+                Just sz -> "    pSize: " ++ shSize sz ++ " / "
+            info = show (evNCall stats) ++ " frames / " ++ show (evNDraw stats) ++ " draws" ++
+                   shpsz ++ "wSize: " ++ shSize (evSize wsz)
+        --         ++ "   zoom = " ++ printf "(%.2f,%.1f,%.1f)" z a b
         render $ Draw [ color white . lineWd 1 $
                         Closed [ Point x1 y1, Point x2 y1
                                , Point x2 y2, Point x1 y2]

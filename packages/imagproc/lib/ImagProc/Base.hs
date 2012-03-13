@@ -13,7 +13,7 @@ General types.
 -----------------------------------------------------------------------------
 
 module ImagProc.Base
-( Size(..), limitSize,
+( Size(..), limitSize, shSize,
   ROI (..),
   Point(..), distPoints,
   Pixel(..),
@@ -30,6 +30,8 @@ import Vision
 
 data Size  = Size  {height :: !Int, width :: !Int} deriving (Show, Eq)
 
+shSize :: Size -> String
+shSize (Size h w) = show w ++"x"++ show h
 
 limitSize :: Int -> Size -> Size
 limitSize mx (Size h w)
