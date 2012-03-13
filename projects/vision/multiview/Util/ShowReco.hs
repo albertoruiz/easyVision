@@ -1,4 +1,4 @@
-module ShowReco where
+module Util.ShowReco where
 
 import Vision -- hiding (degree,rot1,rot2,rot3,infoSProb)
 --import Vision.Multiview

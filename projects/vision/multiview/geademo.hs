@@ -9,7 +9,7 @@ import Vision.IO
 import Vision.Multiview
 import Vision.Epipolar
 import Vision.Bootstrap
-import ShowReco
+import Util.ShowReco
 import Util.Misc(diagl,mean,debug,dimString,pairsWith,degree,median,quartiles)
 import Graphics.Plot
 
