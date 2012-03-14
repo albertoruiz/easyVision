@@ -1,0 +1,28 @@
+Name:               htesseract
+Version:            0.1.0
+License:            GPL
+License-file:       LICENSE
+Author:             Alberto Ruiz
+Maintainer:         Alberto Ruiz <aruiz@um.es>
+Stability:          experimental
+Homepage:           https://github.com/albertoruiz/easyVision
+Synopsis:           simple wrapper to tesseract ocr
+Description:        simple wrapper to tesseract ocr
+
+Category:           Vision
+tested-with:        GHC ==7.4
+
+cabal-version:      >=1.2
+build-type:         Simple
+
+library
+    Build-Depends:      base, imagproc, process
+
+    hs-source-dirs:     src
+
+    Exposed-modules:    ImagProc.Contrib.Tesseract
+
+    ghc-prof-options:   -auto-all
+
+    ghc-options:        -Wall
+

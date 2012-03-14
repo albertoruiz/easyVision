@@ -1,6 +1,6 @@
 -----------------------------------------------------------------------------
 {- |
-Module      :  EasyVision.MiniApps.OCR
+Module      :  ImagProc.Contrib.Tesseract
 Copyright   :  (c) Alberto Ruiz 2011
 License     :  GPL
 
@@ -8,35 +8,31 @@ Maintainer  :  Alberto Ruiz (aruiz at um dot es)
 Stability   :  provisional
 
 
-Interface to tesseract OCR using system calls.
+Interface to tesseract OCR (currently using temp files and system calls.)
 
 -}
 ----------------------------------------------------------------------
 
-module EasyVision.MiniApps.OCR (
-    tesseract,
-    ocrWindow,
-    espeak
+module ImagProc.Contrib.Tesseract (
+     tesseract
+-- , ocrWindow
+-- ,  espeak
 )where
 
 ----------------------------------------------------------------------
 
-import ImagProc                         (ImageGray,saveGray,size)
-import EasyVision.GUI                   (drawImage',setColor',text2D,pixelCoordinates)
-import ImagProc.Camera.MPlayer          (mpSize)
-import EasyVision.MiniApps.Combinators  (clickStatusWindow)
-import Data.Colour.Names                
-import System.Process                   (system,readProcessWithExitCode)
+import ImagProc                         (ImageGray,saveGray)
+import System.Process                   (system)
 import System.IO                        (openTempFile)
 import System.IO.Unsafe                 (unsafePerformIO)
 
 ----------------------------------------------------------------------
-
+{-
 espeak :: String -> IO ()
 espeak text = do
     _ <- readProcessWithExitCode "espeak" (words "--stdin -v en") text
     return ()
-
+-}
 ----------------------------------------------------------------------
 
 tesseract :: ImageGray -> String
@@ -49,7 +45,7 @@ tesseract im = unsafePerformIO $ do
     return s
 
 ----------------------------------------------------------------------
-
+{-
 ocrWindow :: (x -> ImageGray) -> IO x -> IO (IO (x, String))
 ocrWindow sel = clickStatusWindow "Tesseract OCR" (mpSize 10) "" f g (const espeak) where
     f x _ = tesseract (sel x)
@@ -61,4 +57,5 @@ ocrWindow sel = clickStatusWindow "Tesseract OCR" (mpSize 10) "" f g (const espe
         setColor' red; text2D 20 20 s'
     h '\n' = " <CR> "
     h x = [x]       
+-}
 
