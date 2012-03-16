@@ -7,7 +7,7 @@ old      = features old-gui ev
 
 fastinstall = cabal install --disable-library-profiling --disable-documentation
 normalinstall = cabal install --enable-documentation
-fullinstall = cabal install --enable-library-profiling
+fullinstall = cabal install --enable-library-profiling --enable-documentation
 
 all:
 	for p in $(packages); do cd $$p; $(normalinstall) ; cd ..; done
