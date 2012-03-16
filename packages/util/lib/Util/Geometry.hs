@@ -4,6 +4,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE CPP #-}
 -----------------------------------------------------------------------------
 {- |
 Module      :  Util.Geometry
@@ -189,9 +190,11 @@ class Transformable t x
     (◁) :: t -> x -> TResult t x
     (◁) = apTrans
 
-
-apMat :: (Vectorlike a, Vectorlike b, Matrixlike t)
-      => (Mat -> Mat) -> t -> [a] -> [b]
+#if __GLASGOW_HASKELL__ < 704
+apMat :: (Array a ~ Vec, Shaped a, Array b ~ Vec, Shaped b, Array t ~ Mat, Shaped t) => (Mat -> Mat) -> t -> [a] -> [b]
+#else
+apMat :: (Vectorlike a, Vectorlike b, Matrixlike t) => (Mat -> Mat) -> t -> [a] -> [b]
+#endif
 apMat g h = (map unsafeFromVector . toRows) . (<> (g.trans) (toMatrix h)) . fromRows . (map toVector)
 
 instance Transformable Homography [HPoint]

@@ -7,6 +7,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE OverlappingInstances #-}
+{-# LANGUAGE CPP #-}
 -----------------------------------------------------------------------------
 {- |
 Module      :  Util.Small
@@ -23,6 +24,9 @@ Type safe small arrays.
 
 module Util.Small
 (   Shaped(..),
+#if __GLASGOW_HASKELL__ < 704
+    Array,
+#endif
     Dim2(..),Dim3(..),Dim4(..), Build, (!), (#),
     Dim2x2,Dim3x3,Dim4x4,Dim3x4,
     vec2,vec3,vec4,
@@ -113,8 +117,9 @@ type instance DArray Dim4x4        = Mat
 type family Array (m :: *)
 type instance Array a = DArray (Shape a)
 
+#
 class Shaped a where
-    type Shape (m :: *)
+    type Shape a
     toArray         :: a -> Array a
     unsafeFromArray :: Array a -> a
     toDim           :: (Array a ~ Array (Shape a), Shaped (Shape a)) => a -> Shape a
@@ -177,20 +182,33 @@ instance Shaped Dim4x4 where
          [d1,d2,d3,d4] = map unsafeFromArray (toRows m)
 
 --------------------------------------------------------------------------------
-
-class (Shaped x, Array x ~ Mat) => Matrixlike x where
+#if __GLASGOW_HASKELL__ < 704
+class Matrixlike x where
     toMatrix         :: (Shaped x, Array x ~ Mat) => x -> Mat
     unsafeFromMatrix :: (Shaped x, Array x ~ Mat) => Mat -> x
     toMatrix = toArray
     unsafeFromMatrix = unsafeFromArray
 
-instance (Shaped x, Array x ~ Mat) => Matrixlike x
-
-class (Shaped x, Array x ~ Vec) => Vectorlike x where
+class Vectorlike x where
     toVector         :: (Shaped x, Array x ~ Vec) => x -> Vec
     unsafeFromVector :: (Shaped x, Array x ~ Vec) => Vec -> x
     toVector = toArray
     unsafeFromVector = unsafeFromArray
+#else
+class (Shaped x, Array x ~ Mat) => Matrixlike x where
+    toMatrix         :: x -> Mat
+    unsafeFromMatrix :: Mat -> x
+    toMatrix = toArray
+    unsafeFromMatrix = unsafeFromArray
+
+class (Shaped x, Array x ~ Vec) => Vectorlike x where
+    toVector         :: x -> Vec
+    unsafeFromVector :: Vec -> x
+    toVector = toArray
+    unsafeFromVector = unsafeFromArray
+#endif
+
+instance (Shaped x, Array x ~ Mat) => Matrixlike x
 
 instance (Shaped x, Array x ~ Vec) => Vectorlike x
 
