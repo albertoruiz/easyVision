@@ -31,6 +31,7 @@ library
                         Util.Rotation
                         Util.Estimation
                         Util.Homogeneous
+                        Util.Small
                         Util.Geometry
                         Util.Covariance
                         Util.Probability
