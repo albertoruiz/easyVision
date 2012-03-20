@@ -130,7 +130,7 @@ extractSquare sz (F im) = resize (Size sz sz) (F im {vroi = roi}) where
     h = height $ isize im
     d = w-h
     dm = d `quot` 2
-    roi = (vroi im) {c1=dm-1,c2= dm+h}
+    roi = (vroi im) {c1=dm-1,c2= dm+h} --- FIXME ???
 
 ---------------------------------------------------------
 -- deprecated
