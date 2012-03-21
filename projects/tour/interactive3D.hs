@@ -2,7 +2,7 @@ import Vision.GUI
 import ImagProc
 import Util.Geometry
 
-pause = putStr "Press any key (here) to continue..." >> getChar
+pause = putStrLn "Press any key (here) to continue..." >> getChar
 
 -- the following session can also be done in ghci
 

@@ -253,6 +253,29 @@ instance Transformable Homography3D Point3D
 
 
 
+instance Transformable Camera [HPoint3D]
+  where
+    type TResult Camera [HPoint3D] = [HPoint]
+    apTrans = apMat id
+
+instance Transformable Camera HPoint3D
+  where
+    type TResult Camera HPoint3D = HPoint
+    apTrans t x = let [y] = apTrans t [x] in y
+
+
+instance Transformable Camera [Point3D]
+  where
+    type TResult Camera [Point3D] = [Point]
+    apTrans h = map inhomog . apTrans h . map homog -- FIXME
+
+instance Transformable Camera Point3D
+  where
+    type TResult Camera Point3D = Point
+    apTrans t x = let [y] = apTrans t [x] in y
+
+
+
 
 instance Transformable InvCamera HPoint
   where
