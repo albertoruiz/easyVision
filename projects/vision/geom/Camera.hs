@@ -5,19 +5,27 @@ module Camera (
     CameraInfo(..),
     infoCam,
     showCam,
+    computeCamera
 ) where
 
 
 import Vision.GUI
 import ImagProc hiding (Pixel(..))
-import Util.Options(optionFromFile,getRawOption)
-import Data.Traversable(traverse)
 import Numeric.LinearAlgebra
 import Numeric.LinearAlgebra.Util((!),(#),row)
-import Vision as V
-import Util.Geometry as G
-import Util.Misc(debug, debugMat)
+import Vision
+import Util.Geometry
 import Util.Estimation
+
+
+-- provisional
+computeCamera :: [Point] -> [Point3D] -> Camera
+computeCamera image world = unsafeFromMatrix m
+  where
+    m = estimateCamera (map p2l image) (map p2l world)
+    p2l x = toList . toVector $ x
+
+
 
 auxImg = resize (Size 256 256) . float . grayscale . channelsFromRGB
 
