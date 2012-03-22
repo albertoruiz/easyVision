@@ -5,7 +5,7 @@ import Data.Traversable(traverse)
 import Numeric.LinearAlgebra
 import Numeric.LinearAlgebra.Util((!),(#),row, col, diagl)
 import Util.Geometry
-import Camera
+import Util.Camera
 
 main = do
     mbimg <- getRawOption "--image" >>= traverse loadRGB
