@@ -26,7 +26,8 @@ module Vision.GUI.Util (
     drawParam, draw3DParam,
     connectWith,
     clickPoints, clickPoints',
-    interactive3D
+    interactive3D,
+    clickKeep
 ) where
 
 import Graphics.UI.GLUT hiding (Point,Size,color)
@@ -335,4 +336,18 @@ interactive3D name = do
     addDrawing w d = do
         (0,[x]) <- getW w
         resetDrawing w (Draw [x,d])
+
+--------------------------------------------------------------------------------
+
+clickKeep :: String -> (WinRegion -> a -> b) -> ((a,b) -> Drawing) -> Maybe b -> ITrans a (a,b)
+-- ^ click to set something to be forwarded
+clickKeep name f sh s0 = transUI $ interface (Size 240 320) name s0 ft updt [] r sh'
+  where
+    r _ (Just s) input = (Just s, (input,s))
+    r roi Nothing input = (Just s, (input,s))
+      where
+        s = f roi input
+    sh' _ _ = sh
+    updt = [(key (MouseButton LeftButton), \_ _ _ -> Nothing )]
+    ft _ _ = return ()
 
