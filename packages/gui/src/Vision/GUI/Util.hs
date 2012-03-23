@@ -25,7 +25,7 @@ module Vision.GUI.Util (
     withParam,
     drawParam, draw3DParam,
     connectWith,
-    clickPoints,
+    clickPoints, clickPoints',
     interactive3D
 ) where
 
@@ -293,8 +293,13 @@ connectWith f w1 w2 =
 
 --------------------------------------------------------------------------------
 
-clickPoints :: ([Point] -> Drawing) -> IO (EVWindow [Point])
-clickPoints = standalone (Size 400 400) "click points" [] updts acts
+clickPoints' :: String -- ^ window name
+             -> String -- ^ command line option name for loading points
+             -> ([Point] -> Drawing) -- ^ display function
+             -> IO (EVWindow [Point])
+clickPoints' name ldopt sh = do
+    pts <- optionFromFile ldopt []
+    standalone (Size 400 400) name pts updts acts sh
   where
 
     updts = [ (key (MouseButton LeftButton), const new)
@@ -309,6 +314,9 @@ clickPoints = standalone (Size 400 400) "click points" [] updts acts
     move p ps = replaceAt [j] [p] ps
       where
         j = posMin (map (distPoints p) ps)
+
+clickPoints :: ([Point] -> Drawing) -> IO (EVWindow [Point])
+clickPoints = clickPoints' "click points" "--points"
 
 --------------------------------------------------------------------------------
 

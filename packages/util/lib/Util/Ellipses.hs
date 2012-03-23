@@ -1,7 +1,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Util.Ellipses
--- Copyright   :  (c) Alberto Ruiz 2008
+-- Copyright   :  (c) Alberto Ruiz 2008-12
 -- License     :  GPL
 --
 -- Maintainer  :  Alberto Ruiz <aruiz@um.es>
@@ -11,25 +11,31 @@
 --
 -----------------------------------------------------------------------------
 
-module Util.Ellipses ( 
+module Util.Ellipses (
+    -- * Ellipses
     InfoEllipse(..), analyzeEllipse,
     intersectionEllipses,
     tangentEllipses,
     estimateConicRaw,
-    conicPoints
+    conicPoints,
+    -- * Conics
+    computeConic,
+    fromUnitCircle,
+    pointsConic,
+    circle,
+    intersectionConicLine
 ) where
 
 import Numeric.LinearAlgebra
 import Numeric.GSL.Polynomials
 import Util.Homogeneous
-import Util.Misc(mat,Mat,diagl,mt,impossible)
+import Util.Misc(mat,Mat,diagl,mt,impossible,norm)
 import Util.Estimation(homogSolve)
 import Util.Rotation(rot3)
+import Util.Geometry as G
 
 --------------------------------------------------------------------
 
-
--- TODO : work con whitened data
 estimateConicRaw ::  [Point] -> Mat
 estimateConicRaw ps = con where
     con = (3><3) [a,c,d
@@ -40,6 +46,9 @@ estimateConicRaw ps = con where
     eqs = map eq ps
     eq (Point x y) = [x*x, y*y, 2*x*y, 2*x, 2*y, 1.0]
 
+-- FIXME : work con whitened data
+computeConic :: [Point] -> Conic
+computeConic = unsafeFromMatrix . estimateConicRaw
 
 --------------------------------------------------------------------
 
@@ -182,4 +191,39 @@ conicPoints n InfoEllipse {conicCenter = (mx,my), conicSizes = (d1,d2), conicAng
     pt t = Point (mx + x*cos a - y*sin a) (my + x*sin a + y*cos a)
         where x = d1*cos t
               y = d2*sin t
+
+--------------------------------------------------------------------------------
+
+circle :: Int -> Double -> Point -> [Point]
+circle n r (Point x y) = [ Point (x+r*cos t) (y+r*sin t) | t <- toList $ linspace n (0,2*pi) ]
+
+pointsConic :: Int -> Conic -> [Point]
+pointsConic n c = fromUnitCircle c <| circle n 1 (Point 0 0)
+
+fromUnitCircle :: Conic -> Homography
+fromUnitCircle c = h
+  where
+    (l,v) = eigSH (f . toMatrix $ c)
+    f m = m * scalar (signum (-det m))
+    h = unsafeFromMatrix $ v <> diag (recip $ sqrt $ abs $ l)
+
+
+intersectionConicLine :: Conic -> HLine -> [HPoint]
+intersectionConicLine c l = h · r <| ss
+  where
+    h = fromUnitCircle c
+    l' = invTrans h <| l
+    f = closestToLine (HPoint 0 0 1) l'
+    (Point x y) = inhomog f
+    ang = atan2 y x
+    r = unsafeFromMatrix (rot3 (-ang)) :: Homography
+    d = distPoints (Point 0 0) (Point x y)
+    ss = if d > 1 then [] else [HPoint d v 1, HPoint d (-v) 1]
+    v = sqrt (1 - d*d)
+    
+    dirNormal (HLine a b _c) = HPoint a b 0
+
+    closestToLine p m = G.join p (dirNormal m) `meet` m
+
+    distPoints p q = norm (toVector p - toVector q) -- FIXME
 

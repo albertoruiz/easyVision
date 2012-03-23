@@ -195,7 +195,8 @@ apMat :: (Array a ~ Vec, Shaped a, Array b ~ Vec, Shaped b, Array t ~ Mat, Shape
 #else
 apMat :: (Vectorlike a, Vectorlike b, Matrixlike t) => (Mat -> Mat) -> t -> [a] -> [b]
 #endif
-apMat g h = (map unsafeFromVector . toRows) . (<> (g.trans) (toMatrix h)) . fromRows . (map toVector)
+apMat _ _ [] = []
+apMat g h xs = (map unsafeFromVector . toRows) . (<> (g.trans) (toMatrix h)) . fromRows . (map toVector) $ xs
 
 instance Transformable Homography [HPoint]
   where
@@ -228,6 +229,32 @@ instance Transformable Homography HLine
   where
     type TResult Homography HLine = HLine
     apTrans t x = let [y] = apTrans t [x] in y
+
+
+instance Transformable Homography Conic
+  where
+    type TResult Homography Conic = Conic
+    apTrans (Homography t) (Conic c) = Conic (trans it <> c <> it)
+      where
+        it = inv t
+
+instance Transformable Homography [Conic]
+  where
+    type TResult Homography [Conic] = [Conic]
+    apTrans t = map (apTrans t)
+
+
+instance Transformable Homography DualConic
+  where
+    type TResult Homography DualConic = DualConic
+    apTrans (Homography t) (DualConic c) = DualConic (t <> c <> trans t)
+
+instance Transformable Homography [DualConic]
+  where
+    type TResult Homography [DualConic] = [DualConic]
+    apTrans t = map (apTrans t)
+
+
 
 
 instance Transformable Homography3D [HPoint3D]
