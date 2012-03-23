@@ -5,7 +5,8 @@ module Util.Camera (
     CameraInfo(..),
     infoCam,
     showCam,
-    computeCamera
+    computeCamera,
+    computeHomography
 ) where
 
 
@@ -16,6 +17,7 @@ import Numeric.LinearAlgebra.Util((!),(#),row)
 import Vision
 import Util.Geometry
 import Util.Estimation
+import Data.Function(on)
 
 
 -- provisional
@@ -23,8 +25,13 @@ computeCamera :: [Point] -> [Point3D] -> Camera
 computeCamera image world = unsafeFromMatrix m
   where
     m = estimateCamera (map p2l image) (map p2l world)
-    p2l x = toList . toVector $ x
 
+computeHomography :: [Point] -- ^ dst
+                  -> [Point] -- ^ src
+                  -> Homography
+computeHomography dst src = unsafeFromMatrix $ (estimateHomography `on` map p2l) dst src
+
+p2l x = toList . toVector $ x
 
 
 auxImg = resize (Size 256 256) . float . grayscale . channelsFromRGB

@@ -1,6 +1,6 @@
 import Vision.GUI
 import ImagProc hiding (Pixel(..))
-import Util.Options(optionFromFile,getRawOption)
+import Util.Options(getRawOption)
 import Data.Traversable(traverse)
 import Numeric.LinearAlgebra
 import Numeric.LinearAlgebra.Util((!),(#),row, col, diagl)
@@ -9,10 +9,8 @@ import Util.Camera
 
 main = do
     mbimg <- getRawOption "--image" >>= traverse loadRGB
-    pts <- optionFromFile "--points" []
     runIt $ do
-        p <- clickPoints (sh mbimg)
-        putW p pts
+        p <- clickPoints' "click points" "--points" (sh mbimg)
         w <- browser3D "camera resection" [] (const id)
         connectWith (g mbimg) p w
 
