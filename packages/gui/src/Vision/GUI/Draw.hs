@@ -19,7 +19,6 @@ module Vision.GUI.Draw
 ( drawTexture
 , drawCamera
 , cameraView
-, drawInterestPoints
 , extractSquare
 , captureGL
 , drawContourLabeled
@@ -123,57 +122,16 @@ drawCamera' size cam (Just imgtext) = do
                [ q, -q, f]]
     renderPrimitive LineLoop $ mapM_ vertex outline
 
--- | Takes a centered square from an image and resizes it to the desired size (useful to obtain an image texture appropriate for 'drawCamera').
+{-# DEPRECATED extractSquare "use new drawing camera tools" #-}
 extractSquare :: Int -> ImageFloat -> ImageFloat
 extractSquare sz (F im) = resize (Size sz sz) (F im {vroi = roi}) where
     w = width $ isize im
     h = height $ isize im
     d = w-h
     dm = d `quot` 2
-    roi = (vroi im) {c1=dm-1,c2= dm+h} --- FIXME ???
+    roi = (vroi im) {c1=dm-h,c2= dm+h}
 
 ---------------------------------------------------------
--- deprecated
-drawInterestPoints' :: Size -> [InterestPoint] -> IO ()
-drawInterestPoints' sz ipts = do
-    pointCoordinates sz
-    renderPrimitive Points (mapM_ drawPts ipts)
-    renderPrimitive Lines  (mapM_ drawOris ipts)
-    mapM_ drawSample ipts
-  where
-    drawOris IP {ipPosition = p@(Point x y), ipOrientation = a} = do
-        vertex $ p
-        vertex $ Point (x-0.05*cos a) (y+0.05*sin a)
-    drawPts IP {ipPosition = p@(Point x y)} = do
-        vertex $ p
-    drawSample IP {ipPosition = p@(Point x y), ipScale = rad} = renderPrimitive LineLoop (mapM_ vertex (circle x y 16 rad))
-
-circle x y n rad = [Point (x+rad*cos ang) (y+rad*sin ang) | ang <- [0, d .. 2*pi-d]]
-    where d = 2*pi/fromIntegral n
-------------------------------------------------------------
-
-drawInterestPoints :: [InterestPoint] -> IO ()
-drawInterestPoints ps = mapM_ shIP ps
-
-shIP (IP (Point x y) s o _) = do
-    renderPrimitive LineLoop box
-  where
-    m = desp (x,y) <> rot3 o <> desp (-x,-y)
-    ps = ht m [[x-s,y-s],[x-s,y+s],[x+s,y+s],[x+s,y-s]]
-    box = mapM_ vertex ps
-
-shIP' (IP (Point x y) s o _) = do
-    renderPrimitive LineLoop box
-    renderPrimitive Lines dir
-  where
-    box =  vertex (Point (x-s) (y-s))
-        >> vertex (Point (x-s) (y+s))
-        >> vertex (Point (x+s) (y+s))
-        >> vertex (Point (x+s) (y-s))
-    dir = vertex (Point (x) (y))
-        >> vertex (Point (x-s*cos o) (y+s*sin o))
-
------------------------------------------------------
 
 -- | sets the opengl view of a given camera matrix
 cameraView :: Matrix Double -- ^ 3x4 camera matrix (with K=diag f f 1)
@@ -345,6 +303,23 @@ instance Renderable [Segment] where
 instance Renderable Segment where
   render s = render [s]
 
+
+shIP (IP (Point x y) s o _) = do
+    renderPrimitive LineLoop box
+  where
+    m = desp (x,y) <> rot3 o <> desp (-x,-y)
+    ps = ht m [[x-s,y-s],[x-s,y+s],[x+s,y+s],[x+s,y-s]]
+    box = mapM_ vertex ps
+
+instance Renderable InterestPoint where
+  render = shIP
+
+instance Renderable [InterestPoint] where
+  render = mapM_ render
+
+
+
+{-# DEPRECATED points' "use Draw" #-}
 points' :: [Point] -> Drawing
 points' = Draw
 

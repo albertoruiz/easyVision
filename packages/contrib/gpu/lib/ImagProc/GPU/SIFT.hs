@@ -16,19 +16,25 @@ Interface to the SiftGPU library by Changchang Wu, <http://www.cs.unc.edu/~ccwu>
 
 
 module ImagProc.GPU.SIFT(
+    sift,
     getSift,
     SIFTParams(..),
     getMatchGPU
 ) where
 
 import ImagProc.Ipp.Core
-import Foreign
+import Foreign.Ptr
+import Foreign.ForeignPtr
+import Foreign.Marshal
+import Foreign.Storable
+import Foreign.C.Types
 import Foreign.C.String
+import System.IO.Unsafe(unsafePerformIO)
 import Numeric.LinearAlgebra hiding (step)
 import Data.Packed.Development
 import Graphics.UI.GLUT hiding (Point)
 import Control.Monad(when)
-import Vision.GUI.Parameters
+import Vision.GUI
 
 -----------------------------------------------------------------
 
@@ -52,10 +58,10 @@ inContext cxt f = do
 getSift = do
     w <- createWindow "aux SIFTGPU"
     windowStatus $= Hidden
-    return (\ p x -> unsafePerformIO $ inContext w (sift p x))
+    return (\ p x -> unsafePerformIO $ inContext w (sift' p x))
 
 
-sift pars (G im) = do
+sift' pars (G im) = do
     let ok = vroi im == fullroi im
            && step im == width (isize im)
     when (not ok) $ error "FIXME: Sift GPU on image with ROI or step"
@@ -131,3 +137,15 @@ getMatchGPU = do
     return $ \e r v1 v2 -> if null v1 || null v2
         then []
         else unsafePerformIO $ inContext w (matchGPU e r v1 v2)
+        
+--------------------------------------------------------------------------------
+
+sift :: (a -> ImageGray) -> ITrans a (a, [InterestPoint])
+sift f = transUI $ do
+    fsift <- getSift
+    o <- winParam
+    return $ \cam -> do
+       x <- cam
+       pars <- o
+       return (x, fsift pars (f x))
+

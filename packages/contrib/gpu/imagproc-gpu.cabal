@@ -1,17 +1,17 @@
 Name:               imagproc-gpu
-Version:            0.1.0
+Version:            0.2.0
 License:            LGPL
 License-file:       LICENSE
 Author:             Alberto Ruiz
 Maintainer:         Alberto Ruiz <aruiz@um.es>
 Stability:          experimental
-Homepage:           http://www.easyvision.googlepages.com/
+Homepage:           https://github.com/albertoruiz/hmatrix
 Synopsis:           image processing functions using the GPU
 Description:
   image processing functions using the GPU and CUDA
 
 Category:           Math
-tested-with:        GHC ==6.10.4, GHC ==6.12.1
+tested-with:        GHC ==7.4
 
 cabal-version:      >=1.2
 build-type:         Custom
@@ -40,3 +40,4 @@ library
     ghc-options:        -Wall -fno-warn-missing-signatures
 
     extra-libraries:    siftgpu cudart Cg CgGL GLEW IL glut
+
