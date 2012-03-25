@@ -15,7 +15,8 @@ Arrow interface.
 -----------------------------------------------------------------------------
 
 module Vision.GUI.Arrow(
-    runITrans, runT_, runT, runS, ITrans(ITrans), transUI, arrL, (@@@), delay', arrIO
+    runITrans, runT_, runT, runS, ITrans(ITrans), transUI, arrL, (@@@), delay', arrIO,
+    runNT_,
 )where
 
 import Control.Concurrent   (forkIO)
@@ -28,6 +29,7 @@ import Control.Monad
 import Data.Either(lefts,rights)
 import System.IO.Unsafe(unsafeInterleaveIO)
 import Control.Concurrent
+import Graphics.UI.GLUT (mainLoopEvent)
 
 --------------------------------------------------------------------------------
 
@@ -138,6 +140,16 @@ runT_ gcam gt = runIt $ do
     forkIO $ mapM_ g bs
   where
     g !_x = putStr ""
+
+
+runNT_ :: IO (IO a) -> ITrans a b -> IO ()
+-- ^ run process without fork, (needs explicit "prepare").
+-- This is currently required for certain GPU applications.
+runNT_ gcam gt = do
+    bs <- runS gcam gt
+    mapM_ g bs
+  where
+    g !_x = putStr "" >> mainLoopEvent
 
 
 runT :: IO (IO a) -> ITrans a b -> IO [b]
