@@ -39,8 +39,5 @@ library
 
     ghc-options:        -Wall -fno-warn-missing-signatures
 
-    if arch(x86_64)
-        extra-libraries: siftgpu64 cudart64 Cg CgGL GLEW IL glut
-    else
-        extra-libraries: siftgpu cudart Cg CgGL GLEW IL glut
+    extra-libraries: siftgpu cudart Cg CgGL GLEW IL glut
 
