@@ -1,6 +1,7 @@
 {-# LANGUAGE FlexibleInstances, ViewPatterns #-}
 
-import EasyVision
+import Vision.GUI hiding (clearColor)
+import ImagProc
 import Graphics.UI.GLUT as GL hiding(Point,Size) 
 import Numeric.LinearAlgebra
 import System.Random(randomIO)
@@ -17,6 +18,8 @@ main = prepare >> procCircle >> mainLoop
 ----------------------------------------------------------------------
 
 sz = (Size 400 400) 
+
+shLine [a,b,c] = render (HLine a b c)
 
 gpoints sigma m n = do
     seed <- randomIO
