@@ -53,7 +53,7 @@ installation instructions
         export IPP_LIBS="ippcore ippi ipps ippcc ippvc ippcv iomp5"
         export IPP_LINK=-pthread
         export EASYVISION=/your/path/to/easyVision/
-        export LD_LIBRARY_PATH=$IPP_SHARED:$EASYVISION/lib
+        export LD_LIBRARY_PATH=$IPP_SHARED:$EASYVISION/lib/lib32
 
     Make sure that the IPP .h headers are in IPP_INC and the corresponding .so
     libs are in IPP_SHARED (modify as required in 64bit machines). Directory
@@ -84,7 +84,7 @@ installation instructions
 
         $ sudo apt-get install libcv-dev libcvaux-dev libhighgui-dev
 
-    SIFTGPU (currently only for i386):
+    SIFTGPU:
 
         $ sudo apt-get install nvidia-current nvidia-cg-toolkit libdevil-dev g++
 

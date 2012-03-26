@@ -16,7 +16,7 @@ tested-with:        GHC ==7.4
 cabal-version:      >=1.2
 build-type:         Custom
 
-extra-source-files:     lib/ImagProc/GPU/SIFT/SiftGPU.h
+extra-source-files:     src/ImagProc/GPU/SIFT/SiftGPU.h
 
 extra-tmp-files:        imagproc-gpu.buildinfo
 
@@ -25,13 +25,13 @@ library
                         hmatrix >= 0.8.3, imagproc >= 0.1,
                         ev-gui, GLUT, camera
 
-    hs-source-dirs:     lib
+    hs-source-dirs:     src
 
     Exposed-modules:    ImagProc.GPU.SIFT
 
     other-modules:
 
-    c-sources:          lib/ImagProc/GPU/SIFT/SiftGPU.cpp
+    c-sources:          src/ImagProc/GPU/SIFT/SiftGPU.cpp
 
     cc-options:         -O4
 
@@ -39,5 +39,8 @@ library
 
     ghc-options:        -Wall -fno-warn-missing-signatures
 
-    extra-libraries:    siftgpu cudart Cg CgGL GLEW IL glut
+    if arch(x86_64)
+        extra-libraries: siftgpu64 cudart64 Cg CgGL GLEW IL glut
+    else
+        extra-libraries: siftgpu cudart Cg CgGL GLEW IL glut
 

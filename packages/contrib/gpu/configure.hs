@@ -2,9 +2,13 @@
 
 import System.Environment(getEnv)
 
+import Distribution.System(buildArch,Arch(..))
+
+arch = if buildArch == X86_64 then "/lib/lib64" else "/lib/lib32"
+
 main = do
-    nppath <- getEnv "EASYVISION"
-    putStrLn $ "EASYVISION path: " ++ nppath
+    lib <- getEnv "EASYVISION"
+    putStrLn $ "EASYVISION path: " ++ lib
     writeFile "imagproc-gpu.buildinfo" $ 
-              "extra-lib-dirs: "++nppath++"/lib\n"
+              "extra-lib-dirs: " ++ lib ++ arch ++"\n"
 
