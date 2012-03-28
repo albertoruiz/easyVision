@@ -97,7 +97,8 @@ clip mode (Closed a'') (Closed b'') = unsafePerformIO $ do
     -- provisional
     let vxs = map (tail . toList) $ takesV ls (fromList xs)
         vys = map (tail . toList) $ takesV ls (fromList ys)
-        r = zipWith f vxs vys
+        r | n > 0 = zipWith f vxs vys
+          | otherwise = []
           where f as bs = Closed $ zipWith Point as bs
     
     free pxs
