@@ -1,103 +1,78 @@
-{-# LANGUAGE FlexibleInstances, ViewPatterns #-}
-
-import Vision.GUI hiding (clearColor)
+import Vision.GUI
 import ImagProc
-import Graphics.UI.GLUT as GL hiding(Point,Size) 
 import Numeric.LinearAlgebra
+import Numeric.LinearAlgebra.Util(rand,randn)
 import System.Random(randomIO)
 import Util.Misc(randomPermutation,vec,debug,degree)
 import Util.Homogeneous(homog,inHomog)
 import Vision(cross,mS)
 import Util.Estimation(ransac)
-import Util.Ellipses(conicPoints,InfoEllipse(..))
+import Util.Ellipses(circle)
+import Contours(bisector)
+import qualified Util.Geometry as G
+import Control.Applicative((<$>))
 
-----------------------------------------------------------------------
+--------------------------------------------------------------------------------
 
-main = prepare >> procCircle >> mainLoop
+main = runIt $ procCircle >> procLine
 
-----------------------------------------------------------------------
+--------------------------------------------------------------------------------
 
-sz = (Size 400 400) 
-
-shLine [a,b,c] = render (HLine a b c)
-
-gpoints sigma m n = do
+gpoints meth sigma m n = do
+    inliers  <- toLists <$> noisy sigma (meth m)
+    outliers <- toLists . (\r -> 2*r-1) <$> rand n 2
     seed <- randomIO
-    let --inliers = toLists $ noisy seed sigma ( linspace m (-0.5,0.5) `outer` fromList[1,1] )
-        inliers = toLists $ noisy seed sigma (circle m)
-        outliers = toLists $ reshape 2 $ 2 * randomVector seed Uniform (2*n) - 1
-    return (randomPermutation seed (inliers ++ outliers))
+    return (map l2p $ randomPermutation seed (inliers ++ outliers))
+  where
+    noisy sigma m = (\r -> m + scalar sigma * r) <$> randn (rows m) (cols m)
 
-noisy seed sigma m = m + scalar sigma * reshape (cols m) (randomVector seed Gaussian (rows m*cols m))
+l2p [x,y] = Point x y
+p2l (Point x y) = [x,y]
 
-circlePoints n (x,y,r) = conicPoints n InfoEllipse {conicCenter = (x,y), conicSizes = (r,r), conicAngle = 0, conicTrans = undefined, conicMatrix = undefined}
+----------------------------------
 
-circle m = fromLists $ map p2l $ circlePoints m (0,0,0.5)
-  where p2l (Point x y) = [x,y]
+gpointsLine = gpoints $ \m -> linspace m (-0.5,0.5) `outer` fromList[1,1] 
+
+gpointsCircle = gpoints $ \m -> fromLists $ map p2l $ circle m 0.5 (Point 0 0)
+
+--------------------------------------------------------------------------------
 
 estimateLine = ransac estimator inlier 2 0.99
   where
-    estimator [a,b] = toList $ hv a `cross` hv b
+    estimator [a,b] = G.join a b
     inlier l p = distE2 l p < 0.01**2
 
-hv = homog.vec
-
-distE2 [l1,l2,l3] [x,y] = (l1*x + l2*y + l3)**2/(l1**2 + l2**2)
-
-mediatrix a' b' = d `cross` c
-  where
-    a = homog a'
-    b = homog b'
-    c = homog $ (a'+b')/2
-    d = mS <> (a `cross` b)
+distE2 (HLine l1 l2 l3) (Point x y) = (l1*x + l2*y + l3)**2/(l1**2 + l2**2)
 
 
 estimateCircle = ransac estimator inlier 3 0.99
   where
-    estimator [a@[ax,ay],b,c] = [x,y,r]
-      where [x,y] = toList $ inHomog $ mediatrix (vec a) (vec b) `cross` mediatrix (vec b) (vec c)
-            r = distPoints (Point x y) (Point ax ay)
-    inlier [x,y,r] [p,q] = abs (distPoints (Point x y) (Point p q) - r) < 0.02
+    estimator [a,b,c] = (cent,r)
+      where cent = l2p $ toList $ inHomog $ bisector (Segment a b) `cross` bisector (Segment b c)
+            r = distPoints cent a
+    inlier (cent,r) p = abs (distPoints cent p - r) < 0.02
 
+--------------------------------------------------------------------------------
 
-procLine = do
-    pts <- gpoints 0.02 50 500
-    let okmodel = estimateLine pts
-    evWindow () "Data" sz (Just $ disp0 (pts)) (const kbdQuit)
-    clearColor $= Color4 1 1 1 1
-    evWindow () "Model" sz (Just $ disp shLine (pts,okmodel)) (const kbdQuit)
-    clearColor $= Color4 1 1 1 1
-
-procCircle = do
-    pts <- gpoints 0.02 100 500
-    let okmodel = estimateCircle pts
+genproc name genpts estimator shmod = do
+    pts <- genpts
+    let okmodel = estimator pts
     print $ fst okmodel
-    evWindow () "Data" sz (Just $ disp0 (pts)) (const kbdQuit)
-    clearColor $= Color4 1 1 1 1
-    evWindow () "Model" sz (Just $ disp shCircle (pts,okmodel)) (const kbdQuit)
-    clearColor $= Color4 1 1 1 1
+    browser name (sh pts okmodel) (const id)
+ where
+    sh pts mod = [ clearColor white dat
+                 , clearColor white [inls,drmodel] ]
+      where
+        dat = color black . pointSz 3 $ pts
+        drmodel = color black (shmod model)
+        inls = color black . pointSz 3 $ inliers
+        (model,inliers) = mod
 
+----------------------------------
 
-main' = do
-    pts <- gpoints 0.02 50 500
-    print $ fst $ estimateLine pts
+procLine = genproc "line" (gpointsLine 0.02 50 500) estimateLine id
 
-----------------------------------------------------------------------
-
-disp f (pts,(l,inl)) _ = do
-    pointCoordinates sz
-    pointSize $= 3
-    setColor 0 0 0
-    renderPrimitive Points $ mapM_ vertex pts
-    setColor 1 0 0
-    renderPrimitive Points $ mapM_ vertex inl
-    f l
-
-disp0 pts _ = do
-    pointCoordinates sz
-    pointSize $= 3
-    setColor 0 0 0
-    renderPrimitive Points $ mapM_ vertex pts
-
-shCircle [x,y,r] = renderPrimitive LineLoop $ vertex $ Closed $ circlePoints 35 (x,y,r)
+procCircle = genproc "circle" (gpointsCircle 0.02 100 500) estimateCircle sh
+  where
+    sh (cent,r) = Closed $ circle 50 r cent
 
