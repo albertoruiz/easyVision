@@ -16,7 +16,7 @@ Arrow interface.
 
 module Vision.GUI.Arrow(
     runITrans, runT_, runT, runS, ITrans(ITrans), transUI, arrL, (@@@), delay', arrIO,
-    runNT_,
+    runNT_, sink
 )where
 
 import Control.Concurrent   (forkIO)
@@ -165,4 +165,11 @@ runT gcam gt = do
 runS :: IO (IO a) -> ITrans a b -> IO [b]
 -- ^ runT without the GUI (run silent) 
 runS gcam gt = gcam >>= grabAll >>= runITrans gt
+
+
+sink :: ITrans a ()
+-- ^ needed to avoid possible space leak for arrows with unused result
+sink = arrIO f
+  where
+    f x = putStr (seq x "")
 
