@@ -48,7 +48,7 @@ distE2 (HLine l1 l2 l3) (Point x y) = (l1*x + l2*y + l3)**2/(l1**2 + l2**2)
 estimateCircle = ransac estimator inlier 3 0.99
   where
     estimator [a,b,c] = (cent,r)
-      where cent = l2p $ toList $ inHomog $ bisector (Segment a b) `cross` bisector (Segment b c)
+      where cent = G.inhomog $ bisector (Segment a b) `G.meet` bisector (Segment b c)
             r = distPoints cent a
     inlier (cent,r) p = abs (distPoints cent p - r) < 0.02
 

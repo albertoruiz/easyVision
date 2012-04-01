@@ -21,6 +21,7 @@ import Classifier(Sample)
 import Control.Monad(when)
 import Data.List(minimumBy,sortBy,tails)
 import Data.Function(on)
+import Util.Geometry(toVector,meet)
 
 
 autoParam "PolygonParam" "polygon-"
@@ -110,7 +111,7 @@ mkInfo envs = map curvat envs
       where
         l1 = bisector (Segment p0 p1)
         l2 = bisector (Segment p1 p2)
-        hc = cross l1 l2
+        hc = toVector $ meet l1 l2
         tooflat = abs(hc@>2 /norm hc) < 1E-3
         cen@(Point kcx kcy) =  hv2pt hc
         k = distPoints cen p1 `min` 10
