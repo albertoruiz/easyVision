@@ -129,7 +129,7 @@ interfaceG threeD sz0 name st0 ft upds acts resultFun resultDisp = do
         roi <- get (evRegion w)
         let (newState, result) = resultFun roi state thing
             drawing = resultDisp roi newState result
-        putW w newState
+        seq newState $ putW w newState
         pause <- readIORef (evPause w)
         when (not (pause==PauseDraw)) $ swapMVar (evDraw w) drawing >> return ()
         swapMVar(evReady w) True
