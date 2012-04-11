@@ -12,6 +12,6 @@ p = proc g -> do
     let f = float g
     x <- observe "x" id -< f
     s <- (observe "s" id <<< arr (gaussS 5)) -< f
-    sink <<< observe "inverted" notI -< g
+    observe "inverted" notI -< g
     returnA -< x |-| s
 

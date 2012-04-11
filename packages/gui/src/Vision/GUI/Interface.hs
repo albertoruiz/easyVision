@@ -128,9 +128,10 @@ interfaceG threeD sz0 name st0 ft upds acts resultFun resultDisp = do
         state <- getW w
         roi <- get (evRegion w)
         let (newState, result) = resultFun roi state thing
-        putW w newState
+            drawing = resultDisp roi newState result
+        seq newState $ putW w newState
         pause <- readIORef (evPause w)
-        when (not (pause==PauseDraw)) $ swapMVar (evDraw w) (resultDisp roi newState result) >> return ()
+        when (not (pause==PauseDraw)) $ swapMVar (evDraw w) drawing >> return ()
         swapMVar(evReady w) True
         --putStrLn "W"
         sync <- readIORef (evSync w)
@@ -150,8 +151,9 @@ drawRegion w = do
         let shpsz = case psz of
                 Nothing -> "  "
                 Just sz -> "    pSize: " ++ shSize sz ++ " / "
-            info = show (evNCall stats) ++ " frames / " ++ show (evNDraw stats) ++ " draws" ++
-                   shpsz ++ "wSize: " ++ shSize (evSize wsz)
+            info = show (evNCall stats) ++ " frames / " ++ show (evNDraw stats)
+                   ++ " draws (" ++ show (evNCall stats - evNDraw stats) ++ ")"
+                   ++ shpsz ++ "wSize: " ++ shSize (evSize wsz)
         --         ++ "   zoom = " ++ printf "(%.2f,%.1f,%.1f)" z a b
         render $ Draw [ color white . lineWd 1 $
                         Closed [ Point x1 y1, Point x2 y1

@@ -31,6 +31,7 @@ import Data.List(sortBy, maximumBy, sort,foldl',tails)
 import Numeric.LinearAlgebra
 import Util.Homogeneous
 import Util.Misc(diagl,Vec)
+import Util.Geometry as G
 
 
 
@@ -148,16 +149,15 @@ areaTriang p1 p2 p3 = sqrt $ p * (p-d1) * (p-d2) * (p-d3)
     p = (d1+d2+d3)/2
 
 
-bisector :: Segment -> Vec
--- ^ TO DO: use homog line
-bisector (Segment (Point x0 y0) (Point x1 y1)) = cross dir cen
+bisector :: Segment -> HLine
+bisector (Segment (Point x0 y0) (Point x1 y1)) = G.join dir cen
   where
     dx = x1-x0
     dy = y1-y0
     cx = (x0+x1)/2
     cy = (y0+y1)/2
-    dir = fromList [-dy,dx,0]
-    cen = fromList [cx,cy,1]
+    dir = HPoint (-dy) dx 0
+    cen = HPoint cx cy 1
 
 ----------------------------------------------------------------------
 
