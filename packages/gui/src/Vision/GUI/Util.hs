@@ -27,7 +27,7 @@ module Vision.GUI.Util (
     connectWith,
     clickPoints, clickPoints',
     interactive3D,
-    clickKeep, clickList
+    clickKeep, clickList, clickTag
 ) where
 
 import Graphics.UI.GLUT hiding (Point,Size,color)
@@ -363,5 +363,14 @@ clickList name f sh xs0 = transUI $ interface (Size 240 320) name (xs0,False) ft
         xs' = f roi input : xs
     sh' _ _ = sh
     updt = [(key (MouseButton LeftButton), \_ _ (xs,_) -> (xs,True) )]
+    ft _ _ = return ()
+
+--------------------------------------------------------------------------------
+
+clickTag :: (x -> l) -> (x -> r) -> (Either l r -> Drawing) -> String -> ITrans x (Either l r)
+clickTag l r sh name = transUI $ interface (Size 240 320) name False ft updt [] y (const (const sh))
+  where
+    y _ sv input = (sv, if sv then Right (r input) else Left (l input))
+    updt = [(key (MouseButton LeftButton), \_ _ sv -> not sv)]
     ft _ _ = return ()
 
