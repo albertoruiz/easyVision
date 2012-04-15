@@ -17,7 +17,7 @@ Arrow interface.
 module Vision.GUI.Arrow(
     runITrans, runT_, runT, runS,
     ITrans(ITrans), Trans(Trans),
-    transUI, arrL, (@@@), delay', arrIO,
+    transUI, arrL, (@@@), delay, delay', arrIO,
     runNT_
 )where
 
@@ -28,8 +28,8 @@ import Vision.GUI.Interface (runIt,VC,VCN)
 import qualified Control.Category as Cat
 import Control.Arrow
 import Control.Monad
-import Data.Either(lefts,rights)
-import System.IO.Unsafe(unsafeInterleaveIO)
+import Control.Monad.Fix
+import Control.Arrow.Operations(ArrowCircuit(..))
 import Control.Concurrent
 import Util.Misc(debug)
 import Data.IORef
@@ -77,7 +77,6 @@ instance Arrow ITrans
                     --putStrLn "A" >>
                     takeMVar ma
 
-                
             sepb c = do
                 ea <- isEmptyMVar ma
                 eb <- isEmptyMVar mb
@@ -90,7 +89,6 @@ instance Arrow ITrans
                   else
                     --putStrLn "B" >>
                     takeMVar mb
-
 
         return $ Trans $ \ab -> do
             b <- f (sepa ab)
@@ -143,18 +141,31 @@ instance ArrowChoice ITrans where
     ITrans gf ||| ITrans gg = ITrans $ do
         Trans f <- gf
         Trans g <- gg
-        return $ Trans $ \ab -> ab >>= either (f.return) (g.return)
+        return $ Trans (>>= either (f.return) (g.return))
+
+-- similar to Kleisli, explictly calling the IO function
 
 --------------------------------------------------------------------------------
 
+instance ArrowLoop ITrans where
+    loop (ITrans gf) = ITrans $ do
+        Trans f <- gf
+        let f' x y = (f.return) (x, snd y)
+        return $ Trans (>>= liftM fst . mfix . f')
+
+-- the same idea as above
+
+
+instance ArrowCircuit ITrans where
+    delay x = arrL (x:)
+
 
 delay' :: ITrans a a
--- ^ similar to delay from ArrowCircuit, initialized with the first element
+-- ^ delay initialized with the first element (not suitable for ArrowLoop/ArrowCircuit)
 delay' = arrL f
   where
     f [] = []
     f (a:as) = a:a:as
-
 
 --------------------------------------------------------------------------------
 

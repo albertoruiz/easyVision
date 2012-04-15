@@ -27,5 +27,3 @@ f (a,_) (im,c:_) = (warpOn im h a, [c])
         k = posMax $ map segmentLength (asSegments c)
 f _ x = x
 
--- to do this with "delay" (or our delay') we need DoRec and ArrowLoop ITrans
-
