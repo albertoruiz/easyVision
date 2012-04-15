@@ -1,5 +1,6 @@
 -- $ mplayer saved.y4m -demuxer y4m
 --             (or      -vc rawi420)
+-- $ mencoder saved.y4m -vc rawi420 -fps 20 -ovc lavc -lavcopts vcodec=mpeg4:mbd=2:trell:v4mv:turbo -o saved.avi
 
 {-# LANGUAGE Arrows #-}
 
