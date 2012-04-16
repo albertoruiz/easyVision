@@ -83,7 +83,7 @@ newTrackball = do
             rotate (doubleGL $ vertAngle s) (Vector3 0 0 (1::GLdouble))
             Size sz _ <- get windowSize
             writeIORef st s {wsize = fromIntegral sz}
-            postRedisplay Nothing
+            -- postRedisplay Nothing
 
     return (trackball, quatkbd st, quatmot st, autoRot st)
 
@@ -136,8 +136,10 @@ quatmot str pos@(Position x y) = do
         [xp,yp] -> do
             let q = trackball (xp,yp) (xc,yc) .*. tbQuat st
             writeIORef str st {tbQuat = q, prev = [xc,yc]}
+    postRedisplay Nothing
 
 autoRot st = do
     s <- readIORef st
     writeIORef st $ s {vertAngle = vertAngle s + fromIntegral (autoSpeed s)/10}
     return (autoSpeed s /= 0)
+
