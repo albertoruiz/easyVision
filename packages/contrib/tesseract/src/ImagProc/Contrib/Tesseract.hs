@@ -14,18 +14,21 @@ Interface to tesseract OCR (currently using temp files and system calls.)
 ----------------------------------------------------------------------
 
 module ImagProc.Contrib.Tesseract (
-     tesseract
+  tesseract
+  , tesseractQuiet
 -- , ocrWindow
 -- ,  espeak
-)where
+)
+where
 
 ----------------------------------------------------------------------
 
 import ImagProc                         (ImageGray,saveGray)
-import System.Process                   (system)
-import System.IO                        (openTempFile)
+import System.FilePath.Posix
+import System.Directory
+import System.IO.Temp
 import System.IO.Unsafe                 (unsafePerformIO)
-
+import System.Process                   (system)
 ----------------------------------------------------------------------
 {-
 espeak :: String -> IO ()
@@ -36,13 +39,34 @@ espeak text = do
 ----------------------------------------------------------------------
 
 tesseract :: ImageGray -> String
-tesseract im = unsafePerformIO $ do
-    (f,_h) <- openTempFile "." "ocr"
-    saveGray (f++".tif") im
-    _ <- system $ "tesseract "++f++".tif "++f++" -l eng 2> /dev/null"
-    s <- readFile $ f++".txt"
-    _ <- system $ "rm -f "++f++" "++f++".*" 
-    return s
+tesseract im = 
+  unsafePerformIO $ withSystemTempFile "ocr.tif" $ 
+  (\f _h  -> do 
+      let f' = replaceExtension f "txt"
+          fbase = dropExtension f
+      saveGray f im
+      _ <- system $ "tesseract " ++ f ++ " " 
+           ++ fbase ++ " -l eng "
+      s <- readFile $ f'
+      removeFile f
+      removeFile f'
+      return s
+  )     
+
+tesseractQuiet :: ImageGray -> String
+tesseractQuiet im = 
+  unsafePerformIO $ withSystemTempFile "ocr.tif" $ 
+  (\f _h  -> do 
+      let f' = replaceExtension f "txt"
+          fbase = dropExtension f
+      saveGray f im
+      _ <- system $ "tesseract " ++ f ++ " " 
+           ++ fbase ++ " -l eng   &> /dev/null"
+      s <- readFile $ f'
+      removeFile f
+      removeFile f'
+      return s
+  )     
 
 ----------------------------------------------------------------------
 {-
