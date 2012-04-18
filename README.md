@@ -38,7 +38,7 @@ installation instructions
 
 1. Get the source code:
 
-        $ git clone git://github.com/AlbertoRuiz/easyVision.git
+        $ git clone git://github.com/albertoruiz/easyVision.git
 
 2. Install IPP. You can download a noncomercial version for Linux:
 
