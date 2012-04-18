@@ -16,7 +16,7 @@ cabal-version:      >=1.2
 build-type:         Simple
 
 library
-    Build-Depends:      base, imagproc, process
+    Build-Depends:      base, imagproc, process, temporary, filepath, directory
 
     hs-source-dirs:     src
 
