@@ -24,7 +24,8 @@ import Data.Function(on)
 computeCamera :: [Point] -> [Point3D] -> Camera
 computeCamera image world = unsafeFromMatrix m
   where
-    m = estimateCamera (map p2l image) (map p2l world)
+    m | length image > 5 = estimateCamera (map p2l image) (map p2l world)
+      | otherwise = cameraAtOrigin
 
 computeHomography :: [Point] -- ^ dst
                   -> [Point] -- ^ src

@@ -10,6 +10,8 @@
 ./arrows
 ./choice
 ./loop
+./nocircuit ../../data/videos/rcube.avi
+./circuit ../../data/videos/rcube.avi
 ./smon
 ./play4
 ./play5

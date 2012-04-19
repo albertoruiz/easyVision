@@ -29,7 +29,8 @@ library
                         colour >= 2.2,
                         OpenGL, GLUT,
                         containers, process, directory,
-                        template-haskell, ghc-prim
+                        template-haskell, ghc-prim,
+                        arrows
 
     hs-source-dirs:     src
 

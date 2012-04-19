@@ -15,7 +15,9 @@ Arrow interface.
 -----------------------------------------------------------------------------
 
 module Vision.GUI.Arrow(
-    runITrans, runT_, runT, runS, ITrans(ITrans), transUI, arrL, (@@@), delay', arrIO,
+    runITrans, runT_, runT, runS,
+    ITrans(ITrans), Trans(Trans),
+    transUI, arrL, (@@@), delay, delay', arrIO,
     runNT_
 )where
 
@@ -26,61 +28,98 @@ import Vision.GUI.Interface (runIt,VC,VCN)
 import qualified Control.Category as Cat
 import Control.Arrow
 import Control.Monad
-import Data.Either(lefts,rights)
-import System.IO.Unsafe(unsafeInterleaveIO)
+import Control.Monad.Fix
+import Control.Arrow.Operations(ArrowCircuit(..))
 import Control.Concurrent
+import Util.Misc(debug)
+import Data.IORef
+import System.Exit       (exitWith, ExitCode(ExitSuccess))
 import Graphics.UI.GLUT (mainLoopEvent)
 
 --------------------------------------------------------------------------------
 
--- | transformation of a sequence
-newtype Trans a b = Trans ( [a] -> IO [b] )
+newtype Trans a b = Trans ( IO a -> IO b )
 
 newtype ITrans a b = ITrans (IO (Trans a b))
 
 instance Cat.Category Trans
   where
-    id = Trans return 
-    Trans f . Trans g = Trans ( g >=> f )
+    id = Trans id
+    Trans f . Trans g = Trans ( f . g )
+
 
 instance Cat.Category ITrans
   where
-    id = ITrans $ return (arr id)
+    id = ITrans $ return (Cat.id)
     ITrans gf . ITrans gg = ITrans (liftM2 (>>>) gg gf)
 
-instance Arrow Trans
-  where
-    arr f = Trans (return . map f)
-    first f = f *** Cat.id
-    (***) (Trans s) (Trans t) = Trans r
-      where
-        r = g . (s *** t) . unzip
-        g (a,b) = do
-            as <- a
-            bs <- b
-            return (zip as bs)
-
+  
 instance Arrow ITrans
   where
-    arr f = ITrans (return (arr f))
+    arr f = ITrans (return (Trans (fmap f)))
     first f = f *** Cat.id
-    ITrans f *** ITrans g = ITrans $ liftM2 (***) f g
+    ITrans gf *** ITrans gg = ITrans $ do
+        Trans f <- gf
+        Trans g <- gg
+        ma <- newEmptyMVar
+        mb <- newEmptyMVar
 
+        let sepa c = do
+                ea <- isEmptyMVar ma
+                eb <- isEmptyMVar mb
+                if ea
+                  then do
+                    (a,b) <- c
+                    if eb then putMVar mb b else swapMVar mb b >> return ()
+                    --putStrLn "RA"
+                    return a
+                  else
+                    --putStrLn "A" >>
+                    takeMVar ma
 
+            sepb c = do
+                ea <- isEmptyMVar ma
+                eb <- isEmptyMVar mb
+                if eb
+                  then do
+                    (a,b) <- c
+                    if ea then putMVar ma a else swapMVar ma a >> return ()
+                    --putStrLn "RB"
+                    return b
+                  else
+                    --putStrLn "B" >>
+                    takeMVar mb
+
+        return $ Trans $ \ab -> do
+            b <- f (sepa ab)
+            d <- g (sepb ab)
+            return (b,d)
+            
+--------------------------------------------------------------------------------
 
 arrL :: ([a]->[b]) -> ITrans a b
 -- ^ pure function on the whole list of results
-arrL f = ITrans (return (Trans (return . f)))
+arrL f = ITrans $ do
+    pl <- newIORef Nothing
+    return $ Trans $ \c -> do
+        mbl <- readIORef pl
+        case mbl of
+            Nothing -> do writeIORef pl =<< fmap (Just . f) (grabAll c)
+                          cg pl
+            Just _ -> cg pl
+  where
+    cg pl = do
+        Just r <- readIORef pl
+        case r of
+          h:t -> do writeIORef pl (Just t)
+                    return h
+          []  -> exitWith ExitSuccess
 
 
 --------------------------------------------------------------------------------
 
 transUI :: VCN a b -> ITrans a b
-transUI gf = ITrans $ do
-    f <- gf
-    return $ Trans $ \as -> do
-        ga <- createGrab as
-        grabAll (f ga)
+transUI = ITrans . fmap Trans
 
 
 arrIO :: (a -> IO b) -> ITrans a b
@@ -96,30 +135,33 @@ f @@@ p = arr (uncurry f) <<< (transUI (fmap const p) &&& arr id)
 
 ------------------------------------------------------------------
 
-instance ArrowChoice Trans where
-    left f = f +++ arr id
-    Trans f +++ Trans g = Trans $ \xs -> do
-        ls <- unsafeInterleaveIO $ f (lefts xs)
-        rs <- unsafeInterleaveIO $ g (rights xs)
-        return (merge ls rs xs)
-
-merge :: [a] -> [b] -> [Either x y] -> [Either a b]
-merge _  _ [] = []
-merge ls rs (x:xs) =
-    case x of
-         Right _ -> Right (head rs): merge ls (tail rs) xs
-         Left  _ -> Left  (head ls): merge (tail ls) rs xs
-
---------------------------------------------------------------------------------
-
 instance ArrowChoice ITrans where
-   left f = f +++ arr id
-   ITrans f +++ ITrans g = ITrans $ liftM2 (+++) f g
+    left f = f +++ arr id
+    f +++ g = (f >>> arr Left) ||| (g >>> arr Right)
+    ITrans gf ||| ITrans gg = ITrans $ do
+        Trans f <- gf
+        Trans g <- gg
+        return $ Trans (>>= either (f.return) (g.return))
+
+-- similar to Kleisli, explictly calling the IO function
 
 --------------------------------------------------------------------------------
+
+instance ArrowLoop ITrans where
+    loop (ITrans gf) = ITrans $ do
+        Trans f <- gf
+        let f' x y = (f.return) (x, snd y)
+        return $ Trans (>>= liftM fst . mfix . f')
+
+-- the same idea as above
+
+
+instance ArrowCircuit ITrans where
+    delay x = arrL (x:)
+
 
 delay' :: ITrans a a
--- ^ similar to delay from ArrowCircuit, initialized with the first element
+-- ^ delay initialized with the first element (not suitable for ArrowLoop/ArrowCircuit)
 delay' = arrL f
   where
     f [] = []
@@ -130,7 +172,8 @@ delay' = arrL f
 runITrans :: ITrans a b -> [a] -> IO [b]
 runITrans (ITrans gt) as = do
     Trans t <- gt
-    t as
+    x <- createGrab as
+    grabAll (t x)
 
 
 runT_ :: IO (IO a) -> ITrans a b -> IO ()
@@ -162,7 +205,13 @@ runT gcam gt = do
     getChanContents rbs
 
 
+
 runS :: IO (IO a) -> ITrans a b -> IO [b]
 -- ^ runT without the GUI (run silent) 
-runS gcam gt = gcam >>= grabAll >>= runITrans gt
+-- runS gcam gt = gcam >>= grabAll >>= runITrans gt
+runS gcam (ITrans gt) = do
+    cam <- gcam
+    Trans t <- gt
+    r <- grabAll (t cam)
+    return r
 
