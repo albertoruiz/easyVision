@@ -15,7 +15,6 @@ Interface to tesseract OCR (currently using temp files and system calls.)
 
 module ImagProc.Contrib.Tesseract (
   tesseract
-  , tesseractQuiet
 -- , ocrWindow
 -- ,  espeak
 )
@@ -46,22 +45,7 @@ tesseract im =
           fbase = dropExtension f
       saveGray f im
       _ <- system $ "tesseract " ++ f ++ " " 
-           ++ fbase ++ " -l eng "
-      s <- readFile $ f'
-      removeFile f
-      removeFile f'
-      return s
-  )     
-
-tesseractQuiet :: ImageGray -> String
-tesseractQuiet im = 
-  unsafePerformIO $ withSystemTempFile "ocr.tif" $ 
-  (\f _h  -> do 
-      let f' = replaceExtension f "txt"
-          fbase = dropExtension f
-      saveGray f im
-      _ <- system $ "tesseract " ++ f ++ " " 
-           ++ fbase ++ " -l eng   &> /dev/null"
+           ++ fbase ++ " -l eng   2> kkk.txt"
       s <- readFile $ f'
       removeFile f
       removeFile f'
