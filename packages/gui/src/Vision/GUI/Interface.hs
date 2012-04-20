@@ -16,14 +16,17 @@ User interface tools.
 
 module Vision.GUI.Interface (
     -- * Interface
-    Command, WinInit, WinRegion, VC, VCN,
-    runFPS, runIdle, runIt, run', interface, standalone, interface3D, standalone3D,
+    VCN, 
+    Command, WinInit, WinRegion, -- VC, VCN,
+    -- runFPS, runIdle, runIt, run', 
+    interface, standalone, interface3D, standalone3D,
     -- * Tools
-    prepare,
-    evWindow, evWindow3D, evWin3D,
-    launch, launchFreq,
-    inWin, getW, putW, updateW, getROI, setEVROI,
-    kbdcam, kbdQuit, keyAction, mouseGen, mouseGenPt,
+    prepare, runIt,
+    evWindow, 
+    --evWindow3D, evWin3D,
+    --launch, launchFreq,
+    inWin, getW, putW, updateW, -- getROI, setEVROI,
+    kbdcam, kbdQuit, keyAction, -- mouseGen, mouseGenPt,
     Key(..), SpecialKey(..), MouseButton(..), key, kUp, kCtrl, kShift, kAlt, BitmapFont(..)
 ) where
 
@@ -75,7 +78,7 @@ key k          = (k, Down, modif)
 type Command state result = ((Key,KeyState,Modifiers), WinRegion -> Point -> state -> result)
 type WinInit state input = EVWindow state -> input -> IO()
 
-type VC a b = IO a -> IO (IO b)
+--type VC a b = IO a -> IO (IO b)
 
 type VCN a b = IO (IO a -> IO b)
 
@@ -200,6 +203,7 @@ prepare = do
     ippSetNumThreads 1
     return ()
 
+{-
 -- | Starts the application with a worker function (idle callback).
 launch :: IO () -> IO ()
 launch worker = do
@@ -210,27 +214,32 @@ launch worker = do
 launchFreq :: Int -> IO () -> IO ()
 launchFreq freq worker = callbackFreq freq worker >> mainLoop
 
+-}
+
 callbackFreq freq worker = do
     let callback = do
         addTimerCallback (1000 `div` freq) callback
         worker
     addTimerCallback 10 callback
 
-runIdle :: IO (IO a) -> IO ()
-runIdle c = prepare >> (c >>= launch . (>> return ()))
 
-runFPS :: Int -> IO (IO a) -> IO ()
-runFPS n c = prepare >> (c >>= launchFreq n . (>> return ()))
+--runIdle :: IO (IO a) -> IO ()
+--runIdle c = prepare >> (c >>= launch . (>> return ()))
+
+--runFPS :: Int -> IO (IO a) -> IO ()
+--runFPS n c = prepare >> (c >>= launchFreq n . (>> return ()))
 
 runIt :: IO a -> IO ()
 runIt f = prepare >> f >> mainLoop
 
+{-
 run' :: IO (IO a) -> IO ()
 run' c = runIt $ do
     f <- c
     forkIO (forever $ f >>= g )
   where
     g !x = putStr ""
+-}
 
 ----------------------------------------------------------------
 
@@ -327,6 +336,8 @@ updateW w f = evSt w $~ f
 
 ----------------------------------------------------------------
 
+{-
+
 evWindow3D ist name sz kbd = do
     (trackball,kc,mc,_) <- newTrackball
     w <- evWindow ist name (Size sz sz) Nothing (kc kbd)
@@ -358,9 +369,10 @@ evWin3D ist name sz mdisp kbd = do
     addTimerCallback 1000 callback
     return w { evInit = clear [ColorBuffer, DepthBuffer] >> trackball}
 
+-}
 
-redim f p = f p >> postRedisplay Nothing
-redik f a1 a2 a3 a4 a5 = f a1 a2 a3 a4 a5 >> postRedisplay Nothing
+-- redim f p = f p >> postRedisplay Nothing
+-- redik f a1 a2 a3 a4 a5 = f a1 a2 a3 a4 a5 >> postRedisplay Nothing
 
 ----------------------------------------------------------------
 
@@ -493,6 +505,8 @@ newPauser refPau = do
 -----------------------------------------------------------------
 -- (for compatibility, to be removed)
 
+{-
+
 keyAction' g1 upds def w a b c d = do
     v <- getW w
     sz <- evSize `fmap` get windowSize
@@ -520,4 +534,5 @@ setEVROI w r = do
     (evRegion w) $= (a,d)
 
 -----------------------------------------------------------------
+-}
 

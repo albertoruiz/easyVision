@@ -23,7 +23,7 @@ module Vision.GUI.Arrow(
 
 import Control.Concurrent   (forkIO)
 import Util.LazyIO          (mkGenerator, lazyList, grabAll, createGrab)
-import Vision.GUI.Interface (runIt,VC,VCN)
+import Vision.GUI.Interface (runIt,VCN)
 
 import qualified Control.Category as Cat
 import Control.Arrow
