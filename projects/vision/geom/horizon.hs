@@ -11,15 +11,15 @@ import Contours(bounding, poly2roi)
 main = do
     mbimg <- getRawOption "--image" >>= traverse loadRGB
     runIt $ do
-        p <- clickPoints' "click rectangle" "--points" (sh mbimg)
+        p <- clickPoints "click rectangle" "--points" () (sh mbimg.fst)
         w <- browser "horizon" [] (const id)
         connectWith (g mbimg) p w
 
 sh mbimg pts = Draw [ Draw mbimg
                     , color lightgreen . drawPointsLabeled $ pts]
 
-g mbimg (k,_) ps = (k, [Draw [Draw smbimg, color red [ Draw sls, pointSz 5 sps ]]
-                       ])
+g mbimg (k,_) (ps,_) = (k, [Draw [Draw smbimg, color red [ Draw sls, pointSz 5 sps ]]
+                           ])
   where
     [p1,p2,p3,p4] = take 4 ps
     l1 = join p1 p2

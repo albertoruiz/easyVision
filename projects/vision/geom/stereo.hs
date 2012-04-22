@@ -15,18 +15,31 @@ main = do
     mbimg1 <- getRawOption "--image1" >>= traverse loadRGB
     mbimg2 <- getRawOption "--image2" >>= traverse loadRGB
     runIt $ do
-        p1 <- clickPoints' "image1: click points" "--points1" (sh mbimg1)
-        p2 <- clickPoints' "image2: click points" "--points2" (sh mbimg2)
+        p1 <- clickPoints "image1: click points" "--points1" (Draw ()) (sh mbimg1)
+        p2 <- clickPoints "image2: click points" "--points2" (Draw ()) (sh mbimg2)
         w <- standalone3D (Size 600 600) "stereo geometry" ([],[]) [] [] (drw mbf mbimg1 mbimg2) 
         connectWith g1 p1 w
         connectWith g2 p2 w
+        connectWith' addepi p1 p2
+        connectWith' addepi p2 p1
 
-sh mbimg pts = Draw [ Draw $ fmap (rgb.channelsFromRGB) mbimg
+
+g1 (_,r) (ps,_) = (ps,r)
+g2 (l,_) (ps,_) = (l,ps)
+
+addepi (p2,_) (p1,_) = (p2, Draw l)
+  where
+    p2l (Point x y) = [x,y]
+    pts = map p2l p2
+    pts' = map p2l p1
+    f = estimateFundamental pts' pts
+    l = unsafeFromVector $ trans f <> pt2hv (last p1) :: HLine
+
+
+sh mbimg (pts,l) = Draw [ Draw $ fmap (rgb.channelsFromRGB) mbimg
                     , color lightgreen . drawPointsLabeled $ pts 
-                    ]
+                    , l ]
 
-g1 (_,r) ps = (ps,r)
-g2 (l,_) ps = (l,ps)
 
 drw mbf mbimg1 mbimg2 (psl,psr) = clearColor white [ color gray $ axes3D 2 , dr ]
   where

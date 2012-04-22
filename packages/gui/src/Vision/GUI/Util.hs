@@ -24,8 +24,8 @@ module Vision.GUI.Util (
     choose, optDo, optDont,
     withParam,
     drawParam, draw3DParam,
-    connectWith,
-    clickPoints, clickPoints',
+    connectWith, connectWith',
+    clickPoints,
     interactive3D,
     clickKeep, clickList, clickTag
 ) where
@@ -35,7 +35,7 @@ import Vision.GUI.Types
 import Vision.GUI.Interface
 import Vision.GUI.Parameters(ParamRecord(..))
 import Control.Arrow((***),(>>>),arr)
-import Control.Monad((>=>))
+import Control.Monad((>=>),join)
 import Control.Applicative((<*>),(<$>))
 import ImagProc
 import ImagProc.Camera(findSize,readFolderMP,readFolderIM,getCam)
@@ -284,40 +284,46 @@ draw3DParam title f = do
 
 --------------------------------------------------------------------------------
 
-connectWith :: (s2 -> s1 -> s2) -> EVWindow s1 -> EVWindow s2 -> IO ()
-connectWith f w1 w2 =
-    (evAfterD w1) $= do
+connectWithG p f w1 w2 = do
+    (evNotify w1) $~ (>> do
         s1 <- getW w1
         s2 <- getW w2
-        putW w2 (f s2 s1)
-        postRedisplay (Just (evW w2))
+        p w2 (f s2 s1)
+        postRedisplay (Just (evW w2)) )
+    join . get . evNotify $ w1 
+
+
+connectWith :: (s2 -> s1 -> s2) -> EVWindow s1 -> EVWindow s2 -> IO ()
+connectWith = connectWithG putW
+
+connectWith' :: (s2 -> s1 -> s2) -> EVWindow s1 -> EVWindow s2 -> IO ()
+connectWith' = connectWithG putWRaw
 
 --------------------------------------------------------------------------------
 
-clickPoints' :: String -- ^ window name
+clickPoints :: String -- ^ window name
              -> String -- ^ command line option name for loading points
-             -> ([Point] -> Drawing) -- ^ display function
-             -> IO (EVWindow [Point])
-clickPoints' name ldopt sh = do
+             -> a      -- ^ additional state
+             -> (([Point],a) -> Drawing) -- ^ display function
+             -> IO (EVWindow ([Point],a))
+clickPoints name ldopt st sh = do
     pts <- optionFromFile ldopt []
-    standalone (Size 400 400) name pts updts acts sh
+    standalone (Size 400 400) name (pts,st) updts acts sh
   where
 
     updts = [ (key (MouseButton LeftButton), const new)
             , (key (MouseButton RightButton), const move)
-            , (key (Char '\DEL'), \_ _ ps -> if null ps then ps else init ps)]
+            , (key (Char '\DEL'), \_ _ (ps,st) -> if null ps then (ps,st) else (init ps,st))
+            ]
 
-    acts = [(ctrlS, \_ _ ps -> print ps)]
+    acts = [(ctrlS, \_ _ (ps,_) -> print ps)]
     ctrlS = kCtrl (key (Char '\DC3'))
 
-    new p ps = (ps++[p])
+    new p (ps,st) = (ps++[p],st)
 
-    move p ps = replaceAt [j] [p] ps
+    move p (ps,st) = (replaceAt [j] [p] ps, st)
       where
         j = posMin (map (distPoints p) ps)
-
-clickPoints :: ([Point] -> Drawing) -> IO (EVWindow [Point])
-clickPoints = clickPoints' "click points" "--points"
 
 --------------------------------------------------------------------------------
 

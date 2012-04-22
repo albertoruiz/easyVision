@@ -10,7 +10,7 @@ import Util.Camera
 main = do
     mbimg <- getRawOption "--image" >>= traverse loadRGB
     runIt $ do
-        p <- clickPoints' "click points" "--points" (sh mbimg)
+        p <- clickPoints "click points" "--points" () (sh mbimg . fst)
         w <- browser3D "camera resection" [] (const id)
         connectWith (g mbimg) p w
 
@@ -22,7 +22,7 @@ sh mbimg pts = Draw [ Draw $ fmap (rgb.channelsFromRGB) mbimg
   where
     cam = computeCamera pts ref
 
-g mbimg (n,_) ps = (n, [ clearColor white
+g mbimg (n,_) (ps,_) = (n, [ clearColor white
                               [ color gray $ axes3D 4
                               , color red . pointSz 3 $ drawPoints3DLabeled ref
                               , drcam
@@ -32,7 +32,7 @@ g mbimg (n,_) ps = (n, [ clearColor white
                               , pointSz 5 . color orange $ ipts
                               , color lightgray rays
                               ]
-                       ])
+                           ])
   where
     drcam | length ps < length ref = Draw ()
           | otherwise = color green $ showCam 2 ic mbimg

@@ -188,6 +188,7 @@ data EVWindow st = EVW { evW        :: Window
                        , evReady    :: MVar Bool
                        , evDraw     :: MVar Drawing
                        , evAfterD   :: IORef (IO ())
+                       , evNotify   :: IORef (IO ())
                        , evSync     :: IORef Bool
                        , evRegion   :: IORef WinRegion
                        , evDrReg    :: IORef Bool

@@ -25,7 +25,7 @@ module Vision.GUI.Interface (
     evWindow, 
     --evWindow3D, evWin3D,
     --launch, launchFreq,
-    inWin, getW, putW, updateW, -- getROI, setEVROI,
+    inWin, getW, putW, updateW, putWRaw, updateWRaw, -- getROI, setEVROI,
     kbdcam, kbdQuit, keyAction, -- mouseGen, mouseGenPt,
     Key(..), SpecialKey(..), MouseButton(..), key, kUp, kCtrl, kShift, kAlt, BitmapFont(..)
 ) where
@@ -270,11 +270,13 @@ evWindow st0 name size mdisp kbd = do
     pa <- newIORef NoPause
     dc <- newIORef (WStatus 0 0)
     ad <- newIORef (return ())
+    no <- newIORef (return ())
 
     let w = EVW { evW = glw
                 , evSt = st
                 , evDraw = dr
                 , evAfterD = ad
+                , evNotify = no
                 , evSync = sy
                 , evReady = re
                 , evRegion = rr
@@ -331,8 +333,12 @@ inWin w f = do
     currentWindow $= saved
 
 getW = get . evSt
-putW w x = evSt w $= x
-updateW w f = evSt w $~ f
+
+putWRaw    w x = evSt w $= x
+updateWRaw w f = evSt w $~ f
+
+putW    w x = putWRaw    w x >> (join . get . evNotify) w
+updateW w f = updateWRaw w f >> (join . get . evNotify) w
 
 ----------------------------------------------------------------
 

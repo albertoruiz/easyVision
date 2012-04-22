@@ -7,11 +7,7 @@ import Util.Estimation
 import Numeric.LinearAlgebra
 import Numeric.LinearAlgebra.Util
 
-main = do
-    pts <- optionFromFile "--points" []
-    runIt $ do
-        p <- clickPoints sh
-        putW p pts
+main = runIt $ clickPoints "click points" "--points" () (sh.fst)
 
 sh pts = Draw [ color white . drawPointsLabeled $ pts
               , models ]

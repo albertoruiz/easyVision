@@ -12,16 +12,16 @@ import Control.Applicative((<*>),(<$>))
 main = do
     mbimg <- getRawOption "--image" >>= traverse loadRGB
     runIt $ do
-        p <- clickPoints' "click points" "--points" (sh mbimg)
+        p <- clickPoints "click points" "--points" () (sh mbimg . fst)
         w <- browser "rectified" [] (const id)
         connectWith (g mbimg) p w
 
 sh mbimg pts = Draw [ Draw mbimg
                     , color lightgreen . drawPointsLabeled $ pts]
 
-g mbimg (k,_) ps = (k, [ dr rec2
-                       , dr rec1       
-                       ])
+g mbimg (k,_) (ps,_) = (k, [ dr rec2
+                           , dr rec1       
+                           ])
   where
     dr im = Draw [ Draw im
                  , Draw (Closed square)
