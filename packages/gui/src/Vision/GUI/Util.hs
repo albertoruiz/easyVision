@@ -260,29 +260,28 @@ withParam f = choose c (arr $ f defParam) (f @@@ winParam)
 
 drawParam :: ParamRecord t => String -> (t -> [Drawing]) -> IO ()
 -- ^ drawing window with interactive parameters
-drawParam title f = do
-    (wp,gp) <- mkParam
-    b <- browser title [] (const id)
-    (evAfterD wp) $= do
-        p <- gp
-        (k,_) <- getW b
-        putW b (k, f p)
-        postRedisplay (Just (evW b))
+drawParam title f = connectParamWith g (browser title [] (const id))
+  where
+    g (k,_) p = (k, f p)
 
---------------------------------------------------------------------------------
 
 draw3DParam :: ParamRecord t => String -> (t -> [Drawing]) -> IO ()
 -- ^ 3D drawing window with interactive parameters
-draw3DParam title f = do
-    (wp,gp) <- mkParam
-    b <- browser3D title [] (const id)
-    (evAfterD wp) $= do
-        p <- gp
-        (k,_) <- getW b
-        putW b (k, f p)
-        postRedisplay (Just (evW b))
+draw3DParam title f = connectParamWith g (browser3D title [] (const id))
+  where
+    g (k,_) p = (k, f p)
 
---------------------------------------------------------------------------------
+
+connectParamWith f win = do
+    (wp,gp) <- mkParam
+    b <- win
+    (evNotify wp) $= do
+        p <- gp
+        st <- getW b
+        putW b (f st p)
+        postRedisplay (Just (evW b))
+    join . get . evNotify $ wp
+
 
 connectWithG p f w1 w2 = do
     (evNotify w1) $~ (>> do
