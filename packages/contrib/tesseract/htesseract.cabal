@@ -15,6 +15,10 @@ tested-with:        GHC ==7.4
 cabal-version:      >=1.2
 build-type:         Simple
 
+flag redir
+    description:    redirect output using 2> instead of &>
+    default:        False
+
 library
     Build-Depends:      base, imagproc, process, temporary, filepath, directory
 
@@ -25,4 +29,9 @@ library
     ghc-prof-options:   -auto-all
 
     ghc-options:        -Wall
+    
+    Extensions:         CPP
+
+    if flag(redir)
+        cpp-options: -DREDIR
 

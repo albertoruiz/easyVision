@@ -44,8 +44,12 @@ tesseract im =
       let f' = replaceExtension f "txt"
           fbase = dropExtension f
       saveGray f im
-      _ <- system $ "tesseract " ++ f ++ " " 
+      _ <- system $ "tesseract " ++ f ++ " "
+#ifdef REDIR
+           ++ fbase ++ " -l eng   2> /dev/null"
+#else
            ++ fbase ++ " -l eng   &> /dev/null"
+#endif
       s <- readFile $ f'
       removeFile f
       removeFile f'
