@@ -28,7 +28,7 @@ import Data.Map hiding (map)
 import GHC.Float
 import Numeric
 import Data.List as L
-import Control.Monad(ap)
+import Control.Monad(ap,join)
 import Control.Applicative((<$>),(<*>))
 import Util.Options(getOption,optionString)
 
@@ -39,24 +39,27 @@ sizePar :: Int
 sizePar = 35
 
 -- | Given an assoc list of names and initial values of some \'global\' application parameters, it creates a window for controlling them and returns a function to get the current value of the desired parameter. There are several types of parameters.
-createParameters :: [(String, Parameter)]
-                 -> IO (EVWindow (Map String Parameter))
-createParameters = createParameters' "Parameters" ""
 
-createParameters' :: String -- ^ window name
-                  -> String -- ^ prefix for command line options (e.g. \"\", or \"-corners-1\"
-                  -> [(String, Parameter)] -- ^ names and types
-                  -> IO (EVWindow (Map String Parameter))
-createParameters' winname pref ops = do
+
+createParameters :: String -- ^ window name
+                 -> String -- ^ prefix for command line options (e.g. \"\", or \"-corners-1\"
+                 -> [(String, Parameter)] -- ^ names and types
+                 -> IO (EVWindow (Map String Parameter))
+createParameters winname pref ops = do
     ops' <- zip (map fst ops) `fmap` mapM (uncurry (defcomlin pref)) ops
     let sz@(Size ih iw) = Size (2+length ops * sizePar) 200
         nops = length ops - 1
         which h y = (fromIntegral y `div` round (fromIntegral sizePar * fromIntegral h / fromIntegral ih)) `min` nops
-    evWindow (Map.fromList ops') 
-             winname 
-             sz
-             (Just f)
-             (kbdopts which kbdQuit)
+    w <- evWindow (Map.fromList ops') winname sz (kbdopts which kbdQuit)
+             
+    displayCallback $= do
+        clear [ColorBuffer]
+        f (evSt w)
+        swapBuffers
+        join . get . evAfterD $ w
+
+    return w
+             
   where
 
     f o = do
@@ -338,7 +341,7 @@ autoParam name pref defpar = sequence [
           s13 (a,_b,c) = (a,c)
           s3 (_a,_b,c) = c
           s1 (a,_b,_c) = a
-          crea = (varE 'createParameters') `appE` (lift winname) `appE` (lift pref)
+          crea = (varE 'createParameters) `appE` (lift winname) `appE` (lift pref)
           defval = L.foldl' appE (conE p) (map (val.s3) defpar)
           argval = L.foldl' appp retPar (zipWith (optfun pref) (map s1 defpar) (map s3 defpar))
 

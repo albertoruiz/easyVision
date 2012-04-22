@@ -17,16 +17,13 @@ User interface tools.
 module Vision.GUI.Interface (
     -- * Interface
     VCN, 
-    Command, WinInit, WinRegion, -- VC, VCN,
-    -- runFPS, runIdle, runIt, run', 
+    Command, WinInit,
     interface, standalone, interface3D, standalone3D,
     -- * Tools
     prepare, runIt,
-    evWindow, 
-    --evWindow3D, evWin3D,
-    --launch, launchFreq,
-    inWin, getW, putW, updateW, putWRaw, updateWRaw, -- getROI, setEVROI,
-    kbdcam, kbdQuit, keyAction, -- mouseGen, mouseGenPt,
+    evWindow,
+    inWin, getW, putW, updateW, putWRaw, updateWRaw,
+    kbdcam, kbdQuit, keyAction,
     Key(..), SpecialKey(..), MouseButton(..), key, kUp, kCtrl, kShift, kAlt, BitmapFont(..)
 ) where
 
@@ -78,8 +75,6 @@ key k          = (k, Down, modif)
 type Command state result = ((Key,KeyState,Modifiers), WinRegion -> Point -> state -> result)
 type WinInit state input = EVWindow state -> input -> IO()
 
---type VC a b = IO a -> IO (IO b)
-
 type VCN a b = IO (IO a -> IO b)
 
 interface :: Size -> String -> s 
@@ -101,8 +96,8 @@ interface3D = interfaceG True
 interfaceG threeD sz0 name st0 ft upds acts resultFun resultDisp = do
 
     firstTimeRef <- newIORef True
-    let evWin = if threeD then evWin3D' else evWindow
-    w <- evWin st0 name sz0 Nothing (keyAction upds acts kbdQuit)
+    let evWin = if threeD then evWindow3D else evWindow
+    w <- evWin st0 name sz0 (keyAction upds acts kbdQuit)
 
     displayCallback $= do
         evInit w
@@ -179,8 +174,8 @@ standalone3D :: Size -> String -> s
 standalone3D = standaloneG True
 
 standaloneG threeD sz0 name st0 upds acts disp = do
-    let evWin = if threeD then evWin3D' else evWindow
-    w <- evWin st0 name sz0 Nothing (keyAction upds acts kbdQuit)
+    let evWin = if threeD then evWindow3D else evWindow
+    w <- evWin st0 name sz0 (keyAction upds acts kbdQuit)
 
     displayCallback $= do
         evInit w
@@ -203,18 +198,6 @@ prepare = do
     ippSetNumThreads 1
     return ()
 
-{-
--- | Starts the application with a worker function (idle callback).
-launch :: IO () -> IO ()
-launch worker = do
-    idleCallback $= Just worker
-    mainLoop
-
--- | Starts the application with a worker function which runs at the desired frequency (in Hz).
-launchFreq :: Int -> IO () -> IO ()
-launchFreq freq worker = callbackFreq freq worker >> mainLoop
-
--}
 
 callbackFreq freq worker = do
     let callback = do
@@ -223,30 +206,15 @@ callbackFreq freq worker = do
     addTimerCallback 10 callback
 
 
---runIdle :: IO (IO a) -> IO ()
---runIdle c = prepare >> (c >>= launch . (>> return ()))
-
---runFPS :: Int -> IO (IO a) -> IO ()
---runFPS n c = prepare >> (c >>= launchFreq n . (>> return ()))
-
 runIt :: IO a -> IO ()
 runIt f = prepare >> f >> mainLoop
-
-{-
-run' :: IO (IO a) -> IO ()
-run' c = runIt $ do
-    f <- c
-    forkIO (forever $ f >>= g )
-  where
-    g !x = putStr ""
--}
 
 ----------------------------------------------------------------
 
 irr = (Point p p, Point n n)
   where p = 0.5; n = -0.5    
 
-evWindow st0 name size mdisp kbd = do
+evWindow st0 name size kbd = do
     st <- newIORef st0
     glw <- createWindow name
     iconTitle $= name
@@ -294,22 +262,12 @@ evWindow st0 name size mdisp kbd = do
     motionCallback $= Just (\p -> mvroi w p >> postRedisplay Nothing)
     -- callback to detect minimization?
 
-    -- provisionally kept for compatibility
-    let draw = case mdisp of
-            Nothing -> return ()
-            Just fun -> do
-                clear [ColorBuffer]
-                fun st
-                swapBuffers
-                join . get . evAfterD $ w
-    displayCallback $= draw
-
     return w
 
 
-evWin3D' ist name sz mdisp kbd = do
+evWindow3D ist name sz kbd = do
     (trackball,kc,mc,auto) <- newTrackball
-    w <- evWindow ist name sz Nothing (kc kbd)
+    w <- evWindow ist name sz (kc kbd)
     motionCallback $= Just mc
     depthFunc $= Just Less
     textureFilter Texture2D $= ((Nearest, Nothing), Nearest)
@@ -339,46 +297,6 @@ updateWRaw w f = evSt w $~ f
 
 putW    w x = putWRaw    w x >> (join . get . evNotify) w
 updateW w f = updateWRaw w f >> (join . get . evNotify) w
-
-----------------------------------------------------------------
-
-{-
-
-evWindow3D ist name sz kbd = do
-    (trackball,kc,mc,_) <- newTrackball
-    w <- evWindow ist name (Size sz sz) Nothing (kc kbd)
-    motionCallback $= Just mc
-    depthFunc $= Just Less
-    textureFilter Texture2D $= ((Nearest, Nothing), Nearest)
-    textureFunction $= Replace
-    return w { evInit = clear [ColorBuffer, DepthBuffer] >> trackball}
-
--- provisional
-evWin3D ist name sz mdisp kbd = do
-    (trackball,kc,mc,auto) <- newTrackball
-    w <- evWindow ist name (Size sz sz) Nothing (redik (kc kbd))
-    motionCallback $= Just (redim mc)
-    depthFunc $= Just Less
-    textureFilter Texture2D $= ((Nearest, Nothing), Nearest)
-    textureFunction $= Replace
-    let draw = case mdisp of
-            Nothing -> return ()
-            Just fun -> do
-                clear [ColorBuffer, DepthBuffer] >> trackball
-                fun (evSt w)
-                swapBuffers
-    displayCallback $= draw
-    let callback = do
-        addTimerCallback 50 callback
-        ok <- auto
-        when ok $ postRedisplay (Just (evW w))
-    addTimerCallback 1000 callback
-    return w { evInit = clear [ColorBuffer, DepthBuffer] >> trackball}
-
--}
-
--- redim f p = f p >> postRedisplay Nothing
--- redik f a1 a2 a3 a4 a5 = f a1 a2 a3 a4 a5 >> postRedisplay Nothing
 
 ----------------------------------------------------------------
 
@@ -507,38 +425,4 @@ newPauser refPau = do
                 Just _ -> writeIORef frozen Nothing
                 _      -> return ()
             cam   
-        
------------------------------------------------------------------
--- (for compatibility, to be removed)
-
-{-
-
-keyAction' g1 upds def w a b c d = do
-    v <- getW w
-    sz <- evSize `fmap` get windowSize
-    case Prelude.lookup (a,b,c) upds of
-        Just op -> putW w (g1 op sz d v)
-        Nothing -> def a b c d
-
-mouseGen acts = keyAction' (const) acts
-
-mouseGenPt acts = keyAction' (withPoint') acts
-  where
-    withPoint' f sz (Position c r) = f p
-      where
-       [p] = pixelsToPoints sz [Pixel (fromIntegral r) (fromIntegral c)]
-
-
-getROI w = do
-    (p1,p2) <- get (evRegion w)
-    sz <- evSize `fmap` get windowSize 
-    return (poly2roi sz (Closed[p1,p2]))
-
-setEVROI w r = do
-    sz <- evSize `fmap` get windowSize
-    let Closed [a,b,c,d] = roi2poly sz r
-    (evRegion w) $= (a,d)
-
------------------------------------------------------------------
--}
 
