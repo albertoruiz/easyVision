@@ -164,6 +164,12 @@ round' = round
 degree :: Double
 degree = pi/180
 
+
+stdpix :: Double
+-- ^ size of one pixel in a 640x480 image, in normalized image coordinates
+stdpix = 2/640
+
+
 -- | Concatenation of real vectors.
 infixl 9 #
 (#) :: Vec -> Vec -> Vec

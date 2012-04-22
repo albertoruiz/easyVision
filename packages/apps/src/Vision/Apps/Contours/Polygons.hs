@@ -13,7 +13,7 @@ import Control.Arrow((***),(&&&))
 import Control.Applicative
 import Numeric.LinearAlgebra((<>),fromList,inv,(@>))
 import Text.Printf(printf)
-import Util.Misc(diagl,mean,vec,debug,degree,subListsBy,norm)
+import Util.Misc(stdpix,diagl,mean,vec,debug,degree,subListsBy,norm)
 import Util.Rotation(rot3)
 import Util.Options
 import Vision(desp,inHomog,hv2pt,mseLine,cross)
@@ -72,8 +72,6 @@ getFlats mxrc mxang = regroup . filter ((>2). length) . subListsBy ((>mxrc*stdpi
         ca = uv/(sqrt (abs u2)*sqrt (abs v2))
         ok = abs ca > cos (mxang * degree)
 
-
-stdpix = 2/640 :: Double
 
 refinePolygon :: [[InfoPoint]] -> Polyline
 refinePolygon = Closed . interPoints . map (fromList.mseLine.map pt) 
