@@ -8,7 +8,7 @@
 {- |
 Module      :  ImagProc.Ipp.Core
 Copyright   :  (c) Alberto Ruiz 2006-11
-License     :  GPL
+License     :  GPLu
 
 Maintainer  :  Alberto Ruiz (aruiz at um dot es)
 Stability   :  very provisional
@@ -62,7 +62,7 @@ import Foreign.C.String(peekCString)
 import Foreign.C.Types
 import GHC.Base
 import GHC.ForeignPtr(mallocPlainForeignPtrBytes)
-
+import System.IO
 
 ---------------------------------------
 fi :: Int -> CInt
@@ -189,7 +189,7 @@ roiSZ = adapt . roiSize
 genCheckIPP act msg ls f = do
     err <- f
     when (err/=0) $ do
-        putStrLn $ "WARNING: In " ++ msg ++ ":"
+        hPutStrLn stderr $ "WARNING: In " ++ msg ++ ":"
         ps <- ippGetStatusString err
         s <- peekCString ps
         act s
@@ -205,7 +205,7 @@ checkIPP   = genCheckIPP error
 
 -- | An alternative to 'checkIPP' which only emits a warning, without aborting the program.
 warningIPP :: String -> [Img] -> IO Int -> IO ()
-warningIPP = genCheckIPP putStrLn
+warningIPP = genCheckIPP (hPutStrLn stderr)
 
 -- | Postfix function application (@flip ($)@) for conveniently writing ipp wrappers using 'src', 'dst', and 'checkIPP'. See examples in the source code of module "Ipp.Typical".
 (//) :: x -> (x -> y) -> y

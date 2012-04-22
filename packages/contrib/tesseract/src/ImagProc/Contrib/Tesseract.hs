@@ -45,7 +45,7 @@ tesseract im =
           fbase = dropExtension f
       saveGray f im
       _ <- system $ "tesseract " ++ f ++ " " 
-           ++ fbase ++ " -l eng   2> /dev/null"
+           ++ fbase ++ " -l eng   &> /dev/null"
       s <- readFile $ f'
       removeFile f
       removeFile f'
