@@ -71,7 +71,7 @@ drw mbf mbimg1 mbimg2 (psl,psr) = clearColor white [ color gray $ axes3D 2 , dr 
                , pointSz 5 . color blue $ toImagePlane im' szc [epi2]
                -- , color green $ G.join (cenCam im) (cenCam im')
                , color green $ lineStrip [cen1, cen2]
-      --         , color pink $ lineStrip [cen1, G.homog $ last x3d,cen2]
+               , color pink $ lineStrip [cen1, G.homog $ last x3d,cen2]
                , color lightgray [rays1, rays2]
                ]
     

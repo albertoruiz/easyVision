@@ -4,7 +4,7 @@ import Contours(asSegments)
 import Util.Ellipses
 import Util.Geometry
 
-main = runIt $ clickPoints' "conic" "--points" sh
+main = runIt $ clickPoints "conic" "--points" () (sh.fst)
 
 l = join (Point 0.5 0) (Point 0 0.5)
 
