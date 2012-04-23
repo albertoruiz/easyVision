@@ -77,7 +77,7 @@ shRecosG fc fp name ss = do
     n = length ss - 1
 -}
 
-indexCam c s = rasterPos (Vertex3 x y z) >> renderString Helvetica12 (show s)
+indexCam c s = rasterPos (Vertex3 (doubleGL x) (doubleGL y) (doubleGL z)) >> renderString Helvetica12 (show s)
   where (_,_,cen) = factorizeCamera c
         [x,y,z] = toList cen
 

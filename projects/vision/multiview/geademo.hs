@@ -121,6 +121,8 @@ testGoSmall name p = do
     let b = bootstrap p
     printf "boot rmse (x1000): %.2f\n" $ krms b
     
+    writeFile "bootstrap.txt" (unlines $ map (unwords . map show) $ toLists $ fromBlocks $ map return (cams b))
+    
     let g = gea b
     printf "GEA calibrated rmse (x1000): %.2f\n" $ krms g
     runIt $ shRecos name (map (relocate***id) [ (g,"GEA "++name)
