@@ -17,11 +17,13 @@ main = do
     runIt $ do
         p1 <- clickPoints "image1: click points" "--points1" (Draw ()) (sh mbimg1)
         p2 <- clickPoints "image2: click points" "--points2" (Draw ()) (sh mbimg2)
-        w <- standalone3D (Size 600 600) "stereo geometry" ([],[]) [] [] (drw mbf mbimg1 mbimg2) 
+        w <- standalone3D (Size 600 600) "stereo geometry" ([],[]) [] [] (drw mbf mbimg1 mbimg2)
+        r <- browser "rectified" [] (const id)
         connectWith g1 p1 w
         connectWith g2 p2 w
         connectWith' addepi p1 p2
         connectWith' addepi p2 p1
+        connectWith (h mbimg1 mbimg2) w r
 
 
 g1 (_,r) (ps,_) = (ps,r)
@@ -98,7 +100,6 @@ drw mbf mbimg1 mbimg2 (psl,psr) = clearColor white [ color gray $ axes3D 2 , dr 
     epi1 = unsafeFromVector $ inHomog $ nullVector f
     epi2 = unsafeFromVector $ inHomog $ nullVector $ trans f
 
-    
     info = debugMat "F" 6 (const $ normat3 f)
          . debug "f" (const df) 
          . debug "q" (const q)
@@ -107,4 +108,26 @@ drw mbf mbimg1 mbimg2 (psl,psr) = clearColor white [ color gray $ axes3D 2 , dr 
 move d m = k <> (r ! asColumn (-r <> (scalar d * c)))
   where
     (k,r,c) = factorizeCamera m
+
+--------------------------------------------------------------------------------
+
+h (Just x1) (Just x2) (k,_) ps | not (ok ps) = (k, [ Draw $ blockImage[[x1,x2]] ])
+  where
+    ok (psl,psr) = length (zip psl psr) >= 8
+
+h (Just x1) (Just x2) (k,_) (psl,psr) = (k, [ Draw $ blockImage[[y1,y2]]
+                                            , Draw $ y12 ])
+  where
+    p2l (Point x y) = [x,y]
+    pts = map p2l psl
+    pts' = map p2l psr
+    f = estimateFundamental pts' pts
+    (ep,ep') = epipoles f
+    (h, h') = stereoRectifiers f pts pts'
+    sz = Size 800 600
+    y1 = warp (80,0,0) sz h x1
+    y2 = warp (80,0,0) sz h' x2
+    y12 = 0.5 .* g y1 |+| 0.5 .* g y2
+    g = float . grayscale . channelsFromRGB
+h _ _ (k,_) _ = (k,[])
 
