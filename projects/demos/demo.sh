@@ -5,6 +5,7 @@
 ./warp
 ./points
 ./imagproc
+./trail
 ./pose ../../data/videos/rot4.avi
 ./spline
 ./transi ../../data/images/transi
