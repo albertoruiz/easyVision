@@ -6,6 +6,7 @@ int ippiMulC_32f_C1Rx(float*, int, float, float*, int, void*);
 int ippiAdd_32f_C1Rx(float*, int, float*, int, float*, int, void*);
 int ippiSub_32f_C1Rx(float*, int, float*, int, float*, int, void*);
 int ippiMul_32f_C1Rx(float*, int, float*, int, float*, int, void*);
+int ippiDiv_32f_C1Rx(float*, int, float*, int, float*, int, void*);
 int ippiAbs_32f_C1Rx(float*, int, float*, int, void*);
 int ippiSqrt_32f_C1Rx(float*, int, float*, int, void*);
 int ippiMagnitudePack_32f_C1Rx(float*, int, float*, int, void*);

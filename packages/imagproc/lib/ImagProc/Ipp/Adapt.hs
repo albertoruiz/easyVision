@@ -57,6 +57,14 @@ ippiMul_32f_C1R pSrc1 src1Step pSrc2 src2Step pDst dstStep roiSize = do
     free proiSize
     return r
 
+foreign import ccall "adapt.h ippiDiv_32f_C1Rx"
+    ippiDiv_32f_C1Rx :: Ptr Float -> Int -> Ptr Float -> Int -> Ptr Float -> Int -> Ptr IppiSize -> IO Int
+ippiDiv_32f_C1R pSrc1 src1Step pSrc2 src2Step pDst dstStep roiSize = do
+    proiSize <- new roiSize
+    r <- ippiDiv_32f_C1Rx pSrc1 src1Step pSrc2 src2Step pDst dstStep proiSize
+    free proiSize
+    return r
+
 foreign import ccall "adapt.h ippiAbs_32f_C1Rx"
     ippiAbs_32f_C1Rx :: Ptr Float -> Int -> Ptr Float -> Int -> Ptr IppiSize -> IO Int
 ippiAbs_32f_C1R pSrc srcStep pDst dstStep roiSize = do

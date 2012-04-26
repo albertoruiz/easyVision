@@ -26,6 +26,10 @@ int ippiMul_32f_C1Rx(Ipp32f* pSrc1, int src1Step, Ipp32f* pSrc2, int src2Step, I
     return ippiMul_32f_C1R(pSrc1, src1Step, pSrc2, src2Step, pDst, dstStep, *roiSize);
 }
 
+int ippiDiv_32f_C1Rx(Ipp32f* pSrc1, int src1Step, Ipp32f* pSrc2, int src2Step, Ipp32f* pDst, int dstStep, IppiSize* roiSize) {
+    return ippiDiv_32f_C1R(pSrc1, src1Step, pSrc2, src2Step, pDst, dstStep, *roiSize);
+}
+
 int ippiAbs_32f_C1Rx(Ipp32f* pSrc, int srcStep, Ipp32f* pDst, int dstStep, IppiSize* roiSize) {
     return ippiAbs_32f_C1R(pSrc, srcStep, pDst, dstStep, *roiSize);
 }

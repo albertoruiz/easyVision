@@ -15,7 +15,7 @@ Purely functional image processing.
 
 module ImagProc.Ipp.Pure (
     (.*),
-    (|+|),(|-|),absDiff,(|*|),
+    (|+|),(|-|),absDiff,(|*|),(|/|),
     andI,orI,notI,xorI,
     add8u, absDiff8u, sub8u, sub8uRel,
     float, toGray, scale32f8u, scale8u32f,
@@ -81,6 +81,10 @@ v .* im = unsafePerformIO $ ioMulC_32f_C1R v id im
 -- | image product, pixel by pixel
 (|*|) :: ImageFloat -> ImageFloat -> ImageFloat
 (|*|) = mkInt ioMul_32f_C1R
+
+-- | image division, pixel by pixel
+(|/|) :: ImageFloat -> ImageFloat -> ImageFloat
+(|/|) = flip (mkInt ioDiv_32f_C1R)
 
 -- | absolute difference of images, pixel by pixel
 absDiff :: ImageFloat -> ImageFloat -> ImageFloat

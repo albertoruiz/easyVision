@@ -328,6 +328,12 @@ ioSub_32f_C1R  = {-# SCC "ippiSub_32f_C1R" #-} auto_2_32f_C1R f "ippiSub_32f_C1R
 ioMul_32f_C1R  = {-# SCC "ippiMul_32f_C1R" #-} auto_2_32f_C1R f "ippiMul_32f_C1R"
     where f pSrc1 src1Step pSrc2 src2Step pDst dstStep roiSize = ippiMul_32f_C1R pSrc1 src1Step pSrc2 src2Step pDst dstStep roiSize
 
+{- |     Divides pixel values of an image by pixel values of another image
+              and places the results in a destination image.
+ -}
+ioDiv_32f_C1R  = {-# SCC "ippiDiv_32f_C1R" #-} auto_2_32f_C1R f "ippiDiv_32f_C1R"
+    where f pSrc1 src1Step pSrc2 src2Step pDst dstStep roiSize = ippiDiv_32f_C1R pSrc1 src1Step pSrc2 src2Step pDst dstStep roiSize
+
 {- |         Performs corresponding bitwise logical operation between pixels of two image
                   (AndC/OrC/XorC  - between pixel of the source image and a constant)
  -}
