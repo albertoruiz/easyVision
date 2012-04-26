@@ -5,6 +5,7 @@
 ./warp
 ./points
 ./imagproc
+./gradient
 ./trail
 ./pose ../../data/videos/rot4.avi
 ./spline

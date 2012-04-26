@@ -28,6 +28,7 @@ library
                         Vision.Apps.Contours.Extraction
 --                      Vision.Apps.Contours.Matching
                         Vision.Apps.Contours.Polygons
+                        Vision.Apps.Show
 
 
     ghc-prof-options:   -auto-all
