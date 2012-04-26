@@ -90,7 +90,7 @@ installation instructions
 
     tesseract:
 
-        $ sudo apt-get install tesseract-orc-dev
+        $ sudo apt-get install tesseract-ocr-dev
 
     zbar:
         
