@@ -120,7 +120,7 @@ installation instructions
 
         $ cd ../projects/demos
         $ make
-        $ ./demo.sh
+        $ make demo
 
 9. Read the tutorial.
 

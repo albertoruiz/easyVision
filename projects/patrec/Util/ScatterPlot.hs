@@ -40,7 +40,7 @@ scatter examples (i,j) colornames prefun = clearColor white . prep $ [ prefun, p
     b2 = maximum ys
     da = 0.05*(a2-a1)
     db = 0.05*(b2-b1)
-    prep = withOrtho2D (a1-da) (a2+da) (b1-db) (b2+db)
+    prep = withOrtho2D (doubleGL $ a1-da) (doubleGL $ a2+da) (doubleGL $ b1-db) (doubleGL $ b2+db)
     colors = take (length gs) (colornames ++ [red,blue,green,yellow,orange]++ repeat white)
 
 
@@ -69,7 +69,7 @@ scatter3D examples (i,j,k) colornames prefun = clearColor white $ [ prefun, poin
     plot = Raw . GL.renderPrimitive GL.Points . mapM_ (\v-> vertex (Vertex3 (doubleGL $ v@>i) (doubleGL $ v@>j) (doubleGL $ v@>k))) -- FIXME using Point3D
     
     colors = take (length gs) (colornames++defaultColors)
-    
+    {-
     axes = Raw $     
         GL.renderPrimitive GL.Lines $ mapM_ vertex [  -- FIXME using Point3D
             Vertex3 0 0 0,
@@ -78,7 +78,9 @@ scatter3D examples (i,j,k) colornames prefun = clearColor white $ [ prefun, poin
             Vertex3 0 1 0,
             Vertex3 0 0 0,
             Vertex3 0 0 (1::Float)]
-
+     -}
+    axes = axes3D 1
+     
 defaultColors = [red, blue, green, orange, brown ] ++ repeat gray
 
 
