@@ -26,7 +26,6 @@ module Vision.GUI.Draw
 , drawPoints3DLabeled
 , drawPointCoords
 , viewPoint
-, points'
 , lineStrip, axes3D, text3DAtF
 , drawPolygon
 ) where
@@ -317,11 +316,6 @@ instance Renderable InterestPoint where
 instance Renderable [InterestPoint] where
   render = mapM_ render
 
-
-
-{-# DEPRECATED points' "use Draw" #-}
-points' :: [Point] -> Drawing
-points' = Draw
 
 lineStrip :: Vertex a => [a] -> Drawing
 lineStrip = Raw . GL.renderPrimitive GL.LineStrip . mapM_ GL.vertex
