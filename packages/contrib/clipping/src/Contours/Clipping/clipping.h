@@ -42,8 +42,5 @@ struct vertex {
 // in an array of coordinates polys.
 int clip(double *clipx, double *clipy, int nc, 
             double *subjectx, double *subjecty, int ns, 
-                double **polysx, double **polysy, int **lengths, int *nl, int op);
-
-
-
+                double **polysx, double **polysy, int **origin, int **lengths, int *nl, int op);
 

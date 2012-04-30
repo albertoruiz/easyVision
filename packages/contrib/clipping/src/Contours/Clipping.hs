@@ -17,7 +17,8 @@ Algorithm by G. Greiner, K. Hormann, ACM Transactions on Graphics.
 -----------------------------------------------------------------------------
 
 module Contours.Clipping (
-    clip, ClipMode(..)
+    clip, ClipMode(..),
+    xorext,
 )
 where
 
@@ -35,7 +36,7 @@ import Contours.Base(orientedArea)
 foreign import ccall "clip" c_clip
     :: Ptr Double -> Ptr Double -> CInt
     -> Ptr Double -> Ptr Double -> CInt
-    -> Ptr (Ptr Double) -> Ptr (Ptr Double) -> Ptr (Ptr (CInt)) -> Ptr (CInt) -> CInt
+    -> Ptr (Ptr Double) -> Ptr (Ptr Double) -> Ptr (Ptr CInt) -> Ptr (Ptr (CInt)) -> Ptr (CInt) -> CInt
     -> IO CInt
 
 fixOrientation :: [Point] -> [Point]
@@ -46,13 +47,24 @@ fixOrientation xs = if orientedArea (Closed xs) > 0
 data ClipMode = ClipUnion
               | ClipIntersection
               | ClipDifference
+              | ClipXOR
               deriving (Enum, Show)
 
 clip :: ClipMode -> Polyline -> Polyline -> [Polyline]
--- ^ compute the intersection of two polygons
-clip mode (Closed a'') (Closed b'') = unsafePerformIO $ do
+-- ^ set operations for polygons
+clip m a b = map fst (preclip m a b)
+
+
+xorext :: Polyline -> Polyline -> [(Polyline, [Int])]
+--xorext = preclip ClipXOR
+xorext a b = preclip ClipDifference a b ++ preclip ClipDifference b a
+
+preclip :: ClipMode -> Polyline -> Polyline -> [(Polyline, [Int])]
+-- ^ interface to C function to compute set operation and origin for each vertex
+preclip mode (Closed a'') (Closed b'') = unsafePerformIO $ do
     ppxs <- malloc
     ppys <- malloc
+    ppos <- malloc
     ppl  <- malloc
     pn   <- malloc
 
@@ -73,7 +85,7 @@ clip mode (Closed a'') (Closed b'') = unsafePerformIO $ do
     --peekArray ns sx >>= print
     --peekArray ns sy >>= print
 
-    _ok <- c_clip cx cy (fi nc) sx sy (fi ns) ppxs ppys ppl pn (2^fromEnum mode)
+    _ok <- c_clip cx cy (fi nc) sx sy (fi ns) ppxs ppys ppos ppl pn (2^fromEnum mode)
 
     --print _ok
 
@@ -88,28 +100,33 @@ clip mode (Closed a'') (Closed b'') = unsafePerformIO $ do
  
     pxs <- peek ppxs
     pys <- peek ppys
+    pos <- peek ppos
 
     xs <- peekArray tot pxs
     ys <- peekArray tot pys
+    os <- map ti `fmap` peekArray tot pos
 
-    --mapM_ print $ zipWith (,) xs ys
+    mapM_ print $ zip3 xs ys os
 
     -- provisional
     let vxs = map (tail . toList) $ takesV ls (fromList xs)
         vys = map (tail . toList) $ takesV ls (fromList ys)
-        r | n > 0 = zipWith f vxs vys
+        vos = map (tail . toList) $ takesV ls (fromList os)
+        r | n > 0 = zip (zipWith f vxs vys) vos
           | otherwise = []
           where f as bs = Closed $ zipWith Point as bs
     
     free pxs
     free pys
+    free pos
     free pl
 
     free ppxs
     free ppys
+    free ppos
     free ppl
     free pn
     return r
 
-clip _ _ _ = error "clip on open polylines not defined"
+preclip _ _ _ = error "clip on open polylines not defined"
 
