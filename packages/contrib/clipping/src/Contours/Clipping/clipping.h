@@ -21,6 +21,9 @@ struct vertex {
 	// coordinates
 	double x;
 	double y;
+	
+	// origin
+	int o;
 
 	// doubly linked list
 	struct vertex *next, *prev;

@@ -13,7 +13,7 @@
   * Create a new linked lyst from floating points values pointed by @polygon
   * of size @n and return it into a pointer pointed by @l
   */
-void createList(double *polyx, double *polyy, int n, struct vertex **l)
+void createList(int origin, double *polyx, double *polyy, int n, struct vertex **l)
 {
     int i;
     struct vertex *list = (struct vertex *) malloc (sizeof(struct vertex));
@@ -26,6 +26,7 @@ void createList(double *polyx, double *polyy, int n, struct vertex **l)
     for (i = 0; i < n-1; i++) {
         current->x = polyx[i];
         current->y = polyy[i];
+        current->o = origin;
         current->prev = prev;
         current->next = (struct vertex *) malloc (sizeof(struct vertex));
         current->nextVertex = current->next;
@@ -37,6 +38,7 @@ void createList(double *polyx, double *polyy, int n, struct vertex **l)
 
     current->x = polyx[i];
     current->y = polyy[i];
+    current->o = origin;
     current->prev = prev;
     current->next = list;
     current->nextPoly = NULL;
@@ -134,6 +136,9 @@ int findIntersections(struct vertex *lclip, struct vertex *lsubject)
                 i2->alpha = b;
                 i2->x = i1->x = w->x + b * (w->nextVertex->x - w->x);
                 i2->y = i1->y = w->y + b * (w->nextVertex->y - w->y);
+
+                i1->o = 3;
+                i2->o = 3;
 
                 i1->intersect = 1;
                 i2->intersect = 1;
@@ -238,6 +243,7 @@ struct vertex * newPolygon(struct vertex *lastPoly, struct vertex *p)
     struct vertex *poly = (struct vertex *) malloc (sizeof(struct vertex));
     poly->x = p->x;
     poly->y = p->y;
+//  poly->o = p->o;
     poly->nextPoly = NULL;
     poly->next = NULL;
     
@@ -256,6 +262,7 @@ void newVertex(struct vertex *last, struct vertex *p)
         last->next = (struct vertex *) malloc (sizeof(struct vertex));
     point->x = p->x;
     point->y = p->y;
+    point->o = p->o;
 
     point->next = NULL;
     point->nextPoly = NULL;
@@ -291,6 +298,7 @@ int createClippedPolygon(struct vertex *lclip, struct vertex *lsubject,
             first = (struct vertex *) malloc (sizeof(struct vertex));
             first->x = current->x;
             first->y = current->y;
+//          first->o = current->o;
             first->nextPoly = NULL;
             poly = first;
         }
@@ -359,7 +367,7 @@ void copy(struct vertex *polygons, int npolys, int nvertex,
         for (ivertex = ipoly; ivertex; ivertex = ivertex->next)
         {
             ls[polycount]++;
-            po[vertexcount] = vertexcount%3+1;
+            po[vertexcount] = ivertex->o;
             px[vertexcount] = ivertex->x;
             py[vertexcount++] = ivertex->y;
         }
@@ -385,8 +393,8 @@ int clip(double *clipx, double *clipy, int nc,
     int nvertex, npolys;
 
     // create data structures
-    createList(clipx, clipy, nc, &lclip);
-    createList(subjectx, subjecty, ns, &lsubject);
+    createList(1,clipx, clipy, nc, &lclip);
+    createList(2,subjectx, subjecty, ns, &lsubject);
 
     //printf("created lists\n");
 

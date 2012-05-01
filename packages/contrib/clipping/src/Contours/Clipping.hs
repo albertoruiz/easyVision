@@ -30,6 +30,7 @@ import Foreign.Marshal
 import Foreign.Storable
 import System.IO.Unsafe(unsafePerformIO)
 import Control.Applicative((<$>))
+import Control.Arrow((***))
 import Data.Packed.Vector(takesV,fromList,toList)
 import Contours.Base(orientedArea)
 
@@ -44,6 +45,11 @@ fixOrientation xs = if orientedArea (Closed xs) > 0
                       then reverse xs
                       else xs
 
+fixOrientation' :: Double -> (Polyline,[Int]) -> (Polyline,[Int])
+fixOrientation' s p | (signum . orientedArea . fst) p == signum s = p
+                    | otherwise = (Closed . reverse . polyPts *** reverse) p
+ 
+
 data ClipMode = ClipUnion
               | ClipIntersection
               | ClipDifference
@@ -57,7 +63,8 @@ clip m a b = map fst (preclip m a b)
 
 xorext :: Polyline -> Polyline -> [(Polyline, [Int])]
 --xorext = preclip ClipXOR
-xorext a b = preclip ClipDifference a b ++ preclip ClipDifference b a
+xorext a b =    map (fixOrientation' (-1)) (preclip ClipDifference a b)
+             ++ map (fixOrientation'   1 ) (preclip ClipDifference b a)
 
 preclip :: ClipMode -> Polyline -> Polyline -> [(Polyline, [Int])]
 -- ^ interface to C function to compute set operation and origin for each vertex
