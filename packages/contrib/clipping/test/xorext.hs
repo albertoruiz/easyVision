@@ -4,6 +4,7 @@ import Contours
 import Vision
 import Contours.Clipping
 import Data.List(partition)
+import Util.Misc(debug)
 
 main = runIt win
 
@@ -13,10 +14,14 @@ win = browser "clipping" ds (const id)
            , msg "diff a b" [color blue (clip ClipDifference a b)]
            , msg "diff b a" [color red (clip ClipDifference b a)]
            , msg "xor" [color blue (map fst zp), color red (map fst zn)]
-           , msg "circ" $ map drCircuit (map circuit $ xorext a b)
+           
+           , msg "circ a b" $ map drCircuit (map circuit $ xorext a b)
+           , msg "circ b a" $ map drCircuit (map circuit $ xorext b a)
            ]
            ++ map (msg "orig" . color blue . shOrig) zp
            ++ map (msg "orig" . color red  . shOrig) zn
+           ++
+              map (msg "step a b" . drStep1 . step1 ) ( xorext a b)
 
 
 a = Closed [Point x1 y1, Point 0 y1, Point x2 y1, Point x2 y2, Point x1 y2]
@@ -36,16 +41,39 @@ msg s d = Draw [winTitle s, Draw d]
 
 shOrig :: (Polyline, [Int]) -> Drawing
 shOrig (p, os) = Draw [Draw p, color white $ drawThings (polyPts p) (zip [0..] os)]
-  where
-    drawThings pts xs = draws $ zipWith (textF Helvetica10) pts (map ((' ':).show) xs)
 
-circuit (Closed ps, os) = (Closed ps, Open b)
-  where
-    [na,nb,nc] = map (\k -> length (filter (==k) os)) [1,2,3]
-    b = [p | (p,k) <- zip ps os, k/=2 ]
+drawThings pts xs = draws $ zipWith (textF Helvetica10) pts (map ((' ':).show) xs)
 
-drCircuit (p,b) = color c b
+drCircuit (oa,b) = color c b
   where
-    c | orientedArea p < 0 = blue
+    c | oa < 0 = blue
       | otherwise = red
-    
+
+circuit = step2 . step1
+
+-- starting point and direction
+step1 :: (Polyline, [Int]) -> (Double, [(Point, Int)])
+step1 (ps, os) | oa < 0    = (oa, reverse $ rot $ h $ reverse pos)
+               | otherwise = (oa, h pos)
+  where
+    pos = zip (polyPts ps) os
+    oa = orientedArea ps
+    h = until ((==3).snd.head) rot
+    rot xs = tail xs ++ [head xs]
+
+drStep1 (_,pos) = Draw [ Draw (Closed ps), drawThings ps (zip [0..] os) ]
+  where
+    (ps, os) = unzip pos
+
+-- extract fragments
+step2 :: (Double, [(Point, Int)]) -> (Double, [Segment])
+step2 (oa, pos) = (oa, concatMap (asSegments . Open) (fragments pos))
+  where
+    fragments :: [(Point,Int)] -> [[Point]]
+    fragments pos = map (map fst) $ frags $ filter ((/=1).snd) $ pos
+      where
+        frags [] = []
+        frags (p:xs) = (p : rs ++ [q]) : frags ys
+          where
+            (rs,q:ys) = span ((==2).snd) xs
+

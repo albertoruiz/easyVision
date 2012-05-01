@@ -58,13 +58,19 @@ data ClipMode = ClipUnion
 
 clip :: ClipMode -> Polyline -> Polyline -> [Polyline]
 -- ^ set operations for polygons
-clip m a b = map fst (preclip m a b)
+clip m a b = map fst (preclip m b a)
 
 
 xorext :: Polyline -> Polyline -> [(Polyline, [Int])]
 --xorext = preclip ClipXOR
-xorext a b =    map (fixOrientation' (-1)) (preclip ClipDifference a b)
-             ++ map (fixOrientation'   1 ) (preclip ClipDifference b a)
+xorext a b =    map (    fixOrientation' (-1)) (preclip ClipDifference b a)
+             ++ map (g . fixOrientation'   1 ) (preclip ClipDifference a b)
+  where
+    g = id *** map h
+    h 1 = 2
+    h 2 = 1
+    h x = x
+
 
 preclip :: ClipMode -> Polyline -> Polyline -> [(Polyline, [Int])]
 -- ^ interface to C function to compute set operation and origin for each vertex
@@ -113,7 +119,7 @@ preclip mode (Closed a'') (Closed b'') = unsafePerformIO $ do
     ys <- peekArray tot pys
     os <- map ti `fmap` peekArray tot pos
 
-    mapM_ print $ zip3 xs ys os
+    -- mapM_ print $ zip3 xs ys os
 
     -- provisional
     let vxs = map (tail . toList) $ takesV ls (fromList xs)
