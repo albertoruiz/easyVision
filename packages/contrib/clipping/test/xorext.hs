@@ -11,17 +11,9 @@ main = runIt win
 win = browser "clipping" ds (const id)
     where
       ds = [ msg "original contours" [color blue a, color red b]
-           , msg "diff a b" [color blue (clip ClipDifference a b)]
-           , msg "diff b a" [color red (clip ClipDifference b a)]
-           , msg "xor" [color blue (map fst zp), color red (map fst zn)]
-           
-           , msg "circ a b" $ map drCircuit (map circuit $ xorext a b)
-           , msg "circ b a" $ map drCircuit (map circuit $ xorext b a)
            ]
-           ++ map (msg "orig" . color blue . shOrig) zp
-           ++ map (msg "orig" . color red  . shOrig) zn
-           ++
-              map (msg "step a b" . drStep1 . step1 ) ( xorext a b)
+           ++ map (msg "positive" . color blue . shOrig) zp
+           ++ map (msg "negative" . color red  . shOrig) zn
 
 
 a = Closed [Point x1 y1, Point 0 y1, Point x2 y1, Point x2 y2, Point x1 y2]
@@ -34,6 +26,7 @@ b = Closed [ Point x1 y2,  Point x1 0, Point x1 y1, Point x2 y1, Point x2 y2
     x1 = 0.4; x2 = -x1; x3 = 0.2; x4 = -x3;
     y1 = 0.8; y2 = -0.6; y3 = 0.6
 
+
 (zp,zn) = partition ((<0).orientedArea.fst) (xorext a b)
 
 msg s d = Draw [winTitle s, Draw d]
@@ -43,6 +36,8 @@ shOrig :: (Polyline, [Int]) -> Drawing
 shOrig (p, os) = Draw [Draw p, color white $ drawThings (polyPts p) (zip [0..] os)]
 
 drawThings pts xs = draws $ zipWith (textF Helvetica10) pts (map ((' ':).show) xs)
+
+{-
 
 drCircuit (oa,b) = color c b
   where
@@ -76,4 +71,5 @@ step2 (oa, pos) = (oa, concatMap (asSegments . Open) (fragments pos))
         frags (p:xs) = (p : rs ++ [q]) : frags ys
           where
             (rs,q:ys) = span ((==2).snd) xs
+-}
 

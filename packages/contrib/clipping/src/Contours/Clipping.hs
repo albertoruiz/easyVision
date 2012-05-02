@@ -18,7 +18,7 @@ Algorithm by G. Greiner, K. Hormann, ACM Transactions on Graphics.
 
 module Contours.Clipping (
     clip, ClipMode(..),
-    xorext,
+    xorext
 )
 where
 
@@ -30,7 +30,6 @@ import Foreign.Marshal
 import Foreign.Storable
 import System.IO.Unsafe(unsafePerformIO)
 import Control.Applicative((<$>))
-import Control.Arrow((***))
 import Data.Packed.Vector(takesV,fromList,toList)
 import Contours.Base(orientedArea)
 
@@ -40,15 +39,7 @@ foreign import ccall "clip" c_clip
     -> Ptr (Ptr Double) -> Ptr (Ptr Double) -> Ptr (Ptr CInt) -> Ptr (Ptr (CInt)) -> Ptr (CInt) -> CInt
     -> IO CInt
 
-fixOrientation :: [Point] -> [Point]
-fixOrientation xs = if orientedArea (Closed xs) > 0
-                      then reverse xs
-                      else xs
-
-fixOrientation' :: Double -> (Polyline,[Int]) -> (Polyline,[Int])
-fixOrientation' s p | (signum . orientedArea . fst) p == signum s = p
-                    | otherwise = (Closed . reverse . polyPts *** reverse) p
- 
+--------------------------------------------------------------------------------
 
 data ClipMode = ClipUnion
               | ClipIntersection
@@ -60,17 +51,19 @@ clip :: ClipMode -> Polyline -> Polyline -> [Polyline]
 -- ^ set operations for polygons
 clip m a b = map fst (preclip m b a)
 
+--------------------------------------------------------------------------------
 
 xorext :: Polyline -> Polyline -> [(Polyline, [Int])]
---xorext = preclip ClipXOR
-xorext a b =    map (    fixOrientation' (-1)) (preclip ClipDifference b a)
-             ++ map (g . fixOrientation'   1 ) (preclip ClipDifference a b)
-  where
-    g = id *** map h
-    h 1 = 2
-    h 2 = 1
-    h x = x
+xorext = preclip ClipXOR
 
+--------------------------------------------------------------------------------
+
+fixOrientation :: Double -> [Point] -> [Point]
+fixOrientation s xs = if signum (orientedArea (Closed xs)) /= signum s
+                        then reverse xs
+                        else xs
+
+--------------------------------------------------------------------------------
 
 preclip :: ClipMode -> Polyline -> Polyline -> [(Polyline, [Int])]
 -- ^ interface to C function to compute set operation and origin for each vertex
@@ -81,8 +74,8 @@ preclip mode (Closed a'') (Closed b'') = unsafePerformIO $ do
     ppl  <- malloc
     pn   <- malloc
 
-    let a' = fixOrientation a''
-        b' = fixOrientation b''
+    let a' = fixOrientation (-1) a''
+        b' = fixOrientation   1  b''
         a = a' ++ [head a']
         b = b' ++ [head b']   
         nc = length a
