@@ -70,8 +70,8 @@ eig2x2Dir :: (Double,Double,Double) -- ^ (cxx,cyy,cxy)
           -> (Double,Double,Double) -- ^ (v1,v2,angle), the eigenvalues of cov (v1>v2), and angle of dominant eigenvector
 eig2x2Dir (cxx,cyy,cxy) = (l1,l2,a')
     where ra = sqrt(abs $ cxx*cxx + 4*cxy*cxy -2*cxx*cyy + cyy*cyy)
-          l1 = 0.5*(cxx+cyy+ra)
-          l2 = 0.5*(cxx+cyy-ra)
+          l1 = 0.5*(cxx+cyy+ra) `max` 0
+          l2 = 0.5*(cxx+cyy-ra) `max` 0
           a = atan2 (2*cxy) ((cxx-cyy+ra))
           a' | abs cxy < eps && cyy > cxx = pi/2
              | otherwise = a
