@@ -366,20 +366,6 @@ void copy(struct vertex *polygons, int npolys, int nvertex,
     for (ipoly = polygons; ipoly; ipoly = ipoly->nextPoly)
     {
         ls[polycount] = 0;
-
-        /* OLD ADRIAN:
-        for (ivertex = ipoly; ivertex; ivertex = ivertex->next)
-        {
-            ls[polycount]++;
-            po[vertexcount] = ivertex->o;
-            px[vertexcount] = ivertex->x;
-            py[vertexcount++] = ivertex->y;
-            curlen++;
-            printf("\nx=%f y=%f o=%d",ivertex->x,ivertex->y,ivertex->o);
-
-        }
-        printf("\n");*/
-
         curlen = 0;
         for (ivertex = ipoly; ivertex; ivertex = ivertex->next)
         {
@@ -388,55 +374,9 @@ void copy(struct vertex *polygons, int npolys, int nvertex,
             px[vertexcount] = ivertex->x;
             py[vertexcount++] = ivertex->y;
             curlen++;
-            //printf("\nx=%f y=%f o=%d",ivertex->x,ivertex->y,ivertex->o);
         }
-        printf("\n");
+        // Last (repeated) vertex copies its origin label to first one (which was initiall "flipped").
         po[vertexcount-curlen] = po[vertexcount-1];
-
-
-        //for(i=vertexcount-curlen;i<vertexcount;i++)
-            //printf("\n--->x=%f y=%f o=%d",px[i],py[i],po[i]);
-
-
-
-
-
-
-
-
-        /* OLD PEDRO:
-        // First compute length and offset of first "31" type vertex:
-        curlen = 0;
-        offset = -1;
-        for (ivertex = ipoly; ivertex; ivertex = ivertex->next) {
-            if((ivertex->o==31) && (offset==-1))
-                offset = curlen;
-            curlen++;
-        }
-
-        int i=0;
-        for (ivertex = ipoly; ivertex; ivertex = ivertex->next) {
-            ls[polycount]++;
-            po[vertexcount + (i-offset+curlen-1)%(curlen-1)] = ivertex->o;
-            px[vertexcount + (i-offset+curlen-1)%(curlen-1)] = ivertex->x;
-            py[vertexcount + (i-offset+curlen-1)%(curlen-1)] = ivertex->y;
-            i++;
-            printf("\nx=%f y=%f o=%d",ivertex->x,ivertex->y,ivertex->o);
-        }
-        po[vertexcount + curlen -1] = po[vertexcount];
-        px[vertexcount + curlen -1] = px[vertexcount];
-        py[vertexcount + curlen -1] = py[vertexcount];
-
-        for(i=vertexcount;i<vertexcount+curlen;i++)
-            printf("\n--->x=%f y=%f o=%d",px[i],py[i],po[i]);
-
-        vertexcount += curlen;
-
-        printf("\noffset=%d curlen=%d",offset,curlen);
-*/
-
-
-
         polycount++;
     }
     *polysx = px;
@@ -466,16 +406,6 @@ int clip(double *clipx, double *clipy, int nc,
 
     // phase one of the algorithm
     findIntersections(lclip, lsubject);
-
-
-    // FIXME: puesto a piñón aquí:
-    printf("OP=%d\n",op);
-    op = POLYGON_XOREXT;
-    //op = POLYGON_UNION;
-    //op = POLYGON_INTERSECTION;
-    //op = POLYGON_DIFF_AB;
-    //op = POLYGON_DIFF_BA;
-
 
     //printf("found intersections\n");
 
@@ -518,7 +448,7 @@ int clip(double *clipx, double *clipy, int nc,
         npolys2 = createClippedPolygon(lclip, lsubject, &polygons2, &nvertex2);
 
         // number of "positive" polygons:
-        // FIXME uncomment *nlp = npolys;
+        // *nlp = npolys;
 
         npolys += npolys2;
         nvertex += nvertex2;
@@ -530,7 +460,7 @@ int clip(double *clipx, double *clipy, int nc,
 
     } else {
         // only xorext operation uses nlp:
-        //FIXME uncomment *nlp = 0;
+        // *nlp = 0;
     }
 
     //printf("clip polygon\n");
