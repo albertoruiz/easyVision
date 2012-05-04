@@ -115,9 +115,9 @@ preclip mode (Closed a'') (Closed b'') = unsafePerformIO $ do
     -- mapM_ print $ zip3 xs ys os
 
     -- provisional
-    let vxs = map (tail . toList) $ takesV ls (fromList xs)
-        vys = map (tail . toList) $ takesV ls (fromList ys)
-        vos = map (tail . toList) $ takesV ls (fromList os)
+    let vxs = map (init . toList) $ takesV ls (fromList xs)
+        vys = map (init . toList) $ takesV ls (fromList ys)
+        vos = map (init . toList) $ takesV ls (fromList os)
         r | n > 0 = zip (zipWith f vxs vys) vos
           | otherwise = []
           where f as bs = Closed $ zipWith Point as bs
