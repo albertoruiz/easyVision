@@ -18,7 +18,8 @@ Algorithm by G. Greiner, K. Hormann, ACM Transactions on Graphics.
 
 module Contours.Clipping (
     clip, ClipMode(..),
-    xorext
+    preclip,
+    deltaContour
 )
 where
 
@@ -31,52 +32,74 @@ import Foreign.Storable
 import System.IO.Unsafe(unsafePerformIO)
 import Control.Applicative((<$>))
 import Data.Packed.Vector(takesV,fromList,toList)
-import Contours.Base(orientedArea)
+import Contours.Base(orientedArea,rev)
+
 
 foreign import ccall "clip" c_clip
     :: Ptr Double -> Ptr Double -> CInt
     -> Ptr Double -> Ptr Double -> CInt
-    -> Ptr (Ptr Double) -> Ptr (Ptr Double) -> Ptr (Ptr CInt) -> Ptr (Ptr (CInt)) -> Ptr (CInt) -> CInt
+    -> Ptr (Ptr Double) -> Ptr (Ptr Double) -> Ptr (Ptr CInt) -> Ptr (Ptr (CInt)) -> Ptr (CInt) -> Ptr (CInt) -> CInt
     -> IO CInt
 
 --------------------------------------------------------------------------------
 
-data ClipMode = ClipUnion
-              | ClipIntersection
+data ClipMode = ClipIntersection
+              | ClipUnion
               | ClipDifference
               | ClipXOR
+              | ClipDifferenceFlip
               deriving (Enum, Show)
 
 clip :: ClipMode -> Polyline -> Polyline -> [Polyline]
 -- ^ set operations for polygons
-clip m a b = map fst (preclip m b a)
+clip m a b = map fst (fst $ preclip m a b)
 
 --------------------------------------------------------------------------------
 
-xorext :: Polyline -> Polyline -> [(Polyline, [Int])]
-xorext = preclip ClipXOR
+deltaContour :: Polyline -> Polyline -> [((Polyline,Double),[Polyline])]
+deltaContour b a = zp' ++ zn'
+  where
+    ys = map (step2 . step1) xs
+    (xs,np) = preclip ClipXOR b a
+    (zp,zn) = splitAt np ys
+    zp' = map (fixOri (-1)) zp
+    zn' = map (fixOri   1 ) zn
+    fixOri s ((p,ar),os) | signum ar == signum s = ((p,ar),os)
+                         | otherwise = ((rev p,-ar), map rev os)
+
+
+step1 :: (Polyline, [Int]) -> ((Polyline,Double), [(Point, Int)])
+step1 (ps, os) = ((ps,oa), pos)
+  where
+    pos = zip (polyPts ps) os
+    oa = orientedArea ps
+
+-- extract fragments
+step2 :: ((Polyline,Double), [(Point, Int)]) -> ((Polyline,Double), [Polyline])
+step2 (poa, pos) = (poa, map Open (fragments pos))
+  where
+    fragments :: [(Point,Int)] -> [[Point]]
+    fragments = map (map fst) . frags . filter ((/=1).snd)
+      where
+        frags [] = []
+        frags (p:xs) = (p : rs ++ [q]) : frags ys
+          where
+            (rs,q:ys) = span ((==2).snd) xs
+
 
 --------------------------------------------------------------------------------
 
-fixOrientation :: Double -> [Point] -> [Point]
-fixOrientation s xs = if signum (orientedArea (Closed xs)) /= signum s
-                        then reverse xs
-                        else xs
-
---------------------------------------------------------------------------------
-
-preclip :: ClipMode -> Polyline -> Polyline -> [(Polyline, [Int])]
+preclip :: ClipMode -> Polyline -> Polyline -> ([(Polyline, [Int])],Int)
 -- ^ interface to C function to compute set operation and origin for each vertex
-preclip mode (Closed a'') (Closed b'') = unsafePerformIO $ do
+preclip mode (Closed a') (Closed b') = unsafePerformIO $ do
     ppxs <- malloc
     ppys <- malloc
     ppos <- malloc
     ppl  <- malloc
     pn   <- malloc
+    pnp  <- malloc
 
-    let a' = fixOrientation (-1) a''
-        b' = fixOrientation   1  b''
-        a = a' ++ [head a']
+    let a = a' ++ [head a']
         b = b' ++ [head b']   
         nc = length a
         ns = length b
@@ -91,12 +114,14 @@ preclip mode (Closed a'') (Closed b'') = unsafePerformIO $ do
     --peekArray ns sx >>= print
     --peekArray ns sy >>= print
 
-    _ok <- c_clip cx cy (fi nc) sx sy (fi ns) ppxs ppys ppos ppl pn (2^fromEnum mode)
+    _ok <- c_clip cx cy (fi nc) sx sy (fi ns) ppxs ppys ppos ppl pn pnp (2^fromEnum mode)
 
     --print _ok
 
     n <- ti <$> peek pn
     --print n
+    np <- ti <$> peek pnp
+    --print np
     
     pl <- peek ppl
     ls <- map ti <$> peekArray n pl
@@ -118,8 +143,8 @@ preclip mode (Closed a'') (Closed b'') = unsafePerformIO $ do
     let vxs = map (init . toList) $ takesV ls (fromList xs)
         vys = map (init . toList) $ takesV ls (fromList ys)
         vos = map (init . toList) $ takesV ls (fromList os)
-        r | n > 0 = zip (zipWith f vxs vys) vos
-          | otherwise = []
+        r | n > 0 = (zip (zipWith f vxs vys) vos, np)
+          | otherwise = ([],np)
           where f as bs = Closed $ zipWith Point as bs
     
     free pxs

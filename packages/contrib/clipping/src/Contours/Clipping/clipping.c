@@ -391,11 +391,11 @@ void copy(struct vertex *polygons, int npolys, int nvertex,
 // in an array of coordinates polys.
 int clip(double *clipx, double *clipy, int nc,
             double *subjectx, double *subjecty, int ns,
-                double **polysx, double **polysy, int **origin, int **lengths, int *nl, /*int *nlp, */int op)
+                double **polysx, double **polysy, int **origin, int **lengths, int *nl, int *nlp, int op)
 {
     struct vertex *lclip, *lsubject;
     struct vertex *polygons = NULL, *polygons2 = NULL, *auxpoly = NULL;
-    int cIntExt, sIntExt;
+    int cIntExt=0, sIntExt=0;
     int nvertex, nvertex2, npolys, npolys2;
 
     // create data structures
@@ -448,7 +448,7 @@ int clip(double *clipx, double *clipy, int nc,
         npolys2 = createClippedPolygon(lclip, lsubject, &polygons2, &nvertex2);
 
         // number of "positive" polygons:
-        // *nlp = npolys;
+        *nlp = npolys;
 
         npolys += npolys2;
         nvertex += nvertex2;
@@ -460,7 +460,7 @@ int clip(double *clipx, double *clipy, int nc,
 
     } else {
         // only xorext operation uses nlp:
-        // *nlp = 0;
+        *nlp = 0;
     }
 
     //printf("clip polygon\n");
@@ -511,10 +511,10 @@ int main2(void)
 
     double *polysx, *polysy;
     int * origin;
-    int *lengths, nl, i,j;
+    int *lengths, nl,nlp, i,j;
 
     clip(clipx, clipy, lclip, subjectx, subjecty, lsubject,
-            &polysx, &polysy, &origin, &lengths, &nl, POLYGON_INTERSECTION);
+            &polysx, &polysy, &origin, &lengths, &nl, &nlp, POLYGON_INTERSECTION);
 
     int v = 0;
     for (i = 0; i < nl; i++) {

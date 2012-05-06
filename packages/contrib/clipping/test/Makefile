@@ -1,6 +1,8 @@
 include ../../../../projects/Makefile.include
 
 demo:
-	./clipping
+	./test
 	./xor
+	./clipping
+	./delta
 
