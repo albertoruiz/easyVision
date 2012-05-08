@@ -15,7 +15,7 @@ module Util.Options (
 import Data.List(isPrefixOf)
 import System.Environment(getArgs)
 import System.Directory(getDirectoryContents)
-import Control.Monad(join)
+import Control.Monad(join,when)
 import Control.Applicative((<$>))
 import Data.Traversable(sequenceA)
 
@@ -36,6 +36,7 @@ getRawOption :: String -- ^ option name
              -> IO (Maybe String)
 getRawOption name = do
     args <- getArgs
+    when ("--options" `elem` args) (putStrLn name)
     let opts = filter ((name++"=") `isPrefixOf`) args
     return $ case opts of
         [] -> Nothing
@@ -60,6 +61,7 @@ getFlag :: String -- ^ option name, including the dashes (e.g. \"--opt\").
         -> IO Bool
 getFlag name = do
     args <- getArgs
+    when ("--options" `elem` args) (putStrLn name)
     return (any (isPrefixOf name) args)
 
 -- | Special version of 'getOption' for strings, without the need of the quotes required by @read@.
