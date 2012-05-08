@@ -13,7 +13,7 @@ Auxiliary tools for iterative optimization
 -----------------------------------------------------------------------------
 
 module Util.Optimize (
-    optimize,
+    optimize, optimize2,
     optimizeLM
 ) where
 
@@ -42,6 +42,18 @@ optimize epsabs epsrel maxit method errfun s0 = (sol,e) where
     (sol,e) = convergence epsabs epsrel (zip3 sols errs deltas) []
 
 
+optimize2 :: Double             -- ^ absolute tolerance
+          -> Double             -- ^ relative tolerance
+          -> Int                -- ^ maximum number of interations
+          -> (x -> (x,Double))  -- ^ method (new solution, error)
+          -> x                  -- ^ starting point
+          -> (x, [Double])      -- ^ solution and error history
+-- ^ a version of "optimize" in which the iteration function also computes the error
+optimize2 epsabs epsrel maxit method s0 = (fst sol, e)
+  where
+    (sol, e) = optimize epsabs epsrel maxit (method.fst) snd (method s0)
+
+
 optimizeLM :: Double        -- ^ absolute tolerance
            -> Double        -- ^ relative tolerance
            -> Int           -- ^ maximum number of interations
@@ -68,3 +80,4 @@ optimizeLM epsabs epsrel maxit method errfun s0 lambda0 decf incf = r where
     r = convergence epsabs epsrel ws []
 
     updateLM df uf l e e' = if e' > e then uf l else df l
+
