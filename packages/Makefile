@@ -16,6 +16,9 @@ all:
 optional:
 	cd contrib; for p in $(optional); do cd $$p; $(normalinstall) ; cd ..; done; cd ..
 
+optionalprof:
+	cd contrib; for p in $(optional); do cd $$p; $(profinstall) ; cd ..; done; cd ..
+
 prof:
 	for p in $(packages); do cd $$p; $(profinstall) ; cd ..; done;	cd contrib; for p in $(optional); do cd $$p; $(profinstall) ; cd ..; done; cd ..
 

@@ -1,6 +1,8 @@
 import Vision.GUI
 import Contours
 import ImagProc
+import Util.Misc(vec)
+import Numeric.LinearAlgebra(scalar)
 
 main = run (sMonitor "result" f)
 
@@ -12,6 +14,8 @@ f roi x =  [  msg "grayscale"          [ Draw g ]
            ,  msg "raw dark contours"  [ color blue . lineWd 2 $ draws rawconts ]
            ,  msg "reduced contours"   [ color blue . lineWd 2 $ draws conts ]
            ,  msg "distance transform" [ Draw disTra ]
+           ,  msg "DCT"                [ Draw dctt ]
+           ,  msg "LBP"                [ Draw $ dlbp / scalar 20 - 0.5 ]
            ]
   where
     msg s x  =  Draw [ Draw img, Draw x , winTitle s ]
@@ -25,4 +29,6 @@ f roi x =  [  msg "grayscale"          [ Draw g ]
     ((rawconts,_),_)  = otsuContours g
     conts  = map reducePolyline rawconts
     disTra = (1/60) .* distanceTransform [1,1.4,2.2] (notI edges)
+    dctt   = sqrt32f . abs32f . dct . float $ g
+    dlbp   = vec (lbpN 2 g)
 
