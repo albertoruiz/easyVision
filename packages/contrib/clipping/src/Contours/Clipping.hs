@@ -52,15 +52,18 @@ data ClipMode = ClipIntersection
 
 clip :: ClipMode -> Polyline -> Polyline -> [Polyline]
 -- ^ set operations for polygons
-clip m a b = map fst (fst $ preclip m a b)
+clip m a b = map (fst.fst) (fixOrientation $ preclip m a b)
 
 --------------------------------------------------------------------------------
 
 deltaContour :: Polyline -> Polyline -> [((Polyline,Double),[Polyline])]
-deltaContour b a = zp' ++ zn'
+deltaContour a b = fixOrientation (preclip ClipXOR a b)
+
+
+fixOrientation :: ([(Polyline, [Int])],Int) -> [((Polyline,Double),[Polyline])]
+fixOrientation (xs,np) = zp' ++ zn'
   where
     ys = map (step2 . step1) xs
-    (xs,np) = preclip ClipXOR b a
     (zp,zn) = splitAt np ys
     zp' = map (fixOri (-1)) zp
     zn' = map (fixOri   1 ) zn
