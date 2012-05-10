@@ -31,10 +31,7 @@ library
                         Vision.Stereo
                         Vision.TensorRep
                         Vision.Tensorial
-                        Vision.SparseRep
-                        Vision.Bundle
                         Vision.Gea
-                        Vision.Gea2
                         Vision.Types
                         Vision.Epipolar
                         Vision.Bootstrap
@@ -47,5 +44,5 @@ library
 
     ghc-prof-options:   -auto-all
 
-    ghc-options:        -Wall
+--  ghc-options:        -Wall
 

@@ -3,7 +3,7 @@
 import Numeric.LinearAlgebra
 import Vision hiding (selectSol)
 import Vision.LASBA
-import qualified Vision.Gea2 as G
+import qualified Vision.Gea as G
 import Vision.Types
 import Vision.IO
 import Vision.Multiview

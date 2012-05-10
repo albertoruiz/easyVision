@@ -8,7 +8,6 @@ module Vision.Tensorial(
     quality, signalLevel, signalNoise, objectQuality, poseQuality, autoMetric,
     homogT, inhomogT, eps3, eps4, unitT, frobT, normInfT,
     camerasFromTrifocalHZ, correctFundamental,
-    randomTensor, addNoise,
     getFK, getFs, fixCal, metricConsis,
     rangecoord, normalizeCoords,
     module Vision.TensorRep

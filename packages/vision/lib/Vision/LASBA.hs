@@ -10,7 +10,7 @@ import Vision.IO
 
 import System.IO
 import System.Process
-import Foreign(unsafePerformIO)
+import System.IO.Unsafe(unsafePerformIO)
 
 -- | Interface to sparse bundle adjustment implementation by M.I.A. Lourakis and A.A. Argyros
 laSBA' :: [Proj]
