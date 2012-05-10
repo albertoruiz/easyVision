@@ -89,12 +89,13 @@ main = do
     args <- cleanOpts <$> getArgs
     when (null args) $ error "usage: ./geademo <directory> [options]"
     let name = head args
+    p <- loadProblem name
+    
+    getFlag "--info" >>= flip when (info name p)
+    
     full <- liftA2 (||) (getFlag "--full") (getFlag "-f")
-    if full then testF name
-            else testS name
-
-testF name = loadProblem name >>= testGo name
-testS name = loadProblem name >>= testGoSmall name
+    if full then testGo name p
+            else testGoSmall name p
 
 testCal1Optim name = do
     p <- loadProblem name
@@ -313,4 +314,12 @@ bougnouxPairs = map (fst . head &&& median . debug "fi" quartiles. map snd) . gr
 
 ----------------------------------------------------------------------
 
+info name p = do
+    putStrLn $ "Problem " ++ name
+    let e = epi p
+    putStr "images "; print (length $ cams p)
+    putStr "image pairs: "; print (length e)
+    putStr "common points: "; print (map (length.com.snd) e)
+    putStr "epipolar quality: "; print (map (round.(*100).s2.snd) e)
+    
 
