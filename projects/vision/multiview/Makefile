@@ -1,6 +1,6 @@
 include ../../Makefile.include
 
 demo:
-	./geademo
-	./geademo --tracks=trafalgar-21
+	./geademo ../../../data/tracks/dinosaur
+	./geademo ../../../data/tracks/trafalgar-21
 

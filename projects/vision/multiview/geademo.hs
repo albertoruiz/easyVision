@@ -12,10 +12,12 @@ import Vision.Bootstrap
 import Util.ShowReco
 import Util.Misc(diagl,mean,debug,dimString,pairsWith,degree,median,quartiles)
 import Graphics.Plot
+import System.Environment(getArgs)
 
 import Text.Printf
 import Control.Applicative
 import Control.Arrow
+import Control.Monad
 
 import Data.List(sort,groupBy)
 import Data.Function(on)
@@ -26,7 +28,8 @@ import Util.Options
 
 ----------------------------------------------------------------
 
-tracksPath = "../../../data/tracks/"
+--tracksPath = "../../../data/tracks/"
+tracksPath = ""
 
 ----------------------------------------------------------------
 
@@ -83,7 +86,9 @@ relocate p = p { pts = newPts, cams = newCams }
 ----------------------------------------------------------------------
 
 main = do
-    name <- optionString "--tracks" "dinosaur"
+    args <- cleanOpts <$> getArgs
+    when (null args) $ error "usage: ./geademo <directory> [options]"
+    let name = head args
     full <- liftA2 (||) (getFlag "--full") (getFlag "-f")
     if full then testF name
             else testS name
