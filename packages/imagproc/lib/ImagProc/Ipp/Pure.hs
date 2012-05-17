@@ -25,6 +25,7 @@ module ImagProc.Ipp.Pure (
     filterMax, filterMin, filterMax8u, filterMin8u,
     filterBox, filterBox8u, filterMedian,
     maxEvery, minEvery,
+    maxEvery8u, minEvery8u,
     sobelVert, sobelHoriz,
     gauss, gauss8u, laplace, median, highPass8u,
     magnitudePack,
@@ -62,6 +63,12 @@ mkRel f a b = unsafePerformIO (f g (flip g) g a b) where
 mkIdIPInt32f f a b = unsafePerformIO $ do
     let roi = intersection (theROI a) (theROI b)
     r <- ioCopy_32f_C1R (const roi) b
+    f undefined (modifyROI (const roi) a) r
+    return r
+
+mkIdIPInt8u f a b = unsafePerformIO $ do
+    let roi = intersection (theROI a) (theROI b)
+    r <- ioCopy_8u_C1R (const roi) b
     f undefined (modifyROI (const roi) a) r
     return r
 
@@ -314,6 +321,15 @@ maxEvery = mkIdIPInt32f ioMaxEvery_32f_C1IR
 -- | pixelwise minimum of two images
 minEvery :: ImageFloat -> ImageFloat -> ImageFloat
 minEvery = mkIdIPInt32f ioMinEvery_32f_C1IR
+
+
+-- | pixelwise maximum of two images
+maxEvery8u :: ImageGray -> ImageGray -> ImageGray
+maxEvery8u = mkIdIPInt8u ioMaxEvery_8u_C1IR
+
+-- | pixelwise minimum of two images
+minEvery8u :: ImageGray -> ImageGray -> ImageGray
+minEvery8u = mkIdIPInt8u ioMinEvery_8u_C1IR
 
 ------------------------------------------------------
 
