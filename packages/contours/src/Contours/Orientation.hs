@@ -24,7 +24,7 @@ import Contours.Base(asSegments)
 import Data.List(sortBy, foldl')
 import Data.Complex(realPart,imagPart)
 import Util.Homogeneous(Point(..))
-import Util.Misc(degree)
+import Util.Misc(degree,debug)
 import Numeric.GSL.Polynomials(polySolve)
 import Data.Function(on)
 import Control.Arrow((&&&))
@@ -214,12 +214,20 @@ icaAngles = map fst . anglesKurt
 anglesKurt w = sortBy (compare `on` (negate.snd)) angs
   where
     angs = map (id &&& kur)
+         . (++ z)
          . map realPart
          . filter ((<(0.1*degree)).abs.imagPart)
          . map (atan.recip)
-         . polySolve . derivCoefs $ coefs
-    coefs = kurtCoefs w
+         . polySolve
+         $ okdco
+    
     kur = kurtAlpha coefs
+    coefs = kurtCoefs w
+    derco = derivCoefs coefs
+    t = 1E-5 * sum (map abs derco)
+    l = abs (last derco)
+    (okdco,z) | l > t     = (     derco, [] )
+              | otherwise = (init derco, [0])
 
 --------------------------------------------------------------------------------
 
