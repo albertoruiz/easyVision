@@ -26,8 +26,8 @@ import Data.Maybe(isJust)
 import Data.Function(on)
 
 
-shape :: Polyline -> Shape
-shape = analyzeShape 10 . (id &&& momentsContour . polyPts)
+shape :: Int -> Polyline -> Shape
+shape n = analyzeShape n . (id &&& momentsContour . polyPts)
 
 ----------------------------------------------------------------------
 type CVec = Vector (Complex Double)
