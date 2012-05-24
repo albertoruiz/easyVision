@@ -195,7 +195,7 @@ conicPoints n InfoEllipse {conicCenter = (mx,my), conicSizes = (d1,d2), conicAng
 --------------------------------------------------------------------------------
 
 circle :: Int -> Double -> Point -> [Point]
-circle n r (Point x y) = [ Point (x+r*cos t) (y+r*sin t) | t <- toList $ linspace n (0,2*pi) ]
+circle n r (Point x y) = [ Point (x+r*cos t) (y+r*sin t) | t <- tail $ toList $ linspace (n+1) (0,2*pi) ]
 
 pointsConic :: Int -> Conic -> [Point]
 pointsConic n c = fromUnitCircle c <| circle n 1 (Point 0 0)

@@ -2,7 +2,7 @@
 
 module Contours.Matching(
     Shape(..), ShapeMatch(..),
-    shape, shapeMatch,
+    shape, shapeMatch, shapeMatches,
     elongated, isEllipse,
 ) where
 
@@ -40,6 +40,9 @@ data Shape = Shape { shapeContour  :: Polyline
                    , invAffine     :: Vec
                    , invSimil      :: Vec
                    , invKS         :: Vec
+                   , symmet2       :: Double
+                   , symmet4       :: Double
+                   , symmet0       :: Double
                    , kAngles       :: [Double]
                    , kFeats        :: [CVec]
                    , kHyps         :: [(CVec,Mat)]
@@ -92,6 +95,11 @@ analyzeShape mW (p,(mx,my,cxx,cyy,cxy)) = Shape {..}
 
         da = angleDiff (as!!0) (as!!1)
 
+    f1:f2:f3:_ = kFeats
+    symmet2 = pnorm PNorm2 (f1-f2)
+    symmet4 = pnorm PNorm2 (f2-f3)
+    symmet0 = pnorm PNorm2 (f1 - fromList (replicate (mW+1) 0 ++ 2: replicate (mW-1) 0))
+    
 ----------------------------------------------------------------------
 
 data ShapeMatch = ShapeMatch
@@ -137,7 +145,33 @@ rotTrans w = (rho,skew,rat)
     e  = max eps $ sqrt $ abs (ex*ex + ey*ey)
     rat = d / e
     skew = abs (pi/2 - (abs $ acos $ (dx*ex + dy*ey) / (e*d)))
-  
+
+
+shapeMatches :: Sample Shape -> Shape -> [ShapeMatch]
+shapeMatches prots c = concatMap (sm c) prots
+  where
+    sm x p | asym p = [match r0 x p]
+           | asym4 p = [match r0 x p, match r1 x p]
+           | otherwise = [match (rot3 (k*pi/2)) x p | k <-[0..3] ]
+    asym  (y,_) = 0.2 < symmet2 y
+    asym4 (y,_) = 0.2 < symmet4 y
+    r0 = ident 3
+    r1 = rot3 pi
+    r2 = rot3 (pi/2)
+    match r x (y,l) = ShapeMatch {..}
+      where
+        proto = y
+        label = l
+        target = x
+        invDist = (dist `on` invAffine) x y
+        ksDist = (dist `on` invKS) x y
+        dist a b = norm (a-b)
+        (alignDist,((ft,wt),(fp,wp))) = minimumBy (compare `on` fst)
+            [ (d ht hp, (ht,hp)) | hp <- kHyps proto, ht <- kHyps target]
+        d (u,_) (v,_) = pnorm PNorm2 (u-v)
+        wa = inv (wt <> shapeWhitener target) <> r <> wp <> shapeWhitener proto
+        (waRot, waSkew, waScaleRat) = rotTrans wa
+
 ----------------------------------------------------------------------  
 
 -- | checks if a polyline is very similar to an ellipse.
