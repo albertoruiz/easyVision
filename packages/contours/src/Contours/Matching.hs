@@ -1,9 +1,9 @@
 {-# LANGUAGE RecordWildCards #-}
 
 module Contours.Matching(
-    Shape(..), ShapeMatch(..),
+    Shape(..), MatchProps(..), ShapeMatch(..),
     shape, shapeMatch, shapeMatches,
-    elongated, isEllipse,
+    elongated, isEllipse, matchProps
 ) where
 
 import Control.Arrow((***),(&&&))
@@ -102,6 +102,26 @@ analyzeShape mW (p,(mx,my,cxx,cyy,cxy)) = Shape {..}
     
 ----------------------------------------------------------------------
 
+data MatchProps = MatchProps
+    { waRot      :: Double
+    , waSkew     :: Double
+    , waScaleRat :: Double
+    }
+
+matchProps w = MatchProps {..}
+  where
+    [[a1,a2],[b1,b2],[c1,c2]] = ht w [[0,0],[0,1],[1,0]]
+    dx = b1-a1
+    dy = b2-a2
+    d  = max eps $ sqrt $ abs (dx*dx + dy*dy)
+    waRot = atan2 dx dy
+    ex = c1-a1
+    ey = c2-a2
+    e  = max eps $ sqrt $ abs (ex*ex + ey*ey)
+    waScaleRat = d / e
+    waSkew = abs (pi/2 - (abs $ acos $ (dx*ex + dy*ey) / (e*d)))
+
+
 data ShapeMatch = ShapeMatch
     { proto      :: Shape
     , label      :: String
@@ -110,9 +130,7 @@ data ShapeMatch = ShapeMatch
     , ksDist     :: Double
     , alignDist  :: Double
     , wt, wp, wa :: Mat
-    , waRot      :: Double
-    , waSkew     :: Double
-    , waScaleRat :: Double  
+    , waProps    :: MatchProps
     }
 
 shapeMatch :: Sample Shape -> Shape -> [ShapeMatch]
@@ -130,31 +148,16 @@ shapeMatch prots c = map (match c) prots
             [ (d ht hp, (ht,hp)) | hp <- take 8 (kHyps proto), ht <- kHyps target]
         d (u,_) (v,_) = pnorm PNorm2 (u-v)
         wa = inv (wt <> shapeWhitener target) <> wp <> shapeWhitener proto
-        (waRot, waSkew, waScaleRat) = rotTrans wa
-        
-        
-rotTrans w = (rho,skew,rat)
-  where
-    [[a1,a2],[b1,b2],[c1,c2]] = ht w [[0,0],[0,1],[1,0]]
-    dx = b1-a1
-    dy = b2-a2
-    d  = max eps $ sqrt $ abs (dx*dx + dy*dy)
-    rho = atan2 dx dy
-    ex = c1-a1
-    ey = c2-a2
-    e  = max eps $ sqrt $ abs (ex*ex + ey*ey)
-    rat = d / e
-    skew = abs (pi/2 - (abs $ acos $ (dx*ex + dy*ey) / (e*d)))
+        waProps = matchProps wa
 
 
 shapeMatches :: Sample Shape -> Shape -> [ShapeMatch]
 shapeMatches prots c = concatMap (sm c) prots
   where
-    sm x p | asym p = [match r0 x p]
-           | asym4 p = [match r0 x p, match r1 x p]
-           | otherwise = [match (rot3 (k*pi/2)) x p | k <-[0..3] ]
-    asym  (y,_) = 0.2 < symmet2 y
-    asym4 (y,_) = 0.2 < symmet4 y
+    sm x p@(y,_) | symmet0 y < 0.1 = [match r0 x p]
+                 | symmet4 y < 0.2 = [match (rot3 (k*pi/2)) x p | k <-[0..3] ]
+                 | symmet2 y < 0.2 = [match r0 x p, match r1 x p]
+                 | otherwise       = [match r0 x p]
     r0 = ident 3
     r1 = rot3 pi
     r2 = rot3 (pi/2)
@@ -170,7 +173,7 @@ shapeMatches prots c = concatMap (sm c) prots
             [ (d ht hp, (ht,hp)) | hp <- kHyps proto, ht <- kHyps target]
         d (u,_) (v,_) = pnorm PNorm2 (u-v)
         wa = inv (wt <> shapeWhitener target) <> r <> wp <> shapeWhitener proto
-        (waRot, waSkew, waScaleRat) = rotTrans wa
+        waProps = matchProps wa
 
 ----------------------------------------------------------------------  
 
