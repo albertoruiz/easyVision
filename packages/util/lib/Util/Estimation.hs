@@ -1,7 +1,7 @@
 -----------------------------------------------------------------------------
 {- |
 Module      :  Util.Estimation
-Copyright   :  (c) Alberto Ruiz 2006-10
+Copyright   :  (c) Alberto Ruiz 2006-12
 License     :  GPL
 
 Maintainer  :  Alberto Ruiz (aruiz at um dot es)
@@ -25,6 +25,7 @@ module Util.Estimation
 , withNormalization
 , intersectionManyLines
 , mseLine
+, procrustes
   -- * 2D Homography estimation
 , estimateHomographyRaw
 , estimateHomography
@@ -36,7 +37,7 @@ import Util.Covariance
 import Util.Homogeneous
 import Data.List(transpose,nub,maximumBy,genericLength,sortBy,minimumBy)
 import System.Random
-import Util.Misc(norm,mat,vec,Mat,Vec,splitEvery,impossible,posMax,debug,unitary)
+import Util.Misc(norm,mat,vec,Mat,Vec,splitEvery,impossible,posMax,debug,unitary,diagl,median)
 import Data.Function(on)
 
 
@@ -209,4 +210,46 @@ mseLine ps
     | otherwise = (toList . fst) (homogSolve a)
   where
     a = fromRows (map pt2hv ps)
+
+--------------------------------------------------------------------------------
+
+procrustes :: Mat -> Mat -> (Double,Mat,Vec)
+-- ^ orthogonal procustes
+--
+-- procustes x y = (s,r,t) where x = s (r y + t)
+procrustes x y = (s,r,t)
+  where
+    (mx,_) = meanCov x
+    (my,_) = meanCov y
+    xc = x - asRow mx
+    yc = y - asRow my
+    xcs = toRows xc
+    ycs = toRows yc
+    s = median $ zipWith (\x' y' -> norm x' / norm y') xcs ycs
+    syc = scalar s * yc
+    k = trans syc <> xc
+    (u,_,v) = svd k
+    r = v <> diagl (replicate (cols x -1) 1 ++[w]) <> trans u
+    w = det (v <> trans u)
+    t = scalar (recip s) * mx - r <> my
+
+{-
+checkpro1 = do
+  y <- randn 10 3
+  let r = debug "R" id $ rot2 (30*degree)
+      t = fromList [1,2,3]
+      s = 0.7
+      x = scalar s * (y <> trans r + asRow t)
+  print $ procrustes x y
+
+checkpro2 = do
+  y <- randn 10 2
+  let r = debug "R" id $ subMatrix (0,0) (2,2) (rot3 (30*degree))
+      t = fromList [1,2]
+      s = 0.7
+      x = scalar s * (y <> trans r + asRow t)
+  print $ procrustes x y
+-}
+
+--------------------------------------------------------------------------------
 

@@ -1,3 +1,5 @@
+{-# LANGUAGE FlexibleContexts #-}
+
 -- | General purpose functions
 
 module Util.Misc where
@@ -316,4 +318,13 @@ angleDiff :: (Floating a, Ord a) => a -> a -> a
 angleDiff x y = min (abs (x-y)) (abs (opos x - opos y))
   where
     opos z = if z > 0 then z - pi else z + pi
+
+----------------------------------------------------------------------
+
+diagBlock :: (Num (Vector t), Container Vector t)
+          => [Matrix t] -> Matrix t
+diagBlock ms = fromBlocks $ zipWith f ms [0..]
+  where
+    f m k = take n $ replicate k 0 ++ m : repeat 0
+    n = length ms
 

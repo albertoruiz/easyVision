@@ -1,31 +1,43 @@
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE RecordWildCards, FlexibleContexts #-}
 
 -- additional tools for camera analysis and graphic representation
 module Util.Camera (
     CameraInfo(..),
     infoCam,
     showCam,
-    computeCamera,
+    computeCamera, computeLinearPose,
     computeHomography
 ) where
 
 
 import Vision.GUI
-import ImagProc hiding (Pixel(..))
+import ImagProc hiding (Pixel(..),median)
 import Numeric.LinearAlgebra
-import Numeric.LinearAlgebra.Util((!),(#),row)
+import Numeric.LinearAlgebra.Util((!),(#),row,randn)
 import Vision
 import Util.Geometry
 import Util.Estimation
 import Data.Function(on)
+import Util.Misc(debugMat,debug,norm,diagl,degree,median,Mat)
+import Util.Rotation
 
 
 -- provisional
+
+computeLinearPose :: Double -> [Point] -> [Point3D] -> Camera
+computeLinearPose f image world = k ⊙ m
+  where
+    m = linearPose image' world
+    image' = invTrans k ◁ image
+    k = unsafeFromMatrix (kgen f) :: Homography
+
+
 computeCamera :: [Point] -> [Point3D] -> Camera
 computeCamera image world = unsafeFromMatrix m
   where
     m | length image > 5 = estimateCamera (map p2l image) (map p2l world)
       | otherwise = cameraAtOrigin
+
 
 computeHomography :: [Point] -- ^ dst
                   -> [Point] -- ^ src

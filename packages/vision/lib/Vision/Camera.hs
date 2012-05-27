@@ -38,6 +38,7 @@ module Vision.Camera
 , toCameraSystem
 , estimateCamera
 , estimateCameraRaw
+, linearPose
 , rectifierFromCircularPoint
 , rectifierFromAbsoluteDualConic
 , estimateAbsoluteDualConic
@@ -56,14 +57,17 @@ module Vision.Camera
 import Numeric.LinearAlgebra
 import qualified Numeric.GSL as G
 import Util.Homogeneous
-import Util.Estimation(homogSolve, withNormalization, estimateHomography)
+import Util.Estimation(homogSolve, withNormalization, estimateHomography,procrustes)
 import Util.Rotation
 --import Data.List(transpose,nub,maximumBy,genericLength,elemIndex, genericTake, sort)
 --import System.Random
 import Graphics.Plot(gnuplotWin)
 
-import Util.Misc(mat,vec,Mat,Vec,norm,unitary,(&),(//),diagl,degree,impossible)
+import Util.Misc(mat,vec,Mat,Vec,norm,unitary,(&),(//),diagl,degree,impossible,diagBlock,median)
 import Util.Ellipses(intersectionEllipses,InfoEllipse(..))
+
+import Util.Geometry
+import Numeric.LinearAlgebra.Util((!),(#))
 
 cameraAtOrigin :: Mat
 cameraAtOrigin = ident 3 & 0
@@ -421,7 +425,25 @@ cameraFromPlane prec nmax mbf image world = camera where
 
     par2list (CamPar f p t r (cx,cy,cz)) = [f,p,t,r,cx,cy,cz]
 
-----------------------------------------------------------
+--------------------------------------------------------------------------------
+
+linearPose :: [Point] -> [Point3D] -> Camera
+-- ^ Fiore's method
+linearPose image world = unsafeFromMatrix (r ! asColumn t)
+  where
+    x = fromRows (map toVector world)
+    m = trans x # 1
+    v = fromColumns $ nullspacePrec 1 m
+    p = trans (fromRows $ map toVector image) # 1
+    d = diagBlock $ map asColumn $ toColumns p
+    vk = kronecker (trans v) (ident 3)
+    a = vk <> d
+    depths = fst $ homogSolve a
+    sgn = signum $ median $ toList depths
+    pd = asRow depths * p * scalar sgn
+    (_,r,t) = procrustes (trans pd) x
+
+--------------------------------------------------------------------------------
 
 -- Metric rectification tools
 
