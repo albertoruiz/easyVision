@@ -34,11 +34,13 @@ import Control.Applicative((<$>))
 import Data.Packed.Vector(takesV,fromList,toList)
 import Contours.Base(orientedArea,rev)
 
+--------------------------------------------------------------------------------
 
 foreign import ccall "clip" c_clip
     :: Ptr Double -> Ptr Double -> CInt
     -> Ptr Double -> Ptr Double -> CInt
-    -> Ptr (Ptr Double) -> Ptr (Ptr Double) -> Ptr (Ptr CInt) -> Ptr (Ptr (CInt)) -> Ptr (CInt) -> Ptr (CInt) -> CInt
+    -> Ptr (Ptr Double) -> Ptr (Ptr Double) -> Ptr (Ptr CInt) -> Ptr (Ptr (CInt))
+    -> Ptr (CInt) -> Ptr (CInt) -> Ptr (CInt) -> CInt
     -> IO CInt
 
 --------------------------------------------------------------------------------
@@ -47,7 +49,6 @@ data ClipMode = ClipIntersection
               | ClipUnion
               | ClipDifference
               | ClipXOR
-              | ClipDifferenceFlip
               deriving (Enum, Show)
 
 clip :: ClipMode -> Polyline -> Polyline -> [Polyline]
@@ -101,6 +102,7 @@ preclip mode (Closed a') (Closed b') = unsafePerformIO $ do
     ppl  <- malloc
     pn   <- malloc
     pnp  <- malloc
+    pins <- malloc
 
     let a = a' ++ [head a']
         b = b' ++ [head b']   
@@ -117,7 +119,7 @@ preclip mode (Closed a') (Closed b') = unsafePerformIO $ do
     --peekArray ns sx >>= print
     --peekArray ns sy >>= print
 
-    _ok <- c_clip cx cy (fi nc) sx sy (fi ns) ppxs ppys ppos ppl pn pnp (2^fromEnum mode)
+    _ok <- c_clip cx cy (fi nc) sx sy (fi ns) ppxs ppys ppos ppl pn pnp pins (2^fromEnum mode)
 
     --print _ok
 
@@ -125,6 +127,9 @@ preclip mode (Closed a') (Closed b') = unsafePerformIO $ do
     --print n
     np <- ti <$> peek pnp
     --print np
+    
+    insideCode <- ti <$> peek pins
+    --print insideCode
     
     pl <- peek ppl
     ls <- map ti <$> peekArray n pl
@@ -160,7 +165,32 @@ preclip mode (Closed a') (Closed b') = unsafePerformIO $ do
     free ppos
     free ppl
     free pn
-    return r
+    return (fixEmpty r mode insideCode a' b')
 
 preclip _ _ _ = error "clip on open polylines not defined"
+
+--------------------------------------------------------------------------------
+
+fixEmpty :: ([(Polyline, [Int])], Int)
+         -> ClipMode -> Int -> [Point] -> [Point] -> ([(Polyline, [Int])], Int)
+fixEmpty ([],_) ClipIntersection 0 _ _ = ([],0)
+fixEmpty ([],_) ClipIntersection 1 a _ = ([cla a],1)
+fixEmpty ([],_) ClipIntersection 2 _ b = ([clb b],1)
+fixEmpty ([],_) ClipUnion        0 a b = ([cla a,clb b],2)
+fixEmpty ([],_) ClipUnion        1 _ b = ([clb b],1)
+fixEmpty ([],_) ClipUnion        2 a _ = ([cla a],1)
+fixEmpty ([],_) ClipDifference   0 a _ = ([cla a],1)
+fixEmpty ([],_) ClipDifference   1 _ _ = ([],0)
+fixEmpty ([],_) ClipDifference   2 a b = ([cla a,clb b],1)
+fixEmpty ([],_) ClipXOR          _ a b = ([cla a,clb b],1)
+
+fixEmpty r ClipXOR _ _ _ = r
+fixEmpty (cs,_) _ _ _ _ = (cs, length cs)
+
+cl :: Int -> [Point] -> (Polyline, [Int])
+cl x a = (Closed a, replicate x (length a))
+
+cla,clb :: [Point] -> (Polyline, [Int])
+cla = cl 1
+clb = cl 2
 

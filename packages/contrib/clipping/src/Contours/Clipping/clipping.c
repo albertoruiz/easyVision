@@ -391,7 +391,7 @@ void copy(struct vertex *polygons, int npolys, int nvertex,
 // in an array of coordinates polys.
 int clip(double *clipx, double *clipy, int nc,
             double *subjectx, double *subjecty, int ns,
-                double **polysx, double **polysy, int **origin, int **lengths, int *nl, int *nlp, int op)
+                double **polysx, double **polysy, int **origin, int **lengths, int *nl, int *nlp, int *inside, int op)
 {
     struct vertex *lclip, *lsubject;
     struct vertex *polygons = NULL, *polygons2 = NULL, *auxpoly = NULL;
@@ -438,7 +438,7 @@ int clip(double *clipx, double *clipy, int nc,
     // phase three of the algorithm
     npolys = createClippedPolygon(lclip, lsubject, &polygons, &nvertex);
 
-    if(op==POLYGON_XOREXT) {
+    if(op==POLYGON_XOREXT && npolys > 0) {
         cIntExt = POLYGON_INTERIOR;
         sIntExt = POLYGON_EXTERIOR;
 
@@ -465,11 +465,16 @@ int clip(double *clipx, double *clipy, int nc,
 
     //printf("clip polygon\n");
 
+    
     // copy polygons into polys array
     copy(polygons, npolys, nvertex, polysx, polysy, origin, lengths);
     *nl = npolys;
 
     //printf("copied\n");
+
+    *inside = 0;
+    if (isInside(lclip,lsubject)) *inside = 1;
+    if (isInside(lsubject,lclip)) *inside = 2;
 
     // free memory
     deleteList(lclip);
@@ -511,10 +516,10 @@ int main2(void)
 
     double *polysx, *polysy;
     int * origin;
-    int *lengths, nl,nlp, i,j;
+    int *lengths, inside, nl,nlp, i,j;
 
     clip(clipx, clipy, lclip, subjectx, subjecty, lsubject,
-            &polysx, &polysy, &origin, &lengths, &nl, &nlp, POLYGON_INTERSECTION);
+            &polysx, &polysy, &origin, &lengths, &nl, &nlp, &inside, POLYGON_INTERSECTION);
 
     int v = 0;
     for (i = 0; i < nl; i++) {

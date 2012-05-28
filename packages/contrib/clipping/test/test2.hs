@@ -9,14 +9,13 @@ main = runIt $ do
     win "union"        ClipUnion
     win "intersection" ClipIntersection
     win "difference"   ClipDifference
-    win "difference2"  ClipDifferenceFlip
     win "XOR"          ClipXOR
 
 win name mode = browser name xys sh
     where
-      xys = [(a,c),(c,a),(a,b),(c,d)]
+      xys = [(a,c),(c,a),(a,b),(b,a),(c,d)]
       sh k (a,b) = clearColor white 
-                        [ lineWd 7 [ color lightblue a, color pink b ]
+                        [ lineWd 11 [ color lightblue a, color pink b ]
                         , lineWd 2 $ map shori zs
                         ]
         where

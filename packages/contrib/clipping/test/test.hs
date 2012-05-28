@@ -8,7 +8,6 @@ main = runIt $ do
     win "union"        ClipUnion
     win "intersection" ClipIntersection
     win "difference"   ClipDifference
-    win "difference2"  ClipDifferenceFlip
 
 win name mode = browser name xys sh
     where
