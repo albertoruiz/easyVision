@@ -33,6 +33,7 @@ import System.IO.Unsafe(unsafePerformIO)
 import Control.Applicative((<$>))
 import Data.Packed.Vector(takesV,fromList,toList)
 import Contours.Base(orientedArea,rev)
+import Util.Misc(impossible,debug)
 
 --------------------------------------------------------------------------------
 
@@ -53,12 +54,25 @@ data ClipMode = ClipIntersection
 
 clip :: ClipMode -> Polyline -> Polyline -> [Polyline]
 -- ^ set operations for polygons
-clip m a b = map (fst.fst) (fixOrientation $ preclip m a b)
+clip m a b = map (fst.fst) (fixOrientation p)
+  where
+    (p,_,_) = preclip m a b
 
 --------------------------------------------------------------------------------
 
 deltaContour :: Polyline -> Polyline -> [((Polyline,Double),[Polyline])]
-deltaContour a b = fixOrientation (preclip ClipXOR a b)
+deltaContour a b | n > 0     = fixOrientation p
+                 | otherwise = disj ins
+  where
+    (p,n,ins) = preclip ClipXOR a b
+    ([(a',_),(b',_)],1) = p
+    disj 0 = debug "disj!" (const ()) [((undefined,0),[])]
+    disj _ = [((err ,s),[b''])]
+      where
+        s = orientedArea b' - orientedArea a'
+        b'' = Open . clo . polyPts $ b'
+        err = impossible "disj-circ"
+        clo xs = xs++[head xs]
 
 
 fixOrientation :: ([(Polyline, [Int])],Int) -> [((Polyline,Double),[Polyline])]
@@ -93,7 +107,7 @@ step2 (poa, pos) = (poa, map Open (fragments pos))
 
 --------------------------------------------------------------------------------
 
-preclip :: ClipMode -> Polyline -> Polyline -> ([(Polyline, [Int])],Int)
+preclip :: ClipMode -> Polyline -> Polyline -> (([(Polyline, [Int])],Int),Int,Int)
 -- ^ interface to C function to compute set operation and origin for each vertex
 preclip mode (Closed a') (Closed b') = unsafePerformIO $ do
     ppxs <- malloc
@@ -145,6 +159,8 @@ preclip mode (Closed a') (Closed b') = unsafePerformIO $ do
     ys <- peekArray tot pys
     os <- map ti `fmap` peekArray tot pos
 
+    -- print (ls,os)
+    
     -- mapM_ print $ zip3 xs ys os
 
     -- provisional
@@ -152,7 +168,7 @@ preclip mode (Closed a') (Closed b') = unsafePerformIO $ do
         vys = map (init . toList) $ takesV ls (fromList ys)
         vos = map (init . toList) $ takesV ls (fromList os)
         r | n > 0 = (zip (zipWith f vxs vys) vos, np)
-          | otherwise = ([],np)
+          | otherwise = ([],0)
           where f as bs = Closed $ zipWith Point as bs
     
     free pxs
@@ -165,7 +181,8 @@ preclip mode (Closed a') (Closed b') = unsafePerformIO $ do
     free ppos
     free ppl
     free pn
-    return (fixEmpty r mode insideCode a' b')
+    
+    return (fixEmpty r mode insideCode a' b', n, insideCode)
 
 preclip _ _ _ = error "clip on open polylines not defined"
 

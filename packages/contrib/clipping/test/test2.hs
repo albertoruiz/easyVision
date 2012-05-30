@@ -10,6 +10,7 @@ main = runIt $ do
     win "intersection" ClipIntersection
     win "difference"   ClipDifference
     win "XOR"          ClipXOR
+    winDelta
 
 win name mode = browser name xys sh
     where
@@ -32,4 +33,18 @@ d = pre 0.5 (0.5) square
 
 shori z | orientedArea z < 0 = color black z
         | otherwise          = color red z
+
+winDelta = browser "Delta" xys sh
+    where
+      xys = [(a,c),(c,a),(a,b),(b,a),(c,d)]
+      sh k (a,b) = clearColor white [ lineWd 11 [ color lightblue a, color pink b ]
+                                    , lineWd 2 (drawDelta $ deltaContour a b)
+                                    ]
+
+drawDelta = Draw . map shDelta
+  where
+    shDelta ((_,oa),bs) = color c bs
+      where
+        c | oa < 0 = blue
+          | otherwise = red
 
