@@ -25,7 +25,7 @@ Type safe small arrays.
 module Util.Small
 (   Shaped(..),
 #if __GLASGOW_HASKELL__ < 704
-    Array,
+    Array, DArray,
 #endif
     Dim2(..),Dim3(..),Dim4(..), Build, (!), (#),
     Dim2x2,Dim3x3,Dim4x4,Dim3x4,
@@ -194,9 +194,9 @@ class Vectorlike x where
     unsafeFromVector :: (Shaped x, Array x ~ Vec) => Vec -> x
     toVector = toArray
     unsafeFromVector = unsafeFromArray
-    datMat :: [x] -> Mat
+    datMat :: (Shaped x, DArray (Shape x) ~ Vec) => [x] -> Mat
     datMat = fromRows . map toVector
-    unsafeMatDat :: Mat -> [x]
+    unsafeMatDat :: (Shaped x, DArray (Shape x) ~ Vec) => Mat -> [x]
     unsafeMatDat = map unsafeFromVector . toRows
 #else
 class (Shaped x, Array x ~ Mat) => Matrixlike x where

@@ -1,3 +1,7 @@
+{-# LANGUAGE CPP #-}
+#if __GLASGOW_HASKELL__ < 704
+{-# LANGUAGE TypeFamilies #-}
+#endif
 -----------------------------------------------------------------------------
 {- |
 Module      :  Util.Estimation
@@ -40,6 +44,9 @@ import System.Random
 import Util.Misc(norm,mat,vec,Mat,Vec,splitEvery,impossible,posMax,debug,unitary,diagl,median)
 import Data.Function(on)
 import Util.Geometry hiding (homog)
+#if __GLASGOW_HASKELL__ < 704
+import Util.Small(Shaped(..),DArray)
+#endif
 
 
 -- | Minimum squared error solution of a (possibly overconstrained) homogeneous linear system.
@@ -121,9 +128,13 @@ estimateHomography :: [[Double]] -> [[Double]] -> Mat
 estimateHomography = withNormalization inv estimateHomographyRaw
 
 --------------------------------------------------------------------------------
-
+#if __GLASGOW_HASKELL__ < 704
+withNormalization' :: (Shaped x, Vectorlike x, Shaped y, Vectorlike y,
+                       DArray (Shape x) ~ Vec, DArray (Shape y) ~ Vec)
+#else
 -- | combinator to estimate models with normalized (whitened) coordinates
 withNormalization' :: (Vectorlike x, Vectorlike y)
+#endif
                    => (Mat -> Mat) -- ^ left modifier (inv for homographies, trans for fundamental matrices)
                    -> ([x] -> [y] -> Mat) -- ^ estimator
                    -> ([x] -> [y] -> Mat) -- ^ estimator with normalized coordinates
