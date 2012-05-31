@@ -38,7 +38,8 @@ module Vision.Camera
 , toCameraSystem
 , estimateCamera
 , estimateCameraRaw
-, linearPose
+, computeCamera
+, linearPose, computeLinearPose, computeLinearPosePlanar
 , rectifierFromCircularPoint
 , rectifierFromAbsoluteDualConic
 , estimateAbsoluteDualConic
@@ -381,6 +382,32 @@ estimateCameraRaw image world = h where
 estimateCamera :: [[Double]] -> [[Double]] -> Mat
 estimateCamera = withNormalization inv estimateCameraRaw 
 
+computeCamera :: [Point] -> [Point3D] -> Camera
+-- ^ linear camera resection with coordinate normalization
+computeCamera image world = unsafeFromMatrix m
+  where
+    m = estimateCamera (map p2l image) (map p2l world)
+    p2l x = toList . toVector $ x
+
+
+computeCameraRaw :: [Point] -> [Point3D] -> Mat
+-- ^ linear camera resection
+computeCameraRaw image world = c where
+    eqs = concat (zipWith eq image world)
+    c = reshape 4 $ fst $ homogSolve (mat eqs)
+    eq (Point p q) (Point3D x y z) =
+        [ [   0,   0,   0, 0, -x, -y, -z,-1, q*x, q*y, q*z, q]
+        , [   x,   y,   z, 1,  0,  0,  0, 0,-p*x,-p*y,-p*z,-p]
+        , [-q*x,-q*y,-q*z,-q,p*x,p*y,p*z, p,   0,   0,   0, 0] ]
+
+{-
+eq (Point p q) (Point x y) =
+    [ [  0,  0,  0, -x,-y,-1,q*x,q*y,q]
+    , [  x,  y,  1,  0, 0, 0, -p*x, -p*y, -p]
+    , [-q*x, -q*y, -q, p*x, p*y, p, 0,0,0]
+    ]
+-}
+
 ----------------------------------------------------------
 
 -- | Estimation of a camera matrix from image - world correspondences, for world points in the plane z=0. We start from the closed-form solution given by 'estimateHomography' and 'cameraFromHomogZ0', and then optimize the camera parameters by minimization (using the Nelder-Mead simplex algorithm) of reprojection error.
@@ -442,6 +469,25 @@ linearPose image world = unsafeFromMatrix (r ! asColumn t)
     sgn = signum $ median $ toList depths
     pd = asRow depths * p * scalar sgn
     (_,r,t) = procrustes (trans pd) x
+
+
+computeLinearPose :: Double -> [Point] -> [Point3D] -> Camera
+-- ^ 'linearPose' with calibration diag(f,f,1)
+computeLinearPose f image world = k ⊙ m
+  where
+    m = linearPose image' world
+    image' = invTrans k ◁ image
+    k = unsafeFromMatrix (kgen f) :: Homography
+
+
+computeLinearPosePlanar :: Double -> [Point] -> [Point] -> Homography
+-- ^ 'computeLinearPose' from a planar reference
+computeLinearPosePlanar f image world = h
+  where
+    g (Point x y) = Point3D x y 0
+    c = computeLinearPose f image (map g world)
+    [c1,c2,_,c4] = toColumns $ toMatrix c
+    h = unsafeFromMatrix $ fromColumns [c1,c2,c4]
 
 --------------------------------------------------------------------------------
 

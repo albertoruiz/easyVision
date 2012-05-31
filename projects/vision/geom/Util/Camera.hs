@@ -24,19 +24,6 @@ import Util.Rotation
 
 -- provisional
 
-computeLinearPose :: Double -> [Point] -> [Point3D] -> Camera
-computeLinearPose f image world = k ⊙ m
-  where
-    m = linearPose image' world
-    image' = invTrans k ◁ image
-    k = unsafeFromMatrix (kgen f) :: Homography
-
-
-computeCamera :: [Point] -> [Point3D] -> Camera
-computeCamera image world = unsafeFromMatrix m
-  where
-    m | length image > 5 = estimateCamera (map p2l image) (map p2l world)
-      | otherwise = cameraAtOrigin
 
 
 computeHomography :: [Point] -- ^ dst
