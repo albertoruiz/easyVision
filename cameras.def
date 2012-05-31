@@ -6,10 +6,6 @@ webcam3        tv:// -tv driver=v4l2:device=/dev/video3:fps=25 --live
 webcam4        tv:// -tv driver=v4l2:device=/dev/video4:fps=25 --live
 webcam5        tv:// -tv driver=v4l2:device=/dev/video5:fps=25 --live
 
-swebcam        tv:// -tv driver=v4l:device=/dev/video0:height=480:width=640
-
 firewire       /dev/dv1394 -demuxer rawdv -cache 400
 s-video-di     tv:// -tv driver=v4l2:device=/dev/video0 -vf pp=md
-s-video        tv:// -tv driver=v4l2:device=/dev/video0
 
-test           $VIDEOS/penguin.dv
