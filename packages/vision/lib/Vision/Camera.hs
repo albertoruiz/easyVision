@@ -38,7 +38,8 @@ module Vision.Camera
 , toCameraSystem
 , estimateCamera
 , estimateCameraRaw
-, computeCamera
+, computeCamera, computeCameraRaw
+, computeHomography, computeHomographyRaw
 , linearPose, computeLinearPose, computeLinearPosePlanar
 , rectifierFromCircularPoint
 , rectifierFromAbsoluteDualConic
@@ -58,7 +59,7 @@ module Vision.Camera
 import Numeric.LinearAlgebra
 import qualified Numeric.GSL as G
 import Util.Homogeneous
-import Util.Estimation(homogSolve, withNormalization, estimateHomography,procrustes)
+import Util.Estimation(homogSolve, withNormalization, withNormalization', estimateHomography,procrustes)
 import Util.Rotation
 --import Data.List(transpose,nub,maximumBy,genericLength,elemIndex, genericTake, sort)
 --import System.Random
@@ -344,6 +345,8 @@ knor (szx,szy) = (3><3) [-a, 0, a,
     where a = fromIntegral szx/2
           b = fromIntegral szy/2
 
+--------------------------------------------------------------------------------
+
 -- | linear camera resection
 estimateCameraRaw :: [[Double]] -> [[Double]] -> Mat
 estimateCameraRaw image world = h where
@@ -382,13 +385,11 @@ estimateCameraRaw image world = h where
 estimateCamera :: [[Double]] -> [[Double]] -> Mat
 estimateCamera = withNormalization inv estimateCameraRaw 
 
+--------------------------------------------------------------------------------
+
 computeCamera :: [Point] -> [Point3D] -> Camera
 -- ^ linear camera resection with coordinate normalization
-computeCamera image world = unsafeFromMatrix m
-  where
-    m = estimateCamera (map p2l image) (map p2l world)
-    p2l x = toList . toVector $ x
-
+computeCamera image world = unsafeFromMatrix $ withNormalization' inv computeCameraRaw image world
 
 computeCameraRaw :: [Point] -> [Point3D] -> Mat
 -- ^ linear camera resection
@@ -400,15 +401,25 @@ computeCameraRaw image world = c where
         , [   x,   y,   z, 1,  0,  0,  0, 0,-p*x,-p*y,-p*z,-p]
         , [-q*x,-q*y,-q*z,-q,p*x,p*y,p*z, p,   0,   0,   0, 0] ]
 
-{-
-eq (Point p q) (Point x y) =
-    [ [  0,  0,  0, -x,-y,-1,q*x,q*y,q]
-    , [  x,  y,  1,  0, 0, 0, -p*x, -p*y, -p]
-    , [-q*x, -q*y, -q, p*x, p*y, p, 0,0,0]
-    ]
--}
+--------------------------------------------------------------------------------
 
-----------------------------------------------------------
+computeHomography :: [Point] -- ^ dst
+                  -> [Point] -- ^ src
+                  -> Homography
+-- ^ linear homography estimation with coordinate normalization
+computeHomography image world = unsafeFromMatrix $ withNormalization' inv computeHomographyRaw image world
+
+computeHomographyRaw :: [Point] -> [Point] -> Mat
+-- ^ linear homography estimation
+computeHomographyRaw image world = c where
+    eqs = concat (zipWith eq image world)
+    c = reshape 3 $ fst $ homogSolve (mat eqs)
+    eq (Point p q) (Point x y) =
+        [ [   0,    0,  0,  -x,  -y,-1, q*x, q*y, q]
+        , [   x,    y,  1,   0,   0, 0,-p*x,-p*y,-p]
+        , [-q*x, -q*y, -q, p*x, p*y, p,   0,   0, 0] ]
+
+--------------------------------------------------------------------------------
 
 -- | Estimation of a camera matrix from image - world correspondences, for world points in the plane z=0. We start from the closed-form solution given by 'estimateHomography' and 'cameraFromHomogZ0', and then optimize the camera parameters by minimization (using the Nelder-Mead simplex algorithm) of reprojection error.
 cameraFromPlane :: Double        -- ^ desired precision in the solution (e.g., 1e-3)

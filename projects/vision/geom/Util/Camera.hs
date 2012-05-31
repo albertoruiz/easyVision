@@ -22,18 +22,6 @@ import Util.Misc(debugMat,debug,norm,diagl,degree,median,Mat)
 import Util.Rotation
 
 
--- provisional
-
-
-
-computeHomography :: [Point] -- ^ dst
-                  -> [Point] -- ^ src
-                  -> Homography
-computeHomography dst src = unsafeFromMatrix $ (estimateHomography `on` map p2l) dst src
-
-p2l x = toList . toVector $ x
-
-
 auxImg = resize (Size 256 256) . float . grayscale . channelsFromRGB
 
 

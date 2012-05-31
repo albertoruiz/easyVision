@@ -194,6 +194,10 @@ class Vectorlike x where
     unsafeFromVector :: (Shaped x, Array x ~ Vec) => Vec -> x
     toVector = toArray
     unsafeFromVector = unsafeFromArray
+    datMat :: [x] -> Mat
+    datMat = fromRows . map toVector
+    unsafeMatDat :: Mat -> [x]
+    unsafeMatDat = map unsafeFromVector . toRows
 #else
 class (Shaped x, Array x ~ Mat) => Matrixlike x where
     toMatrix         :: x -> Mat
@@ -206,6 +210,10 @@ class (Shaped x, Array x ~ Vec) => Vectorlike x where
     unsafeFromVector :: Vec -> x
     toVector = toArray
     unsafeFromVector = unsafeFromArray
+    datMat :: [x] -> Mat
+    datMat = fromRows . map toVector
+    unsafeMatDat :: Mat -> [x]
+    unsafeMatDat = map unsafeFromVector . toRows
 #endif
 
 instance (Shaped x, Array x ~ Mat) => Matrixlike x

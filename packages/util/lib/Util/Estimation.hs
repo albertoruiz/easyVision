@@ -22,7 +22,7 @@ module Util.Estimation
 , ransac'
 -- * Other
 , robustLocation
-, withNormalization
+, withNormalization, withNormalization'
 , intersectionManyLines
 , mseLine
 , procrustes
@@ -39,6 +39,7 @@ import Data.List(transpose,nub,maximumBy,genericLength,sortBy,minimumBy)
 import System.Random
 import Util.Misc(norm,mat,vec,Mat,Vec,splitEvery,impossible,posMax,debug,unitary,diagl,median)
 import Data.Function(on)
+import Util.Geometry hiding (homog)
 
 
 -- | Minimum squared error solution of a (possibly overconstrained) homogeneous linear system.
@@ -65,6 +66,8 @@ compact :: Int -> Mat -> Mat
 compact nr x = takeRows (rows x `min` nr) c
     where (l,v) = eigSH' (trans x <> x)
           c = diag (sqrt (abs l)) <> trans v
+
+--------------------------------------------------------------------------------
 
 -- FIXME: use a list of tuples insted of two arguments
 -- | estimates a homography using the basic linear method
@@ -96,6 +99,7 @@ estimateHomographyRaw dest orig = h where
             t36=bx
     eq _ _ = impossible "eq in estimateHomographyRaw"
 
+
 -- | combinator to estimate models with normalized (whitened) coordinates
 withNormalization :: (Mat -> Mat) -- ^ left modifier (inv for homographies, trans for fundamental matrices)
                   -> ([[Double]] -> [[Double]] -> Mat) -- ^ estimator
@@ -116,7 +120,26 @@ withNormalization lt estimateRelation dest orig = lt wd <> h <> wo
 estimateHomography :: [[Double]] -> [[Double]] -> Mat
 estimateHomography = withNormalization inv estimateHomographyRaw
 
------------------------------- RANSAC -------------------------------
+--------------------------------------------------------------------------------
+
+-- | combinator to estimate models with normalized (whitened) coordinates
+withNormalization' :: (Vectorlike x, Vectorlike y)
+                   => (Mat -> Mat) -- ^ left modifier (inv for homographies, trans for fundamental matrices)
+                   -> ([x] -> [y] -> Mat) -- ^ estimator
+                   -> ([x] -> [y] -> Mat) -- ^ estimator with normalized coordinates
+withNormalization' lt estimateRelation dest orig = lt wd <> h <> wo
+  where
+    xd = datMat dest
+    xo = datMat orig
+    std = covStr xd
+    sto = covStr xo
+    nd = unsafeMatDat $ encodeRows (isoDist xd std) xd
+    no = unsafeMatDat $ encodeRows (isoDist xo sto) xo
+    h = estimateRelation nd no
+    wd = isoDistTransf xd std
+    wo = isoDistTransf xo sto
+
+------------------------------ RANSAC ------------------------------------------
 
 
 
