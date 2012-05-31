@@ -1,3 +1,5 @@
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TypeFamilies #-}
 -----------------------------------------------------------------------------
 {- |
 Module      :  Contours.Base
@@ -31,6 +33,7 @@ import Data.List(sortBy, maximumBy, sort,foldl',tails)
 import Numeric.LinearAlgebra
 import Util.Homogeneous
 import Util.Misc(diagl,Vec)
+import Data.Function(on)
 import Util.Geometry as G
 
 
@@ -101,8 +104,6 @@ perpDist (Pixel x1 y1) (Pixel x2 y2) = (f,l2) where
     l2 = fromIntegral $ lx*lx+ly*ly
     f (Pixel x3 y3) = perpDistAux lx ly l2 x1 y1 x3 y3
 
-on f g = \x y -> f (g x) (g y)
-
 criticalPoint eps p1 p2 [] = Nothing
 
 criticalPoint eps2 p1 p2 p3s = r where
@@ -125,6 +126,14 @@ transPol t (Open ps)   = Open   $ map l2p $ ht t (map p2l ps)
 
 p2l (Point x y) = [x,y]
 l2p [x,y] = Point x y
+
+instance Transformable Homography Polyline
+  where
+    type TResult Homography Polyline = Polyline
+    apTrans h (Closed ps) = Closed (tp h ps)
+    apTrans h (Open ps)   = Open   (tp h ps)
+
+tp h = unsafeMatDat . htm (toMatrix h) . datMat
 
 ----------------------------------------------------------
 
