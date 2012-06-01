@@ -23,7 +23,9 @@ module Contours.Base (
     bounding,
     roi2poly, poly2roi, setRegion,
     segmentIntersection,
-    bisector
+    bisector,
+    tangentsTo,
+    isLeft
 )
 where
 
@@ -200,6 +202,11 @@ pentominos =
 
 ----------------------------------------------------------------------
 
+isLeft :: Point -> Point -> Point -> Bool
+isLeft p1@(Point x1 y1) p2@(Point x2 y2) p3@(Point x3 y3) =
+    (x2 - x1)*(y3 - y1) - (y2 - y1)*(x3 - x1) > 0
+
+
 convexHull :: [Point] -> [Point]
 convexHull ps = go [q0] rs
   where
@@ -216,8 +223,22 @@ convexHull ps = go [q0] rs
     
     ncosangle p1@(Point x1 y1) p2@(Point x2 y2) = (x1-x2) / distPoints p1 p2
 
-    isLeft p1@(Point x1 y1) p2@(Point x2 y2) p3@(Point x3 y3) = 
-        (x2 - x1)*(y3 - y1) - (y2 - y1)*(x3 - x1) > 0
+
+tangentsTo :: Point -> Polyline -> Maybe (Point,Point)
+tangentsTo q x = r
+  where
+    r | length can == 2 = Just (a,b)
+      | otherwise = Nothing
+    [a,b] = can
+    can = canTans q x
+
+canTans q x = can
+  where
+    xs = cl2 $ convexHull $ polyPts $ x
+    can = [a | t@(_,a,_) <- zipWith3 (,,) xs (tail xs) (tail (tail xs)), f t ]
+    f (a,b,c) = isLeft q a b && not (isLeft q b c)
+              || not (isLeft q a b) && isLeft q b c
+    cl2 (a:b:xs) = a:b:xs++[a,b]
 
 ----------------------------------------------------------------------
 
