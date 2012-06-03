@@ -2,6 +2,9 @@
 
 int ippiAdd_8u_C1RSfsx(unsigned char*, int, unsigned char*, int, unsigned char*, int, void*, int);
 int ippiSub_8u_C1RSfsx(unsigned char*, int, unsigned char*, int, unsigned char*, int, void*, int);
+int ippiAddC_8u_C1RSfsx(unsigned char*, int, unsigned char, unsigned char*, int, void*, int);
+int ippiSubC_8u_C1RSfsx(unsigned char*, int, unsigned char, unsigned char*, int, void*, int);
+int ippiAddC_32f_C1Rx(float*, int, float, float*, int, void*);
 int ippiMulC_32f_C1Rx(float*, int, float, float*, int, void*);
 int ippiAdd_32f_C1Rx(float*, int, float*, int, float*, int, void*);
 int ippiSub_32f_C1Rx(float*, int, float*, int, float*, int, void*);

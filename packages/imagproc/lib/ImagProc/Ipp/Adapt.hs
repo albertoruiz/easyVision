@@ -25,6 +25,30 @@ ippiSub_8u_C1RSfs pSrc1 src1Step pSrc2 src2Step pDst dstStep roiSize scaleFactor
     free proiSize
     return r
 
+foreign import ccall "adapt.h ippiAddC_8u_C1RSfsx"
+    ippiAddC_8u_C1RSfsx :: Ptr CUChar -> Int -> CUChar -> Ptr CUChar -> Int -> Ptr IppiSize -> Int -> IO Int
+ippiAddC_8u_C1RSfs pSrc srcStep value pDst dstStep roiSize scaleFactor = do
+    proiSize <- new roiSize
+    r <- ippiAddC_8u_C1RSfsx pSrc srcStep value pDst dstStep proiSize scaleFactor
+    free proiSize
+    return r
+
+foreign import ccall "adapt.h ippiSubC_8u_C1RSfsx"
+    ippiSubC_8u_C1RSfsx :: Ptr CUChar -> Int -> CUChar -> Ptr CUChar -> Int -> Ptr IppiSize -> Int -> IO Int
+ippiSubC_8u_C1RSfs pSrc srcStep value pDst dstStep roiSize scaleFactor = do
+    proiSize <- new roiSize
+    r <- ippiSubC_8u_C1RSfsx pSrc srcStep value pDst dstStep proiSize scaleFactor
+    free proiSize
+    return r
+
+foreign import ccall "adapt.h ippiAddC_32f_C1Rx"
+    ippiAddC_32f_C1Rx :: Ptr Float -> Int -> Float -> Ptr Float -> Int -> Ptr IppiSize -> IO Int
+ippiAddC_32f_C1R pSrc srcStep value pDst dstStep roiSize = do
+    proiSize <- new roiSize
+    r <- ippiAddC_32f_C1Rx pSrc srcStep value pDst dstStep proiSize
+    free proiSize
+    return r
+
 foreign import ccall "adapt.h ippiMulC_32f_C1Rx"
     ippiMulC_32f_C1Rx :: Ptr Float -> Int -> Float -> Ptr Float -> Int -> Ptr IppiSize -> IO Int
 ippiMulC_32f_C1R pSrc srcStep value pDst dstStep roiSize = do

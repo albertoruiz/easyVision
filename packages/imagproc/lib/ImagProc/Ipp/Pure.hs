@@ -14,10 +14,10 @@ Purely functional image processing.
 -----------------------------------------------------------------------------
 
 module ImagProc.Ipp.Pure (
-    (.*),
+    (.*),(.+),
     (|+|),(|-|),absDiff,(|*|),(|/|),
     andI,orI,notI,xorI,
-    add8u, absDiff8u, sub8u, sub8uRel,
+    addC8u, add8u, absDiff8u, sub8u, sub8uRel,
     float, toGray, scale32f8u, scale8u32f,
     rgbToHSV, hsvToRGB,
     thresholdVal32f, thresholdVal8u,
@@ -77,6 +77,10 @@ mkIdIPInt8u f a b = unsafePerformIO $ do
 (.*) :: Float -> ImageFloat -> ImageFloat
 v .* im = unsafePerformIO $ ioMulC_32f_C1R v id im
 
+-- | add constant
+(.+) :: Float -> ImageFloat -> ImageFloat
+v .+ im = unsafePerformIO $ ioAddC_32f_C1R v id im
+
 -- | image sum, pixel by pixel
 (|+|) :: ImageFloat -> ImageFloat -> ImageFloat
 (|+|) = mkInt ioAdd_32f_C1R
@@ -134,6 +138,18 @@ sub8uRel k = flip (mkRel (ioSub_8u_C1RSfs k))
 compareC8u :: CUChar -> IppCmp -> ImageGray -> ImageGray
 compareC8u v cmp = mkId (ioCompareC_8u_C1R v (codeCmp cmp))
 
+-- | add constant
+addC8u' :: Int -> CUChar -> ImageGray -> ImageGray
+addC8u' k v = mkId (ioAddC_8u_C1RSfs v k)
+
+-- | sub constant
+subC8u' :: Int -> CUChar -> ImageGray -> ImageGray
+subC8u' k v = mkId (ioSubC_8u_C1RSfs v k)
+
+-- | add or sub constant
+addC8u :: Int -> Int -> ImageGray -> ImageGray
+addC8u k v | v > 0     = addC8u' k (fromIntegral v)
+           | otherwise = subC8u' k (fromIntegral (-v))
 
 -- | compare 8u images
 compare8u :: IppCmp -> ImageGray -> ImageGray -> ImageGray

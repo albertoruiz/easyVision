@@ -33,6 +33,7 @@ module ImagProc.Ipp.AutoGen(
     auto_1_8u_C1C3R,
     auto_1_32f_C1MR,
     auto_1_8u_C1MR,
+    auto_1_8u_C1RSfs,
 
     auto_2_8u_C1R,
     auto_2_32f_C1R,
@@ -115,6 +116,7 @@ auto_1_8u32f64f_C1R f msg roifun (G im) = do
     cr12 f msg im r s
     return (F r, D s)
 
+auto_1_8u_C1RSfs = auto_1_8u_C1R
 
 auto_1_8u_P3C3R = error $ "auto_1_8u_P3C3R not yet defined"
 auto_1_8u_C3P3R = error $ "auto_1_8u_C3P3R not yet defined"

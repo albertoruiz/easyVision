@@ -29,6 +29,24 @@ ioSet_32f_C1R value = {-# SCC "ippiSet_32f_C1R" #-} auto_0_32f_C1R (f value) "ip
 {- |     Adds, subtracts, or multiplies pixel values of an image and a constant
               and places the scaled results in the same image.
  -}
+ioAddC_8u_C1RSfs value scaleFactor = {-# SCC "ippiAddC_8u_C1RSfs" #-} auto_1_8u_C1RSfs (f value scaleFactor) "ippiAddC_8u_C1RSfs"
+    where f value scaleFactor pSrc srcStep pDst dstStep roiSize = ippiAddC_8u_C1RSfs pSrc srcStep value pDst dstStep roiSize scaleFactor
+
+{- |     Adds, subtracts, or multiplies pixel values of an image and a constant
+              and places the scaled results in the same image.
+ -}
+ioSubC_8u_C1RSfs value scaleFactor = {-# SCC "ippiSubC_8u_C1RSfs" #-} auto_1_8u_C1RSfs (f value scaleFactor) "ippiSubC_8u_C1RSfs"
+    where f value scaleFactor pSrc srcStep pDst dstStep roiSize = ippiSubC_8u_C1RSfs pSrc srcStep value pDst dstStep roiSize scaleFactor
+
+{- |     Adds, subtracts, or multiplies pixel values of an image and a constant
+              and places the scaled results in the same image.
+ -}
+ioAddC_32f_C1R value = {-# SCC "ippiAddC_32f_C1R" #-} auto_1_32f_C1R (f value) "ippiAddC_32f_C1R"
+    where f value pSrc srcStep pDst dstStep roiSize = ippiAddC_32f_C1R pSrc srcStep value pDst dstStep roiSize
+
+{- |     Adds, subtracts, or multiplies pixel values of an image and a constant
+              and places the scaled results in the same image.
+ -}
 ioMulC_32f_C1R value = {-# SCC "ippiMulC_32f_C1R" #-} auto_1_32f_C1R (f value) "ippiMulC_32f_C1R"
     where f value pSrc srcStep pDst dstStep roiSize = ippiMulC_32f_C1R pSrc srcStep value pDst dstStep roiSize
 

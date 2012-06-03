@@ -10,6 +10,18 @@ int ippiSub_8u_C1RSfsx(Ipp8u* pSrc1, int src1Step, Ipp8u* pSrc2, int src2Step, I
     return ippiSub_8u_C1RSfs(pSrc1, src1Step, pSrc2, src2Step, pDst, dstStep, *roiSize, scaleFactor);
 }
 
+int ippiAddC_8u_C1RSfsx(Ipp8u* pSrc, int srcStep, Ipp8u value, Ipp8u* pDst, int dstStep, IppiSize* roiSize, int scaleFactor) {
+    return ippiAddC_8u_C1RSfs(pSrc, srcStep, value, pDst, dstStep, *roiSize, scaleFactor);
+}
+
+int ippiSubC_8u_C1RSfsx(Ipp8u* pSrc, int srcStep, Ipp8u value, Ipp8u* pDst, int dstStep, IppiSize* roiSize, int scaleFactor) {
+    return ippiSubC_8u_C1RSfs(pSrc, srcStep, value, pDst, dstStep, *roiSize, scaleFactor);
+}
+
+int ippiAddC_32f_C1Rx(Ipp32f* pSrc, int srcStep, Ipp32f value, Ipp32f* pDst, int dstStep, IppiSize* roiSize) {
+    return ippiAddC_32f_C1R(pSrc, srcStep, value, pDst, dstStep, *roiSize);
+}
+
 int ippiMulC_32f_C1Rx(Ipp32f* pSrc, int srcStep, Ipp32f value, Ipp32f* pDst, int dstStep, IppiSize* roiSize) {
     return ippiMulC_32f_C1R(pSrc, srcStep, value, pDst, dstStep, *roiSize);
 }

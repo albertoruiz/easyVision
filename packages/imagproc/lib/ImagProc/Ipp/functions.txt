@@ -43,9 +43,12 @@ ippi.h  ippiXor_8u_C1R
 ippi.h  ippiMul_32f_C1R
 ippi.h  ippiDiv_32f_C1R
 ippi.h  ippiAdd_32f_C1R
+ippi.h  ippiAddC_32f_C1R
 ippi.h  ippiSub_32f_C1R
 ippi.h  ippiAdd_8u_C1RSfs
+ippi.h  ippiAddC_8u_C1RSfs
 ippi.h  ippiSub_8u_C1RSfs
+ippi.h  ippiSubC_8u_C1RSfs
 ippi.h  ippiCompareC_8u_C1R
 ippcv.h ippiAbsDiff_8u_C1R
 ippcv.h ippiAbsDiff_32f_C1R
