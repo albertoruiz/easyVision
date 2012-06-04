@@ -68,7 +68,7 @@ getCam n sz = do
     rawargs <- getArgs
     aliases <- getAliases
     dbg <- when <$> getFlag "-v"
-    let args = cleanOpts rawargs
+    let args = cleanSingleOpts rawargs
         url = if n < length args
                 then args!!n
                 else fst (aliases!!n)
@@ -86,7 +86,8 @@ getCam n sz = do
         else if isChan 
                  then dbg (putStrLn "Channel") >> cam >>= channel
                  else cam
-
+  where
+    cleanSingleOpts = filter $ \x -> not ("-" `isPrefixOf` x) || ' ' `elem` x
 
 ----------------------------------------------
 

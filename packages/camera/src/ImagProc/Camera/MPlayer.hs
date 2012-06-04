@@ -28,6 +28,9 @@ import System.IO
 import System.Process
 import System.Exit
 import Data.List(isInfixOf)
+import Util.Options
+import Control.Monad
+import Control.Applicative
 
 -- | Computes a 4\/3 \'good\' size for both mplayer and IPP. mpSize 20 = 640x480
 mpSize :: Int -> Size
@@ -43,6 +46,8 @@ mplayer' :: String                       -- ^ any url admitted by mplayer
          -> Size                         -- ^ desired image size (see 'mpsize')
          -> IO (IO (Maybe ImageYUV))     -- ^ function returning a new frame
 mplayer' url (Size h w) = do
+
+    verbose <- when <$> getFlag "-v"
 
     let fifo = "/tmp/mplayer-fifo"
     _ <- system $ "rm -f "++fifo
@@ -68,7 +73,8 @@ mplayer' url (Size h w) = do
     --(i,o,e,p) <- runInteractiveProcess "mplayer" (words mpcommand) Nothing Nothing
     --(i,o,e,p) <- runInteractiveCommand ("mplayer " ++mpcommand)
 
-    --putStrLn mpcommand
+    verbose $ putStrLn mpcommand
+
     putStr "Press Ctrl-C and check the URL\r"
     _ <- system $ "mplayer "++ mpcommand ++" >/dev/null 2>/dev/null &"
 
