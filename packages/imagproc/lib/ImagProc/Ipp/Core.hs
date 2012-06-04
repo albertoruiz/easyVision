@@ -27,7 +27,7 @@ module ImagProc.Ipp.Core
             -- * Regions of interest
           , fullroi, invalidROIs, roiSZ, validArea, roiPtrs
             -- * Wrapper tools
-          , src, dst, checkIPP, warningIPP, (//), starting
+          , src, dst, checkIPP, (//), starting
             -- * Image types
           , Image(..)
           , ImageRGB(C)
@@ -186,26 +186,26 @@ dst im roi f = f (starting im roi) (step im) (roiSZ roi)
 roiSZ = adapt . roiSize
     where adapt (Size h w) = IppiSize (fromIntegral h) (fromIntegral w)
 
-genCheckIPP act msg ls f = do
+
+checkIPP :: String  -- ^ some identifier of the calling function
+         -> [Img]   -- ^ the source images required by the function
+         -> IO Int  -- ^ the ipp function to wrap
+         -> IO ()
+-- ^ Required wrapper to any ipp function, checking that it has been successful and touching the foreign pointers of the source images to prevent early deallocation.
+checkIPP msg ls f = do
     err <- f
     when (err/=0) $ do
-        hPutStrLn stderr $ "WARNING: In " ++ msg ++ ":"
         ps <- ippGetStatusString err
         s <- peekCString ps
-        act s
+        if err > 0 || any (`elem` warnings) (words s)
+          then
+            hPutStrLn stderr $ "Warning in " ++ msg ++ ": " ++ s
+          else
+            error $ "in " ++ msg ++ ": " ++ s
     mapM_ (touchForeignPtr . fptr) ls -- really needed!
     return ()
 
--- | Required wrapper to any ipp function, checking that it has been successful and touching the foreign pointers of the source images to prevent early deallocation. It the function returns an error its description is written to the console and the program aborts.
-checkIPP :: String                          -- ^ some identifier of the calling function
-            -> [Img]                        -- ^ the source images required by the function
-            -> IO Int                       -- ^ the ipp function to wrap
-            -> IO () 
-checkIPP   = genCheckIPP error
-
--- | An alternative to 'checkIPP' which only emits a warning, without aborting the program.
-warningIPP :: String -> [Img] -> IO Int -> IO ()
-warningIPP = genCheckIPP (hPutStrLn stderr)
+warnings = ["ippStsCoeffErr:"]
 
 -- | Postfix function application (@flip ($)@) for conveniently writing ipp wrappers using 'src', 'dst', and 'checkIPP'. See examples in the source code of module "Ipp.Typical".
 (//) :: x -> (x -> y) -> y

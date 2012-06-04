@@ -144,7 +144,7 @@ warpOnAux h r im f met s = do
                            (r1 (vroi im)) (r2 (vroi im)) (c1 (vroi im)) (c2 (vroi im))
                            (ptr r) (step r)
                            (r1 (vroi r)) (r2 (vroi r)) (c1 (vroi r)) (c2 (vroi r))
-                           coefs met //warningIPP s [im]
+                           coefs met // checkIPP s [im]
     free coefs
 
 warpOn8u  h (G r) (G im) = warpOnAux h r im warpPerspectiveGray (interCode InterpLinear) "warpOn8u"
