@@ -10,5 +10,8 @@ demo:
 	./probability
 	./bayesgauss
 	./cs
+	./graph
+	./gptest
+	./median
 	./ukf
 

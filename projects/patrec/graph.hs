@@ -7,34 +7,39 @@ import Classifier(addNoise,boxAttr,preprocess)
 import Util.Misc(debug,diagl,vec,Mat,Vec)
 import Util.Gaussian(mixturePDF,findMixture)
 import Numeric.LinearAlgebra
-import EasyVision hiding (whitener)
-import Data.Colour.Names as Col
-import Graphics.UI.GLUT hiding (Size,scale,Point)
-import System.Random(randomIO)
+
+import Vision.GUI
+import ImagProc
+
+import Graphics.UI.GLUT (vertex,renderPrimitive, PrimitiveMode(Lines))
 import Text.Printf(printf)
 import Control.Monad(when)
-import qualified GP
+import qualified Util.GP as GP
 import Data.List(sort, sortBy)
+import Data.Function(on)
+import Data.Maybe
 
----------------------------------------------------------------------------
+import Util.ScatterPlot
 
-colors = [red,blue,orange,green]++repeat Col.lightgray
-
-scw title p = scatterPlot title (Size 400 400) p (0,1) colors (indexSample p)
-
-scw3 title p = scatterPlot3D title 400 p (0,1,2) colors (return ())
-
-scwgraph title p g = scatterPlot title (Size 400 400) p (0,1) colors f
+scw title p = browser title xs (const id)
   where
-    f = do
+    xs = [scatter p (0,1) [] (Draw())]
+
+
+scw3 name ps = browser3D name xs (const id)
+  where
+    xs = map (\p-> scatter3D p (0,1,2) [] (Draw())) ps
+
+
+scwgraph title p g = browser title [d] (const id)
+  where
+    d = scatter p (0,1) [black] x
+    x = color black $ Raw $ do
         renderPrimitive Lines $ mapMatrixWithIndexM_ h g
-        setColor' black
         indexSample p
     h (i,j) w = when (w>0) (vertex (fst(p!!round i)) >> vertex (fst(p!!round j)))
+    indexSample p = mapM_ (\((v,_),k)-> textAt (Point (v@>0) (v@>1)) (show k)) (zip p [0..])
     
-
-indexSample p = mapM_ (\((v,_),k)-> textAt (Point (v@>0) (v@>1)) (show k)) (zip p [0..])
-
 ---------------------------------------------------------------------------
 
 main = test sshape 0.1 0.8
@@ -82,10 +87,10 @@ test prob noise threshold = do
         y' = takeColumns 3 . snd . eigSH' $ g
     runIt $ do
         scwgraph "graph" p g
-        --scw "clusters" (map (,"?") (toRows y))
+        scw "clusters" (map (,"?") (toRows y))
         scw "spectral embedding" (toRows y `zip` map snd p)
-        scw3 "spectral embedding" (ba (toRows y `zip` map snd p))
-        --scw3 "naive embedding" (ba (toRows y' `zip` map snd p))
+        scw3 "spectral embedding" [(ba (toRows y `zip` map snd p))]
+        scw3 "naive embedding" [(ba (toRows y' `zip` map snd p))]
 
 ba p = boxAttr p `preprocess` p
 

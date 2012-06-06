@@ -6,13 +6,14 @@ import Classifier.ToyProblems
 import Classifier(group,addNoise)
 import Util.Misc(debug,diagl,vec,Mat,Vec,pairwiseD2)
 import Numeric.LinearAlgebra
-import EasyVision hiding (whitener)
-import Data.Colour.Names as Col
-import Graphics.UI.GLUT hiding (Size,scale)
+import Vision.GUI
+--import Data.Colour.Names as Col
+import Graphics.UI.GLUT hiding (Size,scale,color,windowTitle)
 import System.Random(randomIO)
 import Text.Printf(printf)
 import Control.Monad(when)
-import qualified GP
+import Util.ScatterPlot
+
 
 ----------------------------------------------------------------------
 
@@ -25,13 +26,16 @@ improveMedian vs m = m'
 
 ----------------------------------------------------------------------
 
-colors = [red,blue,orange,green]++repeat Col.lightgray
-
-scw title p = scatterPlot title (Size 400 400) p (0,1) colors (return ())
-
-scwmedian title p = scatterPlot title (Size 400 400) p (0,1) colors f
+scatterPlots name exs mets = browser name xs (const id)
   where
-    f = do
+    xs = map f mets
+    f (met, name) = scatter exs (0,1) [] (windowTitle name $ drawDecisionRegion 71 exs [] met)
+
+
+scwmedian title p = browser title [d] (const id)
+  where
+    d = scatter p (0,1) [black] x
+    x = color black $ Raw $ do
         let vs = fromRows $ map fst p
             m = fst $ meanCov vs 
             ms = iterate (improveMedian vs) m

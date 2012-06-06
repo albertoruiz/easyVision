@@ -12,7 +12,7 @@ Gaussian Processes
 -}
 -----------------------------------------------------------------------------
 
-module GP (
+module Util.GP (
      GKernel, gaussK,
      lik, matData,
      gp, gp1

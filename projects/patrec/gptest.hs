@@ -1,38 +1,32 @@
 
 import Classifier
 import Classifier.ToyProblems
-import Util.Stat
-import Classifier.Regression(msError)
-import Util.ICA
-import Util.Misc(debug,diagl,vec)
-import Util.Gaussian(mixturePDF,findMixture)
-
 import Numeric.LinearAlgebra
-import EasyVision hiding (whitener)
-import Data.Colour.Names as Col
-import Graphics.UI.GLUT hiding (Size,scale)
-import Data.Maybe(maybe)
+import Util.Misc(vec)
+import Vision.GUI
 import System.Random(randomIO)
 import Text.Printf(printf)
-import Control.Monad((>=>))
-import qualified GP
+import qualified Util.GP as GP
+import Util.ScatterPlot
 import Graphics.Plot
+
 
 ---------------------------------------------------------------------------
 
-colors = [red,blue,orange,green]++repeat Col.lightgray
 
-scw title p = scatterPlot title (Size 400 400) p (0,1) colors (return ())
+scatterPlots name exs mets = browser name xs (const id)
+  where
+    xs = map f mets
+    f (met, name) = scatter exs (0,1) [] (windowTitle name $ drawDecisionRegion 71 exs [] met)
 
-scwc title p clasif = scatterPlot title (Size 400 400) p (0,1) colors (drawRegion clasif p colors)
 
-scwm title p met = scwc title p (mode . met p)
 
-scwme title evi p met = scwc title p (maybe "REJECT" id . reject evi . met p)
+scwc title p clasifs = scatterPlots title p clasifs
 
-scw3 title p = scatterPlot3D title 400 p (0,1,2) colors (return ())
+scwm title p met = scwc title p [(mode . met p, "gp")]
 
-rawmnist = loadExamples "../../../data/mnist.txt"
+scwme title evi p met = scwc title p [(maybe "REJECT" id . reject evi . met p, "gp")]
+
 
 ---------------------------------------------------------------------------
 
