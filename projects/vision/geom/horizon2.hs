@@ -7,7 +7,7 @@ import Text.Printf(printf)
 
 quadrilaterals = take 1 . polygons 10 5 (4,4)
                . map (smoothPolyline 4)
-               . fst . fst . otsuContours
+               . otsuContours
 
 main = run $ arr (grayscale >>> id &&& quadrilaterals) >>> observe "horizon" sh
           

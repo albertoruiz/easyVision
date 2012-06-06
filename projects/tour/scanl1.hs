@@ -5,7 +5,7 @@ import Numeric.LinearAlgebra((<>))
 import Vision(cameraFromHomogZ0,estimateHomographyRaw,ht,scaling) 
 import Util.Misc(rotateLeft,posMax)
 
-darkContours = (id &&& (otsuContours >>> (map (smoothPolyline 4) . fst .fst)))
+darkContours = (id &&& (otsuContours >>> map (smoothPolyline 4)))
 
 main = run $ arr grayscale
           >>> arr darkContours

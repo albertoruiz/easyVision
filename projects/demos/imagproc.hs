@@ -19,32 +19,28 @@ f roi (DemoParam{..},x) =
            ,  msg "median filter"      [ Draw med ]
            ,  msg "canny edges"        [ Draw (notI edges) ]
            ,  msg "Otsu threshold"     [ Draw otsu ]
-           ,  msg "raw dark contours"  [ color blue . lineWd 2 $ draws rawconts ]
-           ,  msg "reduced contours"   [ color blue . lineWd 2 $ draws conts ]
+           ,  msg "raw Otsu contours"  [ proi, color blue . lineWd 2 $ draws rawconts ]
+           ,  msg "adaptive contours"  [ proi, color blue . lineWd 2 $ draws latconts ]
            ,  msg "distance transform" [ Draw disTra ]
            ,  msg "DCT"                [ Draw dctt ]
-           ,  msg "LBP"                [ Draw $ dlbp / scalar 20 - 0.5 ]
-           ,  msg "Histogram"          [ Draw $ histn ]
-           ,  msg "Offset int"         [ Draw $ offset ]
-           ,  msg "Offset float"       [ Draw $ offsetf ]
+           ,  msg "LBP"                [ proi, Draw $ dlbp / scalar 20 - 0.5 ]
+           ,  msg "Histogram"          [ proi, Draw $ histn ]
            ]
   where
     msg s x  =  Draw [ Draw img, Draw x , winTitle s ]
 
-    img    = rgb x 
+    img    = rgb x
     g      = setRegion roi (grayscale x)
+    proi   = color gray $ roi2poly (size g) (theROI g)
     smooth = gauss Mask5x5 . float $ g
     med   = filterMedian rad g
     edges  = canny (0.1,0.3) . gradients $ smooth
     otsu   = compareC8u (otsuThreshold g) IppCmpGreater g
-    ((rawconts,_),_)  = otsuContours g
-    conts  = map reducePolyline rawconts
+    rawconts = otsuContours g
+    latconts = map reducePolyline (fst $ localContours 10 g)
     disTra = (1/60) .* distanceTransform [1,1.4,2.2] (notI edges)
     dctt   = sqrt32f . abs32f . dct . float $ g
     dlbp   = vec (lbpN 2 g)
     hist   = fromList $ histogramN [0..256] g
     histn  = hist / scalar (maxElement hist) - 0.5
-    offset = addC8u scale val g
-    offsetf = (fromIntegral val / 255) .+ (float g)
 
-    

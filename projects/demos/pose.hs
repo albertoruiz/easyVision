@@ -8,7 +8,7 @@ import Vision(cameraFromHomogZ0,estimateHomography,ht,scaling)
 import Util.Misc(rotateLeft)
 import Data.Function(on)
 
-darkContours = (id &&& (otsuContours >>> (map (smoothPolyline 4) . fst .fst)))
+darkContours = (id &&& (otsuContours >>> map (smoothPolyline 4) ))
 
 main = run $ arr grayscale
           >>> arr darkContours

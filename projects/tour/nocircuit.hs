@@ -10,7 +10,7 @@ import Util.Misc(rotateLeft,posMax)
 main = run $ proc im -> do 
                 let g = grayscale im
                 prev <- delay zero -< g
-                let cs = map (smoothPolyline 4) . fst . fst . otsuContours $ g
+                let cs = map (smoothPolyline 4) . otsuContours $ g
                     ps = take 1 . polygons 10 5 (4, 4) $ cs
                     s = f prev g ps
                 (y,_,_) <- sMonitor "recursive" dr -< (s,g,ps)

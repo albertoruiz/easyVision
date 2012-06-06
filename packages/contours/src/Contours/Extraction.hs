@@ -14,11 +14,11 @@ Contour Extraction.
 
 module Contours.Extraction (
     -- * Extraction
-    contours, 
+    contours,
     otsuContours,
+    localContours,
     -- * Devel
     rawContours,
-    contours',
     rawContour,
     contourAt
 )
@@ -92,19 +92,6 @@ rawContour im start v = clean $ iterate (nextPos im v) (start, ToRight)
 
 
 
--- | extracts a list of contours in the image
-contours' :: Int       -- ^ maximum number of contours
-         -> Int       -- ^ minimum area (in pixels) of the admissible contours
-         -> CUChar    -- ^ binarization threshold
-         -> Bool      -- ^ binarization mode (True/False ->detect white/black regions)
-         -> ImageGray -- ^ image source
-         -> [([Pixel],Int,ROI)]  -- ^ list of contours, with area and ROI
-contours' n d th mode im = unsafePerformIO $ do
-    aux <- cloneClear $ (if mode then id else notI) (binarize8u th im)
-    r <- auxCont n d aux
-    return r
-
-
 -- | extracts a list of white contours from a binary image
 rawContours :: Int       -- ^ maximum number of contours
          -> Int       -- ^ minimum area (in pixels) of the admissible contours
@@ -158,17 +145,7 @@ left (Pixel r c) = Pixel r (c-1)
 fixp f p = if s == p then p else fixp f s
     where s = f p
 
---------------------------------------------------------------------------------
 
-otsuContours :: ImageGray -> (([Polyline],[Polyline]),[Polyline])
--- ^ extract contours with Otsu threshold
-otsuContours x = ((res,[]),[])
-  where
-    fst3 (a,_,_) = a
-    res = map (Closed . pixelsToPoints (size x) . fst3) $ contours' 1000 100 128 False otsu
-    otsu = compareC8u (otsuThreshold x) IppCmpGreater x
-
---------------------------------------------------------------------------------
 
 -- | extracts a list of white contours from a binary image
 contours :: Int         -- ^ maximum number of contours
@@ -179,4 +156,38 @@ contours nc ma x = map proc . rawContours nc ma $ x
   where
     fst3 (a,_,_) = a
     proc = Closed . pixelsToPoints (size x) . fst3
+
+
+--------------------------------------------------------------------------------
+
+otsuContours :: ImageGray -> [Polyline]
+-- ^ extract dark contours with Otsu threshold
+otsuContours x = contours 1000 100 otsu
+  where
+    otsu = compareC8u (otsuThreshold x) IppCmpLess x
+
+--------------------------------------------------------------------------------
+
+
+localContours :: CUChar -> ImageGray -> ([Polyline],[Polyline])
+-- ^ extract contours (dark,light) with adaptive local binarization
+localContours rth g = (cs difB, cs difW)
+  where
+    gmx  = filterMax8u 4 g
+    gmn  = filterMin8u 4 g
+    th   = add8u 1 gmx gmn
+
+    mx   = dilate3x3 g
+    mn   = erode3x3  g
+    mask = compareC8u rth IppCmpGreaterEq (sub8u 0 mx mn)
+    
+    difW = compare8u IppCmpGreater g th
+    difB = compare8u IppCmpLess    g th
+    
+    cs dif = filter good $ rcs
+      where
+        rcs = contours 1000 50 $ dif `andI` mask
+        good = ok . head . pointsToPixels (size dif) . polyPts
+
+    ok p = val8u mx p > val8u th p && val8u mn p < val8u th p
 
