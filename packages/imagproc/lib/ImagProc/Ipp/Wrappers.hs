@@ -85,3 +85,13 @@ foreign import ccall "auxIpp.h auxDCTInv_32f_C1R"
                           Ptr Float -> Int ->
                           Int -> Int -> Int -> Int ->
                           IO Int
+
+foreign import ccall "auxInpainting_8u_C1R"
+    auxInpainting_8u_C1R :: Float -> Int ->
+                            Ptr () -> Int ->
+                            Ptr () -> Int ->
+                            Ptr Float -> Int ->
+                            Ptr () -> Int ->
+                            Int -> Int -> Int -> Int ->
+                            IO Int
+

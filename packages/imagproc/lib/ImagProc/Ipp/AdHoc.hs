@@ -25,6 +25,7 @@ import Foreign.Ptr
 import Foreign.ForeignPtr
 import Foreign.Marshal
 import Foreign.Storable
+import Data.List(foldl1')
 
 -- | Writes into a existing image a desired value in a specified roi.
 set32f :: Float      -- ^ desired value
@@ -774,4 +775,32 @@ fromListsF fs = unsafePerformIO $ do
     im <- image (Size r c)
     setData32f im fs
     return im
+
+--------------------------------------------------------------------------------
+
+data InpaintMethod = InpaintTelea
+                   | InpaintNavierStokes
+                   deriving (Enum)
+
+-- | inpainting
+inpainting :: Float -- ^ radius
+           -> InpaintMethod -- ^ algorithm
+           -> ImageGray  -- ^ source
+           -> ImageGray  -- ^ mask
+           -> ImageFloat  -- ^ distance
+           -> ImageGray  -- ^ result
+inpainting rad meth (G s) (G m) (F d) = unsafePerformIO $ do
+    let roi = foldl1' intersection (map vroi [s,m,d])
+    G r' <- image (isize s)
+    let r = r' {vroi = roi}
+    (auxInpainting_8u_C1R
+           rad (fromEnum meth)
+           // src s roi
+           // src m roi
+           // src d roi
+           // src r roi
+           ) (r1 roi) (r2 roi) (c1 roi) (c2 roi)
+           // checkIPP "auxInpainting_8u_C1R" [s,m,d]
+    return (G r)
+
 

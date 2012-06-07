@@ -103,3 +103,25 @@ int auxDCTInv_32f_C1R(float * pSrc, int sstep,
     ippiDCTInvFree_32f(context);
     return res;
 }
+
+//---------------- Image Inpainting ------------------
+
+int auxInpainting_8u_C1R(float rad,     int method,
+                         void  * pSrc,  int sstep,
+                         void  * pMask, int mstep,
+                         float * pDist, int distStep,
+                         void  * pDst,  int dstep,
+                         int dr1, int dr2, int dc1, int dc2)
+{
+    int res;
+    IppiSize roiSize = {dc2-dc1+1,dr2-dr1+1};
+    IppiInpaintState_8u_C1R* pState;
+    int cmethod = method==0 ? IPP_INPAINT_TELEA : IPP_INPAINT_NS;
+    res = ippiInpaintInitAlloc_8u_C1R(&pState, pDist, distStep, pMask, mstep, roiSize, rad, cmethod);
+    //printf("alloc %d\n",res);
+    res = ippiInpaint_8u_C1R(pSrc, sstep, pDst, dstep, roiSize, pState);
+    //printf("inpaint %d\n",res);
+    res = ippiInpaintFree_8u_C1R(pState);
+    //printf("free %d\n",res);
+    return res;
+}
