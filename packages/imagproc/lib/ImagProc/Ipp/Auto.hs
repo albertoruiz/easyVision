@@ -298,6 +298,11 @@ ioDistanceTransform_3x3_8u32f_C1R pMetrics = {-# SCC "ippiDistanceTransform_3x3_
 ioDistanceTransform_5x5_8u32f_C1R pMetrics = {-# SCC "ippiDistanceTransform_5x5_8u32f_C1R" #-} auto_1_8u32f_C1R (f pMetrics) "ippiDistanceTransform_5x5_8u32f_C1R"
     where f pMetrics pSrc srcStep pDst dstStep roiSize = ippiDistanceTransform_5x5_8u32f_C1R pSrc srcStep pDst dstStep roiSize pMetrics
 
+{- |     Get size of external buffer.
+ -}
+ioFastMarching_8u32f_C1R radius pBuffer = {-# SCC "ippiFastMarching_8u32f_C1R" #-} auto_1_8u32f_C1R (f radius pBuffer) "ippiFastMarching_8u32f_C1R"
+    where f radius pBuffer pSrc srcStep pDst dstStep roiSize = ippiFastMarching_8u32f_C1R pSrc srcStep pDst dstStep roiSize radius pBuffer
+
 {- |  correct camera distortion
  -}
 ioUndistortRadial_8u_C1R fx fy cx cy k1 k2 pBuffer = {-# SCC "ippiUndistortRadial_8u_C1R" #-} auto_1_8u_C1R (f fx fy cx cy k1 k2 pBuffer) "ippiUndistortRadial_8u_C1R"

@@ -22,6 +22,7 @@ f roi (DemoParam{..},x) =
            ,  msg "raw Otsu contours"  [ proi, color blue . lineWd 2 $ draws rawconts ]
            ,  msg "adaptive contours"  [ proi, color blue . lineWd 2 $ draws latconts ]
            ,  msg "distance transform" [ Draw disTra ]
+           ,  msg "fast marching"      [ Draw fm ]
            ,  msg "DCT"                [ Draw dctt ]
            ,  msg "LBP"                [ proi, Draw $ dlbp / scalar 20 - 0.5 ]
            ,  msg "Histogram"          [ proi, Draw $ histn ]
@@ -39,6 +40,7 @@ f roi (DemoParam{..},x) =
     rawconts = otsuContours g
     latconts = map reducePolyline (fst $ localContours 10 g)
     disTra = (1/60) .* distanceTransform [1,1.4,2.2] (notI edges)
+    fm     = (1/60) .* fastMarching 0 (notI edges)
     dctt   = sqrt32f . abs32f . dct . float $ g
     dlbp   = vec (lbpN 2 g)
     hist   = fromList $ histogramN [0..256] g

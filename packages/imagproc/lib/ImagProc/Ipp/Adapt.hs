@@ -795,6 +795,22 @@ ippiDistanceTransform_5x5_8u32f_C1R pSrc srcStep pDst dstStep roiSize pMetrics =
     free proiSize
     return r
 
+foreign import ccall "adapt.h ippiFastMarchingGetBufferSize_8u32f_C1Rx"
+    ippiFastMarchingGetBufferSize_8u32f_C1Rx :: Ptr IppiSize -> Ptr CInt -> IO Int
+ippiFastMarchingGetBufferSize_8u32f_C1R roiSize pBufferSize = do
+    proiSize <- new roiSize
+    r <- ippiFastMarchingGetBufferSize_8u32f_C1Rx proiSize pBufferSize
+    free proiSize
+    return r
+
+foreign import ccall "adapt.h ippiFastMarching_8u32f_C1Rx"
+    ippiFastMarching_8u32f_C1Rx :: Ptr CUChar -> Int -> Ptr Float -> Int -> Ptr IppiSize -> Float -> Ptr CUChar -> IO Int
+ippiFastMarching_8u32f_C1R pSrc srcStep pDst dstStep roiSize radius pBuffer = do
+    proiSize <- new roiSize
+    r <- ippiFastMarching_8u32f_C1Rx pSrc srcStep pDst dstStep proiSize radius pBuffer
+    free proiSize
+    return r
+
 foreign import ccall "adapt.h ippiFloodFillGetSizex"
     ippiFloodFillGetSizex :: Ptr IppiSize -> Ptr CInt -> IO Int
 ippiFloodFillGetSize roiSize pBufSize = do

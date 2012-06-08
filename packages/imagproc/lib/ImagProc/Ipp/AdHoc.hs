@@ -803,4 +803,24 @@ inpainting rad meth (G s) (G m) (F d) = unsafePerformIO $ do
            // checkIPP "auxInpainting_8u_C1R" [s,m,d]
     return (G r)
 
+--------------------------------------------------------------------------------
+
+-- | Calculates distance transform to closest zero pixel for all non-zero pixels of source image using fast marching method.
+fastMarching :: Float     -- ^ radius
+             -> ImageGray
+             -> ImageFloat
+fastMarching rad (G s) = unsafePerformIO $ do
+    F r <- image (isize s)
+    ps <- malloc
+    let roi = vroi s
+    (ippiFastMarchingGetBufferSize_8u32f_C1R (roiSZ roi)) ps // checkIPP "fastMarchingGetSize" []
+    bsz <- peek ps
+    buffer <- mallocBytes (fromIntegral bsz)
+    (ippiFastMarching_8u32f_C1R // src s roi // dst r roi) rad buffer
+                         // checkIPP "ippiFastMarching_8u32f_C1R" [s]
+    free buffer
+    free ps
+    return (F r {vroi = roi})
+
+--------------------------------------------------------------------------------
 

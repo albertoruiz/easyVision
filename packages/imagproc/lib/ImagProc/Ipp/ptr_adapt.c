@@ -370,6 +370,14 @@ int ippiDistanceTransform_5x5_8u32f_C1Rx(Ipp8u* pSrc, int srcStep, Ipp32f* pDst,
     return ippiDistanceTransform_5x5_8u32f_C1R(pSrc, srcStep, pDst, dstStep, *roiSize, pMetrics);
 }
 
+int ippiFastMarchingGetBufferSize_8u32f_C1Rx(IppiSize* roiSize, int* pBufferSize) {
+    return ippiFastMarchingGetBufferSize_8u32f_C1R(*roiSize, pBufferSize);
+}
+
+int ippiFastMarching_8u32f_C1Rx(Ipp8u* pSrc, int srcStep, Ipp32f* pDst, int dstStep, IppiSize* roiSize, Ipp32f radius, Ipp8u* pBuffer) {
+    return ippiFastMarching_8u32f_C1R(pSrc, srcStep, pDst, dstStep, *roiSize, radius, pBuffer);
+}
+
 int ippiFloodFillGetSizex(IppiSize* roiSize, int* pBufSize) {
     return ippiFloodFillGetSize(*roiSize, pBufSize);
 }

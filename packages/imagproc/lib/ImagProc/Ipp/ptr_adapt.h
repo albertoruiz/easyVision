@@ -92,6 +92,8 @@ int ippiCannyGetSizex(void*, int*);
 int ippiCanny_32f8u_C1Rx(float*, int, float*, int, unsigned char*, int, void*, float, float, unsigned char*);
 int ippiDistanceTransform_3x3_8u32f_C1Rx(unsigned char*, int, float*, int, void*, float*);
 int ippiDistanceTransform_5x5_8u32f_C1Rx(unsigned char*, int, float*, int, void*, float*);
+int ippiFastMarchingGetBufferSize_8u32f_C1Rx(void*, int*);
+int ippiFastMarching_8u32f_C1Rx(unsigned char*, int, float*, int, void*, float, unsigned char*);
 int ippiFloodFillGetSizex(void*, int*);
 int ippiFloodFillGetSize_Gradx(void*, int*);
 int ippiFloodFill_8Con_8u_C1IRx(unsigned char*, int, void*, void*, unsigned char, void*, unsigned char*);

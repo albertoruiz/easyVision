@@ -78,6 +78,8 @@ ippi.h ippiFFTFwd_RToPack_32f_C1R
 ippi.h ippiMagnitudePack_32f_C1R
 ippcv.h ippiDistanceTransform_3x3_8u32f_C1R
 ippcv.h ippiDistanceTransform_5x5_8u32f_C1R
+ippcv.h ippiFastMarching_8u32f_C1R
+ippcv.h ippiFastMarchingGetBufferSize_8u32f_C1R
 ippcv.h ippiFloodFillGetSize
 ippcv.h ippiFloodFillGetSize_Grad
 ippcv.h ippiFloodFill_8Con_8u_C1IR
