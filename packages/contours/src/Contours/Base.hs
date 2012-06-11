@@ -23,6 +23,7 @@ module Contours.Base (
     bounding,
     roi2poly, poly2roi, setRegion,
     segmentIntersection,
+    intersectionLineSegment,
     bisector,
     tangentsTo,
     isLeft
@@ -280,4 +281,13 @@ segmentIntersection (Segment (Point x1 y1) (Point x2 y2)) (Segment (Point x3 y3)
     y = y1 + u*(y2-y1)
     r | ok = Just (Point x y)
       | otherwise = Nothing
+
+--------------------------------------------------------------------------------
+
+intersectionLineSegment :: HLine -> Segment -> Maybe Point
+intersectionLineSegment l (Segment p1 p2) | ok        = Just p
+                                          | otherwise = Nothing
+  where
+    p = inhomog (meet l (G.join p1 p2))
+    ok = (toVector p - toVector p1) `dot` (toVector p - toVector p2) < 0
 
