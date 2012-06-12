@@ -102,6 +102,14 @@ int intersect(struct vertex *p1, struct vertex *p2,
         {
             *alphaP = wec_p1/(wec_p1 - wec_p2);
             *alphaQ = wec_q1/(wec_q1 - wec_q2);
+            int ok =  ((wec_p1 - wec_p2) != 0)
+                   && ((wec_q1 - wec_q2) != 0)
+                   && (*alphaP != 0) && (*alphaP != 1)
+                   && (*alphaQ != 0) && (*alphaQ != 1);
+            if (!ok) {
+                printf("clipping degeneracy: alphaP = %f, alphaQ = %f\n",*alphaP, *alphaQ);
+                exit(1);
+            }
             return 1;
         }
     }
