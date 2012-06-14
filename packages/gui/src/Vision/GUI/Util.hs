@@ -102,14 +102,22 @@ browseLabeled name examples disp = browser name examples f
 
 --------------------------------------------------------------------------------
 
-sMonitor :: String -> (WinRegion -> b -> [Drawing]) -> ITrans b b
-sMonitor name f = optDont ("--no-"++name)
-                $ transUI 
-                $ interface (Size 240 360) name 0 (const.const.return $ ()) 
-                            (c2 acts) [] (const (,)) g
+sMonitor :: String ->
+            (WinRegion -> b -> [Drawing])
+            -> ITrans b b
+sMonitor name f = optDont ("--no-"++name) $ transUI 
+                $ interface
+                (Size 240 360)            -- window size
+                name                      -- win title
+                0                         -- init state
+                (const.const.return $ ()) -- init action
+                (c2 acts)                 -- state update
+                []                        -- key IO acts
+                (const (,))               -- result
+                g                         -- draw
   where
-    g roi k x | null r    = Draw ()
-              | otherwise = r !! j
+    g roi k _ x | null r    = Draw ()
+                | otherwise = r !! j
       where
         r = f roi x
         j = k `mod` length r
@@ -125,14 +133,14 @@ observe :: Renderable x => String -> (b -> x) -> ITrans b b
 observe name f = optDont ("--no-"++name)
                $ transUI 
                $ interface (Size 240 360) name () (const.const.return $ ())
-                           [] [] (const (,)) (const.const $ Draw . f)
+                           [] [] (const (,)) (const.const.const $ Draw . f)
 
 
 observe3D :: Renderable x => String -> (b -> x) -> ITrans b b
 observe3D name f = optDont ("--no-"++name)
                $ transUI 
                $ interface3D (Size 400 400) name () (const.const.return $ ())
-                             [] [] (const (,)) (const.const $ Draw . f)
+                             [] [] (const (,)) (const.const.const $ Draw . f)
 
 --------------------------------------------------------------------------------
 
@@ -181,7 +189,7 @@ camG opt readf = do
              , (key (MouseButton WheelDown), \_ _ (k,xs) -> (max (k-1) 0,xs))
              , (key (SpecialKey  KeyDown),   \_ _ (k,xs) -> (max (k-1) 0,xs))]
     r _ (k,xs) _ = ((k,xs), fst $ xs!!k)
-    sh _ (k,xs) x = Draw [Draw (rgb x), info (k,xs) ]
+    sh _ (k,xs) _a x = Draw [Draw (rgb x), info (k,xs) ]
     -- ft w _ = evPrefSize w $= Just (Size 240 320)
     ft _ _ = return ()
     info (k,xs) = Draw [color black $ textF Helvetica12 (Point 0.9 0.6)
@@ -219,7 +227,7 @@ freqMonitor = transUI frameRate >>> transUI g
   where
     g = interface (Size 60 300) "Frame Rate" (1/20,0.1) (const . const . return $ ()) [] [] f sh
     f _roi _state (t,x) = (x,t)
-    sh _roi (t2,t1) _result = text (Point 0.9 0) $
+    sh _roi (t2,t1) _a _result = text (Point 0.9 0) $
                                printf " %3.0f ms CPU  / %4.0f Hz   /   %3.0f%%"
                                (t1::Double) (1/t2::Double) (t1/t2/10)
 
@@ -352,7 +360,7 @@ clickKeep name f sh s0 = transUI $ interface (Size 240 320) name s0 ft updt [] r
     r roi Nothing input = (Just s, (input,s))
       where
         s = f roi input
-    sh' _ _ = sh
+    sh' _ _ _ = sh
     updt = [(key (MouseButton LeftButton), \_ _ _ -> Nothing )]
     ft _ _ = return ()
 
@@ -366,14 +374,14 @@ clickList name f sh xs0 = transUI $ interface (Size 240 320) name (xs0,False) ft
     r roi (xs,True) input = ((xs',False), (input,xs'))
       where
         xs' = f roi input : xs
-    sh' _ _ = sh
+    sh' _ _ _ = sh
     updt = [(key (MouseButton LeftButton), \_ _ (xs,_) -> (xs,True) )]
     ft _ _ = return ()
 
 --------------------------------------------------------------------------------
 
 clickTag :: (x -> l) -> (x -> r) -> (Either l r -> Drawing) -> String -> ITrans x (Either l r)
-clickTag l r sh name = transUI $ interface (Size 240 320) name False ft updt [] y (const (const sh))
+clickTag l r sh name = transUI $ interface (Size 240 320) name False ft updt [] y ((const.const.const) sh)
   where
     y _ sv input = (sv, if sv then Right (r input) else Left (l input))
     updt = [(key (MouseButton LeftButton), \_ _ sv -> not sv)]

@@ -77,18 +77,22 @@ type WinInit state input = EVWindow state -> input -> IO()
 
 type VCN a b = IO (IO a -> IO b)
 
-interface :: Size -> String -> s 
-          -> WinInit s a -> [Command s s] -> [Command s (IO())]
-          -> (WinRegion -> s -> a -> (s,b))
-          -> (WinRegion -> s -> b -> Drawing) 
-          -> VCN a b
+interface :: Size                                 -- win size
+             -> String                            -- win title
+             -> s                                 -- state 0
+             -> WinInit s a                       -- init Window
+             -> [Command s s]                     -- upds
+             -> [Command s (IO())]                -- acts
+             -> (WinRegion -> s -> a -> (s,b))    -- result
+             -> (WinRegion -> s -> a -> b -> Drawing)  -- draw 
+             -> VCN a b
 
 interface = interfaceG False
 
 interface3D :: Size -> String -> s 
           -> WinInit s a -> [Command s s] -> [Command s (IO())]
           -> (WinRegion -> s -> a -> (s,b))
-          -> (WinRegion -> s -> b -> Drawing) 
+          -> (WinRegion -> s -> a -> b -> Drawing) 
           -> VCN a b
 
 interface3D = interfaceG True
@@ -126,7 +130,7 @@ interfaceG threeD sz0 name st0 ft upds acts resultFun resultDisp = do
         state <- getW w
         roi <- get (evRegion w)
         let (newState, result) = resultFun roi state thing
-            drawing = resultDisp roi newState result
+            drawing = resultDisp roi newState thing result
         seq newState $ putW w newState
         pause <- readIORef (evPause w)
         when (not (pause==PauseDraw)) $ swapMVar (evDraw w) drawing >> return ()
