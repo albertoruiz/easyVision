@@ -34,6 +34,7 @@ type CVec = Vector (Complex Double)
 
 data Shape = Shape { shapeContour  :: Polyline
                    , shapeMoments  :: (Double,Double,Double,Double,Double)
+                   , shapeCenter   :: Point
                    , shapeAxes     :: (Double,Double,Double)
                    , shapeWhitener :: Mat
                    , whiteShape    :: Polyline
@@ -56,6 +57,7 @@ analyzeShape mW (p,(mx,my,cxx,cyy,cxy)) = Shape {..}
   where
     shapeContour = p
     shapeMoments = (mx,my,cxx,cyy,cxy)
+    shapeCenter = Point mx my
     shapeAxes @ (l1,l2,phi) = eig2x2Dir (cxx,cyy,cxy)
     shapeWhitener = diagl [1/sqrt l1,1/sqrt l2,1] <> rot3 phi <> desp (-mx,-my)
     whiteShape = transPol shapeWhitener p

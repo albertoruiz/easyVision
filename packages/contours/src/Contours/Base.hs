@@ -209,7 +209,8 @@ isLeft p1@(Point x1 y1) p2@(Point x2 y2) p3@(Point x3 y3) =
 
 
 convexHull :: [Point] -> [Point]
-convexHull ps = go [q0] rs
+convexHull ps | length ps > 3 = go [q0] rs
+              | otherwise     = ps
   where
     q0:qs = sortBy (compare `on` (\(Point x y) -> (y,x))) ps
     rs = sortBy (compare `on` (ncosangle q0)) qs
