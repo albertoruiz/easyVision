@@ -24,6 +24,7 @@ module Vision.GUI.Util (
     choose, optDo, optDont,
     withParam,
     drawParam, draw3DParam,
+    connectParamWith,
     connectWith, connectWith',
     clickPoints,
     interactive3D,
@@ -268,27 +269,30 @@ withParam f = choose c (arr $ f defParam) (f @@@ winParam)
 
 drawParam :: ParamRecord t => String -> (t -> [Drawing]) -> IO ()
 -- ^ drawing window with interactive parameters
-drawParam title f = connectParamWith g (browser title [] (const id))
+drawParam title f = connectParamWithWin g (browser title [] (const id))
   where
     g (k,_) p = (k, f p)
 
 
 draw3DParam :: ParamRecord t => String -> (t -> [Drawing]) -> IO ()
 -- ^ 3D drawing window with interactive parameters
-draw3DParam title f = connectParamWith g (browser3D title [] (const id))
+draw3DParam title f = connectParamWithWin g (browser3D title [] (const id))
   where
     g (k,_) p = (k, f p)
 
 
-connectParamWith f win = do
-    (wp,gp) <- mkParam
-    b <- win
+connectParamWith f (wp,gp) b = do
     (evNotify wp) $= do
         p <- gp
         st <- getW b
         putW b (f st p)
         postRedisplay (Just (evW b))
     join . get . evNotify $ wp
+
+connectParamWithWin f win = do
+    p <- mkParam
+    b <- win
+    connectParamWith f p b
 
 
 connectWithG p f w1 w2 = do
