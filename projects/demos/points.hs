@@ -7,7 +7,8 @@ main = run  $    arr (grayscale >>> id &&& interest)
 sh (im, pts) = [ Draw im, pointSz 5 . color red $ pts ]
 
 interest :: ImageGray -> [Point]
-interest g = pixelsToPoints (size g) . getPoints32f 300 . localMax 1 . thres 0.5 . salience 2 4 . float $ g
+interest g  =  pixelsToPoints (size g) . getPoints32f 300 . localMax 1
+            .  thres 0.5 . salience 2 4 . float $ g
   where
     thres r im = thresholdVal32f (mx*r) 0 IppCmpLess im
         where (_,mx) = minmax im
