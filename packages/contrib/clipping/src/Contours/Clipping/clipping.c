@@ -8,6 +8,8 @@
 #define MIN(a,b) ( (a) < (b) ? (a) : (b) )
 #define MAX(a,b) ( (a) > (b) ? (a) : (b) )
 
+#define EPSILON 0.01
+
 
 /**
   * Create a new linked lyst from floating points values pointed by @polygon
@@ -32,6 +34,7 @@ void createList(int origin, double *polyx, double *polyy, int n, struct vertex *
         current->nextVertex = current->next;
         current->nextPoly = NULL;
         current->intersect = 0;
+        current->alpha_in_subject = 0.0;
         prev = current;
         current = current->next;
     }
@@ -39,6 +42,7 @@ void createList(int origin, double *polyx, double *polyy, int n, struct vertex *
     current->x = polyx[i];
     current->y = polyy[i];
     current->o = origin;
+    current->alpha_in_subject = 0.0;
     current->prev = prev;
     current->next = list;
     current->nextPoly = NULL;
@@ -102,14 +106,14 @@ int intersect(struct vertex *p1, struct vertex *p2,
         {
             *alphaP = wec_p1/(wec_p1 - wec_p2);
             *alphaQ = wec_q1/(wec_q1 - wec_q2);
-            int ok =  ((wec_p1 - wec_p2) != 0)
+            /*int ok =  ((wec_p1 - wec_p2) != 0)
                    && ((wec_q1 - wec_q2) != 0)
                    && (*alphaP != 0) && (*alphaP != 1)
                    && (*alphaQ != 0) && (*alphaQ != 1);
             if (!ok) {
                 printf("clipping degeneracy: alphaP = %f, alphaQ = %f\n",*alphaP, *alphaQ);
                 exit(1);
-            }
+            }*/
             return 1;
         }
     }
@@ -142,6 +146,11 @@ int findIntersections(struct vertex *lclip, struct vertex *lsubject)
 
                 i1->alpha = a;
                 i2->alpha = b;
+
+                i1->alpha_in_subject = a;
+                i2->alpha_in_subject = a;
+
+
                 i2->x = i1->x = w->x + b * (w->nextVertex->x - w->x);
                 i2->y = i1->y = w->y + b * (w->nextVertex->y - w->y);
 
@@ -253,6 +262,7 @@ struct vertex * newPolygon(struct vertex *lastPoly, struct vertex *p)
     poly->x = p->x;
     poly->y = p->y;
     poly->o = p->o;
+    poly->alpha_in_subject = p->alpha_in_subject;
     poly->nextPoly = NULL;
     poly->next = NULL;
 
@@ -272,6 +282,7 @@ void newVertex(struct vertex *last, struct vertex *p)
     point->x = p->x;
     point->y = p->y;
     point->o = p->o;
+    point->alpha_in_subject = p->alpha_in_subject;
 
     point->next = NULL;
     point->nextPoly = NULL;
@@ -308,6 +319,7 @@ int createClippedPolygon(struct vertex *lclip, struct vertex *lsubject,
             first->x = current->x;
             first->y = current->y;
             first->o = current->o;
+            first->alpha_in_subject = current->alpha_in_subject;
             first->nextPoly = NULL;
             poly = first;
         }
@@ -360,11 +372,15 @@ int createClippedPolygon(struct vertex *lclip, struct vertex *lsubject,
   * @lengths: array of lengths for each polygon
   */
 void copy(struct vertex *polygons, int npolys, int nvertex,
-                double **polysx, double **polysy, int ** origin, int **lengths)
+                double **polysx, double **polysy, int **origin, int **ind0, int **ind1, double **alphas,
+          int **lengths)
 {
     double *px = (double *) malloc (nvertex * sizeof(double));
     double *py = (double *) malloc (nvertex * sizeof(double));
     int    *po = (int *)    malloc (nvertex * sizeof(int));
+    int    *i0 = (int *)    malloc (nvertex * sizeof(int));
+    int    *i1 = (int *)    malloc (nvertex * sizeof(int));
+    double *as = (double *) malloc (nvertex * sizeof(double));
     int *ls = (int *) malloc (npolys * sizeof(int));
     int polycount = 0, vertexcount = 0;
     struct vertex *ipoly, *ivertex;
@@ -380,7 +396,8 @@ void copy(struct vertex *polygons, int npolys, int nvertex,
             ls[polycount]++;
             po[vertexcount] = ivertex->o;
             px[vertexcount] = ivertex->x;
-            py[vertexcount++] = ivertex->y;
+            py[vertexcount] = ivertex->y;
+            as[vertexcount++] = ivertex->alpha_in_subject;
             curlen++;
         }
         // Last (repeated) vertex copies its origin label to first one (which was initiall "flipped").
@@ -390,6 +407,9 @@ void copy(struct vertex *polygons, int npolys, int nvertex,
     *polysx = px;
     *polysy = py;
     *origin = po;
+    *ind0   = i0;
+    *ind1   = i1;
+    *alphas = as;
     *lengths = ls;
 }
 
@@ -398,8 +418,9 @@ void copy(struct vertex *polygons, int npolys, int nvertex,
 // a subject with ns points. Returns a set of nl polygons with specified lengths
 // in an array of coordinates polys.
 int clip(double *clipx, double *clipy, int nc,
-            double *subjectx, double *subjecty, int ns,
-                double **polysx, double **polysy, int **origin, int **lengths, int *nl, int *nlp, int *inside, int op)
+         double *subjectx, double *subjecty, int ns,
+         double **polysx, double **polysy, int **origin, int **ind0, int **ind1, double **alphas,
+         int **lengths, int *nl, int*nlp, int *inside, int op)
 {
     struct vertex *lclip, *lsubject;
     struct vertex *polygons = NULL, *polygons2 = NULL, *auxpoly = NULL;
@@ -473,9 +494,10 @@ int clip(double *clipx, double *clipy, int nc,
 
     //printf("clip polygon\n");
 
-    
+
     // copy polygons into polys array
-    copy(polygons, npolys, nvertex, polysx, polysy, origin, lengths);
+    copy(polygons, npolys, nvertex, polysx, polysy, origin, ind0, ind1, alphas, lengths);
+
     *nl = npolys;
 
     //printf("copied\n");
@@ -515,26 +537,27 @@ void readFromStdin(double **vclipx, double **vclipy, double **vsubjectx,
 }
 
 
-int main2(void)
+int main(void)
 {
     double *clipx, *clipy, *subjectx, *subjecty;
     int lclip, lsubject;
 
     readFromStdin(&clipx, &clipy, &subjectx, &subjecty, &lclip, &lsubject);
 
-    double *polysx, *polysy;
-    int * origin;
+    double *polysx, *polysy, *alphas;
+    int *origin,*ind0,*ind1;
     int *lengths, inside, nl,nlp, i,j;
 
     clip(clipx, clipy, lclip, subjectx, subjecty, lsubject,
-            &polysx, &polysy, &origin, &lengths, &nl, &nlp, &inside, POLYGON_INTERSECTION);
+         &polysx, &polysy, &origin, &ind0, &ind1, &alphas,
+         &lengths, &nl, &nlp, &inside, POLYGON_INTERSECTION);
 
     int v = 0;
     for (i = 0; i < nl; i++) {
         printf("Polígono %d\n", i+1);
         printf("--------------------------\n");
         for (j = 0; j < lengths[i]; j++) {
-            printf("x=%.5f, y=%.5f, o=%d\n", polysx[v], polysy[v], origin[v]);
+            printf("x=%.5f, y=%.5f, o=%d, alpha_in_subject=%.5f\n", polysx[v], polysy[v], origin[v], alphas[v]);
             v++;
         }
     }
@@ -546,6 +569,9 @@ int main2(void)
     free(polysx);
     free(polysy);
     free(origin);
+    free(ind0);
+    free(ind1);
+    free(alphas);
     return 0;
 }
 

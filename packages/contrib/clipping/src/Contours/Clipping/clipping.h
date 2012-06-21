@@ -40,7 +40,7 @@ struct vertex {
     char entry_exit;
     struct vertex *neighbour;
 
-    double alpha;
+    double alpha,alpha_in_subject;
 };
 
 
@@ -49,5 +49,6 @@ struct vertex {
 // in an array of coordinates polys.
 int clip(double *clipx, double *clipy, int nc,
          double *subjectx, double *subjecty, int ns,
-         double **polysx, double **polysy, int **origin, int **lengths, int *nl, int*nlp, int *inside, int op);
+         double **polysx, double **polysy, int **origin, int **ind0, int **ind1, double **alphas,
+         int **lengths, int *nl, int*nlp, int *inside, int op);
 
