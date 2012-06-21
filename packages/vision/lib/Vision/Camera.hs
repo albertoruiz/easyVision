@@ -419,6 +419,18 @@ computeHomographyRaw image world = c where
         , [   x,    y,  1,   0,   0, 0,-p*x,-p*y,-p]
         , [-q*x, -q*y, -q, p*x, p*y, p,   0,   0, 0] ]
 
+
+computeHomographyH :: [HPoint] -- dst
+                   -> [HPoint] -- src
+                   -> Homography
+-- ^ linear homography estimation from homogeneous points
+computeHomographyH image world = unsafeFromMatrix c
+  where
+    c = trans $ reshape 3 $ fst $ homogSolve eqs
+    eqs = fromBlocks (zipWith eq image world)
+    eq (toVector -> y) (toVector -> x) = [ asRow x `kronecker` asMat y ]
+-- Fusiello style
+
 --------------------------------------------------------------------------------
 
 -- | Estimation of a camera matrix from image - world correspondences, for world points in the plane z=0. We start from the closed-form solution given by 'estimateHomography' and 'cameraFromHomogZ0', and then optimize the camera parameters by minimization (using the Nelder-Mead simplex algorithm) of reprojection error.
