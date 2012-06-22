@@ -35,6 +35,8 @@ void createList(int origin, double *polyx, double *polyy, int n, struct vertex *
         current->nextPoly = NULL;
         current->intersect = 0;
         current->alpha_in_subject = 0.0;
+        current->ind0 = -1;
+        current->ind1 = -1;
         prev = current;
         current = current->next;
     }
@@ -43,6 +45,8 @@ void createList(int origin, double *polyx, double *polyy, int n, struct vertex *
     current->y = polyy[i];
     current->o = origin;
     current->alpha_in_subject = 0.0;
+    current->ind0 = -1;
+    current->ind1 = -1;
     current->prev = prev;
     current->next = list;
     current->nextPoly = NULL;
@@ -230,6 +234,7 @@ int isInside(struct vertex *p, struct vertex *polygon)
   * depending on whether it's an entry or exit point
   * with respect the @interior_exterior of polygon @q
   */
+// Now it also puts the corresponding indexes in all the nodes.
 void markEntries(struct vertex *p, struct vertex *q, int interior_exterior)
 {
     int status;
@@ -241,6 +246,8 @@ void markEntries(struct vertex *p, struct vertex *q, int interior_exterior)
         status = interior_exterior == POLYGON_INTERIOR ?
                                 STATUS_EXIT : STATUS_ENTRY;
     struct vertex *pi;
+    int ind0,ind1;
+    ind0 = ind1 = 0;
     for (pi = p->next; pi != p; pi = pi->next)
     {
         if (pi->intersect)
@@ -248,7 +255,13 @@ void markEntries(struct vertex *p, struct vertex *q, int interior_exterior)
             pi->entry_exit = status;
             pi->processed = 0;
             status = !status;
+            ind1++;
+        } else {
+            ind0++;
+            ind1 = 0;
         }
+    pi->ind0 = ind0;
+    pi->ind1 = ind1;
     }
 }
 
@@ -263,6 +276,8 @@ struct vertex * newPolygon(struct vertex *lastPoly, struct vertex *p)
     poly->y = p->y;
     poly->o = p->o;
     poly->alpha_in_subject = p->alpha_in_subject;
+    poly->ind0 = p->ind0;
+    poly->ind1 = p->ind1;
     poly->nextPoly = NULL;
     poly->next = NULL;
 
@@ -283,7 +298,8 @@ void newVertex(struct vertex *last, struct vertex *p)
     point->y = p->y;
     point->o = p->o;
     point->alpha_in_subject = p->alpha_in_subject;
-
+    point->ind0 = p->ind0;
+    point->ind1 = p->ind1;
     point->next = NULL;
     point->nextPoly = NULL;
 
@@ -320,6 +336,8 @@ int createClippedPolygon(struct vertex *lclip, struct vertex *lsubject,
             first->y = current->y;
             first->o = current->o;
             first->alpha_in_subject = current->alpha_in_subject;
+            first->ind0 = current->ind0;
+            first->ind1 = current->ind1;
             first->nextPoly = NULL;
             poly = first;
         }
@@ -397,7 +415,9 @@ void copy(struct vertex *polygons, int npolys, int nvertex,
             po[vertexcount] = ivertex->o;
             px[vertexcount] = ivertex->x;
             py[vertexcount] = ivertex->y;
-            as[vertexcount++] = ivertex->alpha_in_subject;
+            as[vertexcount] = ivertex->alpha_in_subject;
+            i0[vertexcount] = ivertex->ind0;
+            i1[vertexcount++] = ivertex->ind1;
             curlen++;
         }
         // Last (repeated) vertex copies its origin label to first one (which was initiall "flipped").
@@ -557,7 +577,8 @@ int main(void)
         printf("Polígono %d\n", i+1);
         printf("--------------------------\n");
         for (j = 0; j < lengths[i]; j++) {
-            printf("x=%.5f, y=%.5f, o=%d, alpha_in_subject=%.5f\n", polysx[v], polysy[v], origin[v], alphas[v]);
+            printf("x=%.5f, y=%.5f, o=%d, alpha_in_subject=%.5f, ind=(%d,%d)\n",
+                   polysx[v], polysy[v], origin[v], alphas[v], ind0[v], ind1[v]);
             v++;
         }
     }

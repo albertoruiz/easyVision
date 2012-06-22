@@ -41,6 +41,8 @@ struct vertex {
     struct vertex *neighbour;
 
     double alpha,alpha_in_subject;
+
+    int ind0, ind1;
 };
 
 
