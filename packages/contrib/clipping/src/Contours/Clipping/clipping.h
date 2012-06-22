@@ -23,11 +23,10 @@
 
 struct vertex {
     // coordinates
-    double x;
-    double y;
+    double x,y,x_saved,y_saved;
 
     // origin
-    int o;
+    int origin;
 
     // doubly linked list
     struct vertex *next, *prev;
@@ -38,11 +37,15 @@ struct vertex {
     unsigned char intersect;
     unsigned char processed;
     char entry_exit;
+    char perturbed;
     struct vertex *neighbour;
 
-    double alpha,alpha_in_subject;
+    double alpha,alpha_in_subject,alpha_in_clip;
 
     int ind0, ind1;
+
+    int ind0_clip, ind1_clip,ind0_subj, ind1_subj;
+
 };
 
 
@@ -51,6 +54,8 @@ struct vertex {
 // in an array of coordinates polys.
 int clip(double *clipx, double *clipy, int nc,
          double *subjectx, double *subjecty, int ns,
-         double **polysx, double **polysy, int **origin, int **ind0, int **ind1, double **alphas,
+         double **polysx, double **polysy, int **origin,
+         int **ind0subject, int **ind1subject, int **ind0clip, int **ind1clip,
+         double **alpha_subject, double **alpha_clip,
          int **lengths, int *nl, int*nlp, int *inside, int op);
 

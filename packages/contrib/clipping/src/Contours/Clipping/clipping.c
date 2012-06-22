@@ -28,25 +28,35 @@ void createList(int origin, double *polyx, double *polyy, int n, struct vertex *
     for (i = 0; i < n-1; i++) {
         current->x = polyx[i];
         current->y = polyy[i];
-        current->o = origin;
+        current->origin = origin;
         current->prev = prev;
         current->next = (struct vertex *) malloc (sizeof(struct vertex));
         current->nextVertex = current->next;
         current->nextPoly = NULL;
         current->intersect = 0;
         current->alpha_in_subject = 0.0;
+        current->alpha_in_clip = 0.0;
         current->ind0 = -1;
         current->ind1 = -1;
+        current->ind0_clip = -1;
+        current->ind1_clip = -1;
+        current->ind0_subj = -1;
+        current->ind1_subj = -1;
         prev = current;
         current = current->next;
     }
 
     current->x = polyx[i];
     current->y = polyy[i];
-    current->o = origin;
+    current->origin = origin;
     current->alpha_in_subject = 0.0;
+    current->alpha_in_clip = 0.0;
     current->ind0 = -1;
     current->ind1 = -1;
+    current->ind0_clip = -1;
+    current->ind1_clip = -1;
+    current->ind0_subj = -1;
+    current->ind1_subj = -1;
     current->prev = prev;
     current->next = list;
     current->nextPoly = NULL;
@@ -152,14 +162,16 @@ int findIntersections(struct vertex *lclip, struct vertex *lsubject)
                 i2->alpha = b;
 
                 i1->alpha_in_subject = a;
-                i2->alpha_in_subject = a;
+                i2->alpha_in_subject = a; // FIXME b
+                i1->alpha_in_clip = b;
+                i2->alpha_in_clip = b; // FIXME b
 
 
                 i2->x = i1->x = w->x + b * (w->nextVertex->x - w->x);
                 i2->y = i1->y = w->y + b * (w->nextVertex->y - w->y);
 
-                i1->o = 31;
-                i2->o = 32;
+                i1->origin = 31;
+                i2->origin = 32;
 
                 i1->intersect = 1;
                 i2->intersect = 1;
@@ -247,7 +259,7 @@ void markEntries(struct vertex *p, struct vertex *q, int interior_exterior)
                                 STATUS_EXIT : STATUS_ENTRY;
     struct vertex *pi;
     int ind0,ind1;
-    ind0 = ind1 = 0;
+    p->ind0 = p->ind1 = ind0 = ind1 = 0;
     for (pi = p->next; pi != p; pi = pi->next)
     {
         if (pi->intersect)
@@ -265,6 +277,40 @@ void markEntries(struct vertex *p, struct vertex *q, int interior_exterior)
     }
 }
 
+
+// Transfer indexes and alphas among corresponding intersection nodes:
+void transferIndexesAndAlphas(int origin, struct vertex *p)
+{
+    struct vertex *pi;
+    if(origin == 1) {
+        p->ind0_subj = p->ind0;
+        p->ind1_subj = p->ind1;
+    } else if(origin == 2) {
+        p->ind0_clip = p->ind0;
+        p->ind1_clip = p->ind1;
+    }
+    for (pi = p->next; pi != p; pi = pi->next)
+    {
+        if(origin == 1) {
+            if (pi->intersect) {
+                pi->ind0_clip = pi->neighbour->ind0;
+                pi->ind1_clip = pi->neighbour->ind1;
+            }
+            pi->ind0_subj = pi->ind0;
+            pi->ind1_subj = pi->ind1;
+        } else if(origin == 2) {
+            if (pi->intersect) {
+                pi->ind0_subj = pi->neighbour->ind0;
+                pi->ind1_subj = pi->neighbour->ind1;
+            }
+            pi->ind0_clip = pi->ind0;
+            pi->ind1_clip = pi->ind1;
+        }
+    }
+}
+
+
+
 /**
   * Adds a new polygon to a previous one pointed by @lastPoly
   * with starting vertex @p
@@ -274,10 +320,15 @@ struct vertex * newPolygon(struct vertex *lastPoly, struct vertex *p)
     struct vertex *poly = (struct vertex *) malloc (sizeof(struct vertex));
     poly->x = p->x;
     poly->y = p->y;
-    poly->o = p->o;
+    poly->origin = p->origin;
     poly->alpha_in_subject = p->alpha_in_subject;
+    poly->alpha_in_clip = p->alpha_in_clip;
     poly->ind0 = p->ind0;
     poly->ind1 = p->ind1;
+    poly->ind0_clip = p->ind0_clip;
+    poly->ind1_clip = p->ind1_clip;
+    poly->ind0_subj = p->ind0_subj;
+    poly->ind1_subj = p->ind1_subj;
     poly->nextPoly = NULL;
     poly->next = NULL;
 
@@ -296,10 +347,15 @@ void newVertex(struct vertex *last, struct vertex *p)
         last->next = (struct vertex *) malloc (sizeof(struct vertex));
     point->x = p->x;
     point->y = p->y;
-    point->o = p->o;
+    point->origin = p->origin;
     point->alpha_in_subject = p->alpha_in_subject;
+    point->alpha_in_clip = p->alpha_in_clip;
     point->ind0 = p->ind0;
     point->ind1 = p->ind1;
+    point->ind0_clip = p->ind0_clip;
+    point->ind1_clip = p->ind1_clip;
+    point->ind0_subj = p->ind0_subj;
+    point->ind1_subj = p->ind1_subj;
     point->next = NULL;
     point->nextPoly = NULL;
 
@@ -334,10 +390,15 @@ int createClippedPolygon(struct vertex *lclip, struct vertex *lsubject,
             first = (struct vertex *) malloc (sizeof(struct vertex));
             first->x = current->x;
             first->y = current->y;
-            first->o = current->o;
+            first->origin = current->origin;
             first->alpha_in_subject = current->alpha_in_subject;
+            first->alpha_in_clip = current->alpha_in_clip;
             first->ind0 = current->ind0;
             first->ind1 = current->ind1;
+            first->ind0_clip = current->ind0_clip;
+            first->ind1_clip = current->ind1_clip;
+            first->ind0_subj = current->ind0_subj;
+            first->ind1_subj = current->ind1_subj;
             first->nextPoly = NULL;
             poly = first;
         }
@@ -390,15 +451,20 @@ int createClippedPolygon(struct vertex *lclip, struct vertex *lsubject,
   * @lengths: array of lengths for each polygon
   */
 void copy(struct vertex *polygons, int npolys, int nvertex,
-                double **polysx, double **polysy, int **origin, int **ind0, int **ind1, double **alphas,
+          double **polysx, double **polysy, int **origin,
+          int **ind0subject, int **ind1subject, int **ind0clip, int **ind1clip,
+          double **alpha_subject, double **alpha_clip,
           int **lengths)
 {
-    double *px = (double *) malloc (nvertex * sizeof(double));
-    double *py = (double *) malloc (nvertex * sizeof(double));
-    int    *po = (int *)    malloc (nvertex * sizeof(int));
-    int    *i0 = (int *)    malloc (nvertex * sizeof(int));
-    int    *i1 = (int *)    malloc (nvertex * sizeof(int));
-    double *as = (double *) malloc (nvertex * sizeof(double));
+    double *px  = (double *) malloc (nvertex * sizeof(double));
+    double *py  = (double *) malloc (nvertex * sizeof(double));
+    int    *po  = (int *)    malloc (nvertex * sizeof(int));
+    int    *i0s = (int *)    malloc (nvertex * sizeof(int));
+    int    *i1s = (int *)    malloc (nvertex * sizeof(int));
+    int    *i0c = (int *)    malloc (nvertex * sizeof(int));
+    int    *i1c = (int *)    malloc (nvertex * sizeof(int));
+    double *as  = (double *) malloc (nvertex * sizeof(double));
+    double *ac  = (double *) malloc (nvertex * sizeof(double));
     int *ls = (int *) malloc (npolys * sizeof(int));
     int polycount = 0, vertexcount = 0;
     struct vertex *ipoly, *ivertex;
@@ -412,12 +478,15 @@ void copy(struct vertex *polygons, int npolys, int nvertex,
         for (ivertex = ipoly; ivertex; ivertex = ivertex->next)
         {
             ls[polycount]++;
-            po[vertexcount] = ivertex->o;
+            po[vertexcount] = ivertex->origin;
             px[vertexcount] = ivertex->x;
             py[vertexcount] = ivertex->y;
             as[vertexcount] = ivertex->alpha_in_subject;
-            i0[vertexcount] = ivertex->ind0;
-            i1[vertexcount++] = ivertex->ind1;
+            ac[vertexcount] = ivertex->alpha_in_clip;
+            i0c[vertexcount] = ivertex->ind0_clip;
+            i1c[vertexcount] = ivertex->ind1_clip;
+            i0s[vertexcount] = ivertex->ind0_subj;
+            i1s[vertexcount++] = ivertex->ind1_subj;
             curlen++;
         }
         // Last (repeated) vertex copies its origin label to first one (which was initiall "flipped").
@@ -427,9 +496,12 @@ void copy(struct vertex *polygons, int npolys, int nvertex,
     *polysx = px;
     *polysy = py;
     *origin = po;
-    *ind0   = i0;
-    *ind1   = i1;
-    *alphas = as;
+    *ind0subject = i0s;
+    *ind1subject = i1s;
+    *ind0clip = i0c;
+    *ind1clip = i1c;
+    *alpha_subject = as;
+    *alpha_clip = ac;
     *lengths = ls;
 }
 
@@ -439,7 +511,9 @@ void copy(struct vertex *polygons, int npolys, int nvertex,
 // in an array of coordinates polys.
 int clip(double *clipx, double *clipy, int nc,
          double *subjectx, double *subjecty, int ns,
-         double **polysx, double **polysy, int **origin, int **ind0, int **ind1, double **alphas,
+         double **polysx, double **polysy, int **origin,
+         int **ind0subject, int **ind1subject, int **ind0clip, int **ind1clip,
+         double **alpha_subject, double **alpha_clip,
          int **lengths, int *nl, int*nlp, int *inside, int op)
 {
     struct vertex *lclip, *lsubject;
@@ -484,6 +558,14 @@ int clip(double *clipx, double *clipy, int nc,
 
     //printf("marked entries\n");
 
+
+
+    transferIndexesAndAlphas(1, lsubject);
+    transferIndexesAndAlphas(2, lclip);
+
+
+
+
     // phase three of the algorithm
     npolys = createClippedPolygon(lclip, lsubject, &polygons, &nvertex);
 
@@ -493,6 +575,15 @@ int clip(double *clipx, double *clipy, int nc,
 
         markEntries(lclip, lsubject, sIntExt);
         markEntries(lsubject, lclip, cIntExt);
+
+
+
+
+        transferIndexesAndAlphas(1, lsubject);
+        transferIndexesAndAlphas(2, lclip);
+
+
+
 
         npolys2 = createClippedPolygon(lclip, lsubject, &polygons2, &nvertex2);
 
@@ -516,7 +607,8 @@ int clip(double *clipx, double *clipy, int nc,
 
 
     // copy polygons into polys array
-    copy(polygons, npolys, nvertex, polysx, polysy, origin, ind0, ind1, alphas, lengths);
+    copy(polygons, npolys, nvertex, polysx, polysy, origin, ind0subject, ind1subject,
+         ind0clip,ind1clip,alpha_subject,alpha_clip, lengths);
 
     *nl = npolys;
 
@@ -561,24 +653,27 @@ int main(void)
 {
     double *clipx, *clipy, *subjectx, *subjecty;
     int lclip, lsubject;
+    double *polysx, *polysy, *alpha_subject, *alpha_clip;
+    int *origin,*ind0subject,*ind1subject,*ind0clip,*ind1clip;
+    int *lengths, inside, nl,nlp, i,j;
 
     readFromStdin(&clipx, &clipy, &subjectx, &subjecty, &lclip, &lsubject);
 
-    double *polysx, *polysy, *alphas;
-    int *origin,*ind0,*ind1;
-    int *lengths, inside, nl,nlp, i,j;
 
     clip(clipx, clipy, lclip, subjectx, subjecty, lsubject,
-         &polysx, &polysy, &origin, &ind0, &ind1, &alphas,
-         &lengths, &nl, &nlp, &inside, POLYGON_INTERSECTION);
+         &polysx, &polysy, &origin, &ind0subject, &ind1subject, &ind0clip, &ind1clip,
+         &alpha_subject, &alpha_clip,
+         &lengths, &nl, &nlp, &inside, POLYGON_UNION /*POLYGON_INTERSECTION*/ );
 
     int v = 0;
     for (i = 0; i < nl; i++) {
         printf("Polígono %d\n", i+1);
         printf("--------------------------\n");
         for (j = 0; j < lengths[i]; j++) {
-            printf("x=%.5f, y=%.5f, o=%d, alpha_in_subject=%.5f, ind=(%d,%d)\n",
-                   polysx[v], polysy[v], origin[v], alphas[v], ind0[v], ind1[v]);
+            printf("x=%1.5f, y=%1.5f, o=%2d, alpha_s=%1.5f, ind_s=(%+2d,%+2d), alpha_c=%1.5f, ind_c=(%+2d,%+2d)\n",
+                   polysx[v], polysy[v], origin[v],
+                   alpha_subject[v], ind0subject[v], ind1subject[v],
+                   alpha_clip[v], ind0clip[v], ind1clip[v]);
             v++;
         }
     }
@@ -590,9 +685,12 @@ int main(void)
     free(polysx);
     free(polysy);
     free(origin);
-    free(ind0);
-    free(ind1);
-    free(alphas);
+    free(ind0subject);
+    free(ind1subject);
+    free(ind0clip);
+    free(ind1clip);
+    free(alpha_subject);
+    free(alpha_clip);
     return 0;
 }
 
