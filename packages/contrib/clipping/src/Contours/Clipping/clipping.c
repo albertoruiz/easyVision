@@ -180,7 +180,33 @@ int findIntersections(struct vertex *lclip, struct vertex *lsubject)
                 x4 = w->nextVertex->x;
                 y4 = w->nextVertex->y;
 
-                if(result == BORDER_INTERSECTION) { // Perturb corresponding extreme:
+
+                // FIXME: Treat PARALLEL CASE HERE
+                if(result == PARALLEL_CASE) {
+                    //printf("clipping degeneracy: alphaP = %f, alphaQ = %f\n",a, b);
+                    //exit(1);
+                    // Perturb first segment, first extreme perpendicularly...
+                    v->x_saved = v->x;
+                    v->y_saved = v->y;
+                    v->x = x1 - EPSILON*(y2-y1);
+                    v->y = y1 - EPSILON*(x1-x2);
+                    v->perturbed = 1;
+                    x1 = v->x;
+                    y1 = v->y;
+                    // ... then intersect again ...
+                    result = intersect(v, v->nextVertex, w, w->nextVertex, &a, &b);
+                    // ... and if now there is no intersection, continue to next pair of segments.
+                    // (otherwise, it will be a INTERNAL_INTERSECTION or a BORDER_INTERSECTION, that
+                    // will be treated in the normal continuation code).
+                    if(result == NO_INTERSECTION) {
+                        continue;
+                    }
+                }
+
+
+                // If it is a border intersection, perturb corresponding extreme to avoid it:
+                if(result == BORDER_INTERSECTION) {
+                    // Slightly shorten segment extreme when perturbing (so that no intersection will occur):
                     if(a == 0.0) {
                         v->x_saved = v->x;
                         v->y_saved = v->y;
@@ -206,16 +232,17 @@ int findIntersections(struct vertex *lclip, struct vertex *lsubject)
                         w->nextVertex->y = (y4-y3)*(1.0-EPSILON) + y3;
                         w->nextVertex->perturbed = 1;
                     }
+                    // As we always shorten corresponding segment when perturbing, no intersection will occur;
+                    // thus, we can safely continue with next pair of segments.
                     continue;
                 }
 
-                // if(result == INTERNAL_INTERSECTION) // Normal case:
+                // If we get here, it is an internal intersection (result == INTERNAL_INTERSECTION),
+                // this is the "normal case":
 
                 // create intersection points
-                struct vertex *i1 =
-                    (struct vertex *) malloc (sizeof(struct vertex));
-                struct vertex *i2 =
-                    (struct vertex *) malloc (sizeof(struct vertex));
+                struct vertex *i1 = (struct vertex *) malloc (sizeof(struct vertex));
+                struct vertex *i2 = (struct vertex *) malloc (sizeof(struct vertex));
 
                 intersections++;
 
@@ -237,6 +264,13 @@ int findIntersections(struct vertex *lclip, struct vertex *lsubject)
                 i2->intersect = 1;
                 i1->processed = 0;
                 i2->processed = 0;
+
+                i1->x_saved = i1->x;
+                i1->y_saved = i1->y;
+                i1->perturbed = 0;
+                i2->x_saved = i2->x;
+                i2->y_saved = i2->y;
+                i2->perturbed = 0;
 
                 // link intersection points
                 i1->neighbour = i2;
