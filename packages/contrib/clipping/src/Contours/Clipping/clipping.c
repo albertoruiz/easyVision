@@ -8,7 +8,7 @@
 #define MIN(a,b) ( (a) < (b) ? (a) : (b) )
 #define MAX(a,b) ( (a) > (b) ? (a) : (b) )
 
-#define EPSILON 0.01
+#define EPSILON 0.001
 
 
 /**
@@ -28,6 +28,8 @@ void createList(int origin, double *polyx, double *polyy, int n, struct vertex *
     for (i = 0; i < n-1; i++) {
         current->x = polyx[i];
         current->y = polyy[i];
+        current->x_saved = polyx[i];
+        current->y_saved = polyy[i];
         current->origin = origin;
         current->prev = prev;
         current->next = (struct vertex *) malloc (sizeof(struct vertex));
@@ -42,12 +44,15 @@ void createList(int origin, double *polyx, double *polyy, int n, struct vertex *
         current->ind1_clip = -1;
         current->ind0_subj = -1;
         current->ind1_subj = -1;
+        current->perturbed = 0;
         prev = current;
         current = current->next;
     }
 
     current->x = polyx[i];
     current->y = polyy[i];
+    current->x_saved = polyx[i];
+    current->y_saved = polyy[i];
     current->origin = origin;
     current->alpha_in_subject = 0.0;
     current->alpha_in_clip = 0.0;
@@ -57,6 +62,7 @@ void createList(int origin, double *polyx, double *polyy, int n, struct vertex *
     current->ind1_clip = -1;
     current->ind0_subj = -1;
     current->ind1_subj = -1;
+    current->perturbed = 0;
     current->prev = prev;
     current->next = list;
     current->nextPoly = NULL;
@@ -102,6 +108,11 @@ void deletePolygons(struct vertex *poly)
     }
 }
 
+// Possible cases for intersections of two segments:
+#define NO_INTERSECTION        0
+#define INTERNAL_INTERSECTION  1
+#define BORDER_INTERSECTION    2
+#define PARALLEL_CASE          3
 
 // TODO: add perturbations in case alphaP or alphaQ = 0
 int intersect(struct vertex *p1, struct vertex *p2,
@@ -118,8 +129,18 @@ int intersect(struct vertex *p1, struct vertex *p2,
 
         if (wec_q1 * wec_q2 <= 0)
         {
+            if( (wec_p1-wec_p2==0.0) || (wec_q1-wec_q2==0.0) ) {
+                return PARALLEL_CASE;
+            }
             *alphaP = wec_p1/(wec_p1 - wec_p2);
             *alphaQ = wec_q1/(wec_q1 - wec_q2);
+
+            if ( (*alphaP != 0.0) && (*alphaP != 1.0) && (*alphaQ != 0.0) && (*alphaQ != 1.0) ) {
+                return INTERNAL_INTERSECTION;
+            } else {
+                return BORDER_INTERSECTION;
+            }
+
             /*int ok =  ((wec_p1 - wec_p2) != 0)
                    && ((wec_q1 - wec_q2) != 0)
                    && (*alphaP != 0) && (*alphaP != 1)
@@ -127,12 +148,12 @@ int intersect(struct vertex *p1, struct vertex *p2,
             if (!ok) {
                 printf("clipping degeneracy: alphaP = %f, alphaQ = %f\n",*alphaP, *alphaQ);
                 exit(1);
-            }*/
-            return 1;
+            }
+            return 1;*/
         }
     }
 
-    return 0;
+    return NO_INTERSECTION;
 }
 
 /**
@@ -140,16 +161,56 @@ int intersect(struct vertex *p1, struct vertex *p2,
   */
 int findIntersections(struct vertex *lclip, struct vertex *lsubject)
 {
-    double a, b;
-    int intersections = 0;
+    double a, b, x1, y1, x2, y2, x3, y3, x4, y4;
+    int intersections = 0, result;
     struct vertex *aux, *v, *w, *sort;
     for (v = lsubject; v; v = v->nextVertex == lsubject ? NULL : v->nextVertex)
         for (w = lclip; w; w = w->nextVertex == lclip ? NULL : w->nextVertex)
             if (!DISCARD_INTER(v->x, v->y, v->nextVertex->x, v->nextVertex->y,
                                 MIN(w->x, w->nextVertex->x), MIN(w->y, w->nextVertex->y),
                                 MAX(w->x, w->nextVertex->x), MAX(w->y, w->nextVertex->y))
-                && intersect(v, v->nextVertex, w, w->nextVertex, &a, &b))
+                && ((result = intersect(v, v->nextVertex, w, w->nextVertex, &a, &b)) != NO_INTERSECTION))
             {
+                x1 = v->x;
+                y1 = v->y;
+                x2 = v->nextVertex->x;
+                y2 = v->nextVertex->y;
+                x3 = w->x;
+                y3 = w->y;
+                x4 = w->nextVertex->x;
+                y4 = w->nextVertex->y;
+
+                if(result == BORDER_INTERSECTION) { // Perturb corresponding extreme:
+                    if(a == 0.0) {
+                        v->x_saved = v->x;
+                        v->y_saved = v->y;
+                        v->x = (x1-x2)*(1.0-EPSILON) + x2;
+                        v->y = (y1-y2)*(1.0-EPSILON) + y2;
+                        v->perturbed = 1;
+                    } else if(a == 1.0) {
+                        v->nextVertex->x_saved = v->nextVertex->x;
+                        v->nextVertex->y_saved = v->nextVertex->y;
+                        v->nextVertex->x = (x2-x1)*(1.0-EPSILON) + x1;
+                        v->nextVertex->y = (y2-y1)*(1.0-EPSILON) + y1;
+                        v->nextVertex->perturbed = 1;
+                    } else if(b == 0.0) {
+                        w->x_saved = w->x;
+                        w->y_saved = w->y;
+                        w->x = (x3-x4)*(1.0-EPSILON) + x4;
+                        w->y = (y3-y4)*(1.0-EPSILON) + y4;
+                        w->perturbed = 1;
+                    } else if(b == 1.0) {
+                        w->nextVertex->x_saved = w->nextVertex->x;
+                        w->nextVertex->y_saved = w->nextVertex->y;
+                        w->nextVertex->x = (x4-x3)*(1.0-EPSILON) + x3;
+                        w->nextVertex->y = (y4-y3)*(1.0-EPSILON) + y3;
+                        w->nextVertex->perturbed = 1;
+                    }
+                    continue;
+                }
+
+                // if(result == INTERNAL_INTERSECTION) // Normal case:
+
                 // create intersection points
                 struct vertex *i1 =
                     (struct vertex *) malloc (sizeof(struct vertex));
@@ -162,10 +223,9 @@ int findIntersections(struct vertex *lclip, struct vertex *lsubject)
                 i2->alpha = b;
 
                 i1->alpha_in_subject = a;
-                i2->alpha_in_subject = a; // FIXME b
+                i2->alpha_in_subject = a;
                 i1->alpha_in_clip = b;
-                i2->alpha_in_clip = b; // FIXME b
-
+                i2->alpha_in_clip = b;
 
                 i2->x = i1->x = w->x + b * (w->nextVertex->x - w->x);
                 i2->y = i1->y = w->y + b * (w->nextVertex->y - w->y);
@@ -320,6 +380,9 @@ struct vertex * newPolygon(struct vertex *lastPoly, struct vertex *p)
     struct vertex *poly = (struct vertex *) malloc (sizeof(struct vertex));
     poly->x = p->x;
     poly->y = p->y;
+    poly->x_saved = p->x_saved;
+    poly->y_saved = p->y_saved;
+    poly->perturbed = p->perturbed;
     poly->origin = p->origin;
     poly->alpha_in_subject = p->alpha_in_subject;
     poly->alpha_in_clip = p->alpha_in_clip;
@@ -347,6 +410,9 @@ void newVertex(struct vertex *last, struct vertex *p)
         last->next = (struct vertex *) malloc (sizeof(struct vertex));
     point->x = p->x;
     point->y = p->y;
+    point->x_saved = p->x_saved;
+    point->y_saved = p->y_saved;
+    point->perturbed = p->perturbed;
     point->origin = p->origin;
     point->alpha_in_subject = p->alpha_in_subject;
     point->alpha_in_clip = p->alpha_in_clip;
@@ -358,7 +424,6 @@ void newVertex(struct vertex *last, struct vertex *p)
     point->ind1_subj = p->ind1_subj;
     point->next = NULL;
     point->nextPoly = NULL;
-
 }
 
 
@@ -390,6 +455,9 @@ int createClippedPolygon(struct vertex *lclip, struct vertex *lsubject,
             first = (struct vertex *) malloc (sizeof(struct vertex));
             first->x = current->x;
             first->y = current->y;
+            first->x_saved = current->x_saved;
+            first->y_saved = current->y_saved;
+            first->perturbed = current->perturbed;
             first->origin = current->origin;
             first->alpha_in_subject = current->alpha_in_subject;
             first->alpha_in_clip = current->alpha_in_clip;
@@ -479,8 +547,13 @@ void copy(struct vertex *polygons, int npolys, int nvertex,
         {
             ls[polycount]++;
             po[vertexcount] = ivertex->origin;
-            px[vertexcount] = ivertex->x;
-            py[vertexcount] = ivertex->y;
+            if(ivertex->perturbed) {
+                px[vertexcount] = ivertex->x_saved;
+                py[vertexcount] = ivertex->y_saved;
+            } else {
+                px[vertexcount] = ivertex->x;
+                py[vertexcount] = ivertex->y;
+            }
             as[vertexcount] = ivertex->alpha_in_subject;
             ac[vertexcount] = ivertex->alpha_in_clip;
             i0c[vertexcount] = ivertex->ind0_clip;
@@ -606,6 +679,10 @@ int clip(double *clipx, double *clipy, int nc,
     //printf("clip polygon\n");
 
 
+    // recoverFromPerturbation(lclip, lsubject);
+
+
+
     // copy polygons into polys array
     copy(polygons, npolys, nvertex, polysx, polysy, origin, ind0subject, ind1subject,
          ind0clip,ind1clip,alpha_subject,alpha_clip, lengths);
@@ -659,38 +736,70 @@ int main(void)
 
     readFromStdin(&clipx, &clipy, &subjectx, &subjecty, &lclip, &lsubject);
 
-
-    clip(clipx, clipy, lclip, subjectx, subjecty, lsubject,
-         &polysx, &polysy, &origin, &ind0subject, &ind1subject, &ind0clip, &ind1clip,
-         &alpha_subject, &alpha_clip,
-         &lengths, &nl, &nlp, &inside, POLYGON_UNION /*POLYGON_INTERSECTION*/ );
-
-    int v = 0;
-    for (i = 0; i < nl; i++) {
-        printf("Polígono %d\n", i+1);
-        printf("--------------------------\n");
-        for (j = 0; j < lengths[i]; j++) {
-            printf("x=%1.5f, y=%1.5f, o=%2d, alpha_s=%1.5f, ind_s=(%+2d,%+2d), alpha_c=%1.5f, ind_c=(%+2d,%+2d)\n",
-                   polysx[v], polysy[v], origin[v],
-                   alpha_subject[v], ind0subject[v], ind1subject[v],
-                   alpha_clip[v], ind0clip[v], ind1clip[v]);
-            v++;
+    int ops;
+    for(ops=0; ops<3; ops++) {
+        clip(clipx, clipy, lclip, subjectx, subjecty, lsubject,
+             &polysx, &polysy, &origin, &ind0subject, &ind1subject, &ind0clip, &ind1clip,
+             &alpha_subject, &alpha_clip,
+             &lengths, &nl, &nlp, &inside, ops==0?POLYGON_XOREXT:(ops==1?POLYGON_UNION:POLYGON_INTERSECTION));
+        int v = 0;
+        printf("---------OPERATION: %s---------\n",ops==0?"POLYGON_XOREXT":(ops==1?"POLYGON_UNION":"POLYGON_INTERSECTION"));
+        for (i = 0; i < nl; i++) {
+            printf("Polígono %d\n", i+1);
+            printf("--------------------------\n");
+            for (j = 0; j < lengths[i]; j++) {
+                printf("x=%1.5f, y=%1.5f, o=%2d, alpha_s=%1.5f, ind_s=(%+2d,%+2d), alpha_c=%1.5f, ind_c=(%+2d,%+2d)\n",
+                       polysx[v], polysy[v], origin[v],
+                       alpha_subject[v], ind0subject[v], ind1subject[v],
+                       alpha_clip[v], ind0clip[v], ind1clip[v]);
+                v++;
+            }
         }
+        free(polysx);
+        free(polysy);
+        free(origin);
+        free(ind0subject);
+        free(ind1subject);
+        free(ind0clip);
+        free(ind1clip);
+        free(alpha_subject);
+        free(alpha_clip);
     }
-
     free(clipx);
     free(clipy);
     free(subjectx);
     free(subjecty);
-    free(polysx);
-    free(polysy);
-    free(origin);
-    free(ind0subject);
-    free(ind1subject);
-    free(ind0clip);
-    free(ind1clip);
-    free(alpha_subject);
-    free(alpha_clip);
     return 0;
 }
 
+/* PARECE QUE NO HACE FALTA; NO SE REPITE ULTIMO VERTICE?
+if(v == lsubject) { // v is the first vertex, perturb also last one.
+    v->prev->x = v->x;
+    v->prev->y = v->y;
+} else if(v == lsubject->prev) { // v is the last vertex, perturb also first one.
+    v->next->x = v->x;
+    v->next->y = v->y;
+} else if(w == lclip) { // w is the first vertex, perturb also last one.
+    w->prev->x = w->x;
+    w->prev->y = w->y;
+} else if(w == lclip->prev) { // w is the last vertex, perturb also first one.
+    w->next->x = w->x;
+    w->next->y = w->y;
+}*/
+// Function to get perturbed original polygons vertices back to original values:
+/*void recoverFromPerturbation(struct vertex *lclip, struct vertex *lsubject)
+{
+    struct vertex *v, *w;
+    for (v = lsubject; v; v = v->nextVertex == lsubject ? NULL : v->nextVertex)
+        if(v->perturbed) {
+            v->x = v->x_saved;
+            v->y = v->y_saved;
+            v->perturbed = 0;
+        }
+    for (w = lclip; w; w = w->nextVertex == lclip ? NULL : w->nextVertex)
+        if(w->perturbed) {
+            w->x = w->x_saved;
+            w->y = w->y_saved;
+            w->perturbed = 0;
+        }
+}*/
