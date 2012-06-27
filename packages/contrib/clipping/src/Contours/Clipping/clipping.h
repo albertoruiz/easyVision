@@ -19,6 +19,12 @@
 #define POLYGON_XOREXT       0x8
 #define POLYGON_DIFF_BA      0x16
 
+
+#define POLYGONS_INTERSECT  0
+#define CLIP_INSIDE_SUBJECT 1
+#define SUBJECT_INSIDE_CLIP 2
+#define DISJOINT_POLYGONS   3
+
 #include <stdlib.h>
 
 struct vertex {

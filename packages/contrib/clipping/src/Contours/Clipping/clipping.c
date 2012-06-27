@@ -626,7 +626,10 @@ int clip(double *clipx, double *clipy, int nc,
     struct vertex *lclip, *lsubject;
     struct vertex *polygons = NULL, *polygons2 = NULL, *auxpoly = NULL;
     int cIntExt=0, sIntExt=0;
-    int nvertex, nvertex2, npolys, npolys2;
+    int nvertex, nvertex2, npolys, npolys2, intersections;
+
+    //*polysx = *polysy = *alpha_subject = *alpha_clip = NULL;
+    //*origin = *ind0subject = *ind1subject = *ind0clip = *ind1clip = *lengths = NULL;
 
     // create data structures
     createList(1,clipx, clipy, nc, &lclip);
@@ -635,104 +638,250 @@ int clip(double *clipx, double *clipy, int nc,
     //printf("created lists\n");
 
     // phase one of the algorithm
-    findIntersections(lclip, lsubject);
+    intersections = findIntersections(lclip, lsubject);
 
     //printf("found intersections\n");
 
-    switch(op) {
-        case POLYGON_UNION:
-            cIntExt = sIntExt = POLYGON_INTERIOR;
-            break;
-        case POLYGON_INTERSECTION:
-            cIntExt = sIntExt = POLYGON_EXTERIOR;
-            break;
-        case POLYGON_DIFF_AB:
-            cIntExt = POLYGON_EXTERIOR;
-            sIntExt = POLYGON_INTERIOR;
-            break;
-        case POLYGON_XOREXT:
-            cIntExt = POLYGON_EXTERIOR;
-            sIntExt = POLYGON_INTERIOR;
-            break;
-        case POLYGON_DIFF_BA:
-            cIntExt = POLYGON_INTERIOR;
-            sIntExt = POLYGON_EXTERIOR;
-            break;
-        }
+    //printf("%d intersections\n",intersections);
 
-    markEntries(lclip, lsubject, sIntExt);
-    markEntries(lsubject, lclip, cIntExt);
-
-    //printf("marked entries\n");
-
-
-
-    transferIndexesAndAlphas(1, lsubject);
-    transferIndexesAndAlphas(2, lclip);
-
-
-
-
-    // phase three of the algorithm
-    npolys = createClippedPolygon(lclip, lsubject, &polygons, &nvertex);
-
-    if(op==POLYGON_XOREXT && npolys > 0) {
-        cIntExt = POLYGON_INTERIOR;
-        sIntExt = POLYGON_EXTERIOR;
+    if(intersections == 0) {
+        if (isInside(lclip,lsubject))
+            *inside = CLIP_INSIDE_SUBJECT;
+        else if (isInside(lsubject,lclip))
+            *inside = SUBJECT_INSIDE_CLIP;
+        else
+            *inside = DISJOINT_POLYGONS;
+    } else {
+        *inside = POLYGONS_INTERSECT;
+        switch(op) {
+            case POLYGON_UNION:
+                cIntExt = sIntExt = POLYGON_INTERIOR;
+                break;
+            case POLYGON_INTERSECTION:
+                cIntExt = sIntExt = POLYGON_EXTERIOR;
+                break;
+            case POLYGON_DIFF_AB:
+                cIntExt = POLYGON_EXTERIOR;
+                sIntExt = POLYGON_INTERIOR;
+                break;
+            case POLYGON_XOREXT:
+                cIntExt = POLYGON_EXTERIOR;
+                sIntExt = POLYGON_INTERIOR;
+                break;
+            case POLYGON_DIFF_BA:
+                cIntExt = POLYGON_INTERIOR;
+                sIntExt = POLYGON_EXTERIOR;
+                break;
+            }
 
         markEntries(lclip, lsubject, sIntExt);
         markEntries(lsubject, lclip, cIntExt);
 
-
-
+        //printf("marked entries\n");
 
         transferIndexesAndAlphas(1, lsubject);
         transferIndexesAndAlphas(2, lclip);
 
+        // phase three of the algorithm
+        npolys = createClippedPolygon(lclip, lsubject, &polygons, &nvertex);
 
+        if(op==POLYGON_XOREXT && npolys > 0) {
+            cIntExt = POLYGON_INTERIOR;
+            sIntExt = POLYGON_EXTERIOR;
 
+            markEntries(lclip, lsubject, sIntExt);
+            markEntries(lsubject, lclip, cIntExt);
 
-        npolys2 = createClippedPolygon(lclip, lsubject, &polygons2, &nvertex2);
+            transferIndexesAndAlphas(1, lsubject);
+            transferIndexesAndAlphas(2, lclip);
 
-        // number of "positive" polygons:
-        *nlp = npolys;
+            npolys2 = createClippedPolygon(lclip, lsubject, &polygons2, &nvertex2);
 
-        npolys += npolys2;
-        nvertex += nvertex2;
+            // number of "positive" polygons:
+            *nlp = npolys;
 
-        auxpoly = polygons;
-        while(auxpoly->nextPoly)
-            auxpoly = auxpoly->nextPoly;
-        auxpoly->nextPoly = polygons2;
+            npolys += npolys2;
+            nvertex += nvertex2;
 
-    } else {
-        // only xorext operation uses nlp:
-        *nlp = 0;
+            auxpoly = polygons;
+            while(auxpoly->nextPoly)
+                auxpoly = auxpoly->nextPoly;
+            auxpoly->nextPoly = polygons2;
+
+        } else {
+            // For the normal case (with intersections!=0), only in the xorext case nlp differs from npolys:
+            *nlp = npolys;
+        }
     }
 
     //printf("clip polygon\n");
 
-
     // recoverFromPerturbation(lclip, lsubject);
 
 
-
     // copy polygons into polys array
-    copy(polygons, npolys, nvertex, polysx, polysy, origin, ind0subject, ind1subject,
-         ind0clip,ind1clip,alpha_subject,alpha_clip, lengths);
+    if(*inside == POLYGONS_INTERSECT) {
+        copy(polygons, npolys, nvertex, polysx, polysy, origin, ind0subject, ind1subject,
+             ind0clip,ind1clip,alpha_subject,alpha_clip, lengths);
+
+        // free memory
+        deleteList(lclip);
+        deleteList(lsubject);
+        deletePolygons(polygons);
+
+    } else {
+        // free memory // FIXME OK here?
+        deleteList(lclip);
+        deleteList(lsubject);
+
+        int i, j, copy_subject = 0,copy_clip = 0, subject_first = 0;
+        switch(op) {
+            case POLYGON_UNION:
+                switch(*inside) {
+                    case CLIP_INSIDE_SUBJECT:
+                        copy_subject = 1; subject_first = 1;
+                        *nlp = 1;
+                        break;
+                    case SUBJECT_INSIDE_CLIP:
+                        copy_clip = 1;
+                        *nlp = 1;
+                        break;
+                    case DISJOINT_POLYGONS:
+                        copy_subject = copy_clip = 1;
+                        *nlp = 2;
+                        break;
+                }
+                break;
+            case POLYGON_INTERSECTION:
+                switch(*inside) {
+                    case CLIP_INSIDE_SUBJECT:
+                        copy_clip = 1;
+                        *nlp = 1;
+                        break;
+                    case SUBJECT_INSIDE_CLIP:
+                        copy_subject = 1; subject_first = 1;
+                        *nlp = 1;
+                        break;
+                    case DISJOINT_POLYGONS:
+                        *nlp = 0;
+                        break;
+                }
+                break;
+            case POLYGON_DIFF_AB:
+                switch(*inside) {
+                    case CLIP_INSIDE_SUBJECT:
+                        *nlp = 0;
+                        break;
+                    case SUBJECT_INSIDE_CLIP:
+                        copy_subject = copy_clip = 1;
+                        *nlp = 1;
+                        break;
+                    case DISJOINT_POLYGONS:
+                        copy_clip = 1;
+                        *nlp = 1;
+                        break;
+                }
+                break;
+            case POLYGON_XOREXT:
+                switch(*inside) {
+                    case CLIP_INSIDE_SUBJECT:
+                        copy_subject = copy_clip = 1; subject_first = 1;
+                        *nlp = 1;
+                        break;
+                    case SUBJECT_INSIDE_CLIP:
+                        copy_subject = copy_clip = 1;
+                        *nlp = 1;
+                        break;
+                    case DISJOINT_POLYGONS:
+                        copy_subject = copy_clip = 1;
+                        *nlp = 1;
+                        break;
+                }
+                break;
+            case POLYGON_DIFF_BA:
+                switch(*inside) {
+                    case CLIP_INSIDE_SUBJECT:
+                        copy_subject = copy_clip = 1; subject_first = 1;
+                        *nlp = 1;
+                        break;
+                    case SUBJECT_INSIDE_CLIP:
+                        *nlp = 0;
+                        break;
+                    case DISJOINT_POLYGONS:
+                        copy_subject = 1; subject_first = 1;
+                        *nlp = 1;
+                        break;
+                }
+                break;
+            }
+
+        nvertex = 0;
+        npolys = 0;
+        if(copy_subject) {
+            nvertex += ns;
+            npolys += 1;
+        }
+        if(copy_clip) {
+            nvertex += nc;
+            npolys += 1;
+        }
+
+        *polysx         = (double *) ( (nvertex!=0) ? malloc (nvertex * sizeof(double)):NULL );
+        *polysy         = (double *) ( (nvertex!=0) ? malloc (nvertex * sizeof(double)):NULL );
+        *origin         = (int *)    ( (nvertex!=0) ? malloc (nvertex * sizeof(int))   :NULL );
+        *ind0subject    = (int *)    ( (nvertex!=0) ? malloc (nvertex * sizeof(int))   :NULL );
+        *ind1subject    = (int *)    ( (nvertex!=0) ? malloc (nvertex * sizeof(int))   :NULL );
+        *ind0clip       = (int *)    ( (nvertex!=0) ? malloc (nvertex * sizeof(int))   :NULL );
+        *ind1clip       = (int *)    ( (nvertex!=0) ? malloc (nvertex * sizeof(int))   :NULL );
+        *alpha_subject  = (double *) ( (nvertex!=0) ? malloc (nvertex * sizeof(double)):NULL );
+        *alpha_clip     = (double *) ( (nvertex!=0) ? malloc (nvertex * sizeof(double)):NULL );
+        *lengths        = (int *)    ( (npolys !=0) ? malloc (npolys  * sizeof(int))   :NULL );
+
+        if(npolys == 1) {
+            (*lengths)[0] = copy_clip?nc:ns;
+        } else if(npolys == 2) {
+            (*lengths)[0] = subject_first?ns:nc;
+            (*lengths)[1] = subject_first?nc:ns;
+        }
+
+        if(copy_clip) {
+            j = subject_first?ns:0;
+            for(i=0; i<nc; i++) {
+                (*polysx)[j] = clipx[i];
+                (*polysy)[j] = clipy[i];
+                (*origin)[j] = 1;
+                (*ind0clip)[j] = i;
+                (*ind1clip)[j] = 0;
+                (*ind0subject)[j] = -1;
+                (*ind1subject)[j] = -1;
+                (*alpha_subject)[j] = 0.0;
+                (*alpha_clip)[j] = 0.0;
+                j++;
+            }
+        }
+
+        if(copy_subject) {
+            j = subject_first?0:nc;
+            for(i=0; i<ns; i++) {
+                (*polysx)[j] = subjectx[i];
+                (*polysy)[j] = subjecty[i];
+                (*origin)[j] = 2;
+                (*ind0clip)[j] = -1;
+                (*ind1clip)[j] = -1;
+                (*ind0subject)[j] = i;
+                (*ind1subject)[j] = 0;
+                (*alpha_subject)[j] = 0.0;
+                (*alpha_clip)[j] = 0.0;
+                j++;
+            }
+        }
+
+        //*nlp = 0; // FIXME ¿Convenio aquí? (interior / exterior)?
+    }
 
     *nl = npolys;
 
     //printf("copied\n");
-
-    *inside = 0;
-    if (isInside(lclip,lsubject)) *inside = 1;
-    if (isInside(lsubject,lclip)) *inside = 2;
-
-    // free memory
-    deleteList(lclip);
-    deleteList(lsubject);
-    deletePolygons(polygons);
 
     return 0;
 }
@@ -770,34 +919,46 @@ int main(void)
 
     readFromStdin(&clipx, &clipy, &subjectx, &subjecty, &lclip, &lsubject);
 
-    int ops;
-    for(ops=0; ops<3; ops++) {
+    int op,opind;
+    char *msg;
+    for(opind=0; opind<5; opind++) {
+        switch(opind) {
+            case 0: msg = "POLYGON_UNION";        op = POLYGON_UNION;        break;
+            case 1: msg = "POLYGON_INTERSECTION"; op = POLYGON_INTERSECTION; break;
+            case 2: msg = "POLYGON_DIFF_AB";      op = POLYGON_DIFF_AB;      break;
+            case 3: msg = "POLYGON_DIFF_BA";      op = POLYGON_DIFF_BA;      break;
+            case 4: msg = "POLYGON_XOREXT";       op = POLYGON_XOREXT;       break;
+        }
+
         clip(clipx, clipy, lclip, subjectx, subjecty, lsubject,
              &polysx, &polysy, &origin, &ind0subject, &ind1subject, &ind0clip, &ind1clip,
              &alpha_subject, &alpha_clip,
-             &lengths, &nl, &nlp, &inside, ops==0?POLYGON_XOREXT:(ops==1?POLYGON_UNION:POLYGON_INTERSECTION));
+             &lengths, &nl, &nlp, &inside, op);
         int v = 0;
-        printf("---------OPERATION: %s---------\n",ops==0?"POLYGON_XOREXT":(ops==1?"POLYGON_UNION":"POLYGON_INTERSECTION"));
+
+        printf("---------OPERATION: %s---------\n",msg);
         for (i = 0; i < nl; i++) {
             printf("Polígono %d\n", i+1);
             printf("--------------------------\n");
             for (j = 0; j < lengths[i]; j++) {
-                printf("x=%1.5f, y=%1.5f, o=%2d, alpha_s=%1.5f, ind_s=(%+2d,%+2d), alpha_c=%1.5f, ind_c=(%+2d,%+2d)\n",
+                printf("x=%1.5f, y=%1.5f, o=%02d, alpha_c=%1.5f, ind_c=(%+2d,%+2d), alpha_s=%1.5f, ind_s=(%+2d,%+2d)\n",
                        polysx[v], polysy[v], origin[v],
-                       alpha_subject[v], ind0subject[v], ind1subject[v],
-                       alpha_clip[v], ind0clip[v], ind1clip[v]);
+                       alpha_clip[v], ind0clip[v], ind1clip[v],
+                       alpha_subject[v], ind0subject[v], ind1subject[v]);
                 v++;
             }
         }
-        free(polysx);
-        free(polysy);
-        free(origin);
-        free(ind0subject);
-        free(ind1subject);
-        free(ind0clip);
-        free(ind1clip);
-        free(alpha_subject);
-        free(alpha_clip);
+        printf("nlp=%d inside=%d\n",nlp,inside);
+
+        if(polysx != NULL) free(polysx);
+        if(polysy != NULL) free(polysy);
+        if(origin != NULL) free(origin);
+        if(ind0subject != NULL)free(ind0subject);
+        if(ind1subject != NULL)free(ind1subject);
+        if(ind0clip != NULL)free(ind0clip);
+        if(ind1clip != NULL)free(ind1clip);
+        if(alpha_subject != NULL)free(alpha_subject);
+        if(alpha_clip != NULL)free(alpha_clip);
     }
     free(clipx);
     free(clipy);
