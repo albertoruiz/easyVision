@@ -8,7 +8,41 @@
 #define MIN(a,b) ( (a) < (b) ? (a) : (b) )
 #define MAX(a,b) ( (a) > (b) ? (a) : (b) )
 
-#define EPSILON 0.001
+#define EPSILON 0.00001
+
+#define STATUS_ENTRY 1
+#define STATUS_EXIT 0
+
+#define POLYGON_INTERIOR 1
+#define POLYGON_EXTERIOR 0
+
+struct vertex {
+    // coordinates
+    double x,y,x_saved,y_saved;
+
+    // origin
+    int origin;
+
+    // doubly linked list
+    struct vertex *next, *prev;
+    struct vertex *nextVertex;
+    struct vertex *nextPoly;
+
+    // used by the algorithm
+    unsigned char intersect;
+    unsigned char processed;
+    char entry_exit;
+    char perturbed;
+    struct vertex *neighbour;
+
+    double alpha,alpha_in_subject,alpha_in_clip;
+
+    int ind0, ind1;
+
+    int ind0_clip, ind1_clip,ind0_subj, ind1_subj;
+
+};
+
 
 
 /**
@@ -616,12 +650,22 @@ void copy(struct vertex *polygons, int npolys, int nvertex,
 // Perform clipping of the polygon clip with nc points against
 // a subject with ns points. Returns a set of nl polygons with specified lengths
 // in an array of coordinates polys.
-int clip(double *clipx, double *clipy, int nc,
-         double *subjectx, double *subjecty, int ns,
+/*int clip(double *Ax, double *Ay, int nc,
+         double *Bx, double *By, int ns,
          double **polysx, double **polysy, int **origin,
          int **ind0subject, int **ind1subject, int **ind0clip, int **ind1clip,
          double **alpha_subject, double **alpha_clip,
-         int **lengths, int *nl, int*nlp, int *inside, int op)
+         int **lengths, int *nl, int*nlp, int *status, int op)
+*/
+int clip(double *Ax, double *Ay, int nA,
+         double *Bx, double *By, int nB,
+         int op,
+         double **polysx, double **polysy,
+         int **lengths, int *nl, int*nlp, int *status,
+         int **origin,
+         int **ind0A, int **ind1A, int **ind0B, int **ind1B,
+         double **alphaA, double **alphaB)
+
 {
     struct vertex *lclip, *lsubject;
     struct vertex *polygons = NULL, *polygons2 = NULL, *auxpoly = NULL;
@@ -632,8 +676,8 @@ int clip(double *clipx, double *clipy, int nc,
     //*origin = *ind0subject = *ind1subject = *ind0clip = *ind1clip = *lengths = NULL;
 
     // create data structures
-    createList(1,clipx, clipy, nc, &lclip);
-    createList(2,subjectx, subjecty, ns, &lsubject);
+    createList(1,Ax, Ay, nA, &lclip);
+    createList(2,Bx,By, nB, &lsubject);
 
     //printf("created lists\n");
 
@@ -646,13 +690,13 @@ int clip(double *clipx, double *clipy, int nc,
 
     if(intersections == 0) {
         if (isInside(lclip,lsubject))
-            *inside = CLIP_INSIDE_SUBJECT;
+            *status = A_INSIDE_B;
         else if (isInside(lsubject,lclip))
-            *inside = SUBJECT_INSIDE_CLIP;
+            *status = B_INSIDE_A;
         else
-            *inside = DISJOINT_POLYGONS;
+            *status = DISJOINT_POLYGONS;
     } else {
-        *inside = POLYGONS_INTERSECT;
+        *status = POLYGONS_INTERSECT;
         switch(op) {
             case POLYGON_UNION:
                 cIntExt = sIntExt = POLYGON_INTERIOR;
@@ -720,9 +764,9 @@ int clip(double *clipx, double *clipy, int nc,
 
 
     // copy polygons into polys array
-    if(*inside == POLYGONS_INTERSECT) {
-        copy(polygons, npolys, nvertex, polysx, polysy, origin, ind0subject, ind1subject,
-             ind0clip,ind1clip,alpha_subject,alpha_clip, lengths);
+    if(*status == POLYGONS_INTERSECT) {
+        copy(polygons, npolys, nvertex, polysx, polysy, origin, ind0B, ind1B,
+             ind0A,ind1A,alphaB,alphaA, lengths);
 
         // free memory
         deleteList(lclip);
@@ -737,12 +781,12 @@ int clip(double *clipx, double *clipy, int nc,
         int i, j, copy_subject = 0,copy_clip = 0, subject_first = 0;
         switch(op) {
             case POLYGON_UNION:
-                switch(*inside) {
-                    case CLIP_INSIDE_SUBJECT:
+                switch(*status) {
+                    case A_INSIDE_B:
                         copy_subject = 1; subject_first = 1;
                         *nlp = 1;
                         break;
-                    case SUBJECT_INSIDE_CLIP:
+                    case B_INSIDE_A:
                         copy_clip = 1;
                         *nlp = 1;
                         break;
@@ -753,12 +797,12 @@ int clip(double *clipx, double *clipy, int nc,
                 }
                 break;
             case POLYGON_INTERSECTION:
-                switch(*inside) {
-                    case CLIP_INSIDE_SUBJECT:
+                switch(*status) {
+                    case A_INSIDE_B:
                         copy_clip = 1;
                         *nlp = 1;
                         break;
-                    case SUBJECT_INSIDE_CLIP:
+                    case B_INSIDE_A:
                         copy_subject = 1; subject_first = 1;
                         *nlp = 1;
                         break;
@@ -768,11 +812,11 @@ int clip(double *clipx, double *clipy, int nc,
                 }
                 break;
             case POLYGON_DIFF_AB:
-                switch(*inside) {
-                    case CLIP_INSIDE_SUBJECT:
+                switch(*status) {
+                    case A_INSIDE_B:
                         *nlp = 0;
                         break;
-                    case SUBJECT_INSIDE_CLIP:
+                    case B_INSIDE_A:
                         copy_subject = copy_clip = 1;
                         *nlp = 1;
                         break;
@@ -783,12 +827,12 @@ int clip(double *clipx, double *clipy, int nc,
                 }
                 break;
             case POLYGON_XOREXT:
-                switch(*inside) {
-                    case CLIP_INSIDE_SUBJECT:
+                switch(*status) {
+                    case A_INSIDE_B:
                         copy_subject = copy_clip = 1; subject_first = 1;
                         *nlp = 1;
                         break;
-                    case SUBJECT_INSIDE_CLIP:
+                    case B_INSIDE_A:
                         copy_subject = copy_clip = 1;
                         *nlp = 1;
                         break;
@@ -799,12 +843,12 @@ int clip(double *clipx, double *clipy, int nc,
                 }
                 break;
             case POLYGON_DIFF_BA:
-                switch(*inside) {
-                    case CLIP_INSIDE_SUBJECT:
+                switch(*status) {
+                    case A_INSIDE_B:
                         copy_subject = copy_clip = 1; subject_first = 1;
                         *nlp = 1;
                         break;
-                    case SUBJECT_INSIDE_CLIP:
+                    case B_INSIDE_A:
                         *nlp = 0;
                         break;
                     case DISJOINT_POLYGONS:
@@ -818,60 +862,60 @@ int clip(double *clipx, double *clipy, int nc,
         nvertex = 0;
         npolys = 0;
         if(copy_subject) {
-            nvertex += ns;
+            nvertex += nB;
             npolys += 1;
         }
         if(copy_clip) {
-            nvertex += nc;
+            nvertex += nA;
             npolys += 1;
         }
 
-        *polysx         = (double *) ( (nvertex!=0) ? malloc (nvertex * sizeof(double)):NULL );
-        *polysy         = (double *) ( (nvertex!=0) ? malloc (nvertex * sizeof(double)):NULL );
-        *origin         = (int *)    ( (nvertex!=0) ? malloc (nvertex * sizeof(int))   :NULL );
-        *ind0subject    = (int *)    ( (nvertex!=0) ? malloc (nvertex * sizeof(int))   :NULL );
-        *ind1subject    = (int *)    ( (nvertex!=0) ? malloc (nvertex * sizeof(int))   :NULL );
-        *ind0clip       = (int *)    ( (nvertex!=0) ? malloc (nvertex * sizeof(int))   :NULL );
-        *ind1clip       = (int *)    ( (nvertex!=0) ? malloc (nvertex * sizeof(int))   :NULL );
-        *alpha_subject  = (double *) ( (nvertex!=0) ? malloc (nvertex * sizeof(double)):NULL );
-        *alpha_clip     = (double *) ( (nvertex!=0) ? malloc (nvertex * sizeof(double)):NULL );
-        *lengths        = (int *)    ( (npolys !=0) ? malloc (npolys  * sizeof(int))   :NULL );
+        *polysx  = (double *) ( (nvertex!=0) ? malloc (nvertex * sizeof(double)):NULL );
+        *polysy  = (double *) ( (nvertex!=0) ? malloc (nvertex * sizeof(double)):NULL );
+        *origin  = (int *)    ( (nvertex!=0) ? malloc (nvertex * sizeof(int))   :NULL );
+        *ind0B   = (int *)    ( (nvertex!=0) ? malloc (nvertex * sizeof(int))   :NULL );
+        *ind1B   = (int *)    ( (nvertex!=0) ? malloc (nvertex * sizeof(int))   :NULL );
+        *ind0A   = (int *)    ( (nvertex!=0) ? malloc (nvertex * sizeof(int))   :NULL );
+        *ind1A   = (int *)    ( (nvertex!=0) ? malloc (nvertex * sizeof(int))   :NULL );
+        *alphaB = (double *) ( (nvertex!=0) ? malloc (nvertex * sizeof(double)):NULL );
+        *alphaA = (double *) ( (nvertex!=0) ? malloc (nvertex * sizeof(double)):NULL );
+        *lengths = (int *)    ( (npolys !=0) ? malloc (npolys  * sizeof(int))   :NULL );
 
         if(npolys == 1) {
-            (*lengths)[0] = copy_clip?nc:ns;
+            (*lengths)[0] = copy_clip?nA:nB;
         } else if(npolys == 2) {
-            (*lengths)[0] = subject_first?ns:nc;
-            (*lengths)[1] = subject_first?nc:ns;
+            (*lengths)[0] = subject_first?nB:nA;
+            (*lengths)[1] = subject_first?nA:nB;
         }
 
         if(copy_clip) {
-            j = subject_first?ns:0;
-            for(i=0; i<nc; i++) {
-                (*polysx)[j] = clipx[i];
-                (*polysy)[j] = clipy[i];
+            j = subject_first?nB:0;
+            for(i=0; i<nA; i++) {
+                (*polysx)[j] = Ax[i];
+                (*polysy)[j] = Ay[i];
                 (*origin)[j] = 1;
-                (*ind0clip)[j] = i;
-                (*ind1clip)[j] = 0;
-                (*ind0subject)[j] = -1;
-                (*ind1subject)[j] = -1;
-                (*alpha_subject)[j] = 0.0;
-                (*alpha_clip)[j] = 0.0;
+                (*ind0A)[j] = i;
+                (*ind1A)[j] = 0;
+                (*ind0B)[j] = -1;
+                (*ind1B)[j] = -1;
+                (*alphaB)[j] = 0.0;
+                (*alphaA)[j] = 0.0;
                 j++;
             }
         }
 
         if(copy_subject) {
-            j = subject_first?0:nc;
-            for(i=0; i<ns; i++) {
-                (*polysx)[j] = subjectx[i];
-                (*polysy)[j] = subjecty[i];
+            j = subject_first?0:nA;
+            for(i=0; i<nB; i++) {
+                (*polysx)[j] = Bx[i];
+                (*polysy)[j] = By[i];
                 (*origin)[j] = 2;
-                (*ind0clip)[j] = -1;
-                (*ind1clip)[j] = -1;
-                (*ind0subject)[j] = i;
-                (*ind1subject)[j] = 0;
-                (*alpha_subject)[j] = 0.0;
-                (*alpha_clip)[j] = 0.0;
+                (*ind0A)[j] = -1;
+                (*ind1A)[j] = -1;
+                (*ind0B)[j] = i;
+                (*ind1B)[j] = 0;
+                (*alphaB)[j] = 0.0;
+                (*alphaA)[j] = 0.0;
                 j++;
             }
         }
@@ -915,7 +959,7 @@ int main(void)
     int lclip, lsubject;
     double *polysx, *polysy, *alpha_subject, *alpha_clip;
     int *origin,*ind0subject,*ind1subject,*ind0clip,*ind1clip;
-    int *lengths, inside, nl,nlp, i,j;
+    int *lengths, status, nl,nlp, i,j;
 
     readFromStdin(&clipx, &clipy, &subjectx, &subjecty, &lclip, &lsubject);
 
@@ -930,10 +974,15 @@ int main(void)
             case 4: msg = "POLYGON_XOREXT";       op = POLYGON_XOREXT;       break;
         }
 
-        clip(clipx, clipy, lclip, subjectx, subjecty, lsubject,
-             &polysx, &polysy, &origin, &ind0subject, &ind1subject, &ind0clip, &ind1clip,
-             &alpha_subject, &alpha_clip,
-             &lengths, &nl, &nlp, &inside, op);
+        clip(clipx, clipy, lclip,
+             subjectx, subjecty, lsubject,
+             op,
+             &polysx, &polysy,
+             &lengths, &nl, &nlp, &status,
+             &origin,
+             &ind0clip, &ind1clip, &ind0subject, &ind1subject,
+             &alpha_clip, &alpha_subject);
+
         int v = 0;
 
         printf("---------OPERATION: %s---------\n",msg);
@@ -941,14 +990,14 @@ int main(void)
             printf("Polígono %d\n", i+1);
             printf("--------------------------\n");
             for (j = 0; j < lengths[i]; j++) {
-                printf("x=%1.5f, y=%1.5f, o=%02d, alpha_c=%1.5f, ind_c=(%+2d,%+2d), alpha_s=%1.5f, ind_s=(%+2d,%+2d)\n",
+                printf("x=%1.5f, y=%1.5f, o=%02d, alphaA=%1.5f, indA=(%+2d,%+2d), alphaB=%1.5f, indB=(%+2d,%+2d)\n",
                        polysx[v], polysy[v], origin[v],
                        alpha_clip[v], ind0clip[v], ind1clip[v],
                        alpha_subject[v], ind0subject[v], ind1subject[v]);
                 v++;
             }
         }
-        printf("nlp=%d inside=%d\n",nlp,inside);
+        printf("nlp=%d status=%d\n",nlp,status);
 
         if(polysx != NULL) free(polysx);
         if(polysy != NULL) free(polysy);
