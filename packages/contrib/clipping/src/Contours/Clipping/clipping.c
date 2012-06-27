@@ -206,12 +206,12 @@ int findIntersections(struct vertex *lA, struct vertex *lB)
     double alphaA, alphaB, x1, y1, x2, y2, x3, y3, x4, y4;
     int intersections = 0, result;
     struct vertex *aux, *v, *w, *sort;
-    for (v = lB; v; v = v->nextVertex == lB ? NULL : v->nextVertex)
-        for (w = lA; w; w = w->nextVertex == lA ? NULL : w->nextVertex)
+    for (v = lA; v; v = v->nextVertex == lA ? NULL : v->nextVertex)
+        for (w = lB; w; w = w->nextVertex == lB ? NULL : w->nextVertex)
             if (!DISCARD_INTER(v->x, v->y, v->nextVertex->x, v->nextVertex->y,
-                                MIN(w->x, w->nextVertex->x), MIN(w->y, w->nextVertex->y),
-                                MAX(w->x, w->nextVertex->x), MAX(w->y, w->nextVertex->y))
-                && ((result = intersect(v, v->nextVertex, w, w->nextVertex, &alphaB, &alphaA)) != NO_INTERSECTION))
+                               MIN(w->x, w->nextVertex->x), MIN(w->y, w->nextVertex->y),
+                               MAX(w->x, w->nextVertex->x), MAX(w->y, w->nextVertex->y))
+                && ((result = intersect(v, v->nextVertex, w, w->nextVertex, &alphaA, &alphaB)) != NO_INTERSECTION))
             {
                 x1 = v->x;
                 y1 = v->y;
@@ -232,7 +232,7 @@ int findIntersections(struct vertex *lA, struct vertex *lB)
                     x1 = v->x;
                     y1 = v->y;
                     // ... then intersect again ...
-                    result = intersect(v, v->nextVertex, w, w->nextVertex, &alphaB, &alphaA);
+                    result = intersect(v, v->nextVertex, w, w->nextVertex, &alphaA, &alphaB);
                     // ... and if there is no intersection now, continue to next pair of segments.
                     // (otherwise, it will be a INTERNAL_INTERSECTION or a BORDER_INTERSECTION, that
                     // will be treated in the normal continuation code).
@@ -244,25 +244,25 @@ int findIntersections(struct vertex *lA, struct vertex *lB)
                 // If it is a border intersection, perturb corresponding extreme to avoid it:
                 if(result == BORDER_INTERSECTION) {
                     // Slightly shorten segment extreme when perturbing (so that no intersection will occur):
-                    if(alphaB == 0.0) {
+                    if(alphaA == 0.0) {
                         v->x_saved = v->x;
                         v->y_saved = v->y;
                         v->x = (x1-x2)*(1.0-EPSILON) + x2;
                         v->y = (y1-y2)*(1.0-EPSILON) + y2;
                         v->perturbed = 1;
-                    } else if(alphaB == 1.0) {
+                    } else if(alphaA == 1.0) {
                         v->nextVertex->x_saved = v->nextVertex->x;
                         v->nextVertex->y_saved = v->nextVertex->y;
                         v->nextVertex->x = (x2-x1)*(1.0-EPSILON) + x1;
                         v->nextVertex->y = (y2-y1)*(1.0-EPSILON) + y1;
                         v->nextVertex->perturbed = 1;
-                    } else if(alphaA == 0.0) {
+                    } else if(alphaB == 0.0) {
                         w->x_saved = w->x;
                         w->y_saved = w->y;
                         w->x = (x3-x4)*(1.0-EPSILON) + x4;
                         w->y = (y3-y4)*(1.0-EPSILON) + y4;
                         w->perturbed = 1;
-                    } else if(alphaA == 1.0) {
+                    } else if(alphaB == 1.0) {
                         w->nextVertex->x_saved = w->nextVertex->x;
                         w->nextVertex->y_saved = w->nextVertex->y;
                         w->nextVertex->x = (x4-x3)*(1.0-EPSILON) + x3;
@@ -281,22 +281,23 @@ int findIntersections(struct vertex *lA, struct vertex *lB)
                 struct vertex *i1 = (struct vertex *) malloc (sizeof(struct vertex));
                 struct vertex *i2 = (struct vertex *) malloc (sizeof(struct vertex));
 
+                double x_cut = w->x+alphaB*(w->nextVertex->x-w->x),
+                       y_cut = w->y+alphaB*(w->nextVertex->y-w->y);
+
                 SET_NODE(i1,
-                 /*x*/ w->x+alphaA*(w->nextVertex->x-w->x), /*y*/ w->y+alphaA*(w->nextVertex->y-w->y),
-                 /*x_saved*/ w->x+alphaA*(w->nextVertex->x-w->x), /*y_saved*/ w->y+alphaA*(w->nextVertex->y-w->y),
+                 /*x*/ x_cut, /*y*/ y_cut, /*x_saved*/ x_cut, /*y_saved*/ y_cut,
                  /*next*/ NULL, /*prev*/ NULL,
                  /*nextVertex*/ NULL, /*nextPoly*/ NULL, /*neighbour*/ i2,
-                 /*origin*/ ORIGIN_INT_ENTERS_A, /*intersect*/ 1, /*processed*/ 0, /*entry_exit*/ 0, /*perturbed*/ 0,
-                 /*alpha*/ alphaB, /*alphaA*/ alphaA, /*alphaB*/ alphaB,
+                 /*origin*/ ORIGIN_INT_ENTERS_B, /*intersect*/ 1, /*processed*/ 0, /*entry_exit*/ 0, /*perturbed*/ 0,
+                 /*alpha*/ alphaA, /*alphaA*/ alphaA, /*alphaB*/ alphaB,
                  /*ind0*/ -1, /*ind1*/ -1, /*ind0A*/ -1, /*ind1A*/ -1, /*ind0B*/ -1, /*ind1B*/ -1);
 
                 SET_NODE(i2,
-                 /*x*/ w->x+alphaA*(w->nextVertex->x-w->x), /*y*/ w->y+alphaA*(w->nextVertex->y-w->y),
-                 /*x_saved*/ w->x+alphaA*(w->nextVertex->x-w->x), /*y_saved*/ w->y+alphaA*(w->nextVertex->y-w->y),
+                 /*x*/ x_cut, /*y*/ y_cut, /*x_saved*/ x_cut, /*y_saved*/ y_cut,
                  /*next*/ NULL, /*prev*/ NULL,
                  /*nextVertex*/ NULL, /*nextPoly*/ NULL, /*neighbour*/ i1,
-                 /*origin*/ ORIGIN_INT_ENTERS_B, /*intersect*/ 1, /*processed*/ 0, /*entry_exit*/ 0, /*perturbed*/ 0,
-                 /*alpha*/ alphaA, /*alphaA*/ alphaA, /*alphaB*/ alphaB,
+                 /*origin*/ ORIGIN_INT_ENTERS_A, /*intersect*/ 1, /*processed*/ 0, /*entry_exit*/ 0, /*perturbed*/ 0,
+                 /*alpha*/ alphaB, /*alphaA*/ alphaA, /*alphaB*/ alphaB,
                  /*ind0*/ -1, /*ind1*/ -1, /*ind0A*/ -1, /*ind1A*/ -1, /*ind0B*/ -1, /*ind1B*/ -1);
 
                 // Insert intersection points into polygons, in the correct position according to its alpha values:
