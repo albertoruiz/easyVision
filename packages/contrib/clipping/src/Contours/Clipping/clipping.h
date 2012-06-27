@@ -52,20 +52,20 @@
 #define DISJOINT_POLYGONS    3
 
 // Possible marks for each output vertex:
-/// Vertex comes from polygon A
+/// Output vertex comes from polygon A
 #define ORIGIN_A             1
-/// Vertex comes from polygon B
+/// Output vertex comes from polygon B
 #define ORIGIN_B             2
-/// Vertex comes from an intersection, and next edge enters into polygon A
+/// Output vertex comes from an intersection, and next edge enters into polygon A
 #define ORIGIN_INT_ENTERS_A  31
-/// Vertex comes from an intersection, and next edge enters into polygon B
+/// Output vertex comes from an intersection, and next edge enters into polygon B
 #define ORIGIN_INT_ENTERS_B  32
 
 /// @brief Function that performs any clippling operation (union, intersection, diff, xor) on a pair of input polygons.
 ///
 /// Performs clipping of the polygon A with nA points against another polygon B with nB points. Returns a (possibly
 /// empty) set of nl polygons with specified lengths in an array of coordinates polys. Some of the output polygons
-/// can be termed as "negative" (for example, the XOR operation is is called EXTENDED because it is returned with
+/// can be termed as "negative" (for example, the XOR operation is called EXTENDED because it is returned with
 /// sign, that is, A-B is returned as "positive" and B-A as"negative"; also, in a difference A-B when B is
 /// completely contained by A, the output is given by two polygons, A and B, of which the first is output as
 /// "positive", while the second is output as "negative").
@@ -73,7 +73,8 @@
 /// Here is an example of output for the following two closed input polygons A={(0,0),(8,0),(8,7),(0,7),(0,0)},
 /// and B={(5,-3),(5,2),(9,2),(7,4),(9,5),(-3,5),(5,-3)} (observe that input will only be correct if the last
 /// vertex coincides with the first vertex on each polygon). See help on input/output parameters of the function
-/// for further details on interpreting all the details of the example.
+/// for further details on interpreting all the details of the example. The example is best interpreted if you
+/// draw the polygons in a squared sheet.
 ///
 /*!  @code
 ---------OPERATION: POLYGON_UNION---------
@@ -231,41 +232,43 @@ nlp=4 status=0
 ///                         @ref POLYGON_DIFF_AB @ref POLYGON_XOREXT or @ref POLYGON_DIFF_BA
 /// @param polysx  (output) Array of X coordinates for vertices of output polygons. Should be freed by caller
 ///                         after used. Its length is equal to the sum of integers contained in the output array
-///                         lengths (see below).
+///                         \a lengths (see below).
 /// @param polysy  (output) Array of Y coordinates for vertices of output polygons. Should be freed by caller
 ///                         after used. Its length is equal to the sum of integers contained in the output array
-///                         lengths (see below).
+///                         \a lengths (see below).
 /// @param lengths (output) Array of lengths (in number of vertices) of output polygons. Should be freed by caller
 ///                         after used.
-/// @param nl      (output) Length of array of lengths.
+/// @param nl      (output) Length of array \a lengths.
 /// @param nlp     (output) Indicates how many of the output polygons are "positive". Positive polygons always come
 ///                         before negative ones in the output arrays (polysx,polysy,lengths, origin, etc.)
-///                         You can always assume safely that nlp <= nl.
-/// @param status  (output) One of the possible output status of the function (@ref POLYGONS_INTERSECT,
-///                         @ref A_INSIDE_B, @ref B_INSIDE_A, or @ref DISJOINT_POLYGONS).
+///                         You can always safely assume that \a nlp <= \a nl.
+/// @param status  (output) Output status of the function. It can be any of the following: @ref POLYGONS_INTERSECT,
+///                         @ref A_INSIDE_B, @ref B_INSIDE_A, or @ref DISJOINT_POLYGONS.
 /// @param origin  (output) Array which indicates the origin (@ref ORIGIN_A, @ref ORIGIN_B,
 ///                         @ref ORIGIN_INT_ENTERS_A or @ref ORIGIN_INT_ENTERS_B) of each output vertex. Should be
 ///                         freed by caller after used. Its length is equal to the sum of integers contained in the
-///                         output array lengths.
+///                         output array \a lengths (i.e., the total number of output vertices, just as \a polysx
+///                         and \a polysy, and also the following output arrays \a ind0A, \a ind1A, \a ind0B,
+///                         \a ind1B, \a alphaA and \a alphaB, see below).
 /// @param ind0A   (output) Array which indicates the "edge" in polygon A in which the corresponding output vertex
 ///                         is located. An "edge" starts in the corresponding input vertex, and ends just before
-///                         the following vertex (without including it). A value of -1 just indicates that the
-///                         vertex is just not contained into polygon A. This array should also be freed by caller
-///                         after used, and its length is equal to the sum of integers contained in the output
-///                         array lengths.
+///                         the following input vertex (without including it). A value of -1 just indicates that
+///                         the vertex is not contained into polygon A. This array should also be freed by
+///                         caller after used, and its length is equal to the sum of integers contained in the
+///                         output array lengths.
 /// @param ind1A   (output) Array which indicates the vertex position in "edge" in polygon A in which the
 ///                         corresponding output vertex is located. 0 corresponds to the input vertex itself,
 ///                         while values >0 correspond to "pure intersection" output vertices, sorted along the
-///                         edge. A value of -1 just indicates that the vertex is just not contained into polygon
+///                         edge. A value of -1 just indicates that the vertex is not contained into polygon
 ///                         A. Again, this array should also be freed by caller after used, and its length is
-///                         equal to the sum of integers contained in the output array lengths.
-/// @param ind0B   (output) Just the same as ind0A, but for vertices contained in polygon B.
-/// @param ind1B   (output) Just the same as ind1A, but for vertices contained in polygon B.
+///                         equal to the sum of integers contained in the output array \a lengths.
+/// @param ind0B   (output) Just the same as \a ind0A, but for vertices contained in polygon B.
+/// @param ind1B   (output) Just the same as \a ind1A, but for vertices contained in polygon B.
 /// @param alphaA  (output) Array with real values in the interval [0.0;1.0), indicating the exact position of the
-///                         corresponding output vertices along the corresponding polygon A edges. 0.0 Corresponds
-///                         to first extreme of edge (input vertex), while 1.0 corresponds to last extreme of edge
-///                         (i.e., next vertex in input polygon).
-/// @param alphaB  (output) Just the same as alphaA, but for vertices contained in polygon B.
+///                         corresponding output vertices along the corresponding polygon A edges. A value equal to
+///                         0.0 corresponds to first extreme of edge (input vertex), while 1.0 would correspond to
+///                         last extreme of edge (i.e., next vertex in input polygon).
+/// @param alphaB  (output) Just the same as \a alphaA, but for vertices contained in polygon B.
 ///
 /// @returns 0 if success, 1 in case of failure.
 
