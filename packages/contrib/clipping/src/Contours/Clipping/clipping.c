@@ -224,11 +224,13 @@ int findIntersections(struct vertex *lA, struct vertex *lB)
 
                 if(result == PARALLEL_CASE) {
                     // Perturb first segment, first extreme perpendicularly...
-                    v->x_saved = v->x;
-                    v->y_saved = v->y;
+                    if(!v->perturbed) {
+                        v->x_saved = v->x;
+                        v->y_saved = v->y;
+                        v->perturbed = 1;
+                    }
                     v->x = x1 - EPSILON*(y2-y1);
                     v->y = y1 - EPSILON*(x1-x2);
-                    v->perturbed = 1;
                     x1 = v->x;
                     y1 = v->y;
                     // ... then intersect again ...
@@ -245,29 +247,37 @@ int findIntersections(struct vertex *lA, struct vertex *lB)
                 if(result == BORDER_INTERSECTION) {
                     // Slightly shorten segment extreme when perturbing (so that no intersection will occur):
                     if(alphaA == 0.0) {
-                        v->x_saved = v->x;
-                        v->y_saved = v->y;
+                        if(!v->perturbed) {
+                            v->x_saved = v->x;
+                            v->y_saved = v->y;
+                            v->perturbed = 1;
+                        }
                         v->x = (x1-x2)*(1.0-EPSILON) + x2;
                         v->y = (y1-y2)*(1.0-EPSILON) + y2;
-                        v->perturbed = 1;
                     } else if(alphaA == 1.0) {
-                        v->nextVertex->x_saved = v->nextVertex->x;
-                        v->nextVertex->y_saved = v->nextVertex->y;
+                        if(!v->nextVertex->perturbed) {
+                            v->nextVertex->x_saved = v->nextVertex->x;
+                            v->nextVertex->y_saved = v->nextVertex->y;
+                            v->nextVertex->perturbed = 1;
+                        }
                         v->nextVertex->x = (x2-x1)*(1.0-EPSILON) + x1;
                         v->nextVertex->y = (y2-y1)*(1.0-EPSILON) + y1;
-                        v->nextVertex->perturbed = 1;
                     } else if(alphaB == 0.0) {
-                        w->x_saved = w->x;
-                        w->y_saved = w->y;
+                        if(!w->perturbed) {                        
+                            w->x_saved = w->x;
+                            w->y_saved = w->y;
+                            w->perturbed = 1;
+                        }
                         w->x = (x3-x4)*(1.0-EPSILON) + x4;
                         w->y = (y3-y4)*(1.0-EPSILON) + y4;
-                        w->perturbed = 1;
                     } else if(alphaB == 1.0) {
-                        w->nextVertex->x_saved = w->nextVertex->x;
-                        w->nextVertex->y_saved = w->nextVertex->y;
+                        if(!w->nextVertex->perturbed) {
+                            w->nextVertex->x_saved = w->nextVertex->x;
+                            w->nextVertex->y_saved = w->nextVertex->y;
+                            w->nextVertex->perturbed = 1;
+                        }
                         w->nextVertex->x = (x4-x3)*(1.0-EPSILON) + x3;
                         w->nextVertex->y = (y4-y3)*(1.0-EPSILON) + y3;
-                        w->nextVertex->perturbed = 1;
                     }
                     // As we always shorten corresponding segment when perturbing, no intersection will occur;
                     // thus, we can safely continue with next pair of segments.
