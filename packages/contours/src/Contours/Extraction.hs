@@ -168,10 +168,12 @@ otsuContours x = contours 1000 100 otsu
 
 --------------------------------------------------------------------------------
 
-
-localContours :: CUChar -> ImageGray -> ([Polyline],[Polyline])
+localContours :: CUChar      -- ^ contrast
+              -> Int         -- ^ minimum length
+              -> ImageGray   -- ^ input image
+              -> ([Polyline],[Polyline])  -- ^ (black, white)
 -- ^ extract contours (dark,light) with adaptive local binarization
-localContours rth g = (cs difB, cs difW)
+localContours rth len g = (cs difB, cs difW)
   where
     gmx  = filterMax8u 4 g
     gmn  = filterMin8u 4 g
@@ -186,7 +188,7 @@ localContours rth g = (cs difB, cs difW)
     
     cs dif = filter good $ rcs
       where
-        rcs = contours 1000 50 $ dif `andI` mask
+        rcs = contours 1000 len $ dif `andI` mask
         good = ok . head . pointsToPixels (size dif) . polyPts
 
     ok p = val8u mx p > val8u th p && val8u mn p < val8u th p
