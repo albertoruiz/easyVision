@@ -3,7 +3,7 @@
 module Vision.Tensorial(
     fundamental, trifocal, quadrifocal,
     multiView, fourViews, threeViews, twoViews, extractFirst,
-    flipDir, refine, relocate,
+    flipDir, refine, relocate, alignPtsTo,
     kal, autoCalibrate, calibrate,
     quality, signalLevel, signalNoise, objectQuality, poseQuality, autoMetric,
     homogT, inhomogT, eps3, eps4, unitT, frobT, normInfT,
@@ -27,7 +27,8 @@ import Data.Function(on)
 import Control.Applicative
 import Control.Monad hiding (join)
 import Vision.TensorRep
-import Util.Misc(splitEvery,pairsWith,mean,debug)
+import Util.Misc(splitEvery,pairsWith,mean,debug,diagl)
+import Util.Estimation(procrustes)
 
 
 -- Homogeneous and inhomogenous versions of a tensor in a given index:
@@ -297,6 +298,35 @@ relocate p = p { p3d = (p3d p * hi)!>"yx", cam = (cam p * h) !> "yx"} where
     [x,y,z] = toList m
     s = sqrt $ maxElement $ eigenvaluesSH' c 
 
+-------------------------------------------------
+
+alignPtsTo :: VProb -> VProb -> VProb
+-- ^ metric alignment of two reconstructions for visual inspection
+--   (we check a possible mirror image solution)
+alignPtsTo p q = if e1 < e2 then q1 else q2
+  where
+    (e1,q1) = alignPts' (-1) p q
+    (e2,q2) = alignPts'   1  p q
+
+    alignPts' sg p q = (err, q {p3d = okp3d, cam = okCams})
+      where
+        di = diagl [sg,1,1]
+        a = asMatrix $ inhomogT "x" $ p3d q
+        b = asMatrix $ inhomogT "x" $ p3d p
+        (s,r,d) = procrustes b (a <> trans di)
+        m = diagl [s,s,s,1]
+            <>
+            fromBlocks [[r,asColumn d],
+                        [0,1]]
+            <> diagl [sg,1,1,1]
+        t = (transf $ toLists m) !"yx"
+        it = (transf $ toLists $ inv m) !"xy"
+        okp3d = (p3d q * t) !"nx"
+        okCams = (cam q * it) !"cvx"
+        err = pnorm Frobenius (a - LA.scalar s * (b <> trans r + asRow d))
+
+--------------------------------------------------------------------------------
+
 
 ihPoints3D :: VProb -> [Vector Double]
 ihPoints3D = map coords . flip parts "n" . inhomogT "x" . p3d
@@ -367,3 +397,4 @@ signalNoise p = (quality p / signalLevel p)
 getCams p = map asMatrix $ parts (cam p) "c"
 
 getP3d p = toRows $ asMatrix $ p3d p
+
