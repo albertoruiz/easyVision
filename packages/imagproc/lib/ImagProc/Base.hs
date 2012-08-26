@@ -19,7 +19,7 @@ module ImagProc.Base
   Pixel(..),
   pixelsToPoints, pointsToPixels, pixelToPointTrans,
   Segment(..),
-  segmentLength,
+  segmentLength, cosAngleSegments,
   InterestPoint(..),
   Polyline(..),
   HLine(..)
@@ -108,6 +108,21 @@ segmentLength (Segment {extreme1 = e1, extreme2 = e2}) = distPoints e1 e2
 distPoints :: Point -> Point -> Double
 distPoints (Point a b) (Point x y) = sqrt $ (a-x)^2+(b-y)^2
 
+cosAngleSegments :: Segment -> Segment -> Double
+cosAngleSegments (Segment p q) (Segment p' q') = ca
+  where
+     Point x0 y0 = p
+     Point x1 y1 = q
+     Point x0' y0' = p'
+     Point x1' y1' = q'
+     ux = x1-x0
+     uy = y1-y0
+     vx = x1'-x0'
+     vy = y1'-y0'
+     u2 = ux*ux+uy*uy
+     v2 = vx*vx+vy*vy
+     uv = ux*vx+uy*vy
+     ca = uv/(sqrt (abs u2)*sqrt (abs v2))
 -----------------------------------------------------------------------------
 
 data InterestPoint = IP {

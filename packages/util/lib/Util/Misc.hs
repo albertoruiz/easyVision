@@ -272,6 +272,27 @@ path g a b | b `elem` na = [a,b]
     g' = filter noa g where noa (i,j) = i /= a && j /= a
     subs = filter (not.null) [ path g' v b | v <- na ]
 
+
+treeGroups :: Double -> (a -> a -> Double) -> [a] -> [[a]]
+treeGroups th dist xs = gs
+  where
+    nmx = length xs - 1
+    t = kruskal nmx arcs
+    arcs = map snd $ filter ((<th).fst) $ sort $ pairsWith f (xs `zip` [0..])
+    f (x,i) (y,j) = (dist x y, (i,j))
+    con = connected nmx t
+    gs = map (map (xs!!)) con
+
+
+connected :: Int -> [(Int, Int)] -> [[Int]]
+connected nmax arcs = fixedPoint grow (map return [0..nmax])
+  where
+    fixedPoint f x0 = let x1 = f x0 in if x1 == x0 then x0 else fixedPoint f x1
+    grow = unique . map (unique . concatMap neigh')
+    neigh' x = x : neigh arcs x
+    unique :: Ord t => [t] -> [t]
+    unique = map head . group . sort
+
 ----------------------------------------------------------------------
 
 -- | Taken from \"not-in-base\" package.
