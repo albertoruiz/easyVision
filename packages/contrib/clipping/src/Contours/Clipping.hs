@@ -1,4 +1,3 @@
-{-# LANGUAGE ForeignFunctionInterface #-}
 -----------------------------------------------------------------------------
 {- |
 Module      :  Contours.Clipping
@@ -26,39 +25,12 @@ module Contours.Clipping (
 where
 
 import ImagProc.Base
-import ImagProc.Ipp.Core
-import Foreign.C.Types
-import Foreign.Ptr
-import Foreign.Marshal
-import Foreign.Storable
-import System.IO.Unsafe(unsafePerformIO)
-import Control.Applicative((<$>))
-import Data.Packed.Vector(takesV,fromList,toList)
 import Contours.Base(orientedArea,rev)
 import Util.Misc(impossible,debug)
 
---------------------------------------------------------------------------------
-
-foreign import ccall "clip" c_clip
-    :: Ptr Double -> Ptr Double -> CInt              -- polygon A
-    -> Ptr Double -> Ptr Double -> CInt              -- polygon B
-    -> CInt                                          -- operation code
-    -> Ptr (Ptr Double) -> Ptr (Ptr Double)          -- output vertices
-    -> Ptr (Ptr CInt) -> Ptr (CInt) -> Ptr (CInt)    -- array of lengths, its size, # of positive
-    -> Ptr (CInt)                                    -- inside code
-    -> Ptr (Ptr CInt)                                -- vertex origins
-    -> Ptr (Ptr CInt) -> Ptr (Ptr CInt)
-    -> Ptr (Ptr CInt) -> Ptr (Ptr CInt)              -- indexes
-    -> Ptr (Ptr Double) -> Ptr (Ptr Double)          -- alphas
-    -> IO CInt
+import Contours.ClipRaw
 
 --------------------------------------------------------------------------------
-
-data ClipMode = ClipIntersection
-              | ClipUnion
-              | ClipDifference
-              | ClipXOR
-              deriving (Enum, Show)
 
 clip :: ClipMode -> Polyline -> Polyline -> [Polyline]
 -- ^ set operations for polygons
@@ -111,142 +83,4 @@ step2 (poa, pos) = (poa, map Open (fragments pos))
         frags (p:xs) = (p : rs ++ [q]) : frags ys
           where
             (rs,q:ys) = span ((==2).snd) xs
-
-
---------------------------------------------------------------------------------
-
-preclip :: ClipMode -> Polyline -> Polyline -> (([(Polyline, [Int])],Int),Int,Int)
--- ^ interface to C function to compute set operation and origin for each vertex
-preclip mode (Closed a') (Closed b') = unsafePerformIO $ do
-    ppxs <- malloc
-    ppys <- malloc
-    ppos <- malloc
-    ppl  <- malloc
-    pn   <- malloc
-    pnp  <- malloc
-    pins <- malloc
-    
-    ppInd0A <- malloc
-    ppInd1A <- malloc
-    ppInd0B <- malloc
-    ppInd1B <- malloc
-    ppAlphaA <- malloc
-    ppAlphaB <- malloc
-
-    let a = a' ++ [head a']
-        b = b' ++ [head b']   
-        nc = length a
-        ns = length b
-
-    cx <- newArray (map px a)
-    cy <- newArray (map py a)
-    sx <- newArray (map px b)
-    sy <- newArray (map py b)
-    
-    --peekArray nc cx >>= print
-    --peekArray nc cy >>= print
-    --peekArray ns sx >>= print
-    --peekArray ns sy >>= print
-
-    _ok <- c_clip cx cy (fi nc) sx sy (fi ns) (2^fromEnum mode)
-                  ppxs ppys ppl pn pnp pins
-                  ppos
-                  ppInd0A ppInd1A ppInd0B ppInd1B
-                  ppAlphaA ppAlphaB
-                  
-    --print _ok
-
-    n <- ti <$> peek pn
-    --print n
-    np <- ti <$> peek pnp
-    --print np
-    
-    insideCode <- ti <$> peek pins
-    --print insideCode
-    
-    pl <- peek ppl
-    ls <- map ti <$> peekArray n pl
-    --print ls
-
-    let tot = sum ls
- 
-    pxs <- peek ppxs
-    pys <- peek ppys
-    pos <- peek ppos
-
-    xs <- peekArray tot pxs
-    ys <- peekArray tot pys
-    os <- map ti `fmap` peekArray tot pos
-
-    [pInd0A,pInd1A,pInd0B,pInd1B] <- mapM peek [ppInd0A,ppInd1A,ppInd0B,ppInd1B]
-    [pAlphaA,pAlphaB] <- mapM peek [ppAlphaA,ppAlphaB]
-    
-    [ind0A,ind1A,ind0B,ind1B] <- mapM (peekArray tot) [pInd0A,pInd1A,pInd0B,pInd1B]
-    [alphaA,alphaB] <- mapM (peekArray tot) [pAlphaA,pAlphaB]
-
-    -- print (ls,os)
-    
-    -- mapM_ print $ zip3 xs ys os
-
-    -- provisional
-    let vxs = map (init . toList) $ takesV ls (fromList xs)
-        vys = map (init . toList) $ takesV ls (fromList ys)
-        vos = map (init . toList) $ takesV ls (fromList os)
-        r | n > 0 = (zip (zipWith f vxs vys) vos, np)
-          | otherwise = ([],0)
-          where f as bs = Closed $ zipWith Point as bs
-    
-    free pxs
-    free pys
-    free pos
-    free pl
-
-    free ppxs
-    free ppys
-    free ppos
-    free ppl
-    free pn
-
-    free pInd0A
-    free pInd1A
-    free pInd0B
-    free pInd1B
-    free pAlphaA
-    free pAlphaB
-    
-    free ppInd0A
-    free ppInd1A
-    free ppInd0B
-    free ppInd1B
-    free ppAlphaA
-    free ppAlphaB
-    
-    return (fixEmpty r mode insideCode a' b', n, insideCode)
-
-preclip _ _ _ = error "clip on open polylines not defined"
-
---------------------------------------------------------------------------------
-
-fixEmpty :: ([(Polyline, [Int])], Int)
-         -> ClipMode -> Int -> [Point] -> [Point] -> ([(Polyline, [Int])], Int)
-fixEmpty ([],_) ClipIntersection 0 _ _ = ([],0)
-fixEmpty ([],_) ClipIntersection 1 a _ = ([cla a],1)
-fixEmpty ([],_) ClipIntersection 2 _ b = ([clb b],1)
-fixEmpty ([],_) ClipUnion        0 a b = ([cla a,clb b],2)
-fixEmpty ([],_) ClipUnion        1 _ b = ([clb b],1)
-fixEmpty ([],_) ClipUnion        2 a _ = ([cla a],1)
-fixEmpty ([],_) ClipDifference   0 a _ = ([cla a],1)
-fixEmpty ([],_) ClipDifference   1 _ _ = ([],0)
-fixEmpty ([],_) ClipDifference   2 a b = ([cla a,clb b],1)
-fixEmpty ([],_) ClipXOR          _ a b = ([cla a,clb b],1)
-
-fixEmpty r ClipXOR _ _ _ = r
-fixEmpty (cs,_) _ _ _ _ = (cs, length cs)
-
-cl :: Int -> [Point] -> (Polyline, [Int])
-cl x a = (Closed a, replicate x (length a))
-
-cla,clb :: [Point] -> (Polyline, [Int])
-cla = cl 1
-clb = cl 2
 
