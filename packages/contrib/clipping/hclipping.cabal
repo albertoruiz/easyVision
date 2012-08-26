@@ -36,5 +36,5 @@ library
 
     ghc-prof-options:   -auto-all
 
-    ghc-options:        -Wall
-
+    --ghc-options:        -Wall -fsimpl-tick-factor=500 -ddump-simpl-stats
+    ghc-options:        -Wall -O0

@@ -13,6 +13,8 @@ Implementation in C by Adrián Amor Martínez.
 
 Algorithm by G. Greiner, K. Hormann, ACM Transactions on Graphics.
 
+Additional info and support for degenerate cases by Pedro E. López de Teruel.
+
 -}
 -----------------------------------------------------------------------------
 
@@ -38,10 +40,16 @@ import Util.Misc(impossible,debug)
 --------------------------------------------------------------------------------
 
 foreign import ccall "clip" c_clip
-    :: Ptr Double -> Ptr Double -> CInt
-    -> Ptr Double -> Ptr Double -> CInt
-    -> Ptr (Ptr Double) -> Ptr (Ptr Double) -> Ptr (Ptr CInt) -> Ptr (Ptr (CInt))
-    -> Ptr (CInt) -> Ptr (CInt) -> Ptr (CInt) -> CInt
+    :: Ptr Double -> Ptr Double -> CInt              -- polygon A
+    -> Ptr Double -> Ptr Double -> CInt              -- polygon B
+    -> CInt                                          -- operation code
+    -> Ptr (Ptr Double) -> Ptr (Ptr Double)          -- output vertices
+    -> Ptr (Ptr CInt) -> Ptr (CInt) -> Ptr (CInt)    -- array of lengths, its size, # of positive
+    -> Ptr (CInt)                                    -- inside code
+    -> Ptr (Ptr CInt)                                -- vertex origins
+    -> Ptr (Ptr CInt) -> Ptr (Ptr CInt)
+    -> Ptr (Ptr CInt) -> Ptr (Ptr CInt)              -- indexes
+    -> Ptr (Ptr Double) -> Ptr (Ptr Double)          -- alphas
     -> IO CInt
 
 --------------------------------------------------------------------------------
@@ -117,6 +125,13 @@ preclip mode (Closed a') (Closed b') = unsafePerformIO $ do
     pn   <- malloc
     pnp  <- malloc
     pins <- malloc
+    
+    ppInd0A <- malloc
+    ppInd1A <- malloc
+    ppInd0B <- malloc
+    ppInd1B <- malloc
+    ppAlphaA <- malloc
+    ppAlphaB <- malloc
 
     let a = a' ++ [head a']
         b = b' ++ [head b']   
@@ -133,8 +148,12 @@ preclip mode (Closed a') (Closed b') = unsafePerformIO $ do
     --peekArray ns sx >>= print
     --peekArray ns sy >>= print
 
-    _ok <- c_clip cx cy (fi nc) sx sy (fi ns) ppxs ppys ppos ppl pn pnp pins (2^fromEnum mode)
-
+    _ok <- c_clip cx cy (fi nc) sx sy (fi ns) (2^fromEnum mode)
+                  ppxs ppys ppl pn pnp pins
+                  ppos
+                  ppInd0A ppInd1A ppInd0B ppInd1B
+                  ppAlphaA ppAlphaB
+                  
     --print _ok
 
     n <- ti <$> peek pn
@@ -159,6 +178,12 @@ preclip mode (Closed a') (Closed b') = unsafePerformIO $ do
     ys <- peekArray tot pys
     os <- map ti `fmap` peekArray tot pos
 
+    [pInd0A,pInd1A,pInd0B,pInd1B] <- mapM peek [ppInd0A,ppInd1A,ppInd0B,ppInd1B]
+    [pAlphaA,pAlphaB] <- mapM peek [ppAlphaA,ppAlphaB]
+    
+    [ind0A,ind1A,ind0B,ind1B] <- mapM (peekArray tot) [pInd0A,pInd1A,pInd0B,pInd1B]
+    [alphaA,alphaB] <- mapM (peekArray tot) [pAlphaA,pAlphaB]
+
     -- print (ls,os)
     
     -- mapM_ print $ zip3 xs ys os
@@ -181,6 +206,20 @@ preclip mode (Closed a') (Closed b') = unsafePerformIO $ do
     free ppos
     free ppl
     free pn
+
+    free pInd0A
+    free pInd1A
+    free pInd0B
+    free pInd1B
+    free pAlphaA
+    free pAlphaB
+    
+    free ppInd0A
+    free ppInd1A
+    free ppInd0B
+    free ppInd1B
+    free ppAlphaA
+    free ppAlphaB
     
     return (fixEmpty r mode insideCode a' b', n, insideCode)
 

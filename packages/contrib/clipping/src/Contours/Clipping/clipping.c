@@ -861,7 +861,7 @@ void readFromStdin(double **Ax, double **Ay, int *lA, double **Bx, double **By, 
 /**
   * Main program to test the clip function.
   */
-int main(void)
+int main2(void)
 {
     double *Ax, *Ay, *Bx, *By, *polysx, *polysy, *alphaA, *alphaB;
     int lA, lB, status, nl, nlp, i, j, v, op, opind;
