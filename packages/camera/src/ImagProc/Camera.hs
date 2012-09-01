@@ -80,7 +80,15 @@ getCam n sz = do
         uvcdev = "/dev/video" ++ drop 3 cleanUrl
         cam = if "uvc" `isPrefixOf` cleanUrl
                 then dbg (putStrLn uvcdev) >> uvcCamera uvcdev sz 30
-                else dbg (putStrLn cleanUrl) >> mplayer cleanUrl sz
+                else do dbg (putStrLn cleanUrl)
+                        gsz <- askSize cleanUrl
+                        def <- or `fmap` mapM hasValue ["--size", "--rows", "--cols"]
+                        case gsz of
+                            Nothing -> error $ cleanUrl ++ " not found!"
+                            Just isz -> if def
+                                            then mplayer cleanUrl sz
+                                            else mplayer cleanUrl isz
+                                                   
     if isLive
         then dbg (putStrLn "Live") >> cam >>= live
         else if isChan 
