@@ -74,9 +74,9 @@ mplayer' url (Size h w) = do
     --(i,o,e,p) <- runInteractiveProcess "mplayer" (words mpcommand) Nothing Nothing
     --(i,o,e,p) <- runInteractiveCommand ("mplayer " ++mpcommand)
 
-    verbose $ putStrLn mpcommand
-
-    putStr "Press Ctrl-C and check the URL\r"
+    verbose $ do putStrLn mpcommand
+                 putStr "Press Ctrl-C and check the URL\r"
+    
     _ <- system $ "mplayer "++ mpcommand ++" >/dev/null 2>/dev/null &"
 
     f <- openFile fifo ReadMode
@@ -85,7 +85,7 @@ mplayer' url (Size h w) = do
         _n <- hGetBuf f k 1
         --print _n
         v <- peek (castPtr k)
-        putChar v
+        verbose $ putChar v
         if v=='\n' then return (reverse ss) else find (v:ss)
 
     info <- find ""
