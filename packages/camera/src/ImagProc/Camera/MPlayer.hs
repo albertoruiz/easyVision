@@ -17,20 +17,21 @@ Image acquisition from real cameras and other video sources using MPlayer.
 module ImagProc.Camera.MPlayer (
   -- * MPlayer interface
   -- | This camera works with any kind of video source accepted by MPlayer.
-  mplayer, mplayer', mpSize,
- saveYUV4Mpeg, yuvHeader, openYUV4Mpeg
+  mplayer, mplayer', mpSize, askSize,
+  saveYUV4Mpeg, yuvHeader, openYUV4Mpeg
 )where
 
 import ImagProc.Ipp.Core
 import Foreign
 import Data.IORef
 import System.IO
-import System.Process
+import System.Process(system,readProcessWithExitCode)
 import System.Exit
-import Data.List(isInfixOf)
+import Data.List(isInfixOf,isPrefixOf)
 import Util.Options
 import Control.Monad
 import Control.Applicative
+import Data.Maybe(listToMaybe)
 
 -- | Computes a 4\/3 \'good\' size for both mplayer and IPP. mpSize 20 = 640x480
 mpSize :: Int -> Size
@@ -114,6 +115,21 @@ mplayer :: String                       -- ^ any url admitted by mplayer
         -> IO (IO ImageYUV)             -- ^ function returning a new frame
 mplayer url sz = f `fmap` mplayer' url sz where
     f mbcam = mbcam >>= (maybe (exitWith ExitSuccess) return)
+
+------------------------------------------------
+
+askSize :: FilePath -> IO (Maybe Size)
+-- ^ check if video exists and return frame size
+askSize fname = do
+    (_,res,_) <- readProcessWithExitCode "mplayer" [fname, "-nosound", "-vo", "null", "-frames", "1"] ""
+    let info = listToMaybe $ filter (isPrefixOf "VIDEO:") (lines res)
+    return (f `fmap` info)
+  where
+    f = h . words . map g . (!!2) . words
+    g 'x' = ' '
+    g y = y
+    h [a,b] = Size (read b) (read a)
+    h _ = error "askSize parse error"
 
 ------------------------------------------------
 
