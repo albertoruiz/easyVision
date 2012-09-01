@@ -53,12 +53,23 @@ import Util.LazyIO((>~>),grabAll)
 findSize :: IO Size
 findSize = do
     okSize <- getFlag "--size"
-    mps <- getOption "--size" 20
+    mps <- optionString "--size" "20"
     r   <- getOption "--rows" 480
     c   <- getOption "--cols" 640
     return $ if okSize
-                then mpSize mps
+                then parseSize mps
                 else Size r c
+
+parseSize :: String -> Size
+parseSize s | 'x' `elem` s = f s
+            | otherwise    = mpSize (read s)
+  where
+    f = h . words . map g
+    g 'x' = ' '
+    g y = y
+    h [a,b] = Size (read b) (read a)
+    h _ = error "askSize parse error"
+
 
 -- | returns a camera from the n-th user argument
 getCam :: Int  -- ^ n-th camera url supplied by the user (or defined in cameras.def)
@@ -80,7 +91,15 @@ getCam n sz = do
         uvcdev = "/dev/video" ++ drop 3 cleanUrl
         cam = if "uvc" `isPrefixOf` cleanUrl
                 then dbg (putStrLn uvcdev) >> uvcCamera uvcdev sz 30
-                else dbg (putStrLn cleanUrl) >> mplayer cleanUrl sz
+                else do dbg (putStrLn cleanUrl)
+                        gsz <- askSize cleanUrl
+                        def <- or `fmap` mapM hasValue ["--size", "--rows", "--cols"]
+                        case gsz of
+                            Nothing -> error $ cleanUrl ++ " not found!"
+                            Just isz -> if def
+                                            then mplayer cleanUrl sz
+                                            else mplayer cleanUrl isz
+                                                   
     if isLive
         then dbg (putStrLn "Live") >> cam >>= live
         else if isChan 
