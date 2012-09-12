@@ -195,9 +195,10 @@ fixSpaces = concatMap f
 getSize :: FilePath -> IO Size
 getSize imagfile = do
     s <- readProcess "identify" [imagfile] ""
-    return (g $ words $ map f $ reverse (words s)!!6)
+    return (g . words . map f . h . words $ s)
   where
     f 'x' = ' '
     f a = a
     g [w,h] = Size (read h) (read w)
+    h = head . tail . dropWhile (not . (`elem` ["PNG","JPEG"])) -- FIXME check error
 

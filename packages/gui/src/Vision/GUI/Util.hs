@@ -106,7 +106,9 @@ browseLabeled name examples disp = browser name examples f
 sMonitor :: String ->
             (WinRegion -> b -> [Drawing])
             -> ITrans b b
-sMonitor name f = optDont ("--no-"++name) $ transUI 
+sMonitor name f = optDont ("--no-"++name)
+                $ optDont ("--no-gui")
+                $ transUI
                 $ interface
                 (Size 240 360)            -- window size
                 name                      -- win title
@@ -132,6 +134,7 @@ sMonitor name f = optDont ("--no-"++name) $ transUI
 
 observe :: Renderable x => String -> (b -> x) -> ITrans b b
 observe name f = optDont ("--no-"++name)
+               $ optDont ("--no-gui")
                $ transUI 
                $ interface (Size 240 360) name () (const.const.return $ ())
                            [] [] (const (,)) (const.const.const $ Draw . f)
@@ -139,6 +142,7 @@ observe name f = optDont ("--no-"++name)
 
 observe3D :: Renderable x => String -> (b -> x) -> ITrans b b
 observe3D name f = optDont ("--no-"++name)
+               $ optDont ("--no-gui")
                $ transUI 
                $ interface3D (Size 400 400) name () (const.const.return $ ())
                              [] [] (const (,)) (const.const.const $ Draw . f)
