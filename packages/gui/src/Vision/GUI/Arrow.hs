@@ -22,7 +22,7 @@ module Vision.GUI.Arrow(
 )where
 
 import Control.Concurrent   (forkIO)
-import Util.LazyIO          (mkGenerator, lazyList, grabAll, createGrab)
+import Util.LazyIO          (mkGenerator, lazyList)
 import Vision.GUI.Interface (runIt,VCN)
 
 import qualified Control.Category as Cat
@@ -35,6 +35,7 @@ import Util.Misc(debug)
 import Data.IORef
 import System.Exit       (exitWith, ExitCode(ExitSuccess))
 import Graphics.UI.GLUT (mainLoopEvent)
+import Data.Maybe(fromJust)
 
 --------------------------------------------------------------------------------
 
@@ -96,6 +97,13 @@ instance Arrow ITrans
             return (b,d)
             
 --------------------------------------------------------------------------------
+
+createGrab :: [b] -> IO (IO b)
+createGrab = fmap (fmap (fmap fromJust)) mkGenerator
+
+grabAll :: IO t -> IO [t]
+grabAll = lazyList . fmap Just
+
 
 arrL :: ([a]->[b]) -> ITrans a b
 -- ^ pure function on the whole list of results

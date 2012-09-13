@@ -41,7 +41,7 @@ import Control.Applicative((<*>),(<$>))
 import ImagProc
 import ImagProc.Camera(findSize,readFolderMP,readFolderIM,getCam)
 import Vision.GUI.Arrow--(ITrans, Trans,transUI,transUI2,runT_)
-import Util.LazyIO((~>),(>~>),createGrab)
+import Util.LazyIO((~>),(>~>),mkGenerator)
 import Util.Misc(replaceAt,posMin)
 import Util.Options
 import Control.Concurrent(threadDelay,forkIO)
@@ -50,6 +50,12 @@ import Data.Time
 import System.CPUTime
 import Text.Printf(printf)
 import Data.IORef
+import Data.Maybe(fromJust)
+
+createGrab :: [b] -> IO (IO b)
+createGrab = fmap (fmap (fmap fromJust)) mkGenerator
+
+
 
 editor :: [Command (Int,[x]) (Int,[x])] -> [Command (Int,[x]) (IO())]
        -> String -> [x] -> (Int -> x -> Drawing) -> IO (EVWindow (Int,[x]))
@@ -165,7 +171,7 @@ camera = do
     if f then cameraFolderIM
          else if g then cameraFolderMP
                    else if h then cameraP
-                             else cameraV
+                             else (fmap (fmap fromJust) cameraV)
 
 cameraP = do
     hp <- optionString "--sphotos" "."
