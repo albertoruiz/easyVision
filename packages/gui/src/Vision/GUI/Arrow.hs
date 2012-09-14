@@ -16,13 +16,13 @@ Arrow interface.
 
 module Vision.GUI.Arrow(
     runITrans, runT_, runT, runS,
-    ITrans(ITrans), Trans(Trans),
+    ITrans(ITrans), Trans(Trans), IMTrans(IMTrans), MTrans(MTrans), transIA,
     transUI, arrL, (@@@), delay, delay', arrIO,
     runNT_
 )where
 
 import Control.Concurrent   (forkIO)
-import Util.LazyIO          (mkGenerator, lazyList)
+import Util.LazyIO          (mkGenerator, lazyList, Generator)
 import Vision.GUI.Interface (runIt,VCN)
 
 import qualified Control.Category as Cat
@@ -39,6 +39,11 @@ import Data.Maybe(fromJust)
 
 --------------------------------------------------------------------------------
 
+newtype MTrans a b = MTrans ( IO (Maybe a) -> IO (Maybe b) )
+
+newtype IMTrans a b = IMTrans (IO (MTrans a b))
+
+
 newtype Trans a b = Trans ( IO a -> IO b )
 
 newtype ITrans a b = ITrans (IO (Trans a b))
@@ -53,6 +58,10 @@ instance Cat.Category ITrans
   where
     id = ITrans $ return (Cat.id)
     ITrans gf . ITrans gg = ITrans (liftM2 (>>>) gg gf)
+
+
+instance Cat.Category IMTrans
+instance Arrow IMTrans
 
   
 instance Arrow ITrans
@@ -98,16 +107,18 @@ instance Arrow ITrans
             
 --------------------------------------------------------------------------------
 
-createGrab :: [b] -> IO (IO b)
-createGrab = fmap (fmap (fmap fromJust)) mkGenerator
+--createGrab :: [b] -> IO (IO b)
+--createGrab = fmap (fmap (fmap fromJust)) mkGenerator
 
-grabAll :: IO t -> IO [t]
-grabAll = lazyList . fmap Just
+--grabAll :: IO t -> IO [t]
+--grabAll = lazyList . fmap Just
 
 
 arrL :: ([a]->[b]) -> ITrans a b
 -- ^ pure function on the whole list of results
-arrL f = ITrans $ do
+arrL f = undefined
+{-
+      ITrans $ do
     pl <- newIORef Nothing
     return $ Trans $ \c -> do
         mbl <- readIORef pl
@@ -122,12 +133,15 @@ arrL f = ITrans $ do
           h:t -> do writeIORef pl (Just t)
                     return h
           []  -> exitWith ExitSuccess
-
+-}
 
 --------------------------------------------------------------------------------
 
 transUI :: VCN a b -> ITrans a b
 transUI = ITrans . fmap Trans
+
+transIA :: VCN a b -> IMTrans a b
+transIA = undefined
 
 
 arrIO :: (a -> IO b) -> ITrans a b
@@ -136,10 +150,10 @@ arrIO f = transUI . return $ \c -> c >>= f
 
 --------------------------------------------------------------------------------
 
-(@@@) :: (p -> x -> y) -> IO (IO p) -> ITrans x y
+(@@@) :: (p -> x -> y) -> IO (IO p) -> IMTrans x y
 -- ^ apply a pure function with parameters taken from the UI
 infixl 3 @@@
-f @@@ p = arr (uncurry f) <<< (transUI (fmap const p) &&& arr id)
+f @@@ p = arr (uncurry f) <<< (transIA (fmap const p) &&& arr id)
 
 ------------------------------------------------------------------
 
@@ -177,14 +191,14 @@ delay' = arrL f
 
 --------------------------------------------------------------------------------
 
-runITrans :: ITrans a b -> [a] -> IO [b]
-runITrans (ITrans gt) as = do
-    Trans t <- gt
-    x <- createGrab as
-    grabAll (t x)
+runITrans :: IMTrans a b -> [a] -> IO [b]
+runITrans (IMTrans gt) as = do
+    MTrans t <- gt
+    x <- mkGenerator as
+    lazyList (t x)
 
 
-runT_ :: IO (IO a) -> ITrans a b -> IO ()
+runT_ :: Generator a -> IMTrans a b -> IO ()
 -- ^ run a camera generator on a transformer
 runT_ gcam gt = runIt $ do
     bs <- runS gcam gt
@@ -193,7 +207,7 @@ runT_ gcam gt = runIt $ do
     g !_x = putStr ""
 
 
-runNT_ :: IO (IO a) -> ITrans a b -> IO ()
+runNT_ :: Generator a -> IMTrans a b -> IO ()
 -- ^ run process without fork, (needs explicit "prepare").
 -- This is currently required for certain GPU applications.
 runNT_ gcam gt = do
@@ -203,7 +217,7 @@ runNT_ gcam gt = do
     g !_x = putStr "" >> mainLoopEvent
 
 
-runT :: IO (IO a) -> ITrans a b -> IO [b]
+runT :: Generator a -> IMTrans a b -> IO [b]
 -- ^ run a camera generator on a transformer, returning the results in a lazy list
 runT gcam gt = do
     rbs <- newChan
@@ -214,12 +228,12 @@ runT gcam gt = do
 
 
 
-runS :: IO (IO a) -> ITrans a b -> IO [b]
+runS :: Generator a -> IMTrans a b -> IO [b]
 -- ^ runT without the GUI (run silent) 
 -- runS gcam gt = gcam >>= grabAll >>= runITrans gt
-runS gcam (ITrans gt) = do
+runS gcam (IMTrans gt) = do
     cam <- gcam
-    Trans t <- gt
-    r <- grabAll (t cam)
+    MTrans t <- gt
+    r <- lazyList (t cam)
     return r
 

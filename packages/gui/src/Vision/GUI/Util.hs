@@ -41,7 +41,7 @@ import Control.Applicative((<*>),(<$>))
 import ImagProc
 import ImagProc.Camera(findSize,readFolderMP,readFolderIM,getCam)
 import Vision.GUI.Arrow--(ITrans, Trans,transUI,transUI2,runT_)
-import Util.LazyIO((~>),(>~>),mkGenerator)
+import Util.LazyIO((~>),(>~>),mkGenerator,Generator)
 import Util.Misc(replaceAt,posMin)
 import Util.Options
 import Control.Concurrent(threadDelay,forkIO)
@@ -52,8 +52,8 @@ import Text.Printf(printf)
 import Data.IORef
 import Data.Maybe(fromJust)
 
-createGrab :: [b] -> IO (IO b)
-createGrab = fmap (fmap (fmap fromJust)) mkGenerator
+--createGrab :: [b] -> IO (IO b)
+--createGrab = fmap (fmap (fmap fromJust)) mkGenerator
 
 
 
@@ -111,10 +111,10 @@ browseLabeled name examples disp = browser name examples f
 
 sMonitor :: String ->
             (WinRegion -> b -> [Drawing])
-            -> ITrans b b
+            -> IMTrans b b
 sMonitor name f = optDont ("--no-"++name)
                 $ optDont ("--no-gui")
-                $ transUI
+                $ transIA
                 $ interface
                 (Size 240 360)            -- window size
                 name                      -- win title
@@ -138,18 +138,18 @@ sMonitor name f = optDont ("--no-"++name)
 
 --------------------------------------------------------------------------------
 
-observe :: Renderable x => String -> (b -> x) -> ITrans b b
+observe :: Renderable x => String -> (b -> x) -> IMTrans b b
 observe name f = optDont ("--no-"++name)
                $ optDont ("--no-gui")
-               $ transUI 
+               $ transIA 
                $ interface (Size 240 360) name () (const.const.return $ ())
                            [] [] (const (,)) (const.const.const $ Draw . f)
 
 
-observe3D :: Renderable x => String -> (b -> x) -> ITrans b b
+observe3D :: Renderable x => String -> (b -> x) -> IMTrans b b
 observe3D name f = optDont ("--no-"++name)
                $ optDont ("--no-gui")
-               $ transUI 
+               $ transIA 
                $ interface3D (Size 400 400) name () (const.const.return $ ())
                              [] [] (const (,)) (const.const.const $ Draw . f)
 
@@ -163,7 +163,7 @@ By default it uses the first alias in cameras.def.
 It also admits --photos=path/to/folder/ containing separate image files (.jpg or .png), currently read using imagemagick (slower, lazy),
 and --photosmp=path/to/folder, to read images of the same type and size using mplayer (faster, strict).
 -}
-camera :: IO (IO Channels)
+camera :: Generator Channels
 camera = do
     f <- hasValue "--photos"
     g <- hasValue "--photosmp"
@@ -171,22 +171,25 @@ camera = do
     if f then cameraFolderIM
          else if g then cameraFolderMP
                    else if h then cameraP
-                             else (fmap (fmap fromJust) cameraV)
+                             else cameraV
 
+cameraP :: Generator Channels
 cameraP = do
     hp <- optionString "--sphotos" "."
     g <- readFolderIM hp
-    c <- createGrab g
-    return (fst <$> c)
+    c <- mkGenerator g
+    return (fmap fst <$> c)
 
+cameraV :: Generator Channels
 cameraV = findSize >>= getCam 0 ~> channels
 
-
-cameraFolderIM = camG "--photos" r <*> dummy
+cameraFolderIM :: Generator Channels
+cameraFolderIM = fmap (fmap Just) $ camG "--photos" r <*> dummy
   where
     r p _ = readFolderIM p
 
-cameraFolderMP = camG "--photosmp" readFolderMP <*> dummy
+cameraFolderMP :: Generator Channels
+cameraFolderMP = fmap (fmap Just) $ camG "--photosmp" readFolderMP <*> dummy
 
 camG opt readf = do
     path <- optionString opt "."
@@ -233,8 +236,8 @@ frameRate = do
             return (r,(av',cav'))
 
 
-freqMonitor :: ITrans x x
-freqMonitor = transUI frameRate >>> transUI g
+freqMonitor :: IMTrans x x
+freqMonitor = transIA frameRate >>> transIA g
   where
     g = interface (Size 60 300) "Frame Rate" (1/20,0.1) (const . const . return $ ()) [] [] f sh
     f _roi _state (t,x) = (x,t)
@@ -251,16 +254,16 @@ wait n = transUI $ return $ \cam -> do
 
 --------------------------------------------------------------------------------
 
-choose :: IO Bool -> ITrans a b -> ITrans a b -> ITrans a b
+choose :: IO Bool -> IMTrans a b -> IMTrans a b -> IMTrans a b
 -- ^ select process depending on something (e.g. a command line flag)
-choose q (ITrans a1) (ITrans a2) = ITrans $ do
+choose q (IMTrans a1) (IMTrans a2) = IMTrans $ do
     yes <- q
     if yes then do {a<-a1; return a} else do {a<-a2; return a}
 
-optDo :: String -> ITrans a a -> ITrans a a
+optDo :: String -> IMTrans a a -> IMTrans a a
 optDo flag trans = choose (getFlag (fixFlag flag)) trans (arr id)
 
-optDont :: String -> ITrans a a -> ITrans a a
+optDont :: String -> IMTrans a a -> IMTrans a a
 optDont flag trans = choose (getFlag (fixFlag flag)) (arr id) trans
 
 fixFlag = map sp
@@ -268,7 +271,7 @@ fixFlag = map sp
     sp ' ' = '_'
     sp x = x
 
-withParam :: ParamRecord p => (p -> a -> b) -> ITrans a b
+withParam :: ParamRecord p => (p -> a -> b) -> IMTrans a b
 -- ^ get the first argument from an interactive window, unless the command line options
 -- --no-gui or --default are given, in which case the function takes the default parameters.
 withParam f = choose c (arr $ f defParam) (f @@@ winParam) 
