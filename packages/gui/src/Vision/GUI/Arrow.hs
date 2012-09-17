@@ -16,7 +16,7 @@ Arrow interface.
 
 module Vision.GUI.Arrow(
     runITrans, runT_, runT, runS,
-    ITrans(ITrans), Trans(Trans), IMTrans(IMTrans), MTrans(MTrans), transIA,
+    ITrans(ITrans), Trans(Trans),
     transUI, arrL, (@@@), delay, delay', arrIO,
     runNT_
 )where
@@ -40,32 +40,25 @@ import Data.Traversable
 
 --------------------------------------------------------------------------------
 
-newtype MTrans a b = MTrans ( IO (Maybe a) -> IO (Maybe b) )
-
-newtype IMTrans a b = IMTrans (IO (MTrans a b))
-
-
-newtype Trans a b = Trans ( IO a -> IO b )
+newtype Trans a b = Trans ( IO (Maybe a) -> IO (Maybe b) )
 
 newtype ITrans a b = ITrans (IO (Trans a b))
 
 instance Cat.Category Trans
-  where
-    id = Trans id
-    Trans f . Trans g = Trans ( f . g )
+--  where
+--    id = Trans id
+--    Trans f . Trans g = Trans ( f . g )
 
 
 instance Cat.Category ITrans
-  where
-    id = ITrans $ return (Cat.id)
-    ITrans gf . ITrans gg = ITrans (liftM2 (>>>) gg gf)
+--  where
+--    id = ITrans $ return (Cat.id)
+--    ITrans gf . ITrans gg = ITrans (liftM2 (>>>) gg gf)
 
-
-instance Cat.Category IMTrans
-instance Arrow IMTrans
 
   
 instance Arrow ITrans
+{-
   where
     arr f = ITrans (return (Trans (fmap f)))
     first f = f *** Cat.id
@@ -105,6 +98,8 @@ instance Arrow ITrans
             b <- f (sepa ab)
             d <- g (sepb ab)
             return (b,d)
+
+-}
             
 --------------------------------------------------------------------------------
 
@@ -138,13 +133,10 @@ arrL f = undefined
 
 --------------------------------------------------------------------------------
 
-transUI :: VCN a b -> IMTrans a b
-transUI = IMTrans . fmap MTrans
+transUI :: VCN a b -> ITrans a b
+transUI = ITrans . fmap Trans
 
-transIA = transUI
-
-
-arrIO :: (a -> IO b) -> IMTrans a b
+arrIO :: (a -> IO b) -> ITrans a b
 -- ^ lift an IO action to the ITrans arrow
 arrIO f = transUI . return $ (>>=g)
   where
@@ -152,36 +144,43 @@ arrIO f = transUI . return $ (>>=g)
 
 --------------------------------------------------------------------------------
 
-(@@@) :: (p -> x -> y) -> Generator p -> IMTrans x y
+(@@@) :: (p -> x -> y) -> Generator p -> ITrans x y
 -- ^ apply a pure function with parameters taken from the UI
 infixl 3 @@@
-f @@@ p = arr (uncurry f) <<< (transIA (fmap const p) &&& arr id)
+f @@@ p = arr (uncurry f) <<< (transUI (fmap const p) &&& arr id)
 
 ------------------------------------------------------------------
 
-instance ArrowChoice ITrans where
+instance ArrowChoice ITrans
+{-
+  where
     left f = f +++ arr id
     f +++ g = (f >>> arr Left) ||| (g >>> arr Right)
     ITrans gf ||| ITrans gg = ITrans $ do
         Trans f <- gf
         Trans g <- gg
         return $ Trans (>>= either (f.return) (g.return))
+-}
 
 -- similar to Kleisli, explictly calling the IO function
 
 --------------------------------------------------------------------------------
 
-instance ArrowLoop ITrans where
+instance ArrowLoop ITrans
+{-
+  where
     loop (ITrans gf) = ITrans $ do
         Trans f <- gf
         let f' x y = (f.return) (x, snd y)
         return $ Trans (>>= liftM fst . mfix . f')
+-}
 
 -- the same idea as above
 
 
-instance ArrowCircuit ITrans where
-    delay x = arrL (x:)
+instance ArrowCircuit ITrans
+--  where
+--    delay x = arrL (x:)
 
 
 delay' :: ITrans a a
@@ -193,14 +192,14 @@ delay' = arrL f
 
 --------------------------------------------------------------------------------
 
-runITrans :: IMTrans a b -> [a] -> IO [b]
-runITrans (IMTrans gt) as = do
-    MTrans t <- gt
+runITrans :: ITrans a b -> [a] -> IO [b]
+runITrans (ITrans gt) as = do
+    Trans t <- gt
     x <- mkGenerator as
     lazyList (t x)
 
 
-runT_ :: Generator a -> IMTrans a b -> IO ()
+runT_ :: Generator a -> ITrans a b -> IO ()
 -- ^ run a camera generator on a transformer
 runT_ gcam gt = runIt $ do
     bs <- runS gcam gt
@@ -209,7 +208,7 @@ runT_ gcam gt = runIt $ do
     g !_x = putStr ""
 
 
-runNT_ :: Generator a -> IMTrans a b -> IO ()
+runNT_ :: Generator a -> ITrans a b -> IO ()
 -- ^ run process without fork, (needs explicit "prepare").
 -- This is currently required for certain GPU applications.
 runNT_ gcam gt = do
@@ -219,7 +218,7 @@ runNT_ gcam gt = do
     g !_x = putStr "" >> mainLoopEvent
 
 
-runT :: Generator a -> IMTrans a b -> IO [b]
+runT :: Generator a -> ITrans a b -> IO [b]
 -- ^ run a camera generator on a transformer, returning the results in a lazy list
 runT gcam gt = do
     rbs <- newChan
@@ -230,12 +229,12 @@ runT gcam gt = do
 
 
 
-runS :: Generator a -> IMTrans a b -> IO [b]
+runS :: Generator a -> ITrans a b -> IO [b]
 -- ^ runT without the GUI (run silent) 
 -- runS gcam gt = gcam >>= grabAll >>= runITrans gt
-runS gcam (IMTrans gt) = do
+runS gcam (ITrans gt) = do
     cam <- gcam
-    MTrans t <- gt
+    Trans t <- gt
     r <- lazyList (t cam)
     return r
 

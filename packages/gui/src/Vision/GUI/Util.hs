@@ -113,10 +113,10 @@ browseLabeled name examples disp = browser name examples f
 
 sMonitor :: String ->
             (WinRegion -> b -> [Drawing])
-            -> IMTrans b b
+            -> ITrans b b
 sMonitor name f = optDont ("--no-"++name)
                 $ optDont ("--no-gui")
-                $ transIA
+                $ transUI
                 $ interface
                 (Size 240 360)            -- window size
                 name                      -- win title
@@ -140,18 +140,18 @@ sMonitor name f = optDont ("--no-"++name)
 
 --------------------------------------------------------------------------------
 
-observe :: Renderable x => String -> (b -> x) -> IMTrans b b
+observe :: Renderable x => String -> (b -> x) -> ITrans b b
 observe name f = optDont ("--no-"++name)
                $ optDont ("--no-gui")
-               $ transIA 
+               $ transUI 
                $ interface (Size 240 360) name () (const.const.return $ ())
                            [] [] (const (,)) (const.const.const $ Draw . f)
 
 
-observe3D :: Renderable x => String -> (b -> x) -> IMTrans b b
+observe3D :: Renderable x => String -> (b -> x) -> ITrans b b
 observe3D name f = optDont ("--no-"++name)
                $ optDont ("--no-gui")
-               $ transIA 
+               $ transUI 
                $ interface3D (Size 400 400) name () (const.const.return $ ())
                              [] [] (const (,)) (const.const.const $ Draw . f)
 
@@ -238,8 +238,8 @@ frameRate = do
             return $ fmap (,(av',cav')) r
 
 
-freqMonitor :: IMTrans x x
-freqMonitor = transIA frameRate >>> transIA g
+freqMonitor :: ITrans x x
+freqMonitor = transUI frameRate >>> transUI g
   where
     g = interface (Size 60 300) "Frame Rate" (1/20,0.1) (const . const . return $ ()) [] [] f sh
     f _roi _state (t,x) = (x,t)
@@ -256,16 +256,16 @@ wait n = transUI $ return $ \cam -> do
 
 --------------------------------------------------------------------------------
 
-choose :: IO Bool -> IMTrans a b -> IMTrans a b -> IMTrans a b
+choose :: IO Bool -> ITrans a b -> ITrans a b -> ITrans a b
 -- ^ select process depending on something (e.g. a command line flag)
-choose q (IMTrans a1) (IMTrans a2) = IMTrans $ do
+choose q (ITrans a1) (ITrans a2) = ITrans $ do
     yes <- q
     if yes then do {a<-a1; return a} else do {a<-a2; return a}
 
-optDo :: String -> IMTrans a a -> IMTrans a a
+optDo :: String -> ITrans a a -> ITrans a a
 optDo flag trans = choose (getFlag (fixFlag flag)) trans (arr id)
 
-optDont :: String -> IMTrans a a -> IMTrans a a
+optDont :: String -> ITrans a a -> ITrans a a
 optDont flag trans = choose (getFlag (fixFlag flag)) (arr id) trans
 
 fixFlag = map sp
@@ -273,7 +273,7 @@ fixFlag = map sp
     sp ' ' = '_'
     sp x = x
 
-withParam :: ParamRecord p => (p -> a -> b) -> IMTrans a b
+withParam :: ParamRecord p => (p -> a -> b) -> ITrans a b
 -- ^ get the first argument from an interactive window, unless the command line options
 -- --no-gui or --default are given, in which case the function takes the default parameters.
 withParam f = choose c (arr $ f defParam) ( f @@@ (fmap (fmap Just) $ winParam) )
@@ -371,7 +371,7 @@ interactive3D name = do
 
 --------------------------------------------------------------------------------
 
-clickKeep :: String -> (WinRegion -> a -> b) -> ((a,b) -> Drawing) -> Maybe b -> IMTrans a (a,b)
+clickKeep :: String -> (WinRegion -> a -> b) -> ((a,b) -> Drawing) -> Maybe b -> ITrans a (a,b)
 -- ^ click to set something to be forwarded
 clickKeep name f sh s0 = transUI $ interface (Size 240 320) name s0 ft updt [] r sh'
   where
@@ -385,7 +385,7 @@ clickKeep name f sh s0 = transUI $ interface (Size 240 320) name s0 ft updt [] r
 
 --------------------------------------------------------------------------------
 
-clickList :: String -> (WinRegion -> a -> b) -> ((a,[b]) -> Drawing) -> [b] -> IMTrans a (a,[b])
+clickList :: String -> (WinRegion -> a -> b) -> ((a,[b]) -> Drawing) -> [b] -> ITrans a (a,[b])
 -- ^ click to add things to a list to be forwarded
 clickList name f sh xs0 = transUI $ interface (Size 240 320) name (xs0,False) ft updt [] r sh'
   where
@@ -399,7 +399,7 @@ clickList name f sh xs0 = transUI $ interface (Size 240 320) name (xs0,False) ft
 
 --------------------------------------------------------------------------------
 
-clickTag :: (x -> l) -> (x -> r) -> (Either l r -> Drawing) -> String -> IMTrans x (Either l r)
+clickTag :: (x -> l) -> (x -> r) -> (Either l r -> Drawing) -> String -> ITrans x (Either l r)
 clickTag l r sh name = transUI $ interface (Size 240 320) name False ft updt [] y ((const.const.const) sh)
   where
     y _ sv input = (sv, if sv then Right (r input) else Left (l input))
