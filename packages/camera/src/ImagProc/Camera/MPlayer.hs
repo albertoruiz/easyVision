@@ -121,7 +121,7 @@ mplayer url sz = f `fmap` mplayer' url sz where
 askSize :: FilePath -> IO (Maybe Size)
 -- ^ check if video exists and return frame size
 askSize fname = do
-    (_,res,_) <- readProcessWithExitCode "mplayer" [fname, "-nosound", "-vo", "null", "-frames", "1"] ""
+    (_,res,_) <- readProcessWithExitCode "mplayer" [(head . words) fname, "-nosound", "-vo", "null", "-frames", "1"] ""
     let info = listToMaybe $ filter (isPrefixOf "VIDEO:") (lines res)
     return (f `fmap` info)
   where
