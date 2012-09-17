@@ -45,22 +45,21 @@ newtype Trans a b = Trans ( IO (Maybe a) -> IO (Maybe b) )
 newtype ITrans a b = ITrans (IO (Trans a b))
 
 instance Cat.Category Trans
---  where
---    id = Trans id
---    Trans f . Trans g = Trans ( f . g )
+  where
+    id = Trans id
+    Trans f . Trans g = Trans ( f . g )
 
 
 instance Cat.Category ITrans
---  where
---    id = ITrans $ return (Cat.id)
---    ITrans gf . ITrans gg = ITrans (liftM2 (>>>) gg gf)
+  where
+    id = ITrans $ return (Cat.id)
+    ITrans gf . ITrans gg = ITrans (liftM2 (>>>) gg gf)
 
 
   
 instance Arrow ITrans
-{-
   where
-    arr f = ITrans (return (Trans (fmap f)))
+    arr f = ITrans (return (Trans (fmap (fmap f))))
     first f = f *** Cat.id
     ITrans gf *** ITrans gg = ITrans $ do
         Trans f <- gf
@@ -95,11 +94,16 @@ instance Arrow ITrans
                     takeMVar mb
 
         return $ Trans $ \ab -> do
-            b <- f (sepa ab)
-            d <- g (sepb ab)
-            return (b,d)
+            let ab' = do
+                   mbab <- ab
+                   case mbab of
+                     Just (a,b) -> return (Just a, Just b)
+                     Nothing    -> return (Nothing, Nothing) -- FIXME ?
+            b <- f (sepa ab')
+            d <- g (sepb ab')
+            return $ liftM2 (,) b d
 
--}
+
             
 --------------------------------------------------------------------------------
 
