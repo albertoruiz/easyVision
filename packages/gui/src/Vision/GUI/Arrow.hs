@@ -36,6 +36,7 @@ import Data.IORef
 import System.Exit       (exitWith, ExitCode(ExitSuccess))
 import Graphics.UI.GLUT (mainLoopEvent)
 import Data.Maybe(fromJust)
+import Data.Traversable
 
 --------------------------------------------------------------------------------
 
@@ -137,20 +138,21 @@ arrL f = undefined
 
 --------------------------------------------------------------------------------
 
-transUI :: VCN a b -> ITrans a b
-transUI = ITrans . fmap Trans
+transUI :: VCN a b -> IMTrans a b
+transUI = IMTrans . fmap MTrans
 
-transIA :: VCN a b -> IMTrans a b
-transIA = undefined
+transIA = transUI
 
 
-arrIO :: (a -> IO b) -> ITrans a b
+arrIO :: (a -> IO b) -> IMTrans a b
 -- ^ lift an IO action to the ITrans arrow
-arrIO f = transUI . return $ \c -> c >>= f
+arrIO f = transUI . return $ (>>=g)
+  where
+    g = fmap Just . f . fromJust   -- FIXME !!
 
 --------------------------------------------------------------------------------
 
-(@@@) :: (p -> x -> y) -> IO (IO p) -> IMTrans x y
+(@@@) :: (p -> x -> y) -> Generator p -> IMTrans x y
 -- ^ apply a pure function with parameters taken from the UI
 infixl 3 @@@
 f @@@ p = arr (uncurry f) <<< (transIA (fmap const p) &&& arr id)

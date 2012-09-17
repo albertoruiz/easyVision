@@ -1,3 +1,5 @@
+{-# LANGUAGE TupleSections #-}
+
 -----------------------------------------------------------------------------
 {- |
 Module      :  Vision.GUI.Util
@@ -184,12 +186,12 @@ cameraV :: Generator Channels
 cameraV = findSize >>= getCam 0 ~> channels
 
 cameraFolderIM :: Generator Channels
-cameraFolderIM = fmap (fmap Just) $ camG "--photos" r <*> dummy
+cameraFolderIM = camG "--photos" r <*> dummy
   where
     r p _ = readFolderIM p
 
 cameraFolderMP :: Generator Channels
-cameraFolderMP = fmap (fmap Just) $ camG "--photosmp" readFolderMP <*> dummy
+cameraFolderMP = camG "--photosmp" readFolderMP <*> dummy
 
 camG opt readf = do
     path <- optionString opt "."
@@ -211,8 +213,8 @@ camG opt readf = do
       where
         Size h w = size (grayscale $ fst $ xs!!k)
 
-dummy :: IO (IO ())
-dummy = return (threadDelay 100000 >> return ())
+dummy :: Generator ()
+dummy = return (threadDelay 100000 >> return (Just ()))
 
 
 run t = runT_ camera (t >>> optDo "--freq" freqMonitor) 
@@ -233,7 +235,7 @@ frameRate = do
                 cdt = fromIntegral (ct1-ct0) / (10**9 :: Double)
                 cav' = cav *0.99 + 0.01* cdt
             writeIORef rt (t1,(av',cav'))
-            return (r,(av',cav'))
+            return $ fmap (,(av',cav')) r
 
 
 freqMonitor :: IMTrans x x
@@ -274,7 +276,7 @@ fixFlag = map sp
 withParam :: ParamRecord p => (p -> a -> b) -> IMTrans a b
 -- ^ get the first argument from an interactive window, unless the command line options
 -- --no-gui or --default are given, in which case the function takes the default parameters.
-withParam f = choose c (arr $ f defParam) (f @@@ winParam) 
+withParam f = choose c (arr $ f defParam) ( f @@@ (fmap (fmap Just) $ winParam) )
   where
     c = (||) <$> getFlag "--no-gui" <*> getFlag "--default"
 
@@ -369,7 +371,7 @@ interactive3D name = do
 
 --------------------------------------------------------------------------------
 
-clickKeep :: String -> (WinRegion -> a -> b) -> ((a,b) -> Drawing) -> Maybe b -> ITrans a (a,b)
+clickKeep :: String -> (WinRegion -> a -> b) -> ((a,b) -> Drawing) -> Maybe b -> IMTrans a (a,b)
 -- ^ click to set something to be forwarded
 clickKeep name f sh s0 = transUI $ interface (Size 240 320) name s0 ft updt [] r sh'
   where
@@ -383,7 +385,7 @@ clickKeep name f sh s0 = transUI $ interface (Size 240 320) name s0 ft updt [] r
 
 --------------------------------------------------------------------------------
 
-clickList :: String -> (WinRegion -> a -> b) -> ((a,[b]) -> Drawing) -> [b] -> ITrans a (a,[b])
+clickList :: String -> (WinRegion -> a -> b) -> ((a,[b]) -> Drawing) -> [b] -> IMTrans a (a,[b])
 -- ^ click to add things to a list to be forwarded
 clickList name f sh xs0 = transUI $ interface (Size 240 320) name (xs0,False) ft updt [] r sh'
   where
@@ -397,7 +399,7 @@ clickList name f sh xs0 = transUI $ interface (Size 240 320) name (xs0,False) ft
 
 --------------------------------------------------------------------------------
 
-clickTag :: (x -> l) -> (x -> r) -> (Either l r -> Drawing) -> String -> ITrans x (Either l r)
+clickTag :: (x -> l) -> (x -> r) -> (Either l r -> Drawing) -> String -> IMTrans x (Either l r)
 clickTag l r sh name = transUI $ interface (Size 240 320) name False ft updt [] y ((const.const.const) sh)
   where
     y _ sv input = (sv, if sv then Right (r input) else Left (l input))

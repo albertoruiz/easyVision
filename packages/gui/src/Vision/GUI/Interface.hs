@@ -75,7 +75,7 @@ key k          = (k, Down, modif)
 type Command state result = ((Key,KeyState,Modifiers), WinRegion -> Point -> state -> result)
 type WinInit state input = EVWindow state -> input -> IO()
 
-type VCN a b = IO (IO a -> IO b)
+type VCN a b = IO (IO (Maybe a) -> IO (Maybe b))
 
 interface :: Size                                 -- win size
              -> String                            -- win title
@@ -124,7 +124,10 @@ interfaceG threeD sz0 name st0 ft upds acts resultFun resultDisp = do
     pauser <- newPauser (evPause w)
 
     return $ \cam -> do
-        thing <- pauser cam
+     mbthing <- pauser cam
+     case mbthing of
+       Nothing -> return Nothing -- FIXME :(
+       Just thing -> do
         firstTime <- readIORef firstTimeRef
         when firstTime $ ft w thing >> writeIORef firstTimeRef False
         state <- getW w
@@ -139,7 +142,7 @@ interfaceG threeD sz0 name st0 ft upds acts resultFun resultDisp = do
         sync <- readIORef (evSync w)
         when sync $ postRedisplay (Just (evW w))
         modifyIORef (evStats w) (\s -> s { evNCall = evNCall s + 1 })
-        return result
+        return (Just result)
 
 drawRegion w = do
     ok <- readIORef (evDrReg w)
