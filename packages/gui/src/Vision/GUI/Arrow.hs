@@ -17,7 +17,7 @@ Arrow interface.
 module Vision.GUI.Arrow(
     runITrans, runT_, runT, runS,
     ITrans(ITrans), Trans(Trans),
-    transUI, arrL, (@@@), delay, delay', arrIO,
+    transUI, arrL, (@@@), delay, delay', arrIO, arrIOMb,
     runNT_
 )where
 
@@ -107,33 +107,23 @@ instance Arrow ITrans
             
 --------------------------------------------------------------------------------
 
---createGrab :: [b] -> IO (IO b)
---createGrab = fmap (fmap (fmap fromJust)) mkGenerator
-
---grabAll :: IO t -> IO [t]
---grabAll = lazyList . fmap Just
-
-
 arrL :: ([a]->[b]) -> ITrans a b
 -- ^ pure function on the whole list of results
-arrL f = undefined
-{-
-      ITrans $ do
-    pl <- newIORef Nothing
-    return $ Trans $ \c -> do
-        mbl <- readIORef pl
-        case mbl of
-            Nothing -> do writeIORef pl =<< fmap (Just . f) (grabAll c)
-                          cg pl
-            Just _ -> cg pl
-  where
-    cg pl = do
-        Just r <- readIORef pl
-        case r of
-          h:t -> do writeIORef pl (Just t)
-                    return h
-          []  -> exitWith ExitSuccess
--}
+arrL f = ITrans $ do
+     pl <- newIORef Nothing
+     return $ Trans $ \c -> do
+         mbl <- readIORef pl
+         case mbl of
+             Nothing -> do writeIORef pl =<< fmap (Just . f) (lazyList c)
+                           cg pl
+             Just _ -> cg pl
+   where
+     cg pl = do
+         Just r <- readIORef pl
+         case r of
+           h:t -> do writeIORef pl (Just t)
+                     return (Just h)
+           []  -> return Nothing
 
 --------------------------------------------------------------------------------
 
@@ -146,6 +136,16 @@ arrIO f = transUI . return $ (>>=g)
   where
     g = fmap Just . f . fromJust   -- FIXME !!
 
+
+arrIOMb :: (a -> IO (Maybe b)) -> ITrans a b
+-- ^ lift an IO action to the ITrans arrow
+arrIOMb f = transUI . return $ (>>=g)
+  where
+    g x = case x of
+        Nothing -> return Nothing   -- hmmm
+        Just y -> f y
+
+
 --------------------------------------------------------------------------------
 
 (@@@) :: (p -> x -> y) -> Generator p -> ITrans x y
@@ -156,35 +156,41 @@ f @@@ p = arr (uncurry f) <<< (transUI (fmap const p) &&& arr id)
 ------------------------------------------------------------------
 
 instance ArrowChoice ITrans
-{-
   where
     left f = f +++ arr id
     f +++ g = (f >>> arr Left) ||| (g >>> arr Right)
     ITrans gf ||| ITrans gg = ITrans $ do
         Trans f <- gf
         Trans g <- gg
-        return $ Trans (>>= either (f.return) (g.return))
--}
+        let h Nothing  = return Nothing
+            h (Just y) = either (f.return.Just) (g.return.Just) y
+        return $ Trans $ (>>= h)
 
 -- similar to Kleisli, explictly calling the IO function
 
 --------------------------------------------------------------------------------
 
+adaptMb :: (IO a -> IO b) -> (IO (Maybe a) -> IO (Maybe b))
+adaptMb s = (>>= h)
+  where 
+    h Nothing  = return Nothing
+    h (Just x) = fmap Just . s . return $ x
+
+
 instance ArrowLoop ITrans
-{-
   where
     loop (ITrans gf) = ITrans $ do
         Trans f <- gf
-        let f' x y = (f.return) (x, snd y)
-        return $ Trans (>>= liftM fst . mfix . f')
--}
+        let f' x y = (fmap fromJust . f . return . Just) (x, snd y)
+            r = (>>= liftM fst . mfix . f')
+        return $ Trans $ adaptMb r
 
--- the same idea as above
+-- the same idea as above, with ugly wrapping
 
 
 instance ArrowCircuit ITrans
---  where
---    delay x = arrL (x:)
+  where
+    delay x = arrL (x:)
 
 
 delay' :: ITrans a a
@@ -235,7 +241,6 @@ runT gcam gt = do
 
 runS :: Generator a -> ITrans a b -> IO [b]
 -- ^ runT without the GUI (run silent) 
--- runS gcam gt = gcam >>= grabAll >>= runITrans gt
 runS gcam (ITrans gt) = do
     cam <- gcam
     Trans t <- gt
