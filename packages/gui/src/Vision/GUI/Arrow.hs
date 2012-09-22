@@ -18,7 +18,7 @@ module Vision.GUI.Arrow(
     runITrans, runT_, runT, runS,
     ITrans(ITrans), Trans(Trans),
     transUI, arrL, (@@@), delay, delay', arrIO, arrIOMb,
-    runNT_
+    runNT, runNT_
 )where
 
 import Control.Concurrent   (forkIO)
@@ -37,6 +37,8 @@ import System.Exit       (exitWith, ExitCode(ExitSuccess))
 import Graphics.UI.GLUT (mainLoopEvent)
 import Data.Maybe(fromJust)
 import Data.Traversable
+import Graphics.UI.GLUT(leaveMainLoop)
+import System.IO.Unsafe(unsafeInterleaveIO)
 
 --------------------------------------------------------------------------------
 
@@ -132,9 +134,7 @@ transUI = ITrans . fmap Trans
 
 arrIO :: (a -> IO b) -> ITrans a b
 -- ^ lift an IO action to the ITrans arrow
-arrIO f = transUI . return $ (>>=g)
-  where
-    g = fmap Just . f . fromJust   -- FIXME !!
+arrIO f = transUI . return $ adaptMb (>>=f)
 
 
 arrIOMb :: (a -> IO (Maybe b)) -> ITrans a b
@@ -144,7 +144,6 @@ arrIOMb f = transUI . return $ (>>=g)
     g x = case x of
         Nothing -> return Nothing   -- hmmm
         Just y -> f y
-
 
 --------------------------------------------------------------------------------
 
@@ -213,14 +212,23 @@ runT_ :: Generator a -> ITrans a b -> IO ()
 -- ^ run a camera generator on a transformer
 runT_ gcam gt = runIt $ do
     bs <- runS gcam gt
-    forkIO $ mapM_ g bs
+    forkIO $ mapM_ g bs >> leaveMainLoop
   where
     g !_x = putStr ""
 
 
-runNT_ :: Generator a -> ITrans a b -> IO ()
 -- ^ run process without fork, (needs explicit "prepare").
 -- This is currently required for certain GPU applications.
+runNT :: Generator a -> ITrans a b -> IO [b]
+runNT gcam gt = do
+    bs <- runS gcam gt
+    Control.Monad.mapM g bs
+  where
+    g !x = putStr "" >> mainLoopEvent >> return x
+
+
+runNT_ :: Generator a -> ITrans a b -> IO ()
+-- ^ similar to runNT, discarding the results
 runNT_ gcam gt = do
     bs <- runS gcam gt
     mapM_ g bs
@@ -234,8 +242,19 @@ runT gcam gt = do
     rbs <- newChan
     forkIO $ runIt $ do
         bs <- runS gcam gt
-        forkIO $ mapM_ (writeChan rbs) bs
-    getChanContents rbs
+        forkIO $ mapM_ (writeChan rbs . Just) bs >> writeChan rbs Nothing >> leaveMainLoop
+    getChanContents' rbs
+
+-- to detect end of stream
+getChanContents' :: Chan (Maybe a) -> IO [a]
+getChanContents' ch
+  = unsafeInterleaveIO $ do
+        mx  <- readChan ch
+        case mx of
+          Just x -> do
+            xs <- getChanContents' ch
+            return (x:xs)
+          Nothing -> return []
 
 
 
