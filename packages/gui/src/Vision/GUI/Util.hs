@@ -276,7 +276,7 @@ fixFlag = map sp
 withParam :: ParamRecord p => (p -> a -> b) -> ITrans a b
 -- ^ get the first argument from an interactive window, unless the command line options
 -- --no-gui or --default are given, in which case the function takes the default parameters.
-withParam f = choose c (arr $ f defParam) ( f @@@ (fmap (fmap Just) $ winParam) )
+withParam f = choose c (arr $ f defParam) (f @@@ winParam)
   where
     c = (||) <$> getFlag "--no-gui" <*> getFlag "--default"
 

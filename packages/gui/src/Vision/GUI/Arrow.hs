@@ -18,7 +18,7 @@ module Vision.GUI.Arrow(
     runITrans, runT_, runT, runS,
     ITrans(ITrans), Trans(Trans),
     transUI, arrL, (@@@), delay, delay', arrIO, arrIOMb,
-    runNT, runNT_
+    runNT, runNT_, adaptMb
 )where
 
 import Control.Concurrent   (forkIO)

@@ -336,9 +336,8 @@ kbdcam (pauseC,stepC,passC) = kbd where
 -- Also, pressing i saves a screenshot of the full opengl window contents.
 kbdQuit :: KeyboardMouseCallback
 
-kbdQuit (Char '\27') Down Modifiers {ctrl=Down} _ = leaveMainLoop >> system "killall mplayer" >> return ()
-kbdQuit (Char '\27') Down Modifiers {shift=Down} _ = putStrLn "LEAVE LOOP" >> leaveMainLoop
-kbdQuit (Char '\27') Down Modifiers {alt=Down} _ = putStrLn "USER EXIT" >> exitWith ExitSuccess
+--kbdQuit (Char '\27') Down Modifiers {alt=Down} _ = leaveMainLoop >> system "killall mplayer" >> return ()
+kbdQuit (Char '\27') Down _ _ = exitWith ExitSuccess
 kbdQuit (Char   'i') Down _ _ = captureGL >>= saveRGB' Nothing
 kbdQuit a Down m _            = putStrLn (show a ++ " " ++ show m ++ " not defined")
 kbdQuit _ _ _ _               = return ()
@@ -391,7 +390,7 @@ kbdroi w _ (Char ' ') Down Modifiers {shift=Up} _ = modifyIORef (evPause w) next
 kbdroi w _ (Char ' ') Down Modifiers {shift=Down} _ = modifyIORef (evPause w) nextPauseDraw
 kbdroi w _ (Char 's') Down _ _ = writeIORef (evPause w) PauseStep
 
-kbdroi w _ (Char '\27') Down _ _ = writeIORef (evEnd w) True          -- ESC to end stream
+kbdroi w _ (Char '\27') Down Modifiers {ctrl=Down} _ = writeIORef (evEnd w) True
 
 kbdroi _ defaultFunc a b c d = defaultFunc a b c d
 
