@@ -31,7 +31,7 @@ saveWin = proc img -> do
 saver :: FilePath -> ITrans ImageYUV ImageYUV
 saver name = transUI $ do
     f <- yuvHeader 480 640 name
-    return $ \cam -> do
+    return . adaptMb $ \cam -> do
             x <- cam
             saveYUV4Mpeg f x
             return x

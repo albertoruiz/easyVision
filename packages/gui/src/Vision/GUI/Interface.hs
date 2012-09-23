@@ -75,7 +75,7 @@ key k          = (k, Down, modif)
 type Command state result = ((Key,KeyState,Modifiers), WinRegion -> Point -> state -> result)
 type WinInit state input = EVWindow state -> input -> IO()
 
-type VCN a b = IO (IO a -> IO b)
+type VCN a b = IO (IO (Maybe a) -> IO (Maybe b))
 
 interface :: Size                                 -- win size
              -> String                            -- win title
@@ -124,7 +124,13 @@ interfaceG threeD sz0 name st0 ft upds acts resultFun resultDisp = do
     pauser <- newPauser (evPause w)
 
     return $ \cam -> do
-        thing <- pauser cam
+     end <- readIORef (evEnd w)
+     if end then return Nothing
+            else do
+      mbthing <- pauser cam
+      case mbthing of
+       Nothing -> return Nothing -- FIXME :(
+       Just thing -> do
         firstTime <- readIORef firstTimeRef
         when firstTime $ ft w thing >> writeIORef firstTimeRef False
         state <- getW w
@@ -139,7 +145,7 @@ interfaceG threeD sz0 name st0 ft upds acts resultFun resultDisp = do
         sync <- readIORef (evSync w)
         when sync $ postRedisplay (Just (evW w))
         modifyIORef (evStats w) (\s -> s { evNCall = evNCall s + 1 })
-        return result
+        return (Just result)
 
 drawRegion w = do
     ok <- readIORef (evDrReg w)
@@ -224,7 +230,7 @@ evWindow st0 name size kbd = do
     iconTitle $= name
     windowSize $= glSize size
 
-    -- actionOnWindowClose $= ContinueExectuion
+    actionOnWindowClose $= ContinueExectuion
 
     let Size h w = size
 
@@ -243,6 +249,7 @@ evWindow st0 name size kbd = do
     dc <- newIORef (WStatus 0 0)
     ad <- newIORef (return ())
     no <- newIORef (return ())
+    rend <- newIORef False
 
     let w = EVW { evW = glw
                 , evSt = st
@@ -260,6 +267,7 @@ evWindow st0 name size kbd = do
                 , evVisible = vi
                 , evPause = pa
                 , evStats = dc
+                , evEnd = rend
                 , evInit = clear [ColorBuffer] >> prepZoom w }
 
     keyboardMouseCallback $= Just (\k d m p -> kbdroi w (kbd w) k d m p >> postRedisplay Nothing)
@@ -327,8 +335,8 @@ kbdcam (pauseC,stepC,passC) = kbd where
 -- | keyboard callback for exiting the application with ESC or q, useful as default callback.
 -- Also, pressing i saves a screenshot of the full opengl window contents.
 kbdQuit :: KeyboardMouseCallback
-kbdQuit (Char '\27') Down Modifiers {shift=Down} _ = leaveMainLoop >> system "killall mplayer" >> return ()
-kbdQuit (Char '\27') Down Modifiers {ctrl=Down} _ = leaveMainLoop
+
+--kbdQuit (Char '\27') Down Modifiers {alt=Down} _ = leaveMainLoop >> system "killall mplayer" >> return ()
 kbdQuit (Char '\27') Down _ _ = exitWith ExitSuccess
 kbdQuit (Char   'i') Down _ _ = captureGL >>= saveRGB' Nothing
 kbdQuit a Down m _            = putStrLn (show a ++ " " ++ show m ++ " not defined")
@@ -382,6 +390,7 @@ kbdroi w _ (Char ' ') Down Modifiers {shift=Up} _ = modifyIORef (evPause w) next
 kbdroi w _ (Char ' ') Down Modifiers {shift=Down} _ = modifyIORef (evPause w) nextPauseDraw
 kbdroi w _ (Char 's') Down _ _ = writeIORef (evPause w) PauseStep
 
+kbdroi w _ (Char '\27') Down Modifiers {ctrl=Down} _ = writeIORef (evEnd w) True
 
 kbdroi _ defaultFunc a b c d = defaultFunc a b c d
 

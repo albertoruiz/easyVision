@@ -1,3 +1,5 @@
+{-# LANGUAGE TupleSections #-}
+
 -----------------------------------------------------------------------------
 {- |
 Module      :  Vision.GUI.Util
@@ -41,7 +43,7 @@ import Control.Applicative((<*>),(<$>))
 import ImagProc
 import ImagProc.Camera(findSize,readFolderMP,readFolderIM,getCam)
 import Vision.GUI.Arrow--(ITrans, Trans,transUI,transUI2,runT_)
-import Util.LazyIO((~>),(>~>),createGrab)
+import Util.LazyIO((~>),(>~>),mkGenerator,Generator)
 import Util.Misc(replaceAt,posMin)
 import Util.Options
 import Control.Concurrent(threadDelay,forkIO)
@@ -50,6 +52,12 @@ import Data.Time
 import System.CPUTime
 import Text.Printf(printf)
 import Data.IORef
+import Data.Maybe(fromJust)
+
+--createGrab :: [b] -> IO (IO b)
+--createGrab = fmap (fmap (fmap fromJust)) mkGenerator
+
+
 
 editor :: [Command (Int,[x]) (Int,[x])] -> [Command (Int,[x]) (IO())]
        -> String -> [x] -> (Int -> x -> Drawing) -> IO (EVWindow (Int,[x]))
@@ -157,7 +165,7 @@ By default it uses the first alias in cameras.def.
 It also admits --photos=path/to/folder/ containing separate image files (.jpg or .png), currently read using imagemagick (slower, lazy),
 and --photosmp=path/to/folder, to read images of the same type and size using mplayer (faster, strict).
 -}
-camera :: IO (IO Channels)
+camera :: Generator Channels
 camera = do
     f <- hasValue "--photos"
     g <- hasValue "--photosmp"
@@ -167,19 +175,22 @@ camera = do
                    else if h then cameraP
                              else cameraV
 
+cameraP :: Generator Channels
 cameraP = do
     hp <- optionString "--sphotos" "."
     g <- readFolderIM hp
-    c <- createGrab g
-    return (fst <$> c)
+    c <- mkGenerator g
+    return (fmap fst <$> c)
 
+cameraV :: Generator Channels
 cameraV = findSize >>= getCam 0 ~> channels
 
-
+cameraFolderIM :: Generator Channels
 cameraFolderIM = camG "--photos" r <*> dummy
   where
     r p _ = readFolderIM p
 
+cameraFolderMP :: Generator Channels
 cameraFolderMP = camG "--photosmp" readFolderMP <*> dummy
 
 camG opt readf = do
@@ -202,8 +213,8 @@ camG opt readf = do
       where
         Size h w = size (grayscale $ fst $ xs!!k)
 
-dummy :: IO (IO ())
-dummy = return (threadDelay 100000 >> return ())
+dummy :: Generator ()
+dummy = return (threadDelay 100000 >> return (Just ()))
 
 
 run t = runT_ camera (t >>> optDo "--freq" freqMonitor) 
@@ -224,7 +235,7 @@ frameRate = do
                 cdt = fromIntegral (ct1-ct0) / (10**9 :: Double)
                 cav' = cav *0.99 + 0.01* cdt
             writeIORef rt (t1,(av',cav'))
-            return (r,(av',cav'))
+            return $ fmap (,(av',cav')) r
 
 
 freqMonitor :: ITrans x x
@@ -265,7 +276,7 @@ fixFlag = map sp
 withParam :: ParamRecord p => (p -> a -> b) -> ITrans a b
 -- ^ get the first argument from an interactive window, unless the command line options
 -- --no-gui or --default are given, in which case the function takes the default parameters.
-withParam f = choose c (arr $ f defParam) (f @@@ winParam) 
+withParam f = choose c (arr $ f defParam) (f @@@ winParam)
   where
     c = (||) <$> getFlag "--no-gui" <*> getFlag "--default"
 

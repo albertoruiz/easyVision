@@ -4,7 +4,7 @@ import ImagProc
 main = run $ transUI f >>> freqMonitor
  
 f :: VCN Channels ImageRGB
-f = return $ \cam -> do
+f = return . adaptMb $ \cam -> do
     x <- cam
     let r = rgb x
     print (size r)
