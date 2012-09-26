@@ -15,7 +15,7 @@ module ImagProc.Camera(
     -- * Camera selection
     findSize,
     getCam, numCams,
-    getMulticam,
+    getCams, getMulticam,
     readFrames,
     readImages, readFolderMP, readFolderIM,
     -- * Video I/O
@@ -108,6 +108,14 @@ getCam n sz = do
     cleanSingleOpts = filter $ \x -> not ("-" `isPrefixOf` x) || ' ' `elem` x
 
 ----------------------------------------------
+
+getCams :: IO [IO (Maybe Channels)]
+getCams = do
+    n <- numCams
+    sz <- findSize
+    cams <- mapM (flip getCam sz >~> channels) [0..n-1]
+    return cams
+
 
 getMulticam :: Size -> Int -> Generator [Channels]
 getMulticam sz n = do

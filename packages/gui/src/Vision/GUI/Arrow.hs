@@ -16,7 +16,7 @@ Arrow interface.
 
 module Vision.GUI.Arrow(
     runITrans, runT_, runT, runS,
-    ITrans(ITrans), Trans(Trans),
+    ITrans(ITrans), Trans(Trans), Generator,
     transUI, arrL, (@@@), delay, delay', arrIO, arrIOMb,
     runNT, runNT_, adaptMb
 )where
