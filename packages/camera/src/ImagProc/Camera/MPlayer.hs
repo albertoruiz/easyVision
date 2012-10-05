@@ -57,10 +57,7 @@ mplayer' url (Size h w) = do
     k <- mallocBytes 1
     poke k '\0'         -- essential!!
 
-    let loop | "-loop" `isInfixOf` url = ""
-             | otherwise               = " -loop 0"
-
-        vfscale = " -vf scale=" ++ show w ++ ":" ++ show h
+    let vfscale = " -vf scale=" ++ show w ++ ":" ++ show h
 
         url' | "-vf" `isInfixOf` url = url
              | otherwise             = url ++ vfscale
@@ -69,7 +66,6 @@ mplayer' url (Size h w) = do
                   ++ " -vo yuv4mpeg:file="
                   ++ fifo
                   ++ " -nosound -slave"
-                  ++ loop
 
     --(i,o,e,p) <- runInteractiveProcess "mplayer" (words mpcommand) Nothing Nothing
     --(i,o,e,p) <- runInteractiveCommand ("mplayer " ++mpcommand)
