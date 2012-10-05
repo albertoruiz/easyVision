@@ -41,7 +41,7 @@ clip m a b = map (fst.fst) (fixOrientation p)
 --------------------------------------------------------------------------------
 
 deltaContour :: Polyline -> Polyline -> [((Polyline,Double),[Polyline])]
-deltaContour a b | n > 0     = fixOrientation p
+deltaContour a b | ins == 0 = {-debug "AB" (const (a,b)) $ -} fixOrientation p
                  | otherwise = disj ins
   where
     (p,n,ins) = preclip ClipXOR a b
@@ -80,7 +80,9 @@ step2 (poa, pos) = (poa, map Open (fragments pos))
     fragments = map (map fst) . frags . filter ((/=1).snd)
       where
         frags [] = []
-        frags (p:xs) = (p : rs ++ [q]) : frags ys
+        frags (p:xs) | null ts = error $ "FRAG " ++ show pos
+                     | otherwise = (p : rs ++ [q]) : frags ys
           where
-            (rs,q:ys) = span ((==2).snd) xs
+            (rs,ts) = span ((==2).snd) xs
+            q:ys = ts
 
