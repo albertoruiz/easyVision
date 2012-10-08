@@ -26,7 +26,7 @@ where
 
 import ImagProc.Base
 import Contours.Base(orientedArea,rev)
-import Util.Misc(impossible,debug)
+import Util.Misc(debug)
 
 import Contours.ClipRaw
 
@@ -41,19 +41,20 @@ clip m a b = map (fst.fst) (fixOrientation p)
 --------------------------------------------------------------------------------
 
 deltaContour :: Polyline -> Polyline -> [((Polyline,Double),[Polyline])]
-deltaContour a b | ins == 0 = {-debug "AB" (const (a,b)) $ -} fixOrientation p
-                 | otherwise = disj ins
+deltaContour a b | ins == 0 = checkDob b $ fixOrientation p
+                 | otherwise = debug "disj!" (const ()) donothing
   where
     (p,n,ins) = preclip ClipXOR a b
-    ([(a',_),(b',_)],1) = p
-    disj 0 = debug "disj!" (const ()) [((undefined,0),[])]
-    disj _ = [((err ,s),[b''])]
-      where
-        s = orientedArea b' - orientedArea a'
-        b'' = Open . clo . polyPts $ b'
-        err = impossible "disj-circ"
-        clo xs = xs++[head xs]
+    donothing = [((undefined,0),[])]
+    
 
+checkDob :: Polyline -> [((Polyline,Double),[Polyline])] -> [((Polyline,Double),[Polyline])]
+checkDob x d | dob = debug "Fragmented!" (const ()) donothing
+             | otherwise = d
+  where
+    dob = any ((>1).length.snd) d
+    donothing = [((undefined,0),[Open $ clo $ polyPts x])]
+    clo xs = xs ++ [head xs]
 
 fixOrientation :: ([(Polyline, [Int])],Int) -> [((Polyline,Double),[Polyline])]
 fixOrientation (xs,np) = zp' ++ zn'
