@@ -73,10 +73,48 @@ main = do
     sep "exper2" $ exper2 `cond` ((==6).fst)
     sep "joint" $ joint (return .length.filter (=='+')) (replicateM 5 coin)
     sep "marg" $ replicateM 5 coin `marg` (length.filter (=='+'))
+
 ----------------------------------------------------------------------
 
 exper1 = joint (return.sum) (replicateM 3 die)
 
 exper2 = joint (\n-> sum <$> (replicateM n die)) die
 
+-----------------------------------------------------------------------
+
+natural = bernoulli (1/2) "Boy" "Girl"
+
+name "Boy" = weighted [("B",1)]
+name "Girl" = weighted [("G",80),("Gx",20)]
+
+family = joint name natural `marg` fst
+
+families = replicateM 2 family -- <=> weighted [("G",40),("B",50),("Gx",10)]
+firstgirl = ((=='G').head.head)
+twogirls = (=="GG") . map head
+anyGx = any (=="Gx")
+anygirl = any ((=='G').head)
+sex = map head
+
+msg s x = putStrLn (replicate 30 '-' ++ ' ':s) >> print x
+
+florida = do
+    msg "families"        $ families
+    msg "cond firstgirl"  $ families `cond` firstgirl
+    msg "sex | firstgirl" $ families `cond` firstgirl `marg` sex
+    msg "twogirls | firstgirl"  $ families `cond` firstgirl `marg` twogirls
+    putStrLn ""
+    msg "cond twogirls" $ families `cond` twogirls
+    msg "sex | twogirls" $ families `cond` twogirls `marg` sex
+    putStrLn ""
+    msg "cond anygirl"  $ families `cond` anygirl
+    msg "sex | anygirl"  $ families `cond` anygirl `marg` sex
+    msg "twogirls | anygirl"  $ families `cond` anygirl `marg` twogirls
+    putStrLn ""
+    msg "cond anyGx"  $ families `cond` anyGx
+    msg "sex | anyGx"  $ families `cond` anyGx `marg` sex
+    msg "twogirls | anyGx" $ families `cond` anyGx `marg` twogirls
+    putStrLn ""
+    msg "cond firstGx" $ families `cond` (("Gx"==).head)
+    msg "sex | firstGx" $ families `cond` (("Gx"==).head) `marg` sex
 
