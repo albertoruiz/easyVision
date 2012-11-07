@@ -45,8 +45,8 @@ deltaContour a b | ins == 0 = checkDob b $ fixOrientation p
                  | otherwise = debug "disj!" (const ()) donothing
   where
     (p,n,ins) = preclip ClipXOR a b
-    donothing = [((undefined,0),[])]
-    
+    donothing = [((undefined,0),[Open $ clo $ polyPts b])]
+    clo xs = xs ++ [head xs]
 
 checkDob :: Polyline -> [((Polyline,Double),[Polyline])] -> [((Polyline,Double),[Polyline])]
 checkDob x d | dob = debug "Fragmented!" (const ()) donothing
