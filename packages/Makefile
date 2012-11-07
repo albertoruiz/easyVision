@@ -1,4 +1,4 @@
-stage3   = contours gui apps contrib/clipping
+stage3   = contours gui apps contrib/clipping contrib/hcontours
 stage2   = imagproc camera $(stage3)
 packages = util patrec vision $(stage2)
 optional = gpu opencv models3ds examples zbar tesseract

@@ -1,0 +1,37 @@
+Name:               hcontours
+Version:            0.2.0
+License:            AllRightsReserved
+License-file:       LICENSE
+Author:             PARP Research Group <http://perception.inf.um.es>, University of Murcia, Spain.
+Maintainer:         Alberto Ruiz <aruiz@um.es>
+Stability:          experimental
+Synopsis:           subpixel contour extraction
+Description:        interface to optimized C implementation of subpixel contour extraction
+  
+Category:           Image Processing
+tested-with:        GHC ==7.4
+
+cabal-version:      >=1.2
+build-type:         Custom
+
+
+extra-tmp-files:        hcontours.buildinfo
+extra-source-files:     src/ImagProc/Contrib/Contours/struct.h
+
+library
+    Build-Depends:      base >= 3 && < 5, imagproc >= 0.1, prcv-util >= 0.1,
+                        ev-gui, contours, camera, hmatrix
+
+    hs-source-dirs:     src
+
+    Exposed-modules:    ImagProc.Contrib.Contours
+
+    other-modules:      ImagProc.Contrib.Contours.Structs
+
+    ghc-prof-options:   -auto-all
+
+    ghc-options:        -Wall
+
+    extra-libraries:    contours
+    include-dirs:       src/ImagProc/Contrib/Contours
+
