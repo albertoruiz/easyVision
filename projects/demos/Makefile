@@ -8,6 +8,7 @@ demo:
 	./imagproc
 	./gradient
 	./trail
+	./contours
 	./pose '../../data/videos/rot4.avi -loop 0'
 	./spline
 	./transi ../../data/images/transi
