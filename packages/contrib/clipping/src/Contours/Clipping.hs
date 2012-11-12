@@ -52,7 +52,7 @@ checkDob :: Polyline -> [((Polyline,Double),[Polyline])] -> [((Polyline,Double),
 checkDob x d | dob = debug "Fragmented!" (const ()) donothing
              | otherwise = d
   where
-    dob = any ((>1).length.snd) d
+    dob = any ((/=1).length.snd) d  --FIXME
     donothing = [((undefined,0),[Open $ clo $ polyPts x])]
     clo xs = xs ++ [head xs]
 
