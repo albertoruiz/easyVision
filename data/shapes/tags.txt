@@ -1,0 +1,6 @@
+[
+(Closed {polyPts = [Point {px = 0.0, py = 0.0},Point {px = 1.0, py = 0.0},Point {px = 1.0, py = 0.5},Point {px = 0.5, py = 0.5},Point {px = 0.5, py = 1.0},Point {px = 0.0, py = 1.0}]},"tag"),
+(Closed {polyPts = [Point {px = 0.0, py = 0.0},Point {px = 1.0, py = 0.0},Point {px = 1.0, py = 0.8},Point {px = 0.8, py = 0.8},Point {px = 0.8, py = 1.0},Point {px = 0.0, py = 1.0}]},"tag"),
+(Closed {polyPts = [Point {px = 0.0, py = 0.0},Point {px = 3.0, py = 0.0},Point {px = 3.0, py = 0.5},Point {px = 3.5, py = 1.0},Point {px = 3.0, py = 1.5},Point {px = 3.0, py = 2.0},Point {px = 0.0, py = 2.0},Point {px = 0.0, py = 1.5},Point {px = 0.5, py = 1.0},Point {px = 0.0, py = 0.5}]}, "cyl")
+]
+
