@@ -41,20 +41,13 @@ clip m a b = map (fst.fst) (fixOrientation p)
 --------------------------------------------------------------------------------
 
 deltaContour :: Polyline -> Polyline -> [((Polyline,Double),[Polyline])]
-deltaContour a b | ins == 0 = checkDob b $ fixOrientation p
+deltaContour a b | ins == 0 = fixOrientation p
                  | otherwise = debug "disj!" (const ()) donothing
   where
-    (p,n,ins) = preclip ClipXOR a b
-    donothing = [((undefined,0),[Open $ clo $ polyPts b])]
+    (p,_n,ins) = preclip ClipXOR a b
+    donothing = [((undefined,0),[Open $ clo $ polyPts b])] --FIXME
     clo xs = xs ++ [head xs]
 
-checkDob :: Polyline -> [((Polyline,Double),[Polyline])] -> [((Polyline,Double),[Polyline])]
-checkDob x d | dob = debug "Fragmented!" (const ()) donothing
-             | otherwise = d
-  where
-    dob = any ((/=1).length.snd) d  --FIXME
-    donothing = [((undefined,0),[Open $ clo $ polyPts x])]
-    clo xs = xs ++ [head xs]
 
 fixOrientation :: ([(Polyline, [Int])],Int) -> [((Polyline,Double),[Polyline])]
 fixOrientation (xs,np) = zp' ++ zn'
