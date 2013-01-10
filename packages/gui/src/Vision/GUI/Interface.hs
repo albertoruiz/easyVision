@@ -230,7 +230,8 @@ evWindow st0 name size kbd = do
     iconTitle $= name
     windowSize $= glSize size
 
-    actionOnWindowClose $= ContinueExectuion
+--  actionOnWindowClose $= ContinueExectuion
+--  Exit by default
 
     let Size h w = size
 
