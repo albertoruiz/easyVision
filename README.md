@@ -46,7 +46,7 @@ installation instructions
 
     Install using sudo in the default location.
 
-3. Add the following environment variables to .bahsrc:
+3. Add the following environment variables to `~/.bashrc`:
 
         export IPP_INC=/opt/intel/composerxe/ipp/include
         export IPP_SHARED="/opt/intel/ipp/lib/ia32/:/opt/intel/lib/ia32/"
