@@ -32,6 +32,6 @@ library
 
     ghc-options:        -Wall
 
-    extra-libraries:    contours
+    extra-libraries:    contours m
     include-dirs:       src/ImagProc/Contrib/Contours
 
