@@ -1,0 +1,9 @@
+[
+(Closed {polyPts = [Point {px = 0.0, py = 0.0},Point {px = 1.0, py = 0.0},Point {px = 1.0, py = 0.5},Point {px = 0.5, py = 0.5},Point {px = 0.5, py = 1.0},Point {px = 0.0, py = 1.0}]},"tag"),
+(Closed {polyPts = [Point {px = 0.0, py = 0.0},Point {px = 1.0, py = 0.0},Point {px = 1.0, py = 0.8},Point {px = 0.8, py = 0.8},Point {px = 0.8, py = 1.0},Point {px = 0.0, py = 1.0}]},"tag"),
+(Closed {polyPts = [Point {px = 0.0, py = 0.0},Point {px = 3.0, py = 0.0},Point {px = 3.0, py = 0.5},Point {px = 3.5, py = 1.0},Point {px = 3.0, py = 1.5},Point {px = 3.0, py = 2.0},Point {px = 0.0, py = 2.0},Point {px = 0.0, py = 1.5},Point {px = 0.5, py = 1.0},Point {px = 0.0, py = 0.5}]}, "cyl"),
+(Closed {polyPts = [Point {px = 0, py = 1.01},Point {px = -0.9510565162951535, py = 0.3090169943749475},Point {px = -0.5877852522924732, py = -0.8090169943749473},Point {px = 0.5877852522924729, py = -0.8090169943749476},Point {px = 0.9510565162951536, py = 0.3090169943749472}]},"pentag"),
+(Closed {polyPts = [Point {px = 0, py = 1.5},Point {px = -0.9510565162951535, py = 0.3090169943749475},Point {px = -0.5877852522924732, py = -0.8090169943749473},Point {px = 0.5877852522924729, py = -0.8090169943749476},Point {px = 0.9510565162951536, py = 0.3090169943749472}]},"pentag"),
+(Closed {polyPts = [Point {px = 0, py = 0.8},Point {px = -0.9510565162951535, py = 0.3090169943749475},Point {px = -0.5877852522924732, py = -0.8090169943749473},Point {px = 0.5877852522924729, py = -0.8090169943749476},Point {px = 0.9510565162951536, py = 0.3090169943749472}]},"pentag")
+]
+

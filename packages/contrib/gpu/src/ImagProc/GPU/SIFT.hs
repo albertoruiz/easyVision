@@ -144,8 +144,8 @@ sift :: (a -> ImageGray) -> ITrans a (a, [InterestPoint])
 sift f = transUI $ do
     fsift <- getSift
     o <- winParam
-    return $ \cam -> do
+    return . adaptMb $ \cam -> do
        x <- cam
-       pars <- o
+       Just pars <- o
        return (x, fsift pars (f x))
 

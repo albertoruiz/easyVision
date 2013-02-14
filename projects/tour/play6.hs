@@ -9,7 +9,7 @@ main = runT_ rnd  $    see "x" >>> arrL f >>> see "mean"
 
 see name = observe name (text (Point 0.9 0) . show)
 
-rnd = return (threadDelay 1000 >> fmap (flip mod 10) randomIO)
+rnd = return (threadDelay 1000 >> fmap (Just . flip mod 10) randomIO)
 
 avg = map (mean . map fromIntegral) . splitEvery 100
 

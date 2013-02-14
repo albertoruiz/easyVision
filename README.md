@@ -6,11 +6,11 @@ This is an experimental [Haskell][haskell] framework for fast prototyping of com
 help
 ----
 
-- Tutorial (coming soon)
+- [Introductory slides][slides]
+
+- [Tutorial][tutorial] (in construction)
 
 - [Blog][blog]
-
-- Obsolete [tutorial][tutorial]
 
 related work
 ------------
@@ -21,15 +21,17 @@ related work
 
 - [Repa][repa]
 
+- [JuicyPixels][JuicyPixels]
 
 [haskell]: http://www.haskell.org
-[tutorial]: http://perception.inf.um.es/easyVision/easyVision.pdf
+[slides]: http://perception.inf.um.es/easyVision/ev1.pdf
+[tutorial]: http://perception.inf.um.es/easyVision/ev2.pdf
 [blog]: http://covector.blogspot.com/
 [yale]: http://haskell.cs.yale.edu/?post_type=publication&p=196
 [lewis]: http://hackage.haskell.org/package/HOpenCV
 [tirronen]: http://hackage.haskell.org/package/CV
 [repa]: http://hackage.haskell.org/package/repa-examples
-
+[JuicyPixels]: http://hackage.haskell.org/package/JuicyPixels
 
 installation instructions
 -------------------------

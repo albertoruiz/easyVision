@@ -59,7 +59,8 @@ analyzeShape mW (p,(mx,my,cxx,cyy,cxy)) = Shape {..}
     shapeMoments = (mx,my,cxx,cyy,cxy)
     shapeCenter = Point mx my
     shapeAxes @ (l1,l2,phi) = eig2x2Dir (cxx,cyy,cxy)
-    shapeWhitener = diagl [1/sqrt l1,1/sqrt l2,1] <> rot3 phi <> desp (-mx,-my)
+    shapeWhitener = --whitener' shapeMoments
+                    diagl [1/sqrt l1,1/sqrt l2,1] <> rot3 phi <> desp (-mx,-my)
     whiteShape = transPol shapeWhitener p
     fou = fourierPL whiteShape
     invAffine = fromList $ map (magnitude.fou) [-mW .. mW]

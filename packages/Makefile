@@ -1,4 +1,4 @@
-stage3   = contours gui apps contrib/clipping
+stage3   = contours gui apps contrib/clipping contrib/hcontours
 stage2   = imagproc camera $(stage3)
 packages = util patrec vision $(stage2)
 optional = gpu opencv models3ds examples zbar tesseract
@@ -14,6 +14,9 @@ basic:
 
 optional:
 	cd contrib; for p in $(optional); do cd $$p; $(normalinstall) ; cd ..; done; cd ..
+
+optionalfast:
+	cd contrib; for p in $(optional); do cd $$p; $(fastinstall) ; cd ..; done; cd ..
 
 optionalprof:
 	cd contrib; for p in $(optional); do cd $$p; $(profinstall) ; cd ..; done; cd ..

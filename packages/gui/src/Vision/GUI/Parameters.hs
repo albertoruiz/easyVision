@@ -31,6 +31,7 @@ import Data.List as L
 import Control.Monad(ap,join)
 import Control.Applicative((<$>),(<*>))
 import Util.Options(getOption,optionString)
+import Util.LazyIO(Generator)
 
 import Language.Haskell.TH
 import Language.Haskell.TH.Syntax
@@ -358,8 +359,8 @@ class ParamRecord r where
     defParam :: r           -- ^ default value
     argParam :: IO r        -- ^ default value modified by command line arguments
     mkParam :: MkParam r    -- ^ parameter window with window control
-    winParam :: IO (IO r)   -- ^ parameter window constructor
-    winParam = snd <$> mkParam
+    winParam :: Generator r -- ^ parameter window constructor
+    winParam = (fmap Just . snd) <$> mkParam
 
 
 

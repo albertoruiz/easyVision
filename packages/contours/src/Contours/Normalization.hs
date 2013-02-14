@@ -16,7 +16,7 @@ module Contours.Normalization (
     centerShape,
     normalShape,
     boxShape,
-    whitenContour, whitener, equalizeContour,
+    whitenContour, whitener, whitener', equalizeContour,
     momentsContour, momentsBoundary,
     eig2x2Dir
 )
@@ -88,9 +88,24 @@ whitener :: Polyline -> Matrix Double
 whitener (Closed ps) = t where
     (mx,my,cxx,cyy,cxy) = momentsContour ps
     (l1,l2,a) = eig2x2Dir (cxx,cyy,cxy)
-    t = diag (fromList [1/sqrt l1,1/sqrt l2,1]) <> rot3 (a) <> desp (-mx,-my)
+    --t = diag (fromList [1/sqrt l1,1/sqrt l2,1]) <> rot3 (a) <> desp (-mx,-my)
+    t = whitener' (momentsContour ps)
 
-whitenContour t = transPol w t where w = whitener t
+-- | Based on closed-form Cholesky Factorization
+whitener' :: (Double,Double,Double,Double,Double) -> Matrix Double
+whitener' (mx,my,cxx,cyy,cxy) = (3><3) [ a, b, -a*mx-b*my
+                                       , 0, c, -c*my
+                                       , 0, 0,   1       ]
+  where
+    delta = sqrt( cxx / (cxx*cyy-cxy*cxy) )
+    a = 1/sqrt cxx
+    b = -cxy/cxx*delta
+    c = delta
+
+
+whitenContour t = transPol w t
+  where
+    w = whitener t
 
 
 -- | centered

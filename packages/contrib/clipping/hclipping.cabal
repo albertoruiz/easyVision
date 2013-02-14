@@ -26,7 +26,7 @@ library
 
     Exposed-modules:    Contours.Clipping
 
-    other-modules:
+    other-modules:      Contours.ClipRaw
 
     c-sources:          src/Contours/Clipping/clipping.c
                         

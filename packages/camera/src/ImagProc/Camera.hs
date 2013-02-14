@@ -15,7 +15,7 @@ module ImagProc.Camera(
     -- * Camera selection
     findSize,
     getCam, numCams,
-    getMulticam,
+    getCams, getMulticam,
     readFrames,
     readImages, readFolderMP, readFolderIM,
     -- * Video I/O
@@ -33,7 +33,6 @@ import ImagProc.Generic(Channels,channels,GImg,toYUV,channelsFromRGB)
 import ImagProc.Camera.MPlayer
 import System.IO.Unsafe(unsafeInterleaveIO)
 import Data.List(isPrefixOf,foldl',tails,findIndex,isInfixOf,isSuffixOf)
-import Data.Maybe
 import System.Directory(doesFileExist, getDirectoryContents)
 import Control.Applicative((<$>))
 import System.Environment(getArgs,getEnvironment)
@@ -43,7 +42,7 @@ import ImagProc.Camera.UVC
 import Util.Options
 import Util.Misc(debug)
 import Control.Monad
-import Util.LazyIO((>~>),grabAll)
+import Util.LazyIO((>~>),lazyList,Generator)
 
 -----------------------------------------------------------------------------------
 
@@ -53,17 +52,28 @@ import Util.LazyIO((>~>),grabAll)
 findSize :: IO Size
 findSize = do
     okSize <- getFlag "--size"
-    mps <- getOption "--size" 20
+    mps <- optionString "--size" "20"
     r   <- getOption "--rows" 480
     c   <- getOption "--cols" 640
     return $ if okSize
-                then mpSize mps
+                then parseSize mps
                 else Size r c
+
+parseSize :: String -> Size
+parseSize s | 'x' `elem` s = f s
+            | otherwise    = mpSize (read s)
+  where
+    f = h . words . map g
+    g 'x' = ' '
+    g y = y
+    h [a,b] = Size (read b) (read a)
+    h _ = error "askSize parse error"
+
 
 -- | returns a camera from the n-th user argument
 getCam :: Int  -- ^ n-th camera url supplied by the user (or defined in cameras.def)
        -> Size -- ^ image size
-       -> IO (IO ImageYUV)
+       -> Generator ImageYUV
 getCam n sz = do
     rawargs <- getArgs
     aliases <- getAliases
@@ -79,8 +89,16 @@ getCam n sz = do
         cleanUrl = clean ["--live"] fullUrl
         uvcdev = "/dev/video" ++ drop 3 cleanUrl
         cam = if "uvc" `isPrefixOf` cleanUrl
-                then dbg (putStrLn uvcdev) >> uvcCamera uvcdev sz 30
-                else dbg (putStrLn cleanUrl) >> mplayer cleanUrl sz
+                then dbg (putStrLn uvcdev) >> (fmap (fmap Just) (uvcCamera uvcdev sz 30))
+                else do dbg (putStrLn cleanUrl)
+                        gsz <- askSize cleanUrl
+                        def <- or `fmap` mapM hasValue ["--size", "--rows", "--cols"]
+                        case gsz of
+                            Nothing -> error $ cleanUrl ++ " not found!"
+                            Just isz -> if def
+                                            then mplayer' cleanUrl sz
+                                            else mplayer' cleanUrl isz
+                                                   
     if isLive
         then dbg (putStrLn "Live") >> cam >>= live
         else if isChan 
@@ -91,10 +109,18 @@ getCam n sz = do
 
 ----------------------------------------------
 
-getMulticam :: Size -> Int -> IO (IO [Channels])
+getCams :: IO [IO (Maybe Channels)]
+getCams = do
+    n <- numCams
+    sz <- findSize
+    cams <- mapM (flip getCam sz >~> channels) [0..n-1]
+    return cams
+
+
+getMulticam :: Size -> Int -> Generator [Channels]
 getMulticam sz n = do
     cams <- mapM (flip getCam sz >~> channels) [0..n-1]
-    return (sequence cams)
+    return (fmap sequence $ sequence cams)
 
 
 -----------------------------------------------
@@ -102,16 +128,14 @@ getMulticam sz n = do
 readFrames :: Int  -- ^ n-th camera url supplied by the user (or defined in cameras.def)
            -> IO [ImageYUV]
 -- | returns a lazy list with all the frames produced by an image source.
-readFrames = fmap (map fromJust . takeWhile isJust) . readFrames'
-  where
-    readFrames' n = do
-        args <- cleanOpts `fmap` getArgs
-        aliases <- getAliases
-        sz <- findSize
-        let url = if n < length args
-                    then args!!n
-                    else fst (aliases!!n)
-        mplayer' (expand aliases url) sz >>= grabAll
+readFrames n = do
+    args <- cleanOpts `fmap` getArgs
+    aliases <- getAliases
+    sz <- findSize
+    let url = if n < length args
+                then args!!n
+                else fst (aliases!!n)
+    mplayer' (expand aliases url) sz >>= lazyList
 
 
 writeFrames :: FilePath -> [ImageYUV] -> IO ()
