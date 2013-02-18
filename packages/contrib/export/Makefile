@@ -1,38 +1,8 @@
-GHCV=ghc-7.4.0.20111219
-# ghc --version
-
-GHC=/home/brutus/apps/ghc74020111219/lib/ghc-7.4.0.20111219
-# ghc --print-libdir
-
-CABAL=/home/brutus/.cabal/lib
-
+GHC=/usr/lib/ghc
+GHCV="ghc-7.4.1"
+CABAL=/home/aamor/.cabal/lib
+GCC=gcc
 all:
-	ghc -Wall --make -O2 test.hs -o testh -v
-	gcc -Wall -O3 -o testc test.c HTools.o \
-        -I$(GHC)/include \
-        -L$(CABAL)/hmatrix-0.13.1.0/$(GHCV) -lHShmatrix-0.13.1.0 -lgsl -llapack -lblas \
-        -L$(CABAL)/vector-0.9/$(GHCV) -lHSvector-0.9 \
-        -L$(CABAL)/primitive-0.4.0.1/$(GHCV) -lHSprimitive-0.4.0.1 \
-	    -L$(CABAL)/storable-complex-0.2.1/$(GHCV) -lHSstorable-complex-0.2.1 \
-        -L$(GHC)/process-1.1.0.1 -lHSprocess-1.1.0.1 \
-        -L$(GHC)/directory-1.1.0.2 -lHSdirectory-1.1.0.2 \
-        -L$(GHC)/unix-2.5.1.0 -lHSunix-2.5.1.0 \
-        -L$(GHC)/old-time-1.1.0.0 -lHSold-time-1.1.0.0 \
-        -L$(GHC)/old-locale-1.0.0.4 -lHSold-locale-1.0.0.4 \
-        -L$(GHC)/filepath-1.3.0.0 -lHSfilepath-1.3.0.0 \
-        -L$(GHC)/binary-0.5.1.0 -lHSbinary-0.5.1.0 \
-        -L$(GHC)/containers-0.4.2.1 -lHScontainers-0.4.2.1 \
-        -L$(GHC)/deepseq-1.3.0.0 -lHSdeepseq-1.3.0.0 \
-        -L$(GHC)/bytestring-0.9.2.1 -lHSbytestring-0.9.2.1 \
-        -L$(GHC)/array-0.4.0.0 -lHSarray-0.4.0.0 \
-        -L$(GHC) -lHSrts \
-        -L$(GHC)/base-4.5.0.0 -lHSbase-4.5.0.0 \
-        -L$(GHC)/integer-gmp-0.4.0.0 -lHSinteger-gmp-0.4.0.0 \
-        -lgmp \
-        -L$(GHC)/ghc-prim-0.2.0.0 -lHSghc-prim-0.2.0.0 \
-        -lm -lrt -ldl \
-
-
+	/usr/bin/gcc -fno-stack-protector -Wl,--hash-size=31 -Wl,--reduce-memory-overheads -o testc HTools.o test.o Test.o -L/home/aamor/.cabal/lib/hmatrix-0.14.1.0/ghc-7.4.1 -L/home/aamor/.cabal/lib/vector-0.10.0.1/ghc-7.4.1 -L/home/aamor/.cabal/lib/primitive-0.5.0.1/ghc-7.4.1 -L/home/aamor/.cabal/lib/storable-complex-0.2.1/ghc-7.4.1 -L/usr/lib/haskell-packages/ghc/lib/random-1.0.1.1/ghc-7.4.1 -L/usr/lib/ghc/time-1.4 -L/usr/lib/ghc/process-1.1.0.1 -L/usr/lib/ghc/directory-1.1.0.2 -L/usr/lib/ghc/unix-2.5.1.0 -L/usr/lib/ghc/old-time-1.1.0.0 -L/usr/lib/ghc/old-locale-1.0.0.4 -L/usr/lib/ghc/filepath-1.3.0.0 -L/usr/lib/ghc/binary-0.5.1.0 -L/usr/lib/ghc/containers-0.4.2.1 -L/usr/lib/ghc/deepseq-1.3.0.0 -L/usr/lib/ghc/bytestring-0.9.2.1 -L/usr/lib/ghc/array-0.4.0.0 -L/usr/lib/ghc/base-4.5.0.0 -L/usr/lib/ghc/integer-gmp-0.4.0.0 -L/usr/lib/ghc/ghc-prim-0.2.0.0 -L/usr/lib/ghc  -lHShmatrix-0.14.1.0 -lgsl -llapack -lblas -lHSvector-0.10.0.1 -lHSprimitive-0.5.0.1 -lHSstorable-complex-0.2.1 -lHSrandom-1.0.1.1 -lHStime-1.4 -lHSprocess-1.1.0.1 -lHSdirectory-1.1.0.2 -lHSunix-2.5.1.0 -lrt -lutil -ldl -lpthread -lHSold-time-1.1.0.0 -lHSold-locale-1.0.0.4 -lHSfilepath-1.3.0.0 -lHSbinary-0.5.1.0 -lHScontainers-0.4.2.1 -lHSdeepseq-1.3.0.0 -lHSbytestring-0.9.2.1 -lHSarray-0.4.0.0 -lHSbase-4.5.0.0 -lHSinteger-gmp-0.4.0.0 -lgmp -lHSghc-prim-0.2.0.0 -lHSrts -lffi -lm -lrt -ldl -u ghczmprim_GHCziTypes_Izh_static_info -u ghczmprim_GHCziTypes_Czh_static_info -u ghczmprim_GHCziTypes_Fzh_static_info -u ghczmprim_GHCziTypes_Dzh_static_info -u base_GHCziPtr_Ptr_static_info -u base_GHCziWord_Wzh_static_info -u base_GHCziInt_I8zh_static_info -u base_GHCziInt_I16zh_static_info -u base_GHCziInt_I32zh_static_info -u base_GHCziInt_I64zh_static_info -u base_GHCziWord_W8zh_static_info -u base_GHCziWord_W16zh_static_info -u base_GHCziWord_W32zh_static_info -u base_GHCziWord_W64zh_static_info -u base_GHCziStable_StablePtr_static_info -u ghczmprim_GHCziTypes_Izh_con_info -u ghczmprim_GHCziTypes_Czh_con_info -u ghczmprim_GHCziTypes_Fzh_con_info -u ghczmprim_GHCziTypes_Dzh_con_info -u base_GHCziPtr_Ptr_con_info -u base_GHCziPtr_FunPtr_con_info -u base_GHCziStable_StablePtr_con_info -u ghczmprim_GHCziTypes_False_closure -u ghczmprim_GHCziTypes_True_closure -u base_GHCziPack_unpackCString_closure -u base_GHCziIOziException_stackOverflow_closure -u base_GHCziIOziException_heapOverflow_closure -u base_ControlziExceptionziBase_nonTermination_closure -u base_GHCziIOziException_blockedIndefinitelyOnMVar_closure -u base_GHCziIOziException_blockedIndefinitelyOnSTM_closure -u base_ControlziExceptionziBase_nestedAtomically_closure -u base_GHCziWeak_runFinalizzerBatch_closure -u base_GHCziTopHandler_flushStdHandles_closure -u base_GHCziTopHandler_runIO_closure -u base_GHCziTopHandler_runNonIO_closure -u base_GHCziConcziIO_ensureIOManagerIsRunning_closure -u base_GHCziConcziSync_runSparks_closure -u base_GHCziConcziSignal_runHandlers_closure
 clean:
-	rm -f testc testh *.hi *.o *_stub.h
-
+	rm -f *.hi *.o *_stub.h
