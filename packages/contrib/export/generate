@@ -1,0 +1,24 @@
+#!/bin/bash
+
+HOUT="testh"
+COUT="testc"
+
+rm -f $COUT $HOUT *.hi *.o *_stub.h
+
+echo "GHC=`ghc --print-libdir`" > Makefile
+# ghc --print-libdir
+
+echo "GHCV=\"ghc-`ghc --numeric-version`\"" >> Makefile
+
+echo "CABAL=$HOME/.cabal/lib" >> Makefile
+echo "GCC=gcc" >> Makefile
+TMP="/tmp/ghc-generate-$RANDOM"
+ghc --make *.c *.hs -o $HOUT -no-hs-main -v 2> $TMP
+CC=`grep "\-L.*-l" $TMP | sed "s/\/tmp[^\']*//" | sed "s/$HOUT/$COUT/" | tr -d \'`
+
+rm $TMP
+echo "all:" >> Makefile
+echo -e "\t$CC" >> Makefile
+
+echo "clean:" >> Makefile
+echo -e "\trm -f *.hi *.o *_stub.h" >> Makefile
