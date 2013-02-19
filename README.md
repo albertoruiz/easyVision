@@ -24,8 +24,8 @@ related work
 - [JuicyPixels][JuicyPixels]
 
 [haskell]: http://www.haskell.org
-[slides]: http://perception.inf.um.es/easyVision/ev1.pdf
-[tutorial]: http://perception.inf.um.es/easyVision/ev2.pdf
+[slides]: http://dis.um.es/~alberto/material/ev1.pdf
+[tutorial]: http://dis.um.es/~alberto/material/ev2.pdf
 [blog]: http://covector.blogspot.com/
 [yale]: http://haskell.cs.yale.edu/?post_type=publication&p=196
 [lewis]: http://hackage.haskell.org/package/HOpenCV
