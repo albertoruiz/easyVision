@@ -14,3 +14,4 @@ q = Closed [ Point {px = 0.15270079428773498, py = 0.4329597721355455}
 
 test = sum $ map area $ clip ClipIntersection p q
 
+main = print test

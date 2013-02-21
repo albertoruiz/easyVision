@@ -213,6 +213,7 @@ int findIntersections(struct vertex *lA, struct vertex *lB)
                                MAX(w->x, w->nextVertex->x), MAX(w->y, w->nextVertex->y))
                 && ((result = intersect(v, v->nextVertex, w, w->nextVertex, &alphaA, &alphaB)) != NO_INTERSECTION))
             {
+again:
                 x1 = v->x;
                 y1 = v->y;
                 x2 = v->nextVertex->x;
@@ -279,8 +280,13 @@ int findIntersections(struct vertex *lA, struct vertex *lB)
                         w->nextVertex->x = (x4-x3)*(1.0-EPSILON) + x3;
                         w->nextVertex->y = (y4-y3)*(1.0-EPSILON) + y3;
                     }
-                    // As we always shorten corresponding segment when perturbing, no intersection will occur;
-                    // thus, we can safely continue with next pair of segments.
+                    // As we always shorten corresponding segment when perturbing, no intersection should occur;
+                    // thus, we could safely continue with next pair of segments, at least in theory.
+                    // Nevertheless, in numerically ill-conditioned situations, we have found (rare) cases in which this
+                    // condition could not be true; in that case, we would repeat the process from the beginning, just to
+                    //  be sure that an inconsistent situation will never hold.
+                    if((result = intersect(v, v->nextVertex, w, w->nextVertex, &alphaA, &alphaB)) != NO_INTERSECTION)
+                        goto again;
                     continue;
                 }
 
@@ -878,6 +884,7 @@ int main2(void)
             case 3: msg = "POLYGON_DIFF_BA";      op = POLYGON_DIFF_BA;      break;
             case 4: msg = "POLYGON_XOREXT";       op = POLYGON_XOREXT;       break;
         }
+                
         clip(Ax, Ay, lA, Bx, By, lB, op,
              &polysx, &polysy, &lengths, &nl, &nlp, &status,
              &origin, &ind0A, &ind1A, &ind0B, &ind1B, &alphaA, &alphaB);
@@ -915,3 +922,4 @@ int main2(void)
 
     return 0;
 }
+
