@@ -4,6 +4,7 @@ packages = util patrec vision $(stage2)
 optional = gpu opencv models3ds examples zbar tesseract
 all      = $(packages) $(optional)
 
+forcefast = cabal install --disable-library-profiling --disable-documentation --force-reinstalls
 fastinstall = cabal install --disable-library-profiling --disable-documentation
 normalinstall = cabal install --enable-documentation
 fullinstall = cabal install --enable-library-profiling --enable-documentation
@@ -39,4 +40,7 @@ clean:
 
 unregister:
 	ghc-pkg unregister prcv-util --force
+
+reinstall:
+	for p in $(packages); do cd $$p; cabal clean; $(forcefast); cd -; done
 
