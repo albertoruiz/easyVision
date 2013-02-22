@@ -6,4 +6,4 @@ demo:
 	./xor
 	./clipping
 	./delta
-
+	./test4
