@@ -30,6 +30,8 @@ auxWarpPerspective(_32f_C1R)
 auxWarpPerspective(_8u_C1R)
 auxWarpPerspective(_8u_C3R)
 
+
+// TO DO: reuse buffers
 int auxResize_32f_C1R(void * pSrc, int sstep, int sh, int sw,
                       int sr1, int sr2, int sc1, int sc2,
                       void * pDst, int dstep,
@@ -41,9 +43,10 @@ int auxResize_32f_C1R(void * pSrc, int sstep, int sh, int sw,
     IppiSize dstRoi = {dc2-dc1+1,dr2-dr1+1};
     double xf = (double)(dc2-dc1+1)/(sc2-sc1+1);
     double yf = (double)(dr2-dr1+1)/(sr2-sr1+1);
+
 #ifdef IPP71
-    // only linear at the moment
-    //printf("resize 32f_C1R deleted in 7.1\n"); exit(1);
+     
+    if (interp != ippLinear) printf("sorry, using linear resize\n");
 
     int specSize, initSize, bufSize, numLobes=2, nChannel=1;
     IppiSize srcSizeR = {sc2-sc1+1,sr2-sr1+1};
@@ -60,13 +63,11 @@ int auxResize_32f_C1R(void * pSrc, int sstep, int sh, int sw,
     ippiResizeGetBufferSize_8u(pSpec,dstRoi,nChannel,&bufSize);
     Ipp8u* pBuffer=ippsMalloc_8u(bufSize);
 
-
     int r = ippiResizeLinear_32f_C1R(pSrc, sstep,
-                             pDst, dstep,
-                             dstOffset, dstRoi,
-                             ippBorderRepl, 0,
-                             pSpec,  pBuffer);
-
+                                     pDst, dstep,
+                                     dstOffset, dstRoi,
+                                     ippBorderRepl, 0,
+                                     pSpec, pBuffer);
 
     //ippsFree(pInitBuf);
     ippsFree(pSpec);
@@ -75,10 +76,11 @@ int auxResize_32f_C1R(void * pSrc, int sstep, int sh, int sw,
     return r;
 
 #else
-    return ippiResize_32f_C1R(pSrc,srcSize,sstep,srcRoi,
-                              pDst,dstep,dstRoi,
-                              xf,yf,interp);
+
+    return ippiResize_32f_C1R(pSrc,srcSize,sstep,srcRoi,pDst,dstep,dstRoi,xf,yf,interp);
+
 #endif
+
 }
 
 int auxResize_8u_C1R(void * pSrc, int sstep, int sh, int sw,
@@ -92,9 +94,10 @@ int auxResize_8u_C1R(void * pSrc, int sstep, int sh, int sw,
     IppiSize dstRoi = {dc2-dc1+1,dr2-dr1+1};
     double xf = (double)(dc2-dc1+1)/(sc2-sc1+1);
     double yf = (double)(dr2-dr1+1)/(sr2-sr1+1);
+
 #ifdef IPP71
-    // only the linear method by now
-    //printf("resize 8u_C1R deleted in 7.1\n");
+
+    if (interp != ippLinear) printf("sorry, using linear resize\n");
 
     int specSize, initSize, bufSize, numLobes=2, nChannel=1;
     IppiSize srcSizeR = {sc2-sc1+1,sr2-sr1+1};
@@ -111,13 +114,11 @@ int auxResize_8u_C1R(void * pSrc, int sstep, int sh, int sw,
     ippiResizeGetBufferSize_8u(pSpec,dstRoi,nChannel,&bufSize);
     Ipp8u* pBuffer=ippsMalloc_8u(bufSize);
 
-
     int r = ippiResizeLinear_8u_C1R(pSrc, sstep,
-                             pDst, dstep,
-                             dstOffset, dstRoi,
-                             ippBorderRepl, 0,
-                             pSpec,  pBuffer);
-
+                                    pDst, dstep,
+                                    dstOffset, dstRoi,
+                                    ippBorderRepl, 0,
+                                    pSpec, pBuffer);
 
     //ippsFree(pInitBuf);
     ippsFree(pSpec);
@@ -126,10 +127,11 @@ int auxResize_8u_C1R(void * pSrc, int sstep, int sh, int sw,
     return r;
 
 #else
-    return ippiResize_8u_C1R(pSrc,srcSize,sstep,srcRoi,
-                              pDst,dstep,dstRoi,
-                              xf,yf,interp);
+
+    return ippiResize_8u_C1R(pSrc,srcSize,sstep,srcRoi,pDst,dstep,dstRoi,xf,yf,interp);
+
 #endif
+
 }
 
 int auxResize_8u_C3R(void * pSrc, int sstep, int sh, int sw,
@@ -143,7 +145,10 @@ int auxResize_8u_C3R(void * pSrc, int sstep, int sh, int sw,
     IppiSize dstRoi = {dc2-dc1+1,dr2-dr1+1};
     double xf = (double)(dc2-dc1+1)/(sc2-sc1+1);
     double yf = (double)(dr2-dr1+1)/(sr2-sr1+1);
+    
 #ifdef IPP71
+    
+    if (interp != ippLinear) printf("sorry, using linear resize\n");
 
     int specSize, initSize, bufSize, numLobes=2, nChannel=3;
     IppiSize srcSizeR = {sc2-sc1+1,sr2-sr1+1};
@@ -160,13 +165,11 @@ int auxResize_8u_C3R(void * pSrc, int sstep, int sh, int sw,
     ippiResizeGetBufferSize_8u(pSpec,dstRoi,nChannel,&bufSize);
     Ipp8u* pBuffer=ippsMalloc_8u(bufSize);
 
-
     int r = ippiResizeLinear_8u_C3R(pSrc, sstep,
-                             pDst, dstep,
-                             dstOffset, dstRoi,
-                             ippBorderRepl, 0,
-                             pSpec,  pBuffer);
-
+                                    pDst, dstep,
+                                    dstOffset, dstRoi,
+                                    ippBorderRepl, 0,
+                                    pSpec, pBuffer);
 
     //ippsFree(pInitBuf);
     ippsFree(pSpec);
@@ -174,12 +177,12 @@ int auxResize_8u_C3R(void * pSrc, int sstep, int sh, int sw,
 
     return r;
 
-
 #else
-    return ippiResize_8u_C3R(pSrc,srcSize,sstep,srcRoi,
-                              pDst,dstep,dstRoi,
-                              xf,yf,interp);
+
+    return ippiResize_8u_C3R(pSrc,srcSize,sstep,srcRoi,pDst,dstep,dstRoi,xf,yf,interp);
+
 #endif
+
 }
 
 //---------------- Discrete Cosine Transform ------------------
