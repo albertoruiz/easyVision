@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include "HsFFI.h"
+#include "HSTools_stub.h"
 
 int main(int argc, char *argv[]) {
     hs_init(&argc,&argv);
