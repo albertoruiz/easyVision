@@ -13,8 +13,9 @@ echo "GHCV=\"ghc-`ghc --numeric-version`\"" >> Makefile
 echo "CABAL=$HOME/.cabal/lib" >> Makefile
 echo "GCC=gcc" >> Makefile
 TMP="/tmp/ghc-generate-$RANDOM"
-ghc --make *.c *.hs -o $HOUT -no-hs-main -v 2> $TMP
-CC=`grep "\-L.*-l" $TMP | sed "s/\/tmp[^\']*//" | sed "s/$HOUT/$COUT/" | tr -d \'`
+ghc --make *.hs -o $HOUT -v 2> $TMP
+CC=`grep "\-L.*-l" $TMP | sed "s/\/tmp[^\']*//" | sed "s/$HOUT/$COUT/" | tr -d \' | sed "s/-o\ $COUT/Test.c\ -o\ $COUT/g"`
+CC="$CC -I/usr/lib/ghc/include"
 
 rm $TMP
 echo "all:" >> Makefile
