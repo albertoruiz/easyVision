@@ -1,7 +1,12 @@
 import HTools
 
+import Control.Applicative((<$>))
+import System.Environment(getArgs)
+import ImagProc
+
 main = do
-    k <- hsfun 5
-    print k
-    print (map hf2 [0..5])
+    img <- grayscale . channelsFromRGB <$> (loadRGB . head =<< getArgs)
+    
+    print (sum8u img)
+    print (sum8u (fun img))
 

@@ -1,18 +1,37 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include "HTools_stub.h"
 
 int main(int argc, char *argv[]) {
     hs_init(&argc,&argv);
 
-    int r = hsfun(5);
-    printf("hsFun = %d\n", r);
+    int rows = 480, cols = 640;
+    unsigned char * pSrc = (unsigned char*)malloc(rows*cols*sizeof(unsigned char*));
+    unsigned char * pDst = (unsigned char*)malloc(rows*cols*sizeof(unsigned char*));
 
     int k;
-    for (k=0; k<=5; k++) {
-        double x = k;
-        printf("hf2(%f)=%f\n",x,hf2(x));
+    // load image
+    for (k = 0; k<rows*cols; k++) {
+        pSrc[k] = k % 256;
+    }
+    
+    hfun(pSrc,rows,cols, pDst); // result goes to different buffer
+    
+    // check result
+    for (k = 0; k<10; k++) {
+        printf("%i %i\n",k,pDst[k]);
     }
 
+    hfun(pDst,rows,cols,pDst);  // result overwrites input buffer
+    
+    // check result
+    for (k = 0; k<10; k++) {
+        printf("%i %i\n",k,pDst[k]);
+    }
+
+    free(pSrc);
+    free(pDst);
+    
     hs_exit();
     return 0;
 }
