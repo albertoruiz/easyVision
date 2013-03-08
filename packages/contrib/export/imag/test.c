@@ -29,6 +29,16 @@ int main(int argc, char *argv[]) {
         printf("%i %i\n",k,pDst[k]);
     }
 
+    void *x = hfunparInit();        // initialization
+    hfunpar(x,pSrc,rows,cols,pDst); // working with precomputed auxiliary data
+
+    // check result (first row)
+    for (k = 0; k<cols; k++) {
+        printf("%i ",pDst[k]);
+    }
+    printf("\n");
+
+
     free(pSrc);
     free(pDst);
     

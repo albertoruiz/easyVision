@@ -1,3 +1,5 @@
+-- $ ./testh ../../../../data/images/calibration/cube1.png
+
 import HTools
 
 import Control.Applicative((<$>))
@@ -9,4 +11,7 @@ main = do
     
     print (sum8u img)
     print (sum8u (fun img))
+    
+    m <- funparInit
+    print (sum8u (funpar m img))
 
