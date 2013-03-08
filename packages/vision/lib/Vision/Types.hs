@@ -20,7 +20,8 @@ import Numeric.LinearAlgebra hiding (i)
 import Util.Misc(Vec,Mat,arrayOf,vec,sqr,unitary,intersectSorted)
 import qualified Data.Map as M
 import Vision.Stereo(triangulate1)
-import Util.Homogeneous(Point(..),inHomog)
+import Util.Homogeneous(inHomog)
+import Util.Geometry(Point(..))
 
 type Structure = [Vec]   -- [HPoint3]
 

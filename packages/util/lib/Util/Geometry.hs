@@ -4,6 +4,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE CPP #-}
 -----------------------------------------------------------------------------
 {- |
@@ -45,7 +46,8 @@ module Util.Geometry
 
 import Util.Small
 import Util.Misc(Mat,Vec)
-import Numeric.LinearAlgebra((@>),(><),toRows,fromRows,(<>),trans,inv)
+import Numeric.LinearAlgebra hiding (join, (|>))
+import qualified Numeric.LinearAlgebra as LA
 import Data.Function(on)
 import qualified Numeric.LinearAlgebra.Tensor as T
 import qualified Numeric.LinearAlgebra.Array.Util as UT
@@ -432,6 +434,15 @@ instance Inhomog Point3D
     type HResult Point3D = HPoint3D
     homog (Point3D x y z) = HPoint3D x y z 1
 
+instance (Num (Vector t), Container Vector t) => Inhomog (Vector t)
+  where
+    type HResult (Vector t) = Vector t
+    homog v = LA.join [v,1]
+
+instance (Num (Vector t), Container Vector t) =>  Inhomog (Matrix t)
+  where
+    type HResult (Matrix t) = Matrix t
+    homog m = fromBlocks [[m , 1 ]]
 
 
 class Homog x
@@ -448,6 +459,20 @@ instance Homog HPoint3D
   where
     type IHResult HPoint3D = Point3D
     inhomog (HPoint3D x y z w) = Point3D (x/w) (y/w) (z/w)
+
+instance (Num (Vector t), Container Vector t) => Homog (Vector t)
+  where
+    type IHResult (Vector t) = Vector t
+    inhomog v = subVector 0 d (v / scalar (v@>d))
+      where
+        d = dim v - 1
+
+instance (Num (Vector t), Container Vector t) => Homog (Matrix t)
+  where
+    type IHResult (Matrix t) = Matrix t
+    inhomog m = takeColumns (c-1) (m / dropColumns (c-1) m)
+      where
+        c = cols m
 
 ------------------------------------------------------------------------
 
