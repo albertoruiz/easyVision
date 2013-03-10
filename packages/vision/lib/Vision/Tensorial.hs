@@ -19,7 +19,7 @@ import Numeric.LinearAlgebra
 import Numeric.LinearAlgebra.Array.Util as Array
 import Numeric.LinearAlgebra.Array.Solve
 import System.Random
-import Util.Homogeneous
+import Util.Homogeneous(normat)
 import Vision.Camera
 import Vision.Stereo(depthOfPoint)
 import Data.List
@@ -29,15 +29,16 @@ import Control.Monad hiding (join)
 import Vision.TensorRep
 import Util.Misc(splitEvery,pairsWith,mean,debug,diagl)
 import Util.Estimation(procrustes)
+import Util.Geometry(homog,inhomog)
 
 
 -- Homogeneous and inhomogenous versions of a tensor in a given index:
 
 inhomogT :: Name -> Tensor Double -> Tensor Double
-inhomogT n t = (init `onIndex` n) t / last (parts t n)
+inhomogT = flip inhomog
 
 homogT :: Name -> Tensor Double -> Tensor Double
-homogT n t = ((++[1]) `onIndex` n) t
+homogT = flip homog
 
 -- Comparation of homogeneous transformations with the same scale:
 
