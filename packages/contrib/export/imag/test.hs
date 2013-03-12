@@ -9,9 +9,9 @@ import ImagProc
 main = do
     img <- grayscale . channelsFromRGB <$> (loadRGB . head =<< getArgs)
     
-    print (sum8u img)
-    print (sum8u (fun img))
-    
-    m <- funparInit
-    print (sum8u (funpar m img))
+    m <- funInit "data.txt"
+    print (sum8u (fun m 0 img))
+    print (sum8u (fun m 1 img))
+    print (sum8u (fun m 2 img))
+    print (sum8u (fun m 3 img))
 

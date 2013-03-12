@@ -2,6 +2,12 @@
 #include <stdlib.h>
 #include "HTools_stub.h"
 
+float sum8u(unsigned char * p, int r, int c) {
+    float s = 0; int k;
+    for (k = 0; k<r*c; k++) s += p[k];
+    return s;
+}
+
 int main(int argc, char *argv[]) {
     hs_init(&argc,&argv);
 
@@ -14,30 +20,16 @@ int main(int argc, char *argv[]) {
     for (k = 0; k<rows*cols; k++) {
         pSrc[k] = k % 256;
     }
+
+    // initialization
+    void *x = hfunInit("data.txt");
     
-    hfun(pSrc,rows,cols, pDst); // result goes to different buffer
-    
-    // check result
-    for (k = 0; k<10; k++) {
-        printf("%i %i\n",k,pDst[k]);
+    // working with precomputed auxiliary data
+    // and different arguments
+    for (k=0; k<=3; k++) {
+        hfun(x,k,pSrc,rows,cols,pDst);
+        printf("%f\n",sum8u(pDst,rows,cols));
     }
-
-    hfun(pDst,rows,cols,pDst);  // result overwrites input buffer
-    
-    // check result
-    for (k = 0; k<10; k++) {
-        printf("%i %i\n",k,pDst[k]);
-    }
-
-    void *x = hfunparInit();        // initialization
-    hfunpar(x,pSrc,rows,cols,pDst); // working with precomputed auxiliary data
-
-    // check result (first row)
-    for (k = 0; k<cols; k++) {
-        printf("%i ",pDst[k]);
-    }
-    printf("\n");
-
 
     free(pSrc);
     free(pDst);

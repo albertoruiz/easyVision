@@ -1,99 +1,70 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
 
-module HTools(fun, hfun, funpar, hfunpar, funparInit, hfunparInit) where
+module HTools(fun, hfun,
+              funInit, hfunInit) where
 
 import Foreign.C.Types
+import Foreign.C.String
 import Foreign.Ptr(Ptr,castPtr)
 import Foreign.Marshal.Array(copyArray)
 import ImagProc
 import ImagProc.Ipp.Core
 import GHC.Stable
 
-----------------------
-
 import Numeric.LinearAlgebra
 
 --------------------------------------------------------------------------------
 
--- pure function
+-- function with arguments, some of them typically provided by initialization
 
-fun = notI
+funInit :: HInit
+funInit s = loadMatrix s
 
-hfun = mkC fun
-
-foreign export ccall hfun :: GrayFun
-
-----------------------------------------------
-
--- function with arguments, provided by initialization
-
-funpar :: (Matrix Double) -> (ImageGray -> ImageGray)
-funpar m img = warp 128 (size img) m img
-
-funparInit :: IO (Matrix Double)
-funparInit = loadMatrix "data.txt"
-
-(hfunparInit, hfunpar) = mkCP funparInit funpar
-
-foreign export ccall hfunpar :: GrayFunP
-foreign export ccall hfunparInit :: MkInit
+fun :: HFun
+fun m k img | k == 0 = img
+            | k == 1 = notI img
+            | k == 2 = warp 128 (size img) m img
+            | otherwise = error ("funpar: unknown code " ++ show k)
 
 --------------------------------------------------------------------------------
 
-{- Simple Haskell -> C image processing interface
-
-   We assume that
-   - the function does not change the image size
-   - the number of columns is multiple of 32
-   - it works with full ROI
--}
-
-type GrayFun =  Ptr CUChar -> CInt -> CInt  -- source and size (rows columns)
-             -> Ptr CUChar                  -- destination
-             -> IO Int                      -- exit code
-
-mkC :: (ImageGray -> ImageGray) -> GrayFun
-mkC fun pS sr sc pD = do
-    let r = ti sr; c = ti sc
-    img @ (G Img {ptr = p}) <- image (Size r c)
-    copyArray (castPtr p) pS (r*c)
-    
-    let G Img {ptr = d} = fun img
-
-    copyArray pD (castPtr d) (r*c)
-    return 0
+(hfunInit, hfun) = mkC (funInit, fun)
+foreign export ccall hfun :: CFun
+foreign export ccall hfunInit :: CInit
 
 --------------------------------------------------------------------------------
 
--- With an additional parameter as an opaque reference to Haskell value
+type HInit = String -> IO (Matrix Double)
+type CInit = CString -> IO (Ptr ())
 
-type Init a = IO a -> IO (StablePtr a)
+type HFun = Matrix Double -> Int -> (ImageGray -> ImageGray)
 
-type MkInit = IO (Ptr ())
+type CFun =  Ptr ()                      -- intialized argument
+          -> CInt                        -- normal argument
+          -> Ptr CUChar -> CInt -> CInt  -- source and size (rows columns)
+          -> Ptr CUChar                  -- destination
+          -> IO Int                      -- exit code
 
-type GrayFunP =  Ptr()                       -- auxiliary argument
-              -> Ptr CUChar -> CInt -> CInt  -- source and size (rows columns)
-              -> Ptr CUChar                  -- destination
-              -> IO Int                      -- exit code
+--------------------------------------------------------------------------------
 
-mkCP :: IO a -> (a -> ImageGray -> ImageGray) -> (MkInit, GrayFunP)
-mkCP init fun = (cInit, cFun)
+mkC :: (HInit, HFun) -> (CInit, CFun)
+mkC (init, f) = (cInit, cFun)
   where
-    cInit = do
-      a <- init
+    cInit ps = do
+      s <- peekCString ps
+      a <- init s
       p <- newStablePtr a
       return (castStablePtrToPtr p)
 
-    cFun x pS sr sc pD = do
+    cFun x k pS sr sc pD = do
       let r = ti sr; c = ti sc
       img @ (G Img {ptr = p}) <- image (Size r c)
       copyArray (castPtr p) pS (r*c)
     
       a <- deRefStablePtr (castPtrToStablePtr x)
     
-      let G Img {ptr = d} = fun a img
+      let G Img {ptr = d} = f a (ti k) img
 
       copyArray pD (castPtr d) (r*c)
       return 0
-
 
