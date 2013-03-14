@@ -122,16 +122,6 @@ zoomProb s' p = p { p3d = (p3d p * hi)!>"yx", Vision.Tensorial.cam = (Vision.Ten
 
 --------------------------------------------------------------------------------
 
-instance Homog (Vector Double)
-  where
-    type IHResult (Vector Double) = Vector Double
-    inhomog = H.inHomog
-
-instance Inhomog (Vector Double)
-  where
-    type HResult (Vector Double) = Vector Double
-    homog = H.homog
-
 camcenters = map (inhomog.camCenter) cams
 
 camCenter :: Camera -> HPoint3D

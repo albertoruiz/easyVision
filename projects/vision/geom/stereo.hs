@@ -65,8 +65,8 @@ drw mbf mbimg1 mbimg2 (psl,psr) = clearColor white [ color gray $ axes3D 2 , dr 
     x = triangulate [(m, pts), (m', pts')]
     x3d = info $ map (\[x,y,z]->Point3D x y z) x
     
-    dr2 = Draw [ color red $ showCam szc im mbimg1
-               , color blue $ showCam szc im' mbimg2
+    dr2 = Draw [ color red $ showCam szc im mbimg1'
+               , color blue $ showCam szc im' mbimg2'
                , color black . pointSz 2 $ x3d
                --, color black . pointSz 2 $ drawPoints3DLabeled x3d
                , pointSz 5 . color red $ toImagePlane im szc [epi1]
@@ -80,6 +80,11 @@ drw mbf mbimg1 mbimg2 (psl,psr) = clearColor white [ color gray $ axes3D 2 , dr 
     ok = length pts > 7 && length pts' > 7 && isJust mbm'
     
     dr = if ok then dr2 else Draw ()
+    
+    mbimg1' = tf mbimg1
+    mbimg2' = tf mbimg2
+    tf = fmap (float.grayscale.channelsFromRGB)
+    
     
     im = infoCam $ unsafeFromMatrix m
     im' = infoCam $ unsafeFromMatrix m'
