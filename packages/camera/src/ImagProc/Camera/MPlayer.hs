@@ -54,7 +54,7 @@ mplayer' url (Size h w) = withSystemTempFile "mplayer-fifo" $ \t _ ->  do
     let fifo = t -- "/tmp/mplayer-fifo"
     verbose $ putStrLn $ "Name pipe: " ++ fifo
     
-    _ <- system $ "rm -f "++fifo
+    -- _ <- system $ "rm -f "++fifo
     _ <- system $ "mkfifo "++fifo
 
     k <- mallocBytes 1
