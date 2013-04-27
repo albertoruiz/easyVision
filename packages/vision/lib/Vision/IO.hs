@@ -8,7 +8,8 @@ import Numeric.LinearAlgebra
 import Util.Misc(Vec,Mat,impossible,splitEvery)
 
 import Vision.Camera(factorizeCamera)
-import Util.Homogeneous(Point(..),inHomog)
+import Util.Geometry(Point(..))
+import Util.Homogeneous(inHomog)
 import Util.Quaternion
 
 import Text.Printf

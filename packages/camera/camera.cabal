@@ -38,7 +38,9 @@ library
 
     Build-Depends:      base >= 3 && < 5,
                         process, directory,
-                        prcv-util, imagproc >= 0.1
+                        prcv-util, imagproc >= 0.1,
+                        temporary
+
                         
 
     hs-source-dirs:     src
