@@ -23,7 +23,7 @@ import Util.Estimation(homogSolve,compact)
 import Data.List(sortBy,foldl1')
 import Data.Function(on)
 import Data.Maybe(fromJust,isJust)
-import Util.Homogeneous(Point(..))
+import Util.Geometry(Point(..))
 
 ----------------------------------------------------------------------
 

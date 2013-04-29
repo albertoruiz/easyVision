@@ -21,17 +21,18 @@ module ImagProc.Camera.MPlayer (
   saveYUV4Mpeg, yuvHeader, openYUV4Mpeg
 )where
 
-import ImagProc.Ipp.Core
-import Foreign
-import Data.IORef
-import System.IO
-import System.Process(system,readProcessWithExitCode)
-import System.Exit
-import Data.List(isInfixOf,isPrefixOf)
-import Util.Options
-import Control.Monad
 import Control.Applicative
+import Control.Monad
+import Data.IORef
+import Data.List(isInfixOf,isPrefixOf)
 import Data.Maybe(listToMaybe)
+import Foreign
+import ImagProc.Ipp.Core
+import System.Exit
+import System.IO
+import System.IO.Temp
+import System.Process(system,readProcessWithExitCode)
+import Util.Options
 
 -- | Computes a 4\/3 \'good\' size for both mplayer and IPP. mpSize 20 = 640x480
 mpSize :: Int -> Size
@@ -46,12 +47,14 @@ mpSize k | k > 0     = Size (k*24) (k*32)
 mplayer' :: String                       -- ^ any url admitted by mplayer
          -> Size                         -- ^ desired image size (see 'mpsize')
          -> IO (IO (Maybe ImageYUV))     -- ^ function returning a new frame
-mplayer' url (Size h w) = do
+mplayer' url (Size h w) = withSystemTempFile "mplayer-fifo" $ \t _ ->  do
 
     verbose <- when <$> getFlag "-v"
 
-    let fifo = "/tmp/mplayer-fifo"
-    _ <- system $ "rm -f "++fifo
+    let fifo = t -- "/tmp/mplayer-fifo"
+    verbose $ putStrLn $ "Name pipe: " ++ fifo
+    
+    -- _ <- system $ "rm -f "++fifo
     _ <- system $ "mkfifo "++fifo
 
     k <- mallocBytes 1

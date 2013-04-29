@@ -349,3 +349,11 @@ diagBlock ms = fromBlocks $ zipWith f ms [0..]
     f m k = take n $ replicate k 0 ++ m : repeat 0
     n = length ms
 
+--------------------------------------------------------------------------------
+
+norMax :: (Num (c e), Container c e) => e -> c e -> c e
+norMax s m = m * scalar (s / v)
+  where
+    p = maxIndex (abs m)
+    v = m `atIndex` p
+

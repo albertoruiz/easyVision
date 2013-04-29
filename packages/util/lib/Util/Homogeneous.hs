@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleInstances, TypeSynonymInstances, FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances, TypeSynonymInstances, FlexibleContexts, TypeFamilies #-}
 -----------------------------------------------------------------------------
 {- |
 Module      :  Util.Homogeneous
@@ -15,16 +15,13 @@ Projective geometry utilities.
 
 module Util.Homogeneous
 (
-  -- * Basic Types
-  Point(..), HLine(..),
-  HPoint2, getHPoint2, IsHPoint2(..),
-  HPoint3, getHPoint3, IsHPoint3(..),
 -- * Transformation utilities
   homog
 , inHomog
 , ht
 , htc
 , htm
+, (!<>), (<>!)
 -- * Typical transformations and useful constants
 , desp, desp34
 , scaling
@@ -47,57 +44,12 @@ module Util.Homogeneous
 
 import Numeric.LinearAlgebra
 import Util.Rotation(rot3)
-import Util.Misc(vec,Vec,mat,Mat,(#),unitary,norm,impossible)
+import Util.Misc(vec,Vec,mat,Mat,(#),norm,impossible)
 import Util.Geometry(Point(..),HLine(..))
+import qualified Util.Geometry as G
+
 
 ----------------------------------------------------------------------
-
--- | homogeneous 2D points
-newtype HPoint2 = HPoint2 { getHPoint2 :: Vec } deriving (Read,Show)
-class IsHPoint2 x where
-    hPoint2 :: x -> HPoint2
-
-instance IsHPoint2 [Double] where
-    hPoint2 [x1,x2] = HPoint2 . unitary . vec $ [x1,x2,1]
-    hPoint2 [x1,x2,x3] = HPoint2 . unitary . vec $ [x1,x2,x3]
-    hPoint2 _ = error "wrong number of elements for hPoint2 [Double]"
-    
-instance IsHPoint2 Vec where
-    hPoint2 v | dim v == 2 = hPoint2 (v#1)
-    hPoint2 v | dim v == 3 = HPoint2 . unitary $ v
-    hPoint2 _ = error "wrong number of elements for hPoint2 Vec"
-
-instance IsHPoint2 (Double,Double) where
-    hPoint2 (x1,x2) = hPoint2 [x1,x2]
-    
-instance IsHPoint2 (Double,Double,Double) where
-    hPoint2 (x1,x2,x3) = hPoint2 [x1,x2,x3]
-
-instance IsHPoint2 Point where
-    hPoint2 (Point x y) = hPoint2 (vec [x,y,1])
-
-----------------------------------------------------------------------
-
--- | homogeneous 3D points
-newtype HPoint3 = HPoint3 { getHPoint3 :: Vec } deriving (Read,Show)
-class IsHPoint3 x where
-    hPoint3 :: x -> HPoint3
-
-instance IsHPoint3 [Double] where
-    hPoint3 [x1,x2,x3] = HPoint3 . unitary . vec $ [x1,x2,x3,1]
-    hPoint3 [x1,x2,x3,x4] = HPoint3 . unitary . vec $ [x1,x2,x3,x4]
-    hPoint3 _ = error "wrong number of elements for hPoint3 [Double]"
-    
-instance IsHPoint3 Vec where
-    hPoint3 v | dim v == 3 = hPoint3 (v#1)
-    hPoint3 v | dim v == 4 = HPoint3 . unitary $ v
-    hPoint3 _ = error "wrong number of elements for hPoint3 Vec"
-
-instance IsHPoint3 (Double,Double,Double) where
-    hPoint3 (x1,x2,x3) = hPoint3 [x1,x2,x3]
-    
-instance IsHPoint3 (Double,Double,Double,Double) where
-    hPoint3 (x1,x2,x3,x4) = hPoint3 [x1,x2,x3,x4]
 
 
 
@@ -201,6 +153,17 @@ inHomogMat :: (Container Vector t, Product t, Num (Vector t)) => Matrix t -> Mat
 inHomogMat m = ma / (mb `outer` constant 1 (cols ma))
     where ma = takeColumns (cols m -1) m
           mb = flatten $ dropColumns (cols m -1) m
+
+infixl 7 !<>, <>!
+
+(!<>) :: (Product t, Mul a b c, G.Inhomog x, G.Homog (c t), G.HResult x ~ a t)
+      => x -> b t -> G.IHResult (c t)
+a !<> b = G.inhomog (G.homog a <> b)
+
+(<>!) :: (Product t, Mul a b c, G.Inhomog x, G.Homog (c t), G.HResult x ~ b t)
+      => a t -> x -> G.IHResult (c t)
+a <>! b = G.inhomog (a <> G.homog b)
+
 
 htc :: (Product t, Container Vector t, Num (Vector t)) => Matrix t -> [[t]] -> [[t]]
 htc _ [] = []
