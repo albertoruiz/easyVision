@@ -444,6 +444,10 @@ instance (Num (Vector t), Container Vector t) =>  Inhomog (Matrix t)
     type HResult (Matrix t) = Matrix t
     homog m = fromBlocks [[m , 1 ]]
 
+instance (Show (UT.NArray i x), UT.Compat i, UT.Coord x) => Inhomog (UT.NArray i x) where
+  type HResult (UT.NArray i x) = UT.Name -> UT.NArray i x
+  homog t n = ((++[1]) `UT.onIndex` n) t
+
 
 class Homog x
   where
@@ -473,6 +477,10 @@ instance (Num (Vector t), Container Vector t) => Homog (Matrix t)
     inhomog m = takeColumns (c-1) (m / dropColumns (c-1) m)
       where
         c = cols m
+
+instance (Show (UT.NArray i x), UT.Compat i, UT.Coord x) => Homog (UT.NArray i x) where
+  type IHResult (UT.NArray i x) = UT.Name -> UT.NArray i x
+  inhomog t n = (init `UT.onIndex` n) t / last (UT.parts t n)
 
 ------------------------------------------------------------------------
 

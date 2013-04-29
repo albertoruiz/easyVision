@@ -22,7 +22,7 @@ import Util.Misc(debugMat,debug,norm,diagl,degree,median,Mat)
 import Util.Rotation
 
 
-auxImg = resize (Size 256 256) . float . grayscale . channelsFromRGB
+auxImg = resize (Size 256 256) -- . float . grayscale . channelsFromRGB
 
 
 data CameraInfo = CameraInfo
@@ -105,6 +105,8 @@ wireCamera ic sc ar = lineStrip ps
     [x,y,z] = cam2world ic <| [HPoint3D sc 0 0 1, HPoint3D 0 sc 0 1, HPoint3D 0 0 (2*sc) 1]
     ps = [ -- x,c,y,c,z,
           z, c,p1,p2,p3,p4,p1,c,p2,p3,c,p4]
+
+showCam :: Double -> CameraInfo -> Maybe ImageFloat -> Drawing
 
 showCam sc ic@CameraInfo{..} Nothing = Draw [ wireCamera ic sc 1
                                             , lineStrip (calibFrame ic sc)]

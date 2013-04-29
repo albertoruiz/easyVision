@@ -6,6 +6,8 @@ import Data.List(sortBy)
 import Data.Maybe(catMaybes)
 import Vision(cameraFromHomogZ0,estimateHomography,ht,scaling) 
 import Util.Misc(rotateLeft)
+import Util.Camera(showCam,infoCam)
+import Util.Small(unsafeFromMatrix)
 import Data.Function(on)
 
 darkContours = (id &&& (otsuContours >>> map (smoothPolyline 4) ))
@@ -56,12 +58,14 @@ sh3D (im,cs) = case rectifiers polys of
   where
     polys = polygons 10 5 (length ref, length ref) cs
     dc cam im = Draw [ drawTexture floor floorcoords, 
-                       drawCamera 0.2 cam (Just (extractSquare 128 fim)) ]
+                       --drawCamera 0.2 cam (Just (extractSquare 128 fim))
+                       showCam 0.5 ic (Just fim) ]
       where
         fim = float im
         floor = warp 1 (Size 256 256) okrec fim
         floorcoords = map (++[-0.01]) [[1,1],[-1,1],[-1,-1],[1,-1]] 
         okrec = scaling 0.5 <> rectifZ0 cam
+        ic = infoCam (unsafeFromMatrix cam)
 
 rectifZ0 cam = inv $ fromColumns [c1,c2,c4]
   where

@@ -35,7 +35,7 @@ g mbimg (n,_) (ps,_) = (n, [ clearColor white
                            ])
   where
     drcam | length ps < length ref = Draw ()
-          | otherwise = color green $ showCam 2 ic mbimg
+          | otherwise = color green $ showCam 2 ic (fmap (float.grayscale.channelsFromRGB) mbimg)
     cam = computeCamera ps ref
     ic = infoCam cam 
     ipts = toImagePlane ic 2 ps
