@@ -9,13 +9,15 @@ import Numeric.LinearAlgebra
 autoParam "DemoParam" ""  [ ("rad","Int",intParam 2 1 20)
                           , ("val","Int",intParam 0 (-255) 255)
                           , ("scale","Int",intParam 0 (-5) 5)
+                          , ("sigma","Float",realParam 1 1 10)
                           ]
 
 main = run $ withParam (,) >>> sMonitor "result" f
 
 f roi (DemoParam{..},x) =
            [  msg "grayscale"          [ Draw g ]
-           ,  msg "gaussian filter"    [ Draw smooth ]
+           ,  msg "gaussian fixed"     [ Draw smooth ]
+           ,  msg "gaussian variable"  [ Draw gsig ]
            ,  msg "median filter"      [ Draw med ]
            ,  msg "canny edges"        [ Draw (notI edges) ]
            ,  msg "Otsu threshold"     [ Draw otsu ]
@@ -34,6 +36,7 @@ f roi (DemoParam{..},x) =
     g      = setRegion roi (grayscale x)
     proi   = color gray $ roi2poly (size g) (theROI g)
     smooth = gauss Mask5x5 . float $ g
+    gsig   = gaussS sigma . float $ g
     med   = filterMedian rad g
     edges  = canny (0.1,0.3) . gradients $ smooth
     otsu   = compareC8u (otsuThreshold g) IppCmpGreater g
