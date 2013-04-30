@@ -732,6 +732,25 @@ projectionDerivAt' (rt,rt1,rt2,rt3,m4,m5,m6,cx,cy,cz) (toList -> [x',y',z']) = r
               deriv <> fromColumns [m1,m2,m3,m4,m5,m6],
               deriv <> fromColumns [m7,m8,m9])
 
+-- for homogeneous point
+projectionDerivAt' (rt,rt1,rt2,rt3,m4,m5,m6,cx,cy,cz) pt@(toList -> [x',y',z',w'])  = result where
+    e = fromList [x'-w'*cx, y'-w'*cy, z'-w'*cz]
+    h = (*scalar w')
+    m0 = rt <> e
+    m1 = rt1 <> e
+    m2 = rt2 <> e
+    m3 = rt3 <> e
+    [x,y,w] = toList m0
+    d1 = recip w
+    d2 = -x/w**2
+    d3 = -y/w**2
+    deriv = (2><3) [d1, 0,  d2,
+                    0 , d1, d3 ]
+    result = (fromList [x/w,y/w],
+              deriv <> fromColumns [m1,m2,m3, h m4, h m5, h m6])
+
+
+
 
 epipolarMiniJac :: CamJacobianData -> CamJacobianData -> (Mat,Mat,Mat)
 epipolarMiniJac (r,r1,r2,r3,_,_,_,cx,cy,cz) (q,q1,q2,q3,_,_,_,dx,dy,dz) = result where
