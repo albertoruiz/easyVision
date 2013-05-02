@@ -32,6 +32,7 @@ module Vision.Stereo
 , selectCamera, selectCamera'
   -- * 3D reconstruction
 , triangulate, triangulate1
+, triangulateH
 , stereoRectifiers
   -- * Misc
 , depthOfPoint
@@ -48,7 +49,7 @@ import Util.Stat
 import Data.List(transpose,nub,maximumBy,genericLength,elemIndex, genericTake)
 import System.Random
 import Debug.Trace(trace)
-import Util.Misc(vec,Vec, mat,Mat,unitary,norm,debugMat)
+import Util.Misc(vec,Vec, mat,Mat,unitary,norm,debugMat,null1)
 
 
 --------------------- Basic Stereo -----------------------
@@ -174,6 +175,16 @@ triangulate mps = xs where
     ms = map fst mps
     ps = transpose (map snd mps)
     xs = map (triangulate1 ms) ps
+
+-- many cams and many points per view
+triangulateH :: [(Matrix Double, Matrix Double)] -> Matrix Double
+triangulateH cms = ps
+  where
+    eq (c,vs) = [w2-y3,x3-w1,y1-x2]
+      where
+        [_,x2,x3,y1,_,y3,w1,w2,_] = toRows (trans vs `kronecker` c)
+    eqs = fromRows $ concatMap eq cms
+    ps = fromRows . map null1 . concat . toBlocksEvery (rows eqs) 4 $ eqs
 
 
 cameraDirection :: Mat -> Vec

@@ -14,6 +14,7 @@ import System.Process(system)
 import Foreign.Storable(Storable)
 import Text.Printf(printf)
 import Data.Array(listArray,(!))
+import qualified Numeric.LinearAlgebra.Util as U
 
 type Mat = Matrix Double
 type Vec = Vector Double
@@ -48,6 +49,10 @@ impossible msg = error ("impossible input in "++ msg)
 -- | stop the program if something is wrong
 assert :: Show a => String -> (a -> Bool) -> a -> a
 assert msg cnd x = if cnd x then x else error $ msg ++ show x
+
+warning :: (a -> Bool) -> String -> a -> a
+warning cnd msg x | cnd x = debug msg (const ()) x --FIXME
+                  | otherwise = x
 
 splitEvery :: Int -> [t] -> [[t]]
 splitEvery _ [] = []
@@ -356,4 +361,24 @@ norMax s m = m * scalar (s / v)
   where
     p = maxIndex (abs m)
     v = m `atIndex` p
+
+--------------------------------------------------------------------------------
+
+null1 :: Matrix Double -> Vector Double
+null1 = last . toColumns . snd . rightSV
+
+nulln :: Int -> Matrix Double -> [Vector Double]
+nulln n = reverse . take n . reverse . toColumns . snd . rightSV
+
+null1eig :: Matrix Double -> Vector Double
+null1eig = last . toColumns . snd . eigSH
+
+orthm :: Matrix Double -> Matrix Double
+orthm = fromColumns . orth
+
+rowOuters :: Matrix Double -> Matrix Double -> Matrix Double
+rowOuters a b = a' * b'
+  where
+    a' = kronecker a (U.ones 1 (cols b))
+    b' = kronecker (U.ones 1 (cols a)) b
 

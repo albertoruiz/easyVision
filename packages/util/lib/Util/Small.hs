@@ -30,7 +30,8 @@ module Util.Small
     Dim2(..),Dim3(..),Dim4(..), Build, (!), (#),
     Dim2x2,Dim3x3,Dim4x4,Dim3x4,
     vec2,vec3,vec4,
-    Vectorlike(..), Matrixlike(..)
+    Vectorlike(..), Matrixlike(..),
+    unsafeMap
 --    , v,m, KK(..)
 ) where
 
@@ -278,6 +279,11 @@ instance (Array x ~ Array (Shape x),
     alignment = alignment . toDim
     peek = fmap fromDim . peek . castPtr
     poke p = poke (castPtr p) . toDim
+
+
+unsafeMap :: (Shaped a, Shaped c)
+          => (DArray (Shape a) -> DArray (Shape c)) -> a -> c
+unsafeMap f = unsafeFromArray . f . toArray
 
 --------------------------------------------------------------------------------
  -- tests

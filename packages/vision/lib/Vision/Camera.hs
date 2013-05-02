@@ -52,11 +52,14 @@ module Vision.Camera
 , projectionDerivAt, projectionDerivAtF
 , epipolarMiniJac
 , projectionDerivAt'
+, projectionDerivAtH
+, refineNewton
 , auxCamJac, auxCamJacK
 , projectionAt'', projectionAt'
+, theRightB, theRight
 ) where
 
-import Numeric.LinearAlgebra
+import Numeric.LinearAlgebra as LA
 import qualified Numeric.GSL as G
 import Util.Homogeneous
 import Util.Estimation(homogSolve, withNormalization, withNormalization', estimateHomography,procrustes)
@@ -69,7 +72,9 @@ import Util.Misc(mat,vec,Mat,Vec,norm,unitary,(&),(//),diagl,degree,impossible,d
 import Util.Ellipses(intersectionEllipses,InfoEllipse(..))
 
 import Util.Geometry
+import Util.Small(unsafeMap)
 import Numeric.LinearAlgebra.Util((!),(#))
+import Control.Arrow
 
 cameraAtOrigin :: Mat
 cameraAtOrigin = ident 3 & 0
@@ -733,7 +738,7 @@ projectionDerivAt' (rt,rt1,rt2,rt3,m4,m5,m6,cx,cy,cz) (toList -> [x',y',z']) = r
               deriv <> fromColumns [m7,m8,m9])
 
 -- for homogeneous point
-projectionDerivAt' (rt,rt1,rt2,rt3,m4,m5,m6,cx,cy,cz) pt@(toList -> [x',y',z',w'])  = result where
+projectionDerivAtH (rt,rt1,rt2,rt3,m4,m5,m6,cx,cy,cz) pt@(toList -> [x',y',z',w'])  = result where
     e = fromList [x'-w'*cx, y'-w'*cy, z'-w'*cz]
     h = (*scalar w')
     m0 = rt <> e
@@ -833,4 +838,44 @@ drawCameras tit ms pts = do
 
 cameraOutline' :: Double -> [[Double]]
 cameraOutline' f =  [0::Double,0,0] : drop 5 (cameraOutline f)
+
+--------------------------------------------------------------------------------
+
+theRightB b c = k <> (rt + (3><4) [0,0,0,b,0,0,0,0,0,0,0,0])
+  where
+    (k,rt) = sepCam c
+
+theRight :: Camera -> Camera
+theRight = unsafeMap (theRightB 1)
+
+--------------------------------------------------------------------------------
+
+newtonStep :: Double -> (Vec -> (Vec, Mat)) -> Vec -> Vec
+newtonStep lambda m sol = sol'
+  where
+    fun = fst (m sol)
+    jac = snd (m sol)
+    hes = trans jac <> jac
+    grad = trans jac <> fun
+    sol' = sol - (aug lambda hes) <\> grad
+    aug lam mat = mat + diag (constant lam (rows mat))
+
+
+mkJac cam views points = (origin, g)
+  where
+    origin = cameraModelOrigin (Just (ident 3)) cam
+    preJaco = auxCamJac origin
+    g s = ( (subtract vs) . LA.join *** fromRows . concatMap toRows) $ unzip $ map h (toRows points)
+      where
+        jac = preJaco s
+        vs = flatten $ inhomog views
+        h x = projectionDerivAtH jac x
+
+
+refineNewton n cam views points = k <> result
+  where
+    result = projectionAt'' model $ (!!n) $ iterate (newtonStep 0 funJac) (konst 0 6)
+    (model,funJac) = mkJac kcam kviews points
+    (k,kcam) = sepCam cam
+    kviews = views <> trans (inv k)
 

@@ -5,6 +5,7 @@ import Numeric.LinearAlgebra
 import Numeric.LinearAlgebra.Util((#),(&),row, col, diagl)
 import Util.Geometry
 import Util.Camera
+import Util.Small(unsafeMap)
 import Vision.Camera
 import Util.Misc(degree,diagBlock,median,norm)
 import Numeric.LinearAlgebra.Tensor hiding (scalar)
@@ -63,12 +64,6 @@ drcamps c ps = color green [ showCam 0.5 ic Nothing
   where
     ic = infoCam c
 
-                     
-theRight :: Camera -> Camera
-theRight cam = unsafeFromMatrix $ k <> fromBlocks [[r,-r <> asColumn c']]                 
-  where                   
-    (k,r,c) = factorizeCamera $ toMatrix cam
-    c' = c + trans r <> ((-1)&(0)&0)
 
 cams = concatMap (\c->[c,theRight c]) (take 4 mycams)
   where
