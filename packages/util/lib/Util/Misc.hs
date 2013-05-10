@@ -48,11 +48,11 @@ impossible :: String -> a
 impossible msg = error ("impossible input in "++ msg)
 
 -- | stop the program if something is wrong
-assert :: Show a => String -> (a -> Bool) -> a -> a
-assert msg cnd x = if cnd x then x else error $ msg ++ show x
+assert :: Bool -> String -> a -> a
+assert cnd msg x = if cnd then x else error msg
 
-warning :: (a -> Bool) -> String -> a -> a
-warning cnd msg x | cnd x = debug msg (const ()) x --FIXME
+warning :: Bool -> String -> a -> a
+warning cnd msg x | cnd = trace ("WARNING: "++msg) x
                   | otherwise = x
 
 splitEvery :: Int -> [t] -> [[t]]
