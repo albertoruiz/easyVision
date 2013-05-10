@@ -22,6 +22,7 @@ module Util.Estimation
 , homogSolveG
 , compact
   -- * RANSAC
+, ransacSizeLimit
 , ransac
 , ransac'
 -- * Other
@@ -151,6 +152,22 @@ withNormalization' lt estimateRelation dest orig = lt wd <> h <> wo
     wo = isoDistTransf xo sto
 
 ------------------------------ RANSAC ------------------------------------------
+
+
+ransacSizeLimit :: Int     -- ^ maximum number of samples
+                -> Int     -- ^ elements in each sample
+                -> Double  -- ^ confidence (e.g. 0.99)
+                -> Double  -- ^ outlier proportion (e.g. 0.2)
+                -> Int
+ransacSizeLimit mx s p eps | ok = 1 + floor (n/d)
+                           | otherwise = mx
+  where
+    n = log (1-p)
+    x = (1-eps)^s
+    d = log (1-x)
+    r = d/n
+    rmx = recip (fromIntegral mx)
+    ok = rmx < r
 
 
 

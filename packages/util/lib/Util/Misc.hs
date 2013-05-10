@@ -15,6 +15,7 @@ import Foreign.Storable(Storable)
 import Text.Printf(printf)
 import Data.Array(listArray,(!))
 import qualified Numeric.LinearAlgebra.Util as U
+import qualified Data.Vector as V
 
 type Mat = Matrix Double
 type Vec = Vector Double
@@ -77,6 +78,26 @@ posMin l = p where
 randomPermutation :: Int -> [a] -> [a]
 randomPermutation seed l = map fst $ sortBy (compare `on` snd) randomTuples where
     randomTuples = zip l (randomRs (0, 1::Double) (mkStdGen seed))
+
+-- | without replacement
+randomSamples :: Seed -> Int -> [a] -> [[a]]
+randomSamples seed n dat = map (V.toList . V.backpermute vdat . V.fromList) goodsubsets
+  where
+    
+    randomIndices = randomRs (0, length dat -1) (mkStdGen seed)
+    goodsubsets = filter unique $ splitEvery n randomIndices
+
+    vdat = V.fromList dat
+    
+    unique = g . sort
+    g []  = True
+    g [_] = True
+    g (a:b:cs) | a == b    = False
+               | otherwise = unique (b:cs)
+
+
+
+
 
 -- | Euclidean vector norm.
 norm :: Vector Double -> Double
