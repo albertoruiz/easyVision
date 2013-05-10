@@ -392,7 +392,7 @@ nulln :: Int -> Matrix Double -> [Vector Double]
 nulln n = reverse . take n . reverse . toColumns . snd . rightSV
 
 null1eig :: Matrix Double -> Vector Double
-null1eig = last . toColumns . snd . eigSH
+null1eig = last . toColumns . snd . eigSH'
 
 orthm :: Matrix Double -> Matrix Double
 orthm = fromColumns . orth
