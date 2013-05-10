@@ -10,7 +10,7 @@ import Control.Arrow((***),(&&&))
 import Numeric.LinearAlgebra
 import Text.Printf(printf)
 import Data.List(minimumBy,sortBy,groupBy)
-import Util.Misc(Mat,Vec,norm,degree,diagl,debug,posMax,norm,angleDiff)
+import Util.Misc(Mat,Vec,norm,degree,diagl,debug,posMax,norm,angleDiff,assert,warning)
 import Util.Rotation
 import Classifier(Sample)
 import Vision
@@ -60,7 +60,8 @@ analyzeShape mW (p,(mx,my,cxx,cyy,cxy)) = Shape {..}
     shapeCenter = Point mx my
     shapeAxes @ (l1,l2,phi) = eig2x2Dir (cxx,cyy,cxy)
     shapeWhitener = --whitener' shapeMoments
-                    diagl [1/sqrt l1,1/sqrt l2,1] <> rot3 phi <> desp (-mx,-my)
+                    assert (l2 > 1E-2) "l2 very small in shapeWhitener"
+                  $ diagl [1/sqrt l1,1/sqrt l2,1] <> rot3 phi <> desp (-mx,-my)
     whiteShape = transPol shapeWhitener p
     fou = fourierPL whiteShape
     invAffine = fromList $ map (magnitude.fou) [-mW .. mW]
@@ -182,5 +183,7 @@ isEllipse tol c = (ft-f1)/ft < fromIntegral tol/1000 where
 
 ----------------------------------------------------------------------
 
-elongated r Shape { shapeAxes = (l1,l2,_) } = sqrt l2 / sqrt l1 < 1/r 
+elongated r Shape { shapeAxes = (l1,l2,_) } = assert (l1 > 1E-2) "l1 very small in elongated"
+                                            $ l2 / l1 < 1/r**2
+
 
