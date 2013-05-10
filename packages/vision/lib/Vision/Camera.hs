@@ -22,6 +22,7 @@ module Vision.Camera
 , cameraAtOrigin
 , factorizeCamera
 , rotOfCam
+, mkCamera
 , sepCam
 , poseFromFactorization
 , poseFromCamera
@@ -316,6 +317,13 @@ doublePerp (a,b) (c,d) = (e,f) where
     f = toList $ a' + scalar lam * (b'-a') + scalar mu * v
 -}
 ------------------------------------------------------            
+
+mkCamera :: Mat -- ^ K
+         -> Mat -- ^ R
+         -> Vec -- ^ C
+         -> Mat
+mkCamera k r c = k <> fromBlocks [[r, - asColumn (r <> c)]]
+
 
 
 -- | Given a camera matrix m it returns (K, R, C)
