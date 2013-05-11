@@ -59,8 +59,9 @@ analyzeShape mW (p,(mx,my,cxx,cyy,cxy)) = Shape {..}
     shapeMoments = (mx,my,cxx,cyy,cxy)
     shapeCenter = Point mx my
     shapeAxes @ (l1,l2,phi) = eig2x2Dir (cxx,cyy,cxy)
+    thl2 = (1 * 2/640)**2
     shapeWhitener = --whitener' shapeMoments
-                    assert (l2 > 1E-2) "l2 very small in shapeWhitener"
+                    assert (l2 > thl2) "l2 very small in shapeWhitener"
                   $ diagl [1/sqrt l1,1/sqrt l2,1] <> rot3 phi <> desp (-mx,-my)
     whiteShape = transPol shapeWhitener p
     fou = fourierPL whiteShape
@@ -183,7 +184,8 @@ isEllipse tol c = (ft-f1)/ft < fromIntegral tol/1000 where
 
 ----------------------------------------------------------------------
 
-elongated r Shape { shapeAxes = (l1,l2,_) } = assert (l1 > 1E-2) "l1 very small in elongated"
+elongated r Shape { shapeAxes = (l1,l2,_) } = assert (l1 > thl1) "l1 very small in elongated"
                                             $ l2 / l1 < 1/r**2
-
+  where
+    thl1 = (1 * 2/640)**2
 
