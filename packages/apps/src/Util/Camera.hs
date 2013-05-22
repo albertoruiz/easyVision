@@ -13,12 +13,12 @@ module Util.Camera (
 import Vision.GUI
 import ImagProc hiding (Pixel(..),median)
 import Numeric.LinearAlgebra
-import Numeric.LinearAlgebra.Util((!),(#),row,randn)
+import Numeric.LinearAlgebra.Util((¦),(#),row,norm,diagl)
 import Vision
 import Util.Geometry
 import Util.Estimation
 import Data.Function(on)
-import Util.Misc(debugMat,debug,norm,diagl,degree,median,Mat)
+import Util.Misc(debugMat,debug,degree,median,Mat)
 import Util.Rotation
 
 
@@ -49,7 +49,7 @@ infoCam c = CameraInfo{..}
     fCam = k@@>(0,0)
     world2cam = unsafeFromMatrix $ rt # row [0,0,0,1]
     cam2world = invTrans world2cam
-    ik = unsafeFromMatrix $ inv k ! 0 # row [0,0,0,1] :: Homography3D 
+    ik = unsafeFromMatrix $ inv k ¦ 0 # row [0,0,0,1] :: Homography3D 
     tip = cam2world ⊙ ik
     toImagePlane sc ps = tip ◁  map as3D ps
       where

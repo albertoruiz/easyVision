@@ -38,11 +38,12 @@ module Util.Estimation
 ) where
 
 import Numeric.LinearAlgebra hiding (eps)
+import Numeric.LinearAlgebra.Util(norm,unitary,diagl)
 import Util.Covariance
 import Util.Homogeneous
 import Data.List(transpose,nub,maximumBy,genericLength,sortBy,minimumBy)
 import System.Random
-import Util.Misc(norm,mat,vec,Mat,Vec,splitEvery,impossible,posMax,debug,unitary,diagl,median)
+import Util.Misc(mat,vec,Mat,Vec,splitEvery,impossible,posMax,debug,median)
 import Data.Function(on)
 import Util.Geometry hiding (homog)
 #if __GLASGOW_HASKELL__ < 704

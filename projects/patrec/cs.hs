@@ -1,7 +1,8 @@
 -- simple example of L1 minimization and compressed sensing
 
 import Numeric.LinearAlgebra
-import Util.Misc(Mat,Vec,vec,debug,norm,randomPermutation)
+import Numeric.LinearAlgebra.Util(norm)
+import Util.Misc(Mat,Vec,vec,debug,randomPermutation)
 import Util.L1
 import Text.Printf(printf)
 import Control.Monad(when)

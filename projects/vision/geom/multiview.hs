@@ -2,12 +2,12 @@
 
 import Vision.GUI
 import Numeric.LinearAlgebra
-import Numeric.LinearAlgebra.Util((#),(&),row, col, diagl)
+import Numeric.LinearAlgebra.Util((#),(&),row, col, diagl, norm)
 import Util.Geometry
 import Util.Camera
 import Util.Small(unsafeMap)
 import Vision.Camera
-import Util.Misc(degree,diagBlock,median,norm)
+import Util.Misc(degree,median)
 import Numeric.LinearAlgebra.Tensor hiding (scalar)
 import Numeric.LinearAlgebra.Array.Util hiding (scalar)
 import qualified Util.Homogeneous as H

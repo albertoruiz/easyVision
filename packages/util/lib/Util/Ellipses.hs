@@ -27,9 +27,10 @@ module Util.Ellipses (
 ) where
 
 import Numeric.LinearAlgebra
+import Numeric.LinearAlgebra.Util(diagl,mt,norm)
 import Numeric.GSL.Polynomials
 import Util.Homogeneous
-import Util.Misc(mat,Mat,diagl,mt,impossible,norm)
+import Util.Misc(mat,Mat,impossible)
 import Util.Estimation(homogSolve)
 import Util.Rotation(rot3)
 import Util.Geometry as G

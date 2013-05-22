@@ -12,10 +12,11 @@ module Util.Quaternion(
 ) where
 
 import Numeric.LinearAlgebra
+import Numeric.LinearAlgebra.Util(norm,unitary)
 import Util.Homogeneous(cross)
 import Data.List(minimumBy,maximumBy)
 import Data.Function(on)
-import Util.Misc(vec,Vec,Mat,norm,unitary)
+import Util.Misc(vec,Vec,Mat)
 
 
 

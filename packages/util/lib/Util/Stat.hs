@@ -22,7 +22,8 @@ module Util.Stat (
 ) where
 
 import Numeric.LinearAlgebra hiding (eigenvalues)
-import Util.Misc(Vec,Mat,(//),(&),sqr)
+import Numeric.LinearAlgebra.Util((#),(¦))
+import Util.Misc(Vec,Mat,sqr)
 
 meanRow :: Mat -> Vec
 meanRow m = ones <> m
@@ -69,8 +70,8 @@ stat x = s where
              , eigenvectors = v
              , invCov = inv c
              , whitener = w
-             , whiteningTransformation = w & asColumn (-w <> m) //
-                                         lastrow
+             , whiteningTransformation = w ¦ asColumn (-w <> m)
+                                       # lastrow
              , whitenedData = xc <> trans w
              , varianceVector = vars
              , normalizedData = (x - asRow m) / asRow (sqrt vars)

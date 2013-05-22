@@ -25,10 +25,11 @@ module Vision.Autofrontal (
 -- experiments on planar rectification
 
 import Numeric.LinearAlgebra
+import Numeric.LinearAlgebra.Util(unitary,norm)
 import Numeric.GSL.Minimization
 import Util.Homogeneous
 import Vision.Camera
-import Util.Misc(unitary,degree,vec,Mat,Vec,median,norm,impossible)
+import Util.Misc(degree,vec,Mat,Vec,median,impossible)
 import Data.Maybe(catMaybes)
 
 

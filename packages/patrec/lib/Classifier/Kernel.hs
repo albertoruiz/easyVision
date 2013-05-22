@@ -21,8 +21,9 @@ module Classifier.Kernel (
 ) where
 
 import Numeric.LinearAlgebra
+import Numeric.LinearAlgebra.Util(norm)
 import Classifier.Base
-import Util.Misc(norm,vec,Vec,Mat,sqr)
+import Util.Misc(vec,Vec,Mat,sqr)
 
 -- | Generalized inner product, corresponding to the ordinary dot product in an implicit feature space.
 type Kernel = (Vec -> Vec -> Double)

@@ -4,9 +4,10 @@
 
 import Classifier.ToyProblems
 import Classifier(addNoise,boxAttr,preprocess)
-import Util.Misc(debug,diagl,vec,Mat,Vec)
+import Util.Misc(debug,vec,Mat,Vec)
 import Util.Gaussian(mixturePDF,findMixture)
 import Numeric.LinearAlgebra
+import Numeric.LinearAlgebra.Util(diagl)
 
 import Vision.GUI
 import ImagProc
@@ -37,7 +38,7 @@ scwgraph title p g = browser title [d] (const id)
     x = color black $ Raw $ do
         renderPrimitive Lines $ mapMatrixWithIndexM_ h g
         indexSample p
-    h (i,j) w = when (w>0) (vertex (fst(p!!round i)) >> vertex (fst(p!!round j)))
+    h (i,j) w = when (w>0) (vertex (fst(p!!i)) >> vertex (fst(p!!j)))
     indexSample p = mapM_ (\((v,_),k)-> textAt (Point (v@>0) (v@>1)) (show k)) (zip p [0..])
     
 ---------------------------------------------------------------------------

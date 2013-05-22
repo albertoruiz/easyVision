@@ -3,7 +3,8 @@ module Vision.LASBA(
 ) where
 
 import Numeric.LinearAlgebra as LA hiding (i)
-import Util.Misc(vec,Vec,Mat,(&))
+import Numeric.LinearAlgebra.Util((¦))
+import Util.Misc(vec,Vec,Mat)
 
 import Vision.Types
 import Vision.IO
@@ -32,7 +33,7 @@ laSBA' prjs pts cams kal epilog = unsafePerformIO $ do
    refpts <- loadMatrix rp
    hClose h
    _ <- system $ "rm "++unwords (name:names)
-   return (toRows (refpts&1),refcams)
+   return (toRows (refpts¦1),refcams)
 
 -- | Interface to sparse bundle adjustment implementation by M.I.A. Lourakis and A.A. Argyros
 laSBAg :: String -- ^ additional arguments to the executable

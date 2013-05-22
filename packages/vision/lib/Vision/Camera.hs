@@ -69,16 +69,16 @@ import Util.Rotation
 --import System.Random
 import Graphics.Plot(gnuplotWin)
 
-import Util.Misc(mat,vec,Mat,Vec,norm,unitary,(&),(//),diagl,degree,impossible,diagBlock,median)
+import Util.Misc(mat,vec,Mat,Vec,degree,impossible,median)
 import Util.Ellipses(intersectionEllipses,InfoEllipse(..))
 
 import Util.Geometry
 import Util.Small(unsafeMap)
-import Numeric.LinearAlgebra.Util((!),(#))
+import Numeric.LinearAlgebra.Util((¦),(#),row,norm,unitary,diagl)
 import Control.Arrow
 
 cameraAtOrigin :: Mat
-cameraAtOrigin = ident 3 & 0
+cameraAtOrigin = ident 3 ¦ 0
 
 -- | A nice camera parameterization.
 data CameraParameters 
@@ -300,7 +300,8 @@ cameraOutline f =
 toCameraSystem :: Mat -> (Mat, Double)
 toCameraSystem cam = (inv m, f) where
     (k,r,c) = factorizeCamera cam
-    m = (r & asColumn (-r <> c)) // asRow(vec [0,0,0,1])
+    m = r ¦ asColumn (-r <> c)
+      # row [0,0,0,1]
     (f:_):_ = toLists k
 
 {-
@@ -492,7 +493,7 @@ cameraFromPlane prec nmax mbf image world = camera where
 
 linearPose :: [Point] -> [Point3D] -> Camera
 -- ^ Fiore's method
-linearPose image world = unsafeFromMatrix (r ! asColumn t)
+linearPose image world = unsafeFromMatrix (r ¦ asColumn t)
   where
     x = fromRows (map toVector world)
     m = trans x # 1

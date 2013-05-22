@@ -34,8 +34,9 @@ import ImagProc.Base
 import ImagProc.Ipp.Core(size,setROI)
 import Data.List(sortBy, maximumBy, sort,foldl',tails)
 import Numeric.LinearAlgebra
+import Numeric.LinearAlgebra.Util(diagl)
 import Util.Homogeneous
-import Util.Misc(diagl,Vec)
+import Util.Misc(Vec)
 import Data.Function(on)
 import Util.Geometry as G
 

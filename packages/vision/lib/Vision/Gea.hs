@@ -6,6 +6,7 @@ module Vision.Gea(
 ) where
 
 import Numeric.LinearAlgebra as LA hiding (i)
+import Numeric.LinearAlgebra.Util(norm)
 import Data.List
 import Vision.Camera
 import Util.Optimize(optimize)
@@ -14,7 +15,7 @@ import Vision.Types(Motion)
 import Util.Sparse
 import Data.Function(on)
 import Data.Maybe(fromJust)
-import Util.Misc(debug,norm,round',sqr,Mat,Vec)
+import Util.Misc(debug,round',sqr,Mat,Vec)
 
 
 -- | refine cameras using global epipolar adjustment (all views and default parameters)

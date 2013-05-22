@@ -12,8 +12,9 @@ import Contours hiding (contours)
 import Control.Arrow((***),(&&&))
 import Control.Applicative
 import Numeric.LinearAlgebra((<>),fromList,inv,(@>))
+import Numeric.LinearAlgebra.Util(diagl,norm)
 import Text.Printf(printf)
-import Util.Misc(stdpix,diagl,mean,vec,debug,degree,subListsBy,norm)
+import Util.Misc(stdpix,mean,vec,debug,degree,subListsBy)
 import Util.Rotation(rot3)
 import Util.Options
 import Vision(desp,inHomog,hv2pt,mseLine,cross)

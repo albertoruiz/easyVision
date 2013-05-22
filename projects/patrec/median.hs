@@ -4,8 +4,9 @@
 
 import Classifier.ToyProblems
 import Classifier(group,addNoise)
-import Util.Misc(debug,diagl,vec,Mat,Vec,pairwiseD2)
+import Util.Misc(debug,vec,Mat,Vec)
 import Numeric.LinearAlgebra
+import Numeric.LinearAlgebra.Util(diagl,pairwiseD2)
 import Vision.GUI
 --import Data.Colour.Names as Col
 import Graphics.UI.GLUT hiding (Size,scale,color,windowTitle)

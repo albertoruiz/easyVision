@@ -11,6 +11,7 @@ module Vision.TensorRep(
 import Numeric.LinearAlgebra.Exterior
 import qualified Numeric.LinearAlgebra as LA
 import Numeric.LinearAlgebra
+import Numeric.LinearAlgebra.Util(unitary)
 import Numeric.LinearAlgebra.Array.Util as Array
 import Graphics.Plot(gnuplotpdf)
 import System.Random
@@ -18,7 +19,7 @@ import Vision.Camera
 import Control.Applicative
 import Control.Monad hiding (join)
 import System.Directory(doesFileExist)
-import Util.Misc(splitEvery,degree,unitary)
+import Util.Misc(splitEvery,degree)
 
 
 type Seed = Int

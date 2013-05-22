@@ -43,8 +43,9 @@ module Util.Homogeneous
 ) where
 
 import Numeric.LinearAlgebra
+import Numeric.LinearAlgebra.Util((&),norm)
 import Util.Rotation(rot3)
-import Util.Misc(vec,Vec,mat,Mat,(#),norm,impossible)
+import Util.Misc(vec,Vec,mat,Mat,impossible)
 import Util.Geometry(Point(..),HLine(..))
 import qualified Util.Geometry as G
 
@@ -113,7 +114,7 @@ inHomog v = subVector 0 l v  / scalar (v@>l) where l = dim v - 1
 
 -- | creates a homogeneus version of an ordinary vector (appends a constant component equal to 1)
 homog :: Vec -> Vec
-homog v = v#1
+homog v = v & 1
 
 
 -- | 3x3 antisymmetric matrix

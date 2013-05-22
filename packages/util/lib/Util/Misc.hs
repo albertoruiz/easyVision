@@ -14,7 +14,6 @@ import System.Process(system)
 import Foreign.Storable(Storable)
 import Text.Printf(printf)
 import Data.Array(listArray,(!))
-import qualified Numeric.LinearAlgebra.Util as U
 import qualified Data.Vector as V
 
 type Mat = Matrix Double
@@ -25,9 +24,6 @@ vec = fromList
 
 mat :: [[Double]] -> Mat
 mat = fromLists
-
-diagl :: [Double] -> Mat
-diagl = diag . vec
 
 type Seed = Int
 
@@ -96,12 +92,6 @@ randomSamples seed n dat = map (V.toList . V.backpermute vdat . V.fromList) good
                | otherwise = unique (b:cs)
 
 
-
-
-
--- | Euclidean vector norm.
-norm :: Vector Double -> Double
-norm x = pnorm PNorm2 x
 
 mean :: (Fractional a) => [a] -> a
 mean l = sum l / fromIntegral (length l)
@@ -198,21 +188,6 @@ stdpix :: Double
 stdpix = 2/640
 
 
--- | Concatenation of real vectors.
-infixl 9 #
-(#) :: Vec -> Vec -> Vec
-a # b = join [a,b]
-
--- | Horizontal concatenation of real matrices.
-infixl 8 &
-(&) :: Mat -> Mat -> Mat
-a & b = fromBlocks [[a,b]]
-
--- | Vertical concatenation of real matrices.
-infixl 7 //
-(//) :: Mat -> Mat-> Mat
-a // b = fromBlocks [[a],[b]]
-
 -- | load an audio file (currently using sox, TO DO: read sample rate)
 loadAudio :: FilePath -> IO Mat
 loadAudio fpath = do
@@ -235,28 +210,6 @@ unliftVector f = toList . f . fromList
 unliftRow :: Element a => (Matrix a -> Matrix a) -> (Vector a -> Vector a)
 unliftRow f = flatten . f . asRow
 
-
--- | Obtains a vector in the same direction with 2-norm=1
-unitary :: Vec -> Vec
-unitary v = v / scalar (norm v)
-
--- | Matrix of pairwise squared distances of row vectors
--- (using the matrix product trick in blog.smola.org)
-pairwiseD2 :: Mat -> Mat -> Mat
-pairwiseD2 x y | ok = x2 `outer` oy + ox `outer` y2 - 2* x <> trans y
-               | otherwise = error $ "pairwiseD2 with different number of columns: "
-                                   ++ show (size x) ++ ", " ++ show (size y)
-  where
-    ox = ones (rows x)
-    oy = ones (rows y)
-    oc = ones (cols x)
-    ones k = constant 1 k
-    x2 = sqr x <> oc
-    y2 = sqr y <> oc
-    ok = cols x == cols y
-
-size :: Matrix t -> (Int, Int)
-size m = (rows m, cols m)
 
 ----------------------------------------------------------------------
 
@@ -327,11 +280,6 @@ lambdify f a b x = f (a x) (b x)
 
 --------------------------------------------------------------------
 
-mt :: Mat -> Mat
-mt = trans . inv
-
-----------------------------------------------------------------------
-
 rotateLeft :: Int -> [a] -> [a]
 rotateLeft n list | n >= 0    =  take len $ drop n $ cycle list
                   | otherwise =  rotateLeft (len + n) list
@@ -368,15 +316,6 @@ angleDiff x y = min (abs (x-y)) (abs (opos x - opos y))
 
 ----------------------------------------------------------------------
 
-diagBlock :: (Num (Vector t), Container Vector t)
-          => [Matrix t] -> Matrix t
-diagBlock ms = fromBlocks $ zipWith f ms [0..]
-  where
-    f m k = take n $ replicate k 0 ++ m : repeat 0
-    n = length ms
-
---------------------------------------------------------------------------------
-
 norMax :: (Num (c e), Container c e) => e -> c e -> c e
 norMax s m = m * scalar (s / v)
   where
@@ -385,21 +324,9 @@ norMax s m = m * scalar (s / v)
 
 --------------------------------------------------------------------------------
 
-null1 :: Matrix Double -> Vector Double
-null1 = last . toColumns . snd . rightSV
-
 nulln :: Int -> Matrix Double -> [Vector Double]
 nulln n = reverse . take n . reverse . toColumns . snd . rightSV
 
-null1eig :: Matrix Double -> Vector Double
-null1eig = last . toColumns . snd . eigSH'
-
 orthm :: Matrix Double -> Matrix Double
 orthm = fromColumns . orth
-
-rowOuters :: Matrix Double -> Matrix Double -> Matrix Double
-rowOuters a b = a' * b'
-  where
-    a' = kronecker a (U.ones 1 (cols b))
-    b' = kronecker (U.ones 1 (cols a)) b
 

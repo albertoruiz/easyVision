@@ -27,12 +27,13 @@ module Classifier.Adaboost (
 ) where
 
 import Numeric.LinearAlgebra
+import Numeric.LinearAlgebra.Util(norm,(&),(¦),(#))
 import Classifier.Base
 import Classifier.Simple(multiclass)
 import Data.List(sortBy, transpose,partition)
 import Util.Misc(posMin)
 import Data.Function(on)
-import Util.Misc(norm,(&),(//),(#),Vec,vec,posMax)
+import Util.Misc(Vec,vec,posMax)
 import System.Random
 
 type Weights = Vector Double
@@ -164,12 +165,12 @@ weight seed dic (g1,g2) w = dic (g1',g2') where
 -- | mse with weighted examples
 mseWeighted :: WeightedDicotomizer
 mseWeighted (g1,g2) d = f where
-    m = (fromRows g1 // fromRows g2) & konst 1 (dim b,1)
-    b = constant 1 (length g1) # constant (-1) (length g2)
+    m = (fromRows g1 # fromRows g2) ¦ konst 1 (dim b,1)
+    b = constant 1 (length g1) & constant (-1) (length g2)
     rd  = sqrt d
     rd' = outer rd (constant 1 (cols m))
     w = (m*rd') <\> (b*rd)
-    f v = tanh (v # 1 <.> w)
+    f v = tanh ((v & 1) <.> w)
 
 
 -- | a minimum distance dicotomizer using weighted examples

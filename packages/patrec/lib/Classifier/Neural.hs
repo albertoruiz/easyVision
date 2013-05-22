@@ -18,8 +18,9 @@ module Classifier.Neural (
 ) where
 
 import Numeric.LinearAlgebra hiding (i,eps)
+import Numeric.LinearAlgebra.Util(norm)
 import Classifier.Base
-import Util.Misc(norm, randomPermutation, Vec, Mat, Seed)
+import Util.Misc(randomPermutation, Vec, Mat, Seed)
 import Util.Probability(weighted)
 
 -------------------------- Multilayer perceptron -----------------------

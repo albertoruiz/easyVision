@@ -40,6 +40,7 @@ module Vision.Stereo
 ) where
 
 import Numeric.LinearAlgebra
+import Numeric.LinearAlgebra.Util(unitary,norm,null1)
 import Numeric.GSL
 import Util.Homogeneous
 import Util.Estimation
@@ -49,7 +50,7 @@ import Util.Stat
 import Data.List(transpose,nub,maximumBy,genericLength,elemIndex, genericTake)
 import System.Random
 import Debug.Trace(trace)
-import Util.Misc(vec,Vec, mat,Mat,unitary,norm,debugMat,null1)
+import Util.Misc(vec,Vec, mat,Mat,debugMat)
 
 
 --------------------- Basic Stereo -----------------------

@@ -27,6 +27,7 @@ module Classifier.Simple (
 ) where
 
 import Numeric.LinearAlgebra
+import Numeric.LinearAlgebra.Util(norm,(&),(¦),(#))
 import Classifier.Base
 import Util.Probability(weighted)
 
@@ -35,7 +36,7 @@ import qualified Data.Map as M
 import Util.Stat
 import Util.Gaussian(mixturePDF,findMixture,gaussianLogLik, Gaussian(..))
 import Util.Estimation(robustLocation)
-import Util.Misc(norm,(&),(//),(#),sqr,Vec)
+import Util.Misc(sqr,Vec)
 import Data.Maybe(fromMaybe)
 import qualified Data.List as L
 import Control.Arrow((&&&),(***))
@@ -43,18 +44,18 @@ import Control.Arrow((&&&),(***))
 -- | mse linear discriminant using the pseudoinverse
 mse :: Dicotomizer
 mse (g1,g2) = f where
-    m = (fromRows g1 // fromRows g2) & konst 1 (dim b,1)
-    b = constant 1 (length g1) # constant (-1) (length g2)
+    m = (fromRows g1 # fromRows g2) ¦ konst 1 (dim b,1)
+    b = constant 1 (length g1) & constant (-1) (length g2)
     w = m <\> b
-    f v = tanh (v # 1 <.> w)
+    f v = tanh ((v & 1) <.> w)
 
 -- | linear least squares classifier
 lsc :: Learner Vec
 lsc prob = f where
     (_,lbs) = group prob
-    (x,y) = ((&1).fromRows *** fromRows) $ unzip (vectorLabels prob)
+    (x,y) = ((¦1).fromRows *** fromRows) $ unzip (vectorLabels prob)
     w = x `linearSolveLS` y
-    f v = weighted $ zip (labels lbs) (toList $ exp $ trans w <> v#1)
+    f v = weighted $ zip (labels lbs) (toList $ exp $ trans w <> (v&1))
     
 --------------------------------------------------------------------------------
 

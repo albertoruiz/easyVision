@@ -13,9 +13,10 @@ module Vision.Bootstrap(
 
 import Util.Rotation
 import Vision.Epipolar
-import Util.Misc(vec,Mat,Vec,debug,degree,impossible,(&),arrayOf,
-                 unionSort,unitary,round',kruskal,path)
+import Util.Misc(vec,Mat,Vec,debug,degree,impossible,arrayOf,
+                 unionSort,round',kruskal,path)
 import Numeric.LinearAlgebra hiding (i)
+import Numeric.LinearAlgebra.Util(unitary,(¦))
 import Numeric.LinearAlgebra.Tensor hiding (scalar)
 import Numeric.LinearAlgebra.Array.Util hiding (scalar)
 import Vision.Types
@@ -87,7 +88,7 @@ solveCams rs sel = (cams1, cams2) where
     cens = fst $ debug "centers system error" snd $ estimateCenters rs sel
     cams1 = zipWith f rs cens
     cams2 = zipWith f rs (map negate cens)
-    f r c = r & asColumn (-r <> c)
+    f r c = r ¦ asColumn (-r <> c)
 
 
 estimateCenters :: [Mat] -> EpiPairs -> ([Vec], Double)
@@ -158,7 +159,7 @@ estimatePointsCenters n rots p = (newCams sol, newCams (-sol)) where
     sol = reshape 3 $ fst $ homogSolve $ debug "systemPC" inforank $ dropColumns 3 coefs
       where inforank m = (rows m, cols m)
     newcens s = toRows $ dropRows (pmax) s
-    newCams s = zipWith f rots (newcens s) where f r c = r & asColumn (-r <> c)
+    newCams s = zipWith f rots (newcens s) where f r c = r ¦ asColumn (-r <> c)
     hv (Point x y) = unitary (vec [x,y,1])
 
 -----------------------------------------------------------------

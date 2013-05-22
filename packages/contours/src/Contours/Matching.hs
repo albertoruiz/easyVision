@@ -8,9 +8,10 @@ module Contours.Matching(
 
 import Control.Arrow((***),(&&&))
 import Numeric.LinearAlgebra
+import Numeric.LinearAlgebra.Util(norm,diagl)
 import Text.Printf(printf)
 import Data.List(minimumBy,sortBy,groupBy)
-import Util.Misc(Mat,Vec,norm,degree,diagl,debug,posMax,norm,angleDiff,assert,warning)
+import Util.Misc(Mat,Vec,degree,debug,posMax,angleDiff,assert,warning)
 import Util.Rotation
 import Classifier(Sample)
 import Vision
