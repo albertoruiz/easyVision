@@ -32,7 +32,7 @@ import ImagProc.Ipp.Convert(loadRGB)
 import ImagProc.Generic(Channels,channels,GImg,toYUV,channelsFromRGB)
 import ImagProc.Camera.MPlayer
 import System.IO.Unsafe(unsafeInterleaveIO)
-import Data.List(isPrefixOf,foldl',tails,findIndex,isInfixOf,isSuffixOf)
+import Data.List(isPrefixOf,foldl',tails,findIndex,isInfixOf,isSuffixOf,sort)
 import System.Directory(doesFileExist, getDirectoryContents)
 import Control.Applicative((<$>))
 import System.Environment(getArgs,getEnvironment)
@@ -271,7 +271,7 @@ isImage name = any g [".png",".jpg",".JPG"]
 readFolderIM :: FilePath -> IO [(Channels,String)]
 -- ^ reads a list of images from a folder. Variable size, using imageMagick
 readFolderIM path = do
-    fs <- filter isImage <$> getDirectoryContents path
+    fs <- sort . filter isImage <$> getDirectoryContents path
     putStrLn $ show (length fs) ++ " images in " ++ path
     let f p = fmap (\x-> (channelsFromRGB x,p))
             . unsafeInterleaveIO . loadRGB
