@@ -56,22 +56,24 @@ data Shape = Shape { shapeContour  :: Polyline
 analyzeShape mW (p,(mx,my,cxx,cyy,cxy)) =
   trapping cond "l2 > thl2 in analyzeShape" Shape{..}
   where
-    cond = l2 > thl2
+    cond = l2 <= thl2
     shapeContour = p
     shapeMoments = (mx,my,cxx,cyy,cxy)
     shapeCenter = Point mx my
     shapeAxes @ (l1,l2,phi) = eig2x2Dir (cxx,cyy,cxy)
     thl2 = (1 * 2/640)**2
-    shapeWhitener = -- --whitener' shapeMoments
-                    --assert (l2 > thl2) "l2 very small in shapeWhitener" $
-                    diagl [1/sqrt l1,1/sqrt l2,1] <> rot3 phi <> desp (-mx,-my)
+    shapeWhitener =
+      --whitener' shapeMoments
+      -- assert (l2 > thl2) "l2 very small in shapeWhitener" $
+      diagl [1/sqrt l1,1/sqrt l2,1] <> rot3 phi
+      <> desp (-mx,-my)
     whiteShape = transPol shapeWhitener p
     fou = fourierPL whiteShape
     invAffine = fromList $ map (magnitude.fou) [-mW .. mW]
 
 --  kAngles = icaAngles whiteShape >>= (\a -> [a,a+pi])
     (invKS,kAngles) = impang whiteShape
-    
+
     kFeats = map f kAngles
       where
         f a = g $ normalizeStart $ (*cis (-a)) . fou
@@ -79,7 +81,7 @@ analyzeShape mW (p,(mx,my,cxx,cyy,cxy)) =
     kws = map rot3 kAngles
     kHyps = zip kFeats kws
     kShapes = map (flip transPol whiteShape) kws
-    
+
     kFeatsMirror = kFeats ++ map conj kFeats
     kHypsMirror = kHyps ++ map (conj *** (*diagl[1,-1,1])) kHyps
 
@@ -106,7 +108,7 @@ analyzeShape mW (p,(mx,my,cxx,cyy,cxy)) =
     symmet2 = pnorm PNorm2 (f1-f2)
     symmet4 = pnorm PNorm2 (f2-f3)
     symmet0 = pnorm PNorm2 (f1 - fromList (replicate (mW+1) 0 ++ 2: replicate (mW-1) 0))
-    
+
 ----------------------------------------------------------------------
 
 data ShapeMatch = ShapeMatch
@@ -136,8 +138,8 @@ shapeMatch prots c = map (match c) prots
         d (u,_) (v,_) = pnorm PNorm2 (u-v)
         wa = inv (wt <> shapeWhitener target) <> wp <> shapeWhitener proto
         waRot = rotTrans wa
-        
-        
+
+
 rotTrans w = rho
   where
     [[a1,a2],[b1,b2],[c1,c2]] = ht w [[0,0],[0,1],[1,0]]
@@ -172,7 +174,7 @@ shapeMatches prots c = concatMap (sm c) prots
         wa = inv (wt <> shapeWhitener target) <> r <> wp <> shapeWhitener proto
         waRot = rotTrans wa
 
-----------------------------------------------------------------------  
+----------------------------------------------------------------------
 
 -- | checks if a polyline is very similar to an ellipse.
 isEllipse :: Int -- ^ tolerance (per 1000 of total energy) (e.g. 10)
@@ -187,7 +189,6 @@ isEllipse tol c = (ft-f1)/ft < fromIntegral tol/1000 where
 ----------------------------------------------------------------------
 
 elongated r Shape { shapeAxes = (l1,l2,_) } =
-  warning (l1 > thl1) "l1 very small in elongated" $ l2 / l1 < 1/r**2
+  warning (l1 <= thl1) "l1 very small in elongated" $ l2 / l1 < 1/r**2
   where
     thl1 = (1 * 2/640)**2
-

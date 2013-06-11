@@ -53,7 +53,7 @@ trapping cond msg x =
   if cond
   then trace ("WARNING: " ++ msg) Nothing
   else Just x
-
+\
 warning :: Bool -> String -> a -> a
 warning cnd msg x | cnd = trace ("WARNING: "++msg) x
                   | otherwise = x
