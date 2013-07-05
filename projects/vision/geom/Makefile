@@ -6,6 +6,7 @@ demo:
 	./rectify --points=pts2d.txt --image=../../../data/images/calibration/disk1.jpg
 	./resection --points=pts3d.txt --image=../../../data/images/calibration/cal1.jpg
 	./resection2 --points=pcube37.txt --image=../../../data/images/calibration/cube1.png
+	./resection4 --reference=ref3d.txt --points=plain2d.txt --image=../../../data/images/calibration/cube1.png
 	./stereo --points1=pl.txt --image1=../../../data/images/calibration/cube3.png --points2=pr.txt --image2=../../../data/images/calibration/cube4.png
 	./conic --points=pcon.txt
 	./multiview

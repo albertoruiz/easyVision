@@ -1,6 +1,6 @@
--- $ mplayer saved.y4m -demuxer y4m
---             (or      -vc rawi420)
--- $ mencoder -o saved.avi saved.y4m -vc rawi420 -fps 30 -ovc lavc -lavcopts vcodec=mpeg4:mbd=2:trell:v4mv:turbo:vbitrate=2000
+-- $ ./saveMotion --chan video
+-- $ mencoder -o saved.avi saved.y4m -vc rawi420 -fps 15 -ovc lavc -lavcopts vcodec=mpeg4:mbd=2:trell:v4mv:turbo:vbitrate=2000
+-- $ mplayer saved.avi
 
 {-# LANGUAGE TemplateHaskell, Arrows, RecordWildCards #-}
 
