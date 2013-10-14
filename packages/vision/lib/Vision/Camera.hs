@@ -862,8 +862,7 @@ theRight = unsafeMap (theRightB 1)
 newtonStep :: Double -> (Vec -> (Vec, Mat)) -> Vec -> Vec
 newtonStep lambda m sol = sol'
   where
-    fun = fst (m sol)
-    jac = snd (m sol)
+    (fun,jac) = m sol
     hes = trans jac <> jac
     grad = trans jac <> fun
     sol' = sol - (aug lambda hes) <\> grad
