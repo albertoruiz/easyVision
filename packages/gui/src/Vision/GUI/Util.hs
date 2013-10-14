@@ -29,7 +29,7 @@ module Vision.GUI.Util (
     connectParamWith,
     connectWith, connectWith',
     clickPoints,
-    interactive3D,
+    interactive2D, interactive3D,
     clickKeep, clickList, clickTag
 ) where
 
@@ -353,8 +353,29 @@ clickPoints name ldopt st sh = do
 
 --------------------------------------------------------------------------------
 
+interactive2D :: String -> IO (Drawing -> IO (), Drawing -> IO ())
+-- ^ interactive 2D drawing, useful for ghci and more
+interactive2D name = do
+        prepare
+        b <- browser name [] (const id)
+        let callback = do
+            addTimerCallback 200 callback      -- FIXME
+            postRedisplay (Just (evW b))
+        addTimerCallback 1000 callback
+        forkIO mainLoop
+        return (resetDrawing b, addDrawing b)
+  where
+    resetDrawing w d = putW w (0,[d]) >> p
+      where
+        p = postRedisplay (Just (evW w))
+
+    addDrawing w d = do
+        (0,[x]) <- getW w
+        resetDrawing w (Draw [x,d])
+
+
 interactive3D :: String -> IO (Drawing -> IO (), Drawing -> IO ())
--- ^ interactive 3D drawing, useful for ghci
+-- ^ interactive 3D drawing, useful for ghci and more
 interactive3D name = do
         prepare
         b <- browser3D name [] (const id)
