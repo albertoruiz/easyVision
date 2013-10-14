@@ -174,6 +174,10 @@ int ippiFilterRow_32f_C1Rx(Ipp32f* pSrc, int srcStep, Ipp32f* pDst, int dstStep,
     return ippiFilterRow_32f_C1R(pSrc, srcStep, pDst, dstStep, *dstRoiSize, pKernel, kernelSize, xAnchor);
 }
 
+int ippiCrossCorrValid_NormLevel_32f_C1Rx(Ipp32f* pSrc, int srcStep, IppiSize* srcRoiSize, Ipp32f* pTpl, int tplStep, IppiSize* tplRoiSize, Ipp32f* pDst, int dstStep) {
+    return ippiCrossCorrValid_NormLevel_32f_C1R(pSrc, srcStep, *srcRoiSize, pTpl, tplStep, *tplRoiSize, pDst, dstStep);
+}
+
 int ippiThreshold_Val_8u_C1Rx(Ipp8u* pSrc, int srcStep, Ipp8u* pDst, int dstStep, IppiSize* roiSize, Ipp8u threshold, Ipp8u value, IppCmpOp ippCmpOp) {
     return ippiThreshold_Val_8u_C1R(pSrc, srcStep, pDst, dstStep, *roiSize, threshold, value, ippCmpOp);
 }
@@ -324,6 +328,10 @@ int ippiRGBToHSV_8u_C3Rx(Ipp8u* pSrc, int srcStep, Ipp8u* pDst, int dstStep, Ipp
 
 int ippiHSVToRGB_8u_C3Rx(Ipp8u* pSrc, int srcStep, Ipp8u* pDst, int dstStep, IppiSize* roiSize) {
     return ippiHSVToRGB_8u_C3R(pSrc, srcStep, pDst, dstStep, *roiSize);
+}
+
+int ippiColorTwist32f_8u_C3Rx(Ipp8u* pSrc, int srcStep, Ipp8u* pDst, int dstStep, IppiSize* roiSize, Ipp32f twist[3][4]) {
+    return ippiColorTwist32f_8u_C3R(pSrc, srcStep, pDst, dstStep, *roiSize, twist);
 }
 
 int ippiSampleLine_8u_C1Rx(Ipp8u* pSrc, int srcStep, IppiSize* roiSize, Ipp8u* pDst, IppiPoint* pt1, IppiPoint* pt2) {

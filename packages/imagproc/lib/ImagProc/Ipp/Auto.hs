@@ -276,6 +276,10 @@ ioRGBToHSV_8u_C3R  = {-# SCC "ippiRGBToHSV_8u_C3R" #-} auto_1_8u_C3R f "ippiRGBT
 ioHSVToRGB_8u_C3R  = {-# SCC "ippiHSVToRGB_8u_C3R" #-} auto_1_8u_C3R f "ippiHSVToRGB_8u_C3R"
     where f pSrc srcStep pDst dstStep roiSize = ippiHSVToRGB_8u_C3R pSrc srcStep pDst dstStep roiSize
 
+{- |  -}
+ioColorTwist32f_8u_C3R twist = {-# SCC "ippiColorTwist32f_8u_C3R" #-} auto_1_8u_C3R (f twist) "ippiColorTwist32f_8u_C3R"
+    where f twist pSrc srcStep pDst dstStep roiSize = ippiColorTwist32f_8u_C3R pSrc srcStep pDst dstStep roiSize twist
+
 {- |    calculates pixel sum on subimage
  -}
 ioIntegral_8u32f_C1R val = {-# SCC "ippiIntegral_8u32f_C1R" #-} auto_1_8u32f_C1R (f val) "ippiIntegral_8u32f_C1R"

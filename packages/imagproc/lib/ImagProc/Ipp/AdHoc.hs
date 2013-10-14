@@ -824,3 +824,37 @@ fastMarching rad (G s) = unsafePerformIO $ do
 
 --------------------------------------------------------------------------------
 
+imgAsR2b roifun im1 im2 = do
+    r <- imgAs im1
+    return r {vroi = roifun (vroi im1) (vroi im2)}
+
+cr2b f msg im1 im2 r = f // dst im1 (vroi im1) // dst im2 (vroi im2)// src r (vroi r) // checkIPP msg [im1,im2]
+
+auto_2_32f_C1Rb f msg rf rf1 rf2 (F im1) (F im2) = do
+    r <- imgAsR2b rf im1 im2
+    let im1' = im1 {vroi = rf1 (vroi im1) (vroi im2)}
+        im2' = im2 {vroi = rf2 (vroi im1) (vroi im2)}
+    cr2b f msg im1' im2' r
+    return (F r)
+
+ioCrossCorrValid_NormLevel_32f_C1R  = {-# SCC "ippiSub_32f_C1R" #-} auto_2_32f_C1Rb  ippiCrossCorrValid_NormLevel_32f_C1R "ippiCrossCorrValid_NormLevel_32f_C1R"
+
+
+crossCorr :: ImageFloat -> ImageFloat -> ImageFloat
+crossCorr temp imag = unsafePerformIO $ ioCrossCorrValid_NormLevel_32f_C1R g const (flip const) imag temp
+  where
+    g roi roimask = shrink (h1,w1) roi
+      where
+        ROI r1 r2 c1 c2 = roimask
+        h1 = (r2-r1+1) `div` 2
+        w1 = (c2-c1+1) `div` 2
+
+--------------------------------------------------------------------------------
+
+twistColors :: [[Float]] -> ImageRGB -> ImageRGB
+twistColors twist img = unsafePerformIO $ do
+    pTwist <- newArray (concat twist)
+    (C r) <- ioColorTwist32f_8u_C3R pTwist id img
+    free pTwist
+    return (C r)
+

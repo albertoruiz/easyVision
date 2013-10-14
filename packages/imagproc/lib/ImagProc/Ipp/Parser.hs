@@ -50,9 +50,9 @@ symbol s = do
     return r
 
 main = do
-    ipp <- getEnv "IPP"
+    ipp <- getEnv "IPP_INC"
     header:_ <- getArgs
-    f <- readFile (ipp++"/include/"++header)
+    f <- readFile (ipp++"/"++header)
     let hds = getHeaders f
     print.length $ hds
     mapM_ shfun hds

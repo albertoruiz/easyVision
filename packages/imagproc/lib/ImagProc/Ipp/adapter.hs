@@ -23,7 +23,7 @@ toTuple h = (name h, map f (args h))
 main = do
     ipp <- getEnv "IPP_INC"
     f <- readFile "functions.txt"
-    let hdsnames = map words (lines f)
+    let hdsnames = filter (not . null) . map words . lines $ f
         names = map last hdsnames
         headers = map ((ipp++"/")++) $ nub (map head hdsnames)
     hs <- fmap (map noconst . filter ((`elem` names) . name) . concatMap getHeaders) (mapM readFile headers)
@@ -197,7 +197,7 @@ autofun k hds = unlines [ver k (toTuple h) (doc h) | h <- hds, arity k (map snd 
 
 autodefs hds = (automod++) $ rep ("srcDstXStep","srcDstStep")
                            $ rep ("DstStep","dstStep") $ rep ("srcDstStep","srcDstXStep")
-                           $ rep ("[3]","") $ rep ("[]","") $ rep ("(f )","f") $
+                           $ rep ("[3]","") $ rep ("[3][4]","") $ rep ("[]","") $ rep ("(f )","f") $
     "\n-------- arity 0 -------------\n\n" ++
     autofun 0 hds
     ++ "-------- arity 1 -------------\n\n" ++

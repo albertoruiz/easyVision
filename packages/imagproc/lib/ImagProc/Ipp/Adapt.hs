@@ -393,6 +393,16 @@ ippiFilterRow_32f_C1R pSrc srcStep pDst dstStep dstRoiSize pKernel kernelSize xA
     free pdstRoiSize
     return r
 
+foreign import ccall "adapt.h ippiCrossCorrValid_NormLevel_32f_C1Rx"
+    ippiCrossCorrValid_NormLevel_32f_C1Rx :: Ptr Float -> Int -> Ptr IppiSize -> Ptr Float -> Int -> Ptr IppiSize -> Ptr Float -> Int -> IO Int
+ippiCrossCorrValid_NormLevel_32f_C1R pSrc srcStep srcRoiSize pTpl tplStep tplRoiSize pDst dstStep = do
+    psrcRoiSize <- new srcRoiSize
+    ptplRoiSize <- new tplRoiSize
+    r <- ippiCrossCorrValid_NormLevel_32f_C1Rx pSrc srcStep psrcRoiSize pTpl tplStep ptplRoiSize pDst dstStep
+    free psrcRoiSize
+    free ptplRoiSize
+    return r
+
 foreign import ccall "adapt.h ippiThreshold_Val_8u_C1Rx"
     ippiThreshold_Val_8u_C1Rx :: Ptr CUChar -> Int -> Ptr CUChar -> Int -> Ptr IppiSize -> CUChar -> CUChar -> CInt -> IO Int
 ippiThreshold_Val_8u_C1R pSrc srcStep pDst dstStep roiSize threshold value ippCmpOp = do
@@ -694,6 +704,14 @@ foreign import ccall "adapt.h ippiHSVToRGB_8u_C3Rx"
 ippiHSVToRGB_8u_C3R pSrc srcStep pDst dstStep roiSize = do
     proiSize <- new roiSize
     r <- ippiHSVToRGB_8u_C3Rx pSrc srcStep pDst dstStep proiSize
+    free proiSize
+    return r
+
+foreign import ccall "adapt.h ippiColorTwist32f_8u_C3Rx"
+    ippiColorTwist32f_8u_C3Rx :: Ptr CUChar -> Int -> Ptr CUChar -> Int -> Ptr IppiSize -> Ptr Float -> IO Int
+ippiColorTwist32f_8u_C3R pSrc srcStep pDst dstStep roiSize twist = do
+    proiSize <- new roiSize
+    r <- ippiColorTwist32f_8u_C3Rx pSrc srcStep pDst dstStep proiSize twist
     free proiSize
     return r
 

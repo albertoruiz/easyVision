@@ -43,6 +43,7 @@ int ippiFilterColumn_8u_C1Rx(unsigned char*, int, unsigned char*, int, void*, in
 int ippiFilterColumn_32f_C1Rx(float*, int, float*, int, void*, float*, int, int);
 int ippiFilterRow_8u_C1Rx(unsigned char*, int, unsigned char*, int, void*, int*, int, int, int);
 int ippiFilterRow_32f_C1Rx(float*, int, float*, int, void*, float*, int, int);
+int ippiCrossCorrValid_NormLevel_32f_C1Rx(float*, int, void*, float*, int, void*, float*, int);
 int ippiThreshold_Val_8u_C1Rx(unsigned char*, int, unsigned char*, int, void*, unsigned char, unsigned char, int);
 int ippiThreshold_Val_32f_C1Rx(float*, int, float*, int, void*, float, float, int);
 int ippiComputeThreshold_Otsu_8u_C1Rx(unsigned char*, int, void*, unsigned char*);
@@ -81,6 +82,7 @@ int ippiYUV420ToRGB_8u_P3Rx(void**, int*, void**, int, void*);
 int ippiRGBToGray_8u_C3C1Rx(unsigned char*, int, unsigned char*, int, void*);
 int ippiRGBToHSV_8u_C3Rx(unsigned char*, int, unsigned char*, int, void*);
 int ippiHSVToRGB_8u_C3Rx(unsigned char*, int, unsigned char*, int, void*);
+int ippiColorTwist32f_8u_C3Rx(unsigned char*, int, unsigned char*, int, void*, float*);
 int ippiSampleLine_8u_C1Rx(unsigned char*, int, void*, unsigned char*, void*, void*);
 int ippiSampleLine_32f_C1Rx(float*, int, void*, float*, void*, void*);
 int ippiAbsDiff_8u_C1Rx(unsigned char*, int, unsigned char*, int, unsigned char*, int, void*);
