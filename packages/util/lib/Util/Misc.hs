@@ -43,9 +43,16 @@ debugMat msg dec f x = trace (dimString (msg ++ " " ++ init (dispf dec (f x)))) 
 impossible :: String -> a
 impossible msg = error ("impossible input in "++ msg)
 
--- | stop the program if something is wrong
-assert :: Bool -> String -> a -> a
-assert cnd msg x = if cnd then x else error msg
+-- | stop the program if something is wrong (formerly 'assert')
+preventing :: Bool -> String -> a -> a
+preventing cnd msg x = if cnd then x else error msg
+
+-- | convert value to Nothing if something is wrong
+trapping :: Bool -> String -> a -> Maybe a
+trapping cond msg x =
+  if cond
+  then trace ("WARNING: " ++ msg) Nothing
+  else Just x
 
 warning :: Bool -> String -> a -> a
 warning cnd msg x | cnd = trace ("WARNING: "++msg) x
