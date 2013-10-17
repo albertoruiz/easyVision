@@ -9,4 +9,8 @@ dist
 misc
 experiments
 findFiles.sh
-
+cabal.sandbox.config
+dist_sandbox
+.cabal.sandbox
+*.log
+TAGS

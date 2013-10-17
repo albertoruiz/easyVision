@@ -11,7 +11,7 @@ import Numeric.LinearAlgebra
 import Numeric.LinearAlgebra.Util(norm,diagl)
 import Text.Printf(printf)
 import Data.List(minimumBy,sortBy,groupBy)
-import Util.Misc(Mat,Vec,degree,debug,posMax,angleDiff,assert,warning)
+import Util.Misc(Mat,Vec,degree,debug,posMax,angleDiff,warning,trapping)
 import Util.Rotation
 import Classifier(Sample)
 import Vision
@@ -23,11 +23,11 @@ import Contours.Fourier
 import Contours.Orientation
 import Control.Monad(when)
 import Control.Applicative((<$>))
-import Data.Maybe(isJust)
+import Data.Maybe
 import Data.Function(on)
 
 
-shape :: Int -> Polyline -> Shape
+shape :: Int -> Polyline -> Maybe Shape
 shape n = analyzeShape n . (id &&& momentsContour . polyPts)
 
 ----------------------------------------------------------------------
@@ -53,17 +53,18 @@ data Shape = Shape { shapeContour  :: Polyline
                    , kHypsMirror   :: [(CVec,Mat)]
                    }
 
-
-analyzeShape mW (p,(mx,my,cxx,cyy,cxy)) = Shape {..}
+analyzeShape mW (p,(mx,my,cxx,cyy,cxy)) =
+  trapping cond "l2 > thl2 in analyzeShape" Shape{..}
   where
+    cond = l2 > thl2
     shapeContour = p
     shapeMoments = (mx,my,cxx,cyy,cxy)
     shapeCenter = Point mx my
     shapeAxes @ (l1,l2,phi) = eig2x2Dir (cxx,cyy,cxy)
     thl2 = (1 * 2/640)**2
-    shapeWhitener = --whitener' shapeMoments
-                    assert (l2 > thl2) "l2 very small in shapeWhitener"
-                  $ diagl [1/sqrt l1,1/sqrt l2,1] <> rot3 phi <> desp (-mx,-my)
+    shapeWhitener = -- --whitener' shapeMoments
+                    --assert (l2 > thl2) "l2 very small in shapeWhitener" $
+                    diagl [1/sqrt l1,1/sqrt l2,1] <> rot3 phi <> desp (-mx,-my)
     whiteShape = transPol shapeWhitener p
     fou = fourierPL whiteShape
     invAffine = fromList $ map (magnitude.fou) [-mW .. mW]
@@ -185,8 +186,8 @@ isEllipse tol c = (ft-f1)/ft < fromIntegral tol/1000 where
 
 ----------------------------------------------------------------------
 
-elongated r Shape { shapeAxes = (l1,l2,_) } = assert (l1 > thl1) "l1 very small in elongated"
-                                            $ l2 / l1 < 1/r**2
+elongated r Shape { shapeAxes = (l1,l2,_) } =
+  warning (l1 > thl1) "l1 very small in elongated" $ l2 / l1 < 1/r**2
   where
     thl1 = (1 * 2/640)**2
 
