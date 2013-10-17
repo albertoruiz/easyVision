@@ -54,9 +54,9 @@ data Shape = Shape { shapeContour  :: Polyline
                    }
 
 analyzeShape mW (p,(mx,my,cxx,cyy,cxy)) =
-  trapping cond "l2 > thl2 in analyzeShape" Shape{..}
+  trapping badCond "l2 too small in analyzeShape" Shape{..}
   where
-    cond = l2 <= thl2
+    badCond = l2 <= thl2 
     shapeContour = p
     shapeMoments = (mx,my,cxx,cyy,cxy)
     shapeCenter = Point mx my
@@ -189,6 +189,6 @@ isEllipse tol c = (ft-f1)/ft < fromIntegral tol/1000 where
 ----------------------------------------------------------------------
 
 elongated r Shape { shapeAxes = (l1,l2,_) } =
-  warning (l1 <= thl1) "l1 very small in elongated" $ l2 / l1 < 1/r**2
+  warning (l1 <= thl1) "l1 very small in Contours.Matching.elongated" $ l2 / l1 < 1/r**2
   where
     thl1 = (1 * 2/640)**2
