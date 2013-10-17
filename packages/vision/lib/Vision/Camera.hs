@@ -70,6 +70,7 @@ import Util.Rotation
 import Graphics.Plot(gnuplotWin)
 
 import Util.Misc(mat,vec,Mat,Vec,degree,impossible,median)
+--import Util.Misc(mat,vec,Mat,Vec,norm,unitary,(&),(//),diagl,degree,impossible,median)
 import Util.Ellipses(intersectionEllipses,InfoEllipse(..))
 
 import Util.Geometry
