@@ -45,18 +45,24 @@ impossible msg = error ("impossible input in "++ msg)
 
 -- | stop the program if something is wrong (formerly 'assert')
 preventing :: Bool -> String -> a -> a
-preventing cnd msg x = if cnd then x else error msg
+preventing badCondition msg x = if badCondition then error msg else x
+-- alternative?
+-- preventing bad = Control.Exception.assert (not bad)
+-- compiler flag can turn it on or off
 
 -- | convert value to Nothing if something is wrong
 trapping :: Bool -> String -> a -> Maybe a
-trapping cond msg x =
-  if cond
-  then trace ("WARNING: " ++ msg) Nothing
+trapping badCondition msg x =
+  if badCondition
+  then trace ("Trapping: " ++ msg) $
+       Nothing
   else Just x
 
+-- | just warns and keeps going
 warning :: Bool -> String -> a -> a
-warning cnd msg x | cnd = trace ("WARNING: "++msg) x
-                  | otherwise = x
+warning badCondition msg x
+  | badCondition = trace ("WARNING: " ++ msg) x
+  | otherwise = x
 
 splitEvery :: Int -> [t] -> [[t]]
 splitEvery _ [] = []
