@@ -19,7 +19,11 @@ module Vision.GUI (
     module Vision.GUI.Objects,
     module Vision.GUI.Types,
     module Data.Colour.Names,
-    module Control.Arrow
+    module Control.Arrow,
+    module Control.Applicative,
+    module Data.Function,
+    module Text.Printf,
+    module Data.List
 )where
 
 import Vision.GUI.Util
@@ -29,6 +33,11 @@ import Vision.GUI.Interface
 import Vision.GUI.Parameters
 import Vision.GUI.Objects
 import Vision.GUI.Draw
-import Data.Colour.Names
+import Data.Colour.Names(black,white,gray,red,green,blue,yellow,pink,orange,violet,
+                         darkgray,lightgray,lightgreen,lightblue)
 import Control.Arrow
+import Control.Applicative((<$>))
+import Data.Function(on)
+import Text.Printf
+import Data.List(sort,sortBy,maximumBy,minimumBy)
 
