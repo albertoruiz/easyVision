@@ -178,6 +178,18 @@ int ippiCrossCorrValid_NormLevel_32f_C1Rx(Ipp32f* pSrc, int srcStep, IppiSize* s
     return ippiCrossCorrValid_NormLevel_32f_C1R(pSrc, srcStep, *srcRoiSize, pTpl, tplStep, *tplRoiSize, pDst, dstStep);
 }
 
+int ippiCrossCorrValid_NormLevel_8u32f_C3Rx(Ipp8u* pSrc, int srcStep, IppiSize* srcRoiSize, Ipp8u* pTpl, int tplStep, IppiSize* tplRoiSize, Ipp32f* pDst, int dstStep) {
+    return ippiCrossCorrValid_NormLevel_8u32f_C3R(pSrc, srcStep, *srcRoiSize, pTpl, tplStep, *tplRoiSize, pDst, dstStep);
+}
+
+int ippiSqrDistanceValid_Norm_32f_C1Rx(Ipp32f* pSrc, int srcStep, IppiSize* srcRoiSize, Ipp32f* pTpl, int tplStep, IppiSize* tplRoiSize, Ipp32f* pDst, int dstStep) {
+    return ippiSqrDistanceValid_Norm_32f_C1R(pSrc, srcStep, *srcRoiSize, pTpl, tplStep, *tplRoiSize, pDst, dstStep);
+}
+
+int ippiSqrDistanceValid_Norm_8u32f_C3Rx(Ipp8u* pSrc, int srcStep, IppiSize* srcRoiSize, Ipp8u* pTpl, int tplStep, IppiSize* tplRoiSize, Ipp32f* pDst, int dstStep) {
+    return ippiSqrDistanceValid_Norm_8u32f_C3R(pSrc, srcStep, *srcRoiSize, pTpl, tplStep, *tplRoiSize, pDst, dstStep);
+}
+
 int ippiThreshold_Val_8u_C1Rx(Ipp8u* pSrc, int srcStep, Ipp8u* pDst, int dstStep, IppiSize* roiSize, Ipp8u threshold, Ipp8u value, IppCmpOp ippCmpOp) {
     return ippiThreshold_Val_8u_C1R(pSrc, srcStep, pDst, dstStep, *roiSize, threshold, value, ippCmpOp);
 }

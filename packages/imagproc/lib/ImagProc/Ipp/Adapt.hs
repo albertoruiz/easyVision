@@ -403,6 +403,36 @@ ippiCrossCorrValid_NormLevel_32f_C1R pSrc srcStep srcRoiSize pTpl tplStep tplRoi
     free ptplRoiSize
     return r
 
+foreign import ccall "adapt.h ippiCrossCorrValid_NormLevel_8u32f_C3Rx"
+    ippiCrossCorrValid_NormLevel_8u32f_C3Rx :: Ptr CUChar -> Int -> Ptr IppiSize -> Ptr CUChar -> Int -> Ptr IppiSize -> Ptr Float -> Int -> IO Int
+ippiCrossCorrValid_NormLevel_8u32f_C3R pSrc srcStep srcRoiSize pTpl tplStep tplRoiSize pDst dstStep = do
+    psrcRoiSize <- new srcRoiSize
+    ptplRoiSize <- new tplRoiSize
+    r <- ippiCrossCorrValid_NormLevel_8u32f_C3Rx pSrc srcStep psrcRoiSize pTpl tplStep ptplRoiSize pDst dstStep
+    free psrcRoiSize
+    free ptplRoiSize
+    return r
+
+foreign import ccall "adapt.h ippiSqrDistanceValid_Norm_32f_C1Rx"
+    ippiSqrDistanceValid_Norm_32f_C1Rx :: Ptr Float -> Int -> Ptr IppiSize -> Ptr Float -> Int -> Ptr IppiSize -> Ptr Float -> Int -> IO Int
+ippiSqrDistanceValid_Norm_32f_C1R pSrc srcStep srcRoiSize pTpl tplStep tplRoiSize pDst dstStep = do
+    psrcRoiSize <- new srcRoiSize
+    ptplRoiSize <- new tplRoiSize
+    r <- ippiSqrDistanceValid_Norm_32f_C1Rx pSrc srcStep psrcRoiSize pTpl tplStep ptplRoiSize pDst dstStep
+    free psrcRoiSize
+    free ptplRoiSize
+    return r
+
+foreign import ccall "adapt.h ippiSqrDistanceValid_Norm_8u32f_C3Rx"
+    ippiSqrDistanceValid_Norm_8u32f_C3Rx :: Ptr CUChar -> Int -> Ptr IppiSize -> Ptr CUChar -> Int -> Ptr IppiSize -> Ptr Float -> Int -> IO Int
+ippiSqrDistanceValid_Norm_8u32f_C3R pSrc srcStep srcRoiSize pTpl tplStep tplRoiSize pDst dstStep = do
+    psrcRoiSize <- new srcRoiSize
+    ptplRoiSize <- new tplRoiSize
+    r <- ippiSqrDistanceValid_Norm_8u32f_C3Rx pSrc srcStep psrcRoiSize pTpl tplStep ptplRoiSize pDst dstStep
+    free psrcRoiSize
+    free ptplRoiSize
+    return r
+
 foreign import ccall "adapt.h ippiThreshold_Val_8u_C1Rx"
     ippiThreshold_Val_8u_C1Rx :: Ptr CUChar -> Int -> Ptr CUChar -> Int -> Ptr IppiSize -> CUChar -> CUChar -> CInt -> IO Int
 ippiThreshold_Val_8u_C1R pSrc srcStep pDst dstStep roiSize threshold value ippCmpOp = do

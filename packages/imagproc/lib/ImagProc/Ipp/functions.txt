@@ -104,5 +104,8 @@ ippi.h  ippiRemap_8u_C1R
 ippi.h  ippiRemap_8u_C3R
 ippi.h  ippiRemap_32f_C1R
 ippi.h  ippiCrossCorrValid_NormLevel_32f_C1R
+ippi.h  ippiCrossCorrValid_NormLevel_8u32f_C3R
+ippi.h  ippiSqrDistanceValid_Norm_32f_C1R
+ippi.h  ippiSqrDistanceValid_Norm_8u32f_C3R
 ippcc.h ippiColorTwist32f_8u_C3R
 
