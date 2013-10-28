@@ -43,26 +43,13 @@ debugMat msg dec f x = trace (dimString (msg ++ " " ++ init (dispf dec (f x)))) 
 impossible :: String -> a
 impossible msg = error ("impossible input in "++ msg)
 
--- | stop the program if something is wrong (formerly 'assert')
-preventing :: Bool -> String -> a -> a
-preventing badCondition msg x = if badCondition then error msg else x
--- alternative?
--- preventing bad = Control.Exception.assert (not bad)
--- compiler flag can turn it on or off
+-- | stop the program if something is wrong
+assert :: Bool -> String -> a -> a
+assert cnd msg x = if cnd then x else error msg
 
--- | convert value to Nothing if something is wrong
-trapping :: Bool -> String -> a -> Maybe a
-trapping badCondition msg x =
-  if badCondition
-  then trace ("Trapping: " ++ msg) $
-       Nothing
-  else Just x
-
--- | just warns and keeps going
 warning :: Bool -> String -> a -> a
-warning badCondition msg x
-  | badCondition = trace ("WARNING: " ++ msg) x
-  | otherwise = x
+warning cnd msg x | cnd = trace ("WARNING: "++msg) x
+                  | otherwise = x
 
 splitEvery :: Int -> [t] -> [[t]]
 splitEvery _ [] = []
