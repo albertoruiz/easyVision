@@ -2,6 +2,7 @@
              MagicHash,
              UnboxedTuples,
              BangPatterns,
+             RecordWildCards,
              CPP #-}
 
 -----------------------------------------------------------------------------
@@ -63,6 +64,10 @@ import Foreign.C.Types
 import GHC.Base
 import GHC.ForeignPtr(mallocPlainForeignPtrBytes)
 import System.IO
+import System.IO.Unsafe(unsafePerformIO)
+import Data.Binary
+import Control.Applicative
+import Util.Misc(assert)
 
 ---------------------------------------
 fi :: Int -> CInt
@@ -340,5 +345,67 @@ setValue Img {fptr = fp, ptr = p, jump = j} v r c = do
     poke (advancePtr (castPtr p) (r*j+c)) v
     touchForeignPtr fp
 
--------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+
+instance Binary Size
+  where
+    put (Size h w) = put h >> put w
+    get = Size <$> get <*> get
+
+instance Binary ROI
+  where
+    put (ROI r1 r2 c1 c2) = put r1 >> put r2 >> put c1 >> put c2
+    get = ROI <$> get <*> get <*> get <*> get
+
+
+instance Binary ImageRGB
+  where
+    put x@(C im) = put (size x) >> put (theROI x) >> (put (mass im))
+    get = gget mkRGB
+
+instance Binary ImageGray
+  where
+    put x@(G im) = Util.Misc.assert (mod (step im) 32 == 0) "wrong step for put"
+                 $ put (size x) >> put (theROI x) >> (put (mass im))
+    get = gget mkGray
+
+instance Binary ImageFloat
+  where
+    put x@(F im) = put (size x) >> put (theROI x) >> (put (mass im))
+    get = gget mkFloat
+
+
+gget mk = do
+        sz  <- get
+        roi <- get
+        dat <- get
+        return $ mk sz roi dat
+
+massSize (Img{..}) = r * step
+  where
+    Size r _ = isize
+
+mass im = unsafePerformIO $ do
+    r <- peekArray (massSize im) (castPtr (ptr im) :: Ptr Word8)
+    touchForeignPtr (fptr im)
+    return r
+
+mkFloat :: Size -> ROI -> [Word8] -> ImageFloat
+mkFloat sz roi xs = unsafePerformIO $ do
+    x@(F (Img{..})) <- image sz
+    pokeArray (castPtr ptr :: Ptr Word8) xs
+    return (modifyROI (const roi) x) 
+
+mkGray :: Size -> ROI -> [Word8] -> ImageGray
+mkGray sz roi xs = unsafePerformIO $ do
+    x@(G (Img{..})) <- image sz
+    pokeArray (castPtr ptr :: Ptr Word8) xs
+    return (modifyROI (const roi) x) 
+
+mkRGB :: Size -> ROI -> [Word8] -> ImageRGB
+mkRGB sz roi xs = unsafePerformIO $ do
+    x@(C (Img{..})) <- image sz
+    pokeArray (castPtr ptr :: Ptr Word8) xs
+    return (modifyROI (const roi) x)
 
