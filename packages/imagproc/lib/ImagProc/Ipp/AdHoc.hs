@@ -121,6 +121,7 @@ resize8u3 itp s (C im) = unsafePerformIO $ do
     genResize c_resize8u3 "genResize8u3" r (fullroi r) im (vroi im) (interCode itp)
     return (C r)
 
+{-# DEPRECATED resize32f' "Don't use!" #-}
 -- | Resizes the full image and its roi
 resize32f' :: InterpolationMode -> Size -> ImageFloat -> ImageFloat
 resize32f' itp s (F im) = unsafePerformIO $ do
@@ -135,6 +136,7 @@ resize32f' itp s (F im) = unsafePerformIO $ do
         newroi = ROI (ceiling (fh*f r1)) (floor (fh*f r2)) (ceiling(fw*f c1)) (floor(fw*f c2))
     return (F r {vroi = newroi})
 
+-- FIX auxIpp.c ipp 7.1 to allow InterpNN
 
 ----------------------------------------------------------------------------------------
 
@@ -879,18 +881,14 @@ crossCorrRGB = ccsd3 ioCrossCorrValid_NormLevel_8u32f_C3R
 sqrDistRGB :: ImageRGB -> ImageRGB -> ImageFloat
 sqrDistRGB = ccsd3 ioSqrDistanceValid_Norm_8u32f_C3R
 
-ccsd3 f temp imag = r3 $ unsafePerformIO $ f g const (flip const) imag temp
+ccsd3 f temp imag = unsafePerformIO $ f g const (flip const) imag temp
   where
     g roi roimask = shrink (h1,w1) roi
       where
         ROI r1 r2 c1 c2 = roimask
         h1 = (r2-r1+1) `div` 2
         w1 = (c2-c1+1) `div` 2
-        
-    r3 img = resize32f' InterpLinear (Size r (c `div`3)) img    -- FIX auxIpp.c ipp 7.1 to allow InterpNN
-      where
-        Size r c = size img
-        
+
 --------------------------------------------------------------------------------
 
 twistColors :: [[Float]] -> ImageRGB -> ImageRGB
