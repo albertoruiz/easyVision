@@ -22,6 +22,7 @@ module ImagProc.Ipp.Convert (
     -- * I
     saveRGB',
     saveGray, loadGray, saveRGB, loadRGB,
+    loadRawPPM,
     -- * Conversion to Matrix
     img2mat, mat2img
 ) where
@@ -33,6 +34,7 @@ import Foreign.Marshal
 import System.IO.Unsafe(unsafePerformIO)
 import Control.Monad(when)
 import Control.Arrow((***))
+import Control.Applicative((<$>))
 import System.IO
 import System.Process
 import System.Directory(getDirectoryContents,doesFileExist)
@@ -201,4 +203,38 @@ getSize imagfile = do
     f a = a
     g [w,h] = Size (read h) (read w)
     h = head . tail . dropWhile (not . (`elem` ["PNG","JPEG"])) -- FIXME check error
+
+--------------------------------------------------------------------------------
+
+
+
+loadRawPPM :: FilePath -> IO ImageRGB
+loadRawPPM filename = do
+    handle <- openFile filename ReadMode
+    sh <- header 4 handle
+    -- print sh
+    let ["P6",sw,sr,"255"] = sh
+    let sz@(Size r c) = Size (read sr) (read sw)
+    C im <- image sz
+    
+    if c `mod` 32 /= 0
+      then do
+        let (ps,c) = roiPtrs im
+            f p = hGetBuf handle p (c*3)
+        mapM_ f ps
+      else do
+        hGetBuf handle (ptr im) (r*c*3)
+        return ()
+        
+    hClose handle
+    touchForeignPtr (fptr im)
+    return (C im)
+  where
+    header n h = do
+    ws <- words . takeWhile (/='#') <$> hGetLine h
+    let nw = length ws
+    if nw < n
+      then do more <- header (n-nw) h
+              return (ws++more)
+      else return ws
 
