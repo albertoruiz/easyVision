@@ -25,6 +25,7 @@ import Foreign.ForeignPtr
 import Foreign.Marshal
 import Foreign.Storable
 import System.IO.Unsafe(unsafePerformIO)
+import Foreign(Word8)
 
 -- | Explores an image and returns a list of pixels (as [row,column]) where the image is greater than 0.0.
 getPoints32f :: Int -> ImageFloat -> [Pixel]
@@ -72,7 +73,7 @@ lbpN t im = map ((*sc).fromIntegral) (tail h) where
     sc = (256.0::Double) / fromIntegral ((r2-r1-1)*(c2-c1-1))
 
 foreign import ccall "Simple/simple.h lbp8u"
-     lbp8u :: Int -> Ptr () -> Int -> Int -> Int -> Int -> Int -> Ptr CInt -> IO Int
+     lbp8u :: Int -> Ptr Word8 -> Int -> Int -> Int -> Int -> Int -> Ptr CInt -> IO Int
 
 -----------------------------------------------------------------------------
 
@@ -97,9 +98,9 @@ hsvCode b g w (C im) = unsafePerformIO $ do
     return $ modifyROI (const (vroi im)) (G r)
 
 foreign import ccall "Simple/simple.h hsvcodeTest"
-     hsvcodeTest :: Int -> Int -> Int -> Ptr () -> Int -> Int -> Int -> Int -> Int -> IO Int
+     hsvcodeTest :: Int -> Int -> Int -> Ptr Word8 -> Int -> Int -> Int -> Int -> Int -> IO Int
 foreign import ccall "Simple/simple.h hsvcode"
-     hsvcode :: Int -> Int -> Int -> Ptr () -> Int -> Ptr () -> Int -> Int -> Int -> Int -> Int -> IO Int
+     hsvcode :: Int -> Int -> Int -> Ptr Word8 -> Int -> Ptr Word8 -> Int -> Int -> Int -> Int -> Int -> IO Int
 
 -------------------------------------------------------------------------------
 
@@ -178,7 +179,7 @@ histoDir (F ga) (F gx) (F gy) sigma (Pixel r c) n = unsafePerformIO $ do
 
 
 foreign import ccall "Simple/simple.h histodir"
-     c_histodir :: Ptr () -> Int -> Ptr () -> Int -> Ptr () -> Int
+     c_histodir :: Ptr Word8 -> Int -> Ptr Word8 -> Int -> Ptr Word8 -> Int
                 -> Int -> Int -> Int -> Int
                 -> Double -> Int -> Int
                 -> Int -> Ptr Double -> IO Int
@@ -199,7 +200,7 @@ histogram2D (G a) (G b) = unsafePerformIO $ do
 
 
 foreign import ccall "Simple/simple.h histogram2D"
-     c_histogram2D :: Ptr () -> Int -> Ptr () -> Int -> Ptr () -> Int
+     c_histogram2D :: Ptr Word8 -> Int -> Ptr Word8 -> Int -> Ptr Word8 -> Int
                    -> Int -> Int -> Int -> Int
                    -> IO Int
 
@@ -219,7 +220,7 @@ lookup2D (G a) (G b) (F h) = unsafePerformIO $ do
 
 
 foreign import ccall "Simple/simple.h lookup2D"
-     c_lookup2D :: Ptr () -> Int -> Ptr () -> Int -> Ptr () -> Int -> Ptr () -> Int
+     c_lookup2D :: Ptr Word8 -> Int -> Ptr Word8 -> Int -> Ptr Word8 -> Int -> Ptr Word8 -> Int
                    -> Int -> Int -> Int -> Int
                    -> IO Int
 

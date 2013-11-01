@@ -47,12 +47,12 @@ import ImagProc.Base
 import ImagProc.ROI
 import ImagProc.Ipp.Structs
 
-#if __GLASGOW_HASKELL__ >= 740
+-- #if __GLASGOW_HASKELL__ >= 740
 import Foreign.ForeignPtr.Unsafe
 import Foreign.ForeignPtr(ForeignPtr,touchForeignPtr)
-#else
-import Foreign.ForeignPtr
-#endif
+-- #else
+-- import Foreign.ForeignPtr
+-- #endif
 
 import Foreign.Ptr
 import Foreign.Marshal
@@ -68,6 +68,9 @@ import System.IO.Unsafe(unsafePerformIO)
 import Data.Binary
 import Control.Applicative
 import Util.Misc(assert)
+import qualified Data.ByteString as B
+import qualified Data.ByteString.Internal as B
+import Data.ByteString(ByteString)
 
 ---------------------------------------
 fi :: Int -> CInt
@@ -83,8 +86,8 @@ ti = fromIntegral
 data ImageType = RGB | Gray | I32f | I64f | YUV deriving (Show,Eq)
 
 -- | Image representation:
-data Img = Img { fptr :: {-# UNPACK #-}!(ForeignPtr ())  -- ^ automatic allocated memory
-               , ptr  :: {-# UNPACK #-}!(Ptr ())         -- ^ starting point of the image with the required alignment
+data Img = Img { fptr :: {-# UNPACK #-}!(ForeignPtr Word8)  -- ^ automatic allocated memory
+               , ptr  :: {-# UNPACK #-}!(Ptr Word8)         -- ^ starting point of the image with the required alignment
                , step :: Int                             -- ^ number of bytes of a padded row
                , jump :: {-# UNPACK #-}!Int              -- ^ number of image elements of a padded row
                , itype :: ImageType                      -- ^ type of image
@@ -92,18 +95,19 @@ data Img = Img { fptr :: {-# UNPACK #-}!(ForeignPtr ())  -- ^ automatic allocate
                , layers :: Int                           -- ^ number of layers
                , isize :: Size                           -- ^ rows and columns of the image
                , vroi :: ROI                             -- ^ ROI where data is assumed to be valid
+               , bs :: B.ByteString                      -- ^ convenient image data representation
                }
 
 
 img' t sz ly (Size r c) = do
     let w = c*sz*ly
-    let rest = w `mod` 32
-    let c' = if rest == 0 then w else w + 32 - rest
-    fp <- mallocPlainForeignPtrBytes (r*c'+31)
+        rest = w `mod` 32
+        c' = if rest == 0 then w else w + 32 - rest
+        tl = r*c'+31
+    fp <- mallocPlainForeignPtrBytes tl
     let p' = unsafeForeignPtrToPtr fp
-    let p = alignPtr p' 32
-    --print (p', p) -- debug
-    let res = Img {
+        p = alignPtr p' 32
+        res = Img {
           isize = Size r c
         , layers = ly
         , datasize = sz
@@ -113,6 +117,7 @@ img' t sz ly (Size r c) = do
         , jump = c' `div` sz
         , itype = t
         , vroi = fullroi res
+        , bs = B.PS fp (p `minusPtr` p') tl
         }
     return res
 
@@ -123,7 +128,7 @@ img I32f = img' I32f 4 1
 img I64f = img' I64f 8 1
 img YUV  = img' YUV  1 2 -- img' YUV ? ? -- hmm.. is 4:2:0
 
-roiPtrs :: Img -> ([Ptr ()],Int)
+roiPtrs :: Img -> ([Ptr Word8],Int)
 roiPtrs img@Img {ptr = p, step = s, vroi = roi@(ROI r1 r2 c1 c2) } = (map row [0..r2-r1], c2-c1+1)
   where
     p' = starting img roi
@@ -361,18 +366,18 @@ instance Binary ROI
 
 instance Binary ImageRGB
   where
-    put x@(C im) = put (size x) >> put (theROI x) >> (put (mass im))
+    put x@(C im) = put (size x) >> put (theROI x) >> (put (bs im))
     get = gget mkRGB
 
 instance Binary ImageGray
   where
     put x@(G im) = Util.Misc.assert (mod (step im) 32 == 0) "wrong step for put"
-                 $ put (size x) >> put (theROI x) >> (put (mass im))
+                 $ put (size x) >> put (theROI x) >> (put (bs im))
     get = gget mkGray
 
 instance Binary ImageFloat
   where
-    put x@(F im) = put (size x) >> put (theROI x) >> (put (mass im))
+    put x@(F im) = put (size x) >> put (theROI x) >> (put (bs im))
     get = gget mkFloat
 
 
@@ -382,30 +387,22 @@ gget mk = do
         dat <- get
         return $ mk sz roi dat
 
-massSize (Img{..}) = r * step
-  where
-    Size r _ = isize
 
-mass im = unsafePerformIO $ do
-    r <- peekArray (massSize im) (castPtr (ptr im) :: Ptr Word8)
-    touchForeignPtr (fptr im)
-    return r
+mkFloat :: Size -> ROI -> ByteString -> ImageFloat
+mkFloat sz roi b@(B.PS fp o l) = unsafePerformIO $ do
+    F im <- image sz
+    let x = im { fptr = fp , ptr = unsafeForeignPtrToPtr fp `plusPtr` o, bs = b }
+    return (modifyROI (const roi) (F x)) 
 
-mkFloat :: Size -> ROI -> [Word8] -> ImageFloat
-mkFloat sz roi xs = unsafePerformIO $ do
-    x@(F (Img{..})) <- image sz
-    pokeArray (castPtr ptr :: Ptr Word8) xs
-    return (modifyROI (const roi) x) 
+mkGray :: Size -> ROI -> ByteString -> ImageGray
+mkGray sz roi b@(B.PS fp o l) = unsafePerformIO $ do
+    G im <- image sz
+    let x = im { fptr = fp , ptr = unsafeForeignPtrToPtr fp `plusPtr` o }
+    return (modifyROI (const roi) (G x)) 
 
-mkGray :: Size -> ROI -> [Word8] -> ImageGray
-mkGray sz roi xs = unsafePerformIO $ do
-    x@(G (Img{..})) <- image sz
-    pokeArray (castPtr ptr :: Ptr Word8) xs
-    return (modifyROI (const roi) x) 
-
-mkRGB :: Size -> ROI -> [Word8] -> ImageRGB
-mkRGB sz roi xs = unsafePerformIO $ do
-    x@(C (Img{..})) <- image sz
-    pokeArray (castPtr ptr :: Ptr Word8) xs
-    return (modifyROI (const roi) x)
+mkRGB :: Size -> ROI -> ByteString -> ImageRGB
+mkRGB sz roi b@(B.PS fp o l) = unsafePerformIO $ do
+    C im <- image sz
+    let x = im { fptr = fp , ptr = unsafeForeignPtrToPtr fp `plusPtr` o }    
+    return (modifyROI (const roi) (C x))
 

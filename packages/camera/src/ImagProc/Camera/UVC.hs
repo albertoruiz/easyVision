@@ -28,7 +28,7 @@ foreign import ccall "openUVC"
     c_openUVC :: Ptr CChar -> CInt -> CInt -> CInt -> IO (Ptr ())
 
 foreign import ccall "grabUVC"
-    c_grabUVC :: Ptr () -> Ptr () -> IO ()
+    c_grabUVC :: Ptr () -> Ptr Word8 -> IO ()
 
 uvcCamera :: String -> Size -> Int -> IO (IO ImageYUV)
 uvcCamera d (Size h w) fps = do

@@ -25,49 +25,49 @@ foreign import ccall "auxIpp.h ippGetStatusString" ippGetStatusString :: Int -> 
 foreign import ccall "auxIpp.h ippSetNumThreads" ippSetNumThreads :: Int -> IO Int
 
 foreign import ccall "auxIpp.h auxWarpPerspective_32f_C1R"
-     warpPerspective32f :: Ptr() -> Int -> Int -> Int ->
+     warpPerspective32f :: Ptr Word8 -> Int -> Int -> Int ->
                            Int -> Int -> Int -> Int ->
-                           Ptr() -> Int ->
+                           Ptr Word8 -> Int ->
                            Int -> Int -> Int -> Int ->
                            Ptr Double -> Int ->
                            IO Int
 
 foreign import ccall "auxIpp.h auxWarpPerspective_8u_C1R"
-     warpPerspectiveGray :: Ptr() -> Int -> Int -> Int ->
+     warpPerspectiveGray :: Ptr Word8 -> Int -> Int -> Int ->
                            Int -> Int -> Int -> Int ->
-                           Ptr() -> Int ->
+                           Ptr Word8 -> Int ->
                            Int -> Int -> Int -> Int ->
                            Ptr Double -> Int ->
                            IO Int
 
 foreign import ccall "auxIpp.h auxWarpPerspective_8u_C3R"
-     warpPerspectiveRGB :: Ptr() -> Int -> Int -> Int ->
+     warpPerspectiveRGB :: Ptr Word8 -> Int -> Int -> Int ->
                            Int -> Int -> Int -> Int ->
-                           Ptr() -> Int ->
+                           Ptr Word8 -> Int ->
                            Int -> Int -> Int -> Int ->
                            Ptr Double -> Int ->
                            IO Int
 
 foreign import ccall "auxIpp.h auxResize_32f_C1R"
-     c_resize32f :: Ptr() -> Int -> Int -> Int ->
+     c_resize32f :: Ptr Word8 -> Int -> Int -> Int ->
                            Int -> Int -> Int -> Int ->
-                           Ptr() -> Int ->
+                           Ptr Word8 -> Int ->
                            Int -> Int -> Int -> Int ->
                            Int ->
                            IO Int
 
 foreign import ccall "auxIpp.h auxResize_8u_C1R"
-     c_resize8u :: Ptr() -> Int -> Int -> Int ->
+     c_resize8u :: Ptr Word8 -> Int -> Int -> Int ->
                            Int -> Int -> Int -> Int ->
-                           Ptr() -> Int ->
+                           Ptr Word8 -> Int ->
                            Int -> Int -> Int -> Int ->
                            Int ->
                            IO Int
 
 foreign import ccall "auxIpp.h auxResize_8u_C3R"
-     c_resize8u3 :: Ptr() -> Int -> Int -> Int ->
+     c_resize8u3 :: Ptr Word8 -> Int -> Int -> Int ->
                            Int -> Int -> Int -> Int ->
-                           Ptr() -> Int ->
+                           Ptr Word8 -> Int ->
                            Int -> Int -> Int -> Int ->
                            Int ->
                            IO Int
@@ -88,10 +88,10 @@ foreign import ccall "auxIpp.h auxDCTInv_32f_C1R"
 
 foreign import ccall "auxInpainting_8u_C1R"
     auxInpainting_8u_C1R :: Float -> Int ->
-                            Ptr () -> Int ->
-                            Ptr () -> Int ->
+                            Ptr Word8 -> Int ->
+                            Ptr Word8 -> Int ->
                             Ptr Float -> Int ->
-                            Ptr () -> Int ->
+                            Ptr Word8 -> Int ->
                             Int -> Int -> Int -> Int ->
                             IO Int
 

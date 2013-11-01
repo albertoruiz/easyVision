@@ -30,12 +30,12 @@ import Data.Packed.Development(createVector, app1, vec)
 import Numeric.LinearAlgebra hiding (step)
 import ImagProc.Contrib.Contours.Structs
 import Control.Monad(when)
---import Util.Misc(debug)
+import Foreign(Word8)
 
 --------------------------------------------------------------------------------
 
 foreign import ccall unsafe "get_contours" get_contours
-    :: Ptr () -> CInt                              -- ptr step
+    :: Ptr Word8 -> CInt                           -- ptr step
     -> CInt -> CInt -> CInt -> CInt                -- c1 c2 r1 r2
     -> CInt -> CInt                                -- cols rows
     -> CInt -> CInt                                -- th minlen
