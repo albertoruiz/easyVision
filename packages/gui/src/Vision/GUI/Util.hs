@@ -30,6 +30,7 @@ module Vision.GUI.Util (
     connectWith, connectWith',
     clickPoints,
     interactive2D, interactive3D,
+    Drawer, mkDrawers,
     clickKeep, clickList, clickTag
 ) where
 
@@ -47,6 +48,7 @@ import Util.LazyIO((~>),(>~>),mkGenerator,Generator)
 import Util.Misc(replaceAt,posMin)
 import Util.Options
 import Control.Concurrent(threadDelay,forkIO)
+import Control.Monad(when)
 import Data.Colour.Names
 import Data.Time
 import System.CPUTime
@@ -355,40 +357,57 @@ clickPoints name ldopt st sh = do
 
 interactive2D :: String -> IO (Drawing -> IO (), Drawing -> IO ())
 -- ^ interactive 2D drawing, useful for ghci and more
-interactive2D name = do
-        prepare
-        b <- browser name [] (const id)
-        let callback = do
-            addTimerCallback 200 callback      -- FIXME
-            postRedisplay (Just (evW b))
-        addTimerCallback 1000 callback
-        forkIO mainLoop
-        return (resetDrawing b, addDrawing b)
-  where
-    resetDrawing w d = putW w (0,[d]) >> p
-      where
-        p = postRedisplay (Just (evW w))
-
-    addDrawing w d = do
-        (0,[x]) <- getW w
-        resetDrawing w (Draw [x,d])
-
+interactive2D = interactiveG browser
 
 interactive3D :: String -> IO (Drawing -> IO (), Drawing -> IO ())
 -- ^ interactive 3D drawing, useful for ghci and more
-interactive3D name = do
-        prepare
-        b <- browser3D name [] (const id)
-        forkIO mainLoop
-        return (resetDrawing b, addDrawing b)
-  where
-    resetDrawing w d = putW w (0,[d]) >> p
-      where
-        p = postRedisplay (Just (evW w))
+interactive3D = interactiveG browser3D
 
-    addDrawing w d = do
-        (0,[x]) <- getW w
-        resetDrawing w (Draw [x,d])
+interactiveG f name = do
+        prepare
+        b <- f name [] (const id)
+        okr <- newIORef False
+        let callback = do
+                addTimerCallback 200 callback
+                ok <- readIORef okr
+                when ok $ do
+                    postRedisplay . Just . evW $ b
+                    writeIORef okr False
+        addTimerCallback 1000 callback
+        forkIO mainLoop
+        return (resetDrawing okr b, addDrawing okr b)
+  where
+    resetDrawing okr w d =
+        putW w (0,[d]) >> writeIORef okr True
+
+    addDrawing okr w d = do
+        (_,[x]) <- getW w
+        resetDrawing okr w (Draw [x,d])
+
+
+type Drawer = [Drawing] -> IO ()
+
+-- | interactive 2D drawing, with several windows,
+--   several drawings per window,
+--   drawings "not accumulative"
+mkDrawers :: [String] -> IO [Drawer]
+mkDrawers names = do
+        prepare
+        bs <- mapM (\n -> browser n [] (const id)) names
+        okr <- newIORef False
+        let callback = do
+            addTimerCallback 200 callback
+            ok <- readIORef okr
+            when ok $ mapM_ (postRedisplay. Just . evW) bs
+            writeIORef okr False
+        addTimerCallback 1000 callback
+        forkIO mainLoop
+        return (map (f okr) bs)
+  where
+    f okr w ds = do
+        (k,_) <- getW w
+        putW w (k,ds)
+        writeIORef okr True
 
 --------------------------------------------------------------------------------
 
