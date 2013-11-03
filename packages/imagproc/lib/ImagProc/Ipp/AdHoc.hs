@@ -828,7 +828,7 @@ fastMarching rad (G s) = unsafePerformIO $ do
 
 ioCrossCorrValid_NormLevel_32f_C1R  = {-# SCC "ippiCrossCorrValid_NormLevel_32f_C1R" #-} special_2_32f_C1R  ippiCrossCorrValid_NormLevel_32f_C1R "ippiCrossCorrValid_NormLevel_32f_C1R"
 
-ioSqrDistanceValid_Norm_32f_C1R  = {-# SCC "ippiSqrDistanceValid_Norm_32f_C1R" #-} special_2_32f_C1R ippiSqrDistanceValid_Norm_32f_C1R "ippiSqrDistanceValid_Norm_8u32f_C1R"
+ioSqrDistanceValid_Norm_32f_C1R  = {-# SCC "ippiSqrDistanceValid_Norm_32f_C1R" #-} special_2_32f_C1R ippiSqrDistanceValid_Norm_32f_C1R "ippiSqrDistanceValid_Norm_32f_C1R"
 
 imgAsR2b roifun im1 im2 = do
     r <- imgAs im1
@@ -860,7 +860,7 @@ sqrDist   = ccsd ioSqrDistanceValid_Norm_32f_C1R
 
 --------------------------------------------------------------------------------
 
-ioCrossCorrValid_NormLevel_8u32f_C3R  = {-# SCC "ippiCrossCorrValid_NormLevel_32f_C1R" #-} special_2_8u32f_C3R ippiCrossCorrValid_NormLevel_8u32f_C3R "ippiCrossCorrValid_NormLevel_8u32f_C3R"
+ioCrossCorrValid_NormLevel_8u32f_C3R  = {-# SCC "ippiCrossCorrValid_NormLevel_8u32f_C13R" #-} special_2_8u32f_C3R ippiCrossCorrValid_NormLevel_8u32f_C3R "ippiCrossCorrValid_NormLevel_8u32f_C3R"
 
 ioSqrDistanceValid_Norm_8u32f_C3R  = {-# SCC "ippiSqrDistanceValid_Norm_8u32f_C3R" #-} special_2_8u32f_C3R  ippiSqrDistanceValid_Norm_8u32f_C3R "ippiSqrDistanceValid_Norm_8u32f_C3R"
 
@@ -876,18 +876,33 @@ special_2_8u32f_C3R f msg rf rf1 rf2 (C im1) (C im2) = do
 
 
 crossCorrRGB :: ImageRGB -> ImageRGB -> ImageFloat
-crossCorrRGB = ccsd3 ioCrossCorrValid_NormLevel_8u32f_C3R
+crossCorrRGB = ccsd ioCrossCorrValid_NormLevel_8u32f_C3R
 
 sqrDistRGB :: ImageRGB -> ImageRGB -> ImageFloat
-sqrDistRGB = ccsd3 ioSqrDistanceValid_Norm_8u32f_C3R
+sqrDistRGB = ccsd ioSqrDistanceValid_Norm_8u32f_C3R
 
-ccsd3 f temp imag = unsafePerformIO $ f g const (flip const) imag temp
-  where
-    g roi roimask = shrink (h1,w1) roi
-      where
-        ROI r1 r2 c1 c2 = roimask
-        h1 = (r2-r1+1) `div` 2
-        w1 = (c2-c1+1) `div` 2
+--------------------------------------------------------------------------------
+
+ioCrossCorrValid_NormLevel_8u32f_C1R  = {-# SCC "ippiCrossCorrValid_NormLevel_8u32f_C1R" #-} special_2_8u32f_C1R ippiCrossCorrValid_NormLevel_8u32f_C3R "ippiCrossCorrValid_NormLevel_8u32f_C1R"
+
+ioSqrDistanceValid_Norm_8u32f_C1R  = {-# SCC "ippiSqrDistanceValid_Norm_8u32f_C1R" #-} special_2_8u32f_C1R  ippiSqrDistanceValid_Norm_8u32f_C3R "ippiSqrDistanceValid_Norm_8u32f_C1R"
+
+special_2_8u32f_C1R f msg rf rf1 rf2 (G im1) (G im2) = do
+    let Size r c = isize im1
+        ROI r1 r2 c1 c2 = rf (vroi im1) (vroi im2)
+    F r0 <- image (Size r c)
+    let r = r0 {vroi = ROI r1 r2 c1 c2}
+    let im1' = im1 {vroi = rf1 (vroi im1) (vroi im2)}
+        im2' = im2 {vroi = rf2 (vroi im1) (vroi im2)}
+    cr2b f msg im1' im2' r
+    return (F r)
+
+
+crossCorrGray :: ImageGray -> ImageGray -> ImageFloat
+crossCorrGray = ccsd ioCrossCorrValid_NormLevel_8u32f_C1R
+
+sqrDistGray :: ImageGray -> ImageGray -> ImageFloat
+sqrDistGray = ccsd ioSqrDistanceValid_Norm_8u32f_C1R
 
 --------------------------------------------------------------------------------
 
