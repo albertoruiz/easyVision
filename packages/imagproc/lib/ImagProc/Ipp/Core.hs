@@ -71,6 +71,7 @@ import Util.Misc(assert)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Internal as B
 import Data.ByteString(ByteString)
+import Control.DeepSeq
 
 ---------------------------------------
 fi :: Int -> CInt
@@ -405,4 +406,18 @@ mkRGB sz roi b@(B.PS fp o l) = unsafePerformIO $ do
     C im <- image sz
     let x = im { fptr = fp , ptr = unsafeForeignPtrToPtr fp `plusPtr` o }    
     return (modifyROI (const roi) (C x))
+
+--------------------------------------------------------------------------------
+
+instance NFData ImageRGB
+  where
+    rnf (C im) = rnf (bs im)
+
+instance NFData ImageGray
+  where
+    rnf (G im) = rnf (bs im)
+
+instance NFData ImageFloat
+  where
+    rnf (F im) = rnf (bs im)
 
