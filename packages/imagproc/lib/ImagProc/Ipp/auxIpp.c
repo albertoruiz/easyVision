@@ -63,7 +63,7 @@ int auxResize_32f_C1R(void * pSrc, int sstep, int sh, int sw,
     ippiResizeGetBufferSize_8u(pSpec,dstRoi,nChannel,&bufSize);
     Ipp8u* pBuffer=ippsMalloc_8u(bufSize);
 
-    int r = ippiResizeLinear_32f_C1R(pSrc, sstep,
+    int r = ippiResizeLinear_32f_C1R(pSrc+sstep*sr1+sc1*sizeof(float), sstep,
                                      pDst, dstep,
                                      dstOffset, dstRoi,
                                      ippBorderRepl, 0,
@@ -114,7 +114,7 @@ int auxResize_8u_C1R(void * pSrc, int sstep, int sh, int sw,
     ippiResizeGetBufferSize_8u(pSpec,dstRoi,nChannel,&bufSize);
     Ipp8u* pBuffer=ippsMalloc_8u(bufSize);
 
-    int r = ippiResizeLinear_8u_C1R(pSrc, sstep,
+    int r = ippiResizeLinear_8u_C1R(pSrc+sstep*sr1+sc1, sstep,
                                     pDst, dstep,
                                     dstOffset, dstRoi,
                                     ippBorderRepl, 0,
@@ -165,7 +165,7 @@ int auxResize_8u_C3R(void * pSrc, int sstep, int sh, int sw,
     ippiResizeGetBufferSize_8u(pSpec,dstRoi,nChannel,&bufSize);
     Ipp8u* pBuffer=ippsMalloc_8u(bufSize);
 
-    int r = ippiResizeLinear_8u_C3R(pSrc, sstep,
+    int r = ippiResizeLinear_8u_C3R(pSrc+sstep*sr1+sc1*3, sstep,
                                     pDst, dstep,
                                     dstOffset, dstRoi,
                                     ippBorderRepl, 0,
