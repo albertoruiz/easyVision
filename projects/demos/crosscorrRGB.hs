@@ -13,9 +13,6 @@ main = run $ getBackground
 getBackground = clickKeep "click to set template" f g Nothing
   where
     f _ = warp (255, 255, 255) (Size 320 320) (scaling 2) . rgb
-    h _ c = copy $ modifyROI (const (poly2roi (size x) roi)) x
-      where
-        x = rgb c
     g x = Draw [Draw (rgb $ fst x), color white roi ]
     roi = Closed [Point 0.5 0.5, Point 0.5 (-0.5), Point (-0.5) (-0.5), Point (-0.5) 0.5]
 
