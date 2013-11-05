@@ -121,7 +121,7 @@ resize8u3 itp s (C im) = unsafePerformIO $ do
     genResize c_resize8u3 "genResize8u3" r (fullroi r) im (vroi im) (interCode itp)
     return (C r)
 
-{-# DEPRECATED resize32f' "Don't use!" #-}
+{-# DEPRECATED resize32f' "Use resizeFull instead" #-}
 -- | Resizes the full image and its roi
 resize32f' :: InterpolationMode -> Size -> ImageFloat -> ImageFloat
 resize32f' itp s (F im) = unsafePerformIO $ do
@@ -852,11 +852,11 @@ ccsd f temp imag = unsafePerformIO $ f g const (flip const) imag temp
         h1 = (r2-r1+1) `div` 2
         w1 = (c2-c1+1) `div` 2
 
-crossCorr :: ImageFloat -> ImageFloat -> ImageFloat
-crossCorr = ccsd ioCrossCorrValid_NormLevel_32f_C1R
+crossCorrFloat :: ImageFloat -> ImageFloat -> ImageFloat
+crossCorrFloat = ccsd ioCrossCorrValid_NormLevel_32f_C1R
 
-sqrDist :: ImageFloat -> ImageFloat -> ImageFloat
-sqrDist   = ccsd ioSqrDistanceValid_Norm_32f_C1R
+sqrDistFloat :: ImageFloat -> ImageFloat -> ImageFloat
+sqrDistFloat   = ccsd ioSqrDistanceValid_Norm_32f_C1R
 
 --------------------------------------------------------------------------------
 

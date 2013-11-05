@@ -6,4 +6,5 @@ main = run $ arr rgb
            >>> arr (modifyROI (shrink (150,200)))
            >>> observe "source" id
            >>> observe "resize" (resize (Size 50 50))
+           >>> observe "resizeFull" (resizeFull (Size 120 160))
 

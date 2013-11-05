@@ -1,4 +1,5 @@
 {-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies, FlexibleInstances #-}
+{-# LANGUAGE RecordWildCards #-}
 
 -----------------------------------------------------------------------------
 {- |
@@ -17,8 +18,9 @@ module ImagProc.Generic (
 , blockImage
 , warp, warpOn, warpOn'
 , constImage, cloneClear, clean
-, Channels(..), channels, grayscale
+, Channels(..), channels, grayscale, grayf
 , channelsFromRGB
+, resizeFull
 )
 where
 
@@ -42,10 +44,13 @@ class Image image => GImg pixel image | pixel -> image, image -> pixel where
     uradial :: Float -- ^ f parameter in normalized coordinates (e.g. 2.0)
             -> Float -- ^ k radial distortion (quadratic) parameter
             -> image -> image
+    crossCorr :: image -> image -> ImageFloat
+    sqrDist   :: image -> image -> ImageFloat
 
 ----------------------------------
 
-instance GImg CUChar ImageGray where
+instance GImg CUChar ImageGray
+  where
     zeroP = 0
     set = set8u
     copy = copyROI8u
@@ -56,8 +61,11 @@ instance GImg CUChar ImageGray where
     toYUV = grayToYUV . clean
     remap (LookupMap m) = remap8u m
     uradial = uradialG undistortRadial8u
+    crossCorr = crossCorrGray
+    sqrDist = sqrDistGray
 
-instance GImg Float ImageFloat where
+instance GImg Float ImageFloat
+  where
     zeroP = 0
     set = set32f
     copy = copyROI32f
@@ -68,8 +76,11 @@ instance GImg Float ImageFloat where
     toYUV = grayToYUV . clean . toGray
     remap (LookupMap m) = remap32f m
     uradial = uradialG undistortRadial32f
+    crossCorr = crossCorrFloat
+    sqrDist = sqrDistFloat
 
-instance GImg (CUChar,CUChar,CUChar) ImageRGB where
+instance GImg (CUChar,CUChar,CUChar) ImageRGB
+  where
     zeroP = (0,0,0)
     set (r,g,b) = set8u3 r g b
     copy = copyROI8u3
@@ -80,6 +91,12 @@ instance GImg (CUChar,CUChar,CUChar) ImageRGB where
     toYUV = rgbToYUV . clean
     remap (LookupMap m) = remapRGB m
     uradial = uradialG undistortRadialRGB
+    crossCorr t = r3 . crossCorrRGB t
+    sqrDist t = r3 . sqrDistRGB t
+
+r3 x = resizeFull (Size r (c `div` 3)) x
+  where
+    Size r c = size x
 
 
 -- modifies the undefined region of an image.
@@ -178,7 +195,7 @@ constImage val sz = unsafePerformIO $ do
 
 data Channels = CHIm
     { yuv  :: ImageYUV
-    , yCh :: ImageGray
+    , yCh  :: ImageGray
     , uCh  :: ImageGray
     , vCh  :: ImageGray
     , rgb  :: ImageRGB
@@ -188,50 +205,72 @@ data Channels = CHIm
     , hsv  :: ImageRGB
     , hCh  :: ImageGray
     , sCh  :: ImageGray
+    , fCh  :: ImageFloat
     }
 
 grayscale :: Channels -> ImageGray
 grayscale = yCh
 
+grayf :: Channels -> ImageFloat
+grayf = fCh
+
 channels :: ImageYUV -> Channels
-channels img = CHIm
-    { yuv = img
-    , yCh = fromYUV img
-    , uCh = u
-    , vCh = v
-    , rgb = rgbAux
-    , rCh = getChannel 0 rgbAux
-    , gCh = getChannel 1 rgbAux
-    , bCh = getChannel 2 rgbAux
-    , hsv = hsvAux
-    , hCh = getChannel 0 hsvAux
-    , sCh = getChannel 1 hsvAux
-    }
-    where rgbAux = fromYUV img
-          hsvAux = rgbToHSV rgbAux
-          (u,v) = yuvToUV img
+channels img = CHIm{..}
+  where
+    yuv = img
+    yCh = fromYUV img
+    uCh = u
+    vCh = v
+    rgb = rgbAux
+    rCh = getChannel 0 rgbAux
+    gCh = getChannel 1 rgbAux
+    bCh = getChannel 2 rgbAux
+    hsv = hsvAux
+    hCh = getChannel 0 hsvAux
+    sCh = getChannel 1 hsvAux
+    fCh = float yCh
+    rgbAux = fromYUV img
+    hsvAux = rgbToHSV rgbAux
+    (u,v) = yuvToUV img
 
 channelsFromRGB :: ImageRGB -> Channels
-channelsFromRGB img = CHIm
-    { yuv = yuvAux
-    , yCh = fromYUV yuvAux
-    , uCh = u
-    , vCh = v
-    , rgb = img
-    , rCh = getChannel 0 img
-    , gCh = getChannel 1 img
-    , bCh = getChannel 2 img
-    , hsv = hsvAux
-    , hCh = getChannel 0 hsvAux
-    , sCh = getChannel 1 hsvAux
-    }
-    where yuvAux = toYUV img
-          hsvAux = rgbToHSV img
-          (u,v) = yuvToUV yuvAux
+channelsFromRGB img = CHIm{..}
+  where
+    yuv = yuvAux
+    yCh = fromYUV yuvAux
+    uCh = u
+    vCh = v
+    rgb = img
+    rCh = getChannel 0 img
+    gCh = getChannel 1 img
+    bCh = getChannel 2 img
+    hsv = hsvAux
+    hCh = getChannel 0 hsvAux
+    sCh = getChannel 1 hsvAux
+    fCh = float yCh
+    yuvAux = toYUV img
+    hsvAux = rgbToHSV img
+    (u,v) = yuvToUV yuvAux
 
 ------------------------------------------------
 
 uradialG gen f k im = gen fp fp (fromIntegral w / 2) (fromIntegral h / 2) k 0 im
         where Size h w = size im
               fp = f * fromIntegral w / 2
+
+------------------------------------------------
+
+resizeFull :: GImg pixel a => Size -> a -> a
+resizeFull sz@(Size h' w') im = unsafePerformIO $ do
+    let Size h w = size im
+        fh = f h' / f h
+        fw = f w' / f w
+        ROI r1 r2 c1 c2 = theROI im
+        newroi = ROI (ceiling (fh*f r1)) (floor (fh*f r2)) (ceiling(fw*f c1)) (floor(fw*f c2))
+    r <- image sz
+    let x = resize (roiSize newroi) im
+    copy x (theROI x) r newroi
+    return $ modifyROI (const newroi) r
+  where
+    f n = fromIntegral n
 

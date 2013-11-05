@@ -368,21 +368,21 @@ instance Binary ROI
 instance Binary ImageRGB
   where
     put x@(C im) = put (size x) >> put (theROI x) >> (put (bs im))
-    get = gget mkRGB
+    get = genGet mkRGB
 
 instance Binary ImageGray
   where
     put x@(G im) = Util.Misc.assert (mod (step im) 32 == 0) "wrong step for put"
                  $ put (size x) >> put (theROI x) >> (put (bs im))
-    get = gget mkGray
+    get = genGet mkGray
 
 instance Binary ImageFloat
   where
     put x@(F im) = put (size x) >> put (theROI x) >> (put (bs im))
-    get = gget mkFloat
+    get = genGet mkFloat
 
 
-gget mk = do
+genGet mk = do
         sz  <- get
         roi <- get
         dat <- get
