@@ -15,6 +15,7 @@ import Foreign.Storable(Storable)
 import Text.Printf(printf)
 import Data.Array(listArray,(!))
 import qualified Data.Vector as V
+import System.IO(hPutStrLn, stderr)
 
 type Mat = Matrix Double
 type Vec = Vector Double
@@ -35,6 +36,9 @@ dimString s = "\^[[2m"++s++"\^[[0m"
 
 redString :: String -> String
 redString s = "\^[[0;31m"++s++"\^[[0m"
+
+errMsg :: String -> IO ()
+errMsg = hPutStrLn stderr . dimString
 
 debugMat :: String -> Int -> (t -> Mat) -> t -> t
 debugMat msg dec f x = trace (dimString (msg ++ " " ++ init (dispf dec (f x)))) x

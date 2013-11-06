@@ -40,7 +40,7 @@ import Control.Concurrent
 import Data.IORef
 import ImagProc.Camera.UVC
 import Util.Options
-import Util.Misc(debug)
+import Util.Misc(debug,errMsg)
 import Control.Monad
 import Util.LazyIO((>~>),lazyList,Generator)
 
@@ -272,12 +272,15 @@ readFolderIM :: FilePath -> IO [(Channels,String)]
 -- ^ reads a list of images from a folder. Variable size, using imageMagick
 readFolderIM path = do
     fs <- sort . filter isImage <$> getDirectoryContents path
-    putStrLn $ show (length fs) ++ " images in " ++ path
-    let f p = fmap (\x-> (channelsFromRGB x,p))
-            . unsafeInterleaveIO . loadRGB
+    errMsg $ show (length fs) ++ " images in " ++ path
+    info <- when <$> getFlag "--progress"
+    let tot = length fs
+        progress k = show k ++"/"++show tot
+        f (k,p) = fmap (\x-> (channelsFromRGB x,p))
+            . unsafeInterleaveIO . (\x -> info (putStrLn (progress k)) >> loadRGB x)
             . debug "loading" (const p)
             $ path++"/"++p
-    mapM f fs
+    mapM f (zip [1::Int ..] fs)
 
 
 readImages :: [FilePath] -> IO [Channels]
@@ -298,7 +301,7 @@ readFolderMP path mbsz = do
     let nframes = length (filter isImage fs)
     cam <- mplayer ("mf://"++path++"/ -benchmark -loop 1") sz
     imgs <- sequence (replicate nframes cam)
-    putStrLn $ show (length imgs) ++ " images in " ++ path
+    errMsg $ show (length imgs) ++ " images in " ++ path
     return $ zip (map channels imgs) (map show [(1::Int)..])
 
 
