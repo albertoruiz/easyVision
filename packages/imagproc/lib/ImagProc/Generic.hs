@@ -21,6 +21,7 @@ module ImagProc.Generic (
 , Channels(..), channels, grayscale, grayf
 , channelsFromRGB
 , resizeFull
+, layerImages
 )
 where
 
@@ -274,3 +275,18 @@ resizeFull sz@(Size h' w') im = unsafePerformIO $ do
   where
     f n = fromIntegral n
 
+--------------------------------------------------------------------------------
+
+layerImages :: GImg pixel a => Size -> [(Pixel, a)] -> a
+layerImages sz ptsIms = unsafePerformIO $ do
+    res <- image sz
+    set zeroP (theROI res) res
+    mapM_ (f res) ptsIms
+    return res
+  where
+    f res (Pixel r c, im) = copy im (theROI im) res roi
+      where
+        Size h w = roiSize (theROI im)
+        roi = ROI r (r+h-1) c (c+w-1)
+
+--------------------------------------------------------------------------------
