@@ -43,6 +43,7 @@ import Util.Options
 import Util.Misc(debug,errMsg)
 import Control.Monad
 import Util.LazyIO((>~>),lazyList,Generator)
+import Text.Printf
 
 -----------------------------------------------------------------------------------
 
@@ -263,7 +264,7 @@ saveFrame f cam = do
 ----------------------------------------------------------------------
  
 isImage :: FilePath -> Bool
-isImage name = any g [".png",".jpg",".JPG"]
+isImage name = any g [".png",".PNG",".jpg",".JPG",".bmp",".BMP",".ppm",".PPM"]
   where
     g e = e `isSuffixOf` name
 
@@ -273,11 +274,14 @@ readFolderIM :: FilePath -> IO [(Channels,String)]
 readFolderIM path = do
     fs <- sort . filter isImage <$> getDirectoryContents path
     errMsg $ show (length fs) ++ " images in " ++ path
-    info <- when <$> getFlag "--progress"
+    info        <- getFlag "--read-folder-progress"
+    infopercent <- getFlag "--read-folder-percent"
     let tot = length fs
-        progress k = show k ++"/"++show tot
+        progress k | info = putStrLn $ show k ++"/"++show tot
+                   | infopercent = putStrLn $ printf "%2.0f" (100*fromIntegral k / fromIntegral tot::Double)
+                   | otherwise = return ()
         f (k,p) = fmap (\x-> (channelsFromRGB x,p))
-            . unsafeInterleaveIO . (\x -> info (putStrLn (progress k)) >> loadRGB x)
+            . unsafeInterleaveIO . (\x -> progress k >> loadRGB x)
             . debug "loading" (const p)
             $ path++"/"++p
     mapM f (zip [1::Int ..] fs)

@@ -38,11 +38,12 @@ import Control.Applicative((<$>))
 import System.IO
 import System.Process
 import System.Directory(getDirectoryContents,doesFileExist)
-import Data.List(isPrefixOf)
+import Data.List(isPrefixOf,isSuffixOf)
 import Data.Packed.Development(app1,mat,cmat,createMatrix,MatrixOrder(..))
 import Numeric.LinearAlgebra(Matrix,rows,cols)
 import Util.Options(getOption)
 import Text.Printf
+import Data.Char
 
 
 -- | Writes to a file (with automatic name if Nothing) a RGB image in png format.
@@ -165,6 +166,9 @@ loadGray filename = do
 
 -- | Load an image using imagemagick's convert.
 loadRGB :: FilePath -> IO ImageRGB
+
+loadRGB filename | ".ppm" `isSuffixOf` (map toLower filename) = loadRawPPM filename
+
 loadRGB filename = do
     Size h w <- getSize filename
     let fname = fixSpaces filename
@@ -202,7 +206,7 @@ getSize imagfile = do
     f 'x' = ' '
     f a = a
     g [w,h] = Size (read h) (read w)
-    h = head . tail . dropWhile (not . (`elem` ["PNG","JPEG"])) -- FIXME check error
+    h = head . tail . dropWhile (not . (`elem` ["PNG","JPEG","BMP"])) -- FIXME check error
 
 --------------------------------------------------------------------------------
 
