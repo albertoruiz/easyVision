@@ -62,7 +62,7 @@ getFlag :: String -- ^ option name, including the dashes (e.g. \"--opt\").
 getFlag name = do
     args <- getArgs
     when ("--options" `elem` args) (putStrLn name)
-    return (any (isPrefixOf name) args)
+    return $ name `elem` args || any ((name ++ "=") `isPrefixOf`) args
 
 -- | Special version of 'getOption' for strings, without the need of the quotes required by @read@.
 optionString :: String -- ^ option name
