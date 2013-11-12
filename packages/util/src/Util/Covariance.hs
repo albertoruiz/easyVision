@@ -32,7 +32,7 @@ module Util.Covariance (
 
 import Numeric.LinearAlgebra hiding (eigenvalues)
 import Numeric.LinearAlgebra.Util (diagl,norm)
-import Util.Misc(Vec,Mat,sqr, unliftRow, mean)
+import Util.Misc(Vec,Mat,unliftRow, mean)
 
 meanRow :: Mat -> Vec
 meanRow m = ones <> m
@@ -112,7 +112,7 @@ pca (ReconstructionQuality prec) st = pca (NewDimension n) st where
                 then error "the reconstruction quality must be 0<prec<1"
                 else prec
 
-pca (SigmaPercent p) st = pca (ReconstructionQuality $ 1-sqr(1-p/100)) st
+pca (SigmaPercent p) st = pca (ReconstructionQuality $ 1-(1-p/100)**2) st
 
 --------------------------------------------------------------
 

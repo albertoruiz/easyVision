@@ -13,8 +13,8 @@ module Vision.Bootstrap(
 
 import Util.Rotation
 import Vision.Epipolar
-import Util.Misc(vec,Mat,Vec,debug,degree,impossible,arrayOf,
-                 unionSort,round',kruskal,path)
+import Util.Misc(vec,Mat,Vec,debug,degree,impossible,arrayOf,unionSort)
+import Util.Graph(kruskal,path)
 import Numeric.LinearAlgebra hiding (i)
 import Numeric.LinearAlgebra.Util(unitary,(¦))
 import Numeric.LinearAlgebra.Tensor hiding (scalar)
@@ -197,7 +197,7 @@ lieAverage :: Vec -> Double -> [Mat] -> [((Int,Int),Mat)] -> [Mat]
 lieAverage w angMax r0 sel = debug "rotation system error gain: " (const err) rs where
     r = arrayOf r0
     f ((i,j),rel) = ((i,j), coordsRot $ trans (r j) <> rel <> r i)
-    d = debug "rot residuals: " (map (round'.h.snd))
+    d = debug "rot residuals: " (map (round.h.snd))
     h = (/degree). pnorm PNorm2 . vec
     g = filter ((<angMax).h.snd) . debug "removed: " (map fst . filter ((>=angMax).h.snd))
     resi = d . g $ map f sel

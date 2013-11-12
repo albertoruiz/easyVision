@@ -26,7 +26,7 @@ module Util.Kalman (
 
 import Numeric.LinearAlgebra
 import Numeric.GSL.Differentiation
-import Util.Misc(Vec,Mat,vec,mat,sqr)
+import Util.Misc(Vec,Mat,vec,mat)
 
 --import Debug.Trace
 --import Text.Printf
@@ -131,9 +131,9 @@ unscentedSamples UKFParam {..} (med,cov) = (med : concat [pos,neg], (wm,wc)) whe
     f op = map (op med) ds
     ds = toRows $ mr ( (fromIntegral n + lambda) `scale` cov :: Matrix Double)
     wm = lambda/(nr+lambda) : ws
-    wc = (lambda/(nr+lambda) + 1- sqr ukfAlpha + ukfBeta) : ws
+    wc = (lambda/(nr+lambda) + 1- ukfAlpha**2 + ukfBeta) : ws
     ws = replicate (2*n) (1/2/(nr+lambda))
-    lambda = sqr ukfAlpha * (nr + ukfKappa n) - nr
+    lambda = ukfAlpha**2 * (nr + ukfKappa n) - nr
     n  = dim med
     nr = fromIntegral n
     --mr m = trans $ v <> diag (sqrt l) where (l,v) = eigSH m

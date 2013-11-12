@@ -23,7 +23,7 @@ module Classifier.Kernel (
 import Numeric.LinearAlgebra
 import Numeric.LinearAlgebra.Util(norm)
 import Classifier.Base
-import Util.Misc(vec,Vec,Mat,sqr)
+import Util.Misc(vec,Vec,Mat)
 
 -- | Generalized inner product, corresponding to the ordinary dot product in an implicit feature space.
 type Kernel = (Vec -> Vec -> Double)
@@ -50,4 +50,5 @@ polyK n x y = (x `dot` y + 1)^n
 
 -- | gaussian 'Kernel' of with width sigma
 gaussK :: Double -> Kernel
-gaussK s x y = exp (-sqr (norm (x-y) / s))
+gaussK s x y = exp (- (norm (x-y) / s)**2)
+

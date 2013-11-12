@@ -20,7 +20,7 @@ module Util.ICA (
 import Numeric.LinearAlgebra hiding (eigenvalues)
 import Data.List(sortBy)
 import Data.Function(on)
-import Util.Misc(Vec,Mat,sqr)
+import Util.Misc(Vec,Mat)
 import Util.Optimize(optimize)
 
 meanRow :: Mat -> Vec
@@ -45,7 +45,7 @@ icaTrans nmax met d = (fromRows . sortBy (compare `on` q) . toRows $ w, errs)
     (w,errs) = optimize 0 0.001 nmax update cost (ident (cols d))
     q wi = - dif kurt2 (d <> wi)
     negentropy' fun  = sum . map (dif fun) . toColumns
-    dif (f,k) x = sqr(sumElements (f x) / fromIntegral (dim x) - k)
+    dif (f,k) x = (sumElements (f x) / fromIntegral (dim x) - k)**2
     kurt2 = ((** 4),3)
 
 

@@ -1,5 +1,5 @@
 Name:               prcv-util
-Version:            0.2.1
+Version:            0.3
 License:            GPL
 License-file:       LICENSE
 Author:             Alberto Ruiz
@@ -11,7 +11,7 @@ Description:
  Utilities for pattern recognition and computer vision.
 
 Category:           Math
-tested-with:        GHC ==7.4.1
+tested-with:        GHC ==7.6.3
 
 cabal-version:      >=1.2
 build-type:         Simple
@@ -23,7 +23,7 @@ library
                         process, array, random, containers, directory,
                         hmatrix-glpk
 
-    hs-source-dirs:     lib
+    hs-source-dirs:     src
 
     Exposed-modules:    Util.Misc
                         Util.Options
@@ -44,6 +44,8 @@ library
                         Util.Stat
                         Util.Gaussian
                         Util.L1
+                        Util.Audio
+                        Util.Graph
 
     other-modules:
 

@@ -18,7 +18,7 @@ import Data.Array
 import Data.List(foldl',foldl1',group,sort)
 import Numeric.LinearAlgebra hiding (i)
 import Numeric.LinearAlgebra.Util(unitary)
-import Util.Misc(Vec,Mat,arrayOf,vec,sqr,intersectSorted)
+import Util.Misc(Vec,Mat,arrayOf,vec,intersectSorted)
 import qualified Data.Map as M
 import Vision.Stereo(triangulate1)
 import Util.Homogeneous(inHomog)
@@ -105,7 +105,7 @@ rms obs ks cs ps = sqrt (e2/2) where
     n = fromIntegral (length obs)
     c = arrayOf (zipWith (<>) ks cs)
     p = arrayOf ps
-    g ac ((i,j), Point x y) = ac + sqr(x-a/w) + sqr(y-b/w)
+    g ac ((i,j), Point x y) = ac + (x-a/w)**2 + (y-b/w)**2
         where [a,b,w] = toList $ c j <> p i
     e2 = foldl' g 0 obs / n
 

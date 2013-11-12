@@ -24,7 +24,7 @@ module Classifier.Regression (
 import Numeric.LinearAlgebra
 import Numeric.LinearAlgebra.Util(norm)
 import Util.Stat
-import Util.Misc(Mat,Vec,mean,sqr)
+import Util.Misc(Mat,Vec,mean)
 
 -- working with variables with zero mean and unit deviation
 
@@ -104,4 +104,4 @@ pcr n xc yc = (<>q) . (<>w) where
 msError :: Regressor -> DataPairs -> Double
 msError f prob = sqrt (k * mse)
     where k = recip $ fromIntegral $ dim (snd (head prob))
-          mse = mean [ sqr $ norm (y - f x ) | (x,y) <- prob ]
+          mse = mean [ norm (y - f x )**2 | (x,y) <- prob ]

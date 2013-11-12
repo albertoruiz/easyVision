@@ -31,7 +31,7 @@ import Numeric.LinearAlgebra
 import qualified Data.List as L
 import qualified Data.Map as Map
 import Data.Array
-import Util.Misc(vec,Vec,Mat,Seed,round')
+import Util.Misc(vec,Vec,Mat,Seed)
 import Util.Probability(Prob,mode,evidence,weighted)
 import Text.Printf(printf)
 
@@ -189,4 +189,7 @@ shQuality q = do
     _ <- printf "%d/%d/%d\n" (round' ac) (round' rj) (round' tt)
     _ <- printf "Rej: %.2f %%  Err: %.2f %%\n" (rejectionRate q) (errorRate q)
     putStrLn $ format " " (show.round') m
+
+round' :: RealFrac a => a -> Int
+round' x = round x :: Int
 

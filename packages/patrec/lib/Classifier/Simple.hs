@@ -36,7 +36,7 @@ import qualified Data.Map as M
 import Util.Stat
 import Util.Gaussian(mixturePDF,findMixture,gaussianLogLik, Gaussian(..))
 import Util.Estimation(robustLocation)
-import Util.Misc(sqr,Vec)
+import Util.Misc(Vec)
 import Data.Maybe(fromMaybe)
 import qualified Data.List as L
 import Control.Arrow((&&&),(***))
@@ -144,7 +144,7 @@ naiveGaussian vs = LogLik f where
     m2 = meanVector (stat (x*x))
     s = sqrt (m2 - m*m)
     k = sumElements (log s)
-    f v = - k - 0.5*sqr(norm ((v-m)/s))
+    f v = - k - 0.5*(norm ((v-m)/s))**2
 
 
 -- | a bayesian classifier based on the estimated probabilities
@@ -200,4 +200,6 @@ dicodist :: Distance Vec -> Dicotomizer
 dicodist d (g1,g2) = f where
     [d1,d2] = map (uD.d) [g1,g2]
     f x = d2 x - d1 x
+
+
 

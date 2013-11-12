@@ -15,7 +15,7 @@ import Vision.Types(Motion)
 import Util.Sparse
 import Data.Function(on)
 import Data.Maybe(fromJust)
-import Util.Misc(debug,round',sqr,Mat,Vec)
+import Util.Misc(debug,Mat,Vec)
 
 
 -- | refine cameras using global epipolar adjustment (all views and default parameters)
@@ -40,7 +40,7 @@ geaG delta maxIt lambda used free s initcams = (newSol sol, info) where
     (sol, errs) = optimize 0 delta maxIt update fcost vsol
     update = newtonStep lambda mods
     (mods,vsol,newSol,fcost) = prepareEpipolarSelect used free s initcams
-    info = "epipolar errors: " ++ show (map round' errs)
+    info = "epipolar errors: " ++ show (map round errs)
 
 -- | one optimization step (constant lambda)
 newtonStep :: Double -> (Vec -> (SMat, SMat)) -> Vec -> Vec
@@ -88,7 +88,7 @@ prepareEpipolarSelect used free obs initcams = (getBlocks, vsol, newSol, fcost) 
                   c = ((k,fromSel j), Dense (d <>f2))
                   d = m_hat epi
 
-    fcost sol = 1E4 * sqrt (sqr (norm v) / fromIntegral (dim v))
+    fcost sol = 1E4 * sqrt ((norm v)**2 / fromIntegral (dim v))
         where v = flatten $ toDense $ fst $ getBlocks sol
 
 
