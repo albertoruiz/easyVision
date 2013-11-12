@@ -28,6 +28,7 @@ where
 import ImagProc.Ipp
 import System.IO.Unsafe(unsafePerformIO)
 import Numeric.LinearAlgebra
+import Util.Misc(debug)
 
 class Image image => GImg pixel image | pixel -> image, image -> pixel where
     zeroP :: pixel
@@ -153,7 +154,7 @@ columnImage l = unsafePerformIO $ do
 adapt dst h src = toLists $ inv (pixelToPointTrans (size dst)) <> h <> pixelToPointTrans (size src)
 
 -- | Apply a homography (defined on normalized points, see 'pixelsToPoints') to an image.
-warp :: (GImg pixel img) 
+warp :: (GImg pixel img)
      =>  pixel            -- ^ default value for regions outside the transformed roi
      -> Size              -- ^ desired size of the result
      -> Matrix Double     -- ^ homography
@@ -262,18 +263,24 @@ uradialG gen f k im = gen fp fp (fromIntegral w / 2) (fromIntegral h / 2) k 0 im
 ------------------------------------------------
 
 resizeFull :: GImg pixel a => Size -> a -> a
-resizeFull sz@(Size h' w') im = unsafePerformIO $ do
+resizeFull sz'@(Size h' w') im = unsafePerformIO $ do
     let Size h w = size im
-        fh = f h' / f h
-        fw = f w' / f w
-        ROI r1 r2 c1 c2 = theROI im
-        newroi = ROI (ceiling (fh*f r1)) (floor (fh*f r2)) (ceiling(fw*f c1)) (floor(fw*f c2))
-    r <- image sz
-    let x = resize (roiSize newroi) im
+        roi@(ROI r1 _ c1 _) = theROI im
+        Size rh rw = roiSize roi
+        fh = fi h' / fi h
+        fw = fi w' / fi w
+        rh' = round (fi rh*fh)
+        rw' = round (fi rw*fw)
+        r1' = round (fi r1*fh)
+        c1' = round (fi c1*fw)
+    r <- image sz'
+    let x = resize (Size rh' rw') im
+        newroi = shift (r1',c1') (theROI x)
     copy x (theROI x) r newroi
-    return $ modifyROI (const newroi) r
+    let res = setROI newroi r
+    return res
   where
-    f n = fromIntegral n
+    fi n = fromIntegral n
 
 --------------------------------------------------------------------------------
 
@@ -289,4 +296,4 @@ layerImages sz ptsIms = unsafePerformIO $ do
         Size h w = roiSize (theROI im)
         roi = ROI r (r+h-1) c (c+w-1)
 
---------------------------------------------------------------------------------
+

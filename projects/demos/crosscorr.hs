@@ -5,7 +5,7 @@ import Vision(scaling)
 import Contours(poly2roi)
 import Util.Misc(debug)
 
-sel = grayf
+sel = rgb
 fun = crossCorr
 
 main = run $ getBackground

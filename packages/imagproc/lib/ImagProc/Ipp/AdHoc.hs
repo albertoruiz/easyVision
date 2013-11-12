@@ -26,6 +26,7 @@ import Foreign.ForeignPtr
 import Foreign.Marshal
 import Foreign.Storable
 import Data.List(foldl1')
+import Util.Misc(debug)
 
 -- | Writes into a existing image a desired value in a specified roi.
 set32f :: Float      -- ^ desired value
@@ -836,21 +837,23 @@ imgAsR2b roifun im1 im2 = do
 
 cr2b f msg im1 im2 r = f // dst im1 (vroi im1) // dst im2 (vroi im2)// src r (vroi r) // checkIPP msg [im1,im2]
 
-special_2_32f_C1R f msg rf rf1 rf2 (F im1) (F im2) = do
+special_2_32f_C1R f msg rf (F im1) (F im2) = do
     r <- imgAsR2b rf im1 im2
-    let im1' = im1 {vroi = rf1 (vroi im1) (vroi im2)}
-        im2' = im2 {vroi = rf2 (vroi im1) (vroi im2)}
-    cr2b f msg im1' im2' r
+    cr2b f msg im1 im2 r
     return (F r)
 
 
-ccsd f temp imag = unsafePerformIO $ f g const (flip const) imag temp
+ccsd f temp imag = unsafePerformIO $ f g imag temp
   where
-    g roi roimask = shrink (h1,w1) roi
+    g roi roimask = ROI r1' r2' c1' c2'
       where
-        ROI r1 r2 c1 c2 = roimask
-        h1 = (r2-r1+1) `div` 2
-        w1 = (c2-c1+1) `div` 2
+        Size h w = roiSize roimask
+        ROI r1 r2 c1 c2 = roi
+        r1' = r1 + (h-1) `div` 2
+        r2' = r1'+r2-r1-h+1
+        c1' = c1 + (w-1) `div` 2
+        c2' = c1'+c2-c1-w+1
+        
 
 crossCorrFloat :: ImageFloat -> ImageFloat -> ImageFloat
 crossCorrFloat = ccsd ioCrossCorrValid_NormLevel_32f_C1R
@@ -864,14 +867,12 @@ ioCrossCorrValid_NormLevel_8u32f_C3R  = {-# SCC "ippiCrossCorrValid_NormLevel_8u
 
 ioSqrDistanceValid_Norm_8u32f_C3R  = {-# SCC "ippiSqrDistanceValid_Norm_8u32f_C3R" #-} special_2_8u32f_C3R  ippiSqrDistanceValid_Norm_8u32f_C3R "ippiSqrDistanceValid_Norm_8u32f_C3R"
 
-special_2_8u32f_C3R f msg rf rf1 rf2 (C im1) (C im2) = do
+special_2_8u32f_C3R f msg rf (C im1) (C im2) = do
     let Size r c = isize im1
         ROI r1 r2 c1 c2 = rf (vroi im1) (vroi im2)
     F r0 <- image (Size r (3*c))
-    let r = r0 {vroi = ROI r1 r2 (c1*3) (c2*3)}
-    let im1' = im1 {vroi = rf1 (vroi im1) (vroi im2)}
-        im2' = im2 {vroi = rf2 (vroi im1) (vroi im2)}
-    cr2b f msg im1' im2' r
+    let r = r0 {vroi = ROI r1 r2 (c1*3) (c2*3+2)}
+    cr2b f msg im1 im2 r
     return (F r)
 
 
@@ -887,14 +888,12 @@ ioCrossCorrValid_NormLevel_8u32f_C1R  = {-# SCC "ippiCrossCorrValid_NormLevel_8u
 
 ioSqrDistanceValid_Norm_8u32f_C1R  = {-# SCC "ippiSqrDistanceValid_Norm_8u32f_C1R" #-} special_2_8u32f_C1R  ippiSqrDistanceValid_Norm_8u32f_C3R "ippiSqrDistanceValid_Norm_8u32f_C1R"
 
-special_2_8u32f_C1R f msg rf rf1 rf2 (G im1) (G im2) = do
+special_2_8u32f_C1R f msg rf (G im1) (G im2) = do
     let Size r c = isize im1
         ROI r1 r2 c1 c2 = rf (vroi im1) (vroi im2)
     F r0 <- image (Size r c)
     let r = r0 {vroi = ROI r1 r2 c1 c2}
-    let im1' = im1 {vroi = rf1 (vroi im1) (vroi im2)}
-        im2' = im2 {vroi = rf2 (vroi im1) (vroi im2)}
-    cr2b f msg im1' im2' r
+    cr2b f msg im1 im2 r
     return (F r)
 
 

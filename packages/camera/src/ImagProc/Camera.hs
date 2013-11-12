@@ -275,10 +275,8 @@ readFolderIM path = do
     fs <- sort . filter isImage <$> getDirectoryContents path
     errMsg $ show (length fs) ++ " images in " ++ path
     info        <- getFlag "--read-folder-progress"
-    infopercent <- getFlag "--read-folder-percent"
     let tot = length fs
         progress k | info = putStrLn $ show k ++"/"++show tot
-                   | infopercent = putStrLn $ printf "%2.0f" (100*fromIntegral k / fromIntegral tot::Double)
                    | otherwise = return ()
         f (k,p) = fmap (\x-> (channelsFromRGB x,p))
             . unsafeInterleaveIO . (\x -> progress k >> loadRGB x)
