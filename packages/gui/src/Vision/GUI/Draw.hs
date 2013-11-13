@@ -33,7 +33,7 @@ module Vision.GUI.Draw
 import Graphics.UI.GLUT hiding (RGB, Matrix, Size, Point,color)
 import qualified Graphics.UI.GLUT as GL
 import ImagProc.Ipp.Core
-import ImagProc(resize,yuvToRGB,toGray)
+import ImagProc(resize,yuvToRGB,toGray,Channels(..),histogramN,blockImage)
 import Data.IORef
 import Foreign (touchForeignPtr,castPtr)
 import Numeric.LinearAlgebra hiding (step)
@@ -396,3 +396,25 @@ drawCamera :: Double -> Matrix Double -> Maybe ImageFloat -> Drawing
 -- ^ provisional
 drawCamera sz cam mbt = Raw (drawCamera' sz cam mbt)
 
+--------------------------------------------------------------------------------
+
+instance Renderable Channels
+  where
+    renderIn q CHIm{..} = do
+        renderIn q things
+        render (color orange $ text (Point (0.5) (0.5)) "grayscale")
+        render (color red    $ text (Point (-0.5) (0.5)) "red channel")
+        render (color green  $ text (Point (0.5) (-0.5)) "green channel")
+        render (color blue   $ text (Point (-0.5) (-0.5)) "blue channel")
+        render (color orange $ histn yCh)
+        render (color red    $ histn rCh)
+        render (color green  $ histn gCh)
+        render (color blue   $ histn bCh)
+      where
+        things = (blockImage . map (map f)) [[yCh, rCh],[gCh,bCh]]
+        f = resize (Size (h `div`2) (w `div` 2))
+        Size h w = size (yCh)
+        histn c = hist / scalar (maxElement hist) - 0.6
+          where
+            hist = fromList $ histogramN [0..256] c
+        
