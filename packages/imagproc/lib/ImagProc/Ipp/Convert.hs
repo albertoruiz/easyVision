@@ -3,6 +3,9 @@
              UnboxedTuples,
              BangPatterns #-}
 
+{-# LANGUAGE RecordWildCards #-}
+
+
 -----------------------------------------------------------------------------
 {- |
 Module      :  ImagProc.Ipp.Convert
@@ -23,6 +26,7 @@ module ImagProc.Ipp.Convert (
     saveRGB',
     saveGray, loadGray, saveRGB, loadRGB,
     loadRawPPM,
+    savePPM,
     -- * Conversion to Matrix
     img2mat, mat2img
 ) where
@@ -34,17 +38,19 @@ import Foreign.Marshal
 import System.IO.Unsafe(unsafePerformIO)
 import Control.Monad(when)
 import Control.Arrow((***))
-import Control.Applicative((<$>))
+import Control.Applicative
 import System.IO
 import System.Process
 import System.Directory(getDirectoryContents,doesFileExist)
-import Data.List(isPrefixOf,isSuffixOf)
+import Data.List(isPrefixOf,isSuffixOf,intercalate)
 import Data.Packed.Development(app1,mat,cmat,createMatrix,MatrixOrder(..))
 import Numeric.LinearAlgebra(Matrix,rows,cols)
 import Util.Options(getOption)
 import Text.Printf
 import Data.Char
-
+import qualified Data.ByteString as BS
+import qualified Data.ByteString.Char8 as BSC
+import Util.Misc(formattedTime)
 
 -- | Writes to a file (with automatic name if Nothing) a RGB image in png format.
 -- (uses imagemagick' convert.)
@@ -210,8 +216,6 @@ getSize imagfile = do
 
 --------------------------------------------------------------------------------
 
-
-
 loadRawPPM :: FilePath -> IO ImageRGB
 loadRawPPM filename = do
     handle <- openFile filename ReadMode
@@ -241,4 +245,27 @@ loadRawPPM filename = do
       then do more <- header (n-nw) h
               return (ws++more)
       else return ws
+
+
+--------------------------------------------------------------------------------
+
+saveRawPPM :: FilePath -> ImageRGB -> IO ()
+saveRawPPM filename (C Img{..}) = do
+    BS.writeFile filename (BS.append header pixels)
+  where
+    Size h w = isize
+    header = BSC.pack . unlines $
+      [ "P6"
+      , "# created by hVision"
+      , intercalate " " . map show $ [w, h]
+      , "255"
+      ]
+    pixels | w `mod` 32 == 0 = bs
+
+savePPM :: Maybe FilePath -> ImageRGB -> IO ()
+savePPM (Just filename) x = saveRawPPM filename x
+
+savePPM Nothing x = do
+    timename <- formattedTime
+    savePPM (Just (timename++".ppm")) x
 

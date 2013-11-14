@@ -31,7 +31,7 @@ import Vision.GUI.Types
 import Vision.GUI.Draw
 import Vision.GUI.Trackball
 import ImagProc.Base
-import ImagProc.Ipp(Size(..),ippSetNumThreads,ROI(..),saveRGB')
+import ImagProc.Ipp(Size(..),ippSetNumThreads,ROI(..),savePPM)
 import Graphics.UI.GLUT hiding (RGB, Matrix, Size, None, Point,color)
 import qualified Graphics.UI.GLUT as GL
 import Data.IORef
@@ -339,7 +339,7 @@ kbdQuit :: KeyboardMouseCallback
 
 --kbdQuit (Char '\27') Down Modifiers {alt=Down} _ = leaveMainLoop >> system "killall mplayer" >> return ()
 kbdQuit (Char '\27') Down _ _ = exitWith ExitSuccess
-kbdQuit (Char   'i') Down _ _ = captureGL >>= saveRGB' Nothing
+kbdQuit (Char   'i') Down _ _ = captureGL >>= savePPM Nothing
 kbdQuit a Down m _            = putStrLn (show a ++ " " ++ show m ++ " not defined")
 kbdQuit _ _ _ _               = return ()
 

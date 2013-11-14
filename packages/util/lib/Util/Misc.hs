@@ -16,6 +16,8 @@ import Text.Printf(printf)
 import Data.Array(listArray,(!))
 import qualified Data.Vector as V
 import System.IO(hPutStrLn, stderr)
+import System.Time
+import System.Locale
 
 type Mat = Matrix Double
 type Vec = Vector Double
@@ -333,4 +335,23 @@ nulln n = reverse . take n . reverse . toColumns . snd . rightSV
 
 orthm :: Matrix Double -> Matrix Double
 orthm = fromColumns . orth
+
+--------------------------------------------------------------------------------
+
+formattedTime :: IO String
+formattedTime = do
+    t <- getClockTime >>= toCalendarTime
+    return $ formatCalendarTime
+               defaultTimeLocale
+               (iso8601DateFormat (Just "%H-%M-%S"))
+               t
+
+
+formattedDate :: IO String
+formattedDate = do
+    t <- getClockTime >>= toCalendarTime
+    return $ formatCalendarTime
+               defaultTimeLocale
+               (iso8601DateFormat Nothing)
+               t
 
