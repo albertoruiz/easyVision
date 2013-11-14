@@ -33,7 +33,7 @@ module Vision.GUI.Draw
 import Graphics.UI.GLUT hiding (RGB, Matrix, Size, Point,color)
 import qualified Graphics.UI.GLUT as GL
 import ImagProc.Ipp.Core
-import ImagProc(resize,yuvToRGB,toGray,Channels(..),histogramN,blockImage)
+import ImagProc(resize,yuvToRGB, yCbCrToRGB, toGray,Channels(..),histogramN,blockImage)
 import Data.IORef
 import Foreign (touchForeignPtr,castPtr)
 import Numeric.LinearAlgebra hiding (step)
@@ -67,6 +67,10 @@ myDrawPixels m@Img{itype=Gray} = do
 myDrawPixels m@Img{itype=I32f} = do
     GL.rowLength Unpack $= fromIntegral (step m `quot` (datasize m * layers m))
     GL.drawPixels (szgl m) (PixelData Luminance Float (pstart m))
+
+myDrawPixels m@Img{itype=YCbCr} = do
+    GL.rowLength Unpack $= fromIntegral (step m `quot` (datasize m * layers m))
+    GL.drawPixels (szgl m) (PixelData YCBCR422 UnsignedByte (pstart m))
 
 myDrawPixels m@Img{itype=YUV} = error "myDrawPixels undefined for YUV"
 
@@ -240,6 +244,10 @@ instance Renderable ImageFloat where
 
 instance Renderable ImageYUV where
     renderIn w = renderIn w . yuvToRGB
+
+instance Renderable ImageYCbCr where
+    -- renderIn w (Y422 im) = renderImageIn w im
+    renderIn w = renderIn w . yCbCrToRGB
 
 instance Renderable Polyline where
     render (Closed ps) = renderPrimitive LineLoop (vertex (Closed ps))

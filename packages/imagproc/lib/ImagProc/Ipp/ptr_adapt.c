@@ -326,6 +326,14 @@ int ippiDilate3x3_8u_C1Rx(Ipp8u* pSrc, int srcStep, Ipp8u* pDst, int dstStep, Ip
     return ippiDilate3x3_8u_C1R(pSrc, srcStep, pDst, dstStep, *roiSize);
 }
 
+int ippiRGBToYCbCr422_8u_C3C2Rx(Ipp8u* pSrc, int srcStep, Ipp8u* pDst, int dstStep, IppiSize* roiSize) {
+    return ippiRGBToYCbCr422_8u_C3C2R(pSrc, srcStep, pDst, dstStep, *roiSize);
+}
+
+int ippiYCbCr422ToRGB_8u_C2C3Rx(Ipp8u* pSrc, int srcStep, Ipp8u* pDst, int dstStep, IppiSize* roiSize) {
+    return ippiYCbCr422ToRGB_8u_C2C3R(pSrc, srcStep, pDst, dstStep, *roiSize);
+}
+
 int ippiRGBToYUV420_8u_C3P3Rx(Ipp8u* pSrc, int srcStep, Ipp8u* pDst[3], int dstStep[3], IppiSize* roiSize) {
     return ippiRGBToYUV420_8u_C3P3R(pSrc, srcStep, pDst, dstStep, *roiSize);
 }

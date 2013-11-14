@@ -36,6 +36,7 @@ module ImagProc.Ipp.Core
           , ImageFloat(F)
           , ImageDouble(D)
           , ImageYUV (Y)
+          , ImageYCbCr(Y422)
           -- * Image coordinates
           , val8u, fval
           -- * Reexported modules
@@ -84,7 +85,7 @@ ti = fromIntegral
 ------------- descriptor of an ipp image -------------------
 
 -- | Image type descriptor:
-data ImageType = RGB | Gray | I32f | I64f | YUV deriving (Show,Eq)
+data ImageType = RGB | Gray | I32f | I64f | YUV | YCbCr deriving (Show,Eq)
 
 -- | Image representation:
 data Img = Img { fptr :: {-# UNPACK #-}!(ForeignPtr Word8)  -- ^ automatic allocated memory
@@ -128,6 +129,7 @@ img RGB  = img' RGB  1 3
 img I32f = img' I32f 4 1
 img I64f = img' I64f 8 1
 img YUV  = img' YUV  1 2 -- img' YUV ? ? -- hmm.. is 4:2:0
+img YCbCr = img' YCbCr 1 2
 
 roiPtrs :: Img -> ([Ptr Word8],Int)
 roiPtrs img@Img {ptr = p, step = s, vroi = roi@(ROI r1 r2 c1 c2) } = (map row [0..r2-r1], c2-c1+1)
@@ -309,6 +311,8 @@ newtype ImageDouble = D Img
 -- | The yuv 4:2:0 image obtained by mplayer -vo yuv4mpeg
 newtype ImageYUV = Y Img
 
+-- | The yuv 4:2:2 image obtained by the webcam with format V4L2_PIX_FMT_YUYV
+newtype ImageYCbCr = Y422 Img
 
 -------------------------------------------------------------------
 
@@ -393,19 +397,19 @@ mkFloat :: Size -> ROI -> ByteString -> ImageFloat
 mkFloat sz roi b@(B.PS fp o l) = unsafePerformIO $ do
     F im <- image sz
     let x = im { fptr = fp , ptr = unsafeForeignPtrToPtr fp `plusPtr` o, bs = b }
-    return (modifyROI (const roi) (F x)) 
+    return (setROI roi (F x))
 
 mkGray :: Size -> ROI -> ByteString -> ImageGray
 mkGray sz roi b@(B.PS fp o l) = unsafePerformIO $ do
     G im <- image sz
-    let x = im { fptr = fp , ptr = unsafeForeignPtrToPtr fp `plusPtr` o }
-    return (modifyROI (const roi) (G x)) 
+    let x = im { fptr = fp , ptr = unsafeForeignPtrToPtr fp `plusPtr` o, bs = b }
+    return (setROI roi (G x))
 
 mkRGB :: Size -> ROI -> ByteString -> ImageRGB
 mkRGB sz roi b@(B.PS fp o l) = unsafePerformIO $ do
     C im <- image sz
-    let x = im { fptr = fp , ptr = unsafeForeignPtrToPtr fp `plusPtr` o }    
-    return (modifyROI (const roi) (C x))
+    let x = im { fptr = fp , ptr = unsafeForeignPtrToPtr fp `plusPtr` o, bs = b }
+    return (setROI roi (C x))
 
 --------------------------------------------------------------------------------
 

@@ -256,6 +256,14 @@ ioErode3x3_8u_C1R  = {-# SCC "ippiErode3x3_8u_C1R" #-} auto_1_8u_C1R f "ippiErod
 ioDilate3x3_8u_C1R  = {-# SCC "ippiDilate3x3_8u_C1R" #-} auto_1_8u_C1R f "ippiDilate3x3_8u_C1R"
     where f pSrc srcStep pDst dstStep roiSize = ippiDilate3x3_8u_C1R pSrc srcStep pDst dstStep roiSize
 
+{- |     Converts an RGB(BGR) image to the YCbCr (CbYCr, YCrCb) image and vice versa. -}
+ioRGBToYCbCr422_8u_C3C2R  = {-# SCC "ippiRGBToYCbCr422_8u_C3C2R" #-} auto_1_8u_C3C2R f "ippiRGBToYCbCr422_8u_C3C2R"
+    where f pSrc srcStep pDst dstStep roiSize = ippiRGBToYCbCr422_8u_C3C2R pSrc srcStep pDst dstStep roiSize
+
+{- |     Converts an RGB(BGR) image to the YCbCr (CbYCr, YCrCb) image and vice versa. -}
+ioYCbCr422ToRGB_8u_C2C3R  = {-# SCC "ippiYCbCr422ToRGB_8u_C2C3R" #-} auto_1_8u_C2C3R f "ippiYCbCr422ToRGB_8u_C2C3R"
+    where f pSrc srcStep pDst dstStep roiSize = ippiYCbCr422ToRGB_8u_C2C3R pSrc srcStep pDst dstStep roiSize
+
 {- |  -}
 ioYUV420ToRGB_8u_P3C3R  = {-# SCC "ippiYUV420ToRGB_8u_P3C3R" #-} auto_1_8u_P3C3R f "ippiYUV420ToRGB_8u_P3C3R"
     where f pSrc srcStep pDst dstStep roiSize = ippiYUV420ToRGB_8u_P3C3R pSrc srcStep pDst dstStep roiSize

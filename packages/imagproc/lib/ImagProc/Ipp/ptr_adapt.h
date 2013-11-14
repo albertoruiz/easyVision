@@ -81,6 +81,8 @@ int ippiCompareC_8u_C1Rx(unsigned char*, int, unsigned char, unsigned char*, int
 int ippiCompare_32f_C1Rx(float*, int, float*, int, unsigned char*, int, void*, int);
 int ippiErode3x3_8u_C1Rx(unsigned char*, int, unsigned char*, int, void*);
 int ippiDilate3x3_8u_C1Rx(unsigned char*, int, unsigned char*, int, void*);
+int ippiRGBToYCbCr422_8u_C3C2Rx(unsigned char*, int, unsigned char*, int, void*);
+int ippiYCbCr422ToRGB_8u_C2C3Rx(unsigned char*, int, unsigned char*, int, void*);
 int ippiRGBToYUV420_8u_C3P3Rx(unsigned char*, int, void**, int*, void*);
 int ippiYUV420ToRGB_8u_P3C3Rx(void**, int*, unsigned char*, int, void*);
 int ippiYUV420ToRGB_8u_P3Rx(void**, int*, void**, int, void*);

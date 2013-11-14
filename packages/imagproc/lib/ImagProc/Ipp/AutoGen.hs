@@ -24,6 +24,7 @@ module ImagProc.Ipp.AutoGen(
     auto_1_8u_C3R,
     auto_1_32f_C1R,
     auto_1_8u_C3C1R,
+    auto_1_8u_C3C2R,
     auto_1_8u32f_C1R,
     auto_1_32f8u_C1R,
 
@@ -31,6 +32,7 @@ module ImagProc.Ipp.AutoGen(
     auto_1_8u_C3P3R,
     auto_1_8u_P3R,
     auto_1_8u_C1C3R,
+    auto_1_8u_C2C3R,
     auto_1_32f_C1MR,
     auto_1_8u_C1MR,
     auto_1_8u_C1RSfs,
@@ -96,6 +98,25 @@ auto_1_8u_C3C1R f msg roifun (C im) = do
     cr1 f msg im r
     return (G r)
 
+auto_1_8u_C3C2R f msg roifun (C im) = do
+    r' <- img YCbCr (isize im)
+    let r = r' { vroi = roifun (vroi im) }
+    cr1 f msg im r
+    return (Y422 r)
+
+auto_1_8u_C1C3R f msg roifun (G im) = do
+    r' <- img RGB (isize im)
+    let r = r' { vroi = roifun (vroi im) }
+    cr1 f msg im r
+    return (C r)
+
+auto_1_8u_C2C3R f msg roifun (Y422 im) = do
+    r' <- img RGB (isize im)
+    let r = r' { vroi = roifun (vroi im) }
+    cr1 f msg im r
+    return (C r)
+
+
 auto_1_8u32f_C1R f msg roifun (G im) = do
     r' <- img I32f (isize im)
     let r = r' { vroi = roifun (vroi im) }
@@ -121,7 +142,6 @@ auto_1_8u_C1RSfs = auto_1_8u_C1R
 auto_1_8u_P3C3R = error $ "auto_1_8u_P3C3R not yet defined"
 auto_1_8u_C3P3R = error $ "auto_1_8u_C3P3R not yet defined"
 auto_1_8u_P3R = error $ "auto_1_8u_P3R not yet defined"
-auto_1_8u_C1C3R = error $ "auto_1_8u_C1C3R not yet defined"
 auto_1_32f_C1MR = error $ "auto_1_32f_C1MR not yet defined"
 auto_1_8u_C1MR = error $ "auto_1_8u_C1MR not yet defined"
 
