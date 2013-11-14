@@ -26,8 +26,13 @@ struct vdIn * openUVC(char * videodevice, int width, int height, int fps){
 
 ////////////////////////////////////////////////////////////////////////////////////
 
-int grabUVC(int mode, struct vdIn * v, Ipp8u * p) {
+#define clip(a) ((a)<0?0:(a)>255?255:(a))
 
+#define R(C,D,E) clip(( 298 * (C)             + 409 * (E) + 128) >> 8)
+#define G(C,D,E) clip(( 298 * (C) - 100 * (D) - 208 * (E) + 128) >> 8)
+#define B(C,D,E) clip(( 298 * (C) + 516 * (D)             + 128) >> 8)
+
+int grabUVC(int mode, struct vdIn * v, Ipp8u * p) {
     int ok = uvcGrab(v);
     if (ok<0) return ok;
     
@@ -39,7 +44,7 @@ int grabUVC(int mode, struct vdIn * v, Ipp8u * p) {
         ippiYCbCr422ToYCbCr420_8u_C2P3R(v->framebuffer, v->width*2, dest, steps, roiSize);
         return ok;
       }
-      case 1: { // RGB
+      case 4: { // RGB with IPP
         IppiSize roiSize = {v->width,v->height};
         Ipp8u * dest = p;
         ippiYCbCr422ToRGB_8u_C2C3R(v->framebuffer, v->width*2, dest, v->width*3, roiSize);
@@ -58,10 +63,32 @@ int grabUVC(int mode, struct vdIn * v, Ipp8u * p) {
         memcpy(p, v->framebuffer, v->width * (v->height) * 2);
         return ok;
       }
+      case 1: { // RGB
+        int k, ks=0, kd=0;
+        unsigned char * s = v->framebuffer;
+        for(k=0; k<(v->width*v->height/2); k++) {
+          int y1 = s[ks++]-16;
+          int u  = s[ks++]-128;
+          int y2 = s[ks++]-16;
+          int v  = s[ks++]-128;
+          p[kd++] = R(y1,u,v);
+          p[kd++] = G(y1,u,v);
+          p[kd++] = B(y1,u,v);
+          p[kd++] = R(y2,u,v);
+          p[kd++] = G(y2,u,v);
+          p[kd++] = B(y2,u,v);
+        }
+        return ok;
+      }
       default : return 1;
     }
 
 }
+
+#undef clip
+#undef R
+#undef G
+#undef B
 
 ////////////////////////////////////////////////////////////////////////////////////
 
