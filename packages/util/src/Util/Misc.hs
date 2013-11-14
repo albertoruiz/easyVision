@@ -20,8 +20,10 @@ module Util.Misc(
     mean, median, quartiles, shDist,
     -- * Misc
     angleDiff,
-    lambdify,
-    arrayOf, memo
+    lambdify, (.:),
+    arrayOf, memo,
+    formattedTime,
+    formattedDate
 ) where
 
 
@@ -226,6 +228,12 @@ unliftRow f = flatten . f . asRow
 -- | Taken from \"not-in-base\" package.
 lambdify :: (a -> b -> t) -> (c -> a) -> (c -> b) -> c -> t
 lambdify f a b x = f (a x) (b x)
+
+-- | composition for 1 and 2 argument functions
+
+infixr 9 .:
+(.:) :: (x -> y) -> ( a -> b-> x) -> (a -> b-> y)
+f .: g = \a b -> f (g a b)
 
 --------------------------------------------------------------------
 
