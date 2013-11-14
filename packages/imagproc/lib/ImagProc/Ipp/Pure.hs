@@ -19,7 +19,7 @@ module ImagProc.Ipp.Pure (
     andI,orI,notI,xorI,
     addC8u, add8u, absDiff8u, sub8u, sub8uRel,
     float, toGray, scale32f8u, scale8u32f,
-    rgbToGray, rgbToHSV, hsvToRGB,
+    rgbToGray, rgbToHSV, hsvToRGB, yCbCrToRGB, rgbToYCbCr,
     thresholdVal32f, thresholdVal8u,
     compareC8u, compare8u,
     filterMax, filterMin, filterMax8u, filterMin8u,
@@ -180,9 +180,15 @@ rgbToHSV = mkId ioRGBToHSV_8u_C3R
 hsvToRGB :: ImageRGB -> ImageRGB
 hsvToRGB = mkId ioHSVToRGB_8u_C3R
 
-
 rgbToGray :: ImageRGB -> ImageGray
 rgbToGray = mkId ioRGBToGray_8u_C3C1R
+
+yCbCrToRGB :: ImageYCbCr -> ImageRGB
+yCbCrToRGB = mkId ioYCbCr422ToRGB_8u_C2C3R
+
+rgbToYCbCr :: ImageRGB -> ImageYCbCr
+rgbToYCbCr = mkId ioRGBToYCbCr422_8u_C3C2R
+
 
 -- | The result is the source image in which the pixels verifing the comparation with a threshold are set to a desired value.
 thresholdVal32f :: Float          -- ^ threshold

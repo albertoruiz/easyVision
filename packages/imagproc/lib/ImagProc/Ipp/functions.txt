@@ -110,4 +110,6 @@ ippi.h  ippiSqrDistanceValid_Norm_32f_C1R
 ippi.h  ippiSqrDistanceValid_Norm_8u32f_C3R
 ippi.h  ippiSqrDistanceValid_Norm_8u32f_C1R
 ippcc.h ippiColorTwist32f_8u_C3R
+ippcc.h ippiYCbCr422ToRGB_8u_C2C3R
+ippcc.h ippiRGBToYCbCr422_8u_C3C2R
 

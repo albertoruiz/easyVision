@@ -709,6 +709,22 @@ ippiDilate3x3_8u_C1R pSrc srcStep pDst dstStep roiSize = do
     free proiSize
     return r
 
+foreign import ccall "adapt.h ippiRGBToYCbCr422_8u_C3C2Rx"
+    ippiRGBToYCbCr422_8u_C3C2Rx :: Ptr CUChar -> Int -> Ptr CUChar -> Int -> Ptr IppiSize -> IO Int
+ippiRGBToYCbCr422_8u_C3C2R pSrc srcStep pDst dstStep roiSize = do
+    proiSize <- new roiSize
+    r <- ippiRGBToYCbCr422_8u_C3C2Rx pSrc srcStep pDst dstStep proiSize
+    free proiSize
+    return r
+
+foreign import ccall "adapt.h ippiYCbCr422ToRGB_8u_C2C3Rx"
+    ippiYCbCr422ToRGB_8u_C2C3Rx :: Ptr CUChar -> Int -> Ptr CUChar -> Int -> Ptr IppiSize -> IO Int
+ippiYCbCr422ToRGB_8u_C2C3R pSrc srcStep pDst dstStep roiSize = do
+    proiSize <- new roiSize
+    r <- ippiYCbCr422ToRGB_8u_C2C3Rx pSrc srcStep pDst dstStep proiSize
+    free proiSize
+    return r
+
 foreign import ccall "adapt.h ippiRGBToYUV420_8u_C3P3Rx"
     ippiRGBToYUV420_8u_C3P3Rx :: Ptr CUChar -> Int -> Ptr () -> Ptr CInt -> Ptr IppiSize -> IO Int
 ippiRGBToYUV420_8u_C3P3R pSrc srcStep pDst dstStep roiSize = do
