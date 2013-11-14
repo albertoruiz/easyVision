@@ -397,19 +397,19 @@ mkFloat :: Size -> ROI -> ByteString -> ImageFloat
 mkFloat sz roi b@(B.PS fp o l) = unsafePerformIO $ do
     F im <- image sz
     let x = im { fptr = fp , ptr = unsafeForeignPtrToPtr fp `plusPtr` o, bs = b }
-    return (modifyROI (const roi) (F x))
+    return (setROI roi (F x))
 
 mkGray :: Size -> ROI -> ByteString -> ImageGray
 mkGray sz roi b@(B.PS fp o l) = unsafePerformIO $ do
     G im <- image sz
-    let x = im { fptr = fp , ptr = unsafeForeignPtrToPtr fp `plusPtr` o }
-    return (modifyROI (const roi) (G x))
+    let x = im { fptr = fp , ptr = unsafeForeignPtrToPtr fp `plusPtr` o, bs = b }
+    return (setROI roi (G x))
 
 mkRGB :: Size -> ROI -> ByteString -> ImageRGB
 mkRGB sz roi b@(B.PS fp o l) = unsafePerformIO $ do
     C im <- image sz
-    let x = im { fptr = fp , ptr = unsafeForeignPtrToPtr fp `plusPtr` o }
-    return (modifyROI (const roi) (C x))
+    let x = im { fptr = fp , ptr = unsafeForeignPtrToPtr fp `plusPtr` o, bs = b }
+    return (setROI roi (C x))
 
 --------------------------------------------------------------------------------
 
