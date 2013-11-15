@@ -21,7 +21,7 @@ module ImagProc.ImageFold (
 )
 where
 
-import ImagProc.Ipp.Core
+import Image.Core
 import Foreign.Storable
 import Foreign.Ptr
 import Foreign.ForeignPtr

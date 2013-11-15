@@ -15,8 +15,8 @@ Experimental interface to Intel's IPP image processing libraries
 -----------------------------------------------------------------------------
 
 module ImagProc.Ipp (
-    module ImagProc.Ipp.Core,
-    module ImagProc.Ipp.Convert,
+    module Image.Core,
+    module Image.Convert,
     module ImagProc.Ipp.Wrappers,
     module ImagProc.Ipp.AdHoc,
     module ImagProc.Ipp.Adapt,
@@ -24,8 +24,8 @@ module ImagProc.Ipp (
     module ImagProc.Ipp.Pure
 ) where
 
-import ImagProc.Ipp.Core
-import ImagProc.Ipp.Convert
+import Image.Core
+import Image.Convert
 import ImagProc.Ipp.Wrappers
 import ImagProc.Ipp.AdHoc
 import ImagProc.Ipp.Adapt

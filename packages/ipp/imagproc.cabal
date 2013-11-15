@@ -1,11 +1,11 @@
-Name:               imagproc
-Version:            0.1.0
+Name:               hVision-ipp
+Version:            0.2
 License:            LGPL
 License-file:       LICENSE
 Author:             Alberto Ruiz
 Maintainer:         Alberto Ruiz <aruiz@um.es>
 Stability:          experimental
-Homepage:           http://www.easyvision.googlepages.com/
+Homepage:           https://github.com/albertoruiz/easyVision
 Synopsis:           Image processing based on IPP
 Description:
  Image processing using Intel's IPP
@@ -17,48 +17,45 @@ cabal-version:      >=1.2
 build-type:         Custom
 
 extra-source-files: configure configure.hs
-                    lib/ImagProc/Ipp/adapter.hs
-                    lib/ImagProc/Ipp/Parser.hs
-                    lib/ImagProc/Ipp/functions.txt
-                    lib/ImagProc/Ipp/auxIpp.h
-                    lib/ImagProc/C/Simple/simple.h
-                    lib/ImagProc/Ipp/ptr_adapt.h
+                    src/ImagProc/Ipp/adapter.hs
+                    src/ImagProc/Ipp/Parser.hs
+                    src/ImagProc/Ipp/functions.txt
+                    src/ImagProc/Ipp/auxIpp.h
+                    src/ImagProc/C/Simple/simple.h
+                    src/ImagProc/Ipp/ptr_adapt.h
 
 extra-tmp-files:    imagproc.buildinfo
 
 library
     Build-Depends:      base >= 3 && < 5, directory, process,
-                        hmatrix >= 0.8.3, vision >= 0.1, prcv-util,
+                        hmatrix >= 0.8.3,
+                        hVision-geometry, hVision-util, hVision-image,
                         ghc-prim, binary, bytestring, deepseq
 
-    hs-source-dirs:     lib
+    hs-source-dirs:     src
 
     Exposed-modules:
                         ImagProc
-                        ImagProc.Base
                         ImagProc.Tools
                         ImagProc.Moments
-                        ImagProc.Images
-                        ImagProc.ROI
                         ImagProc.Generic
                         ImagProc.ImageFold
                         ImagProc.C.Simple
                         ImagProc.Ipp
+                        ImagProc.Ipp.Core
                         ImagProc.Ipp.Auto
                         ImagProc.Ipp.Adapt
                         ImagProc.Ipp.AdHoc
                         ImagProc.Ipp.AutoGen
-                        ImagProc.Ipp.Core
-                        ImagProc.Ipp.Convert
                         ImagProc.Ipp.Pure
                         ImagProc.Ipp.Wrappers
                         ImagProc.Ipp.Structs
 
     other-modules:
 
-    c-sources:          lib/ImagProc/Ipp/auxIpp.c
-                        lib/ImagProc/C/Simple/simple.c
-                        lib/ImagProc/Ipp/ptr_adapt.c
+    c-sources:          src/ImagProc/Ipp/auxIpp.c
+                        src/ImagProc/C/Simple/simple.c
+                        src/ImagProc/Ipp/ptr_adapt.c
 
     ghc-prof-options:   -auto-all
 
@@ -66,3 +63,4 @@ library
     --                    -fno-warn-missing-signatures
 
     ghc-options:        -fwarn-unused-imports
+

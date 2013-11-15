@@ -20,19 +20,19 @@ module ImagProc (
     module ImagProc.Generic,
     module ImagProc.Tools,
     module ImagProc.Moments,
-    module ImagProc.Images,
+    module Image.Types,
     module ImagProc.C.Simple,
-    module ImagProc.Ipp.Convert
+    module Image.Convert
 ) where
 
-import ImagProc.Ipp.Core
-import ImagProc.Ipp.Convert
+import Image.Core
+import Image.Convert
 import ImagProc.Ipp.AdHoc
 import ImagProc.Ipp.Pure
 import ImagProc.Ipp.Structs
 import ImagProc.Generic
 import ImagProc.C.Simple
-import ImagProc.Images
+import Image.Types
 import ImagProc.Tools
 import ImagProc.Moments
 

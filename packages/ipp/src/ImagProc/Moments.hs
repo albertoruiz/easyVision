@@ -19,8 +19,8 @@ module ImagProc.Moments (
 
 import ImagProc.Ipp.Pure
 import ImagProc.Ipp.AdHoc
-import ImagProc.Ipp.Convert(mat2img)
-import ImagProc.Images
+import Image.Convert(mat2img)
+import Image.Types
 import Numeric.LinearAlgebra
 
 data ImageBasis = ImageBasis { zeroIb, oneIb, xIb, yIb, x2Ib, y2Ib, xyIb :: ImageFloat }

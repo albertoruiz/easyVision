@@ -28,7 +28,7 @@ module Image.Core
             -- * Regions of interest
           , fullroi, invalidROIs, validArea, roiPtrs
             -- * Wrapper tools
-          , src, checkIPP, (//), starting
+          , src, checkIP, (//), starting
             -- * Image types
           , Image(..)
           , ImageRGB(C)
@@ -194,12 +194,12 @@ src im roi f = f (starting im roi) (step im)
 
 
 
-checkIPP :: String  -- ^ some identifier of the calling function
+checkIP  :: String  -- ^ some identifier of the calling function
          -> [Img]   -- ^ the source images required by the function
          -> IO Int  -- ^ the ipp function to wrap
          -> IO ()
 -- ^ Required wrapper to any ipp function, checking that it has been successful and touching the foreign pointers of the source images to prevent early deallocation.
-checkIPP msg ls f = do
+checkIP msg ls f = do
     err <- f
     when (err/=0) $ do
 --        ps <- ippGetStatusString err
