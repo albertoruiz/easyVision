@@ -1,11 +1,11 @@
-Name:               vision
-Version:            0.2.0
+Name:               hVision-geometry
+Version:            0.3.0
 License:            GPL
 License-file:       LICENSE
 Author:             Alberto Ruiz
 Maintainer:         Alberto Ruiz <aruiz@um.es>
 Stability:          experimental
-Homepage:           http://www.easyvision.googlepages.com/
+Homepage:           https://github.com/albertoruiz/easyVision
 Synopsis:           geometric vision algorithms
 Description:
  geometric vision algorithms.
@@ -21,10 +21,10 @@ extra-source-files:
 library
     Build-Depends:      base >= 3 && < 5, random, directory,
                         array, containers, process,
-                        hmatrix >= 0.13, prcv-util,
+                        hmatrix >= 0.13, hVision-util,
                         hTensor >= 0.5
 
-    hs-source-dirs:     lib
+    hs-source-dirs:     src
 
     Exposed-modules:    Vision
                         Vision.Camera

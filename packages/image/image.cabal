@@ -1,0 +1,41 @@
+Name:               hVision-image
+Version:            0.2
+License:            LGPL
+License-file:       LICENSE
+Author:             Alberto Ruiz
+Maintainer:         Alberto Ruiz <aruiz@um.es>
+Stability:          experimental
+Homepage:           https://github.com/albertoruiz/easyVision
+Synopsis:           Basic types for image processing
+Description:
+ Basic types for image processing
+
+Category:           Math
+tested-with:        GHC ==7.6
+
+cabal-version:      >=1.2
+build-type:         Custom
+
+
+library
+    Build-Depends:      base >= 3 && < 5, directory, process,
+                        hmatrix >= 0.8.3, hVision-geometry, hVision-util,
+                        ghc-prim, binary, bytestring, deepseq
+
+    hs-source-dirs:     src
+
+    Exposed-modules:    Image.Base
+                        Image.Types
+                        Image.ROI
+                        Image.Core
+                        Image.Convert
+
+    other-modules:
+
+    
+    ghc-prof-options:   -auto-all
+
+    ghc-options:        -Wall
+                        -fno-warn-missing-signatures
+
+

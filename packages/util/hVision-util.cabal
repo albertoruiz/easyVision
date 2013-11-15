@@ -1,11 +1,11 @@
-Name:               prcv-util
-Version:            0.3
+Name:               hVision-util
+Version:            0.4
 License:            GPL
 License-file:       LICENSE
 Author:             Alberto Ruiz
 Maintainer:         Alberto Ruiz <aruiz@um.es>
 Stability:          experimental
-Homepage:           http://code.haskel.org/easyVision
+Homepage:           https://github.com/albertoruiz/easyVision
 Synopsis:           Utilities for pattern recognition and computer vision
 Description:
  Utilities for pattern recognition and computer vision.

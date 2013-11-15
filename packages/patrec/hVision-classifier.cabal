@@ -1,18 +1,18 @@
-Name:               patrec
-Version:            0.3.0
+Name:               hVision-classifier
+Version:            0.4.0
 License:            GPL
 License-file:       LICENSE
 Author:             Alberto Ruiz
 Maintainer:         Alberto Ruiz <aruiz@um.es>
 Stability:          experimental
-Homepage:           http://www.easyvision.googlepages.com/
+Homepage:           https://github.com/albertoruiz/easyVision
 Synopsis:           Simple pattern recognition algorithms
 Description:
  Simple pattern recognition algorithms and 
  feature extraction combinators.
 
 Category:           Math
-tested-with:        GHC ==6.10.4, GHC ==6.12.1
+tested-with:        GHC ==7.6.3
 
 cabal-version:      >=1.2
 build-type:         Simple
@@ -20,10 +20,10 @@ build-type:         Simple
 extra-source-files:
 
 library
-    Build-Depends:      base >= 3 && < 5, hmatrix >= 0.11.2, prcv-util,
+    Build-Depends:      base >= 3 && < 5, hmatrix >= 0.11.2, hVision-util,
                         array, containers, process, random
 
-    hs-source-dirs:     lib
+    hs-source-dirs:     src
 
     Exposed-modules:    Classifier
                         Classifier.Base
