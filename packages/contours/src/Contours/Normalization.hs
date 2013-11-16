@@ -22,8 +22,8 @@ module Contours.Normalization (
 )
 where
 
-import ImagProc.Base
-import Contours.Base(asSegments,transPol,bounding)
+import Image.Base
+import Contours.Base(asSegments,transPol)
 import Data.List(foldl')
 import Numeric.LinearAlgebra
 import Util.Homogeneous

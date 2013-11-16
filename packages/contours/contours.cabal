@@ -1,11 +1,11 @@
-Name:               contours
-Version:            0.1.0
+Name:               hVision-contours
+Version:            0.2.0
 License:            GPL
 License-file:       LICENSE
 Author:             Alberto Ruiz
 Maintainer:         Alberto Ruiz <aruiz@um.es>
 Stability:          experimental
-Homepage:           http://perception.inf.um.es/easyVision
+Homepage:           https://github.com/albertoruiz/easyVision
 Synopsis:           contour functions and shape matching
 Description:
                     contour functions and shape matching
@@ -18,9 +18,9 @@ build-type:         Simple
 extra-source-files:
 
 library
-    Build-Depends:      base >= 3 && < 5,
-                        hmatrix, vision, imagproc,
-                        patrec, prcv-util
+    Build-Depends:      base,
+                        hmatrix,
+                        hVision-base
 
     hs-source-dirs:     src
 
@@ -30,7 +30,6 @@ library
                         Contours.Fourier
                         Contours.Orientation
                         Contours.Matching
-                        Contours.Extraction
                         Contours.Reduction
 
     ghc-prof-options:   -auto-all

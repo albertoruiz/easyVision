@@ -13,9 +13,9 @@ import Text.Printf(printf)
 import Data.List(minimumBy,sortBy,groupBy)
 import Util.Misc(Mat,Vec,degree,debug,posMax,angleDiff,assert,warning)
 import Util.Rotation
-import Classifier(Sample)
-import Vision
-import ImagProc.Base(Polyline(..))
+--import Classifier(Sample)
+import Util.Homogeneous(ht,desp)
+import Image.Base(Point(..),Polyline(..))
 import Util.Options(optionFromFile)
 import Contours.Base
 import Contours.Normalization
@@ -119,7 +119,7 @@ data ShapeMatch = ShapeMatch
     , waRot      :: Double
     }
 
-shapeMatch :: Sample Shape -> Shape -> [ShapeMatch]
+shapeMatch :: [(Shape,String)] -> Shape -> [ShapeMatch]
 shapeMatch prots c = map (match c) prots
   where
     match x (y,l) = ShapeMatch {..}
@@ -146,7 +146,7 @@ rotTrans w = rho
     rho = atan2 dx dy
 
 
-shapeMatches :: Sample Shape -> Shape -> [ShapeMatch]
+shapeMatches :: [(Shape,String)] -> Shape -> [ShapeMatch]
 shapeMatches prots c = concatMap (sm c) prots
   where
     sm x p | asym p = [match r0 x p]

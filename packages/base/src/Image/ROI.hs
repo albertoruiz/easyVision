@@ -27,7 +27,9 @@ module Image.ROI
   roiFrom2Pixels,
   roiCenter,
   roiRadius,
-  roiDiv
+  roiDiv,
+  roi2poly,
+  poly2roi
 ) where
 
 import Image.Base
@@ -139,4 +141,18 @@ roiRadius (ROI r1 r2 c1 c2) = min ((r2-r1+1)`div`2) ((c2-c1+1)`div`2)
 roiDiv :: Int -> ROI -> ROI
 roiDiv k (ROI r1 r2 c1 c2) = ROI (d r1) (d r2) (d c1) (d c2)
   where d = (`div` k)
+
+roi2poly :: Size -> ROI -> Polyline
+roi2poly sz (ROI r1 r2 c1 c2) = Closed $ pixelsToPoints sz p
+  where
+    p = [Pixel r1 c1, Pixel r1 c2, Pixel r2 c2, Pixel r2 c1]
+
+poly2roi :: Size -> Polyline -> ROI
+poly2roi sz p = ROI r1 (max (r1+d) r2) c1 (max (c1+d) c2)
+  where
+    (Closed [p1,_,p3,_]) = bounding p
+    [Pixel r1 c1, Pixel r2 c2] = pointsToPixels sz [p1,p3]
+    d = 32
+
+
 

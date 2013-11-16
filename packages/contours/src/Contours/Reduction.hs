@@ -19,7 +19,7 @@ module Contours.Reduction (
 )
 where
 
-import ImagProc.Base
+import Image.Base
 import Contours.Base
 import Data.List(maximumBy)
 import Data.Function(on)

@@ -26,7 +26,7 @@ module Image.Core
             -- * Creation of images
           , img, imgAs, getData32f, setData32f, setData8u, setValue
             -- * Regions of interest
-          , fullroi, invalidROIs, validArea, roiPtrs
+          , fullroi, invalidROIs, validArea, roiPtrs, setRegion
             -- * Wrapper tools
           , src, checkIP, (//), starting
             -- * Image types
@@ -249,6 +249,8 @@ class Image a where
     -- | modifyROI . const
     setROI :: ROI -> a -> a
     setROI = modifyROI . const
+
+setRegion (p1,p2) im = setROI (poly2roi (size im) (Closed[p1,p2])) im
 
 instance Image ImageFloat where
     image s = do

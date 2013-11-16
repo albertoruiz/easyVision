@@ -15,7 +15,7 @@ General types.
 module Image.Base
 ( Size(..), limitSize, shSize,
   ROI (..),
-  Point(..), distPoints,
+  Point(..), distPoints, bounding,
   Pixel(..),
   pixelsToPoints, pointsToPixels, pixelToPointTrans,
   Segment(..),
@@ -108,6 +108,19 @@ segmentLength (Segment {extreme1 = e1, extreme2 = e2}) = distPoints e1 e2
 -- | Euclidean distance between two points
 distPoints :: Point -> Point -> Double
 distPoints (Point a b) (Point x y) = sqrt $ (a-x)^2+(b-y)^2
+
+bounding :: Polyline -> Polyline
+bounding p = Closed [Point x2 y2, Point x1 y2, Point x1 y1, Point x2 y1] 
+  where
+    x1 = minimum xs
+    x2 = maximum xs
+    y1 = minimum ys
+    y2 = maximum ys
+    xs = map px (polyPts p)
+    ys = map py (polyPts p)
+
+--------------------------------------------------------------------------------
+
 
 cosAngleSegments :: Segment -> Segment -> Double
 cosAngleSegments (Segment p q) (Segment p' q') = ca

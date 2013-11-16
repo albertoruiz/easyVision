@@ -20,8 +20,6 @@ module Contours.Base (
     area, orientedArea, rev, 
     asSegments, transPol,
     pentominos,
-    bounding,
-    roi2poly, poly2roi, setRegion,
     segmentIntersection,
     intersectionLineSegment,
     bisector,
@@ -30,8 +28,8 @@ module Contours.Base (
 )
 where
 
-import ImagProc.Base
-import ImagProc.Ipp.Core(size,setROI)
+import Image.Base
+--import ImagProc.Ipp.Core(size,setROI)
 import Data.List(sortBy, maximumBy, sort,foldl',tails)
 import Numeric.LinearAlgebra
 import Numeric.LinearAlgebra.Util(diagl)
@@ -245,31 +243,6 @@ canTans q x = can
 
 ----------------------------------------------------------------------
 
-bounding :: Polyline -> Polyline
-bounding p = Closed [Point x2 y2, Point x1 y2, Point x1 y1, Point x2 y1] 
-  where
-    x1 = minimum xs
-    x2 = maximum xs
-    y1 = minimum ys
-    y2 = maximum ys
-    xs = map px (polyPts p)
-    ys = map py (polyPts p)
-
-roi2poly :: Size -> ROI -> Polyline
-roi2poly sz (ROI r1 r2 c1 c2) = Closed $ pixelsToPoints sz p
-  where
-    p = [Pixel r1 c1, Pixel r1 c2, Pixel r2 c2, Pixel r2 c1]
-
-poly2roi :: Size -> Polyline -> ROI
-poly2roi sz p = ROI r1 (max (r1+d) r2) c1 (max (c1+d) c2)
-  where
-    (Closed [p1,_,p3,_]) = bounding p
-    [Pixel r1 c1, Pixel r2 c2] = pointsToPixels sz [p1,p3]
-    d = 32
-
-setRegion (p1,p2) im = setROI (poly2roi (size im) (Closed[p1,p2])) im
-
---------------------------------------------------------------------------------
 
 -- compact expression from http://paulbourke.net/geometry/lineline2d/
 segmentIntersection :: Segment -> Segment -> Maybe Point

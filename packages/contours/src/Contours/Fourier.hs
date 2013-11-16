@@ -21,7 +21,7 @@ module Contours.Fourier (
 )
 where
 
-import ImagProc.Base(Polyline(..),Point(..),distPoints)
+import Image.Base(Polyline(..),Point(..),distPoints)
 import Contours.Base(perimeter)
 import Data.List(zipWith4)
 import Numeric.LinearAlgebra
