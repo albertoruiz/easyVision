@@ -1,14 +1,14 @@
-Name:               ev-apps
-Version:            0.2.0
+Name:               hVision
+Version:            0.3.0
 License:            GPL
 License-file:       LICENSE
 Author:             Alberto Ruiz
 Maintainer:         Alberto Ruiz <aruiz@um.es>
 Stability:          experimental
-Homepage:           http://perception.inf.um.es/easyVision
-Synopsis:           high level tools
+Homepage:           https://github.com/albertoruiz/easyVision
+Synopsis:           reexport and high level tools
 Description:
-                    high level tools
+                    reexport and high level tools
 
 Category:           Math
 
@@ -19,8 +19,9 @@ extra-source-files:
 
 library
     Build-Depends:      base >= 3 && < 5,
-                        hmatrix, vision, imagproc,
-                        patrec, prcv-util, ev-gui, contours
+                        hmatrix,
+                        hVision-base, hVision-contours, hVision-gui, hVision-ipp,
+                        hVision-geometry
 
     hs-source-dirs:     src
 
@@ -28,8 +29,11 @@ library
                         Vision.Apps.Contours.Polygons
                         Vision.Apps.Show
                         Util.Camera
+                        Vision.GUI.ExtraDraw
+                        Vision.GUI.ExtraUtil
+                        Contours.Extraction
 
     ghc-prof-options:   -auto-all
 
---  ghc-options:        -Wall
+    ghc-options:        -Wall
 

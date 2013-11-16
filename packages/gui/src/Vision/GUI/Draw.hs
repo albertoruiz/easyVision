@@ -19,7 +19,6 @@ module Vision.GUI.Draw
 ( drawTexture
 , drawCamera
 , cameraView
--- , extractSquare
 , captureGL
 , drawContourLabeled
 , drawPointsLabeled
@@ -125,18 +124,6 @@ drawCamera' size cam (Just imgtext) = do
                [ q, -q, f]]
     renderPrimitive LineLoop $ mapM_ vertex outline
 
-{-
-
-{-# DEPRECATED extractSquare "use new drawing camera tools" #-}
-extractSquare :: Int -> ImageFloat -> ImageFloat
-extractSquare sz (F im) = resize (Size sz sz) (F im {vroi = roi}) where
-    w = width $ isize im
-    h = height $ isize im
-    d = w-h
-    dm = d `quot` 2
-    roi = (vroi im) {c1=dm-1,c2= dm+h}
-
--}
 
 ---------------------------------------------------------
 
@@ -160,33 +147,6 @@ cameraView m ar near far = do
     mat <- newMatrix RowMajor (map doubleGL $ toList $ flatten $ inv p) :: IO (GLmatrix GLdouble)
     multMatrix mat
 
-------------------------------------------------------
-
-{-
-renderSignal ls = do
-    let delta = 1.8/fromIntegral (length ls-1)
-    let points = zipWith Point [0.9, 0.9-delta ..] ls
-    GL.renderPrimitive GL.LineStrip $ mapM_ GL.vertex points
-
-renderAxes = 
-    GL.renderPrimitive GL.Lines $ mapM_ GL.vertex
-        [Point (-1) 0, Point 1 0, Point 0 (-1), Point 0 1]
-
--- | representation of the elements of a vector as vertical bars from a starting position
-drawVector :: Int -- ^ column
-          -> Int -- ^ row
-          -> Vector Double -- ^ input vector
-          -> IO ()
-drawVector x y v = do
-    let f k = vertex (Vertex2 x1 y1) >> vertex (Vertex2 x2 y2)
-            where x1 = fromIntegral (x+k) :: GLint
-                  y1 = fromIntegral y
-                  x2 = x1
-                  y2 = y1 + round (-v@>k)
-    renderPrimitive Lines $ do
-        mapM_ f [0..dim v -1]
-        vertex (Pixel y x) >> vertex (Pixel y (x+dim v -1))
--}
 
 --------------------------------------------------------------------------------
 
@@ -243,19 +203,6 @@ instance Renderable ImageGray where
 instance Renderable ImageRGB where
     renderIn w (C im) = renderImageIn w im
 
-{-
-
-instance Renderable ImageFloat where
-    renderIn w = renderIn w . toGray
-
-instance Renderable ImageYUV where
-    renderIn w = renderIn w . yuvToRGB
-
-instance Renderable ImageYCbCr where
-    -- renderIn w (Y422 im) = renderImageIn w im
-    renderIn w = renderIn w . yCbCrToRGB
-
--}
 
 instance Renderable Polyline where
     render (Closed ps) = renderPrimitive LineLoop (vertex (Closed ps))
@@ -414,26 +361,3 @@ drawCamera sz cam mbt = Raw (drawCamera' sz cam mbt)
 
 --------------------------------------------------------------------------------
 
-{-
-
-instance Renderable Channels
-  where
-    renderIn q CHIm{..} = do
-        renderIn q things
-        render (color orange $ text (Point (0.5) (0.5)) "grayscale")
-        render (color red    $ text (Point (-0.5) (0.5)) "red channel")
-        render (color green  $ text (Point (0.5) (-0.5)) "green channel")
-        render (color blue   $ text (Point (-0.5) (-0.5)) "blue channel")
-        render (color orange $ histn yCh)
-        render (color red    $ histn rCh)
-        render (color green  $ histn gCh)
-        render (color blue   $ histn bCh)
-      where
-        things = (blockImage . map (map f)) [[yCh, rCh],[gCh,bCh]]
-        f = resize (Size (h `div`2) (w `div` 2))
-        Size h w = size (yCh)
-        histn c = hist / scalar (maxElement hist) - 0.6
-          where
-            hist = fromList $ histogramN [0..256] c
-
--}

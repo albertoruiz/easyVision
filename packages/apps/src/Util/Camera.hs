@@ -11,10 +11,12 @@ module Util.Camera (
 
 
 import Vision.GUI
-import ImagProc hiding (Pixel(..),median)
+import Image.Base hiding (Pixel(..))
+import Image.Core(ImageFloat,size)
 import Numeric.LinearAlgebra
 import Numeric.LinearAlgebra.Util((¦),(#),row,norm,diagl)
-import Vision
+import ImagProc(resize)
+import Vision.Camera(sepCam,computeCamera,computeHomography,computeLinearPose)
 import Util.Geometry
 import Util.Estimation
 import Data.Function(on)
