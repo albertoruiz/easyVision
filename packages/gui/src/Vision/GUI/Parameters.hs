@@ -18,7 +18,7 @@ module Vision.GUI.Parameters (
      autoParam, MkParam, ParamRecord(..)
 ) where
 
-import ImagProc.Ipp.Core hiding (r1,c1,r2,c2)
+import Image.Core(Size(..),Pixel(..))
 import Vision.GUI.Types
 import Vision.GUI.Interface
 import Graphics.UI.GLUT hiding (RGB, Matrix, Size)

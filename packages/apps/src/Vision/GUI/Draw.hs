@@ -19,7 +19,7 @@ module Vision.GUI.Draw
 ( drawTexture
 , drawCamera
 , cameraView
--- , extractSquare
+, extractSquare
 , captureGL
 , drawContourLabeled
 , drawPointsLabeled
@@ -125,8 +125,6 @@ drawCamera' size cam (Just imgtext) = do
                [ q, -q, f]]
     renderPrimitive LineLoop $ mapM_ vertex outline
 
-{-
-
 {-# DEPRECATED extractSquare "use new drawing camera tools" #-}
 extractSquare :: Int -> ImageFloat -> ImageFloat
 extractSquare sz (F im) = resize (Size sz sz) (F im {vroi = roi}) where
@@ -135,8 +133,6 @@ extractSquare sz (F im) = resize (Size sz sz) (F im {vroi = roi}) where
     d = w-h
     dm = d `quot` 2
     roi = (vroi im) {c1=dm-1,c2= dm+h}
-
--}
 
 ---------------------------------------------------------
 
@@ -243,8 +239,6 @@ instance Renderable ImageGray where
 instance Renderable ImageRGB where
     renderIn w (C im) = renderImageIn w im
 
-{-
-
 instance Renderable ImageFloat where
     renderIn w = renderIn w . toGray
 
@@ -254,8 +248,6 @@ instance Renderable ImageYUV where
 instance Renderable ImageYCbCr where
     -- renderIn w (Y422 im) = renderImageIn w im
     renderIn w = renderIn w . yCbCrToRGB
-
--}
 
 instance Renderable Polyline where
     render (Closed ps) = renderPrimitive LineLoop (vertex (Closed ps))
@@ -414,8 +406,6 @@ drawCamera sz cam mbt = Raw (drawCamera' sz cam mbt)
 
 --------------------------------------------------------------------------------
 
-{-
-
 instance Renderable Channels
   where
     renderIn q CHIm{..} = do
@@ -435,5 +425,4 @@ instance Renderable Channels
         histn c = hist / scalar (maxElement hist) - 0.6
           where
             hist = fromList $ histogramN [0..256] c
-
--}
+        

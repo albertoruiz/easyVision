@@ -41,11 +41,8 @@ import Vision.GUI.Parameters(ParamRecord(..))
 import Control.Arrow((***),(>>>),arr)
 import Control.Monad((>=>),join)
 import Control.Applicative((<*>),(<$>))
-import Image.Core(Size(..),Point(..))
-import Image.Base(distPoints)
-import Image.Core
-import ImagProc.Camera.UVC
-import Image.Camera(findSize,readFolderMP,readFolderIM,getCam)
+import ImagProc
+import ImagProc.Camera(findSize,readFolderMP,readFolderIM,getCam)
 import Vision.GUI.Arrow--(ITrans, Trans,transUI,transUI2,runT_)
 import Util.LazyIO((~>),(>~>),mkGenerator,Generator)
 import Util.Misc(replaceAt,posMin)
@@ -170,29 +167,33 @@ By default it uses the first alias in cameras.def.
 It also admits --photos=path/to/folder/ containing separate image files (.jpg or .png), currently read using imagemagick (slower, lazy),
 and --photosmp=path/to/folder, to read images of the same type and size using mplayer (faster, strict).
 -}
-camera :: Generator ImageRGB
+camera :: Generator Channels
 camera = do
     f <- hasValue "--photos"
+    g <- hasValue "--photosmp"
     h <- hasValue "--sphotos"
     if f then cameraFolderIM
-         else if h then cameraP
-                   else webcamRGB 0 (Size 480 640) 30
+         else if g then cameraFolderMP
+                   else if h then cameraP
+                             else cameraV
 
-cameraP :: Generator ImageRGB
+cameraP :: Generator Channels
 cameraP = do
     hp <- optionString "--sphotos" "."
     g <- readFolderIM hp
     c <- mkGenerator g
     return (fmap fst <$> c)
 
-cameraV :: Generator ImageYUV
-cameraV = findSize >>= getCam 0
+cameraV :: Generator Channels
+cameraV = findSize >>= getCam 0 ~> channels
 
-cameraFolderIM :: Generator ImageRGB
+cameraFolderIM :: Generator Channels
 cameraFolderIM = camG "--photos" r <*> dummy
   where
     r p _ = readFolderIM p
 
+cameraFolderMP :: Generator Channels
+cameraFolderMP = camG "--photosmp" readFolderMP <*> dummy
 
 camG opt readf = do
     path <- optionString opt "."
@@ -206,13 +207,13 @@ camG opt readf = do
              , (key (MouseButton WheelDown), \_ _ (k,xs) -> (max (k-1) 0,xs))
              , (key (SpecialKey  KeyDown),   \_ _ (k,xs) -> (max (k-1) 0,xs))]
     r _ (k,xs) _ = ((k,xs), fst $ xs!!k)
-    sh _ (k,xs) _a x = Draw [Draw x, info (k,xs) ]
+    sh _ (k,xs) _a x = Draw [Draw (rgb x), info (k,xs) ]
     -- ft w _ = evPrefSize w $= Just (Size 240 320)
     ft _ _ = return ()
     info (k,xs) = Draw [color black $ textF Helvetica12 (Point 0.9 0.6)
                         (show w ++ "x" ++ show h ++ " " ++snd ( xs!!k)) ]
       where
-        Size h w = size (fst $ xs!!k)
+        Size h w = size (grayscale $ fst $ xs!!k)
 
 dummy :: Generator ()
 dummy = return (threadDelay 100000 >> return (Just ()))

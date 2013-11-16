@@ -31,7 +31,7 @@ import Vision.GUI.Types
 import Vision.GUI.Draw
 import Vision.GUI.Trackball
 import Image.Base
-import ImagProc.Ipp(ippSetNumThreads)
+--import ImagProc.Ipp(ippSetNumThreads)
 import Image.Convert(savePPM)
 import Graphics.UI.GLUT hiding (RGB, Matrix, Size, None, Point,color)
 import qualified Graphics.UI.GLUT as GL
@@ -205,7 +205,7 @@ prepare :: IO ()
 prepare = do
     getArgsAndInitialize
     initialDisplayMode $= [DoubleBuffered, WithDepthBuffer]
-    ippSetNumThreads 1
+    -- ippSetNumThreads 1
     return ()
 
 

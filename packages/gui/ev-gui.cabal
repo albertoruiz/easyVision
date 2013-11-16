@@ -1,4 +1,4 @@
-Name:               hvision-gui
+Name:               hVision-gui
 Version:            0.3.0
 License:            GPL
 License-file:       LICENSE
@@ -25,7 +25,7 @@ library
                         containers, process, directory,
                         template-haskell, ghc-prim,
                         arrows,
-                        hmatrix, hVision-base, hVision-geometry, hVision-ipp
+                        hmatrix, hVision-base, hVision-geometry
 
     hs-source-dirs:     src
 
