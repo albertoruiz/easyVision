@@ -30,8 +30,9 @@ module Vision.GUI.Interface (
 import Vision.GUI.Types
 import Vision.GUI.Draw
 import Vision.GUI.Trackball
-import ImagProc.Base
-import ImagProc.Ipp(Size(..),ippSetNumThreads,ROI(..),savePPM)
+import Image.Base
+import ImagProc.Ipp(ippSetNumThreads)
+import Image.Convert(savePPM)
 import Graphics.UI.GLUT hiding (RGB, Matrix, Size, None, Point,color)
 import qualified Graphics.UI.GLUT as GL
 import Data.IORef
@@ -46,7 +47,6 @@ import Data.Traversable
 import Control.Applicative
 import Control.Arrow
 import Data.Colour.Names
-import Contours.Base
 import Control.Concurrent
 import Text.Printf(printf)
 

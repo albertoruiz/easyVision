@@ -31,7 +31,7 @@ module Vision.GUI.Types
 
 import Graphics.UI.GLUT hiding (RGB, Matrix, Size, Point,color,clearColor,windowTitle,blend)
 import qualified Graphics.UI.GLUT as GL
-import ImagProc.Base
+import Image.Base
 import Numeric.LinearAlgebra hiding (step)
 import Data.Colour(Colour)
 import Data.Colour.SRGB(RGB(..),toSRGB)

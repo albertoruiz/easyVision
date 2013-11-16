@@ -1,11 +1,11 @@
-Name:               ev-gui
-Version:            0.2.0
+Name:               hvision-gui
+Version:            0.3.0
 License:            GPL
 License-file:       LICENSE
 Author:             Alberto Ruiz
 Maintainer:         Alberto Ruiz <aruiz@um.es>
 Stability:          experimental
-Homepage:           http://perception.inf.um.es/easyVision
+Homepage:           https://github.com/albertoruiz/easyVision
 Synopsis:           simple gui for image processing and computer vision
 Description:
  simple gui for image processing and and computer vision
@@ -19,18 +19,13 @@ build-type:         Simple
 extra-source-files:
 
 library
-    Build-Depends:      imagproc >= 0.1,
-                        camera >= 0.1,
-                        vision >= 0.1,
-                        hmatrix >= 0.8.3,
-                        prcv-util,
-                        contours,
-                        base >= 3 && < 5, time,
+    Build-Depends:      base >= 3 && < 5, time,
                         colour >= 2.2,
                         OpenGL, GLUT,
                         containers, process, directory,
                         template-haskell, ghc-prim,
-                        arrows
+                        arrows,
+                        hmatrix, hVision-base, hVision-geometry, hVision-ipp
 
     hs-source-dirs:     src
 
@@ -48,5 +43,5 @@ library
 
     ghc-prof-options:   -auto-all
 
---    ghc-options:        -Wall
+    ghc-options:        -Wall
 
