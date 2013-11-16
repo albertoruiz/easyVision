@@ -20,7 +20,7 @@ build-type:         Simple
 extra-source-files:
 
 library
-    Build-Depends:      base >= 3 && < 5, hmatrix >= 0.11.2, hVision-util,
+    Build-Depends:      base >= 3 && < 5, hmatrix >= 0.11.2, hVision-base,
                         array, containers, process, random
 
     hs-source-dirs:     src

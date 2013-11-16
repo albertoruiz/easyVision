@@ -31,7 +31,7 @@ import ImagProc.Generic
 import ImagProc.C.Simple
 import Data.List(transpose)
 import Util.Rotation(rot3)
-import Vision(desp)
+import Util.Homogeneous(desp)
 import Numeric.LinearAlgebra
 
 -- | Binarizes a gray level image.

@@ -1,4 +1,4 @@
-Name:               hVision-util
+Name:               hVision-base
 Version:            0.4
 License:            GPL
 License-file:       LICENSE
@@ -22,7 +22,9 @@ library
     Build-Depends:      base >= 4 && < 5, hmatrix >= 0.15, vector, hTensor,
                         process, array, random, containers, directory,
                         old-locale, old-time,
-                        hmatrix-glpk
+                        hmatrix-glpk,
+                        process,
+                        ghc-prim, binary, bytestring, deepseq
 
     hs-source-dirs:     src
 
@@ -47,6 +49,12 @@ library
                         Util.L1
                         Util.Audio
                         Util.Graph
+                        
+                        Image.Base
+                        Image.Types
+                        Image.ROI
+                        Image.Core
+                        Image.Convert
 
     other-modules:
 

@@ -29,7 +29,7 @@ extra-tmp-files:    imagproc.buildinfo
 library
     Build-Depends:      base >= 3 && < 5, directory, process,
                         hmatrix >= 0.8.3,
-                        hVision-geometry, hVision-util, hVision-image,
+                        hVision-base,
                         ghc-prim, binary, bytestring, deepseq
 
     hs-source-dirs:     src

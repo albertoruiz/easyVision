@@ -26,7 +26,8 @@ module Image.Base
 ) where
 
 import qualified Numeric.LinearAlgebra as LA
-import Vision
+import Util.Geometry(Point(..),HLine(..))
+import Util.Homogeneous(ht)
 
 data Size  = Size  {height :: !Int, width :: !Int} deriving (Show, Eq)
 
