@@ -28,7 +28,7 @@ module ImagProc.Camera(
 )where
 
 import ImagProc.Ipp.Core
-import ImagProc.Ipp.Convert(loadRGB)
+import Image.Convert(loadRGB)
 import ImagProc.Generic(Channels,channels,GImg,toYUV,channelsFromRGB)
 import ImagProc.Camera.MPlayer
 import System.IO.Unsafe(unsafeInterleaveIO)

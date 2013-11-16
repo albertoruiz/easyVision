@@ -1,7 +1,7 @@
 #include "v4l2uvc.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include <ippcc.h>
+// #include <ippcc.h>
 
 
 // videodevice = "/dev/video0";
@@ -32,11 +32,12 @@ struct vdIn * openUVC(char * videodevice, int width, int height, int fps){
 #define G(C,D,E) clip(( 298 * (C) - 100 * (D) - 208 * (E) + 128) >> 8)
 #define B(C,D,E) clip(( 298 * (C) + 516 * (D)             + 128) >> 8)
 
-int grabUVC(int mode, struct vdIn * v, Ipp8u * p) {
+int grabUVC(int mode, struct vdIn * v, unsigned char * p) {
     int ok = uvcGrab(v);
     if (ok<0) return ok;
     
     switch (mode) {
+/*
       case 2 : { // YUV 420
         IppiSize roiSize = {v->width,v->height};
         int steps[3] = {v->width,v->width/2,v->width/2};
@@ -50,6 +51,8 @@ int grabUVC(int mode, struct vdIn * v, Ipp8u * p) {
         ippiYCbCr422ToRGB_8u_C2C3R(v->framebuffer, v->width*2, dest, v->width*3, roiSize);
         return ok;
       }
+*/
+
       case 3: { // grayscale
         // copy the gray plane
         int k, d = 0;
@@ -59,10 +62,12 @@ int grabUVC(int mode, struct vdIn * v, Ipp8u * p) {
         }
         return ok;
       }
+
       case 0 : { // YCbCr 422
         memcpy(p, v->framebuffer, v->width * (v->height) * 2);
         return ok;
       }
+
       case 1: { // RGB
         int k, ks=0, kd=0;
         unsigned char * s = v->framebuffer;
@@ -80,6 +85,7 @@ int grabUVC(int mode, struct vdIn * v, Ipp8u * p) {
         }
         return ok;
       }
+
       default : return 1;
     }
 

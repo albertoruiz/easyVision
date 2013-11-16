@@ -20,7 +20,7 @@ where
 import Foreign
 import Foreign.C.Types
 import Foreign.C.String(newCString)
-import ImagProc.Ipp hiding (r1,c1,r2,c2)
+import Image.Core hiding (r1,c1,r2,c2)
 
 -- #define HASUVC
 #ifdef HASUVC

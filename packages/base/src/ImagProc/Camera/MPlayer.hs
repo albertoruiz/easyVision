@@ -27,7 +27,7 @@ import Data.IORef
 import Data.List(isInfixOf,isPrefixOf)
 import Data.Maybe(listToMaybe)
 import Foreign
-import ImagProc.Ipp.Core
+import Image.Core
 import System.Exit
 import System.IO
 import System.IO.Temp

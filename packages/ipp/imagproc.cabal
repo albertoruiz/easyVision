@@ -36,6 +36,7 @@ library
 
     Exposed-modules:
                         ImagProc
+                        ImagProc.Camera
                         ImagProc.Tools
                         ImagProc.Moments
                         ImagProc.Generic
