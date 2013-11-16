@@ -70,7 +70,7 @@ library
                         Image.Core
                         Image.Convert
                         
-                        -- ImagProc.Camera
+                        Image.Camera
                         ImagProc.Camera.UVC
                         ImagProc.Camera.MPlayer
 
