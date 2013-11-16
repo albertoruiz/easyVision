@@ -10,7 +10,7 @@ Stability   :  provisional
 -}
 -----------------------------------------------------------------------------
 
-module Vision.GUI (
+module Vision.GUI.Simple (
     module Vision.GUI.Util,
     module Vision.GUI.Arrow,
     module Vision.GUI.Draw,

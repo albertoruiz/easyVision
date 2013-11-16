@@ -29,7 +29,7 @@ library
 
     hs-source-dirs:     src
 
-    Exposed-modules:    Vision.GUI
+    Exposed-modules:    Vision.GUI.Simple
                         Vision.GUI.Types
                         Vision.GUI.Util
                         Vision.GUI.Draw

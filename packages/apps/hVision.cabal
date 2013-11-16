@@ -31,6 +31,7 @@ library
                         Util.Camera
                         Vision.GUI.ExtraDraw
                         Vision.GUI.ExtraUtil
+                        Vision.GUI
                         Contours.Extraction
 
     ghc-prof-options:   -auto-all
