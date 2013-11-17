@@ -1,26 +1,23 @@
-Name:               imagproc-contrib
-Version:            0.2.0
+Name:               hVision-contrib
+Version:            0.3
 License:            GPL
 License-file:       LICENSE
 Author:             Alberto Ruiz
 Maintainer:         Alberto Ruiz <aruiz@um.es>
 Stability:          experimental
-Homepage:           http://perception.inf.um.es/easyVision/
+Homepage:           https://github.com/albertoruiz/easyVision
 Synopsis:           additional low level image processing functions
 Description:        additional low level image processing functions
 
 Category:           Math
-tested-with:        GHC ==6.10.4, GHC ==6.12.1, GHC ==7.4
+tested-with:        GHC ==7.6.3
 
 cabal-version:      >=1.2
-build-type:         Simple
+build-type:         Custom
 
-extra-source-files:     src/ImagProc/Contrib/wrappers.h
-
-extra-tmp-files:
 
 library
-    Build-Depends:      base >= 3 && < 5, imagproc
+    Build-Depends:      base >= 3 && < 5, hVision-base
 
     hs-source-dirs:     src
 
@@ -30,7 +27,7 @@ library
 
     c-sources:          src/ImagProc/Contrib/Examples/examples.c
                         
-    include-dirs:       src/ImagProc/Contrib
+--    include-dirs:       src/ImagProc/Contrib
 
     cc-options:         -O3 -msse2
 

@@ -16,15 +16,17 @@ tested-with:        GHC ==7.6.3
 cabal-version:      >=1.2
 build-type:         Simple
 
-extra-source-files: src/ImagProc/C/UVC/avilib.h
-                    src/ImagProc/C/UVC/color.h
-                    src/ImagProc/C/UVC/huffman.h
-                    src/ImagProc/C/UVC/utils.h
-                    src/ImagProc/C/UVC/v4l2uvc.h
-                    src/ImagProc/C/UVC/dynctrl-logitech.c
-                    src/ImagProc/C/UVC/uvc_compat.h
-                    src/ImagProc/C/UVC/uvcvideo.h
-                    src/ImagProc/C/UVC/COPYING
+extra-source-files: src/ImagProc/Camera/UVC/avilib.h
+                    src/ImagProc/Camera/UVC/color.h
+                    src/ImagProc/Camera/UVC/huffman.h
+                    src/ImagProc/Camera/UVC/utils.h
+                    src/ImagProc/Camera/UVC/v4l2uvc.h
+                    src/ImagProc/Camera/UVC/dynctrl-logitech.h
+                    src/ImagProc/Camera/UVC/uvc_compat.h
+                    src/ImagProc/Camera/UVC/uvcvideo.h
+                    src/ImagProc/Camera/UVC/COPYING
+
+Data-files:         src/Image/Devel/wrappers.h
 
 
 flag uvc
@@ -70,14 +72,19 @@ library
                         Image.ROI
                         Image.Core
                         Image.Convert
+                        Image.Devel
                         
                         Image.Camera
                         ImagProc.Camera.UVC
                         ImagProc.Camera.MPlayer
+                        
+                        
 
-    other-modules:
+    other-modules:      Paths_hVision_base
 
-    cc-options:         -O4
+    include-dirs:       src/Image/Devel
+
+    cc-options:         -O4 -msse2
 
     ghc-prof-options:   -auto-all
 
@@ -88,11 +95,11 @@ library
     if flag(uvc)
         if ! os(OSX)
             cpp-options: -DHASUVC
-            c-sources:          src/ImagProc/Camera/UVC/avilib.c
-                                src/ImagProc/Camera/UVC/color.c
-                                src/ImagProc/Camera/UVC/utils.c
-                                src/ImagProc/Camera/UVC/v4l2uvc.c
-                                src/ImagProc/Camera/UVC/capture.c
+            c-sources:   src/ImagProc/Camera/UVC/avilib.c
+                         src/ImagProc/Camera/UVC/color.c
+                         src/ImagProc/Camera/UVC/utils.c
+                         src/ImagProc/Camera/UVC/v4l2uvc.c
+                         src/ImagProc/Camera/UVC/capture.c
 
-    include-dirs:       src/ImagProc/Camera/UVC/
+    include-dirs:        src/ImagProc/Camera/UVC/
 
