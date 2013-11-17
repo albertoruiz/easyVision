@@ -19,7 +19,7 @@ module Vision.GUI.ExtraDraw
 ( extractSquare
 ) where
 
-import Vision.GUI
+import Vision.GUI.Simple
 import Image.Core
 import ImagProc
 import Numeric.LinearAlgebra

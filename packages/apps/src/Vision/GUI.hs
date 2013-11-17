@@ -16,7 +16,7 @@ module Vision.GUI (
     module Vision.GUI.ExtraUtil,
 )where
 
-import Vision.GUI.Simple
+import Vision.GUI.Simple hiding (camera,run)
 import Vision.GUI.ExtraDraw
 import Vision.GUI.ExtraUtil
 

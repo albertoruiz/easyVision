@@ -15,11 +15,12 @@ common interfaces
 -----------------------------------------------------------------------------
 
 module Vision.GUI.ExtraUtil (
-    Vision.GUI.ExtraUtil.camera
+    Vision.GUI.ExtraUtil.camera,
+    Vision.GUI.ExtraUtil.run
 ) where
 
 --import Graphics.UI.GLUT hiding (Point,Size,color)
-import Vision.GUI
+import Vision.GUI.Simple hiding(camera)
 import Control.Arrow((***),(>>>),arr)
 import Control.Monad((>=>),join)
 import Control.Applicative((<*>),(<$>))
@@ -76,4 +77,6 @@ cameraFolderMP = camG "--photosmp" (rfmp)  <*> dummy
 
 dummy :: Generator ()
 dummy = return (threadDelay 100000 >> return (Just ()))
+
+run t = runT_ camera (t >>> optDo "--freq" freqMonitor)
 

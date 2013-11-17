@@ -45,7 +45,7 @@ import Image.Core(Size(..),Point(..))
 import Image.Base(distPoints)
 import Image.Core
 import ImagProc.Camera.UVC
-import Image.Camera(findSize,readFolderMP,readFolderIM,getCam)
+import Image.Camera(findSize,readFolderIM)
 import Vision.GUI.Arrow--(ITrans, Trans,transUI,transUI2,runT_)
 import Util.LazyIO((~>),(>~>),mkGenerator,Generator)
 import Util.Misc(replaceAt,posMin)
@@ -176,7 +176,12 @@ camera = do
     h <- hasValue "--sphotos"
     if f then cameraFolderIM
          else if h then cameraP
-                   else webcamRGB 0 (Size 480 640) 30
+                   else cameraW
+
+cameraW = do
+    d <- getOption "--dev" 0
+    sz <- findSize
+    webcamRGB d sz 30
 
 cameraP :: Generator ImageRGB
 cameraP = do
@@ -185,14 +190,10 @@ cameraP = do
     c <- mkGenerator g
     return (fmap fst <$> c)
 
-cameraV :: Generator ImageYUV
-cameraV = findSize >>= getCam 0
-
 cameraFolderIM :: Generator ImageRGB
 cameraFolderIM = camG "--photos" r <*> dummy
   where
     r p _ = readFolderIM p
-
 
 camG opt readf = do
     path <- optionString opt "."
@@ -216,7 +217,6 @@ camG opt readf = do
 
 dummy :: Generator ()
 dummy = return (threadDelay 100000 >> return (Just ()))
-
 
 run t = runT_ camera (t >>> optDo "--freq" freqMonitor)
 

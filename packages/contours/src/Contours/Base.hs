@@ -33,7 +33,7 @@ import Image.Base
 import Data.List(sortBy, maximumBy, sort,foldl',tails)
 import Numeric.LinearAlgebra
 import Numeric.LinearAlgebra.Util(diagl)
-import Util.Homogeneous
+import Util.Homogeneous hiding (flipx)
 import Util.Misc(Vec)
 import Data.Function(on)
 import Util.Geometry as G
