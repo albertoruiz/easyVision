@@ -60,6 +60,8 @@ module Vision.Camera
 , theRightB, theRight
 ) where
 
+import Util.Camera
+
 import Numeric.LinearAlgebra as LA
 import qualified Numeric.GSL as G
 import Util.Homogeneous
@@ -76,9 +78,6 @@ import Util.Geometry
 import Util.Small(unsafeMap)
 import Numeric.LinearAlgebra.Util((¦),(#),row,norm,unitary,diagl)
 import Control.Arrow
-
-cameraAtOrigin :: Mat
-cameraAtOrigin = ident 3 ¦ 0
 
 -- | A nice camera parameterization.
 data CameraParameters 
@@ -121,15 +120,6 @@ syntheticCamera campar = flipx <> k <> r <> m where
              [0,0,1, -cz]]
     r = rotPTR (p,t,q)
     k = kgen f
-
-flipx :: Mat
-flipx = diagl [-1,1,1]
-
--- | Matrix of intrinsic parameters of a diag(f,f,1) camera
-kgen :: Double -> Mat
-kgen f = (3><3) [ f,0,0
-                , 0,f,0
-                , 0,0,1 ]
 
 
 rotPTR :: (Double,Double,Double) -> Mat
@@ -297,12 +287,6 @@ cameraOutline f =
     --,[0,0,3*f]
     ]
 
-toCameraSystem :: Mat -> (Mat, Double)
-toCameraSystem cam = (inv m, f) where
-    (k,r,c) = factorizeCamera cam
-    m = r ¦ asColumn (-r <> c)
-      # row [0,0,0,1]
-    (f:_):_ = toLists k
 
 {-
 doublePerp (a,b) (c,d) = (e,f) where
@@ -318,48 +302,6 @@ doublePerp (a,b) (c,d) = (e,f) where
     f = toList $ a' + scalar lam * (b'-a') + scalar mu * v
 -}
 ------------------------------------------------------            
-
-mkCamera :: Mat -- ^ K
-         -> Mat -- ^ R
-         -> Vec -- ^ C
-         -> Mat
-mkCamera k r c = k <> fromBlocks [[r, - asColumn (r <> c)]]
-
-
-
--- | Given a camera matrix m it returns (K, R, C)
---   such as m \=\~\= k \<\> r \<\> (ident 3 \<\|\> -c)
-factorizeCamera :: Mat -> (Mat,Mat,Vec)
-factorizeCamera m = (normat3 k, signum (det r) `scale` r ,c) where
-    m' = takeColumns 3 m
-    (k',r') = rq m'
-    s = diag(signum (takeDiag k'))
-    (_,_,v) = svd m
-    (v',_) = qr v
-    k = k'<>s
-    r = s<>r'
-    c = inHomog $ flatten $ dropColumns 3 v'
-
-
--- | Factorize a camera matrix as (K, [R|t])
-sepCam :: Mat -> (Mat, Mat)
-sepCam m = (k,p) where
-    (k,r,c) = factorizeCamera m
-    p = fromBlocks [[r,-r <> asColumn c]]
-
-rotOfCam :: Mat -> Mat
-rotOfCam c = r where (_,r,_) = factorizeCamera c
-
-
--- | Scaling of pixel coordinates to get values of order of 1
-knor :: (Int,Int) -> Mat
-knor (szx,szy) = (3><3) [-a, 0, a,
-                          0,-a, b,
-                          0, 0, 1]
-    where a = fromIntegral szx/2
-          b = fromIntegral szy/2
-
---------------------------------------------------------------------------------
 
 -- | linear camera resection
 estimateCameraRaw :: [[Double]] -> [[Double]] -> Mat

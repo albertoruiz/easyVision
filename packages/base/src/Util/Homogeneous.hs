@@ -25,6 +25,7 @@ module Util.Homogeneous
 -- * Typical transformations and useful constants
 , desp, desp34
 , scaling
+, flipx
 , mS
 , mA
 , mF
@@ -43,7 +44,7 @@ module Util.Homogeneous
 ) where
 
 import Numeric.LinearAlgebra
-import Numeric.LinearAlgebra.Util((&),norm)
+import Numeric.LinearAlgebra.Util((&),norm,diagl)
 import Util.Rotation(rot3)
 import Util.Misc(vec,Vec,mat,Mat,impossible)
 import Util.Geometry(Point(..),HLine(..))
@@ -52,6 +53,8 @@ import qualified Util.Geometry as G
 
 ----------------------------------------------------------------------
 
+flipx :: Matrix Double
+flipx = diagl [-1,1,1]
 
 
 -- | Homogeneous 3x3 matrix of a 2D displacement

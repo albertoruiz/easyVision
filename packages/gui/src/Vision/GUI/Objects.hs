@@ -13,7 +13,7 @@ True coordinates of several calibration objects and 3D models
 -----------------------------------------------------------------------------
 
 module Vision.GUI.Objects (
-    a4Ref, asymRef, cornerRef, houseModel, block, unitCube, sphere,
+    a4Ref, asymRef, cornerRef, houseModel, block, unitCube, sphere, cameraOutline
 ) where
 
 import Graphics.UI.GLUT
@@ -116,4 +116,28 @@ sphere x y z r = do
         renderQuadric 
             (QuadricStyle Nothing NoTextureCoordinates Outside LineStyle)
             (Sphere (doubleGL r) 20 20)
+
+
+cameraOutline :: Double -> [[Double]]
+cameraOutline f =
+    [
+    [0::Double,0,0],
+    [1,0,0],
+    [0,0,0],
+    [0,0.75,0],
+    [0,0,0],
+    [-1,1,f],
+    [1,1,f],
+    [1,-1,f],
+    [-1,-1,f],
+    [-1,1,f],
+    [0,0,0],
+    [1,1,f],
+    [0,0,0],
+    [-1,-1,f],
+    [0,0,0],
+    [1,-1,f],
+    [0,0,0]
+    --,[0,0,3*f]
+    ]
 

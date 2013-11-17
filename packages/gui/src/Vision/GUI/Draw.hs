@@ -36,7 +36,9 @@ import Image.Core
 import Data.IORef
 import Foreign (touchForeignPtr,castPtr)
 import Numeric.LinearAlgebra hiding (step)
-import Vision
+import Util.Camera(toCameraSystem)
+import Vision.GUI.Objects(cameraOutline)
+import Util.Homogeneous(ht,desp)
 import Util.Rotation
 import Util.Misc(degree,debug,Mat)
 import Vision.GUI.Types
@@ -103,29 +105,6 @@ drawTexture' (F im) [v1,v2,v3,v4] = do
           vertex p
 
 ------------------------------------------------------------
-
--- | It shows the outline of a camera and an optional image (texture) in its image plane.
-drawCamera' :: Double -> Matrix Double -> Maybe ImageFloat -> IO ()
-drawCamera' size cam Nothing = do
-    let (invcam,f) = toCameraSystem cam
-    let m = invcam<>diag (fromList[1,1,1,1/size])
-    let outline = ht m (cameraOutline f)
-    renderPrimitive LineLoop $ mapM_ vertex outline
-
-drawCamera' size cam (Just imgtext) = do
-    let (invcam,f) = toCameraSystem cam
-    let m = invcam<>diag (fromList[1,1,1,1/size])
-    let outline = ht m (cameraOutline f)
-    let q = 0.95 --0.75                     TO DO: fix this
-    drawTexture' imgtext $ ht m
-              [[ q,  q, f],
-               [-q,  q, f],
-               [-q, -q, f],
-               [ q, -q, f]]
-    renderPrimitive LineLoop $ mapM_ vertex outline
-
-
----------------------------------------------------------
 
 -- | sets the opengl view of a given camera matrix
 cameraView :: Matrix Double -- ^ 3x4 camera matrix (with K=diag f f 1)
@@ -358,6 +337,28 @@ drawTexture x ps = Raw (drawTexture' x ps)
 drawCamera :: Double -> Matrix Double -> Maybe ImageFloat -> Drawing
 -- ^ provisional
 drawCamera sz cam mbt = Raw (drawCamera' sz cam mbt)
+
+
+
+-- | It shows the outline of a camera and an optional image (texture) in its image plane.
+drawCamera' :: Double -> Matrix Double -> Maybe ImageFloat -> IO ()
+drawCamera' size cam Nothing = do
+    let (invcam,f) = toCameraSystem cam
+    let m = invcam<>diag (fromList[1,1,1,1/size])
+    let outline = ht m (cameraOutline f)
+    renderPrimitive LineLoop $ mapM_ vertex outline
+
+drawCamera' size cam (Just imgtext) = do
+    let (invcam,f) = toCameraSystem cam
+    let m = invcam<>diag (fromList[1,1,1,1/size])
+    let outline = ht m (cameraOutline f)
+    let q = 0.95 --0.75                     TO DO: fix this
+    drawTexture' imgtext $ ht m
+              [[ q,  q, f],
+               [-q,  q, f],
+               [-q, -q, f],
+               [ q, -q, f]]
+    renderPrimitive LineLoop $ mapM_ vertex outline
 
 --------------------------------------------------------------------------------
 

@@ -218,7 +218,7 @@ dummy :: Generator ()
 dummy = return (threadDelay 100000 >> return (Just ()))
 
 
-run t = runT_ camera (t >>> optDo "--freq" freqMonitor) 
+run t = runT_ camera (t >>> optDo "--freq" freqMonitor)
 
 --------------------------------------------------------------------------------
 

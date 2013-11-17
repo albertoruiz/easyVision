@@ -25,7 +25,7 @@ library
                         containers, process, directory,
                         template-haskell, ghc-prim,
                         arrows,
-                        hmatrix, hVision-base, hVision-geometry
+                        hmatrix, hVision-base
 
     hs-source-dirs:     src
 
