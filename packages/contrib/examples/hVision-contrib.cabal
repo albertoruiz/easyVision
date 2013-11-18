@@ -15,6 +15,9 @@ tested-with:        GHC ==7.6.3
 cabal-version:      >=1.2
 build-type:         Custom
 
+extra-source-files: configure configure.hs
+extra-tmp-files:    hVision-contrib.buildinfo
+
 
 library
     Build-Depends:      base >= 3 && < 5, hVision-base
@@ -26,10 +29,8 @@ library
     other-modules:
 
     c-sources:          src/ImagProc/Contrib/Examples/examples.c
-                        
---    include-dirs:       src/ImagProc/Contrib
 
-    cc-options:         -O3 -msse2
+    cc-options:         -O4 -msse2
 
     ghc-prof-options:   -auto-all
 
