@@ -28,7 +28,7 @@ module Image.Camera(
 import Image.Core
 import Image.Base
 import Image.Convert(loadRGB)
---import ImagProc.Generic(Channels,channels,GImg,toYUV,channelsFromRGB)
+import ImagProc.Simple(yuv2rgb)
 import ImagProc.Camera.MPlayer
 import System.IO.Unsafe(unsafeInterleaveIO)
 import Data.List(isPrefixOf,foldl',tails,findIndex,isInfixOf,isSuffixOf,sort)
@@ -73,7 +73,7 @@ parseSize s | 'x' `elem` s = f s
 -- | returns a camera from the n-th user argument
 getCam :: Int  -- ^ n-th camera url supplied by the user (or defined in cameras.def)
        -> Size -- ^ image size
-       -> Generator ImageYUV
+       -> Generator ImageRGB
 getCam n sz = do
     rawargs <- getArgs
     aliases <- getAliases
@@ -87,29 +87,35 @@ getCam n sz = do
         isChan = "--chan" `isInfixOf` fullUrl || "--chan" `elem` rawargs
         clean ws = unwords . filter (not . (`elem` ws)). words
         cleanUrl = clean ["--live"] fullUrl
-        uvcdev = "/dev/video" ++ drop 3 cleanUrl
-        cam = if "uvc" `isPrefixOf` cleanUrl
-                then dbg (putStrLn uvcdev) >> (fmap (fmap Just) (uvcCamera uvcdev sz 30))
+    uvcdev <- getOption "--uvc" "/dev/video0"
+    isuvc <- getFlag "--uvc"
+    let cam = if isuvc || null rawargs
+                then webcamRGB uvcdev sz 30
                 else do dbg (putStrLn cleanUrl)
                         gsz <- askSize cleanUrl
                         def <- or `fmap` mapM hasValue ["--size", "--rows", "--cols"]
                         case gsz of
                             Nothing -> error $ cleanUrl ++ " not found!"
                             Just isz -> if def
-                                            then mplayer' cleanUrl sz
-                                            else mplayer' cleanUrl isz
+                                            then mplayer'' cleanUrl sz
+                                            else mplayer'' cleanUrl isz
 
     if isLive
         then dbg (putStrLn "Live") >> cam >>= live
         else if isChan
                  then dbg (putStrLn "Channel") >> cam >>= channel
+       
                  else cam
   where
     cleanSingleOpts = filter $ \x -> not ("-" `isPrefixOf` x) || ' ' `elem` x
 
+--mplayer'' = Generator ImageRGB
+
+mplayer'' u s = fmap (fmap (fmap yuv2rgb)) (mplayer' u s)
+
 ----------------------------------------------
 
-getCams :: IO [IO (Maybe ImageYUV)]
+getCams :: IO [IO (Maybe ImageRGB)]
 getCams = do
     n <- numCams
     sz <- findSize
@@ -117,7 +123,7 @@ getCams = do
     return cams
 
 
-getMulticam :: Size -> Int -> Generator [ImageYUV]
+getMulticam :: Size -> Int -> Generator [ImageRGB]
 getMulticam sz n = do
     cams <- mapM (flip getCam sz) [0..n-1]
     return (fmap sequence $ sequence cams)

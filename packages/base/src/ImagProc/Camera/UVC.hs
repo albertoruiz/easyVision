@@ -44,13 +44,15 @@ uvcCamera d (Size h w) fps = do
 
 --------------------------------------------------------------------------------
 
+-- FIXME return real size
+
 webcamRGB
-  :: Int  -- ^ device
+  :: String -- ^ device
   -> Size
   -> Int  -- ^ frame rate
   -> IO (IO (Maybe ImageRGB))
 webcamRGB d (Size h w) fps = do
-    dev <- newCString ("/dev/video"++show d)
+    dev <- newCString d
     han <- c_openUVC dev (fromIntegral w) (fromIntegral h) (fromIntegral fps)
     return $ do
         C im <- image (Size h w)
@@ -61,12 +63,12 @@ webcamRGB d (Size h w) fps = do
 
 
 webcam
-  :: Int  -- ^ device
+  :: String  -- ^ device
   -> Size
   -> Int  -- ^ frame rate
   -> IO (IO (Maybe ImageYCbCr))
 webcam d (Size h w) fps = do
-    dev <- newCString ("/dev/video"++show d)
+    dev <- newCString d
     han <- c_openUVC dev (fromIntegral w) (fromIntegral h) (fromIntegral fps)
     return $ do
         im <- img YCbCr (Size h w)
@@ -77,12 +79,12 @@ webcam d (Size h w) fps = do
 
 
 webcamGray
-  :: Int  -- ^ device
+  :: String  -- ^ device
   -> Size
   -> Int  -- ^ frame rate
   -> IO (IO (Maybe ImageGray))
 webcamGray d (Size h w) fps = do
-    dev <- newCString ("/dev/video"++show d)
+    dev <- newCString d
     han <- c_openUVC dev (fromIntegral w) (fromIntegral h) (fromIntegral fps)
     return $ do
         G im <- image (Size h w)
