@@ -290,7 +290,7 @@ readImages fs = do
     mapM f fs
 
 
-readFolderMP :: FilePath -> Maybe Size -> IO [(ImageYUV,String)]
+readFolderMP :: FilePath -> Maybe Size -> IO [(ImageRGB,String)]
 -- ^ reads a list of images from a folder. Fixed size using mplayer
 readFolderMP path mbsz = do
     let sz = maybe (Size 600 800) id mbsz -- TO DO: remove fixed size
@@ -299,6 +299,6 @@ readFolderMP path mbsz = do
     cam <- mplayer ("mf://"++path++"/ -benchmark -loop 1") sz
     imgs <- sequence (replicate nframes cam)
     errMsg $ show (length imgs) ++ " images in " ++ path
-    return $ zip imgs (map show [(1::Int)..])
+    return $ zip (map yuv2rgb imgs) (map show [(1::Int)..])
 
 

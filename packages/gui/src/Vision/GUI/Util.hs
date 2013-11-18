@@ -45,7 +45,7 @@ import Image.Core(Size(..),Point(..))
 import Image.Base(distPoints)
 import Image.Core
 import ImagProc.Camera.UVC
-import Image.Camera(findSize,readFolderIM)
+import Image.Camera
 import Vision.GUI.Arrow--(ITrans, Trans,transUI,transUI2,runT_)
 import Util.LazyIO((~>),(>~>),mkGenerator,Generator)
 import Util.Misc(replaceAt,posMin)
@@ -71,7 +71,7 @@ editor upds acts name xs drw = standalone (Size 400 400) name (0,xs) (upds ++ mo
     f (k,xs) | null xs = text (Point 0 0) "empty list!"
              | otherwise = drw j (xs !! j)
                  where
-                   j = k `mod` (length xs)   
+                   j = k `mod` (length xs)
     move = g2 [ ( key (MouseButton WheelUp),   (+1) )
               , ( key (SpecialKey  KeyUp),     (+1) )
               , ( key (MouseButton WheelDown), pred )
@@ -98,7 +98,7 @@ browser3D name xs drw = standalone3D (Size 400 400) name (0,xs) move [] f
     f (k,xs) | null xs = text (Point 0 0) "empty list!"
              | otherwise = drw j (xs !! j)
                  where
-                   j = k `mod` (length xs)   
+                   j = k `mod` (length xs)
     move = g2 [ ( key (MouseButton WheelUp),   (+1) )
               , ( key (SpecialKey  KeyUp),     (+1) )
               , ( key (MouseButton WheelDown), pred )
@@ -148,7 +148,7 @@ sMonitor name f = optDont ("--no-"++name)
 observe :: Renderable x => String -> (b -> x) -> ITrans b b
 observe name f = optDont ("--no-"++name)
                $ optDont ("--no-gui")
-               $ transUI 
+               $ transUI
                $ interface (Size 240 360) name () (const.const.return $ ())
                            [] [] (const (,)) (const.const.const $ Draw . f)
 
@@ -156,11 +156,12 @@ observe name f = optDont ("--no-"++name)
 observe3D :: Renderable x => String -> (b -> x) -> ITrans b b
 observe3D name f = optDont ("--no-"++name)
                $ optDont ("--no-gui")
-               $ transUI 
+               $ transUI
                $ interface3D (Size 400 400) name () (const.const.return $ ())
                              [] [] (const (,)) (const.const.const $ Draw . f)
 
 --------------------------------------------------------------------------------
+
 
 {- |
 Returns the first image source given in the command line.
@@ -173,15 +174,12 @@ and --photosmp=path/to/folder, to read images of the same type and size using mp
 camera :: Generator ImageRGB
 camera = do
     f <- hasValue "--photos"
+    g <- hasValue "--photosmp"
     h <- hasValue "--sphotos"
     if f then cameraFolderIM
-         else if h then cameraP
-                   else cameraW
-
-cameraW = do
-    d <- getOption "--dev" 0
-    sz <- findSize
-    webcamRGB d sz 30
+         else if g then cameraFolderMP
+                   else if h then cameraP
+                             else cameraV
 
 cameraP :: Generator ImageRGB
 cameraP = do
@@ -190,10 +188,16 @@ cameraP = do
     c <- mkGenerator g
     return (fmap fst <$> c)
 
+cameraV :: Generator ImageRGB
+cameraV = findSize >>= getCam 0
+
 cameraFolderIM :: Generator ImageRGB
 cameraFolderIM = camG "--photos" r <*> dummy
   where
     r p _ = readFolderIM p
+
+cameraFolderMP :: Generator ImageRGB
+cameraFolderMP = camG "--photosmp" readFolderMP <*> dummy
 
 camG opt readf = do
     path <- optionString opt "."
@@ -218,7 +222,9 @@ camG opt readf = do
 dummy :: Generator ()
 dummy = return (threadDelay 100000 >> return (Just ()))
 
+
 run t = runT_ camera (t >>> optDo "--freq" freqMonitor)
+
 
 --------------------------------------------------------------------------------
 
@@ -317,7 +323,7 @@ connectWithG p f w1 w2 = do
         s2 <- getW w2
         p w2 (f s2 s1)
         postRedisplay (Just (evW w2)) )
-    join . get . evNotify $ w1 
+    join . get . evNotify $ w1
 
 
 connectWith :: (s2 -> s1 -> s2) -> EVWindow s1 -> EVWindow s2 -> IO ()
