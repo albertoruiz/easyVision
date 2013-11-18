@@ -110,7 +110,7 @@ img2mat (F im) = unsafePerformIO $ do
             sequence_ $ zipWith (f p) ps [0..fromIntegral r-1]
             return 0
     m <- createMatrix RowMajor r c
-    app1 g mat (cmat m) "img2mat" >> return 0 // checkIP "img2mat" [im]
+    app1 g mat (cmat m) "img2mat" >> return 0 // checkFFI "img2mat" [im]
     return m
 
 ----------------------------------------------------------------------

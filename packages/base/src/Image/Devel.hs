@@ -4,12 +4,15 @@
 module Image.Devel (
     RawImage,
     appG, appF, appC,
+    CInt(..),Ptr, Word8, unsafePerformIO,
     getDataFileName
 ) where
 
 import Image.Core
 import Foreign.Ptr
+import Foreign.C.Types
 import Foreign(Word8)
+import System.IO.Unsafe(unsafePerformIO)
 
 import Paths_hVision_base
 

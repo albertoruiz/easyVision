@@ -78,11 +78,15 @@ library
                         ImagProc.Camera.UVC
                         ImagProc.Camera.MPlayer
                         
+                        ImagProc.Simple
+                        
                         
 
     other-modules:      Paths_hVision_base
 
     include-dirs:       src/Image/Devel
+
+    c-sources:          src/ImagProc/Simple/simple.c
 
     cc-options:         -O4 -msse2
 

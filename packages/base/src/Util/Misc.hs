@@ -20,7 +20,7 @@ module Util.Misc(
     mean, median, quartiles, shDist,
     -- * Misc
     angleDiff,
-    lambdify, (.:),
+    lambdify, (.:), (//),
     arrayOf, memo,
     formattedTime,
     formattedDate
@@ -234,6 +234,11 @@ lambdify f a b x = f (a x) (b x)
 infixr 9 .:
 (.:) :: (x -> y) -> ( a -> b-> x) -> (a -> b-> y)
 f .: g = \a b -> f (g a b)
+
+-- | Postfix function application (@flip ($)@)
+(//) :: x -> (x -> y) -> y
+infixl 0 //
+(//) = flip ($)
 
 --------------------------------------------------------------------
 

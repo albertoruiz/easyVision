@@ -28,7 +28,7 @@ module Image.Core
             -- * Regions of interest
           , fullroi, invalidROIs, validArea, roiPtrs, setRegion
             -- * Wrapper tools
-          , src, checkIP, (//), starting
+          , src, checkFFI, (//), starting
             -- * Image types
           , Image(..)
           , ImageRGB(C)
@@ -68,7 +68,7 @@ import System.IO
 import System.IO.Unsafe(unsafePerformIO)
 import Data.Binary
 import Control.Applicative
-import Util.Misc(assert)
+import Util.Misc(assert,(//))
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Internal as B
 import Data.ByteString(ByteString)
@@ -194,31 +194,18 @@ src im roi f = f (starting im roi) (step im)
 
 
 
-checkIP  :: String  -- ^ some identifier of the calling function
-         -> [Img]   -- ^ the source images required by the function
-         -> IO Int  -- ^ the ipp function to wrap
-         -> IO ()
+checkFFI  :: String  -- ^ some identifier of the calling function
+          -> [Img]   -- ^ the source images required by the function
+          -> IO CInt  -- ^ the foreing function to wrap
+          -> IO ()
 -- ^ Required wrapper to any ipp function, checking that it has been successful and touching the foreign pointers of the source images to prevent early deallocation.
-checkIP msg ls f = do
+checkFFI msg ls f = do
     err <- f
-    when (err/=0) $ do
---        ps <- ippGetStatusString err
---        s <- peekCString ps
-        let s = "FIXME"
-        if err > 0 || any (`elem` warnings) (words s)
-          then
-            hPutStrLn stderr $ "Warning in " ++ msg ++ ": " ++ s
-          else
-            error $ "in " ++ msg ++ ": " ++ s
-    mapM_ (touchForeignPtr . fptr) ls -- really needed!
-    return ()
-
-warnings = ["ippStsCoeffErr:"]
-
--- | Postfix function application (@flip ($)@) for conveniently writing ipp wrappers using 'src', 'dst', and 'checkIPP'. See examples in the source code of module "Ipp.Typical".
-(//) :: x -> (x -> y) -> y
-infixl 0 //
-(//) = flip ($)
+    if (err==0)
+      then
+        mapM_ (touchForeignPtr . fptr) ls
+      else
+        error $ "error in foreign function " ++ msg
 
 --------------------------------------------------------------
 
