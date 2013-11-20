@@ -391,8 +391,6 @@ clickTag l r sh name = transUI $ interface (Size 240 320) name False ft updt [] 
 {- |
 Returns the first image source given in the command line.
 
-By default it uses the first alias in cameras.def.
-
 It also admits --photos=path/to/folder/ containing separate image files (.jpg or .png), currently read using imagemagick (slower, lazy),
 and --photosmp=path/to/folder, to read images of the same type and size using mplayer (faster, strict).
 -}
@@ -406,8 +404,6 @@ camera = do
                    else if h then cameraP
                              else cameraV
 
-toRGB = fmap (fmap (fmap yuyv2rgb))
-
 cameraP :: Generator ImageRGB
 cameraP = do
     hp <- optionString "--sphotos" "."
@@ -416,12 +412,14 @@ cameraP = do
     return (fmap fst <$> c)
 
 cameraV :: Generator ImageRGB
-cameraV = toRGB (findSize >>= getCam 0)
+cameraV = toRGB gcam
+  where
+    toRGB = fmap (fmap (fmap yuyv2rgb))
 
 cameraFolderIM :: Generator ImageRGB
 cameraFolderIM = camG "--photos" r <*> dummy
   where
-    r p _ = readFolderIM p
+    r p _sz = readFolderIM p
 
 cameraFolderMP :: Generator ImageRGB
 cameraFolderMP = camG "--photosmp" rf <*> dummy
@@ -430,7 +428,7 @@ cameraFolderMP = camG "--photosmp" rf <*> dummy
 
 camG opt readf = do
     path <- optionString opt "."
-    sz <- findSize
+    sz <- parseSize <$> optionString "--size" "640x480"
     imgs <- readf path (Just sz)
     interface (Size 240 320) "photos" (0,imgs) ft (keys imgs) [] r sh
   where
