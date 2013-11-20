@@ -435,7 +435,7 @@ static int init_v4l2(struct vdIn *vd)
 	}
 	if ((vd->fmt.fmt.pix.width != vd->width) ||
 		(vd->fmt.fmt.pix.height != vd->height)) {
-		printf("  Frame size:   %ux%u (requested size %ux%u is not supported by device)\n",
+		fprintf(stderr,"\e[0;31mFrame size:   %ux%u (requested size %ux%u is not supported by device)\n\e[0m",
 			vd->fmt.fmt.pix.width, vd->fmt.fmt.pix.height, vd->width, vd->height);
 		vd->width = vd->fmt.fmt.pix.width;
 		vd->height = vd->fmt.fmt.pix.height;
@@ -469,8 +469,8 @@ static int init_v4l2(struct vdIn *vd)
 	if(ret == 0) {
 		float confirmed_fps = (float)setfps->parm.capture.timeperframe.denominator / (float)setfps->parm.capture.timeperframe.numerator;
 		if (confirmed_fps != (float)n / (float)d) {
-			printf("  Frame rate:   %g fps (requested frame rate %g fps is "
-				"not supported by device)\n",
+			fprintf(stderr,"\e[0;31mFrame rate:   %g fps (requested frame rate %g fps is "
+				"not supported by device)\n\e[0m",
 				confirmed_fps,
 				vd->fps);
 			vd->fps = confirmed_fps;

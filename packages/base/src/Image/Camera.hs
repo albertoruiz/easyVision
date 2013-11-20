@@ -13,6 +13,7 @@ Video sources
 
 module Image.Camera(
     -- * Camera selection
+    gcam,
     findSize,
     getCam, numCams,
     getCams, getMulticam,
@@ -43,8 +44,42 @@ import Util.Misc(debug,errMsg)
 import Control.Monad
 import Util.LazyIO((>~>),lazyList,Generator)
 import Text.Printf
+import Data.List.Split(splitOn)
 
------------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+
+gcam :: Generator ImageYCbCr
+gcam = do
+    args <- getArgs
+    let clean = cleanOpts args
+    a <- if null args
+           then return "uvc"
+           else if null clean
+                  then optionString "--source" "uvc"
+                  else return (head clean)
+    let opt = getSubOption a
+        has = hasSubOption a
+
+        dev = "/dev/video" ++ opt "dev" "0"
+        sz = parseSize $ opt "size" "640x480"
+        fps = read (opt "fps" "30")
+        
+        url = opt "url" (head (splitOn ":" a))
+        
+    if has "uvc"
+        then webcam dev sz fps
+        else if has "size"
+                then mplayer'' url sz
+                else do
+                    mbsize <- askSize url
+                    case mbsize of
+                        Nothing -> mplayer'' url sz
+                        Just oksz -> mplayer'' url oksz
+
+
+--------------------------------------------------------------------------------
+
 
 {- | Extracts an optional image size from command line.
      It admits --rows, --cols, and --size (for 32k 4\/3). The default is --size=20 (640x480).
@@ -300,5 +335,4 @@ readFolderMP path mbsz = do
     imgs <- sequence (replicate nframes cam)
     errMsg $ show (length imgs) ++ " images in " ++ path
     return $ zip (map yuv2yuyv imgs) (map show [(1::Int)..])
-
 
