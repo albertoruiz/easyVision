@@ -39,7 +39,7 @@ library
                         process, array, random, containers, directory,
                         old-locale, old-time,
                         hmatrix-glpk,
-                        process, temporary, split,
+                        process, temporary, split, SafeSemaphore,
                         ghc-prim, binary, bytestring, deepseq
 
     hs-source-dirs:     src
@@ -79,6 +79,8 @@ library
                         ImagProc.Camera.MPlayer
                         
                         ImagProc.Simple
+                        
+                        Image.OldCamera
                         
                         
 
