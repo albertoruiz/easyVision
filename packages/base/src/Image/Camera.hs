@@ -28,7 +28,7 @@ module Image.Camera(
 import Image.Core
 import Image.Base
 import Image.Convert(loadRGB)
-import ImagProc.Simple(yuv2rgb)
+import ImagProc.Simple(yuv2yuyv)
 import ImagProc.Camera.MPlayer
 import System.IO.Unsafe(unsafeInterleaveIO)
 import Data.List(isPrefixOf,foldl',tails,findIndex,isInfixOf,isSuffixOf,sort)
@@ -73,7 +73,7 @@ parseSize s | 'x' `elem` s = f s
 -- | returns a camera from the n-th user argument
 getCam :: Int  -- ^ n-th camera url supplied by the user (or defined in cameras.def)
        -> Size -- ^ image size
-       -> Generator ImageRGB
+       -> Generator ImageYCbCr
 getCam n sz = do
     rawargs <- getArgs
     aliases <- getAliases
@@ -90,7 +90,7 @@ getCam n sz = do
     uvcdev <- getOption "--uvc" "/dev/video0"
     isuvc <- getFlag "--uvc"
     let cam = if isuvc || null rawargs
-                then webcamRGB uvcdev sz 30
+                then webcam uvcdev sz 30
                 else do dbg (putStrLn cleanUrl)
                         gsz <- askSize cleanUrl
                         def <- or `fmap` mapM hasValue ["--size", "--rows", "--cols"]
@@ -109,13 +109,13 @@ getCam n sz = do
   where
     cleanSingleOpts = filter $ \x -> not ("-" `isPrefixOf` x) || ' ' `elem` x
 
---mplayer'' = Generator ImageRGB
+--webcamRGB dev sz fps = fmap (fmap (fmap yuyv2rgb)) (webcam dev sz fps)
 
-mplayer'' u s = fmap (fmap (fmap yuv2rgb)) (mplayer' u s)
+mplayer'' u s = fmap (fmap (fmap yuv2yuyv)) (mplayer' u s)
 
 ----------------------------------------------
 
-getCams :: IO [IO (Maybe ImageRGB)]
+getCams :: IO [IO (Maybe ImageYCbCr)]
 getCams = do
     n <- numCams
     sz <- findSize
@@ -123,7 +123,7 @@ getCams = do
     return cams
 
 
-getMulticam :: Size -> Int -> Generator [ImageRGB]
+getMulticam :: Size -> Int -> Generator [ImageYCbCr]
 getMulticam sz n = do
     cams <- mapM (flip getCam sz) [0..n-1]
     return (fmap sequence $ sequence cams)
@@ -290,7 +290,7 @@ readImages fs = do
     mapM f fs
 
 
-readFolderMP :: FilePath -> Maybe Size -> IO [(ImageRGB,String)]
+readFolderMP :: FilePath -> Maybe Size -> IO [(ImageYCbCr,String)]
 -- ^ reads a list of images from a folder. Fixed size using mplayer
 readFolderMP path mbsz = do
     let sz = maybe (Size 600 800) id mbsz -- TO DO: remove fixed size
@@ -299,6 +299,6 @@ readFolderMP path mbsz = do
     cam <- mplayer ("mf://"++path++"/ -benchmark -loop 1") sz
     imgs <- sequence (replicate nframes cam)
     errMsg $ show (length imgs) ++ " images in " ++ path
-    return $ zip (map yuv2rgb imgs) (map show [(1::Int)..])
+    return $ zip (map yuv2yuyv imgs) (map show [(1::Int)..])
 
 

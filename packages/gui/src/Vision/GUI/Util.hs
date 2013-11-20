@@ -15,12 +15,12 @@ common interfaces
 -----------------------------------------------------------------------------
 
 module Vision.GUI.Util (
+    run, camera,
     observe, observe3D, camG, cameraFolderIM,
     sMonitor,
     browser, browser3D,
     editor,
     updateItem,
-    camera, run,
     freqMonitor, wait,
     browseLabeled,
     choose, optDo, optDont,
@@ -45,6 +45,7 @@ import Image.Core(Size(..),Point(..))
 import Image.Base(distPoints)
 import Image.Core
 import ImagProc.Camera.UVC
+import ImagProc.Simple(yuyv2rgb)
 import Image.Camera
 import Vision.GUI.Arrow--(ITrans, Trans,transUI,transUI2,runT_)
 import Util.LazyIO((~>),(>~>),mkGenerator,Generator)
@@ -159,72 +160,6 @@ observe3D name f = optDont ("--no-"++name)
                $ transUI
                $ interface3D (Size 400 400) name () (const.const.return $ ())
                              [] [] (const (,)) (const.const.const $ Draw . f)
-
---------------------------------------------------------------------------------
-
-
-{- |
-Returns the first image source given in the command line.
-
-By default it uses the first alias in cameras.def.
-
-It also admits --photos=path/to/folder/ containing separate image files (.jpg or .png), currently read using imagemagick (slower, lazy),
-and --photosmp=path/to/folder, to read images of the same type and size using mplayer (faster, strict).
--}
-camera :: Generator ImageRGB
-camera = do
-    f <- hasValue "--photos"
-    g <- hasValue "--photosmp"
-    h <- hasValue "--sphotos"
-    if f then cameraFolderIM
-         else if g then cameraFolderMP
-                   else if h then cameraP
-                             else cameraV
-
-cameraP :: Generator ImageRGB
-cameraP = do
-    hp <- optionString "--sphotos" "."
-    g <- readFolderIM hp
-    c <- mkGenerator g
-    return (fmap fst <$> c)
-
-cameraV :: Generator ImageRGB
-cameraV = findSize >>= getCam 0
-
-cameraFolderIM :: Generator ImageRGB
-cameraFolderIM = camG "--photos" r <*> dummy
-  where
-    r p _ = readFolderIM p
-
-cameraFolderMP :: Generator ImageRGB
-cameraFolderMP = camG "--photosmp" readFolderMP <*> dummy
-
-camG opt readf = do
-    path <- optionString opt "."
-    sz <- findSize
-    imgs <- readf path (Just sz)
-    interface (Size 240 320) "photos" (0,imgs) ft (keys imgs) [] r sh
-  where
-    keys xs = acts (length xs -1)
-    acts n = [ (key (MouseButton WheelUp),   \_ _ (k,xs) -> (min (k+1) n,xs))
-             , (key (SpecialKey  KeyUp),     \_ _ (k,xs) -> (min (k+1) n,xs))
-             , (key (MouseButton WheelDown), \_ _ (k,xs) -> (max (k-1) 0,xs))
-             , (key (SpecialKey  KeyDown),   \_ _ (k,xs) -> (max (k-1) 0,xs))]
-    r _ (k,xs) _ = ((k,xs), fst $ xs!!k)
-    sh _ (k,xs) _a x = Draw [Draw x, info (k,xs) ]
-    -- ft w _ = evPrefSize w $= Just (Size 240 320)
-    ft _ _ = return ()
-    info (k,xs) = Draw [color black $ textF Helvetica12 (Point 0.9 0.6)
-                        (show w ++ "x" ++ show h ++ " " ++snd ( xs!!k)) ]
-      where
-        Size h w = size (fst $ xs!!k)
-
-dummy :: Generator ()
-dummy = return (threadDelay 100000 >> return (Just ()))
-
-
-run t = runT_ camera (t >>> optDo "--freq" freqMonitor)
-
 
 --------------------------------------------------------------------------------
 
@@ -450,4 +385,72 @@ clickTag l r sh name = transUI $ interface (Size 240 320) name False ft updt [] 
     y _ sv input = (sv, if sv then Right (r input) else Left (l input))
     updt = [(key (MouseButton LeftButton), \_ _ sv -> not sv)]
     ft _ _ = return ()
+
+--------------------------------------------------------------------------------
+
+{- |
+Returns the first image source given in the command line.
+
+By default it uses the first alias in cameras.def.
+
+It also admits --photos=path/to/folder/ containing separate image files (.jpg or .png), currently read using imagemagick (slower, lazy),
+and --photosmp=path/to/folder, to read images of the same type and size using mplayer (faster, strict).
+-}
+camera :: Generator ImageRGB
+camera = do
+    f <- hasValue "--photos"
+    g <- hasValue "--photosmp"
+    h <- hasValue "--sphotos"
+    if f then cameraFolderIM
+         else if g then cameraFolderMP
+                   else if h then cameraP
+                             else cameraV
+
+toRGB = fmap (fmap (fmap yuyv2rgb))
+
+cameraP :: Generator ImageRGB
+cameraP = do
+    hp <- optionString "--sphotos" "."
+    g <- readFolderIM hp
+    c <- mkGenerator g
+    return (fmap fst <$> c)
+
+cameraV :: Generator ImageRGB
+cameraV = toRGB (findSize >>= getCam 0)
+
+cameraFolderIM :: Generator ImageRGB
+cameraFolderIM = camG "--photos" r <*> dummy
+  where
+    r p _ = readFolderIM p
+
+cameraFolderMP :: Generator ImageRGB
+cameraFolderMP = camG "--photosmp" rf <*> dummy
+  where
+    rf p sz = map (yuyv2rgb *** id) <$> readFolderMP p sz
+
+camG opt readf = do
+    path <- optionString opt "."
+    sz <- findSize
+    imgs <- readf path (Just sz)
+    interface (Size 240 320) "photos" (0,imgs) ft (keys imgs) [] r sh
+  where
+    keys xs = acts (length xs -1)
+    acts n = [ (key (MouseButton WheelUp),   \_ _ (k,xs) -> (min (k+1) n,xs))
+             , (key (SpecialKey  KeyUp),     \_ _ (k,xs) -> (min (k+1) n,xs))
+             , (key (MouseButton WheelDown), \_ _ (k,xs) -> (max (k-1) 0,xs))
+             , (key (SpecialKey  KeyDown),   \_ _ (k,xs) -> (max (k-1) 0,xs))]
+    r _ (k,xs) _ = ((k,xs), fst $ xs!!k)
+    sh _ (k,xs) _a x = Draw [Draw x, info (k,xs) ]
+    -- ft w _ = evPrefSize w $= Just (Size 240 320)
+    ft _ _ = return ()
+    info (k,xs) = Draw [color black $ textF Helvetica12 (Point 0.9 0.6)
+                        (show w ++ "x" ++ show h ++ " " ++snd ( xs!!k)) ]
+      where
+        Size h w = size (fst $ xs!!k)
+
+dummy :: Generator ()
+dummy = return (threadDelay 100000 >> return (Just ()))
+
+
+run t = runT_ camera (t >>> optDo "--freq" freqMonitor)
 
