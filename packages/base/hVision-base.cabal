@@ -79,6 +79,7 @@ library
                         ImagProc.Camera.MPlayer
                         
                         ImagProc.Simple
+                        ImagProc.NewSimple
                         
                         Image.OldCamera
                         

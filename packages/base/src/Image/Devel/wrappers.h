@@ -1,11 +1,21 @@
-#define GIMG(T,X) T * X##pSrc, int X##sstep, int X##sr1, int X##sr2, int X##sc1, int X##sc2
-#define IMG(X) GIMG(unsigned char,X)
-#define IMC(X) IMG(X)
+#define GIMG(T,X) T * X##p, int X##step, int X##r1, int X##r2, int X##c1, int X##c2
+
+#define IM1(X) GIMG(unsigned char,X)
+#define P(X,r,c) (*(X##p+(r)*X##step+(c)))
+
+#define IM2(X) IM1(X)
+#define IM3(X) IM1(X)
+#define PM(X,r,c,p) (*(X##p+(r)*X##step+(3*(c))+(p)))
+
+
 #define IMF(X) GIMG(float,X)
-#define P(X,r,c) (*(X##pSrc+(r)*X##sstep+(c)))
-#define PF(X,r,c) (*(X##pSrc+(r)*X##sstep/4+(c)))
-#define P3(X,r,c,p) (*(X##pSrc+(r)*X##sstep+(3*(c))+(p)))
-#define TRAV(X,D,r,c) for (r=X##sr1+D; r<=X##sr2-D; r++) for(c=X##sc1+D; c<=X##sc2-D; c++)
+#define PF(X,r,c) (*(X##p+(r)*X##step/4+(c)))
+
+#define TRAV(X,D,r,c) for (r=X##r1+D; r<=X##r2-D; r++) for(c=X##c1+D; c<=X##c2-D; c++)
+#define TRAVR(X,r) for (r=X##r1; r<=X##r2; r++)
+#define TRAVC(X,c) for(c=X##c1; c<=X##c2; c++)
+
 #define MAX(a,b) ((a)>(b)?(a):(b))
 #define MIN(a,b) ((a)<(b)?(a):(b))
+#define CLIP(a) ((a)<0?0:(a)>255?255:(a))
 

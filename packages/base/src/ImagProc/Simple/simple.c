@@ -1,27 +1,23 @@
-#include "wrappers.h"
 #include <stdio.h>
 #include <stdlib.h>
-
-#define clip(a) ((a)<0?0:(a)>255?255:(a))
+#include "wrappers.h"
 
 #define R(C,D,E) clip(( 298 * (C)             + 409 * (E) + 128) >> 8)
 #define G(C,D,E) clip(( 298 * (C) - 100 * (D) - 208 * (E) + 128) >> 8)
 #define B(C,D,E) clip(( 298 * (C) + 516 * (D)             + 128) >> 8)
 
-#define TRAVR(X,r) for (r=X##sr1; r<=X##sr2; r++)
-#define TRAVC(X,c) for(c=X##sc1; c<=X##sc2; c++)
 
-int exampleInvert(IMG(src), IMG(dst)) {
+int exampleInvert(IM1(src), IM1(dst)) {
     int r,c;
-    TRAV(src,0,r,c) {
+    TRAV(dst,20,r,c) {
         P(dst,r,c) = 255 - P(src,r,c);
     }
     return 0;
 }
 
-int yuv2yuyv(IMG(x),IMG(y)) {
+int yuv2yuyv(IM1(x),IM2(y)) {
     int r, c;
-    unsigned char * p = xpSrc, * q = ypSrc;
+    unsigned char * p = xp, * q = yp;
     TRAV(x,0,r,c) {
         *(q++) = *(p++);
         *(q++) = 0;
@@ -30,9 +26,9 @@ int yuv2yuyv(IMG(x),IMG(y)) {
 }
 
 
-int yuyv2rgb(IMG(x),IMG(y)) {
+int yuyv2rgb(IM2(x),IM3(y)) {
     int r, c;
-    unsigned char * p = xpSrc, * q = ypSrc;
+    unsigned char * p = xp, * q = yp;
     TRAV(x,0,r,c) {
         *(q++) = *p;
         *(q++) = 0;
@@ -93,7 +89,6 @@ int yuyv2rgb(IMG(x),IMG(y)) {
 
 */
 
-#undef clip
 #undef R
 #undef G
 #undef B

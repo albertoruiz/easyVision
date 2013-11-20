@@ -7,8 +7,12 @@ module Image.Internal (
     cloneImage,
     withImage,
     ptrAt,
-    Word8, Word24(..), RGB,
+    starting,
+    Word8, Word16, Word24(..), RGB, CInt(..),
     STImage, thawImage, runSTImage,
+    RawImage,
+    Wrap11,
+    wrap11
 ) where
 
 import qualified Data.ByteString as B
@@ -22,15 +26,15 @@ import Foreign.Storable(Storable(..))
 import Foreign(Word16)
 import Control.Monad.ST(ST, runST)
 import Control.Monad.ST.Unsafe(unsafeIOToST)
+import Util.Misc((//))
+import Control.Monad(when)
 
-
-import Image.Core(Size(..),ROI(..),Word8)
+import Image.Core(Size(..),ROI(..),Word8,CInt(..),fi,ti,unsafePerformIO)
 
 data Image t = Image
     { size  :: Size
     , roi   :: ROI
     , bytes :: ByteString
-    , zeroP :: t
     , step  :: Int
     }
 
@@ -65,13 +69,13 @@ ptrAt Image{..} r c = castPtr (unsafeForeignPtrToPtr fp `plusPtr` (o + r*step)) 
     B.PS fp o _ = bytes
 
 
-starting :: Image t -> Ptr t
-starting x = ptrAt x r1 c1
+starting :: Image t -> Ptr Word8
+starting x = castPtr $ ptrAt x r1 c1
   where
     ROI r1 _ c1 _ = roi x
 
 
-withImage x@Image{..} act = withForeignPtr fp $ \_ -> act x
+withImage x@Image{..} act = withForeignPtr fp $ \_ -> act
   where
     B.PS fp _ _ = bytes
 
@@ -79,7 +83,7 @@ withImage x@Image{..} act = withForeignPtr fp $ \_ -> act x
 newImage :: Storable t => t -> Size -> IO (Image t)
 newImage z sz = do
     (bs,s) <- alignedBytes z sz
-    return Image {size = sz, roi = fullROI sz, bytes = bs, zeroP = z, step = s }
+    return Image {size = sz, roi = fullROI sz, bytes = bs, step = s }
 
 fullROI (Size h w) = ROI {r1=0, r2=h-1, c1=0, c2=w-1}
 
@@ -117,11 +121,11 @@ runSTImage st = runST (st >>= freezeImage)
 
 {-# INLINE ioRead #-}
 ioRead :: Storable t => Image t -> Int -> Int -> IO t
-ioRead x r c = withImage x $ \x -> peek (ptrAt x r c)
+ioRead x r c = withImage x $ peek (ptrAt x r c)
 
 {-# INLINE ioWrite #-}
 ioWrite :: Storable t => Image t -> Int -> Int -> t -> IO ()
-ioWrite x r c v = withImage x $ \x -> poke (ptrAt x r c) v
+ioWrite x r c v = withImage x $ poke (ptrAt x r c) v
 
 {-# INLINE unsafeRead #-}
 unsafeRead :: Storable t => STImage s t -> Int -> Int -> ST s t
@@ -130,4 +134,27 @@ unsafeRead (STImage x) r c = unsafeIOToST $ ioRead x r c
 {-# INLINE unsafeWrite #-}
 unsafeWrite :: Storable t => STImage s t -> Int -> Int -> t -> ST s ()
 unsafeWrite (STImage x) r c v = unsafeIOToST $ ioWrite x r c v
+
+--------------------------------------------------------------------------------
+
+appI :: RawImage p t -> Image p -> t
+appI f img = f (ptrAt img 0 0) (fi.step $ img) (g r1) (g r2) (g c1) (g c2)
+  where
+    g x = (fi . x . roi) img
+
+type RawImage p t = Ptr p -> CInt -> CInt -> CInt -> CInt -> CInt -> t
+
+type Wrap11 p q = RawImage p (RawImage q (IO CInt))
+
+wrap11 :: Storable b => String -> Wrap11 a b -> Image a -> Image b
+wrap11 msg f x = unsafePerformIO $ do
+    r <- newImage undefined (size x)
+    withImage x $ withImage r $ checkFFI msg $
+        appI f x `appI` r
+    return r
+
+checkFFI :: String -> IO CInt -> IO ()
+checkFFI msg f = do
+    err <- f
+    when (err/=0)  (error $ "error in foreign function " ++ msg)
 
