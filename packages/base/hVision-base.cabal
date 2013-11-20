@@ -67,12 +67,12 @@ library
                         Util.Graph
                         Util.Camera
                         
+                        Image.Internal
                         Image.Base
                         Image.Types
                         Image.ROI
                         Image.Core
                         Image.Convert
-                        Image.Devel
                         
                         Image.Camera
                         ImagProc.Camera.UVC

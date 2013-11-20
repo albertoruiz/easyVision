@@ -41,7 +41,11 @@ module Image.Core
           , val8u, fval,
           -- * Reexported modules
           CInt, CUChar, fi, ti
-          , module Image.Base, module Image.ROI
+          , module Image.Base, module Image.ROI,
+          RawImage,
+          Wrap11, wrap11,
+          CInt(..), Ptr, Word8, unsafePerformIO,
+          getDataFileName
 ) where
 
 import Image.Base
@@ -73,6 +77,11 @@ import qualified Data.ByteString as B
 import qualified Data.ByteString.Internal as B
 import Data.ByteString(ByteString)
 import Control.DeepSeq
+
+import Paths_hVision_base
+
+
+
 
 ---------------------------------------
 fi :: Int -> CInt
@@ -236,8 +245,14 @@ class Image a where
     -- | modifyROI . const
     setROI :: ROI -> a -> a
     setROI = modifyROI . const
+    theImg :: a -> Img
+    appI :: RawImage t -> a -> t
 
 setRegion (p1,p2) im = setROI (poly2roi (size im) (Closed[p1,p2])) im
+
+appGen f im = f (ptr im) (fi.step $ im) (g r1) (g r2) (g c1) (g c2)
+  where
+    g x = (fi . x . vroi) im
 
 instance Image ImageFloat where
     image s = do
@@ -246,7 +261,9 @@ instance Image ImageFloat where
     size (F Img {isize=s}) = s
     theROI (F im) = vroi im
     modifyROI f (F im) = F im { vroi = f (vroi im) `intersection` (vroi im) }
-
+    theImg (F im) = im
+    appI f (F im) = appGen f im
+ 
 instance Image ImageDouble where
     image s = do
         i <- img I64f s
@@ -254,6 +271,8 @@ instance Image ImageDouble where
     size (D Img {isize=s}) = s
     theROI (D im) = vroi im
     modifyROI f (D im) = D im { vroi = f (vroi im) `intersection` (vroi im) }
+    theImg (D im) = im
+    appI f (D im) = appGen f im
 
 instance Image ImageGray where
     image s = do
@@ -262,6 +281,8 @@ instance Image ImageGray where
     size (G Img {isize=s}) = s
     theROI (G im) = vroi im
     modifyROI f (G im) = G im { vroi = f (vroi im) `intersection` (vroi im) }
+    theImg (G im) = im
+    appI f (G im) = appGen f im
 
 instance Image ImageRGB where
     image s = do
@@ -270,6 +291,8 @@ instance Image ImageRGB where
     size (C Img {isize=s}) = s
     theROI (C im) = vroi im
     modifyROI f (C im) = C im { vroi = f (vroi im) `intersection` (vroi im) }
+    theImg (C im) = im
+    appI f (C im) = appGen f im
 
 instance Image ImageYUV where
     image s = do
@@ -278,7 +301,18 @@ instance Image ImageYUV where
     size (Y Img {isize=s}) = s
     theROI (Y im) = vroi im
     modifyROI f (Y im) = Y im { vroi = f (vroi im) `intersection` (vroi im) }
-
+    theImg (Y im) = im
+    appI f (Y im) = appGen f im
+    
+instance Image ImageYCbCr where
+    image s = do
+        i <- img YCbCr s
+        return (Y422 i)
+    size (Y422 Img {isize=s}) = s
+    theROI (Y422 im) = vroi im
+    modifyROI f (Y422 im) = Y422 im { vroi = f (vroi im) `intersection` (vroi im) }
+    theImg (Y422 im) = im
+    appI f (Y422 im) = appGen f im
 
 -- | The IPP 8u_C3 image type
 newtype ImageRGB   = C Img
@@ -408,4 +442,17 @@ instance NFData ImageGray
 instance NFData ImageFloat
   where
     rnf (F im) = rnf (bs im)
+
+--------------------------------------------------------------------------------
+
+type RawImage t = Ptr Word8 -> CInt -> CInt -> CInt -> CInt -> CInt -> t
+
+
+type Wrap11 = RawImage (RawImage (IO CInt))
+
+wrap11 :: (Image a, Image b) => Wrap11 -> a -> b
+wrap11 f x = unsafePerformIO $ do
+    r <- image (size x)
+    appI f x `appI` r // checkFFI "exampleInvert" [theImg x, theImg r]
+    return r
 

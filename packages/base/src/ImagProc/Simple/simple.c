@@ -8,10 +8,36 @@
 #define G(C,D,E) clip(( 298 * (C) - 100 * (D) - 208 * (E) + 128) >> 8)
 #define B(C,D,E) clip(( 298 * (C) + 516 * (D)             + 128) >> 8)
 
+#define TRAVR(X,r) for (r=X##sr1; r<=X##sr2; r++)
+#define TRAVC(X,c) for(c=X##sc1; c<=X##sc2; c++)
+
 int exampleInvert(IMG(src), IMG(dst)) {
     int r,c;
     TRAV(src,0,r,c) {
         P(dst,r,c) = 255 - P(src,r,c);
+    }
+    return 0;
+}
+
+int yuv2yuyv(IMG(x),IMG(y)) {
+    int r, c;
+    unsigned char * p = xpSrc, * q = ypSrc;
+    TRAV(x,0,r,c) {
+        *(q++) = *(p++);
+        *(q++) = 0;
+    }
+    return 0;
+}
+
+
+int yuyv2rgb(IMG(x),IMG(y)) {
+    int r, c;
+    unsigned char * p = xpSrc, * q = ypSrc;
+    TRAV(x,0,r,c) {
+        *(q++) = *p;
+        *(q++) = 0;
+        *(q++) = *(p++);
+        p++;
     }
     return 0;
 }
