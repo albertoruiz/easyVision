@@ -3,6 +3,8 @@
 module Util.Options (
     getRawOption,
     getOption,
+    getSubOption,
+    hasSubOption,
     optionString,
     optionFromFile,
     getFlag,
@@ -13,6 +15,7 @@ module Util.Options (
 ) where
 
 import Data.List(isPrefixOf)
+import Data.List.Split(splitOn)
 import System.Environment(getArgs)
 import System.Directory(getDirectoryContents)
 import Control.Monad(join,when)
@@ -90,4 +93,14 @@ optionFromFile
     -> a       -- ^ default value
     -> IO a    -- ^ result
 optionFromFile option x = maybe x id <$> join (fmap sequenceA $ (fmap (fmap read . readFile)) <$> getRawOption option)
+
+parseSubOptions :: String -> [(String,String)]
+parseSubOptions = map ((\[k,v] -> (k,v)) . take 2 . splitOn "=" . (++"=")) . filter (not .null) . splitOn ":"
+
+
+getSubOption :: String -> String -> String -> String
+getSubOption a name def = maybe def id $ lookup name (parseSubOptions a)
+
+hasSubOption :: String -> String -> Bool
+hasSubOption a name = lookup name (parseSubOptions a) /= Nothing
 

@@ -39,7 +39,7 @@ library
                         process, array, random, containers, directory,
                         old-locale, old-time,
                         hmatrix-glpk,
-                        process, temporary,
+                        process, temporary, split,
                         ghc-prim, binary, bytestring, deepseq
 
     hs-source-dirs:     src
