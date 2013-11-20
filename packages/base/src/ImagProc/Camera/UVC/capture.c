@@ -9,7 +9,7 @@
 // height = 480;
 // fps = 30.0;
 
-struct vdIn * openUVC(char * videodevice, int width, int height, int fps){
+struct vdIn * openUVC(char * videodevice, int* width, int* height, int* fps){
 
     int format = V4L2_PIX_FMT_YUYV;
     int grabmethod = 1;
@@ -18,8 +18,12 @@ struct vdIn * openUVC(char * videodevice, int width, int height, int fps){
     struct vdIn *videoIn = (struct vdIn *) calloc(1, sizeof(struct vdIn));
 
     if (init_videoIn (videoIn, videodevice,
-                      width, height, fps, format,
+                      *width, *height, *fps, format,
                       grabmethod, avifilename) < 0) exit(1);
+
+    *width  = videoIn->width;
+    *height = videoIn->height;
+    *fps    = videoIn->fps;
 
     return videoIn;
 }
