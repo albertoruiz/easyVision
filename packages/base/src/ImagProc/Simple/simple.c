@@ -31,7 +31,7 @@ int yuyv2rgb(IM2(x),IM3(y)) {
     unsigned char * p = xp, * q = yp;
     TRAV(x,0,r,c) {
         *(q++) = *p;
-        *(q++) = 0;
+        *(q++) = *p;
         *(q++) = *(p++);
         p++;
     }

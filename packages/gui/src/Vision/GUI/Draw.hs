@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RecordWildCards #-}
 
 -----------------------------------------------------------------------------
@@ -50,13 +51,12 @@ import Control.Monad(when)
 import GHC.Float(double2Float)
 import Util.Geometry(HPoint(..),Point3D(..),HPoint3D(..),HLine3D(..),HPlane(..),Meet(..))
 import Text.Printf(printf)
+import Image.ROI
+import Image.Base
 
+szgl = glSize .roiSize . roi
 
-pstart im = starting im (vroi im)
-
-szgl = glSize .roiSize . vroi
-
-
+{-
 myDrawPixels m@Img{itype=RGB} = do
     GL.rowLength Unpack $= fromIntegral (step m `quot` (datasize m * layers m))
     GL.drawPixels (szgl m) (PixelData GL.RGB UnsignedByte (pstart m))
@@ -74,22 +74,25 @@ myDrawPixels m@Img{itype=YCbCr} = do
     GL.drawPixels (szgl m) (PixelData YCBCR422 UnsignedByte (pstart m))
 
 myDrawPixels m@Img{itype=YUV} = error "myDrawPixels undefined for YUV"
+-}
 
+myDrawPixels m t s img@Image{..} = withImage img $ do
+    GL.rowLength Unpack $= fromIntegral (step `quot` s)
+    GL.drawPixels (szgl img) (PixelData m t (starting img))
 
 --------------------------------------------------------------------------------
 
 -- | Draws an image 32f as a texture in the current window, in the desired 3D coordinates corresponding to (0,0), (1,0), (1,1), (0,1). (Drawing is very fast if the sizes are powers of 2.)
 drawTexture' :: ImageFloat -> [[Double]] -> IO ()
-drawTexture' (F im) [v1,v2,v3,v4] = do
+drawTexture' im [v1,v2,v3,v4] = do
+  withImage im $ do
     texImage2D  Nothing
                 NoProxy
                 0
                 Luminance'
-                (TextureSize2D (fromIntegral $ width $ isize im) (fromIntegral $ height $ isize im))
+                (TextureSize2D (fromIntegral w) (fromIntegral h))
                 0
-                (PixelData Luminance Float (ptr im))
-
-    touchForeignPtr (fptr im)
+                (PixelData Luminance Float (starting im))
     texture Texture2D $= Enabled
     renderPrimitive Polygon $ do
         vert (TexCoord2 0 0) v1
@@ -99,6 +102,7 @@ drawTexture' (F im) [v1,v2,v3,v4] = do
     texture Texture2D $= Disabled
 
   where
+    Size h w = size im
     vert :: TexCoord2 GLdouble -> [Double] -> IO ()
     vert t p = do
           multiTexCoord (TextureUnit 0) t
@@ -133,20 +137,19 @@ cameraView m ar near far = do
 captureGL :: IO ImageRGB
 captureGL = do
     sz <- get windowSize
-    img <- image (evSize sz)
-    let C (Img {ptr = p, fptr = f}) = img
-    when (width (size img) `rem` 32 /= 0) $ putStrLn "Warning, captureGL with wrong padding"
-    readPixels (Position 0 0) sz (PixelData GL.RGB UnsignedByte p)
-    touchForeignPtr f
+    img <- newImage undefined (evSize sz)
+    withImage img $ do
+        when (width (size img) `rem` 32 /= 0) $ putStrLn "Warning, captureGL with wrong padding"
+        readPixels (Position 0 0) sz (PixelData GL.RGB UnsignedByte (starting img))
     return img
 
 ----------------------------------------------------------------
 
-renderImageIn :: EVWindow st -> Img -> IO ()
-renderImageIn evW m = do
+--renderImageIn :: EVWindow st -> Image t -> IO ()
+renderImageIn evW m t s img = do
     policy <- readIORef (evPolicy evW)
     prefSize <- readIORef (evPrefSize evW)
-    let imSize@(Size h w) = isize m
+    let imSize@(Size h w) = size img
         szI = limitSize 800 imSize
     when (prefSize == Nothing || policy == DynamicSize) $
         writeIORef (evPrefSize evW) (Just szI)
@@ -161,7 +164,7 @@ renderImageIn evW m = do
     
     let zw = fromIntegral vw/ fromIntegral w
         z = (floatGL . double2Float) z' * zw
-        r@ROI {..} = vroi m
+        r@ROI {..} = roi img
         szTe@(Size th tw) = evSize szT
         r0 = round (fromIntegral r1 * zw + (fromIntegral th-fromIntegral h*zw)/2)
         c0 = round (fromIntegral c1 * zw)
@@ -170,17 +173,16 @@ renderImageIn evW m = do
                                            Pixel (1+r2) (1+c2), Pixel r1 (1+c2) ]
     rasterPos (Vertex2 (doubleGL x0) (doubleGL y0-1E-6))
     pixelZoom $= (z,-z)   
-    myDrawPixels m { vroi = r { r1 = r1 - min 0 (round $ (fromIntegral r0)/zw) } }
-    touchForeignPtr (fptr m)
+    myDrawPixels m t s img { roi = r { r1 = r1 - min 0 (round $ (fromIntegral r0)/zw) } }
     render $ Draw [color white . lineWd 1 $ (Closed roipts)]
 
 --------------------------------------------------------------------------------
 
 instance Renderable ImageGray where
-    renderIn w (G im) = renderImageIn w im
+    renderIn w = renderImageIn w Luminance UnsignedByte 1
 
 instance Renderable ImageRGB where
-    renderIn w (C im) = renderImageIn w im
+    renderIn w = renderImageIn w GL.RGB UnsignedByte 3
 
 
 instance Renderable Polyline where
@@ -318,7 +320,7 @@ drawPointCoords ps = Draw [ --Raw (logicOp $= (Just Xor)),
 
 --------------------------------------------------------------------------------
 
-viewPoint :: (Image im, Renderable im, Renderable x) => Mat -> Maybe im -> x -> Drawing
+viewPoint :: (Renderable (Image t), Renderable x) => Mat -> Maybe (Image t) -> x -> Drawing
 -- ^ draw 3D objects as seen from a given camera matrix, with an optional image background
 viewPoint cam mbimg things = Draw [
     Raw (depthFunc $= Just Less >> clear [DepthBuffer]),

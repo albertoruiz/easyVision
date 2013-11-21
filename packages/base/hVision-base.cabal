@@ -67,11 +67,10 @@ library
                         Util.Graph
                         Util.Camera
                         
-                        Image.Internal
-                        Image.Base
-                        Image.Types
-                        Image.ROI
                         Image.Core
+                        Image.Base
+                        Image.ROI
+                        Image.OldCore
                         Image.Convert
                         
                         Image.Camera
@@ -79,11 +78,6 @@ library
                         ImagProc.Camera.MPlayer
                         
                         ImagProc.Simple
-                        ImagProc.NewSimple
-                        
-                        Image.OldCamera
-                        
-                        
 
     other-modules:      Paths_hVision_base
 

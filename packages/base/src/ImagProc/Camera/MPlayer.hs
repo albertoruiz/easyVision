@@ -95,13 +95,13 @@ mplayer' url (Size h w) = withSystemTempFile "mplayer-fifo" $ \t _ ->  do
     _ <- system $ "rm "++fifo
 
     let grab = do
-        Y im <- image (Size h' w')
+        im <- newImage undefined (Size h' w')
         let frameSize = w'*h'*3`div`2
-        n <- hGetBuf f (castPtr (ptr im)) 6
+        n <- hGetBuf f (starting im) 6
         if n < 6
             then return Nothing
-            else do _ <- hGetBuf f (castPtr (ptr im)) frameSize
-                    return (Just (Y im))
+            else do _ <- hGetBuf f (starting im) frameSize
+                    return (Just im)
 
     return grab
 
@@ -133,12 +133,12 @@ askSize fname = do
 ------------------------------------------------
 
 saveYUV4Mpeg :: Handle -> ImageYUV -> IO ()
-saveYUV4Mpeg handle (Y im) = do
-    let Size h w = isize im
-    hPutStrLn handle "FRAME"
-    hPutBuf handle (castPtr (ptr im)) (w*h*3`div`2)
-    hFlush handle
-    touchForeignPtr (fptr im)
+saveYUV4Mpeg handle im = do
+    let Size h w = size im
+    withImage im $ do
+        hPutStrLn handle "FRAME"
+        hPutBuf handle (starting im) (w*h*3`div`2)
+        hFlush handle
 
 yuvHeader :: Int -> Int -> FilePath -> IO Handle
 yuvHeader h w filename = do

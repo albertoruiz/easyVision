@@ -40,6 +40,7 @@ import qualified Data.Vector as V
 import System.IO(hPutStrLn, stderr)
 import System.Time
 import System.Locale
+import Control.Applicative((<$>))
 
 
 type Mat = Matrix Double
@@ -199,14 +200,6 @@ selectPos :: (Num a, Enum a, Eq a) => [a] -> [b] -> [b]
 selectPos is = map snd . filter (flip elem is . fst) . zip [0 ..]
 
 
--- | specialized @(^2)@
-sqr :: Num a => a -> a
-sqr x = x^(2::Int)
-
--- | specialized 'round'
-round' :: RealFrac a => a -> Int
-round' = round
-
 -- | conversion factor from degrees to radians
 degree :: Double
 degree = pi/180
@@ -302,12 +295,6 @@ formattedTime = do
                (iso8601DateFormat (Just "%H-%M-%S"))
                t
 
-
 formattedDate :: IO String
-formattedDate = do
-    t <- getClockTime >>= toCalendarTime
-    return $ formatCalendarTime
-               defaultTimeLocale
-               (iso8601DateFormat Nothing)
-               t
+formattedDate = takeWhile (/='T') <$> formattedTime
 
