@@ -200,6 +200,7 @@ data EVWindow st = EVW { evW        :: Window
                        , evVisible  :: IORef Bool
                        , evPause    :: IORef PauseStatus
                        , evStats    :: IORef WStatus
+                       , evWinTitle :: String
                        , evEnd      :: IORef Bool
                        }
 

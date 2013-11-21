@@ -36,19 +36,21 @@ import Image.Convert(savePPM)
 import Graphics.UI.GLUT hiding (RGB, Matrix, Size, None, Point,color)
 import qualified Graphics.UI.GLUT as GL
 import Data.IORef
-import System.Process(system)
+import System.Process(system,readProcessWithExitCode)
 import System.Exit
-import Control.Monad(when,forever,join)
-import System.Environment(getArgs)
+import Control.Monad(when,forever,join,filterM)
+import System.Environment
 import qualified Data.Map as Map
-import Data.Map
-import Util.Misc(debug)
-import Data.Traversable
+import Data.Map hiding (null,map)
+import Util.Misc(debug,errMsg)
+--import Data.Traversable
 import Control.Applicative
 import Control.Arrow
 import Data.Colour.Names
 import Control.Concurrent
 import Text.Printf(printf)
+import Data.List(intercalate)
+import System.Directory
 
 keyAction upds acts def w a b c d = do
     st <- getW w
@@ -56,11 +58,13 @@ keyAction upds acts def w a b c d = do
     roi <- get (evRegion w)
     case Prelude.lookup (a,b,c) upds of
         Just op -> putW w (withPoint op roi gp d st)
-        Nothing -> case Prelude.lookup (a,b,c) acts of
+        Nothing -> case Prelude.lookup (a,b,c) (help acts) of
                         Just op -> withPoint op roi gp d st
                         Nothing -> def a b c d
   where
     withPoint f roi gp pos = f roi (gp pos)
+    help acts = acts ++ [(key (SpecialKey KeyF1), \p r w -> callHelp s)]
+    s = evWinTitle w
 
 modif = Modifiers {ctrl = Up, shift = Up, alt = Up }
 
@@ -269,6 +273,7 @@ evWindow st0 name size kbd = do
                 , evPause = pa
                 , evStats = dc
                 , evEnd = rend
+                , evWinTitle = name
                 , evInit = clear [ColorBuffer] >> prepZoom w }
 
     keyboardMouseCallback $= Just (\k d m p -> kbdroi w (kbd w) k d m p >> postRedisplay Nothing)
@@ -340,7 +345,7 @@ kbdQuit :: KeyboardMouseCallback
 --kbdQuit (Char '\27') Down Modifiers {alt=Down} _ = leaveMainLoop >> system "killall mplayer" >> return ()
 kbdQuit (Char '\27') Down _ _ = exitWith ExitSuccess
 kbdQuit (Char   'i') Down _ _ = captureGL >>= savePPM Nothing
-kbdQuit a Down m _            = putStrLn (show a ++ " " ++ show m ++ " not defined")
+kbdQuit a Down m _            = errMsg (show a ++ " " ++ show m ++ " not defined")
 kbdQuit _ _ _ _               = return ()
 
 
@@ -439,4 +444,20 @@ newPauser refPau = do
                 Just _ -> writeIORef frozen Nothing
                 _      -> return ()
             cam   
+
+--------------------------------------------------------------------------------
+
+callHelp wn = do
+    pname <- getProgName
+    let helpnames = concatMap (\x -> [x,"help/"++x])
+          [ intercalate "-" [pname, wn, "help.md"]
+          , intercalate "-" [       wn, "help.md"]
+          , intercalate "-" [pname,     "help.md"]
+          , "help.md"
+          ]
+    fs <- filterM doesFileExist helpnames
+    let f = head fs
+    if null fs
+      then errMsg "no help file available"
+      else system ("markdown "++f++" > /tmp/help.html && xdg-open /tmp/help.html") >> return ()
 
