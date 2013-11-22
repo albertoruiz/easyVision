@@ -391,10 +391,6 @@ ioXor_8u_C1R  = {-# SCC "ippiXor_8u_C1R" #-} auto_2_8u_C1R f "ippiXor_8u_C1R"
 ioCompare_8u_C1R ippCmpOp = {-# SCC "ippiCompare_8u_C1R" #-} auto_2_8u_C1R (f ippCmpOp) "ippiCompare_8u_C1R"
     where f ippCmpOp pSrc1 src1Step pSrc2 src2Step pDst dstStep roiSize = ippiCompare_8u_C1R pSrc1 src1Step pSrc2 src2Step pDst dstStep roiSize ippCmpOp
 
-{- |   Compares pixel values of two images, or pixel values of an image to a constant -}
-ioCompare_32f_C1R ippCmpOp = {-# SCC "ippiCompare_32f_C1R" #-} auto_2_32f_C1R (f ippCmpOp) "ippiCompare_32f_C1R"
-    where f ippCmpOp pSrc1 src1Step pSrc2 src2Step pDst dstStep roiSize = ippiCompare_32f_C1R pSrc1 src1Step pSrc2 src2Step pDst dstStep roiSize ippCmpOp
-
 {- |  Calculate absolute difference between corresponding pixels of the two images
            or between image pixels and scalar.
  -}
@@ -406,11 +402,6 @@ ioAbsDiff_8u_C1R  = {-# SCC "ippiAbsDiff_8u_C1R" #-} auto_2_8u_C1R f "ippiAbsDif
  -}
 ioAbsDiff_32f_C1R  = {-# SCC "ippiAbsDiff_32f_C1R" #-} auto_2_32f_C1R f "ippiAbsDiff_32f_C1R"
     where f pSrc1 src1Step pSrc2 src2Step pDst dstStep roiSize = ippiAbsDiff_32f_C1R pSrc1 src1Step pSrc2 src2Step pDst dstStep roiSize
-
-{- |    Calculates standard deviation on rectangular window
- -}
-ioRectStdDev_32f_C1R rect = {-# SCC "ippiRectStdDev_32f_C1R" #-} auto_2_32f_C1R (f rect) "ippiRectStdDev_32f_C1R"
-    where f rect pSrc srcStep pSqr sqrStep pDst dstStep roiSize = ippiRectStdDev_32f_C1R pSrc srcStep pSqr sqrStep pDst dstStep roiSize rect
 
 
 ------ inplace arity 2 ------

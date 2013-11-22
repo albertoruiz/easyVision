@@ -78,7 +78,6 @@ int ippiXor_8u_C1Rx(unsigned char*, int, unsigned char*, int, unsigned char*, in
 int ippiNot_8u_C1Rx(unsigned char*, int, unsigned char*, int, void*);
 int ippiCompare_8u_C1Rx(unsigned char*, int, unsigned char*, int, unsigned char*, int, void*, int);
 int ippiCompareC_8u_C1Rx(unsigned char*, int, unsigned char, unsigned char*, int, void*, int);
-int ippiCompare_32f_C1Rx(float*, int, float*, int, unsigned char*, int, void*, int);
 int ippiErode3x3_8u_C1Rx(unsigned char*, int, unsigned char*, int, void*);
 int ippiDilate3x3_8u_C1Rx(unsigned char*, int, unsigned char*, int, void*);
 int ippiRGBToYCbCr422_8u_C3C2Rx(unsigned char*, int, unsigned char*, int, void*);
@@ -96,7 +95,6 @@ int ippiAbsDiff_8u_C1Rx(unsigned char*, int, unsigned char*, int, unsigned char*
 int ippiAbsDiff_32f_C1Rx(float*, int, float*, int, float*, int, void*);
 int ippiIntegral_8u32f_C1Rx(unsigned char*, int, float*, int, void*, float);
 int ippiSqrIntegral_8u32f64f_C1Rx(unsigned char*, int, float*, int, double*, int, void*, float, double);
-int ippiRectStdDev_32f_C1Rx(float*, int, double*, int, float*, int, void*, void*);
 int ippiCannyGetSizex(void*, int*);
 int ippiCanny_32f8u_C1Rx(float*, int, float*, int, unsigned char*, int, void*, float, float, unsigned char*);
 int ippiDistanceTransform_3x3_8u32f_C1Rx(unsigned char*, int, float*, int, void*, float*);

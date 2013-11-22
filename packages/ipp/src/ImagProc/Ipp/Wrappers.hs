@@ -9,7 +9,7 @@ License     :  GPL
 Maintainer  :  Alberto Ruiz (aruiz at um dot es)
 Stability   :  provisional
 
-Special interface to some IPP functions not yet automatically generated.
+Special Interface to some IPP functions not yet automatically generated.
 
 -}
 -----------------------------------------------------------------------------
@@ -20,78 +20,78 @@ module ImagProc.Ipp.Wrappers where
 import Foreign
 import Foreign.C.Types
 
-foreign import ccall "auxIpp.h ippGetStatusString" ippGetStatusString :: Int -> IO (Ptr CChar)
+foreign import ccall "auxIpp.h ippGetStatusString" ippGetStatusString :: CInt -> IO (Ptr CChar)
 
-foreign import ccall "auxIpp.h ippSetNumThreads" ippSetNumThreads :: Int -> IO Int
+foreign import ccall "auxIpp.h ippSetNumThreads" ippSetNumThreads :: CInt -> IO CInt
 
 foreign import ccall "auxIpp.h auxWarpPerspective_32f_C1R"
-     warpPerspective32f :: Ptr Word8 -> Int -> Int -> Int ->
-                           Int -> Int -> Int -> Int ->
-                           Ptr Word8 -> Int ->
-                           Int -> Int -> Int -> Int ->
-                           Ptr Double -> Int ->
-                           IO Int
+     warpPerspective32f :: Ptr Word8 -> CInt -> CInt -> CInt ->
+                           CInt -> CInt -> CInt -> CInt ->
+                           Ptr Word8 -> CInt ->
+                           CInt -> CInt -> CInt -> CInt ->
+                           Ptr Double -> CInt ->
+                           IO CInt
 
 foreign import ccall "auxIpp.h auxWarpPerspective_8u_C1R"
-     warpPerspectiveGray :: Ptr Word8 -> Int -> Int -> Int ->
-                           Int -> Int -> Int -> Int ->
-                           Ptr Word8 -> Int ->
-                           Int -> Int -> Int -> Int ->
-                           Ptr Double -> Int ->
-                           IO Int
+     warpPerspectiveGray :: Ptr Word8 -> CInt -> CInt -> CInt ->
+                           CInt -> CInt -> CInt -> CInt ->
+                           Ptr Word8 -> CInt ->
+                           CInt -> CInt -> CInt -> CInt ->
+                           Ptr Double -> CInt ->
+                           IO CInt
 
 foreign import ccall "auxIpp.h auxWarpPerspective_8u_C3R"
-     warpPerspectiveRGB :: Ptr Word8 -> Int -> Int -> Int ->
-                           Int -> Int -> Int -> Int ->
-                           Ptr Word8 -> Int ->
-                           Int -> Int -> Int -> Int ->
-                           Ptr Double -> Int ->
-                           IO Int
+     warpPerspectiveRGB :: Ptr Word8 -> CInt -> CInt -> CInt ->
+                           CInt -> CInt -> CInt -> CInt ->
+                           Ptr Word8 -> CInt ->
+                           CInt -> CInt -> CInt -> CInt ->
+                           Ptr Double -> CInt ->
+                           IO CInt
 
 foreign import ccall "auxIpp.h auxResize_32f_C1R"
-     c_resize32f :: Ptr Word8 -> Int -> Int -> Int ->
-                           Int -> Int -> Int -> Int ->
-                           Ptr Word8 -> Int ->
-                           Int -> Int -> Int -> Int ->
-                           Int ->
-                           IO Int
+     c_resize32f :: Ptr Word8 -> CInt -> CInt -> CInt ->
+                           CInt -> CInt -> CInt -> CInt ->
+                           Ptr Word8 -> CInt ->
+                           CInt -> CInt -> CInt -> CInt ->
+                           CInt ->
+                           IO CInt
 
 foreign import ccall "auxIpp.h auxResize_8u_C1R"
-     c_resize8u :: Ptr Word8 -> Int -> Int -> Int ->
-                           Int -> Int -> Int -> Int ->
-                           Ptr Word8 -> Int ->
-                           Int -> Int -> Int -> Int ->
-                           Int ->
-                           IO Int
+     c_resize8u :: Ptr Word8 -> CInt -> CInt -> CInt ->
+                           CInt -> CInt -> CInt -> CInt ->
+                           Ptr Word8 -> CInt ->
+                           CInt -> CInt -> CInt -> CInt ->
+                           CInt ->
+                           IO CInt
 
 foreign import ccall "auxIpp.h auxResize_8u_C3R"
-     c_resize8u3 :: Ptr Word8 -> Int -> Int -> Int ->
-                           Int -> Int -> Int -> Int ->
-                           Ptr Word8 -> Int ->
-                           Int -> Int -> Int -> Int ->
-                           Int ->
-                           IO Int
+     c_resize8u3 :: Ptr Word8 -> CInt -> CInt -> CInt ->
+                           CInt -> CInt -> CInt -> CInt ->
+                           Ptr Word8 -> CInt ->
+                           CInt -> CInt -> CInt -> CInt ->
+                           CInt ->
+                           IO CInt
 
 foreign import ccall "auxIpp.h auxDCTFwd_32f_C1R"
-     auxDCTFwd_32f_C1R :: Ptr Float -> Int ->
-                          Int -> Int -> Int -> Int ->
-                          Ptr Float -> Int ->
-                          Int -> Int -> Int -> Int ->
-                          IO Int
+     auxDCTFwd_32f_C1R :: Ptr Float -> CInt ->
+                          CInt -> CInt -> CInt -> CInt ->
+                          Ptr Float -> CInt ->
+                          CInt -> CInt -> CInt -> CInt ->
+                          IO CInt
 
 foreign import ccall "auxIpp.h auxDCTInv_32f_C1R"
-     auxDCTInv_32f_C1R :: Ptr Float -> Int ->
-                          Int -> Int -> Int -> Int ->
-                          Ptr Float -> Int ->
-                          Int -> Int -> Int -> Int ->
-                          IO Int
+     auxDCTInv_32f_C1R :: Ptr Float -> CInt ->
+                          CInt -> CInt -> CInt -> CInt ->
+                          Ptr Float -> CInt ->
+                          CInt -> CInt -> CInt -> CInt ->
+                          IO CInt
 
-foreign import ccall "auxInpainting_8u_C1R"
-    auxInpainting_8u_C1R :: Float -> Int ->
-                            Ptr Word8 -> Int ->
-                            Ptr Word8 -> Int ->
-                            Ptr Float -> Int ->
-                            Ptr Word8 -> Int ->
-                            Int -> Int -> Int -> Int ->
-                            IO Int
+foreign import ccall "auxInpaCInting_8u_C1R"
+    auxInpaCInting_8u_C1R :: Float -> CInt ->
+                            Ptr Word8 -> CInt ->
+                            Ptr Word8 -> CInt ->
+                            Ptr Float -> CInt ->
+                            Ptr Word8 -> CInt ->
+                            CInt -> CInt -> CInt -> CInt ->
+                            IO CInt
 

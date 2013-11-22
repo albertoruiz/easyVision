@@ -314,10 +314,6 @@ int ippiCompareC_8u_C1Rx(Ipp8u* pSrc, int srcStep, Ipp8u value, Ipp8u* pDst, int
     return ippiCompareC_8u_C1R(pSrc, srcStep, value, pDst, dstStep, *roiSize, ippCmpOp);
 }
 
-int ippiCompare_32f_C1Rx(Ipp32f* pSrc1, int src1Step, Ipp32f* pSrc2, int src2Step, Ipp8u* pDst, int dstStep, IppiSize* roiSize, IppCmpOp ippCmpOp) {
-    return ippiCompare_32f_C1R(pSrc1, src1Step, pSrc2, src2Step, pDst, dstStep, *roiSize, ippCmpOp);
-}
-
 int ippiErode3x3_8u_C1Rx(Ipp8u* pSrc, int srcStep, Ipp8u* pDst, int dstStep, IppiSize* roiSize) {
     return ippiErode3x3_8u_C1R(pSrc, srcStep, pDst, dstStep, *roiSize);
 }
@@ -384,10 +380,6 @@ int ippiIntegral_8u32f_C1Rx(Ipp8u* pSrc, int srcStep, Ipp32f* pDst, int dstStep,
 
 int ippiSqrIntegral_8u32f64f_C1Rx(Ipp8u* pSrc, int srcStep, Ipp32f* pDst, int dstStep, Ipp64f* pSqr, int sqrStep, IppiSize* roiSize, Ipp32f val, Ipp64f valSqr) {
     return ippiSqrIntegral_8u32f64f_C1R(pSrc, srcStep, pDst, dstStep, pSqr, sqrStep, *roiSize, val, valSqr);
-}
-
-int ippiRectStdDev_32f_C1Rx(Ipp32f* pSrc, int srcStep, Ipp64f* pSqr, int sqrStep, Ipp32f* pDst, int dstStep, IppiSize* roiSize, IppiRect* rect) {
-    return ippiRectStdDev_32f_C1R(pSrc, srcStep, pSqr, sqrStep, pDst, dstStep, *roiSize, *rect);
 }
 
 int ippiCannyGetSizex(IppiSize* roiSize, int* bufferSize) {

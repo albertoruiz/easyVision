@@ -1,14 +1,11 @@
 -----------------------------------------------------------------------------
 {- |
 Module      :  ImagProc.Ipp.Pure
-Copyright   :  (c) Alberto Ruiz 2007
-License     :  GPL-style
+Copyright   :  (c) Alberto Ruiz 2007-13
+License     :  GPL
 
 Maintainer  :  Alberto Ruiz (aruiz at um dot es)
-Stability   :  very provisional
-Portability :  hmm...
-
-Purely functional image processing.
+Stability   :  provisional
 
 -}
 -----------------------------------------------------------------------------
@@ -39,7 +36,7 @@ where
 
 import ImagProc.Ipp.Core
 import ImagProc.Ipp.Auto
-import System.IO.Unsafe
+import System.IO.Unsafe(unsafePerformIO)
 import Foreign.Ptr
 import Debug.Trace
 
@@ -61,16 +58,16 @@ mkRel f a b = unsafePerformIO (f g (flip g) g a b) where
 
 -- should be generic using clone (must break cycle of import)
 mkIdIPInt32f f a b = unsafePerformIO $ do
-    let roi = intersection (theROI a) (theROI b)
-    r <- ioCopy_32f_C1R (const roi) b
-    f undefined (modifyROI (const roi) a) r
-    return r
+    let r = intersection (roi a) (roi b)
+    x <- ioCopy_32f_C1R (const r) b
+    f undefined (setROI r a) x
+    return x
 
 mkIdIPInt8u f a b = unsafePerformIO $ do
-    let roi = intersection (theROI a) (theROI b)
-    r <- ioCopy_8u_C1R (const roi) b
-    f undefined (modifyROI (const roi) a) r
-    return r
+    let r = intersection (roi a) (roi b)
+    x <- ioCopy_8u_C1R (const r) b
+    f undefined (setROI r a) x
+    return x
 
 
 -- | image scaling
@@ -135,15 +132,15 @@ sub8uRel :: Int -> ImageGray -> ImageGray -> ImageGray
 sub8uRel k = flip (mkRel (ioSub_8u_C1RSfs k))
 
 -- | compare with a constant
-compareC8u :: CUChar -> IppCmp -> ImageGray -> ImageGray
+compareC8u :: Word8 -> IppCmp -> ImageGray -> ImageGray
 compareC8u v cmp = mkId (ioCompareC_8u_C1R v (codeCmp cmp))
 
 -- | add constant
-addC8u' :: Int -> CUChar -> ImageGray -> ImageGray
+addC8u' :: Int -> Word8 -> ImageGray -> ImageGray
 addC8u' k v = mkId (ioAddC_8u_C1RSfs v k)
 
 -- | sub constant
-subC8u' :: Int -> CUChar -> ImageGray -> ImageGray
+subC8u' :: Int -> Word8 -> ImageGray -> ImageGray
 subC8u' k v = mkId (ioSubC_8u_C1RSfs v k)
 
 -- | add or sub constant
@@ -199,8 +196,8 @@ thresholdVal32f :: Float          -- ^ threshold
 thresholdVal32f t v cmp = mkId (ioThreshold_Val_32f_C1R t v (codeCmp cmp))
 
 -- | The result is the source image in which the pixels verifing the comparation with a threshold are set to a desired value.
-thresholdVal8u :: CUChar          -- ^ threshold
-                -> CUChar          -- ^ value
+thresholdVal8u  :: Word8          -- ^ threshold
+                -> Word8          -- ^ value
                 -> IppCmp         -- ^ comparison function
                 -> ImageGray     -- ^ source image
                 -> ImageGray  -- ^ result

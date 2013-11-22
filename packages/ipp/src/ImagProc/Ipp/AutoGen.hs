@@ -3,12 +3,11 @@
 -----------------------------------------------------------------------------
 {- |
 Module      :  ImagProc.Ipp.AutoGen
-Copyright   :  (c) Alberto Ruiz 2006-8
-License     :  GPL-style
+Copyright   :  (c) Alberto Ruiz 2006-13
+License     :  GPL
 
 Maintainer  :  Alberto Ruiz (aruiz at um dot es)
-Stability   :  very provisional
-Portability :  hmm...
+Stability   :  provisional
 
 Generators of Haskell style functions from IPP wrappers
 
@@ -50,84 +49,85 @@ module ImagProc.Ipp.AutoGen(
 
 import ImagProc.Ipp.Core
 
-------------------------------------------------
+--------------------------------------------------------------------------------
 
-auto_0_8u_C1R f msg sz = do
-    G r <- image sz
-    f // dst r (vroi r) // checkIPP msg []
-    return (G r)
+type Auto_0 t = Dst t (IO CInt) -> String -> Size -> IO (Image t)
 
-auto_0_8u_C3R f msg sz = do
-    C r <- image sz
-    f // dst r (vroi r) // checkIPP msg []
-    return (C r)
+auto_0 :: Storable t => Dst t (IO CInt) -> String -> Size -> IO (Image t)
+auto_0 f msg sz = do
+    r <- newImage undefined sz
+    f // dst r // checkIPP msg
+    return r
 
-auto_0_32f_C1R f msg sz = do
-    F r <- image sz
-    f // dst r (vroi r) // checkIPP msg []
-    return (F r)
+auto_0_8u_C1R :: Auto_0 Word8
+auto_0_8u_C1R = auto_0
 
-------------------------------------------------
+auto_0_8u_C3R :: Auto_0 Word24
+auto_0_8u_C3R = auto_0
 
-imgAsR1 roifun im = do 
-    r <- imgAs im
-    return r {vroi = roifun (vroi im)}
+auto_0_32f_C1R :: Auto_0 Float
+auto_0_32f_C1R = auto_0
 
-cr1 f msg im r = f // src im (vroi r) // dst r (vroi r) // checkIPP msg [im]
+--------------------------------------------------------------------------------
+
+newImageAsR1 :: Storable q => (ROI->ROI) -> Image p -> IO (Image q)
+newImageAsR1 roifun im = do
+    r <- newImage undefined (size im)
+    return $ setROI (roifun (roi im)) r
+
+cr1 :: Src p (Dst q (IO CInt)) -> String -> Image p -> Image q -> IO ()
+cr1 f msg im r = withImage im $ do
+    f // src im (roi r) // dst r // checkIPP msg
+
+type Auto_1 p q = Src p (Dst q (IO CInt)) -> String -> (ROI -> ROI) -> Image p -> IO (Image q)
+
+auto_1 :: (Storable p, Storable q) => Auto_1 p q
+auto_1 f msg roifun im = do
+    r <- newImageAsR1 roifun im
+    cr1 f msg im r
+    return r
+
+auto_1_8u_C1R :: Auto_1 Word8 Word8
+auto_1_8u_C1R = auto_1
+
+auto_1_8u_C3R :: Auto_1 Word24 Word24
+auto_1_8u_C3R = auto_1
+
+auto_1_32f_C1R :: Auto_1 Float Float
+auto_1_32f_C1R = auto_1
+
+auto_1_8u_C3C1R :: Auto_1 Word24 Word8
+auto_1_8u_C3C1R = auto_1
+
+auto_1_8u_C3C2R :: Auto_1 Word24 Word16
+auto_1_8u_C3C2R = auto_1
+
+auto_1_8u_C1C3R :: Auto_1 Word8 Word24
+auto_1_8u_C1C3R = auto_1
+
+auto_1_8u_C2C3R :: Auto_1 Word16 Word24
+auto_1_8u_C2C3R = auto_1
+
+auto_1_8u32f_C1R :: Auto_1 Word8 Float
+auto_1_8u32f_C1R = auto_1
+
+auto_1_32f8u_C1R :: Auto_1 Float Word8
+auto_1_32f8u_C1R = auto_1
+
+auto_1_8u_C1RSfs :: Auto_1 Word8 Word8
+auto_1_8u_C1RSfs = auto_1_8u_C1R
+
+auto_1_8u_P3C3R = error $ "auto_1_8u_P3C3R not yet defined"
+auto_1_8u_C3P3R = error $ "auto_1_8u_C3P3R not yet defined"
+auto_1_8u_P3R = error $ "auto_1_8u_P3R not yet defined"
+auto_1_32f_C1MR = error $ "auto_1_32f_C1MR not yet defined"
+auto_1_8u_C1MR = error $ "auto_1_8u_C1MR not yet defined"
+
+auto_1_8u32f64f_C1R = error "FIXME auto_1_8u32f64f_C1R"
+
+{-
 
 cr12 f msg im r1 r2 = f // src im (vroi r2) // src r1 (vroi r2) // dst r2 (vroi r2) // checkIPP msg [im]
-
-auto_1_8u_C1R f msg roifun (G im) = do
-    r <- imgAsR1 roifun im
-    cr1 f msg im r
-    return (G r)
-
-auto_1_8u_C3R f msg roifun (C im) = do
-    r <- imgAsR1 roifun im
-    cr1 f msg im r
-    return (C r)
-
-auto_1_32f_C1R f msg roifun (F im) = do
-    r <- imgAsR1 roifun im
-    cr1 f msg im r
-    return (F r)
-
-auto_1_8u_C3C1R f msg roifun (C im) = do
-    r' <- img Gray (isize im)
-    let r = r' { vroi = roifun (vroi im) }
-    cr1 f msg im r
-    return (G r)
-
-auto_1_8u_C3C2R f msg roifun (C im) = do
-    r' <- img YCbCr (isize im)
-    let r = r' { vroi = roifun (vroi im) }
-    cr1 f msg im r
-    return (Y422 r)
-
-auto_1_8u_C1C3R f msg roifun (G im) = do
-    r' <- img RGB (isize im)
-    let r = r' { vroi = roifun (vroi im) }
-    cr1 f msg im r
-    return (C r)
-
-auto_1_8u_C2C3R f msg roifun (Y422 im) = do
-    r' <- img RGB (isize im)
-    let r = r' { vroi = roifun (vroi im) }
-    cr1 f msg im r
-    return (C r)
-
-
-auto_1_8u32f_C1R f msg roifun (G im) = do
-    r' <- img I32f (isize im)
-    let r = r' { vroi = roifun (vroi im) }
-    cr1 f msg im r
-    return (F r)
-
-auto_1_32f8u_C1R f msg roifun (F im) = do
-    r' <- img Gray (isize im)
-    let r = r' { vroi = roifun (vroi im) }
-    cr1 f msg im r
-    return (G r)
 
 auto_1_8u32f64f_C1R f msg roifun (G im) = do
     r' <- img I32f (isize im)
@@ -137,37 +137,45 @@ auto_1_8u32f64f_C1R f msg roifun (G im) = do
     cr12 f msg im r s
     return (F r, D s)
 
-auto_1_8u_C1RSfs = auto_1_8u_C1R
+-}
 
-auto_1_8u_P3C3R = error $ "auto_1_8u_P3C3R not yet defined"
-auto_1_8u_C3P3R = error $ "auto_1_8u_C3P3R not yet defined"
-auto_1_8u_P3R = error $ "auto_1_8u_P3R not yet defined"
-auto_1_32f_C1MR = error $ "auto_1_32f_C1MR not yet defined"
-auto_1_8u_C1MR = error $ "auto_1_8u_C1MR not yet defined"
+--------------------------------------------------------------------------------
 
-----------------------------------------------------------
+newImageAsR2 :: Storable p => (ROI->ROI->ROI) -> Image p -> Image p -> IO (Image p)
+newImageAsR2 roifun im1 im2 = do
+    r <- newImage undefined (size im1)
+    return $ setROI (roifun (roi im1) (roi im2)) r
 
-imgAsR2 roifun im1 im2 = do
-    r <- imgAs im1
-    return r {vroi = roifun (vroi im1) (vroi im2)}
+type Auto_2 p =  Src p (Src p (Dst p (IO CInt))) -> String
+              -> (ROI-> ROI -> ROI) 
+              -> (ROI-> ROI -> ROI)
+              -> (ROI-> ROI -> ROI)
+              -> Image p -> Image p -> IO (Image p)
 
-cr2 f msg im1 im2 r = f // src im1 (vroi im1) // src im2 (vroi im2)// dst r (vroi r) // checkIPP msg [im1,im2]
+cr2 :: Src p (Src q (Dst r (IO CInt))) -> String
+    -> Image p -> Image q -> Image r
+    -> IO ()
+cr2 f msg im1 im2 r = withImage im1 $ withImage im2 $ do
+    f // src im1 (roi im1) // src im2 (roi im2)// dst r // checkIPP msg
 
-auto_2_8u_C1R f msg rf rf1 rf2 (G im1) (G im2) = do
-    r <- imgAsR2 rf im1 im2
-    let im1' = im1 {vroi = rf1 (vroi im1) (vroi im2)}
-        im2' = im2 {vroi = rf2 (vroi im1) (vroi im2)}
-    cr2 f msg im1' im2' r
-    return (G r)
+auto_2 :: Storable p => Auto_2 p
+auto_2 f msg rf rf1 rf2 im1 im2 = do
+    r <- newImageAsR2 rf im1 im2
+    let im1' = setROI (rf1 (roi im1) (roi im2)) im1
+        im2' = setROI (rf2 (roi im1) (roi im2)) im2
+    cr2 f msg im1 im2 r
+    return r
 
-auto_2_32f_C1R f msg rf rf1 rf2 (F im1) (F im2) = do
-    r <- imgAsR2 rf im1 im2
-    let im1' = im1 {vroi = rf1 (vroi im1) (vroi im2)}
-        im2' = im2 {vroi = rf2 (vroi im1) (vroi im2)}
-    cr2 f msg im1' im2' r
-    return (F r)
+auto_2_8u_C1R :: Auto_2 Word8
+auto_2_8u_C1R = auto_2
 
+auto_2_32f_C1R :: Auto_2 Float
+auto_2_32f_C1R = auto_2
+
+auto_2_8u_C1RSfs :: Auto_2 Word8
 auto_2_8u_C1RSfs = auto_2_8u_C1R
+
+{-
 
 ------------------------------------------------------------
 
@@ -180,3 +188,9 @@ auto_11_32f_C1IR f msg _ (F im1) (F im2) = do
 
 auto_11_8u_C1IR f msg _ (G im1) (G im2) = do
     cr2i f msg im1 im2
+    
+-}
+
+auto_11_32f_C1IR = error $ "FIXME auto_11_32f_C1IR"
+auto_11_8u_C1IR = error $ "FIXME auto_11_8u_C1IR"
+

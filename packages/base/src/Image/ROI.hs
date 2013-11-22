@@ -14,6 +14,7 @@ Manipulation of regions of interest.
 
 module Image.ROI
 ( roiSize,
+  fullROI,
   shrink,
   shift,
   getShift,
@@ -37,6 +38,11 @@ import Image.Base
 -- | Size of a ROI
 roiSize :: ROI -> Size
 roiSize ROI { r1=a, r2=b, c1=x, c2=y} = Size { height = b-a+1, width = y-x+1 }
+
+
+fullROI :: Size -> ROI
+fullROI (Size h w) = ROI {r1=0, r2=h-1, c1=0, c2=w-1}
+
 
 -- | Creates a new roi by reducing in (r,c) units the rows and columns or a given roi. If r or c are negative the roi expands.
 shrink :: (Int,Int)  -> ROI -> ROI

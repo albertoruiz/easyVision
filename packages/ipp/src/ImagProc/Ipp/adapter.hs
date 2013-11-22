@@ -93,8 +93,8 @@ cl (_,n) = takeWhile (/= '[') n
 -------------------------------------------------------
 
 mkw (n,as) = rep ("DstStep","dstStep")$ 
-             "foreign import ccall \"adapt.h "++n++"x\"\n    "++n++"x :: "
-             ++ concat (intersperse " -> " (map wt as))++" -> IO Int\n"
+             "foreign import ccall \""++n++"x\"\n    "++n++"x :: "
+             ++ concat (intersperse " -> " (map wt as))++" -> IO CInt\n"
              ++ n ++" " ++ unwords (map cl' as) ++ " = do\n"
              ++ auxStruct initStruct as
              ++ "    r <- "++n++"x " ++ unwords (map cl'' as)++"\n"
@@ -132,8 +132,8 @@ ht "float" = "Float"
 ht "float*" = "Ptr Float"
 ht "double" = "Double"
 ht "double*" = "Ptr Double"
-ht "Ipp8u" = "CUChar"
-ht "Ipp8u*" = "Ptr CUChar"
+ht "Ipp8u" = "Word8"
+ht "Ipp8u*" = "Ptr Word8"
 ht "Ipp8u**" = "Ptr ()"
 ht "Ipp32f" = "Float"
 ht "Ipp32f*" = "Ptr Float"

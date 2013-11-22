@@ -20,7 +20,7 @@ module ImagProc.Moments (
 import ImagProc.Ipp.Pure
 import ImagProc.Ipp.AdHoc
 import Image.Convert(mat2img)
-import Image.Types
+import Image.Core
 import Numeric.LinearAlgebra
 
 data ImageBasis = ImageBasis { zeroIb, oneIb, xIb, yIb, x2Ib, y2Ib, xyIb :: ImageFloat }

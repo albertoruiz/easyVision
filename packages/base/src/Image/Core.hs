@@ -8,7 +8,7 @@ module Image.Core (
     withImage,
     ptrAt,
     starting, rowPtrs,
-    Size(..),
+    modifyROI, setROI,
     Word8, Word16, Word24(..), CInt(..),
     Gray, RGB, YCbCr, YUV,
     ImageGray, ImageFloat, ImageRGB, ImageYCbCr, ImageYUV,
@@ -94,6 +94,7 @@ rowPtrs img@Image {..} = (map row [0..r2-r1], c2-c1+1)
     row k = plusPtr p (k*step)
 
 
+withImage :: Image t -> IO b -> IO b
 withImage x@Image{..} act = withForeignPtr fp $ \_ -> act
   where
     B.PS fp _ _ = bytes
@@ -103,9 +104,6 @@ newImage :: Storable t => t -> Size -> IO (Image t)
 newImage z sz = do
     (bs,s) <- alignedBytes z sz
     return Image {size = sz, roi = fullROI sz, bytes = bs, step = s }
-
-fullROI (Size h w) = ROI {r1=0, r2=h-1, c1=0, c2=w-1}
-
 
 cloneImage :: Image t -> IO (Image t)
 cloneImage x = return $ x { bytes = B.copy (bytes x) }
@@ -124,6 +122,14 @@ alignedBytes x (Size r c) = do
             p' = unsafeForeignPtrToPtr fp
             p = alignPtr p' 32
     return (B.PS fp o tl, c')
+
+--------------------------------------------------------------------------------
+
+modifyROI :: (ROI->ROI) -> Image p -> Image p
+modifyROI f im = im { roi = f (roi im) `intersection` (roi im) }
+
+setROI :: ROI -> Image p -> Image p
+setROI r = modifyROI (const r)
 
 --------------------------------------------------------------------------------
 

@@ -19,7 +19,7 @@ main = do
     case lookup m entries of
         Just p  -> putStrLn p
         Nothing -> case lookup m'' entries of
-                      Nothing -> putStrLn index
+                      Nothing -> putStrLn $ "http://holumbus.fh-wedel.de/hayoo/hayoo.html?query="++m''
                       Just p  -> putStrLn $ p -- ++ "#v:"++s
         
 f [a,b] = (takeWhile (/='<') b, tail . init $ dropWhile (/='\"') a)

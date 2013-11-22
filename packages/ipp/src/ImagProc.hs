@@ -20,7 +20,6 @@ module ImagProc (
     module ImagProc.Generic,
     module ImagProc.Tools,
     module ImagProc.Moments,
-    module Image.Types,
     module ImagProc.C.Simple,
     module Image.Convert
 ) where
@@ -32,7 +31,6 @@ import ImagProc.Ipp.Pure
 import ImagProc.Ipp.Structs
 import ImagProc.Generic
 import ImagProc.C.Simple
-import Image.Types
 import ImagProc.Tools
 import ImagProc.Moments
 
