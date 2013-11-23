@@ -42,7 +42,12 @@ data Image t = Image
     , roi   :: ROI
     , bytes :: ByteString
     , step  :: Int
+    , szpix :: Int
     }
+
+sizeOfPix :: Storable a => Image a -> Int
+sizeOfPix = sizeOf . (undefined :: Image a -> a)
+
 
 data Word24 = Word24 {-# UNPACK #-} !Word8
                      {-# UNPACK #-} !Word8
@@ -74,8 +79,9 @@ type YUV = Word16
 type ImageYUV = Image YUV
 
 
+
 ptrAt :: Image t -> Int -> Int -> Ptr t
-ptrAt Image{..} r c = castPtr (unsafeForeignPtrToPtr fp `plusPtr` (o + r*step)) `plusPtr` c
+ptrAt Image{..} r c = castPtr $ unsafeForeignPtrToPtr fp `plusPtr` (o + r*step + c*szpix)
   where
     B.PS fp o _ = bytes
 
@@ -102,26 +108,28 @@ withImage x@Image{..} act = withForeignPtr fp $ \_ -> act
 
 newImage :: Storable t => t -> Size -> IO (Image t)
 newImage z sz = do
-    (bs,s) <- alignedBytes z sz
-    return Image {size = sz, roi = fullROI sz, bytes = bs, step = s }
+    let sp = sizeOf z
+    (bs,s) <- alignedBytes sp sz
+    return Image {size = sz, roi = fullROI sz, bytes = bs, step = s, szpix = sp }
+
 
 cloneImage :: Image t -> IO (Image t)
 cloneImage x = return $ x { bytes = B.copy (bytes x) }
 
 
-alignedBytes :: Storable x => x -> Size -> IO (ByteString,Int)
-alignedBytes x (Size r c) = do
-    let sz = sizeOf x
-        w = c*sz
+alignedBytes :: Int -> Size -> IO (ByteString,Int)
+alignedBytes sz (Size r c) = do
+    let w = c*sz
         rest = w `mod` 32
         c' = if rest == 0 then w else w + 32 - rest
         tl = r*c'+31
     fp <- mallocPlainForeignPtrBytes tl
-    let o = p `minusPtr` p'
-          where
-            p' = unsafeForeignPtrToPtr fp
-            p = alignPtr p' 32
-    return (B.PS fp o tl, c')
+    let p' = unsafeForeignPtrToPtr fp
+        p = alignPtr p' 32
+        o = p `minusPtr` p'
+        t = tl - o
+    return (B.PS fp o t, c')
+
 
 --------------------------------------------------------------------------------
 

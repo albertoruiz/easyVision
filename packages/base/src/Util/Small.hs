@@ -270,7 +270,7 @@ instance Storable t => Storable (Dim4 t) where
         pokeElemOff q 2 c
         pokeElemOff q 3 d
 
-
+{-
 instance (Array x ~ Array (Shape x),
           Shaped x, 
           Shaped (Shape x),
@@ -279,7 +279,7 @@ instance (Array x ~ Array (Shape x),
     alignment = alignment . toDim
     peek = fmap fromDim . peek . castPtr
     poke p = poke (castPtr p) . toDim
-
+-}
 
 unsafeMap :: (Shaped a, Shaped c)
           => (DArray (Shape a) -> DArray (Shape c)) -> a -> c

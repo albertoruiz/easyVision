@@ -2,9 +2,9 @@
 #include <stdlib.h>
 #include "wrappers.h"
 
-#define R(C,D,E) clip(( 298 * (C)             + 409 * (E) + 128) >> 8)
-#define G(C,D,E) clip(( 298 * (C) - 100 * (D) - 208 * (E) + 128) >> 8)
-#define B(C,D,E) clip(( 298 * (C) + 516 * (D)             + 128) >> 8)
+#define R(C,D,E) CLIP(( 298 * (C)             + 409 * (E) + 128) >> 8)
+#define G(C,D,E) CLIP(( 298 * (C) - 100 * (D) - 208 * (E) + 128) >> 8)
+#define B(C,D,E) CLIP(( 298 * (C) + 516 * (D)             + 128) >> 8)
 
 
 int exampleInvert(IM1(src), IM1(dst)) {
@@ -27,13 +27,20 @@ int yuv2yuyv(IM1(x),IM2(y)) {
 
 
 int yuyv2rgb(IM2(x),IM3(y)) {
-    int r, c;
-    unsigned char * p = xp, * q = yp;
-    TRAV(x,0,r,c) {
-        *(q++) = *p;
-        *(q++) = *p;
-        *(q++) = *(p++);
-        p++;
+    int k, ks=0, kd=0;
+    unsigned char * s = xp, * p = yp;
+    int width = xc2-xc1+1, height = xr2-xr1+1;
+    for(k=0; k<(width*height/2); k++) {
+          int y1 = s[ks++]-16;
+          int u  = s[ks++]-128;
+          int y2 = s[ks++]-16;
+          int v  = s[ks++]-128;
+          p[kd++] = R(y1,u,v);
+          p[kd++] = G(y1,u,v);
+          p[kd++] = B(y1,u,v);
+          p[kd++] = R(y2,u,v);
+          p[kd++] = G(y2,u,v);
+          p[kd++] = B(y2,u,v);
     }
     return 0;
 }

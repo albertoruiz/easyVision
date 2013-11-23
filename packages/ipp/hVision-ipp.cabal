@@ -42,6 +42,7 @@ library
                         ImagProc.Ipp.AutoGen
                         ImagProc.Ipp.Auto
                         ImagProc.Ipp.Pure
+                        ImagProc.Ipp.AdHoc
 
                         --ImagProc
                         --ImagProc.Tools
@@ -50,14 +51,11 @@ library
                         --ImagProc.C.Simple
                         --ImagProc.Ipp
 
-                        --ImagProc.Ipp.AdHoc
-
-                        --ImagProc.Ipp.Pure
 
     other-modules:
 
     c-sources:          src/ImagProc/Ipp/auxIpp.c
-                        src/ImagProc/C/Simple/simple.c
+                        --src/ImagProc/C/Simple/simple.c
                         src/ImagProc/Ipp/ptr_adapt.c
 
     ghc-prof-options:   -auto-all

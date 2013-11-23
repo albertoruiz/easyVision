@@ -13,7 +13,11 @@ IPP functions which need an ad-hoc wrapper
 -}
 -----------------------------------------------------------------------------
 
-module ImagProc.Ipp.AdHoc
+module ImagProc.Ipp.AdHoc(
+    set8u,set8u3,set32f,
+    copy8u,copy8u3,copy32f,
+    resize8u,resize8u3,resize32f
+)
 where
 
 import ImagProc.Ipp.Core
@@ -27,34 +31,64 @@ import Foreign.Marshal
 import Foreign.Storable
 import Data.List(foldl1')
 import Util.Misc(debug)
+import Control.Monad(when)
 
 -- | Writes into a existing image a desired value in a specified roi.
 set32f :: Float      -- ^ desired value
        -> ROI        -- ^ roi
        -> ImageFloat -- ^ destination image
        -> IO ()
-set32f v roi (F im) = ippiSet_32f_C1R v // dst im roi // checkIPP "set32f" [im]
+set32f v dr im = when (roiArea r > 0) $ do
+    ippiSet_32f_C1R v // dst (setROI r im) // checkIPP "set32f"
+  where
+    r = intersection dr (roi im)
 
 -- | Writes into a existing image a desired value in a specified roi.
-set8u :: CUChar      -- ^ desired value
+set8u :: Word8      -- ^ desired value
        -> ROI        -- ^ roi
        -> ImageGray  -- ^ destination image
        -> IO ()
-set8u v roi (G im) = ippiSet_8u_C1R v // dst im roi // checkIPP "set8u" [im]
+set8u v dr im = when (roiArea r > 0) $ do
+    ippiSet_8u_C1R v // dst (setROI r im) // checkIPP "set8u"
+  where
+    r = intersection dr (roi im)
 
 
 -- | Writes into a existing image a desired value in a specified roi.
-set8u3 :: CUChar -> CUChar -> CUChar -- ^ desired RGB value
+set8u3 :: Word8 -> Word8 -> Word8 -- ^ desired RGB value
        -> ROI        -- ^ roi
        -> ImageRGB   -- ^ destination image
        -> IO ()
-set8u3 r g b roi (C im) = do
+set8u3 r g b dr im = when (roiArea ar > 0) $ do
     v <- mallocArray 3
     pokeArray v [r,g,b]
-    ippiSet_8u_C3R v // dst im roi // checkIPP "set8u3" [im]
+    ippiSet_8u_C3R v // dst (setROI ar im) // checkIPP "set8u3"
     free v
+  where
+    ar = intersection dr (roi im)
 
-----------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+
+copyg :: String -> Src p (Dst p (IO CInt))
+      -> Image p -> Image p -> Pixel -> IO ()
+copyg msg f s d pix = do
+    let r = intersection (roi d) (roi s `roiAt` pix)
+    when (roiArea r > 0) $ do
+        f // src s (roi s) // dst (setROI r d) // checkIPP msg
+    return ()
+
+copy8u :: Image Word8 -> Image Word8 -> Pixel -> IO ()
+copy8u = copyg "copy8u" ippiCopy_8u_C1R
+
+copy8u3 :: Image Word24 -> Image Word24 -> Pixel -> IO ()
+copy8u3 = copyg "copy8u3" ippiCopy_8u_C3R
+
+copy32f :: Image Float -> Image Float -> Pixel -> IO ()
+copy32f = copyg "copy32f" ippiCopy_32f_C1R
+
+--------------------------------------------------------------------------------
+
+{-
 
 -- | Copies the roi of the input image into the roi of the destination image.
 copyROI32f :: ImageFloat -- ^ input image
@@ -80,6 +114,9 @@ shiftROI8u dxy im = unsafePerformIO $ do
     copyROI8u im roi1 r roi2
     return (modifyROI (const roi2) r)
 
+-}
+
+
 --------------------------------------------------------------------
 data InterpolationMode = InterpNN
                        | InterpLinear
@@ -87,27 +124,36 @@ data InterpolationMode = InterpNN
                        | InterpSuper
                        | InterpLanczos
 
-interCode InterpNN      =  1 :: Int
+interCode InterpNN      =  1 :: CInt
 interCode InterpLinear  =  2
 interCode InterpCubic   =  4
 interCode InterpSuper   =  8
 interCode InterpLanczos = 16
 --inter_SMOOTH_EDGE = (1 << 31) :: Int
 
-genResize f s dst droi im sroi interp = do
-               f (ptr im) (step im) (height $ isize im) (width $ isize im)
-                 (r1 sroi) (r2 sroi) (c1 sroi) (c2 sroi)
-                 (ptr dst) (step dst)
-                 (r1 droi) (r2 droi) (c1 droi) (c2 droi)
-                 interp // checkIPP s [im]
 
--- | Resizes the roi of a given image.
-resize32f :: InterpolationMode -> Size -> ImageFloat -> ImageFloat
-resize32f itp s (F im) = unsafePerformIO $ do
-    r <- img I32f s
-    genResize c_resize32f "genResize32f" r (fullroi r) im (vroi im) (interCode itp)
-    return (F r)
+resizeg msg f itp s im = unsafePerformIO $ do
+    r <- newImage undefined s
+    genResize f msg r (fullROI s) im (roi im) (interCode itp)
+    return r
+  where
+    genResize f s dst droi im sroi interp = withImage im $ do
+       f (castPtr $ ptrAt im 0 0) (fi $ step im) (fi $ height $ size im) (fi $ width $ size im)
+         (fi $ r1 sroi) (fi $ r2 sroi) (fi $ c1 sroi) (fi $ c2 sroi)
+         (castPtr $ ptrAt dst 0 0) (fi $ step dst)
+         (fi $ r1 droi) (fi $ r2 droi) (fi $ c1 droi) (fi $ c2 droi)
+         interp // checkIPP s
 
+resize32f :: Size -> Image Float -> Image Float
+resize32f = resizeg "resize32f" c_resize32f InterpLinear
+
+resize8u :: Size -> Image Word8 -> Image Word8
+resize8u = resizeg "resize8u" c_resize8u InterpLinear
+
+resize8u3 :: Size -> Image Word24 -> Image Word24
+resize8u3 = resizeg "resize8u3" c_resize8u3 InterpLinear
+
+{-
 -- | Resizes the roi of a given image.
 resize8u :: InterpolationMode -> Size -> ImageGray -> ImageGray
 resize8u itp s (G im) = unsafePerformIO $ do
@@ -121,23 +167,11 @@ resize8u3 itp s (C im) = unsafePerformIO $ do
     r <- img RGB s
     genResize c_resize8u3 "genResize8u3" r (fullroi r) im (vroi im) (interCode itp)
     return (C r)
-
-{-# DEPRECATED resize32f' "Use resizeFull instead" #-}
--- | Resizes the full image and its roi
-resize32f' :: InterpolationMode -> Size -> ImageFloat -> ImageFloat
-resize32f' itp s (F im) = unsafePerformIO $ do
-    r <- img I32f s
-    genResize c_resize32f "genResize32f" r (fullroi r) im (fullroi im) (interCode itp)
-    let Size h' w' = s
-        Size h w = isize im
-        fh = fromIntegral h' / fromIntegral h
-        fw = fromIntegral w' / fromIntegral w
-        ROI r1 r2 c1 c2 = vroi im
-        f n = fromIntegral n
-        newroi = ROI (ceiling (fh*f r1)) (floor (fh*f r2)) (ceiling(fw*f c1)) (floor(fw*f c2))
-    return (F r {vroi = newroi})
+-}
 
 -- FIX auxIpp.c ipp 7.1 to allow InterpNN
+
+{-
 
 ----------------------------------------------------------------------------------------
 
@@ -298,7 +332,7 @@ floodFill8uGrad (G im) (Pixel r c) dmin dmax val = do
 -- | Returns the minimum and maximum value in an image32f
 minmax :: ImageFloat -> (Float,Float)
 minmax (F im) = unsafePerformIO $ do
-    mn <- malloc 
+    mn <- malloc
     mx <- malloc
     (ippiMinMax_32f_C1R // dst im (vroi im)) mn mx // checkIPP "minmax" [im]
     a <- peek mn
@@ -485,7 +519,7 @@ powerSpectrum (F im) = unsafePerformIO $ do
 
 -- | Distance transform: Given an 8u image with feature pixels = 0, computes a 32f image with the distance from each pixel to the nearest feature pixel. The argument metrics is a list of float with two (for a 3x3 mask) or three elements (for a 5x5 mask), which specify respectively the distances between pixels which share an edge, a corner and pixels at distance of chess knight move. For example, for L2 metrics we use [1,1.4] (3x3 mask) or [1,1.4,2.2] (5x5 mask). If metrics is not valid (e.g. []), then [1,1.4] is used.
 distanceTransform :: [Float]       -- ^ metrics
-                  -> ImageGray     -- ^ source image 
+                  -> ImageGray     -- ^ source image
                   -> ImageFloat -- ^ result
 
 distanceTransform (m@[_,_]) = genDistanceTransform ippiDistanceTransform_3x3_8u32f_C1R m
@@ -853,7 +887,7 @@ ccsd f temp imag = unsafePerformIO $ f g imag temp
         r2' = r1'+r2-r1-h+1
         c1' = c1 + (w-1) `div` 2
         c2' = c1'+c2-c1-w+1
-        
+
 
 crossCorrFloat :: ImageFloat -> ImageFloat -> ImageFloat
 crossCorrFloat = ccsd ioCrossCorrValid_NormLevel_32f_C1R
@@ -911,4 +945,7 @@ twistColors twist img = unsafePerformIO $ do
     (C r) <- ioColorTwist32f_8u_C3R pTwist id img
     free pTwist
     return (C r)
+
+--------------------------------------------------------------------------------
+-}
 

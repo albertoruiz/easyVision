@@ -30,7 +30,8 @@ module Image.ROI
   roiRadius,
   roiDiv,
   roi2poly,
-  poly2roi
+  poly2roi,
+  roiAt
 ) where
 
 import Image.Base
@@ -160,5 +161,6 @@ poly2roi sz p = ROI r1 (max (r1+d) r2) c1 (max (c1+d) c2)
     [Pixel r1 c1, Pixel r2 c2] = pointsToPixels sz [p1,p3]
     d = 32
 
-
+roiAt :: ROI -> Pixel -> ROI
+roiAt r@(ROI r1 _ c1 _) (Pixel r0 c0) = shift (r0-r1,c0-c1) r
 

@@ -69,7 +69,9 @@ type Dst p t = Ptr (PtrOf p) -> Int -> IppiSize -> t
 
 -- | Extracts from a destination Img the pointer to the starting position taken into account the given roi, and applies it to a ipp function.
 dst :: Image p -> (Dst p t) -> t
-dst im f = f (castPtr $ starting im) (step im) (roiSZ (roi im))
+dst im f = if roiArea (roi im) > 0
+             then f (castPtr $ starting im) (step im) (roiSZ (roi im))
+             else error "empty destination ROI"
 
 
 type Src p t = Ptr (PtrOf p) -> Int -> t
