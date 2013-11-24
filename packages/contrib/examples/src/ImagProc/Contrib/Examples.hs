@@ -16,7 +16,6 @@ module ImagProc.Contrib.Examples (
 )
 where
 
-import Image.Devel
 import Image.Core
 import Foreign(Word8)
 --import ImagProc.Generic(clone)
@@ -30,32 +29,23 @@ import System.IO.Unsafe(unsafePerformIO)
 ----------------------------------------------------
 
 foreign import ccall "customSum"
-    c_customSum :: Ptr Word8 -> CInt -> CInt -> CInt -> CInt -> CInt
-                -> Ptr CInt
-                -> IO CInt
+    c_customSum :: Ptr CInt -> RawImage Word8 (IO CInt)
 
 sumInC :: ImageGray -> Int
-sumInC (G x) = ti . unsafePerformIO $ do
+sumInC x = ti . unsafePerformIO $ do
     presult <- malloc
-    _ok <- appG c_customSum (G x) presult
+    withImage x $ do
+        c_customSum presult `appI` x // checkFFI "sumInC"
     result <- peek presult
     free presult
-    touchForeignPtr . fptr $ x
     return result 
 
 ------------------------------------------------
 
 foreign import ccall "customInvert"
-    c_customInvert :: Ptr Word8 -> CInt -> CInt -> CInt -> CInt -> CInt
-                   -> Ptr Word8 -> CInt -> CInt -> CInt -> CInt -> CInt
-                   -> IO CInt
-
+    c_customInvert :: RawImage Word8 (RawImage Word8 (IO CInt))
 invertInC :: ImageGray -> ImageGray
-invertInC (G x) = unsafePerformIO $ do
-    G res <- image $ size (G x)
-    _ok <- appG c_customInvert (G x) `appG` G res
-    mapM_ (touchForeignPtr . fptr)  [x,res]
-    return (G res) 
+invertInC = wrap11 "invertInC" c_customInvert
 
 ----------------------------------------------------
 

@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <math.h>
 
-int customSum(IMG(src), int*result) {
+int customSum(int*result, IM1(src)) {
     int r,c;
     int sum = 0;
     TRAV(src,0,r,c) {
@@ -12,7 +12,7 @@ int customSum(IMG(src), int*result) {
     return 0;
 }
 
-int customInvert(IMG(src), IMG(dst)) {
+int customInvert(IM1(src), IM1(dst)) {
     int r,c;
     TRAV(src,0,r,c) {
         P(dst,r,c) = 255 - P(src,r,c);

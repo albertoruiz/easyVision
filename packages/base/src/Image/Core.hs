@@ -13,7 +13,7 @@ module Image.Core (
     Gray, RGB, YCbCr, YUV,
     ImageGray, ImageFloat, ImageRGB, ImageYCbCr, ImageYUV,
     STImage, thawImage, runSTImage,
-    RawImage,
+    RawImage, appI,
     Wrap11, wrap11, fi, ti, (//), checkFFI,
     module Image.Base,
     module Image.ROI
