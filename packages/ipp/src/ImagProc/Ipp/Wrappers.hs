@@ -19,6 +19,7 @@ module ImagProc.Ipp.Wrappers where
 
 import Foreign
 import Foreign.C.Types
+import Image.Core
 
 foreign import ccall "auxIpp.h ippGetStatusString" ippGetStatusString :: CInt -> IO (Ptr CChar)
 
@@ -49,28 +50,13 @@ foreign import ccall "auxIpp.h auxWarpPerspective_8u_C3R"
                            IO CInt
 
 foreign import ccall "auxIpp.h auxResize_32f_C1R"
-     c_resize32f :: Ptr Word8 -> CInt -> CInt -> CInt ->
-                           CInt -> CInt -> CInt -> CInt ->
-                           Ptr Word8 -> CInt ->
-                           CInt -> CInt -> CInt -> CInt ->
-                           CInt ->
-                           IO CInt
+     c_resize32f :: CInt -> RawImage Float (RawImage Float (IO CInt))
 
 foreign import ccall "auxIpp.h auxResize_8u_C1R"
-     c_resize8u :: Ptr Word8 -> CInt -> CInt -> CInt ->
-                           CInt -> CInt -> CInt -> CInt ->
-                           Ptr Word8 -> CInt ->
-                           CInt -> CInt -> CInt -> CInt ->
-                           CInt ->
-                           IO CInt
+     c_resize8u :: CInt -> RawImage Word8 (RawImage Word8 (IO CInt))
 
 foreign import ccall "auxIpp.h auxResize_8u_C3R"
-     c_resize8u3 :: Ptr Word8 -> CInt -> CInt -> CInt ->
-                           CInt -> CInt -> CInt -> CInt ->
-                           Ptr Word8 -> CInt ->
-                           CInt -> CInt -> CInt -> CInt ->
-                           CInt ->
-                           IO CInt
+     c_resize8u3 :: CInt -> RawImage Word24 (RawImage Word24 (IO CInt))
 
 foreign import ccall "auxIpp.h auxDCTFwd_32f_C1R"
      auxDCTFwd_32f_C1R :: Ptr Float -> CInt ->
@@ -86,8 +72,8 @@ foreign import ccall "auxIpp.h auxDCTInv_32f_C1R"
                           CInt -> CInt -> CInt -> CInt ->
                           IO CInt
 
-foreign import ccall "auxInpaCInting_8u_C1R"
-    auxInpaCInting_8u_C1R :: Float -> CInt ->
+foreign import ccall "auxInpainting_8u_C1R"
+    auxInpainting_8u_C1R :: Float -> CInt ->
                             Ptr Word8 -> CInt ->
                             Ptr Word8 -> CInt ->
                             Ptr Float -> CInt ->

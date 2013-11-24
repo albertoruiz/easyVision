@@ -7,9 +7,10 @@
 #define IM3(X) IM1(X)
 #define PM(X,r,c,p) (*(X##p+(r)*X##step+(3*(c))+(p)))
 
-
 #define IMF(X) GIMG(float,X)
 #define PF(X,r,c) (*(X##p+(r)*X##step/4+(c)))
+
+#define ROI(X,C) (X##p + X##r1*X##step/sizeof(*X##p) + X##c1*C)
 
 #define TRAV(X,D,r,c) for (r=X##r1+D; r<=X##r2-D; r++) for(c=X##c1+D; c<=X##c2-D; c++)
 #define TRAVR(X,r) for (r=X##r1; r<=X##r2; r++)

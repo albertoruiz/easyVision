@@ -1,7 +1,5 @@
 -- generated automatically by adapter.hs
 
-{-# OPTIONS #-}
-
 module ImagProc.Ipp.Auto where
 
 import ImagProc.Ipp.AutoGen

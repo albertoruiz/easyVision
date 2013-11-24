@@ -58,10 +58,8 @@ library
                         --src/ImagProc/C/Simple/simple.c
                         src/ImagProc/Ipp/ptr_adapt.c
 
+    cc-options:         -Wall
     ghc-prof-options:   -auto-all
 
-    --ghc-options:        -Wall
-    --                    -fno-warn-missing-signatures
-
-    ghc-options:        -fwarn-unused-imports
+    ghc-options:        -Wall -fno-warn-missing-signatures
 

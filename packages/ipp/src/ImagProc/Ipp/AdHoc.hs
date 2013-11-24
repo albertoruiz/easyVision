@@ -131,18 +131,11 @@ interCode InterpSuper   =  8
 interCode InterpLanczos = 16
 --inter_SMOOTH_EDGE = (1 << 31) :: Int
 
-
 resizeg msg f itp s im = unsafePerformIO $ do
     r <- newImage undefined s
-    genResize f msg r (fullROI s) im (roi im) (interCode itp)
+    withImage im $ checkIPP msg $ do
+        f (interCode itp) `appI` im `appI` r
     return r
-  where
-    genResize f s dst droi im sroi interp = withImage im $ do
-       f (castPtr $ ptrAt im 0 0) (fi $ step im) (fi $ height $ size im) (fi $ width $ size im)
-         (fi $ r1 sroi) (fi $ r2 sroi) (fi $ c1 sroi) (fi $ c2 sroi)
-         (castPtr $ ptrAt dst 0 0) (fi $ step dst)
-         (fi $ r1 droi) (fi $ r2 droi) (fi $ c1 droi) (fi $ c2 droi)
-         interp // checkIPP s
 
 resize32f :: Size -> Image Float -> Image Float
 resize32f = resizeg "resize32f" c_resize32f InterpLinear
@@ -152,22 +145,6 @@ resize8u = resizeg "resize8u" c_resize8u InterpLinear
 
 resize8u3 :: Size -> Image Word24 -> Image Word24
 resize8u3 = resizeg "resize8u3" c_resize8u3 InterpLinear
-
-{-
--- | Resizes the roi of a given image.
-resize8u :: InterpolationMode -> Size -> ImageGray -> ImageGray
-resize8u itp s (G im) = unsafePerformIO $ do
-    r <- img Gray s
-    genResize c_resize8u "genResize8u" r (fullroi r) im (vroi im) (interCode itp)
-    return (G r)
-
--- | Resizes the roi of a given image.
-resize8u3 :: InterpolationMode -> Size -> ImageRGB -> ImageRGB
-resize8u3 itp s (C im) = unsafePerformIO $ do
-    r <- img RGB s
-    genResize c_resize8u3 "genResize8u3" r (fullroi r) im (vroi im) (interCode itp)
-    return (C r)
--}
 
 -- FIX auxIpp.c ipp 7.1 to allow InterpNN
 

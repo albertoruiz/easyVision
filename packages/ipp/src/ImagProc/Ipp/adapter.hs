@@ -23,7 +23,7 @@ toTuple h = (name h, map f (args h))
 main = do
     ipp <- getEnv "IPP_INC"
     f <- readFile "functions.txt"
-    let hdsnames = filter (not . null) . map words . lines $ f
+    let hdsnames = filter ((/="--") . head) . filter (not . null) . map words . lines $ f
         names = map last hdsnames
         headers = map ((ipp++"/")++) $ nub (map head hdsnames)
     hs <- fmap (map noconst . filter ((`elem` names) . name) . concatMap getHeaders) (mapM readFile headers)
@@ -149,8 +149,7 @@ ht x = error $ " UNKNOWN TYPE: "++x
 -----------------------------------------------------------------
 
 wmod  = "-- generated automatically by adapter.hs\n\n"
-     ++ "{-# LANGUAGE ForeignFunctionInterface #-}\n"
-     ++ "{-# OPTIONS #-}\n\n"
+     ++ "{-# LANGUAGE ForeignFunctionInterface #-}\n\n"
      ++ "module ImagProc.Ipp.Adapt where\n\n"
      ++ "import Foreign\nimport Foreign.C.Types\n"
      ++ "import ImagProc.Ipp.Structs\n\n"
@@ -225,6 +224,6 @@ suffix n = (iterate (tail.dropWhile (/='_')) n) !! k
     where k = length (filter (== '_') n) - 1
 
 automod  = "-- generated automatically by adapter.hs\n\n"
-     ++ "{-# OPTIONS #-}\n\n"
      ++ "module ImagProc.Ipp.Auto where\n\n"
      ++ "import ImagProc.Ipp.AutoGen\nimport ImagProc.Ipp.Adapt\n"
+
