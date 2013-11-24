@@ -23,6 +23,7 @@ module Image.ROI
   roiArea,
   inROI, inROI',
   roiGrid, roiGridStep,
+  roiArray,
   overlap,
   roiFromPixel,
   roiFrom2Pixels,
@@ -163,4 +164,10 @@ poly2roi sz p = ROI r1 (max (r1+d) r2) c1 (max (c1+d) c2)
 
 roiAt :: ROI -> Pixel -> ROI
 roiAt r@(ROI r1 _ c1 _) (Pixel r0 c0) = shift (r0-r1,c0-c1) r
+
+roiArray :: Int -> Int -> Int -> Int -> ROI -> ROI
+roiArray h w i j r | ok = roiGrid h w r !! ((i-1)*w+j-1)
+                   | otherwise = error "roiArray"
+  where
+    ok = i >= 1 && i <= h && j >= 1 && j <= w && h > 0 && w > 0
 
