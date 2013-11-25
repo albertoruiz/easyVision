@@ -101,36 +101,6 @@ copy32f = copyg "copy32f" ippiCopy_32f_C1R
 
 --------------------------------------------------------------------------------
 
-{-
-
--- | Copies the roi of the input image into the roi of the destination image.
-copyROI32f :: ImageFloat -- ^ input image
-            -> ROI
-            -> ImageFloat -- ^ destination image
-            -> ROI
-            -> IO ()
-copyROI32f (F im) r1 (F r) r2 = ippiCopy_32f_C1R // src im r1 // dst r r2 // checkIPP "copyROI32f'" [im]
-
--- | Copies the roi of the input image into the roi of the destination image.
-copyROI8u :: ImageGray -> ROI -> ImageGray -> ROI -> IO ()
-copyROI8u (G im) r1 (G r) r2 = ippiCopy_8u_C1R // src im r1 // dst r r2 // checkIPP "copyROI8u'" [im]
-
--- | Copies the roi of the input image into the roi of the destination image.
-copyROI8u3 :: ImageRGB -> ROI -> ImageRGB -> ROI -> IO ()
-copyROI8u3 (C im) r1 (C r) r2 = ippiCopy_8u_C3R // src im r1 // dst r r2 // checkIPP "copyROI8u3'" [im]
-
-shiftROI8u :: (Int,Int) -> ImageGray -> ImageGray
-shiftROI8u dxy im = unsafePerformIO $ do
-    r <- image (size im)
-    let roi1 = theROI im
-        roi2 = shift dxy roi1
-    copyROI8u im roi1 r roi2
-    return (modifyROI (const roi2) r)
-
--}
-
-
---------------------------------------------------------------------
 data InterpolationMode = InterpNN
                        | InterpLinear
                        | InterpCubic
@@ -145,6 +115,8 @@ interCode InterpLanczos = 16
 --inter_SMOOTH_EDGE = (1 << 31) :: Int
 
 resizeg msg f itp s im = unsafePerformIO $ do
+    when (roiArea (fullROI s) <=0) $ error $ "resize result " ++ show s
+    when (roiArea (roi im) <= 0) $ error $ "resize input " ++ show (roi im)
     r <- newImage undefined s
     withImage im $ checkIPP msg $ do
         f (interCode itp) `appI` im `appI` r
