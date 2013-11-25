@@ -1,14 +1,35 @@
 module ImagProc.Ipp.Generic(
-    GPixel(..)
+    GPixel(..),
+    resizeFull
 ) where
 
 import Image.Core
 import ImagProc.Ipp.AdHoc
 
-class GPixel p where
+class Storable p => GPixel p
+  where
     copy   :: Image p -> [(Image p, Pixel)] -> Image p
     set    :: Image p -> [(ROI, p)]         -> Image p
     resize :: Size    -> Image p            -> Image p
+
+
+resizeFull :: GPixel p => Size -> Image p -> Image p
+resizeFull sz'@(Size h' w') im = unsafePerformIO $ do
+    r <- newImage undefined sz'
+    return $ setROI newroi $ copy r [(x,Pixel r1' c1')]
+ where
+    Size h w = size im
+    sr@(ROI r1 _ c1 _) = roi im
+    Size rh rw = roiSize sr
+    fh = fi h' / fi h
+    fw = fi w' / fi w
+    rh' = round (fi rh*fh)
+    rw' = round (fi rw*fw)
+    r1' = round (fi r1*fh)
+    c1' = round (fi c1*fw)
+    x = resize (Size rh' rw') im
+    newroi = shift (r1',c1') (roi x)
+    fi n = fromIntegral n
 
 
 instance GPixel Word8
@@ -296,25 +317,6 @@ uradialG gen f k im = gen fp fp (fromIntegral w / 2) (fromIntegral h / 2) k 0 im
 
 ------------------------------------------------
 
-resizeFull :: GImg pixel a => Size -> a -> a
-resizeFull sz'@(Size h' w') im = unsafePerformIO $ do
-    let Size h w = size im
-        roi@(ROI r1 _ c1 _) = theROI im
-        Size rh rw = roiSize roi
-        fh = fi h' / fi h
-        fw = fi w' / fi w
-        rh' = round (fi rh*fh)
-        rw' = round (fi rw*fw)
-        r1' = round (fi r1*fh)
-        c1' = round (fi c1*fw)
-    r <- image sz'
-    let x = resize (Size rh' rw') im
-        newroi = shift (r1',c1') (theROI x)
-    copy x (theROI x) r newroi
-    let res = setROI newroi r
-    return res
-  where
-    fi n = fromIntegral n
 
 --------------------------------------------------------------------------------
 -}

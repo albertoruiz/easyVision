@@ -9,11 +9,11 @@ module Image.Core (
     ptrAt,
     starting, rowPtrs,
     modifyROI, setROI,
-    Word8, Word16, Word24(..), CInt(..),
+    Word8, Word16, Word24(..),
     Gray, RGB, YCbCr, YUV,
     ImageGray, ImageFloat, ImageRGB, ImageYCbCr, ImageYUV,
     STImage, thawImage, runSTImage,
-    RawImage, appI,
+    RawImage, appI, CInt(..), Storable, Ptr,
     Wrap11, wrap11, fi, ti, (//), checkFFI, unsafePerformIO,
     module Image.Base,
     module Image.ROI

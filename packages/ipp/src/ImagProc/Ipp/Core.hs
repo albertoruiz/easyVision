@@ -12,8 +12,7 @@ Stability   :  provisional
 -----------------------------------------------------------------------------
 
 module ImagProc.Ipp.Core
-    ( Src, src, Dst, dst, checkIPP, Ptr, Storable
-    , invalidROIs, roiSZ, validArea
+    ( Src, src, Dst, dst, checkIPP, roiSZ
     , module ImagProc.Ipp.Structs
     , module Image.Core
 ) where
@@ -54,6 +53,8 @@ roiSZ :: ROI -> IppiSize
 roiSZ = adapt . roiSize
     where adapt (Size h w) = IppiSize (fromIntegral h) (fromIntegral w)
 
+{-
+
 -- | 'ROI'\'s area in pixels
 validArea :: Image t -> Int
 validArea = roiArea . roi
@@ -70,6 +71,7 @@ invalidROIs img = [r | Just r <- thefour]
     ROI r1 r2 c1 c2 = roi img
     Size h w = size img
 
+-}
 
 checkIPP :: String  -- ^ some identifier of the calling function
          -> IO CInt  -- ^ the ipp function to wrap
