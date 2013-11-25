@@ -2,7 +2,7 @@
 
 import System.Environment(getEnv)
 import Data.List.Split(splitOn)
-import Image.OldCore(getDataFileName)
+import Image.Devel(getDataFileName)
 
 main = do
     ipp_inc <- getEnv "IPP_INC"

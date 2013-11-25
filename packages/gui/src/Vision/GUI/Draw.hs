@@ -164,7 +164,7 @@ renderImageIn evW m t s img = do
     
     let zw = fromIntegral vw/ fromIntegral w
         z = (floatGL . double2Float) z' * zw
-        r@ROI {..} = roi img
+        ROI r1 r2 c1 c2 = roi img
         szTe@(Size th tw) = evSize szT
         r0 = round (fromIntegral r1 * zw + (fromIntegral th-fromIntegral h*zw)/2)
         c0 = round (fromIntegral c1 * zw)
@@ -175,7 +175,7 @@ renderImageIn evW m t s img = do
     pixelZoom $= (z,-z)
     GL.clearColor $= Color4 0.2 0 0 0
     when (roiArea (roi img) > 0) $ do
-        myDrawPixels m t s img { roi = r { r1 = r1 - min 0 (round $ (fromIntegral r0)/zw) } }
+        myDrawPixels m t s img { roi = ROI (r1 - min 0 (round $ (fromIntegral r0)/zw)) r2 c1 c2 }
         render $ Draw [color white . lineWd 1 $ (Closed roipts)]
 
 --------------------------------------------------------------------------------
