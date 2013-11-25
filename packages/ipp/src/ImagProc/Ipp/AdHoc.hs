@@ -34,9 +34,9 @@ import Util.Misc(debug)
 import Control.Monad(when)
 
 -- | Writes into a existing image a desired value in a specified roi.
-set32f :: Float      -- ^ desired value
-       -> ROI        -- ^ roi
-       -> ImageFloat -- ^ destination image
+set32f :: Float
+       -> ROI
+       -> Image Float
        -> IO ()
 set32f v dr im = when (roiArea r > 0) $ do
     ippiSet_32f_C1R v // dst (setROI r im) // checkIPP "set32f"
@@ -44,9 +44,9 @@ set32f v dr im = when (roiArea r > 0) $ do
     r = intersection dr (roi im)
 
 -- | Writes into a existing image a desired value in a specified roi.
-set8u :: Word8      -- ^ desired value
-       -> ROI        -- ^ roi
-       -> ImageGray  -- ^ destination image
+set8u :: Word8
+       -> ROI
+       -> Image Word8
        -> IO ()
 set8u v dr im = when (roiArea r > 0) $ do
     ippiSet_8u_C1R v // dst (setROI r im) // checkIPP "set8u"
@@ -55,11 +55,11 @@ set8u v dr im = when (roiArea r > 0) $ do
 
 
 -- | Writes into a existing image a desired value in a specified roi.
-set8u3 :: Word8 -> Word8 -> Word8 -- ^ desired RGB value
-       -> ROI        -- ^ roi
-       -> ImageRGB   -- ^ destination image
+set8u3 :: Word24
+       -> ROI
+       -> Image Word24
        -> IO ()
-set8u3 r g b dr im = when (roiArea ar > 0) $ do
+set8u3 (Word24 r g b) dr im = when (roiArea ar > 0) $ do
     v <- mallocArray 3
     pokeArray v [r,g,b]
     ippiSet_8u_C3R v // dst (setROI ar im) // checkIPP "set8u3"

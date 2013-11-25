@@ -7,19 +7,23 @@ import ImagProc.Ipp.AdHoc
 
 class GPixel p where
     copy :: Image p -> [(Image p, Pixel)] -> Image p
+    set  :: Image p -> [(ROI, p)]         -> Image p
 
 
 instance GPixel Word8
   where
     copy = layerImages copy8u
+    set  = setROIs set8u
 
 instance GPixel Word24
   where
     copy = layerImages copy8u3
+    set  = setROIs set8u3
 
 instance GPixel Float
   where
     copy = layerImages copy32f
+    set  = setROIs set32f
 
 
 
@@ -322,4 +326,14 @@ layerImages g im ptsIms = unsafePerformIO $ do
     return res
   where
     f res (x, p) = g x res p
+
+setROIs
+    :: (p -> ROI -> Image p -> IO ())
+    -> Image p -> [(ROI, p)] -> Image p
+setROIs g im rps = unsafePerformIO $ do
+    res <- cloneImage im
+    mapM_ (f res) rps
+    return res
+  where
+    f res (x, p) = g p x res
 
