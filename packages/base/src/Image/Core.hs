@@ -107,7 +107,8 @@ withImage x@Image{..} act = withForeignPtr fp $ \_ -> act
 
 
 newImage :: Storable t => t -> Size -> IO (Image t)
-newImage z sz = do
+newImage z sz@(Size h w) = do
+    when (h < 1 || w < 1) $ error ("newImage "++ show sz)
     let sp = sizeOf z
     (bs,s) <- alignedBytes sp sz
     return Image {size = sz, roi = fullROI sz, bytes = bs, step = s, szpix = sp }
