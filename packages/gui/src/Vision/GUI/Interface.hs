@@ -449,7 +449,7 @@ newPauser refPau = do
 
 callHelp wn = do
     pname <- getProgName
-    let helpnames = concatMap (\x -> [x,"help/"++x])
+    let helpnames = concatMap (\x -> [x,"help/"++x,"../help/"++x])
           [ intercalate "-" [pname, wn, "help.md"]
           , intercalate "-" [       wn, "help.md"]
           , intercalate "-" [pname,     "help.md"]
