@@ -1,6 +1,6 @@
 #! /usr/bin/env runhaskell
 
-import Image.OldCore(getDataFileName)
+import Image.Devel(getDataFileName)
 import Data.List.Split(splitOn)
 
 main = do
