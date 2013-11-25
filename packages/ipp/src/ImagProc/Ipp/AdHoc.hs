@@ -26,8 +26,6 @@ import ImagProc.Ipp.Core
 import ImagProc.Ipp.Adapt
 import ImagProc.Ipp.Wrappers
 import Foreign.Marshal
-import Data.List(foldl1')
-import Util.Misc(debug)
 import Control.Monad(when)
 
 -- | Writes into a existing image a desired value in a specified roi.

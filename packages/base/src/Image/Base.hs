@@ -40,7 +40,7 @@ limitSize mx (Size h w)
     | otherwise = (Size h' w')
   where
     s = max h w
-    r = fromIntegral w /  fromIntegral h
+    r = fromIntegral w /  fromIntegral h :: Double
     (h',w') | w > h     = (round (fromIntegral mx/r), mx)
             | otherwise = (mx, round (fromIntegral mx*r))
 

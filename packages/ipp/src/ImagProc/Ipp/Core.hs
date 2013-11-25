@@ -52,25 +52,6 @@ roiSZ :: ROI -> IppiSize
 roiSZ = adapt . roiSize
     where adapt (Size h w) = IppiSize (fromIntegral h) (fromIntegral w)
 
-{-
-
--- | 'ROI'\'s area in pixels
-validArea :: Image t -> Int
-validArea = roiArea . roi
-
--- | Given an image, invalidROIs im computes a list of ROIs surrounding the valid ROI of im.
-invalidROIs :: Image t -> [ROI]
-invalidROIs img = [r | Just r <- thefour]
-  where
-    thefour = [ if r1>0   then Just $ ROI 0 (r1-1) 0 (w-1)     else Nothing
-              , if r2<h-1 then Just $ ROI (r2+1) (h-1) 0 (w-1) else Nothing
-              , if c1>0   then Just $ ROI r1 r2 0 (c1-1)       else Nothing
-              , if c2<w-1 then Just $ ROI r1 r2 (c2+1) (w-1)   else Nothing
-              ]
-    ROI r1 r2 c1 c2 = roi img
-    Size h w = size img
-
--}
 
 checkIPP :: String  -- ^ some identifier of the calling function
          -> IO CInt  -- ^ the ipp function to wrap
@@ -86,8 +67,7 @@ checkIPP msg f = do
             errMsg $ "Warning in " ++ msg ++ ": " ++ s
           else
             error $ "in " ++ msg ++ ": " ++ s
-    -- mapM_ (touchForeignPtr . fptr) ls -- really needed! --USE withImage
     return ()
-
-warnings = ["ippStsCoeffErr:"]
+  where
+    warnings = ["ippStsCoeffErr:"]
 

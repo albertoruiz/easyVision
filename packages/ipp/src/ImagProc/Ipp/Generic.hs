@@ -6,7 +6,8 @@ module ImagProc.Ipp.Generic(
 
 import Image.Core
 import ImagProc.Ipp.AdHoc
-import Numeric.LinearAlgebra(Matrix(..), toLists, (<>), inv)
+import Numeric.LinearAlgebra(Matrix, toLists, (<>), inv, rows, cols)
+import Control.Arrow((&&&))
 
 class Storable p => Pix p
   where
@@ -46,8 +47,8 @@ resizeFull sz'@(Size h' w') im = unsafePerformIO $ do
     Size h w = size im
     sr@(ROI r1 _ c1 _) = roi im
     Size rh rw = roiSize sr
-    fh = fi h' / fi h
-    fw = fi w' / fi w
+    fh = fi h' / fi h :: Double
+    fw = fi w' / fi w :: Double
     rh' = round (fi rh*fh)
     rw' = round (fi rw*fw)
     r1' = round (fi r1*fh)
@@ -374,7 +375,10 @@ warpong g im hxs = unsafePerformIO $ do
     mapM_ (f res) hxs
     return res
   where
-    f res (h,x) = g adapt x res
+    f res (h,x) | ok = g adapt x res
+                | otherwise = error $ "warp homography wrong dimensions " ++ show szh
       where
         adapt = toLists $ inv (pixelToPointTrans (size res)) <> h <> pixelToPointTrans (size x)
+        szh = (rows &&& cols) h
+        ok = szh == (3,3)
 

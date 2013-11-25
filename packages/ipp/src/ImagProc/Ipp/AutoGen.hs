@@ -161,7 +161,7 @@ auto_2 f msg rf rf1 rf2 im1 im2 = do
     r <- newImageAsR2 rf im1 im2
     let im1' = setROI (rf1 (roi im1) (roi im2)) im1
         im2' = setROI (rf2 (roi im1) (roi im2)) im2
-    cr2 f msg im1 im2 r
+    cr2 f msg im1' im2' r
     return r
 
 auto_2_8u_C1R :: Auto_2 Word8
