@@ -12,7 +12,7 @@ module Image.Core (
     Word8, Word16, Word24(..),
     Gray, RGB, YCbCr, YUV,
     ImageGray, ImageFloat, ImageRGB, ImageYCbCr, ImageYUV,
-    STImage, thawImage, runSTImage,
+    STImage, thawImage, runSTImage, ioRead, ioWrite, stRead, stWrite, readPixel,
     RawImage, appI, CInt(..), Storable, Ptr,
     Wrap11, wrap11, fi, ti, (//), checkFFI, unsafePerformIO,
     module Image.Base,
@@ -25,9 +25,11 @@ import Data.ByteString(ByteString)
 import Foreign.Ptr(alignPtr,minusPtr,Ptr,castPtr,plusPtr)
 import GHC.ForeignPtr(mallocPlainForeignPtrBytes)
 import Foreign.ForeignPtr.Unsafe(unsafeForeignPtrToPtr)
-import Foreign.ForeignPtr(ForeignPtr,withForeignPtr)
+import Foreign.ForeignPtr(withForeignPtr)
+import System.IO.Unsafe(unsafePerformIO)
 import Foreign.Storable(Storable(..))
-import Foreign(Word16)
+import Foreign(Word16,Word8)
+import Foreign.C.Types(CInt(..))
 import Control.Monad.ST(ST, runST)
 import Control.Monad.ST.Unsafe(unsafeIOToST)
 import Util.Misc((//))
@@ -35,7 +37,6 @@ import Control.Monad(when)
 import Image.Base
 import Image.ROI
 
-import Image.OldCore(Word8,CInt(..),fi,ti,unsafePerformIO)
 
 data Image t = Image
     { size  :: Size
@@ -44,10 +45,6 @@ data Image t = Image
     , step  :: Int
     , szpix :: Int
     }
-
-sizeOfPix :: Storable a => Image a -> Int
-sizeOfPix = sizeOf . (undefined :: Image a -> a)
-
 
 data Word24 = Word24 {-# UNPACK #-} !Word8
                      {-# UNPACK #-} !Word8
@@ -101,7 +98,7 @@ rowPtrs img@Image {..} = (map row [0..r2-r1], c2-c1+1)
 
 
 withImage :: Image t -> IO b -> IO b
-withImage x@Image{..} act = withForeignPtr fp $ \_ -> act
+withImage Image{..} act = withForeignPtr fp $ \_ -> act
   where
     B.PS fp _ _ = bytes
 
@@ -157,17 +154,21 @@ runSTImage st = runST (st >>= freezeImage)
 ioRead :: Storable t => Image t -> Int -> Int -> IO t
 ioRead x r c = withImage x $ peek (ptrAt x r c)
 
+{-# INLINE readPixel #-}
+readPixel :: Storable a => Pixel -> Image a -> a
+readPixel (Pixel r c) x = B.inlinePerformIO (ioRead x r c)
+
 {-# INLINE ioWrite #-}
 ioWrite :: Storable t => Image t -> Int -> Int -> t -> IO ()
 ioWrite x r c v = withImage x $ poke (ptrAt x r c) v
 
-{-# INLINE unsafeRead #-}
-unsafeRead :: Storable t => STImage s t -> Int -> Int -> ST s t
-unsafeRead (STImage x) r c = unsafeIOToST $ ioRead x r c
+{-# INLINE stRead #-}
+stRead :: Storable t => STImage s t -> Int -> Int -> ST s t
+stRead (STImage x) r c = unsafeIOToST $ ioRead x r c
 
-{-# INLINE unsafeWrite #-}
-unsafeWrite :: Storable t => STImage s t -> Int -> Int -> t -> ST s ()
-unsafeWrite (STImage x) r c v = unsafeIOToST $ ioWrite x r c v
+{-# INLINE stWrite #-}
+stWrite :: Storable t => STImage s t -> Int -> Int -> t -> ST s ()
+stWrite (STImage x) r c v = unsafeIOToST $ ioWrite x r c v
 
 --------------------------------------------------------------------------------
 
@@ -175,6 +176,10 @@ appI :: RawImage p t -> Image p -> t
 appI f img = f (ptrAt img 0 0) (fi.step $ img) (g r1) (g r2) (g c1) (g c2)
   where
     g x = (fi . x . roi) img
+    r1 (ROI r _ _ _) = r
+    r2 (ROI _ r _ _) = r
+    c1 (ROI _ _ c _) = c
+    c2 (ROI _ _ _ c) = c
 
 type RawImage p t = Ptr p -> CInt -> CInt -> CInt -> CInt -> CInt -> t
 
@@ -192,3 +197,8 @@ checkFFI msg f = do
     err <- f
     when (err/=0)  (error $ "error in foreign function " ++ msg)
 
+
+fi :: Int -> CInt
+fi = fromIntegral
+ti :: CInt -> Int
+ti = fromIntegral

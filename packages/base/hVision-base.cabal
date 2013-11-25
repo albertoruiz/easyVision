@@ -70,7 +70,7 @@ library
                         Image.Core
                         Image.Base
                         Image.ROI
-                        Image.OldCore
+                        -- Image.OldCore
                         Image.Convert
                         
                         Image.Camera
