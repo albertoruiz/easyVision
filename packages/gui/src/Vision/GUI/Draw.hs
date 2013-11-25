@@ -174,8 +174,9 @@ renderImageIn evW m t s img = do
     rasterPos (Vertex2 (doubleGL x0) (doubleGL y0-1E-6))
     pixelZoom $= (z,-z)
     GL.clearColor $= Color4 0.2 0 0 0
-    myDrawPixels m t s img { roi = r { r1 = r1 - min 0 (round $ (fromIntegral r0)/zw) } }
-    render $ Draw [color white . lineWd 1 $ (Closed roipts)]
+    when (roiArea (roi img) > 0) $ do
+        myDrawPixels m t s img { roi = r { r1 = r1 - min 0 (round $ (fromIntegral r0)/zw) } }
+        render $ Draw [color white . lineWd 1 $ (Closed roipts)]
 
 --------------------------------------------------------------------------------
 
