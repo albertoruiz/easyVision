@@ -43,11 +43,12 @@ library
                         ImagProc.Ipp.Auto
                         ImagProc.Ipp.Pure
                         ImagProc.Ipp.AdHoc
+                        ImagProc.Ipp.Generic
 
                         --ImagProc
                         --ImagProc.Tools
                         --ImagProc.Moments
-                        --ImagProc.Generic
+
                         --ImagProc.C.Simple
                         --ImagProc.Ipp
 

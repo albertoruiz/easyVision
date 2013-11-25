@@ -1,3 +1,30 @@
+module ImagProc.Ipp.Generic(
+    GPixel(..)
+) where
+
+import Image.Core
+import ImagProc.Ipp.AdHoc
+
+class GPixel p where
+    copy :: Image p -> [(Image p, Pixel)] -> Image p
+
+
+instance GPixel Word8
+  where
+    copy = layerImages copy8u
+
+instance GPixel Word24
+  where
+    copy = layerImages copy8u3
+
+instance GPixel Float
+  where
+    copy = layerImages copy32f
+
+
+
+{-
+
 {-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies, FlexibleInstances #-}
 {-# LANGUAGE RecordWildCards #-}
 
@@ -283,17 +310,16 @@ resizeFull sz'@(Size h' w') im = unsafePerformIO $ do
     fi n = fromIntegral n
 
 --------------------------------------------------------------------------------
+-}
 
-layerImages :: GImg pixel a => Size -> [(Pixel, a)] -> a
-layerImages sz ptsIms = unsafePerformIO $ do
-    res <- image sz
-    set zeroP (theROI res) res
+
+layerImages
+    :: (Image p -> Image p -> Pixel -> IO ())
+    -> Image p -> [(Image p, Pixel)] -> Image p
+layerImages g im ptsIms = unsafePerformIO $ do
+    res <- cloneImage im
     mapM_ (f res) ptsIms
     return res
   where
-    f res (Pixel r c, im) = copy im (theROI im) res roi
-      where
-        Size h w = roiSize (theROI im)
-        roi = ROI r (r+h-1) c (c+w-1)
-
+    f res (x, p) = g x res p
 

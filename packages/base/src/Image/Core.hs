@@ -14,7 +14,7 @@ module Image.Core (
     ImageGray, ImageFloat, ImageRGB, ImageYCbCr, ImageYUV,
     STImage, thawImage, runSTImage,
     RawImage, appI,
-    Wrap11, wrap11, fi, ti, (//), checkFFI,
+    Wrap11, wrap11, fi, ti, (//), checkFFI, unsafePerformIO,
     module Image.Base,
     module Image.ROI
 ) where

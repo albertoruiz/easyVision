@@ -71,6 +71,19 @@ set8u3 r g b dr im = when (roiArea ar > 0) $ do
 
 copyg :: String -> Src p (Dst p (IO CInt))
       -> Image p -> Image p -> Pixel -> IO ()
+
+copyg msg f s d (Pixel r c) | r < r0 = copyg msg f (setROI rs s) d (Pixel r0 c)
+  where
+    ROI r1 r2 c1 c2 = roi s
+    ROI r0 _  _  _  = roi d
+    rs = ROI (r1-r+r0) r2 c1 c2
+
+copyg msg f s d (Pixel r c) | c < c0 = copyg msg f (setROI rs s) d (Pixel r c0)
+  where
+    ROI r1 r2 c1 c2 = roi s
+    ROI _  _  c0 _  = roi d
+    rs = ROI r r2 (c1-c+c0) c2
+
 copyg msg f s d pix = do
     let r = intersection (roi d) (roi s `roiAt` pix)
     when (roiArea r > 0) $ do
