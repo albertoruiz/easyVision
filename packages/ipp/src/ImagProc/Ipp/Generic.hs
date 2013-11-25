@@ -6,25 +6,28 @@ import Image.Core
 import ImagProc.Ipp.AdHoc
 
 class GPixel p where
-    copy :: Image p -> [(Image p, Pixel)] -> Image p
-    set  :: Image p -> [(ROI, p)]         -> Image p
+    copy   :: Image p -> [(Image p, Pixel)] -> Image p
+    set    :: Image p -> [(ROI, p)]         -> Image p
+    resize :: Size    -> Image p            -> Image p
 
 
 instance GPixel Word8
   where
-    copy = layerImages copy8u
-    set  = setROIs set8u
+    copy   = layerImages copy8u
+    set    = setROIs set8u
+    resize = selresize resize8u resize8uNN
 
 instance GPixel Word24
   where
-    copy = layerImages copy8u3
-    set  = setROIs set8u3
+    copy   = layerImages copy8u3
+    set    = setROIs set8u3
+    resize = selresize resize8u3 resize8u3NN
 
 instance GPixel Float
   where
-    copy = layerImages copy32f
-    set  = setROIs set32f
-
+    copy   = layerImages copy32f
+    set    = setROIs set32f
+    resize = selresize resize32f resize32fNN
 
 
 {-
@@ -336,4 +339,12 @@ setROIs g im rps = unsafePerformIO $ do
     return res
   where
     f res (x, p) = g p x res
+
+
+selresize f1 f2 sz im
+    | roiArea sr < 1       = error $ "resize input " ++ show sr
+    | r1 == r2 || c1 == c2 = f2 sz im
+    | otherwise            = f1 sz im
+  where
+    sr@(ROI r1 r2 c1 c2) = roi im
 

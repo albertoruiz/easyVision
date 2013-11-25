@@ -49,14 +49,24 @@ foreign import ccall "auxIpp.h auxWarpPerspective_8u_C3R"
                            Ptr Double -> CInt ->
                            IO CInt
 
-foreign import ccall "auxIpp.h auxResize_32f_C1R"
-     c_resize32f :: CInt -> RawImage Float (RawImage Float (IO CInt))
+foreign import ccall "auxResize_32f_C1R"
+     c_resize32f :: RawImage Float (RawImage Float (IO CInt))
 
-foreign import ccall "auxIpp.h auxResize_8u_C1R"
-     c_resize8u :: CInt -> RawImage Word8 (RawImage Word8 (IO CInt))
+foreign import ccall "auxResize_8u_C1R"
+     c_resize8u :: RawImage Word8 (RawImage Word8 (IO CInt))
 
-foreign import ccall "auxIpp.h auxResize_8u_C3R"
-     c_resize8u3 :: CInt -> RawImage Word24 (RawImage Word24 (IO CInt))
+foreign import ccall "auxResize_8u_C3R"
+     c_resize8u3 :: RawImage Word24 (RawImage Word24 (IO CInt))
+
+foreign import ccall "auxResize_32f_C1R_NN"
+     c_resize32f_NN :: RawImage Float (RawImage Float (IO CInt))
+
+foreign import ccall "auxResize_8u_C1R_NN"
+     c_resize8u_NN :: RawImage Word8 (RawImage Word8 (IO CInt))
+
+foreign import ccall "auxResize_8u_C3R_NN"
+     c_resize8u3_NN :: RawImage Word24 (RawImage Word24 (IO CInt))
+
 
 foreign import ccall "auxIpp.h auxDCTFwd_32f_C1R"
      auxDCTFwd_32f_C1R :: Ptr Float -> CInt ->

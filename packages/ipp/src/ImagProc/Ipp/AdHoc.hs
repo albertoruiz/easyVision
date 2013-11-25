@@ -16,19 +16,15 @@ IPP functions which need an ad-hoc wrapper
 module ImagProc.Ipp.AdHoc(
     set8u,set8u3,set32f,
     copy8u,copy8u3,copy32f,
-    resize8u,resize8u3,resize32f
+    resize8u,resize8u3,resize32f,
+    resize8uNN,resize8u3NN,resize32fNN
 )
 where
 
 import ImagProc.Ipp.Core
 import ImagProc.Ipp.Adapt
-import ImagProc.Ipp.Auto
 import ImagProc.Ipp.Wrappers
-import System.IO.Unsafe(unsafePerformIO)
-import Foreign.Ptr
-import Foreign.ForeignPtr
 import Foreign.Marshal
-import Foreign.Storable
 import Data.List(foldl1')
 import Util.Misc(debug)
 import Control.Monad(when)
@@ -101,35 +97,31 @@ copy32f = copyg "copy32f" ippiCopy_32f_C1R
 
 --------------------------------------------------------------------------------
 
-data InterpolationMode = InterpNN
-                       | InterpLinear
-                       | InterpCubic
-                       | InterpSuper
-                       | InterpLanczos
-
-interCode InterpNN      =  1 :: CInt
-interCode InterpLinear  =  2
-interCode InterpCubic   =  4
-interCode InterpSuper   =  8
-interCode InterpLanczos = 16
---inter_SMOOTH_EDGE = (1 << 31) :: Int
-
-resizeg msg f itp s im = unsafePerformIO $ do
+resizeg msg f s im = unsafePerformIO $ do
     when (roiArea (fullROI s) <=0) $ error $ "resize result " ++ show s
-    when (roiArea (roi im) <= 0) $ error $ "resize input " ++ show (roi im)
     r <- newImage undefined s
     withImage im $ checkIPP msg $ do
-        f (interCode itp) `appI` im `appI` r
+        f `appI` im `appI` r
     return r
 
 resize32f :: Size -> Image Float -> Image Float
-resize32f = resizeg "resize32f" c_resize32f InterpLinear
+resize32f = resizeg "resize32f" c_resize32f
 
 resize8u :: Size -> Image Word8 -> Image Word8
-resize8u = resizeg "resize8u" c_resize8u InterpLinear
+resize8u = resizeg "resize8u" c_resize8u
 
 resize8u3 :: Size -> Image Word24 -> Image Word24
-resize8u3 = resizeg "resize8u3" c_resize8u3 InterpLinear
+resize8u3 = resizeg "resize8u3" c_resize8u3
+
+resize32fNN :: Size -> Image Float -> Image Float
+resize32fNN = resizeg "resize32fNN" c_resize32f_NN
+
+resize8uNN :: Size -> Image Word8 -> Image Word8
+resize8uNN = resizeg "resize8uNN" c_resize8u_NN
+
+resize8u3NN :: Size -> Image Word24 -> Image Word24
+resize8u3NN = resizeg "resize8u3NN" c_resize8u3_NN
+
 
 -- FIX auxIpp.c ipp 7.1 to allow InterpNN
 

@@ -1,62 +1,32 @@
-{-# LANGUAGE ForeignFunctionInterface,
-             MagicHash,
-             UnboxedTuples,
-             BangPatterns,
-             RecordWildCards,
-             CPP #-}
-
 {-# LANGUAGE TypeFamilies #-}
 
 -----------------------------------------------------------------------------
 {- |
 Module      :  ImagProc.Ipp.Core
-Copyright   :  (c) Alberto Ruiz 2006-11
-License     :  GPLu
+Copyright   :  (c) Alberto Ruiz 2006-13
+License     :  GPL
 
 Maintainer  :  Alberto Ruiz (aruiz at um dot es)
-Stability   :  very provisional
-
-Experimental interface to Intel Integrated Performance Primitives for image processing.
-
+Stability   :  provisional
 -}
 -----------------------------------------------------------------------------
 
-
 module ImagProc.Ipp.Core
-          ( fullROI, invalidROIs, roiSZ, validArea
-          , Src, src, Dst, dst, checkIPP, Ptr(..), Storable
-          , module ImagProc.Ipp.Structs, CInt, CUChar, fi, ti
-          , module Image.Base
-          , module Image.ROI
-          , module Image.Core
+    ( Src, src, Dst, dst, checkIPP, Ptr, Storable
+    , invalidROIs, roiSZ, validArea
+    , module ImagProc.Ipp.Structs
+    , module Image.Core
 ) where
 
 import Image.Core
-import Image.Base
-import Image.ROI
 import ImagProc.Ipp.Structs
 
-import Foreign.ForeignPtr.Unsafe
-import Foreign.ForeignPtr(ForeignPtr,touchForeignPtr)
-
 import Foreign.Ptr
-import Foreign.Marshal
 import Foreign.Storable
 import Control.Monad(when)
 import ImagProc.Ipp.Wrappers
 import Foreign.C.String(peekCString)
-import Foreign.C.Types
-import GHC.Base
-import GHC.ForeignPtr(mallocPlainForeignPtrBytes)
-import System.IO
-import System.IO.Unsafe(unsafePerformIO)
-import Data.Binary
-import Control.Applicative
 import Util.Misc(errMsg)
-import qualified Data.ByteString as B
-import qualified Data.ByteString.Internal as B
-import Data.ByteString(ByteString)
-import Control.DeepSeq
 
 type family PtrOf (c :: *)
 
@@ -119,5 +89,4 @@ checkIPP msg f = do
     return ()
 
 warnings = ["ippStsCoeffErr:"]
-
 
