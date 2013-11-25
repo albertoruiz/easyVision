@@ -46,18 +46,14 @@ limitSize mx (Size h w)
 
 
 
-
-data ROI = ROI { r1 :: Int  -- ^ upper row
-               , r2 :: Int  -- ^ lower row
-               , c1 :: Int  -- ^ leftmost column
-               , c2 :: Int  -- ^ rightmost column
-               } deriving (Show,Read,Eq)
+-- | ROI (upper row) (lower row) (leftmost column) (rightmost column)
+data ROI = ROI !Int !Int !Int !Int deriving (Show,Read,Eq)
 
 -- -- | Normalized image coordinates, with x from +1 to -1 (for a right handed 3D reference system with z pointing forward)
 -- data Point = Point { px    :: !Double, py :: !Double} deriving (Eq, Show)
 
--- | Raw image coordinates
-data Pixel = Pixel { row   :: !Int,    col :: !Int } deriving (Eq, Show)
+-- | Raw image coordinates, Pixel row column
+data Pixel = Pixel !Int !Int deriving (Eq, Show)
 
 -- | Auxiliary homogeneous transformation from 'Pixel's to 'Point's
 pixelToPointTrans :: Size -> LA.Matrix Double
@@ -70,21 +66,30 @@ pixelToPointTrans Size {width = w', height = h'} = nor where
         ,[   0, -2*r/h, r]
         ,[   0,      0, 1]]
 
-pixelToList Pixel {row = r, col = c} = [fromIntegral c, fromIntegral r]
+pixelToList :: Pixel -> [Double]
+pixelToList (Pixel r c) = [fromIntegral c, fromIntegral r]
+
+pointToList :: Point -> [Double]
 pointToList p = [px p, py p]
+
+listToPoint :: [Double] -> Point
 listToPoint [x,y] = Point {px = x, py= y}
-listToPixel [c,r] = Pixel {row = round r, col = round c}
+listToPoint _ = error "listToPoint"
+
+listToPixel :: [Double] -> Pixel
+listToPixel [c,r] = Pixel (round r) (round c)
+listToPixel _ = error "listToPixel"
 
 -- | Trasformation from pixels to normalized points.
 pixelsToPoints :: Size -> [Pixel]->[Point]
-pixelsToPoints sz [] = []
+pixelsToPoints _ [] = []
 pixelsToPoints sz ps = fix ps where
     nor = pixelToPointTrans sz
     fix = map listToPoint. ht nor . map pixelToList
 
 -- | Trasformation from pixels to normalized points.
 pointsToPixels :: Size -> [Point]->[Pixel]
-pointsToPixels sz [] = []
+pointsToPixels _ [] = []
 pointsToPixels sz ps = fix ps where
     nor = LA.inv (pixelToPointTrans sz)
     fix = map listToPixel. ht nor . map pointToList
@@ -107,7 +112,7 @@ segmentLength (Segment {extreme1 = e1, extreme2 = e2}) = distPoints e1 e2
 
 -- | Euclidean distance between two points
 distPoints :: Point -> Point -> Double
-distPoints (Point a b) (Point x y) = sqrt $ (a-x)^2+(b-y)^2
+distPoints (Point a b) (Point x y) = sqrt $ (a-x)^(2::Int)+(b-y)^(2::Int)
 
 bounding :: Polyline -> Polyline
 bounding p = Closed [Point x2 y2, Point x1 y2, Point x1 y1, Point x2 y1] 

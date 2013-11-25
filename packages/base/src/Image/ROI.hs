@@ -37,50 +37,36 @@ module Image.ROI
 
 import Image.Base
 
--- | Size of a ROI
+
 roiSize :: ROI -> Size
-roiSize ROI { r1=a, r2=b, c1=x, c2=y} = Size { height = b-a+1, width = y-x+1 }
+roiSize (ROI a b x y) = Size { height = b-a+1, width = y-x+1 }
 
 
 fullROI :: Size -> ROI
-fullROI (Size h w) = ROI {r1=0, r2=h-1, c1=0, c2=w-1}
+fullROI (Size h w) = ROI 0 (h-1) 0 (w-1)
 
 
 -- | Creates a new roi by reducing in (r,c) units the rows and columns or a given roi. If r or c are negative the roi expands.
-shrink :: (Int,Int)  -> ROI -> ROI
-shrink (r,c) roi =
-    ROI {r1=(r1 roi) +r, 
-         r2=(r2 roi) -r,
-         c1=(c1 roi) +c,
-         c2=(c2 roi) -c}
+shrink :: (Int,Int) -> ROI -> ROI
+shrink (r,c) (ROI r1 r2 c1 c2) = ROI (r1+r) (r2-r) (c1+c) (c2-c)
 
 -- | Creates a new roi by moving (r,c) units the position of a given roi.
-shift :: (Int,Int)  -> ROI -> ROI
-shift (r,c) roi =
-    ROI {r1=(r1 roi) +r, 
-         r2=(r2 roi) +r,
-         c1=(c1 roi) +c,
-         c2=(c2 roi) +c}
+shift :: (Int,Int) -> ROI -> ROI
+shift (r,c) (ROI r1 r2 c1 c2) = ROI (r1+r) (r2+r) (c1+c) (c2+c)
 
 -- | Computes the displacement between the top left corners of two rois 
 getShift :: ROI -> ROI -> (Int,Int)
-getShift roi1 roi2 = (r1 roi2 - r1 roi1, c1 roi2 - c1 roi1)
+getShift (ROI r11 _ c11 _) (ROI r12 _ c12 _) = (r12 - r11, c12 - c11)
 
 -- | Creates a new roi as the intersection of two given roi's.
 intersection :: ROI -> ROI -> ROI
-intersection a b = ROI { r1 = max (r1 a) (r1 b)
-                       , r2 = min (r2 a) (r2 b)
-                       , c1 = max (c1 a) (c1 b)
-                       , c2 = min (c2 a) (c2 b)
-                       }
+intersection (ROI r1a r2a c1a c2a) (ROI r1b r2b c1b c2b)
+    = ROI (max r1a r1b) (min r2a r2b) (max c1a c1b) (min c2a c2b)
 
 -- | obtains the minimum ROI which contains the arguments
 union :: ROI -> ROI -> ROI
-union a b = ROI { r1 = min (r1 a) (r1 b)
-                , r2 = max (r2 a) (r2 b)
-                , c1 = min (c1 a) (c1 b)
-                , c2 = max (c2 a) (c2 b)
-                }
+union (ROI r1a r2a c1a c2a) (ROI r1b r2b c1b c2b)
+    = ROI (min r1a r1b) (max r2a r2b) (min c1a c1b) (max c2a c2b)
 
 -- | 'ROI'\'s area in pixels
 roiArea :: ROI -> Int
