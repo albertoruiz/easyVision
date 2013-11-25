@@ -1,5 +1,6 @@
 module ImagProc.Ipp.Generic(
     Pix(..),
+    warp,
     resizeFull,
     constant
 ) where
@@ -64,6 +65,8 @@ constant v sz = unsafePerformIO $ do
     return $ set r [(fullROI sz, v)]
 
 
+warp :: Pix p => p -> Size -> Matrix Double -> Image p -> Image p
+warp p sz h im = warpon (constant p sz) [(h,im)]
 
 
 {-
@@ -171,21 +174,6 @@ r3 x = resizeFull (Size r (c `div` 3)) x
     Size r c = size x
 
 
--- modifies the undefined region of an image.
-clearNoROI :: Image a => (ROI -> a -> IO ()) -> a -> IO ()
-clearNoROI fun im = mapM_ ((flip fun) im) (invalidROIs im)
-
---cloneClear' :: Image a => a -> IO ()
-cloneClear im = do
-    r <- clone im
-    clearNoROI (set zeroP) r
-    return r
-
--- | creates a new image with the region outside the roi set to zerop
-clean :: (GImg pixel a) => a -> a
-clean im | (roiArea . theROI) im == (height.size) im * (width.size) im = im
-         | otherwise = unsafePerformIO (cloneClear im)
-
 --------------------------------------------------------------------------
 
 -- | joins images
@@ -217,49 +205,6 @@ columnImage l = unsafePerformIO $ do
                   roi = theROI i
     sequence_ $ zipWith f l [0..]
     return res
-
-
---------------------------------------------------------------------
-
--- | Apply a homography (defined on normalized points, see 'pixelsToPoints') to an image.
-warp :: (GImg pixel img)
-     =>  pixel            -- ^ default value for regions outside the transformed roi
-     -> Size              -- ^ desired size of the result
-     -> Matrix Double     -- ^ homography
-     -> img               -- ^ source image
-     -> img               -- ^ result
-warp out s h im = unsafePerformIO $ do
-    r <- image s
-    set out (theROI r) r
-    warpOn' h r im
-    return r
-
--- | Destructive version of 'warpOn'
-warpOn' :: (GImg pixel img)
-        => Matrix Double     -- ^ homography
-        -> img               -- ^ destination image
-        -> img               -- ^ source image
-        -> IO ()
-warpOn' h r im = warpOnG (adapt r h im) r im
-
--- | The same as 'warp', but the source image is warped onto a copy of the destination image.
-warpOn :: (GImg pixel img)
-     => img               -- ^ destination image
-     -> Matrix Double     -- ^ homography
-     -> img               -- ^ source image
-     -> img               -- ^ result
-warpOn base h im = unsafePerformIO $ do
-    dest <- clone base
-    warpOn' h dest im
-    return dest
-
----------------------------------------------------------------------------------
-
--- hmmmmmmmm
-constImage val sz = unsafePerformIO $ do
-    z <- image sz
-    set val (theROI z) z
-    return z
 
 ---------------------------------------------------------------------------------
 
