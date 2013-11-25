@@ -1,19 +1,44 @@
 module ImagProc.Ipp.Generic(
-    GPixel(..),
-    resizeFull
+    Pix(..),
+    resizeFull,
+    constant
 ) where
 
 import Image.Core
 import ImagProc.Ipp.AdHoc
+import Numeric.LinearAlgebra(Matrix(..), toLists, (<>), inv)
 
-class Storable p => GPixel p
+class Storable p => Pix p
   where
-    copy   :: Image p -> [(Image p, Pixel)] -> Image p
-    set    :: Image p -> [(ROI, p)]         -> Image p
-    resize :: Size    -> Image p            -> Image p
+    copy   :: Image p -> [(Image p, Pixel)]         -> Image p
+    set    :: Image p -> [(ROI, p)]                 -> Image p
+    resize :: Size    -> Image p                    -> Image p
+    warpon :: Image p -> [(Matrix Double, Image p)] -> Image p
 
 
-resizeFull :: GPixel p => Size -> Image p -> Image p
+instance Pix Word8
+  where
+    copy   = layerImages copy8u
+    set    = setROIs set8u
+    resize = selresize resize8u resize8uNN
+    warpon = warpong warpon8u
+
+instance Pix Word24
+  where
+    copy   = layerImages copy8u3
+    set    = setROIs set8u3
+    resize = selresize resize8u3 resize8u3NN
+    warpon = warpong warpon8u3
+
+instance Pix Float
+  where
+    copy   = layerImages copy32f
+    set    = setROIs set32f
+    resize = selresize resize32f resize32fNN
+    warpon = warpong warpon32f
+
+
+resizeFull :: Pix p => Size -> Image p -> Image p
 resizeFull sz'@(Size h' w') im = unsafePerformIO $ do
     r <- newImage undefined sz'
     return $ setROI newroi $ copy r [(x,Pixel r1' c1')]
@@ -32,23 +57,12 @@ resizeFull sz'@(Size h' w') im = unsafePerformIO $ do
     fi n = fromIntegral n
 
 
-instance GPixel Word8
-  where
-    copy   = layerImages copy8u
-    set    = setROIs set8u
-    resize = selresize resize8u resize8uNN
+constant :: Pix p => p -> Size -> Image p
+constant v sz = unsafePerformIO $ do
+    r <- newImage undefined sz
+    return $ set r [(fullROI sz, v)]
 
-instance GPixel Word24
-  where
-    copy   = layerImages copy8u3
-    set    = setROIs set8u3
-    resize = selresize resize8u3 resize8u3NN
 
-instance GPixel Float
-  where
-    copy   = layerImages copy32f
-    set    = setROIs set32f
-    resize = selresize resize32f resize32fNN
 
 
 {-
@@ -206,8 +220,6 @@ columnImage l = unsafePerformIO $ do
 
 --------------------------------------------------------------------
 
-adapt dst h src = toLists $ inv (pixelToPointTrans (size dst)) <> h <> pixelToPointTrans (size src)
-
 -- | Apply a homography (defined on normalized points, see 'pixelsToPoints') to an image.
 warp :: (GImg pixel img)
      =>  pixel            -- ^ default value for regions outside the transformed roi
@@ -343,10 +355,26 @@ setROIs g im rps = unsafePerformIO $ do
     f res (x, p) = g p x res
 
 
+selresize
+  :: (Size -> Image p -> t) -> (Size -> Image p -> t)
+  -> Size -> Image p -> t
 selresize f1 f2 sz im
     | roiArea sr < 1       = error $ "resize input " ++ show sr
     | r1 == r2 || c1 == c2 = f2 sz im
     | otherwise            = f1 sz im
   where
     sr@(ROI r1 r2 c1 c2) = roi im
+
+
+warpong
+  :: ([[Double]] -> Image p -> Image p -> IO ())
+     -> Image p -> [(Matrix Double, Image p)] -> Image p
+warpong g im hxs = unsafePerformIO $ do
+    res <- cloneImage im
+    mapM_ (f res) hxs
+    return res
+  where
+    f res (h,x) = g adapt x res
+      where
+        adapt = toLists $ inv (pixelToPointTrans (size res)) <> h <> pixelToPointTrans (size x)
 

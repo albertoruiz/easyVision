@@ -21,7 +21,6 @@ import Image.Core
 import ImagProc.Ipp.Structs
 
 import Foreign.Ptr
-import Foreign.Storable
 import Control.Monad(when)
 import ImagProc.Ipp.Wrappers
 import Foreign.C.String(peekCString)

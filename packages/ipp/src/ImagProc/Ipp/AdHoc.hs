@@ -17,7 +17,8 @@ module ImagProc.Ipp.AdHoc(
     set8u,set8u3,set32f,
     copy8u,copy8u3,copy32f,
     resize8u,resize8u3,resize32f,
-    resize8uNN,resize8u3NN,resize32fNN
+    resize8uNN,resize8u3NN,resize32fNN,
+    warpon8u,warpon8u3,warpon32f
 )
 where
 
@@ -82,7 +83,7 @@ copyg msg f s d (Pixel r c) | c < c0 = copyg msg f (setROI rs s) d (Pixel r c0)
 
 copyg msg f s d pix = do
     let r = intersection (roi d) (roi s `roiAt` pix)
-    when (roiArea r > 0) $ do
+    when (roiArea r > 0) $ withImage s $ do
         f // src s (roi s) // dst (setROI r d) // checkIPP msg
     return ()
 
@@ -97,6 +98,8 @@ copy32f = copyg "copy32f" ippiCopy_32f_C1R
 
 --------------------------------------------------------------------------------
 
+resizeg :: Storable p => String -> RawImage p (RawImage p (IO CInt))
+        -> Size -> Image p -> Image p
 resizeg msg f s im = unsafePerformIO $ do
     when (roiArea (fullROI s) <=0) $ error $ "resize result " ++ show s
     r <- newImage undefined s
@@ -122,28 +125,26 @@ resize8uNN = resizeg "resize8uNN" c_resize8u_NN
 resize8u3NN :: Size -> Image Word24 -> Image Word24
 resize8u3NN = resizeg "resize8u3NN" c_resize8u3_NN
 
+--------------------------------------------------------------------------------
 
--- FIX auxIpp.c ipp 7.1 to allow InterpNN
+warpong :: Storable p => String -> (Ptr Double -> CInt -> CInt -> RawImage p (RawImage p (IO CInt)))
+        -> [[Double]] -> Image p -> Image p -> IO ()
+warpong msg f h s d = do
+    ph <- newArray (concat h)
+    withImage s $ do
+        f ph (fi r) (fi c) `appI` s `appI` d // checkIPP msg
+    free ph
+  where
+    Size r c = size s
+
+warpon8u  = warpong "warpOn8u"  warpPerspective8u
+warpon8u3 = warpong "warpOn8u3" warpPerspective8u3
+warpon32f = warpong "warpOn32f" warpPerspective32f
+
+
+--------------------------------------------------------------------------------
 
 {-
-
-----------------------------------------------------------------------------------------
-
-warpOnAux h r im f met s = do
-    coefs <- newArray (concat h)
-    let Size h w = isize im
-    f (ptr im) (step im) h w
-                           (r1 (vroi im)) (r2 (vroi im)) (c1 (vroi im)) (c2 (vroi im))
-                           (ptr r) (step r)
-                           (r1 (vroi r)) (r2 (vroi r)) (c1 (vroi r)) (c2 (vroi r))
-                           coefs met // checkIPP s [im]
-    free coefs
-
-warpOn8u  h (G r) (G im) = warpOnAux h r im warpPerspectiveGray (interCode InterpLinear) "warpOn8u"
-warpOn32f h (F r) (F im) = warpOnAux h r im warpPerspective32f (interCode InterpLinear) "warpOn32f"
-warpOn8u3 h (C r) (C im) = warpOnAux h r im warpPerspectiveRGB (interCode InterpLinear) "warpOn8u3"
-
--------------------------------------------------------------------
 
 -- | extracts a given channel of a 8uC3 image into a 8uC1 image
 getChannel :: Int -> ImageRGB -> ImageGray

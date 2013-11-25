@@ -26,28 +26,16 @@ foreign import ccall "auxIpp.h ippGetStatusString" ippGetStatusString :: CInt ->
 foreign import ccall "auxIpp.h ippSetNumThreads" ippSetNumThreads :: CInt -> IO CInt
 
 foreign import ccall "auxIpp.h auxWarpPerspective_32f_C1R"
-     warpPerspective32f :: Ptr Word8 -> CInt -> CInt -> CInt ->
-                           CInt -> CInt -> CInt -> CInt ->
-                           Ptr Word8 -> CInt ->
-                           CInt -> CInt -> CInt -> CInt ->
-                           Ptr Double -> CInt ->
-                           IO CInt
+     warpPerspective32f :: Ptr Double -> CInt -> CInt
+                        -> RawImage Float (RawImage Float (IO CInt))
 
 foreign import ccall "auxIpp.h auxWarpPerspective_8u_C1R"
-     warpPerspectiveGray :: Ptr Word8 -> CInt -> CInt -> CInt ->
-                           CInt -> CInt -> CInt -> CInt ->
-                           Ptr Word8 -> CInt ->
-                           CInt -> CInt -> CInt -> CInt ->
-                           Ptr Double -> CInt ->
-                           IO CInt
+     warpPerspective8u :: Ptr Double -> CInt -> CInt
+                       -> RawImage Word8 (RawImage Word8 (IO CInt))
 
 foreign import ccall "auxIpp.h auxWarpPerspective_8u_C3R"
-     warpPerspectiveRGB :: Ptr Word8 -> CInt -> CInt -> CInt ->
-                           CInt -> CInt -> CInt -> CInt ->
-                           Ptr Word8 -> CInt ->
-                           CInt -> CInt -> CInt -> CInt ->
-                           Ptr Double -> CInt ->
-                           IO CInt
+     warpPerspective8u3 :: Ptr Double -> CInt -> CInt
+                        -> RawImage Word24 (RawImage Word24 (IO CInt))
 
 foreign import ccall "auxResize_32f_C1R"
      c_resize32f :: RawImage Float (RawImage Float (IO CInt))
