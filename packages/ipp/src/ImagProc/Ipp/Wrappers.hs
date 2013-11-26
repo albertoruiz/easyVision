@@ -19,7 +19,7 @@ module ImagProc.Ipp.Wrappers where
 
 import Foreign
 import Foreign.C.Types
-import Image.Core
+import Image.Devel
 
 foreign import ccall "auxIpp.h ippGetStatusString" ippGetStatusString :: CInt -> IO (Ptr CChar)
 

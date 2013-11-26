@@ -67,7 +67,7 @@ library
                         Util.Graph
                         Util.Camera
                         
-                        Image.Types
+                        
                         Image.Core
                         Image.ROI
                         Image.Devel
@@ -76,6 +76,8 @@ library
                         Image.Capture
 
     other-modules:      Paths_hVision_base
+                        
+                        Image.Types
                         
                         Image.Capture.UVC
                         Image.Capture.MPlayer

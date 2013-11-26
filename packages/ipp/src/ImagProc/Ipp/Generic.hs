@@ -5,8 +5,9 @@ module ImagProc.Ipp.Generic(
     constant
 ) where
 
-import Image.Core
+import Image.Devel
 import ImagProc.Ipp.AdHoc
+import ImagProc.Ipp.Pure
 import Numeric.LinearAlgebra(Matrix, toLists, (<>), inv, rows, cols)
 import Control.Arrow((&&&))
 
@@ -16,14 +17,17 @@ class Storable p => Pix p
     set    :: Image p -> [(ROI, p)]                 -> Image p
     resize :: Size    -> Image p                    -> Image p
     warpon :: Image p -> [(Matrix Double, Image p)] -> Image p
-
+    uradial :: Float -- ^ f parameter in normalized coordinates (e.g. 2.0)
+            -> Float -- ^ k radial distortion (quadratic) parameter
+            -> Image p -> Image p
 
 instance Pix Word8
   where
-    copy   = layerImages copy8u
-    set    = setROIs set8u
-    resize = selresize resize8u resize8uNN
-    warpon = warpong warpon8u
+    copy    = layerImages copy8u
+    set     = setROIs set8u
+    resize  = selresize resize8u resize8uNN
+    warpon  = warpong warpon8u
+    uradial = uradialG undistortRadial8u
 
 instance Pix Word24
   where
@@ -31,6 +35,7 @@ instance Pix Word24
     set    = setROIs set8u3
     resize = selresize resize8u3 resize8u3NN
     warpon = warpong warpon8u3
+    uradial = uradialG undistortRadial8u3
 
 instance Pix Float
   where
@@ -38,7 +43,7 @@ instance Pix Float
     set    = setROIs set32f
     resize = selresize resize32f resize32fNN
     warpon = warpong warpon32f
-
+    uradial = uradialG undistortRadial32f
 
 resizeFull :: Pix p => Size -> Image p -> Image p
 resizeFull sz'@(Size h' w') im = unsafePerformIO $ do
@@ -269,9 +274,7 @@ channelsFromRGB img = CHIm{..}
 
 ------------------------------------------------
 
-uradialG gen f k im = gen fp fp (fromIntegral w / 2) (fromIntegral h / 2) k 0 im
-        where Size h w = size im
-              fp = f * fromIntegral w / 2
+
 
 ------------------------------------------------
 
@@ -326,4 +329,8 @@ warpong g im hxs = unsafePerformIO $ do
         adapt = toLists $ inv (pixelToPointTrans (size res)) <> h <> pixelToPointTrans (size x)
         szh = (rows &&& cols) h
         ok = szh == (3,3)
+
+uradialG gen f k im = gen fp fp (fromIntegral w / 2) (fromIntegral h / 2) k 0 im
+        where Size h w = size im
+              fp = f * fromIntegral w / 2
 

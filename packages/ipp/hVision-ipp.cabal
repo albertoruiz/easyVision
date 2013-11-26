@@ -34,9 +34,11 @@ library
 
     hs-source-dirs:     src
 
-    exposed-modules:    ImagProc.Ipp.Generic
+    exposed-modules:    Image.Processing
+
+    other-modules:
+                        ImagProc.Ipp.Generic
                         ImagProc.Ipp.Pure
---    other-modules:
                         ImagProc.Ipp.Wrappers
                         ImagProc.Ipp.Adapt
                         ImagProc.Ipp.Core
@@ -44,7 +46,7 @@ library
                         ImagProc.Ipp.Structs
                         ImagProc.Ipp.AutoGen
                         ImagProc.Ipp.Auto
-                        
+
 
                         --ImagProc
                         --ImagProc.Tools

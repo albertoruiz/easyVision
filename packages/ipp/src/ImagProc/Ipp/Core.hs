@@ -14,10 +14,10 @@ Stability   :  provisional
 module ImagProc.Ipp.Core
     ( Src, src, Dst, dst, checkIPP, roiSZ
     , module ImagProc.Ipp.Structs
-    , module Image.Core
+    , module Image.Devel
 ) where
 
-import Image.Core
+import Image.Devel
 import ImagProc.Ipp.Structs
 
 import Foreign.Ptr
