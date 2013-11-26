@@ -41,12 +41,10 @@ import Vision.GUI.Parameters(ParamRecord(..))
 import Control.Arrow((***),(>>>),arr)
 import Control.Monad((>=>),join)
 import Control.Applicative((<*>),(<$>))
-import Image.Core(Size(..),Point(..))
-import Image.Base(distPoints)
+import Util.Geometry hiding (join)
 import Image.Core
-import ImagProc.Camera.UVC
-import ImagProc.Simple(yuyv2rgb)
-import Image.Camera
+import Image.Capture
+import Image.Convert
 import Vision.GUI.Arrow--(ITrans, Trans,transUI,transUI2,runT_)
 import Util.LazyIO((~>),(>~>),mkGenerator,Generator)
 import Util.Misc(replaceAt,posMin)

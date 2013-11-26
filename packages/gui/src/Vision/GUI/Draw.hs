@@ -33,6 +33,7 @@ module Vision.GUI.Draw
 import Graphics.UI.GLUT hiding (RGB, Matrix, Size, Point,color)
 import qualified Graphics.UI.GLUT as GL
 import Image.Core
+import Util.Geometry
 --import ImagProc(resize,yuvToRGB, yCbCrToRGB, toGray,Channels(..),histogramN,blockImage)
 import Data.IORef
 import Foreign (touchForeignPtr,castPtr)
@@ -51,8 +52,6 @@ import Control.Monad(when)
 import GHC.Float(double2Float)
 import Util.Geometry(HPoint(..),Point3D(..),HPoint3D(..),HLine3D(..),HPlane(..),Meet(..))
 import Text.Printf(printf)
-import Image.ROI
-import Image.Base
 
 szgl = glSize .roiSize . roi
 
@@ -86,7 +85,7 @@ myDrawPixels m t s img@Image{..} = withImage img $ do
 drawTexture' :: ImageFloat -> [[Double]] -> IO ()
 drawTexture' im [v1,v2,v3,v4] = do
   withImage im $ do
-    texImage2D  Nothing
+    texImage2D  Texture2D
                 NoProxy
                 0
                 Luminance'
@@ -180,10 +179,10 @@ renderImageIn evW m t s img = do
 
 --------------------------------------------------------------------------------
 
-instance Renderable ImageGray where
+instance Renderable (Image Word8) where
     renderIn w = renderImageIn w Luminance UnsignedByte 1
 
-instance Renderable ImageRGB where
+instance Renderable (Image Word24) where
     renderIn w = renderImageIn w GL.RGB UnsignedByte 3
 
 

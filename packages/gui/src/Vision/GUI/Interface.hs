@@ -30,7 +30,8 @@ module Vision.GUI.Interface (
 import Vision.GUI.Types
 import Vision.GUI.Draw
 import Vision.GUI.Trackball
-import Image.Base
+import Image.Core hiding (shift)
+import Util.Geometry hiding (join)
 --import ImagProc.Ipp(ippSetNumThreads)
 import Image.Convert(savePPM)
 import Graphics.UI.GLUT hiding (RGB, Matrix, Size, None, Point,color)
@@ -344,7 +345,7 @@ kbdQuit :: KeyboardMouseCallback
 
 --kbdQuit (Char '\27') Down Modifiers {alt=Down} _ = leaveMainLoop >> system "killall mplayer" >> return ()
 kbdQuit (Char '\27') Down _ _ = exitWith ExitSuccess
-kbdQuit (Char   'i') Down _ _ = captureGL >>= savePPM Nothing
+kbdQuit (Char   'i') Down _ _ = captureGL >>= savePPM Nothing >> return () -- FIXME flip
 kbdQuit a Down m _            = errMsg (show a ++ " " ++ show m ++ " not defined")
 kbdQuit _ _ _ _               = return ()
 

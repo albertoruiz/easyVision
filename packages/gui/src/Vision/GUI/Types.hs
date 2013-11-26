@@ -31,7 +31,8 @@ module Vision.GUI.Types
 
 import Graphics.UI.GLUT hiding (RGB, Matrix, Size, Point,color,clearColor,windowTitle,blend)
 import qualified Graphics.UI.GLUT as GL
-import Image.Base
+import Image.Core(Size(..),Pixel(..))
+import Util.Geometry
 import Numeric.LinearAlgebra hiding (step)
 import Data.Colour(Colour)
 import Data.Colour.SRGB(RGB(..),toSRGB)
@@ -124,9 +125,9 @@ instance Vertex (Complex Double) where
     vertexv = undefined
 
 instance Vertex Segment where
-    vertex s = do
-        vertex $ (extreme1 s)
-        vertex $ (extreme2 s)
+    vertex (Segment p q) = do
+        vertex p
+        vertex q
     vertexv = undefined
 
 instance Vertex (Vector Double) where
