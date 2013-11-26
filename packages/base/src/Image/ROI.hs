@@ -35,8 +35,8 @@ module Image.ROI
   roiAt
 ) where
 
-import Image.Base
-
+import Image.Types
+import Util.Geometry
 
 roiSize :: ROI -> Size
 roiSize (ROI a b x y) = Size { height = b-a+1, width = y-x+1 }

@@ -18,7 +18,6 @@ module Image.Camera(
 )where
 
 import Image.Core
-import Image.Base
 import Image.Convert(loadRGB)
 import ImagProc.Simple(yuv2yuyv)
 import ImagProc.Camera.MPlayer

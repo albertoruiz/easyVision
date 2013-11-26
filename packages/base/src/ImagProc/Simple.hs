@@ -8,7 +8,7 @@ module ImagProc.Simple (
     exampleInvert
 ) where
 
-import Image.Core
+import Image.Devel
 
 --------------------------------------------------------------------------------
 

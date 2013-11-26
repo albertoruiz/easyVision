@@ -24,7 +24,7 @@ module Util.Geometry
 (
   -- * Basic Types
     Point(..), HPoint(..), HLine(..),
-    Point3D(..), HPoint3D(..), HLine3D(..), HPlane(..), 
+    Point3D(..), HPoint3D(..), HLine3D(..), HPlane(..),
 
     Homography, Camera, Homography3D,
 
@@ -38,10 +38,15 @@ module Util.Geometry
 
   -- * Geometric constructions
     Meet(..), Join(..),
-    
-  -- * Conversion
-    Inhomog(..), Homog(..)
 
+  -- * Conversion
+    Inhomog(..), Homog(..),
+
+  -- * Derived types
+
+    Polyline(..), Segment(..),
+    segmentLength, distPoints, bounding, cosAngleSegments,
+    InterestPoint(..)
 ) where
 
 import Util.Small
@@ -62,7 +67,7 @@ instance Shaped Point where
     type Shape Point = Dim2 Double
     toArray (Point x1 x2) = vec2 x1 x2
     unsafeFromArray v = Point (v@>0) (v@>1)
- 
+
 
 -- | inhomogenous 2D point
 data HPoint = HPoint !Double !Double !Double deriving (Eq, Show, Read)
@@ -490,7 +495,7 @@ class Tensorial x where
 
 instance Tensorial HPoint where
     toTensor (HPoint x y w) = T.vector [x,y,w]
-    
+
 instance Tensorial HPoint3D where
     toTensor (HPoint3D x y z w) = T.vector [x,y,z,w]
 
@@ -603,4 +608,61 @@ instance Meet HLine3D HPlane where
 instance Meet HPlane HPlane where
     type HPlane :\/: HPlane = HLine3D
     meet p q = HLine3D . UT.asMatrix . E.dual $ (E.switch . toTensor $ p) E./\ (E.switch . toTensor $ q)
+
+--------------------------------------------------------------------------------
+
+data Polyline = Closed { polyPts :: [Point] }
+              | Open   { polyPts :: [Point] } deriving (Show,Read)
+
+--------------------------------------------------------------------------------
+
+data Segment = Segment !Point !Point
+  deriving (Show)
+
+--------------------------------------------------------------------------------
+
+-- | The length of a segment.
+segmentLength :: Segment -> Double
+segmentLength (Segment e1 e2) = distPoints e1 e2
+
+-- | Euclidean distance between two points
+distPoints :: Point -> Point -> Double
+distPoints (Point a b) (Point x y) = sqrt $ (a-x)^(2::Int)+(b-y)^(2::Int)
+
+bounding :: Polyline -> Polyline
+bounding p = Closed [Point x2 y2, Point x1 y2, Point x1 y1, Point x2 y1]
+  where
+    x1 = minimum xs
+    x2 = maximum xs
+    y1 = minimum ys
+    y2 = maximum ys
+    xs = map px (polyPts p)
+    ys = map py (polyPts p)
+
+--------------------------------------------------------------------------------
+
+cosAngleSegments :: Segment -> Segment -> Double
+cosAngleSegments (Segment p q) (Segment p' q') = ca
+  where
+     Point x0 y0 = p
+     Point x1 y1 = q
+     Point x0' y0' = p'
+     Point x1' y1' = q'
+     ux = x1-x0
+     uy = y1-y0
+     vx = x1'-x0'
+     vy = y1'-y0'
+     u2 = ux*ux+uy*uy
+     v2 = vx*vx+vy*vy
+     uv = ux*vx+uy*vy
+     ca = uv/(sqrt (abs u2)*sqrt (abs v2))
+
+--------------------------------------------------------------------------------
+
+data InterestPoint = IP {
+      ipPosition    :: Point
+    , ipScale       :: Double
+    , ipOrientation :: Double
+    , ipDescriptor  :: LA.Vector Double
+    } deriving (Eq, Show)
 

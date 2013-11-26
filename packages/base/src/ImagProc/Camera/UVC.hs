@@ -20,7 +20,7 @@ where
 import Foreign
 import Foreign.C.Types
 import Foreign.C.String(newCString)
-import Image.Core
+import Image.Devel
 import Control.Applicative((<$>))
 
 -- #define HASUVC

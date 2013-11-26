@@ -31,7 +31,7 @@ module Image.Convert (
     img2mat, mat2img
 ) where
 
-import Image.Core
+import Image.Devel
 import Foreign.Ptr
 import Foreign.ForeignPtr
 import Foreign.Marshal

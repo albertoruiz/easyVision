@@ -67,8 +67,8 @@ library
                         Util.Graph
                         Util.Camera
                         
+                        Image.Types
                         Image.Core
-                        Image.Base
                         Image.ROI
                         Image.Devel
                         Image.Convert

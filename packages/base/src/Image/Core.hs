@@ -2,7 +2,7 @@
 {-# LANGUAGE Rank2Types      #-}
 
 module Image.Core (
-    Image(..),
+    Size(..), ROI(..), Pixel(..), Image(..),
     newImage,
     cloneImage,
     withImage,
@@ -13,9 +13,7 @@ module Image.Core (
     Gray, RGB, YCbCr, YUV,
     ImageGray, ImageFloat, ImageRGB, ImageYCbCr, ImageYUV,
     STImage, thawImage, runSTImage, ioRead, ioWrite, stRead, stWrite, readPixel,
-    RawImage, appI, CInt(..), Storable, Ptr,
-    Wrap11, wrap11, fi, ti, (//), checkFFI, unsafePerformIO,
-    module Image.Base,
+    module Image.Types,
     module Image.ROI
 ) where
 
@@ -34,8 +32,9 @@ import Control.Monad.ST(ST, runST)
 import Control.Monad.ST.Unsafe(unsafeIOToST)
 import Util.Misc((//))
 import Control.Monad(when)
-import Image.Base
+import Image.Types
 import Image.ROI
+
 
 
 data Image t = Image
@@ -77,14 +76,14 @@ type ImageYUV = Image YUV
 
 
 
-ptrAt :: Image t -> Int -> Int -> Ptr t
-ptrAt Image{..} r c = castPtr $ unsafeForeignPtrToPtr fp `plusPtr` (o + r*step + c*szpix)
+ptrAt :: Image t -> Pixel -> Ptr t
+ptrAt Image{..} (Pixel r c) = castPtr $ unsafeForeignPtrToPtr fp `plusPtr` (o + r*step + c*szpix)
   where
     B.PS fp o _ = bytes
 
 
 starting :: Image t -> Ptr Word8
-starting x = castPtr $ ptrAt x r1 c1
+starting x = castPtr $ ptrAt x (Pixel r1 c1)
   where
     ROI r1 _ c1 _ = roi x
 
@@ -151,54 +150,24 @@ runSTImage :: Storable t => (forall s . ST s (STImage s t)) -> Image t
 runSTImage st = runST (st >>= freezeImage)
 
 {-# INLINE ioRead #-}
-ioRead :: Storable t => Image t -> Int -> Int -> IO t
-ioRead x r c = withImage x $ peek (ptrAt x r c)
+ioRead :: Storable t => Image t -> Pixel -> IO t
+ioRead x p = withImage x $ peek (ptrAt x p)
 
 {-# INLINE readPixel #-}
 readPixel :: Storable a => Pixel -> Image a -> a
-readPixel (Pixel r c) x = B.inlinePerformIO (ioRead x r c)
+readPixel p x = B.inlinePerformIO (ioRead x p)
 
 {-# INLINE ioWrite #-}
-ioWrite :: Storable t => Image t -> Int -> Int -> t -> IO ()
-ioWrite x r c v = withImage x $ poke (ptrAt x r c) v
+ioWrite :: Storable t => Image t -> Pixel -> t -> IO ()
+ioWrite x p v = withImage x $ poke (ptrAt x p) v
 
 {-# INLINE stRead #-}
-stRead :: Storable t => STImage s t -> Int -> Int -> ST s t
-stRead (STImage x) r c = unsafeIOToST $ ioRead x r c
+stRead :: Storable t => STImage s t -> Pixel -> ST s t
+stRead (STImage x) p = unsafeIOToST $ ioRead x p
 
 {-# INLINE stWrite #-}
-stWrite :: Storable t => STImage s t -> Int -> Int -> t -> ST s ()
-stWrite (STImage x) r c v = unsafeIOToST $ ioWrite x r c v
+stWrite :: Storable t => STImage s t -> Pixel -> t -> ST s ()
+stWrite (STImage x) p v = unsafeIOToST $ ioWrite x p v
 
 --------------------------------------------------------------------------------
 
-appI :: RawImage p t -> Image p -> t
-appI f img = f (ptrAt img 0 0) (fi.step $ img) (g r1) (g r2) (g c1) (g c2)
-  where
-    g x = (fi . x . roi) img
-    r1 (ROI r _ _ _) = r
-    r2 (ROI _ r _ _) = r
-    c1 (ROI _ _ c _) = c
-    c2 (ROI _ _ _ c) = c
-
-type RawImage p t = Ptr p -> CInt -> CInt -> CInt -> CInt -> CInt -> t
-
-type Wrap11 p q = RawImage p (RawImage q (IO CInt))
-
-wrap11 :: Storable b => String -> Wrap11 a b -> Image a -> Image b
-wrap11 msg f x = unsafePerformIO $ do
-    r <- newImage undefined (size x)
-    withImage x $ withImage r $ checkFFI msg $
-        appI f x `appI` r
-    return r
-
-checkFFI :: String -> IO CInt -> IO ()
-checkFFI msg f = do
-    err <- f
-    when (err/=0)  (error $ "error in foreign function " ++ msg)
-
-
-fi :: Int -> CInt
-fi = fromIntegral
-ti :: CInt -> Int
-ti = fromIntegral
