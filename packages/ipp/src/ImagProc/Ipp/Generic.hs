@@ -1,8 +1,12 @@
+{-# LANGUAGE RecordWildCards #-}
+
+
 module ImagProc.Ipp.Generic(
     Pix(..),
     warp,
     resizeFull,
-    constant
+    constant,
+    Channels(..),channelsFromRGB, grayscale, grayf
 ) where
 
 import Image.Devel
@@ -137,7 +141,7 @@ class Image image => GImg pixel image | pixel -> image, image -> pixel where
 
 ----------------------------------
 
-instance GImg CUChar ImageGray
+instance GImg CUChar Image Word8
   where
     zeroP = 0
     set = set8u
@@ -193,7 +197,7 @@ r3 x = resizeFull (Size r (c `div` 3)) x
 blockImage :: GImg p img  => [[img]] -> img
 blockImage = columnImage . map rowImage
 
---rowImage :: [ImageGray] -> ImageGray
+--rowImage :: [Image Word8] -> Image Word8
 rowImage l = unsafePerformIO $ do
     let r = maximum (map (height.size) l)
         c = maximum (map (width.size) l)
@@ -206,7 +210,7 @@ rowImage l = unsafePerformIO $ do
     sequence_ $ zipWith f l [0..]
     return res
 
---columnImage :: [ImageGray] -> ImageGray
+--columnImage :: [Image Word8] -> Image Word8
 columnImage l = unsafePerformIO $ do
     let r = maximum (map (height.size) l)
         c = maximum (map (width.size) l)
@@ -221,27 +225,30 @@ columnImage l = unsafePerformIO $ do
 
 ---------------------------------------------------------------------------------
 
+-}
+
 data Channels = CHIm
     { yuv  :: ImageYUV
-    , yCh  :: ImageGray
-    , uCh  :: ImageGray
-    , vCh  :: ImageGray
-    , rgb  :: ImageRGB
-    , rCh  :: ImageGray
-    , gCh  :: ImageGray
-    , bCh  :: ImageGray
-    , hsv  :: ImageRGB
-    , hCh  :: ImageGray
-    , sCh  :: ImageGray
-    , fCh  :: ImageFloat
+    , yCh  :: Image Word8
+    , uCh  :: Image Word8
+    , vCh  :: Image Word8
+    , rgb  :: Image Word24
+    , rCh  :: Image Word8
+    , gCh  :: Image Word8
+    , bCh  :: Image Word8
+    , hsv  :: Image Word24
+    , hCh  :: Image Word8
+    , sCh  :: Image Word8
+    , fCh  :: Image Float
     }
 
-grayscale :: Channels -> ImageGray
+grayscale :: Channels -> Image Word8
 grayscale = yCh
 
-grayf :: Channels -> ImageFloat
+grayf :: Channels -> Image Float
 grayf = fCh
 
+{-
 channels :: ImageYUV -> Channels
 channels img = CHIm{..}
   where
@@ -261,11 +268,13 @@ channels img = CHIm{..}
     hsvAux = rgbToHSV rgbAux
     (u,v) = yuvToUV img
 
-channelsFromRGB :: ImageRGB -> Channels
+-}
+
+channelsFromRGB :: Image Word24 -> Channels
 channelsFromRGB img = CHIm{..}
   where
     yuv = yuvAux
-    yCh = fromYUV yuvAux
+    yCh = rgbToGray img
     uCh = u
     vCh = v
     rgb = img
@@ -276,13 +285,12 @@ channelsFromRGB img = CHIm{..}
     hCh = getChannel 0 hsvAux
     sCh = getChannel 1 hsvAux
     fCh = float yCh
-    yuvAux = toYUV img
+    yuvAux = rgbToYUV img
     hsvAux = rgbToHSV img
     (u,v) = yuvToUV yuvAux
 
 
 --------------------------------------------------------------------------------
--}
 
 
 layerImages

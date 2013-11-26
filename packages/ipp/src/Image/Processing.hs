@@ -1,19 +1,19 @@
 module Image.Processing(
-    -- * Basic functions
+    -- * basic functions
     Image(), Pix(), size, roi, setROI, modifyROI,
     G.constant, set, copy,
     -- * spatial transformations
     resize, G.resizeFull, G.warp, warpon, uradial,
-    -- * Logical functions
+    -- * logical functions
     andI, orI, notI, xorI, dilate3x3, erode3x3,
-    -- * Arithmetic functions
+    -- * arithmetic functions
     (.*),(.+),
     (|+|),(|-|),absDiff,(|*|),(|/|),
     addC8u, add8u, absDiff8u, sub8u, sub8uRel,
-    -- * Image filters and matching
+    -- * image filters and matching
     crossCorr, sqrDist,
-    -- * Color transformations
-    twistColors
+    -- * color transformations
+    twistColors, G.Channels(..), G.channelsFromRGB, G.grayscale, G.grayf
 ) where
 
 import Image.Core
