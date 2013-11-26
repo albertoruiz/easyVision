@@ -15,7 +15,7 @@ module ImagProc.Ipp.Pure (
     (|+|),(|-|),absDiff,(|*|),(|/|),
     andI,orI,notI,xorI,
     addC8u, add8u, absDiff8u, sub8u, sub8uRel,
-    float, toGray, scale32f8u, scale8u32f,
+    toFloat, toGray, scale32f8u, scale8u32f,
     rgbToGray, rgbToHSV, hsvToRGB, yCbCrToRGB, rgbToYCbCr,
     thresholdVal32f, thresholdVal8u,
     compareC8u, compare8u,
@@ -149,37 +149,35 @@ compare8u :: IppCmp -> Image Word8 -> Image Word8 -> Image Word8
 compare8u cmp = mkInt (ioCompare_8u_C1R (codeCmp cmp))
 
 
--- | conversion from discrete gray level images (0-255) to floating point (0->0, 255->)
-float :: Image Word8 -> Image Float
-float = mkId (ioScale_8u32f_C1R 0 1)
+-- | conversion from discrete gray level images (0-255) to floating point (0->0, 255->1)
+toFloat :: Image Word8 -> Image Float
+toFloat = mkId (ioScale_8u32f_C1R 0 1)
 
 -- | the inverse of 'float'
 toGray :: Image Float -> Image Word8
 toGray = scale32f8u 0 1
 
--- | similar to 'toGray' with desired conversion range
+-- | similar to 'toGray' with explicit conversion range
 scale32f8u :: Float -> Float -> Image Float -> Image Word8
 scale32f8u mn mx = mkId (ioScale_32f8u_C1R mn mx)
 
--- | similar to 'float' with desired conversion range
+-- | similar to 'float' with explicit conversion range
 scale8u32f :: Float -> Float -> Image Word8 -> Image Float
 scale8u32f mn mx = mkId (ioScale_8u32f_C1R mn mx)
 
--- | conversion from RGB to HSV color representation
-rgbToHSV :: ImageRGB -> ImageRGB
+rgbToHSV :: Image Word24 -> Image Word24
 rgbToHSV = mkId ioRGBToHSV_8u_C3R
 
--- | the inverse of 'rgbToHSV'
-hsvToRGB :: ImageRGB -> ImageRGB
+hsvToRGB :: Image Word24 -> Image Word24
 hsvToRGB = mkId ioHSVToRGB_8u_C3R
 
-rgbToGray :: ImageRGB -> Image Word8
+rgbToGray :: Image Word24 -> Image Word8
 rgbToGray = mkId ioRGBToGray_8u_C3C1R
 
-yCbCrToRGB :: ImageYCbCr -> ImageRGB
+yCbCrToRGB :: Image Word16 -> Image Word24
 yCbCrToRGB = mkId ioYCbCr422ToRGB_8u_C2C3R
 
-rgbToYCbCr :: ImageRGB -> ImageYCbCr
+rgbToYCbCr :: Image Word24 -> Image Word16
 rgbToYCbCr = mkId ioRGBToYCbCr422_8u_C3C2R
 
 

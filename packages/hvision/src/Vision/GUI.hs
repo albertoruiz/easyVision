@@ -1,3 +1,6 @@
+{-# LANGUAGE FlexibleInstances #-}
+
+
 -----------------------------------------------------------------------------
 {- |
 Module      :  Vision.GUI
@@ -17,23 +20,12 @@ module Vision.GUI (
 
 import Vision.GUI.Simple hiding (camera,run)
 import Vision.GUI.Util
-import Image.Core
+import Image.Convert
 import Image.Processing
+import Image.Core
 
-{-
 instance Renderable (Image Float) where
     renderIn w = renderIn w . toGray
-
--}
-
-instance Renderable ImageYUV where
-    renderIn w = renderIn w . yuvToRGB
-
-
-
-instance Renderable ImageYCbCr where
-    -- renderIn w (Y422 im) = renderImageIn w im
-    renderIn w = renderIn w . yCbCrToRGB
 
 
 {-
@@ -66,5 +58,5 @@ toRGB :: Generator ImageRGB -> Generator Channels
 toRGB = fmap (fmap (fmap channelsFromRGB))
 
 run :: ITrans Channels b -> IO ()
-run t = runT_ Vision.GUI.camera (t >>> optDo "--freq" freqMonitor)
+run t = ippSetNumThreads 1 >> runT_ Vision.GUI.camera (t >>> optDo "--freq" freqMonitor)
 

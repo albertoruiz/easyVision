@@ -27,6 +27,7 @@ module Image.Convert (
     saveGray, loadGray, saveRGB, loadRGB,
     loadRawPPM,
     savePPM,
+    yuyv2rgb, yuv2rgb,
     -- * Conversion to Matrix
     img2mat, mat2img
 ) where
@@ -52,6 +53,7 @@ import qualified Data.ByteString as BS
 import qualified Data.ByteString.Char8 as BSC
 import Util.Misc(formattedTime)
 import Image.ROI(roiSize)
+import Image.Capture.Simple
 
 -- | Writes to a file (with automatic name if Nothing) a RGB image in png format.
 -- (uses imagemagick' convert.)

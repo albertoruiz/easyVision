@@ -13,7 +13,12 @@ module Image.Processing(
     -- * image filters and matching
     crossCorr, sqrDist,
     -- * color transformations
-    twistColors, G.Channels(..), G.channelsFromRGB, G.grayscale, G.grayf
+    rgbToGray, rgbToHSV, hsvToRGB, yCbCrToRGB, rgbToYCbCr,
+    twistColors, G.Channels(..), G.channelsFromRGB, G.grayscale, G.grayf,
+    -- * pixel transformations
+    toFloat, toGray, scale32f8u, scale8u32f,
+    -- * misc
+    ippSetNumThreads
 ) where
 
 import Image.Core
@@ -21,7 +26,7 @@ import ImagProc.Ipp.Generic(Pix)
 import qualified ImagProc.Ipp.Generic as G
 import ImagProc.Ipp.Pure
 import ImagProc.Ipp.AdHoc(twistColors)
-
+import ImagProc.Ipp.Wrappers(ippSetNumThreads)
 
 set  x l = G.set  x l
 copy x l = G.copy x l

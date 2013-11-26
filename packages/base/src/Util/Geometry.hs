@@ -45,8 +45,7 @@ module Util.Geometry
   -- * Derived types
 
     Polyline(..), Segment(..),
-    segmentLength, distPoints, bounding, cosAngleSegments,
-    InterestPoint(..)
+    segmentLength, distPoints, bounding, cosAngleSegments
 ) where
 
 import Util.Small
@@ -666,11 +665,4 @@ cosAngleSegments (Segment p q) (Segment p' q') = ca
      ca = uv/(sqrt (abs u2)*sqrt (abs v2))
 
 --------------------------------------------------------------------------------
-
-data InterestPoint = IP {
-      ipPosition    :: Point
-    , ipScale       :: Double
-    , ipOrientation :: Double
-    , ipDescriptor  :: LA.Vector Double
-    } deriving (Eq, Show)
 

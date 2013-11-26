@@ -93,3 +93,4 @@ data InterestPoint = IP {
     , ipOrientation :: Double
     , ipDescriptor  :: Vector Double
     } deriving (Eq, Show)
+
