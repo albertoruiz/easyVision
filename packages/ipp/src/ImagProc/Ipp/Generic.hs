@@ -17,6 +17,8 @@ class Storable p => Pix p
     set    :: Image p -> [(ROI, p)]                 -> Image p
     resize :: Size    -> Image p                    -> Image p
     warpon :: Image p -> [(Matrix Double, Image p)] -> Image p
+    crossCorr :: Image p -> Image p -> Image Float
+    sqrDist   :: Image p -> Image p -> Image Float
     uradial :: Float -- ^ f parameter in normalized coordinates (e.g. 2.0)
             -> Float -- ^ k radial distortion (quadratic) parameter
             -> Image p -> Image p
@@ -28,6 +30,8 @@ instance Pix Word8
     resize  = selresize resize8u resize8uNN
     warpon  = warpong warpon8u
     uradial = uradialG undistortRadial8u
+    crossCorr = crossCorr8u
+    sqrDist = sqrDist8u
 
 instance Pix Word24
   where
@@ -36,6 +40,8 @@ instance Pix Word24
     resize = selresize resize8u3 resize8u3NN
     warpon = warpong warpon8u3
     uradial = uradialG undistortRadial8u3
+    crossCorr = crossCorr8u3
+    sqrDist = sqrDist8u3
 
 instance Pix Float
   where
@@ -44,6 +50,8 @@ instance Pix Float
     resize = selresize resize32f resize32fNN
     warpon = warpong warpon32f
     uradial = uradialG undistortRadial32f
+    crossCorr = crossCorr32f
+    sqrDist = sqrDist32f
 
 resizeFull :: Pix p => Size -> Image p -> Image p
 resizeFull sz'@(Size h' w') im = unsafePerformIO $ do
@@ -53,15 +61,15 @@ resizeFull sz'@(Size h' w') im = unsafePerformIO $ do
     Size h w = size im
     sr@(ROI r1 _ c1 _) = roi im
     Size rh rw = roiSize sr
-    fh = fi h' / fi h :: Double
-    fw = fi w' / fi w :: Double
-    rh' = round (fi rh*fh)
-    rw' = round (fi rw*fw)
-    r1' = round (fi r1*fh)
-    c1' = round (fi c1*fw)
+    fh = g h' / g h :: Double
+    fw = g w' / g w :: Double
+    rh' = round (g rh*fh)
+    rw' = round (g rw*fw)
+    r1' = round (g r1*fh)
+    c1' = round (g c1*fw)
     x = resize (Size rh' rw') im
     newroi = shift (r1',c1') (roi x)
-    fi n = fromIntegral n
+    g n = fromIntegral n
 
 
 constant :: Pix p => p -> Size -> Image p
@@ -272,12 +280,6 @@ channelsFromRGB img = CHIm{..}
     hsvAux = rgbToHSV img
     (u,v) = yuvToUV yuvAux
 
-------------------------------------------------
-
-
-
-------------------------------------------------
-
 
 --------------------------------------------------------------------------------
 -}
@@ -330,6 +332,8 @@ warpong g im hxs = unsafePerformIO $ do
         szh = (rows &&& cols) h
         ok = szh == (3,3)
 
+uradialG :: (Float -> Float -> Float -> Float -> Float -> Float -> Image p -> Image p)
+         -> Float -> Float -> Image p -> Image p
 uradialG gen f k im = gen fp fp (fromIntegral w / 2) (fromIntegral h / 2) k 0 im
         where Size h w = size im
               fp = f * fromIntegral w / 2

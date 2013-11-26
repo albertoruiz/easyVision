@@ -18,7 +18,10 @@ module ImagProc.Ipp.AdHoc(
     copy8u,copy8u3,copy32f,
     resize8u,resize8u3,resize32f,
     resize8uNN,resize8u3NN,resize32fNN,
-    warpon8u,warpon8u3,warpon32f
+    warpon8u,warpon8u3,warpon32f,
+    crossCorr8u, crossCorr8u3, crossCorr32f,
+    sqrDist8u, sqrDist8u3, sqrDist32f,
+    twistColors
 )
 where
 
@@ -27,6 +30,7 @@ import ImagProc.Ipp.Adapt
 import ImagProc.Ipp.Wrappers
 import Foreign.Marshal
 import Control.Monad(when)
+import ImagProc.Ipp.Auto
 
 -- | Writes into a existing image a desired value in a specified roi.
 set32f :: Float
@@ -77,7 +81,7 @@ copyg msg f s d (Pixel r c) | c < c0 = copyg msg f (setROI rs s) d (Pixel r c0)
   where
     ROI r1 r2 c1 c2 = roi s
     ROI _  _  c0 _  = roi d
-    rs = ROI r r2 (c1-c+c0) c2
+    rs = ROI r1 r2 (c1-c+c0) c2
 
 copyg msg f s d pix = do
     let r = intersection (roi d) (roi s `roiAt` pix)
@@ -814,91 +818,92 @@ fastMarching rad (G s) = unsafePerformIO $ do
 
 --------------------------------------------------------------------------------
 
-ioCrossCorrValid_NormLevel_32f_C1R  = {-# SCC "ippiCrossCorrValid_NormLevel_32f_C1R" #-} special_2_32f_C1R  ippiCrossCorrValid_NormLevel_32f_C1R "ippiCrossCorrValid_NormLevel_32f_C1R"
+-}
 
-ioSqrDistanceValid_Norm_32f_C1R  = {-# SCC "ippiSqrDistanceValid_Norm_32f_C1R" #-} special_2_32f_C1R ippiSqrDistanceValid_Norm_32f_C1R "ippiSqrDistanceValid_Norm_32f_C1R"
+ioCrossCorrValid_NormLevel_32f_C1R  = {-# SCC "ippiCrossCorrValid_NormLevel_32f_C1R" #-} special_2  ippiCrossCorrValid_NormLevel_32f_C1R "ippiCrossCorrValid_NormLevel_32f_C1R"
+
+ioSqrDistanceValid_Norm_32f_C1R  = {-# SCC "ippiSqrDistanceValid_Norm_32f_C1R" #-} special_2 ippiSqrDistanceValid_Norm_32f_C1R "ippiSqrDistanceValid_Norm_32f_C1R"
 
 imgAsR2b roifun im1 im2 = do
-    r <- imgAs im1
-    return r {vroi = roifun (vroi im1) (vroi im2)}
+    r <- newImage (undefined::Float) (size im1)
+    return r {roi = roifun (roi im1) (roi im2)}
 
-cr2b f msg im1 im2 r = f // dst im1 (vroi im1) // dst im2 (vroi im2)// src r (vroi r) // checkIPP msg [im1,im2]
+cr2b :: Dst p (Dst p (Src Float (IO CInt))) -> String -> Image p -> Image p -> Image Float -> IO()
+cr2b f msg im1 im2 r = withImage im1 $ withImage im2 $ do
+    f // dst im1 // dst im2 // src r (roi r) // checkIPP msg
 
-special_2_32f_C1R f msg rf (F im1) (F im2) = do
+
+special_2 f msg rf im1 im2 = do
     r <- imgAsR2b rf im1 im2
     cr2b f msg im1 im2 r
-    return (F r)
+    return r
 
 
 ccsd f temp imag = unsafePerformIO $ f g imag temp
   where
-    g roi roimask = ROI r1' r2' c1' c2'
+    g iroi roimask = ROI r1' r2' c1' c2'
       where
         Size h w = roiSize roimask
-        ROI r1 r2 c1 c2 = roi
+        ROI r1 r2 c1 c2 = iroi
         r1' = r1 + (h-1) `div` 2
         r2' = r1'+r2-r1-h+1
         c1' = c1 + (w-1) `div` 2
         c2' = c1'+c2-c1-w+1
 
 
-crossCorrFloat :: ImageFloat -> ImageFloat -> ImageFloat
-crossCorrFloat = ccsd ioCrossCorrValid_NormLevel_32f_C1R
+crossCorr32f :: Image Float -> Image Float -> Image Float
+crossCorr32f = ccsd ioCrossCorrValid_NormLevel_32f_C1R
 
-sqrDistFloat :: ImageFloat -> ImageFloat -> ImageFloat
-sqrDistFloat   = ccsd ioSqrDistanceValid_Norm_32f_C1R
+sqrDist32f :: Image Float -> Image Float -> Image Float
+sqrDist32f = ccsd ioSqrDistanceValid_Norm_32f_C1R
 
 --------------------------------------------------------------------------------
+
+
 
 ioCrossCorrValid_NormLevel_8u32f_C3R  = {-# SCC "ippiCrossCorrValid_NormLevel_8u32f_C13R" #-} special_2_8u32f_C3R ippiCrossCorrValid_NormLevel_8u32f_C3R "ippiCrossCorrValid_NormLevel_8u32f_C3R"
 
 ioSqrDistanceValid_Norm_8u32f_C3R  = {-# SCC "ippiSqrDistanceValid_Norm_8u32f_C3R" #-} special_2_8u32f_C3R  ippiSqrDistanceValid_Norm_8u32f_C3R "ippiSqrDistanceValid_Norm_8u32f_C3R"
 
-special_2_8u32f_C3R f msg rf (C im1) (C im2) = do
-    let Size r c = isize im1
-        ROI r1 r2 c1 c2 = rf (vroi im1) (vroi im2)
-    F r0 <- image (Size r (3*c))
-    let r = r0 {vroi = ROI r1 r2 (c1*3) (c2*3+2)}
-    cr2b f msg im1 im2 r
-    return (F r)
+
+special_2_8u32f_C3R f msg rf im1 im2 = do
+    let Size r c = size im1
+        ROI r1 r2 c1 c2 = rf (roi im1) (roi im2)
+    r0 <- newImage (undefined::Float) (Size r (3*c))
+    let res = r0 {roi = ROI r1 r2 (c1*3) (c2*3+2)}
+    cr2b f msg im1 im2 res
+    return res
 
 
-crossCorrRGB :: ImageRGB -> ImageRGB -> ImageFloat
-crossCorrRGB = ccsd ioCrossCorrValid_NormLevel_8u32f_C3R
+crossCorr8u3 :: Image Word24 -> Image Word24 -> Image Float
+crossCorr8u3 = ccsd ioCrossCorrValid_NormLevel_8u32f_C3R
 
-sqrDistRGB :: ImageRGB -> ImageRGB -> ImageFloat
-sqrDistRGB = ccsd ioSqrDistanceValid_Norm_8u32f_C3R
-
---------------------------------------------------------------------------------
-
-ioCrossCorrValid_NormLevel_8u32f_C1R  = {-# SCC "ippiCrossCorrValid_NormLevel_8u32f_C1R" #-} special_2_8u32f_C1R ippiCrossCorrValid_NormLevel_8u32f_C3R "ippiCrossCorrValid_NormLevel_8u32f_C1R"
-
-ioSqrDistanceValid_Norm_8u32f_C1R  = {-# SCC "ippiSqrDistanceValid_Norm_8u32f_C1R" #-} special_2_8u32f_C1R  ippiSqrDistanceValid_Norm_8u32f_C3R "ippiSqrDistanceValid_Norm_8u32f_C1R"
-
-special_2_8u32f_C1R f msg rf (G im1) (G im2) = do
-    let Size r c = isize im1
-        ROI r1 r2 c1 c2 = rf (vroi im1) (vroi im2)
-    F r0 <- image (Size r c)
-    let r = r0 {vroi = ROI r1 r2 c1 c2}
-    cr2b f msg im1 im2 r
-    return (F r)
-
-
-crossCorrGray :: ImageGray -> ImageGray -> ImageFloat
-crossCorrGray = ccsd ioCrossCorrValid_NormLevel_8u32f_C1R
-
-sqrDistGray :: ImageGray -> ImageGray -> ImageFloat
-sqrDistGray = ccsd ioSqrDistanceValid_Norm_8u32f_C1R
+sqrDist8u3 :: Image Word24 -> Image Word24 -> Image Float
+sqrDist8u3 = ccsd ioSqrDistanceValid_Norm_8u32f_C3R
 
 --------------------------------------------------------------------------------
 
-twistColors :: [[Float]] -> ImageRGB -> ImageRGB
+
+
+ioCrossCorrValid_NormLevel_8u32f_C1R  = {-# SCC "ippiCrossCorrValid_NormLevel_8u32f_C1R" #-} special_2 ippiCrossCorrValid_NormLevel_8u32f_C3R "ippiCrossCorrValid_NormLevel_8u32f_C1R"
+
+ioSqrDistanceValid_Norm_8u32f_C1R  = {-# SCC "ippiSqrDistanceValid_Norm_8u32f_C1R" #-} special_2  ippiSqrDistanceValid_Norm_8u32f_C3R "ippiSqrDistanceValid_Norm_8u32f_C1R"
+
+
+crossCorr8u :: Image Word8 -> Image Word8 -> ImageFloat
+crossCorr8u = ccsd ioCrossCorrValid_NormLevel_8u32f_C1R
+
+sqrDist8u :: Image Word8 -> Image Word8 -> ImageFloat
+sqrDist8u = ccsd ioSqrDistanceValid_Norm_8u32f_C1R
+
+
+--------------------------------------------------------------------------------
+
+
+twistColors :: [[Float]] -> Image Word24 -> Image Word24
 twistColors twist img = unsafePerformIO $ do
     pTwist <- newArray (concat twist)
-    (C r) <- ioColorTwist32f_8u_C3R pTwist id img
+    r <- ioColorTwist32f_8u_C3R pTwist id img
     free pTwist
-    return (C r)
-
---------------------------------------------------------------------------------
--}
+    return r
 
