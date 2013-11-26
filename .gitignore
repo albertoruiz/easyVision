@@ -9,4 +9,8 @@ dist
 misc
 experiments
 findFiles.sh
+data
+packages/contrib
+packages/devel
+projects
 
