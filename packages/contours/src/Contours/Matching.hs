@@ -15,7 +15,6 @@ import Util.Misc(Mat,Vec,degree,debug,posMax,angleDiff,assert,warning)
 import Util.Rotation
 --import Classifier(Sample)
 import Util.Homogeneous(ht,desp)
-import Image.Base(Point(..),Polyline(..))
 import Util.Options(optionFromFile)
 import Contours.Base
 import Contours.Normalization

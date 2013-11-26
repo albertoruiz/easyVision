@@ -19,7 +19,6 @@ module Contours.Reduction (
 )
 where
 
-import Image.Base
 import Contours.Base
 import Data.List(maximumBy)
 import Data.Function(on)
@@ -89,6 +88,8 @@ smoothPolyline k (Open   p) = Closed (smooth k p)
 smooth k = map meanPoint . splitEvery k
   where
     meanPoint pts = Point (mean $ map px pts) (mean $ map py pts)
+    px (Point x _) = x
+    py (Point _ y) = y
 
 --------------------------------------------------------------------------------
 

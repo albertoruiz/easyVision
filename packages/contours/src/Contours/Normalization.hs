@@ -22,12 +22,12 @@ module Contours.Normalization (
 )
 where
 
-import Image.Base
-import Contours.Base(asSegments,transPol)
+import Contours.Base
 import Data.List(foldl')
 import Numeric.LinearAlgebra
 import Util.Homogeneous
 import Util.Rotation(rot3)
+import Util.Geometry(segmentLength, bounding)
 
 
 auxContour (s,sx,sy,sx2,sy2,sxy) seg@(Segment (Point x1 y1) (Point x2 y2))

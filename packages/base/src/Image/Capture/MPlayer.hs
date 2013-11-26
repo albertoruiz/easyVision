@@ -2,8 +2,8 @@
 
 -----------------------------------------------------------------------------
 {- |
-Module      :  ImagProc.Camera.Mplayer
-Copyright   :  (c) Alberto Ruiz 2006-2012
+Module      :  Image.Capture.MPlayer
+Copyright   :  (c) Alberto Ruiz 2006-2013
 License     :  GPL
 
 Maintainer  :  Alberto Ruiz (aruiz at um dot es)
@@ -14,10 +14,10 @@ Image acquisition from real cameras and other video sources using MPlayer.
 -}
 -----------------------------------------------------------------------------
 
-module ImagProc.Camera.MPlayer (
+module Image.Capture.MPlayer (
   -- * MPlayer interface
   -- | This camera works with any kind of video source accepted by MPlayer.
-  mplayer, mplayer', mpSize, askSize,
+  mplayer', mplayer, mpSize, askSize,
   saveYUV4Mpeg, yuvHeader, openYUV4Mpeg
 )where
 
@@ -44,10 +44,10 @@ mpSize k | k > 0     = Size (k*24) (k*32)
 -- It admits the url shortcuts webcam1, webcam2, and firewire,
 -- and automatically supplies the required additional parameters.
 -- The grab function returns Nothing if there are no remaining frames to read.
-mplayer' :: String                       -- ^ any url admitted by mplayer
+mplayer :: String                       -- ^ any url admitted by mplayer
          -> Size                         -- ^ desired image size (see 'mpsize')
          -> IO (IO (Maybe ImageYUV))     -- ^ function returning a new frame
-mplayer' url (Size h w) = withSystemTempFile "mplayer-fifo" $ \t _ ->  do
+mplayer url (Size h w) = withSystemTempFile "mplayer-fifo" $ \t _ ->  do
 
     verbose <- when <$> getFlag "-v"
 
@@ -109,10 +109,10 @@ mplayer' url (Size h w) = withSystemTempFile "mplayer-fifo" $ \t _ ->  do
 
 -- | The same as @mplayer'@, but it returns a grab function which exits the program if
 -- there are no remaining frames to read.
-mplayer :: String                       -- ^ any url admitted by mplayer
+mplayer' :: String                       -- ^ any url admitted by mplayer
         -> Size                         -- ^ desired image size (see 'mpsize')
         -> IO (IO ImageYUV)             -- ^ function returning a new frame
-mplayer url sz = f `fmap` mplayer' url sz where
+mplayer' url sz = f `fmap` mplayer url sz where
     f mbcam = mbcam >>= (maybe (exitWith ExitSuccess) return)
 
 ------------------------------------------------

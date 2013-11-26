@@ -15,6 +15,7 @@ Basic operations with polylines.
 -----------------------------------------------------------------------------
 
 module Contours.Base (
+    Point(..), Polyline(..), Segment(..),
     convexHull,
     perimeter,
     area, orientedArea, rev, 
@@ -28,7 +29,7 @@ module Contours.Base (
 )
 where
 
-import Image.Base
+
 --import ImagProc.Ipp.Core(size,setROI)
 import Data.List(sortBy, maximumBy, sort,foldl',tails)
 import Numeric.LinearAlgebra
@@ -37,7 +38,6 @@ import Util.Homogeneous hiding (flipx)
 import Util.Misc(Vec)
 import Data.Function(on)
 import Util.Geometry as G
-
 
 
 -- | (for an open polyline is the length)
@@ -64,34 +64,7 @@ rev (Open ps) = Open (reverse ps)
 
 ----------------------------------------------------------------------
 
-{-# DEPRECATED douglasPeuckerClosed "use reduceDP instead" #-}
-
--- | Removes nodes in closed polyline such that the orthogonal distance 
---   from the remaining line is less than a given epsilon
-douglasPeuckerClosed :: Double -> [Pixel] -> [Pixel]
-douglasPeuckerClosed eps (a:b:ls) = b : case criticalPoint (eps^2) b a ls of
-    Nothing -> [b]
-    Just c  -> left ++ right where
-        (l,_:r) = break (==c) ls
-        left = douglasPeucker' (eps^2) b c l
-        right = douglasPeucker' (eps^2) c a r
-
-{-# DEPRECATED douglasPeucker "use reduceDP instead" #-}
-
--- | Removes nodes in an open polyline such that the orthogonal distance 
---   from the remaining line is less than a given epsilon
-douglasPeucker :: Double -> [Pixel] -> [Pixel]
-douglasPeucker eps list = a: douglasPeucker' (eps^2) a b list
-    where a = head list
-          b = last list
-
-douglasPeucker' eps2 a b ls = case criticalPoint eps2 a b ls of
-    Nothing -> [b]
-    Just c  -> left ++ right where
-        (l,_:r) = break (==c) ls
-        left = douglasPeucker' eps2 a c l
-        right = douglasPeucker' eps2 c b r
-
+{-
 perpDistAux :: Int -> Int -> Double -> Int -> Int -> Int -> Int -> Double
 perpDistAux lx ly l2 x1 y1 x3 y3 = d2 where
     d2 = p2 - a'*a'/l2
@@ -106,6 +79,7 @@ perpDist (Pixel x1 y1) (Pixel x2 y2) = (f,l2) where
     l2 = fromIntegral $ lx*lx+ly*ly
     f (Pixel x3 y3) = perpDistAux lx ly l2 x1 y1 x3 y3
 
+
 criticalPoint eps p1 p2 [] = Nothing
 
 criticalPoint eps2 p1 p2 p3s = r where
@@ -114,7 +88,7 @@ criticalPoint eps2 p1 p2 p3s = r where
     r = if f p3 > eps2
         then Just p3
         else Nothing
-
+-}
 ----------------------------------------------------------------------
 
 asSegments :: Polyline -> [Segment]
@@ -129,13 +103,6 @@ transPol t (Open ps)   = Open   $ map l2p $ ht t (map p2l ps)
 p2l (Point x y) = [x,y]
 l2p [x,y] = Point x y
 
-instance Transformable Homography Polyline
-  where
-    type TResult Homography Polyline = Polyline
-    apTrans h (Closed ps) = Closed (tp h ps)
-    apTrans h (Open ps)   = Open   (tp h ps)
-
-tp h = unsafeMatDat . htm (toMatrix h) . datMat
 
 ----------------------------------------------------------
 

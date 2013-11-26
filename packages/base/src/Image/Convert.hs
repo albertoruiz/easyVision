@@ -64,9 +64,9 @@ saveRGB' (Just filename) im = do
     withImage im $ do
         hPutBuf handle (starting im) (w*h*3)
         hClose handle
-    system $ "convert -flip -size " ++ show w ++ "x" ++ show h ++ " -depth 8 rgb:"
+    _ <- system $ "convert -flip -size " ++ show w ++ "x" ++ show h ++ " -depth 8 rgb:"
              ++ (filename++".rgb ") ++ (filename++".png")
-    system $ "rm "++(filename++".rgb")
+    _ <- system $ "rm "++(filename++".rgb")
     return ()
 
 saveRGB' Nothing im = do
@@ -128,9 +128,9 @@ saveRGB filename im = do
     withImage im $ do
         mapM_ f ps
         hClose handle
-    system $ "convert -size "++show w++"x"++show h++" -depth 8 rgb:"
+    _ <- system $ "convert -size "++show w++"x"++show h++" -depth 8 rgb:"
              ++(filename++".rgb ")++filename
-    system $ "rm "++(filename++".rgb")
+    _ <- system $ "rm "++(filename++".rgb")
     return ()
 
 ----------------------------------------------------------------------
@@ -146,9 +146,9 @@ saveGray filename im = do
     withImage im $ do
         mapM_ f ps
         hClose handle
-    system $ "convert -size "++show w++"x"++show h++" -depth 8 gray:"
+    _ <- system $ "convert -size "++show w++"x"++show h++" -depth 8 gray:"
              ++(filename++".8u ")++filename
-    system $ "rm "++(filename++".8u")
+    _ <- system $ "rm "++(filename++".8u")
     return ()
 
 ----------------------------------------------------------------------
@@ -160,7 +160,7 @@ loadGray filename = do
     let fname = fixSpaces filename
     mh <- getOption "--maxHeight" h
     let (h',w') = fixSizes mh h w
-    system $ "convert -resize "++show w' ++"x"++show h'++"! "++fname++" -depth 8 gray:"
+    _ <- system $ "convert -resize "++show w' ++"x"++show h'++"! "++fname++" -depth 8 gray:"
              ++(fname++".8u ")
     handle <- openFile (filename++".8u") ReadMode
     im <- newImage undefined (Size h' w')
@@ -169,7 +169,7 @@ loadGray filename = do
     withImage im $ do
         mapM_ f ps
         hClose handle
-    system $ "rm "++(fname++".8u")
+    _ <- system $ "rm "++(fname++".8u")
     return im
 
 -- | Load an image using imagemagick's convert.
@@ -185,7 +185,7 @@ loadRGB filename = do
     -- print (h,w)
     -- print (h',w')
     --print filename
-    system $ "convert -resize "++show w' ++"x"++show h'++"! "++fname++" -depth 8 rgb:"
+    _ <- system $ "convert -resize "++show w' ++"x"++show h'++"! "++fname++" -depth 8 rgb:"
              ++(fname++".rgb")
     handle <- openFile (filename++".rgb") ReadMode
     im <- newImage undefined (Size h' w')
@@ -194,13 +194,15 @@ loadRGB filename = do
     withImage im $ do
         mapM_ f ps
         hClose handle
-    system $ "rm "++(fname++".rgb")
+    _ <- system $ "rm "++(fname++".rgb")
     return im
 
+fixSizes :: Int -> Int -> Int -> (Int, Int)
 fixSizes mh h w = (mkEven *** mkEven) $ if h > mh then (mh, (mh*w) `div` h) else (h,w)
   where
     mkEven n = ((n+1) `div` 2) * 2
 
+fixSpaces :: String -> String
 fixSpaces = concatMap f
   where
     f ' ' = "\\ "
@@ -209,12 +211,13 @@ fixSpaces = concatMap f
 getSize :: FilePath -> IO Size
 getSize imagfile = do
     s <- readProcess "identify" [imagfile] ""
-    return (g . words . map f . h . words $ s)
+    return (g . words . map f . he . words $ s)
   where
     f 'x' = ' '
     f a = a
     g [w,h] = Size (read h) (read w)
-    h = head . tail . dropWhile (not . (`elem` ["PNG","JPEG","BMP"])) -- FIXME check error
+    g _ = error "getSize"
+    he = head . tail . dropWhile (not . (`elem` ["PNG","JPEG","BMP"])) -- FIXME check error
 
 --------------------------------------------------------------------------------
 
@@ -229,11 +232,11 @@ loadRawPPM filename = do
     withImage im $ do
         if c `mod` 32 /= 0
           then do
-            let (ps,c) = rowPtrs im
-                f p = hGetBuf handle p (c*3)
+            let (ps,c') = rowPtrs im
+                f p = hGetBuf handle p (c'*3)
             mapM_ f ps
           else do
-            hGetBuf handle (starting im) (r*c*3)
+            _ <- hGetBuf handle (starting im) (r*c*3)
             return ()
             
         hClose handle
@@ -263,10 +266,12 @@ saveRawPPM filename Image{..} = do
       ]
     pixels | w `mod` 32 == 0 = bytes
 
-savePPM :: Maybe FilePath -> ImageRGB -> IO ()
-savePPM (Just filename) x = saveRawPPM filename x
+
+savePPM :: Maybe FilePath -> ImageRGB -> IO FilePath
+savePPM (Just filename) x = saveRawPPM filename x >> return filename
 
 savePPM Nothing x = do
     timename <- formattedTime
-    savePPM (Just (timename++".ppm")) x
+    let filename = timename++".ppm"
+    savePPM (Just filename) x
 

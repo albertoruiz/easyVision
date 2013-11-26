@@ -226,5 +226,3 @@ intersectionConicLine c l = h · r <| ss
 
     closestToLine p m = G.join p (dirNormal m) `meet` m
 
-    distPoints p q = norm (toVector p - toVector q) -- FIXME
-

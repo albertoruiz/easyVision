@@ -19,8 +19,7 @@ module Contours.Orientation (
 )
 where
 
-import Image.Base(Polyline(..),Segment(..))
-import Contours.Base(asSegments)
+import Contours.Base(Polyline(..),Segment(..),asSegments)
 import Data.List(sortBy, foldl')
 import Data.Complex(realPart,imagPart)
 import Util.Geometry(Point(..))

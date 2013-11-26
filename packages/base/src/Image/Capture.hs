@@ -1,7 +1,7 @@
 -----------------------------------------------------------------------------
 {- |
-Module      :  Image.Camera
-Copyright   :  (c) Alberto Ruiz 2006-12
+Module      :  Image.Capture
+Copyright   :  (c) Alberto Ruiz 2006-13
 License     :  GPL
 
 Maintainer  :  Alberto Ruiz (aruiz at um dot es)
@@ -11,16 +11,18 @@ Video sources
 -}
 -----------------------------------------------------------------------------
 
-module Image.Camera(
+module Image.Capture(
     gcam,
     readImages, readFolderIM, readFolderMP,
-    mostRecent, keepAll, parseSize
+    mostRecent, keepAll, parseSize,
+    webcam, mplayer
 )where
 
 import Image.Core
 import Image.Convert(loadRGB)
-import ImagProc.Simple(yuv2yuyv)
-import ImagProc.Camera.MPlayer
+import Image.Capture.Simple(yuv2yuyv)
+import Image.Capture.UVC(webcam)
+import Image.Capture.MPlayer
 import System.IO.Unsafe(unsafeInterleaveIO)
 import Data.List(isPrefixOf,foldl',tails,findIndex,isInfixOf,isSuffixOf,sort)
 import System.Directory(doesFileExist, getDirectoryContents)
@@ -29,7 +31,7 @@ import System.Environment(getArgs,getEnvironment)
 import Control.Concurrent
 import Control.Concurrent.MSampleVar
 import Data.IORef
-import ImagProc.Camera.UVC
+
 import Util.Options
 import Util.Misc(debug,errMsg)
 import Control.Monad
@@ -87,7 +89,7 @@ parseSize s | 'x' `elem` s = f s
     h _ = error "parseSize error"
 
 
-mplayer'' u s = fmap (fmap (fmap yuv2yuyv)) (mplayer' u s)
+mplayer'' u s = fmap (fmap (fmap yuv2yuyv)) (mplayer u s)
 
 --------------------------------------------------------------------------------
 
@@ -145,7 +147,7 @@ readFolderMP path mbsz = do
     let sz = maybe (Size 600 800) id mbsz -- TO DO: remove fixed size
     fs <- getDirectoryContents path
     let nframes = length (filter isImage fs)
-    cam <- mplayer ("mf://"++path++"/ -benchmark -loop 1") sz
+    cam <- mplayer' ("mf://"++path++"/ -benchmark -loop 1") sz
     imgs <- sequence (replicate nframes cam)
     errMsg $ show (length imgs) ++ " images in " ++ path
     return $ zip (map yuv2yuyv imgs) (map show [(1::Int)..])

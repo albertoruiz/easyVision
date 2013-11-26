@@ -61,7 +61,8 @@ import qualified Numeric.LinearAlgebra.Exterior as E
 ----------------------------------------------------------------------
 
 -- | inhomogenous 2D point
-data Point = Point {px :: !Double, py :: !Double} deriving (Eq, Show, Read)
+data Point = Point !Double !Double
+  deriving (Eq, Show, Read)
 
 instance Shaped Point where
     type Shape Point = Dim2 Double
@@ -197,11 +198,7 @@ class Transformable t x
     (◁) :: t -> x -> TResult t x
     (◁) = apTrans
 
-#if __GLASGOW_HASKELL__ < 704
-apMat :: (Array a ~ Vec, Shaped a, Array b ~ Vec, Shaped b, Array t ~ Mat, Shaped t) => (Mat -> Mat) -> t -> [a] -> [b]
-#else
 apMat :: (Vectorlike a, Vectorlike b, Matrixlike t) => (Mat -> Mat) -> t -> [a] -> [b]
-#endif
 apMat _ _ [] = []
 apMat g h xs = (map unsafeFromVector . toRows) . (<> (g.trans) (toMatrix h)) . fromRows . (map toVector) $ xs
 
@@ -614,6 +611,15 @@ instance Meet HPlane HPlane where
 data Polyline = Closed { polyPts :: [Point] }
               | Open   { polyPts :: [Point] } deriving (Show,Read)
 
+instance Transformable Homography Polyline
+  where
+    type TResult Homography Polyline = Polyline
+    apTrans h (Closed ps) = Closed (tp h ps)
+    apTrans h (Open ps)   = Open   (tp h ps)
+
+tp :: Homography -> [Point] -> [Point]
+tp h = unsafeMatDat . (<> trans (toMatrix h)) . datMat
+
 --------------------------------------------------------------------------------
 
 data Segment = Segment !Point !Point
@@ -638,6 +644,8 @@ bounding p = Closed [Point x2 y2, Point x1 y2, Point x1 y1, Point x2 y1]
     y2 = maximum ys
     xs = map px (polyPts p)
     ys = map py (polyPts p)
+    px (Point x _) = x
+    py (Point _ y) = y
 
 --------------------------------------------------------------------------------
 

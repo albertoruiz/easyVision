@@ -61,10 +61,10 @@ pixelToList :: Pixel -> [Double]
 pixelToList (Pixel r c) = [fromIntegral c, fromIntegral r]
 
 pointToList :: Point -> [Double]
-pointToList p = [px p, py p]
+pointToList (Point x y) = [x, y]
 
 listToPoint :: [Double] -> Point
-listToPoint [x,y] = Point {px = x, py= y}
+listToPoint [x,y] = Point x y
 listToPoint _ = error "listToPoint"
 
 listToPixel :: [Double] -> Pixel

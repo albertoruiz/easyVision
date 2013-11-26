@@ -1,7 +1,7 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
 
 
-module ImagProc.Simple (
+module Image.Capture.Simple (
     yuyv2rgb, yuyv2gray,
     yuv2rgb, yuv2gray,
     yuv2yuyv,

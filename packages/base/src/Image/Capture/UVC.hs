@@ -14,7 +14,7 @@ Interface to uvc cameras stolen from luvcview.
 -}
 -----------------------------------------------------------------------------
 
-module ImagProc.Camera.UVC (webcam)
+module Image.Capture.UVC (webcam)
 where
 
 import Foreign
