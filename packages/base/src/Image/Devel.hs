@@ -9,7 +9,7 @@ module Image.Devel(
     getDataFileName,
     module Image.Core,
     convert,
-    yuyv2rgb, yuv2rgb, yuv2yuyv,
+    yuyv2rgb, yuv2rgb, yuv2yuyv, gray2rgb,
     mpSize, parseSize,
     unsafePerformIO,
     CInt(..), Storable, Ptr
@@ -75,17 +75,22 @@ mpSize k | k > 0     = Size (k*24) (k*32)
 --------------------------------------------------------------------------------
 
 yuv2yuyv :: ImageYUV -> ImageYCbCr
-yuv2yuyv = wrap11 "kk" c_yuv2yuyv
+yuv2yuyv = wrap11 "yuv2yuyv" c_yuv2yuyv
 
 foreign import ccall "yuv2yuyv" c_yuv2yuyv :: Wrap11 YUV YCbCr
 
 --------------------------------------------------------------------------------
 
 yuyv2rgb :: ImageYCbCr -> ImageRGB
-yuyv2rgb = wrap11 "kk" c_yuyv2rgb
+yuyv2rgb = wrap11 "yuyv2rgb" c_yuyv2rgb
 
 foreign import ccall "yuyv2rgb" c_yuyv2rgb :: Wrap11 YCbCr RGB
 
-
+yuv2rgb :: ImageYUV -> ImageRGB
 yuv2rgb = yuyv2rgb . yuv2yuyv
+
+gray2rgb :: Image I8u -> Image I8u3
+gray2rgb = wrap11 "gray2rgb" c_gray2rgb
+
+foreign import ccall "gray2rgb" c_gray2rgb :: Wrap11 I8u I8u3
 

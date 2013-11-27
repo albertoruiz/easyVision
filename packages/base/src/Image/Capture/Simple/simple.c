@@ -15,6 +15,18 @@ int exampleInvert(IM1(src), IM1(dst)) {
     return 0;
 }
 
+int gray2rgb(IM1(src), IM1(dst)) {
+    int r,c;
+    TRAV(src,0,r,c) {
+        int v = P(src,r,c);
+        PM(dst,r,c,0)=v;
+        PM(src,r,c,1)=v;
+        PM(dst,r,c,2)=v;
+    }
+    return 0;
+}
+
+
 int yuv2yuyv(IM1(x),IM2(y)) {
     int r, c;
     unsigned char * p = xp, * q = yp;

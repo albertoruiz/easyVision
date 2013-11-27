@@ -20,9 +20,9 @@ module Vision.GUI (
 
 import Vision.GUI.Simple hiding (camera,run)
 import Vision.GUI.Util
-import Image.Convert
+import Image
 import Image.Processing
-import Image.Core
+
 
 instance Renderable (Image Float) where
     renderIn w = renderIn w . toGray
@@ -54,7 +54,7 @@ instance Renderable Channels
 camera :: Generator Channels
 camera = toRGB Vision.GUI.Util.camera
 
-toRGB :: Generator ImageRGB -> Generator Channels
+toRGB :: Generator (Image RGB) -> Generator Channels
 toRGB = fmap (fmap (fmap channelsFromRGB))
 
 run :: ITrans Channels b -> IO ()

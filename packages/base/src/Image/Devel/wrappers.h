@@ -5,7 +5,7 @@
 
 #define IM2(X) IM1(X)
 #define IM3(X) IM1(X)
-#define PM(X,r,c,p) (*(X##p+(r)*X##step+(3*(c))+(p)))
+#define PM(X,r,c,k) (*(X##p+(r)*X##step+(3*(c))+(k)))
 
 #define IMF(X) GIMG(float,X)
 #define PF(X,r,c) (*(X##p+(r)*X##step/4+(c)))
