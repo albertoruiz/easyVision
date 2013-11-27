@@ -33,7 +33,7 @@ import Vision.GUI.Trackball
 import Image.Core hiding (shift)
 import Util.Geometry hiding (join)
 --import ImagProc.Ipp(ippSetNumThreads)
-import Image.Convert(savePPM)
+import Image.Convert(saveImage)
 import Graphics.UI.GLUT hiding (RGB, Matrix, Size, None, Point,color)
 import qualified Graphics.UI.GLUT as GL
 import Data.IORef
@@ -345,7 +345,7 @@ kbdQuit :: KeyboardMouseCallback
 
 --kbdQuit (Char '\27') Down Modifiers {alt=Down} _ = leaveMainLoop >> system "killall mplayer" >> return ()
 kbdQuit (Char '\27') Down _ _ = exitWith ExitSuccess
-kbdQuit (Char   'i') Down _ _ = captureGL >>= savePPM Nothing >> return () -- FIXME flip
+kbdQuit (Char   'i') Down _ _ = captureGL >>= saveImage ".png"
 kbdQuit a Down m _            = errMsg (show a ++ " " ++ show m ++ " not defined")
 kbdQuit _ _ _ _               = return ()
 

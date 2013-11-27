@@ -41,7 +41,7 @@ import System.IO(hPutStrLn, stderr)
 import System.Time
 import System.Locale
 import Control.Applicative((<$>))
-
+import Data.Packed.Development((//))
 
 type Mat = Matrix Double
 type Vec = Vector Double
@@ -155,15 +155,6 @@ memo mx f = g where
     g w = m ! w
 
 
-myintersect' :: (Ord a) => [a] -> [a] -> [a]
-myintersect' xs ys = go xs ys [] where
-    go [] _ x = x
-    go _ [] x = x
-    go (a:as) (b:bs) x
-        | a < b = go (a:as) bs x
-        | a > b = go as (b:bs) x
-        | otherwise = go as bs (a:x)
-
 -- | intersection of two lists of ordered elements (the result is also ordered).
 intersectSorted :: (Ord a) => [a] -> [a] -> [a]
 intersectSorted xs ys = reverse (go xs ys []) where
@@ -227,11 +218,6 @@ lambdify f a b x = f (a x) (b x)
 infixr 9 .:
 (.:) :: (x -> y) -> ( a -> b-> x) -> (a -> b-> y)
 f .: g = \a b -> f (g a b)
-
--- | Postfix function application (@flip ($)@)
-(//) :: x -> (x -> y) -> y
-infixl 0 //
-(//) = flip ($)
 
 --------------------------------------------------------------------
 
