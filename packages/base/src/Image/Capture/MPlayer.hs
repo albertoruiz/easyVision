@@ -17,7 +17,7 @@ Image acquisition from real cameras and other video sources using MPlayer.
 module Image.Capture.MPlayer (
   -- * MPlayer interface
   -- | This camera works with any kind of video source accepted by MPlayer.
-  mplayer', mplayer, mpSize, askSize,
+  mplayer', mplayer, askSize,
   saveYUV4Mpeg, yuvHeader, openYUV4Mpeg
 )where
 
@@ -27,17 +27,13 @@ import Data.IORef
 import Data.List(isInfixOf,isPrefixOf)
 import Data.Maybe(listToMaybe)
 import Foreign
-import Image.Core
+import Image.Devel
 import System.Exit
 import System.IO
 import System.IO.Temp
 import System.Process(system,readProcessWithExitCode)
 import Util.Options
 
--- | Computes a 4\/3 \'good\' size for both mplayer and IPP. mpSize 20 = 640x480
-mpSize :: Int -> Size
-mpSize k | k > 0     = Size (k*24) (k*32)
-         | otherwise = error "mpSize"
 
 
 -- | Interface to mplayer (implemented using a pipe and the format yuv4mpeg).

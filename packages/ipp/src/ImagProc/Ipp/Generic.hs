@@ -10,6 +10,7 @@ module ImagProc.Ipp.Generic(
 ) where
 
 import Image.Devel
+import ImagProc.Ipp.Core
 import ImagProc.Ipp.AdHoc
 import ImagProc.Ipp.Pure
 import Numeric.LinearAlgebra(Matrix, toLists, (<>), inv, rows, cols)

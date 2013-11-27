@@ -42,9 +42,8 @@ import Control.Arrow((***),(>>>),arr)
 import Control.Monad((>=>),join)
 import Control.Applicative((<*>),(<$>))
 import Util.Geometry hiding (join)
-import Image.Core
+import Image.Devel
 import Image.Capture
-import Image.Convert
 import Vision.GUI.Arrow--(ITrans, Trans,transUI,transUI2,runT_)
 import Util.LazyIO((~>),(>~>),mkGenerator,Generator)
 import Util.Misc(replaceAt,posMin)

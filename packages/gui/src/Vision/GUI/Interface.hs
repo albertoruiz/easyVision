@@ -30,10 +30,10 @@ module Vision.GUI.Interface (
 import Vision.GUI.Types
 import Vision.GUI.Draw
 import Vision.GUI.Trackball
-import Image.Core hiding (shift)
 import Util.Geometry hiding (join)
 --import ImagProc.Ipp(ippSetNumThreads)
-import Image.Convert(saveImage)
+import Image
+import Image.Devel(shSize,pixelsToPoints)
 import Graphics.UI.GLUT hiding (RGB, Matrix, Size, None, Point,color)
 import qualified Graphics.UI.GLUT as GL
 import Data.IORef

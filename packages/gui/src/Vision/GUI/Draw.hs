@@ -32,7 +32,7 @@ module Vision.GUI.Draw
 
 import Graphics.UI.GLUT hiding (RGB, Matrix, Size, Point,color)
 import qualified Graphics.UI.GLUT as GL
-import Image.Core
+import Image.Devel
 import Util.Geometry
 --import ImagProc(resize,yuvToRGB, yCbCrToRGB, toGray,Channels(..),histogramN,blockImage)
 import Data.IORef
@@ -179,10 +179,10 @@ renderImageIn evW m t s img = do
 
 --------------------------------------------------------------------------------
 
-instance Renderable (Image Word8) where
+instance Renderable (Image I8u) where
     renderIn w = renderImageIn w Luminance UnsignedByte 1
 
-instance Renderable (Image Word24) where
+instance Renderable (Image RGB) where
     renderIn w = renderImageIn w GL.RGB UnsignedByte 3
 
 

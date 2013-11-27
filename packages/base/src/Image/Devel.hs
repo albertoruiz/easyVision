@@ -1,3 +1,6 @@
+{-# LANGUAGE ForeignFunctionInterface #-}
+
+
 module Image.Devel(
     RawImage, appI,
     Wrap11, wrap11,
@@ -5,6 +8,9 @@ module Image.Devel(
     (//), checkFFI,
     getDataFileName,
     module Image.Core,
+    convert,
+    yuyv2rgb, yuv2rgb, yuv2yuyv,
+    mpSize, parseSize,
     unsafePerformIO,
     CInt(..), Storable, Ptr
 ) where
@@ -17,6 +23,7 @@ import Foreign.Storable(Storable(..))
 import Control.Monad(when)
 import Foreign.Ptr(Ptr)
 import Util.Misc((//))
+import Image.Convert
 
 appI :: RawImage p t -> Image p -> t
 appI f img = f (ptrAt img (Pixel 0 0)) (fi.step $ img) (g r1) (g r2) (g c1) (g c2)
@@ -47,4 +54,38 @@ fi :: Int -> CInt
 fi = fromIntegral
 ti :: CInt -> Int
 ti = fromIntegral
+
+--------------------------------------------------------------------------------
+
+parseSize :: String -> Size
+parseSize s | 'x' `elem` s = f s
+            | otherwise    = mpSize (read s)
+  where
+    f = h . words . map g
+    g 'x' = ' '
+    g y = y
+    h [a,b] = Size (read b) (read a)
+    h _ = error "parseSize error"
+
+-- | Computes a 4\/3 \'good\' size for both mplayer and IPP. mpSize 20 = 640x480
+mpSize :: Int -> Size
+mpSize k | k > 0     = Size (k*24) (k*32)
+         | otherwise = error "mpSize"
+
+--------------------------------------------------------------------------------
+
+yuv2yuyv :: ImageYUV -> ImageYCbCr
+yuv2yuyv = wrap11 "kk" c_yuv2yuyv
+
+foreign import ccall "yuv2yuyv" c_yuv2yuyv :: Wrap11 YUV YCbCr
+
+--------------------------------------------------------------------------------
+
+yuyv2rgb :: ImageYCbCr -> ImageRGB
+yuyv2rgb = wrap11 "kk" c_yuyv2rgb
+
+foreign import ccall "yuyv2rgb" c_yuyv2rgb :: Wrap11 YCbCr RGB
+
+
+yuv2rgb = yuyv2rgb . yuv2yuyv
 

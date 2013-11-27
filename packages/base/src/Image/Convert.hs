@@ -17,11 +17,10 @@ module Image.Convert (
     saveImage,
     loadRGB,
     convert,
-    yuyv2rgb, yuv2rgb,
     img2mat, mat2img
 ) where
 
-import Image.Devel
+import Image.Core
 import Foreign.Ptr ( plusPtr )
 import Foreign.Marshal ( copyBytes )
 import Control.Monad ( when )
@@ -37,8 +36,7 @@ import Data.Char ( toLower )
 import qualified Data.ByteString as BS ( writeFile, append )
 import qualified Data.ByteString.Char8 as BSC ( pack )
 import Util.Misc ( formattedTime )
-import Image.Capture.Simple ( yuyv2rgb, yuv2rgb )
-
+import System.IO.Unsafe(unsafePerformIO)
 
 ----------------------------------------------------------------------
 
@@ -64,7 +62,7 @@ img2mat im = unsafePerformIO $ do
             return 0
     m <- createMatrix RowMajor r c
     withImage im $ do
-        app1 g mat (cmat m) "img2mat" >> return 0 // checkFFI "img2mat"
+        app1 g mat (cmat m) "img2mat" >> return 0
     return m
 
 ----------------------------------------------------------------------
@@ -160,7 +158,7 @@ nameext p | null things = (p,"")
 
 -- nameext ".b"
 
-saveImage :: String -> ImageRGB -> IO ()
+saveImage :: FilePath -> ImageRGB -> IO ()
 saveImage (nameext -> ("",""))    x = savePPM Nothing x >> return ()
 saveImage (nameext -> ("","ppm")) x = savePPM Nothing x >> return ()
 saveImage (nameext -> ("ppm","")) x = savePPM Nothing x >> return ()

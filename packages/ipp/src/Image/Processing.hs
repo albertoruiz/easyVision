@@ -21,7 +21,7 @@ module Image.Processing(
     ippSetNumThreads
 ) where
 
-import Image.Core
+import Image
 import ImagProc.Ipp.Generic(Pix)
 import qualified ImagProc.Ipp.Generic as G
 import ImagProc.Ipp.Pure

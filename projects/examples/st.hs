@@ -1,6 +1,6 @@
 import Vision.GUI.Simple ( Drawing(Draw), browser, runIt )
 import Image.Capture ( readImages )
-import Image.Core
+import Image.Devel
 
 
 main = do

@@ -9,8 +9,8 @@ module Image.Core (
     ptrAt,
     starting, rowPtrs,
     modifyROI, setROI,
-    Word8, Word16, Word24(..),
-    Gray, RGB, YCbCr, YUV,
+    I8u, I8u2, I8u3, Word24(..),
+    Gray, RGB, YCbCr, YUV, I32f,
     ImageGray, ImageFloat, ImageRGB, ImageYCbCr, ImageYUV,
     STImage, thawImage, runSTImage, ioRead, ioWrite, stRead, stWrite, readPixel,
     module Image.Types,
@@ -62,9 +62,14 @@ instance Storable Word24 where
     pokeElemOff pb 1 w2
     pokeElemOff pb 2 w3
 
-type RGB   = Word24
-type Gray  = Word8
-type YCbCr = Word16
+
+type I8u   = Word8
+type I8u3  = Word24
+type RGB   = I8u3
+type Gray  = I8u
+type I8u2  = Word16
+type YCbCr = I8u2
+type I32f = Float
 
 type ImageGray  = Image Gray
 type ImageRGB   = Image RGB
@@ -73,8 +78,6 @@ type ImageYCbCr = Image YCbCr
 
 type YUV = Word16
 type ImageYUV = Image YUV
-
-
 
 ptrAt :: Image t -> Pixel -> Ptr t
 ptrAt Image{..} (Pixel r c) = castPtr $ unsafeForeignPtrToPtr fp `plusPtr` (o + r*step + c*szpix)

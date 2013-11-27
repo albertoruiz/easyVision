@@ -66,23 +66,18 @@ library
                         Util.Audio
                         Util.Graph
                         Util.Camera
-                        
-                        
-                        Image.Core
-                        Image.ROI
-                        Image.Devel
-                        Image.Convert
-                        
-                        Image.Capture
 
-    other-modules:      Paths_hVision_base
-                        
+                        Image
+                        Image.Capture
+                        Image.Devel
+                        Image.ROI
+    other-modules:
+                        Image.Core
+                        Image.Convert
+                        Paths_hVision_base
                         Image.Types
-                        
                         Image.Capture.UVC
                         Image.Capture.MPlayer
-                        Image.Capture.Simple
-
 
     include-dirs:       src/Image/Devel
 
@@ -95,7 +90,7 @@ library
 
     ghc-options:        -Wall -funbox-strict-fields
 
-    
+
     if flag(uvc)
         if ! os(OSX)
             cpp-options: -DHASUVC

@@ -14,13 +14,13 @@ Video sources
 module Image.Capture(
     gcam,
     readImages, readFolderIM, readFolderMP,
-    mostRecent, keepAll, parseSize,
+    -- mostRecent, keepAll, parseSize,
     webcam, mplayer
 )where
 
 import Image.Core
 import Image.Convert(loadRGB)
-import Image.Capture.Simple(yuv2yuyv)
+import Image.Devel(yuv2yuyv,parseSize)
 import Image.Capture.UVC(webcam)
 import Image.Capture.MPlayer
 import System.IO.Unsafe(unsafeInterleaveIO)
@@ -78,17 +78,6 @@ gcam = do
 
 --------------------------------------------------------------------------------
 
-parseSize :: String -> Size
-parseSize s | 'x' `elem` s = f s
-            | otherwise    = mpSize (read s)
-  where
-    f = h . words . map g
-    g 'x' = ' '
-    g y = y
-    h [a,b] = Size (read b) (read a)
-    h _ = error "parseSize error"
-
-
 mplayer'' u s = fmap (fmap (fmap yuv2yuyv)) (mplayer u s)
 
 --------------------------------------------------------------------------------
@@ -117,7 +106,7 @@ isImage name = any g [".png",".PNG",".jpg",".JPG",".bmp",".BMP",".ppm",".PPM"]
 
 
 readFolderIM :: FilePath -> IO [(ImageRGB,String)]
--- ^ reads a list of images from a folder. Variable size, using imageMagick
+-- ^ read the images in a folder.
 readFolderIM path = do
     fs <- sort . filter isImage <$> getDirectoryContents path
     errMsg $ show (length fs) ++ " images in " ++ path
@@ -133,7 +122,7 @@ readFolderIM path = do
 
 
 readImages :: [FilePath] -> IO [ImageRGB]
--- ^ reads a list of images (variable size, using imageMagick)
+-- ^ lazily read a list of images
 readImages fs = do
     let f p = unsafeInterleaveIO . loadRGB
             . debug "loading" (const p)
@@ -142,7 +131,7 @@ readImages fs = do
 
 
 readFolderMP :: FilePath -> Maybe Size -> IO [(ImageYCbCr,String)]
--- ^ reads a list of images from a folder. Fixed size using mplayer
+-- ^ read the images in a folder (fixed size, using mplayer)
 readFolderMP path mbsz = do
     let sz = maybe (Size 600 800) id mbsz -- TO DO: remove fixed size
     fs <- getDirectoryContents path

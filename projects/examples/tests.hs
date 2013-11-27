@@ -1,6 +1,7 @@
 import Vision.GUI.Simple ( Drawing(Draw), browser, runIt )
+import Image
 import Image.Capture
-import Image.Core
+import Image.ROI
 import Image.Processing
 import Util.Misc(debug)
 import Numeric.LinearAlgebra

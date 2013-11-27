@@ -12,11 +12,12 @@ Stability   :  provisional
 -----------------------------------------------------------------------------
 
 module ImagProc.Ipp.Core
-    ( Src, src, Dst, dst, checkIPP, roiSZ
+    ( Src, src, Dst, dst, checkIPP, roiSZ, Word8, Word16
     , module ImagProc.Ipp.Structs
     , module Image.Devel
 ) where
 
+import Foreign(Word8,Word16)
 import Image.Devel
 import ImagProc.Ipp.Structs
 
