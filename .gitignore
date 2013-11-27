@@ -12,5 +12,6 @@ findFiles.sh
 data
 packages/contrib
 packages/devel
+packages/newdevel
 projects
 

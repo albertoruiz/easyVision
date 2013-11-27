@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE RecordWildCards #-}
 
 
 -----------------------------------------------------------------------------
@@ -22,13 +23,14 @@ import Vision.GUI.Simple hiding (camera,run)
 import Vision.GUI.Util
 import Image
 import Image.Processing
+import Numeric.LinearAlgebra
 
 
 instance Renderable (Image Float) where
     renderIn w = renderIn w . toGray
 
 
-{-
+
 
 instance Renderable Channels
   where
@@ -49,7 +51,7 @@ instance Renderable Channels
         histn c = hist / scalar (maxElement hist) - 0.6
           where
             hist = fromList $ histogramN [0..256] c
--}
+
 
 camera :: Generator Channels
 camera = toRGB Vision.GUI.Util.camera

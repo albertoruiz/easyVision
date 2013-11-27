@@ -22,7 +22,8 @@ module ImagProc.Ipp.AdHoc(
     crossCorr8u, crossCorr8u3, crossCorr32f,
     sqrDist8u, sqrDist8u3, sqrDist32f,
     twistColors,
-    getChannel, rgbToYUV, yuvToUV
+    getChannel, rgbToYUV, yuvToUV,
+    histogram, histogramN
 )
 where
 
@@ -521,29 +522,35 @@ canny32f (F dx, F dy) (l,h) = unsafePerformIO $ do
     free ps
     return (G r {vroi = roi})
 
+-}
+
 --------------------------------------------------------------------------------
 
 -- | Histogram of a 8u image. For instance, @histogram [0,64 .. 256] g@ computes an histogram with four bins equally spaced in the image range.
 histogram :: [Int] -- ^ bin bounds
-          -> ImageGray -- ^ source image
+          -> Image I8u -- ^ source image
           -> [Int]     -- result
-histogram bins (G im) = unsafePerformIO $ do
+histogram bins im = unsafePerformIO $ do
     let n = length bins
     pbins <- newArray (map fromIntegral bins)
     pr <- mallocArray n
-    (ippiHistogramRange_8u_C1R // dst im (vroi im)) pr pbins n // checkIPP "histogram" [im]
+    withImage im $ do
+        (ippiHistogramRange_8u_C1R // dst im) pr pbins n // checkIPP "histogram"
     r <- peekArray (n-1) pr
     free pbins
     free pr
     return (map fromIntegral r)
 
 -- normalized histogram
+histogramN :: [Int] -> Image Word8 -> [Double]
 histogramN bins im = map ((*sc).fromIntegral) h where
     h = histogram bins im
-    ROI r1 r2 c1 c2 = theROI im
+    ROI r1 r2 c1 c2 = roi im
     sc = (1.0::Double) / fromIntegral ((r2-r1+1)*(c2-c1+1))
 
 -----------------------------------------------------------------------------------
+
+{-
 
 convolution32f :: [[Float]] -> ImageFloat -> ImageFloat
 convolution32f mask img = unsafePerformIO $ do

@@ -20,19 +20,25 @@ int gray2rgb(IM1(src), IM1(dst)) {
     TRAV(src,0,r,c) {
         int v = P(src,r,c);
         PM(dst,r,c,0)=v;
-        PM(src,r,c,1)=v;
+        PM(dst,r,c,1)=v;
         PM(dst,r,c,2)=v;
     }
     return 0;
 }
 
 
-int yuv2yuyv(IM1(x),IM2(y)) {
-    int r, c;
-    unsigned char * p = xp, * q = yp;
-    TRAV(x,0,r,c) {
-        *(q++) = *(p++);
-        *(q++) = 0;
+int yuv2yuyv(IM1(s),IM2(d)) {
+    int w = sc2-sc1+1, h = sr2-sr1+1, w2 = w/2;
+    unsigned char *py = sp, *pu = py + w*h, *pv = pu + w*h/4;
+    unsigned char *d = dp;
+    int i,j;
+    for (i=0; i<h; i++) {
+        for (j=0; j<w2; j++) {
+            *(d++) = py[i*w+2*j];
+            *(d++) = pu[(i/2)*w2+j];
+            *(d++) = py[i*w+2*j+1];
+            *(d++) = pv[(i/2)*w2+j];
+        }
     }
     return 0;
 }
@@ -57,59 +63,7 @@ int yuyv2rgb(IM2(x),IM3(y)) {
     return 0;
 }
 
-
-/*
-
-      case 2 : { // YUV 420
-        IppiSize roiSize = {v->width,v->height};
-        int steps[3] = {v->width,v->width/2,v->width/2};
-        Ipp8u * dest [3] = {p, p + (v->width*v->height), p + (v->width*v->height+v->width*v->height/4)};
-        ippiYCbCr422ToYCbCr420_8u_C2P3R(v->framebuffer, v->width*2, dest, steps, roiSize);
-        return ok;
-      }
-
-      case 3: { // grayscale
-        // copy the gray plane
-        int k, d = 0;
-        unsigned char * s = v->framebuffer;
-        for(k=0; k<(v->width*v->height); k++) {
-          p[k] = s[d]; d+=2;
-        }
-        return ok;
-      }
-
-      case 0 : { // YCbCr 422
-        memcpy(p, v->framebuffer, v->width * (v->height) * 2);
-        return ok;
-      }
-
-      case 1: { // RGB
-        int k, ks=0, kd=0;
-        unsigned char * s = v->framebuffer;
-        for(k=0; k<(v->width*v->height/2); k++) {
-          int y1 = s[ks++]-16;
-          int u  = s[ks++]-128;
-          int y2 = s[ks++]-16;
-          int v  = s[ks++]-128;
-          p[kd++] = R(y1,u,v);
-          p[kd++] = G(y1,u,v);
-          p[kd++] = B(y1,u,v);
-          p[kd++] = R(y2,u,v);
-          p[kd++] = G(y2,u,v);
-          p[kd++] = B(y2,u,v);
-        }
-        return ok;
-      }
-
-      default : return 1;
-    }
-
-}
-
-*/
-
 #undef R
 #undef G
 #undef B
-
 

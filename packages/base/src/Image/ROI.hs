@@ -32,7 +32,9 @@ module Image.ROI
   roiDiv,
   roi2poly,
   poly2roi,
-  roiAt
+  roiAt,
+  topLeft,
+  bottomRight
 ) where
 
 import Image.Types
@@ -156,4 +158,11 @@ roiArray h w i j r | ok = roiGrid h w r !! ((i-1)*w+j-1)
                    | otherwise = error "roiArray"
   where
     ok = i >= 1 && i <= h && j >= 1 && j <= w && h > 0 && w > 0
+
+
+topLeft :: ROI -> Pixel
+topLeft (ROI r _ c _) = Pixel r c
+
+bottomRight :: ROI -> Pixel
+bottomRight (ROI _ r _ c) = Pixel r c
 

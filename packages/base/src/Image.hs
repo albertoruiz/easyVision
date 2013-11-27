@@ -1,5 +1,5 @@
 module Image (
-    Image(), Size(..), ROI(..), Pixel(..),
+    Image(), Size(..), ROI(..), Pixel(..), Point(..),
     I8u, I8u3, I32f, Word24(..),
     Gray, RGB,
     size, roi, modifyROI, setROI,
@@ -9,4 +9,4 @@ module Image (
 
 import Image.Core
 import Image.Convert
-
+import Util.Geometry(Point(..))
