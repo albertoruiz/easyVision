@@ -256,8 +256,13 @@ loadRawPPM filename = do
 --------------------------------------------------------------------------------
 
 saveRawPPM :: FilePath -> ImageRGB -> IO ()
-saveRawPPM filename Image{..} = do
-    BS.writeFile filename (BS.append header pixels)
+saveRawPPM filename im@Image{..} = do
+    if w `mod` 32 == 0 && False
+      then
+        BS.writeFile filename (BS.append header bytes)
+      else do
+        BS.writeFile filename header
+        appendData
   where
     Size h w = size
     header = BSC.pack . unlines $
@@ -266,7 +271,12 @@ saveRawPPM filename Image{..} = do
       , intercalate " " . map show $ [w, h]
       , "255"
       ]
-    pixels | w `mod` 32 == 0 = bytes
+    appendData = do
+        handle <- openFile filename AppendMode
+        let (ps,c) = rowPtrs im
+            f p = hPutBuf handle p (c*3)
+        withImage im $ mapM_ f ps
+        hClose handle
 
 
 savePPM :: Maybe FilePath -> ImageRGB -> IO FilePath
@@ -274,6 +284,11 @@ savePPM (Just filename) x = saveRawPPM filename x >> return filename
 
 savePPM Nothing x = do
     timename <- formattedTime
-    let filename = timename++".ppm"
+    let filename = redu timename++".ppm"
     savePPM (Just filename) x
+  where
+    redu = map g . filter (/='-')
+    g 'T' = '-'
+    g x   = x
+
 

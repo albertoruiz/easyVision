@@ -135,11 +135,11 @@ cameraView m ar near far = do
 -- | captures the contents of the current opengl window (very slow)
 captureGL :: IO ImageRGB
 captureGL = do
-    sz <- get windowSize
+    sz@(GL.Size w h) <- get windowSize
     img <- newImage undefined (evSize sz)
-    withImage img $ do
-        when (width (size img) `rem` 32 /= 0) $ putStrLn "Warning, captureGL with wrong padding"
-        readPixels (Position 0 0) sz (PixelData GL.RGB UnsignedByte (starting img))
+    let (ps,c) = rowPtrs img
+        f k ptr = readPixels (Position 0 k) (GL.Size w 1) (PixelData GL.RGB UnsignedByte ptr)
+    withImage img $ sequence_ $ zipWith f [h-1, h-2 ..] ps
     return img
 
 ----------------------------------------------------------------

@@ -1,6 +1,6 @@
 module Image.Processing(
     -- * basic functions
-    Image(), Pix(), size, roi, setROI, modifyROI,
+    Image(), Pix(), Size(..), size, ROI(..), roi, setROI, modifyROI,
     G.constant, set, copy,
     -- * spatial transformations
     resize, G.resizeFull, G.warp, warpon, uradial,
