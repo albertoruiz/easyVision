@@ -34,15 +34,17 @@ import Util.Misc((//))
 import Control.Monad(when)
 import Image.Types
 import Image.ROI
-
+import Data.Binary
+import Control.DeepSeq
+import Control.Applicative
 
 
 data Image t = Image
     { size  :: Size
     , roi   :: ROI
-    , bytes :: ByteString
     , step  :: Int
     , szpix :: Int
+    , bytes :: ByteString
     }
 
 data Word24 = Word24 {-# UNPACK #-} !Word8
@@ -173,4 +175,15 @@ stWrite :: Storable t => STImage s t -> Pixel -> t -> ST s ()
 stWrite (STImage x) p v = unsafeIOToST $ ioWrite x p v
 
 --------------------------------------------------------------------------------
+
+instance Binary (Image t)
+  where
+    put Image{..} = put size >> put roi >> put step >> put szpix >> put bytes
+    get = Image <$> get <*> get <*> get <*> get <*> get
+
+--------------------------------------------------------------------------------
+
+instance NFData (Image t)
+  where
+    rnf = rnf . bytes
 

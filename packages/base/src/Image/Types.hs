@@ -21,8 +21,16 @@ module Image.Types
 import Util.Geometry(Point(..))
 import Numeric.LinearAlgebra
 import Util.Homogeneous(ht)
+import Data.Binary
+import Control.Applicative
 
-data Size  = Size  {height :: !Int, width :: !Int} deriving (Show, Eq)
+data Size  = Size  {height :: !Int, width :: !Int}
+  deriving (Show, Eq)
+
+instance Binary Size
+  where
+    put (Size h w) = put h >> put w
+    get = Size <$> get <*> get
 
 shSize :: Size -> String
 shSize (Size h w) = show w ++"x"++ show h
@@ -39,7 +47,13 @@ limitSize mx (Size h w)
 
 
 -- | ROI (upper row) (lower row) (leftmost column) (rightmost column)
-data ROI = ROI !Int !Int !Int !Int deriving (Show,Read,Eq)
+data ROI = ROI !Int !Int !Int !Int
+  deriving (Show,Read,Eq)
+
+instance Binary ROI
+  where
+    put (ROI r1 r2 c1 c2) = put r1 >> put r2 >> put c1 >> put c2
+    get = ROI <$> get <*> get <*> get <*> get
 
 
 -- | Raw image coordinates, Pixel row column
