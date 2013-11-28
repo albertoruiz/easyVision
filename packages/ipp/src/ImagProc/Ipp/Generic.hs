@@ -8,7 +8,8 @@ module ImagProc.Ipp.Generic(
     resizeFull,
     constant,
     blockImage,
-    Channels(..),channelsFromRGB, grayscale, grayf
+    Channels(..),channelsFromRGB, grayscale, grayf,
+    NPix(..)
 ) where
 
 import Image.Devel
@@ -245,4 +246,20 @@ uradialG :: (Float -> Float -> Float -> Float -> Float -> Float -> Image p -> Im
 uradialG gen f k im = gen fp fp (fromIntegral w / 2) (fromIntegral h / 2) k 0 im
         where Size h w = size im
               fp = f * fromIntegral w / 2
+
+--------------------------------------------------------------------------------
+
+class Pix p => NPix p
+  where
+    maxIdx :: Image p -> (p, Pixel)
+
+
+instance NPix Word8
+  where
+    maxIdx = maxIndx8u
+    
+
+instance NPix Float
+  where
+    maxIdx = maxIndx32f
 

@@ -1,6 +1,6 @@
 module Image.Processing(
     -- * Types
-    Image(), Pix(), Size(..), ROI(..),
+    Image(), Pix(), NPix(), Size(..), ROI(..),
     -- * basic functions
     size, roi, setROI, modifyROI,
     G.constant, set, zeroP, copy, G.blockImage,
@@ -15,7 +15,7 @@ module Image.Processing(
     -- * threshold and comparison
     thresholdVal32f, thresholdVal8u,
     compareC8u, compare8u, IppCmp(..),
-    minmax,maxIndx32f,maxIndx8u,
+    minmax,maxIdx,
     maxEvery, minEvery,
     maxEvery8u, minEvery8u,
     otsuThreshold,
@@ -41,7 +41,7 @@ module Image.Processing(
 ) where
 
 import Image
-import ImagProc.Ipp.Generic(Pix)
+import ImagProc.Ipp.Generic(Pix,NPix)
 import qualified ImagProc.Ipp.Generic as G
 import ImagProc.Ipp.Pure
 import ImagProc.Ipp.AdHoc
@@ -58,4 +58,6 @@ crossCorr a b = G.crossCorr a b
 sqrDist a b = G.sqrDist a b
 zeroP :: Pix p => p
 zeroP = G.zeroP
+
+maxIdx x = G.maxIdx x
 
