@@ -18,13 +18,15 @@ Additional info and support for degenerate cases by Pedro E. López de Teruel.
 -----------------------------------------------------------------------------
 
 module Contours.Clipping (
+    -- * Normal use
     clip, ClipMode(..),
+    -- * Extra information
     preclip,
     deltaContour
 )
 where
 
-import ImagProc.Base
+import Util.Geometry
 import Contours.Base(orientedArea,rev)
 import Util.Misc(debug)
 

@@ -6,8 +6,8 @@ module Vision.Apps.Contours.Polygons (
     polygons, getFlats,  InfoPoint(..), extendedContour
 ) where
 
-import Vision.GUI
-import ImagProc
+import Vision.GUI.Simple
+import Util.Geometry
 import Contours hiding (contours)
 import Control.Arrow((***),(&&&))
 import Control.Applicative

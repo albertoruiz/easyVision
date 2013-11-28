@@ -20,7 +20,7 @@ extra-source-files:     src/Contours/wrappers.h
 extra-tmp-files:
 
 library
-    Build-Depends:      base >= 3 && < 5, hmatrix, imagproc, contours, prcv-util
+    Build-Depends:      base >= 3 && < 5, hmatrix, hVision-base, hVision-contours
 
     hs-source-dirs:     src
 
@@ -32,7 +32,7 @@ library
                         
     include-dirs:       src/Contours
 
-    cc-options:         -O3 -msse2 -Wall
+    cc-options:         -O4 -msse2 -Wall
 
     ghc-prof-options:   -auto-all
 

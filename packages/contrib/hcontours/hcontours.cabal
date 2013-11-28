@@ -19,8 +19,7 @@ extra-tmp-files:        hcontours.buildinfo
 extra-source-files:     src/ImagProc/Contrib/Contours/struct.h
 
 library
-    Build-Depends:      base >= 3 && < 5, imagproc >= 0.1, prcv-util >= 0.1,
-                        ev-gui, contours, camera, hmatrix
+    Build-Depends:      base >= 3 && < 5, hmatrix, hVision-base, hVision-gui
 
     hs-source-dirs:     src
 

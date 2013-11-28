@@ -159,8 +159,8 @@ ioRead :: Storable t => Image t -> Pixel -> IO t
 ioRead x p = withImage x $ peek (ptrAt x p)
 
 {-# INLINE readPixel #-}
-readPixel :: Storable a => Pixel -> Image a -> a
-readPixel p x = B.inlinePerformIO (ioRead x p)
+readPixel :: Storable a => Image a -> Pixel -> a
+readPixel x p = B.inlinePerformIO (ioRead x p)
 
 {-# INLINE ioWrite #-}
 ioWrite :: Storable t => Image t -> Pixel -> t -> IO ()

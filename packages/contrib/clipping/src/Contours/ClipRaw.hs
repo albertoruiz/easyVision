@@ -25,7 +25,8 @@ module Contours.ClipRaw (
 )
 where
 
-import ImagProc.Ipp.Core
+import Util.Geometry
+import Image.Devel
 import Foreign.C.Types
 import Foreign.Ptr
 import Foreign.Marshal
@@ -60,7 +61,6 @@ data ClipMode = ClipIntersection
 --------------------------------------------------------------------------------
 
 preclip :: ClipMode -> Polyline -> Polyline -> (([(Polyline, [Int])],Int),Int,Int)
--- ^ interface to C function to compute set operation and origin for each vertex
 preclip mode (Closed a') (Closed b') = unsafePerformIO $ do
     ppxs <- malloc
     ppys <- malloc
@@ -166,6 +166,11 @@ preclip mode (Closed a') (Closed b') = unsafePerformIO $ do
     free ppAlphaB
     
     return (r, n, insideCode)
+  where
+    px (Point x _) = x
+    py (Point _ y) = y
+
+
 
 preclip _ _ _ = error "clip on open polylines not defined"
 

@@ -10,12 +10,11 @@ module Util.Camera (
 ) where
 
 
-import Vision.GUI
-import Image.Base hiding (Pixel(..))
-import Image.Core(ImageFloat,size)
+import Vision.GUI.Simple
+import Image(Image,Size(..),size)
 import Numeric.LinearAlgebra
 import Numeric.LinearAlgebra.Util((¦),(#),row,norm,diagl)
-import ImagProc(resize)
+import Image.Processing(resize)
 import Vision.Camera(sepCam,computeCamera,computeHomography,computeLinearPose)
 import Util.Geometry
 import Util.Estimation
@@ -23,6 +22,7 @@ import Data.Function(on)
 import Util.Misc(debugMat,debug,degree,median,Mat)
 import Util.Rotation
 
+type ImageFloat = Image Float
 
 auxImg = resize (Size 256 256) -- . float . grayscale . channelsFromRGB
 

@@ -14,23 +14,21 @@ Interface to optimized C implementation of subpixel contour extraction.
 -----------------------------------------------------------------------------
 
 module ImagProc.Contrib.Contours (
-    npContours, NPParam,
-    compute_HoG
+    npContours, NPParam(..)
+--   , compute_HoG
 ) where
 
-import ImagProc.Ipp.Core
-import Foreign.Ptr
-import Foreign.ForeignPtr
-import Foreign.Storable
-import Foreign.Marshal hiding (alloca)
-import System.IO.Unsafe(unsafePerformIO)
-import Foreign.C.Types
+import Image.Devel
+import Foreign.Storable ( Storable(peek) )
+import Foreign.Marshal ( peekArray, copyArray, malloc, free )
+import Foreign.C.Types ( CInt(CInt) )
 import Vision.GUI.Parameters
-import Data.Packed.Development(createVector, app1, vec)
+import Data.Packed.Development ( createVector, app1, vec )
 import Numeric.LinearAlgebra hiding (step)
 import ImagProc.Contrib.Contours.Structs
-import Control.Monad(when)
-import Foreign(Word8)
+import Control.Monad ( when )
+import Foreign ( Word8 )
+import Util.Geometry ( Polyline(Closed, Open), Point(Point) )
 
 --------------------------------------------------------------------------------
 
@@ -41,7 +39,7 @@ foreign import ccall unsafe "get_contours" get_contours
     -> CInt -> CInt                                -- th minlen
     -> Ptr TContours                               -- ptr contours
     -> CInt                                        -- options
-    -> IO Int
+    -> IO CInt
 
 foreign import ccall unsafe "pack_contours" pack_contours
     :: Ptr TContours                               -- ptr contours
@@ -52,27 +50,29 @@ foreign import ccall unsafe "free_mem_contours" free_mem_contours
     :: Ptr TContours
     -> IO ()
 
+{-
 foreign import ccall unsafe "compute_HoG" compute_HoG
     :: Ptr TContours -> CInt -> CInt -> Ptr Float
     -> IO ()
+-}
 
 --------------------------------------------------------------------------------
 
 rawContours :: Int -> Int -> CInt -> Bool -> Float -> ImageGray
             -> [(CInt, (Vector Float, Vector Float))]
 rawContours th minlen options pack thPack imgSrc = unsafePerformIO $ do
-    let G im = modifyROI (shrink (5,5)) imgSrc
-        v z = fi . z . vroi $ im
+    let im = modifyROI (shrink (5,5)) imgSrc
+        ROI r1 r2 c1 c2 = roi im
+        v = fi
 
     ptrConts <- malloc
 
-    --putStrLn "entro"
-    _ok <- get_contours (ptr im) (fi.step $ im) (v c1) (v c2) (v r1) (v r2)
-                        (fi.width.isize $ im) (fi.height.isize $ im)
-                        (fi th) (fi minlen)
-                        ptrConts
-                        options
-    --putStrLn "salgo"
+    withImage im $ do
+        get_contours (starting im) (fi .step $ im) (v c1) (v c2) (v r1) (v r2)
+                     (fi.width.size $ im) (fi.height.size $ im)
+                     (fi th) (fi minlen)
+                     ptrConts
+                     options // checkFFI "rawContours"
 
     when pack $ do
         --putStrLn "pack..."
@@ -103,7 +103,6 @@ rawContours th minlen options pack thPack imgSrc = unsafePerformIO $ do
                 --putStrLn "vectors copied";  print (dim xs, dim ys)
                 return (takesV c' xs, takesV c' ys)
 
-    touchForeignPtr.fptr $ im
 
     free_mem_contours ptrConts
     free (ptrConts)

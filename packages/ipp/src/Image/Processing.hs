@@ -3,7 +3,7 @@ module Image.Processing(
     Image(), Pix(), Size(..), ROI(..),
     -- * basic functions
     size, roi, setROI, modifyROI,
-    G.constant, set, copy, G.blockImage,
+    G.constant, set, zeroP, copy, G.blockImage,
     -- * spatial transformations
     resize, G.resizeFull, G.warp, warpon, uradial,
     -- * logical functions
@@ -50,4 +50,6 @@ warpon i l = G.warpon i l
 uradial f g i = G.uradial f g i
 crossCorr a b = G.crossCorr a b
 sqrDist a b = G.sqrDist a b
+zeroP :: Pix p => p
+zeroP = G.zeroP
 
