@@ -23,7 +23,10 @@ module ImagProc.Ipp.AdHoc(
     sqrDist8u, sqrDist8u3, sqrDist32f,
     twistColors,
     getChannel, rgbToYUV, yuvToUV,
-    histogram, histogramN
+    histogram, histogramN,
+    floodFill8u, floodFill8uGrad,
+    minmax,maxIndx32f,maxIndx8u,
+    otsuThreshold
 )
 where
 
@@ -35,6 +38,7 @@ import Control.Monad(when)
 import ImagProc.Ipp.Auto
 import Data.ByteString.Internal as B
 import Foreign.Ptr(plusPtr,castPtr)
+import Foreign.Storable(peek)
 
 
 -- | Writes into a existing image a desired value in a specified roi.
@@ -258,52 +262,59 @@ yuvToRGB (Y im) = unsafePerformIO $ do
     return (C r)
 
 
-
+-}
 ------------------------------------------------------------------
 
 -- | Fills (as a side effect) a connected component in the image, starting at the seed pixel. It returns
 -- the enclosing ROI, area and value. This is the 8con version.
-floodFill8u :: ImageGray -> Pixel -> CUChar -> IO (ROI, Int, CUChar)
-floodFill8u (G im) (Pixel r c) val = do
-    let roi@(ROI r1 r2 c1 c2) = vroi im
+floodFill8u :: Image I8u -> Pixel -> I8u -> IO (ROI, Int, I8u)
+floodFill8u im (Pixel r c) val = do
+    let droi@(ROI r1 r2 c1 c2) = roi im
     pregion <- malloc
     pbufsize <- malloc
-    (ippiFloodFillGetSize (roiSZ roi)) pbufsize // checkIPP "ippiFloodFillGetSize" []
+    (ippiFloodFillGetSize (roiSZ droi)) pbufsize // checkIPP "ippiFloodFillGetSize"
     bufsize <- peek pbufsize
     buf <- mallocBytes (fromIntegral bufsize)
     free pbufsize
-    (ippiFloodFill_8Con_8u_C1IR // dst im (vroi im)) (IppiPoint (fi $ c-c1) (fi $ r-r1)) val pregion buf // checkIPP "ippiFloodFill_8Con_8u_C1IR" [im]
+    withImage im $ do
+        (ippiFloodFill_8Con_8u_C1IR // dst im) (IppiPoint (fi $ c-c1) (fi $ r-r1)) val pregion buf // checkIPP "ippiFloodFill_8Con_8u_C1IR"
     free buf
     IppiConnectedComp area value0 _ _ (IppiRect x y w h) <- peek pregion
     free pregion
     return (ROI (r1+ ti y) (r1+ti y+ti h-1) (c1+ti x) (c1+ti x+ti w-1), round area, round value0)
+
+
 
 -- | Fills (as a side effect) a connected component in the image, starting at the seed pixel.
 -- This version admits a lower and higher difference in the pixel values.
 -- It returns the enclosing ROI, area and value. This is the 8con version.
-floodFill8uGrad :: ImageGray -> Pixel -> CUChar -> CUChar -> CUChar-> IO (ROI, Int, CUChar)
-floodFill8uGrad (G im) (Pixel r c) dmin dmax val = do
-    let roi@(ROI r1 r2 c1 c2) = vroi im
+floodFill8uGrad :: Image I8u -> Pixel -> I8u -> I8u -> I8u-> IO (ROI, Int, I8u)
+floodFill8uGrad im (Pixel r c) dmin dmax val = do
+    let droi@(ROI r1 r2 c1 c2) = roi im
     pregion <- malloc
     pbufsize <- malloc
-    ippiFloodFillGetSize (roiSZ roi) pbufsize // checkIPP "ippiFloodFillGetSize" []
+    ippiFloodFillGetSize (roiSZ droi) pbufsize // checkIPP "ippiFloodFillGetSize"
     bufsize <- peek pbufsize
     buf <- mallocBytes (fromIntegral bufsize)
     free pbufsize
-    (ippiFloodFill_Grad8Con_8u_C1IR // dst im (vroi im)) (IppiPoint (fi $ c-c1) (fi $ r-r1)) val dmin dmax pregion buf // checkIPP "ippiFloodFill_Grad8Con_8u_C1IR" [im]
+    withImage im $ do
+        (ippiFloodFill_Grad8Con_8u_C1IR // dst im) (IppiPoint (fi $ c-c1) (fi $ r-r1)) val dmin dmax pregion buf // checkIPP "ippiFloodFill_Grad8Con_8u_C1IR"
     free buf
     IppiConnectedComp area value0 _ _ (IppiRect x y w h) <- peek pregion
     free pregion
     return (ROI (r1+ ti y) (r1+ti y+ti h-1) (c1+ti x) (c1+ti x+ti w-1), round area, round value0)
 
+
 ----------------------------------------------------------------
 
+
 -- | Returns the minimum and maximum value in an image32f
-minmax :: ImageFloat -> (Float,Float)
-minmax (F im) = unsafePerformIO $ do
+minmax :: Image Float -> (Float,Float)
+minmax im = unsafePerformIO $ do
     mn <- malloc
     mx <- malloc
-    (ippiMinMax_32f_C1R // dst im (vroi im)) mn mx // checkIPP "minmax" [im]
+    withImage im $ do
+        (ippiMinMax_32f_C1R // dst im) mn mx // checkIPP "minmax"
     a <- peek mn
     b <- peek mx
     free mn
@@ -311,52 +322,40 @@ minmax (F im) = unsafePerformIO $ do
     return (a,b)
 
 
--- | Returns the maximum value and its position in the roi of an image32f. The position is relative to the ROI.
-maxIndx :: ImageFloat -> (Float,Pixel)
-maxIndx (F im) = unsafePerformIO $ do
+maxIndx32f :: Image Float -> (Float,Pixel)
+maxIndx32f im = unsafePerformIO $ do
     mx <- malloc
     px <- malloc
     py <- malloc
-    (ippiMaxIndx_32f_C1R // dst im (vroi im)) mx px py // checkIPP "maxIndx" [im]
+    withImage im $ do
+        (ippiMaxIndx_32f_C1R // dst im) mx px py // checkIPP "maxIndx"
     v <- peek mx
     x <- peek px
     y <- peek py
     free mx
     free px
     free py
-    return (v,Pixel (fromIntegral y) (fromIntegral x))
-
--- | Returns the maximum value and its position in the roi of an image32f. The position is relative to the image.
-maxIndx32f :: ImageFloat -> (Float,Pixel)
-maxIndx32f (F im) = unsafePerformIO $ do
-    let roi@(ROI r1 r2 c1 c2) = vroi im
-    mx <- malloc
-    px <- malloc
-    py <- malloc
-    (ippiMaxIndx_32f_C1R // dst im (vroi im)) mx px py // checkIPP "maxIndx" [im]
-    v <- peek mx
-    x <- peek px
-    y <- peek py
-    free mx
-    free px
-    free py
+    let droi@(ROI r1 _ c1 _) = roi im
     return (v,Pixel (r1+fromIntegral y) (c1+fromIntegral x))
 
--- | Returns the maximum value and its position in the roi of an image8u. The position is relative to the image.
-maxIndx8u :: ImageGray -> (CUChar,Pixel)
-maxIndx8u (G im) = unsafePerformIO $ do
-    let roi@(ROI r1 r2 c1 c2) = vroi im
+
+maxIndx8u :: Image I8u -> (I8u,Pixel)
+maxIndx8u im = unsafePerformIO $ do
     mx <- malloc
     px <- malloc
     py <- malloc
-    (ippiMaxIndx_8u_C1R // dst im roi) mx px py // checkIPP "maxIndx8u" [im]
+    withImage im $ do
+        (ippiMaxIndx_8u_C1R // dst im) mx px py // checkIPP "maxIndx8u"
     v <- peek mx
     x <- peek px
     y <- peek py
     free mx
     free px
     free py
+    let droi@(ROI r1 _ c1 _) = roi im
     return (v,Pixel (r1 + fromIntegral y) (c1 + fromIntegral x))
+
+{-
 
 ----------------------------------------------------------------------
 
@@ -408,14 +407,19 @@ sum32f (F im) = unsafePerformIO $ do
     free pf
     return r
 
--- | Computes the Otsu threshold of a 8u image, useful for binarization
-otsuThreshold :: ImageGray -> CUChar
-otsuThreshold (G im) = unsafePerformIO $ do
+-}
+
+
+otsuThreshold :: Image I8u -> I8u
+otsuThreshold im = unsafePerformIO $ do
     pf <- malloc
-    (ippiComputeThreshold_Otsu_8u_C1R // dst im (vroi im)) pf // checkIPP "otsuThreshold" [im]
+    withImage im $ do
+        (ippiComputeThreshold_Otsu_8u_C1R // dst im) pf // checkIPP "otsuThreshold"
     r <- peek pf
     free pf
     return r
+
+{-
 
 ---------------------------------------------------------
 
@@ -768,25 +772,6 @@ remap32f (F xmap, F ymap, buffer) mode (F im) = unsafePerformIO $ do
         (ippiRemap_32f_C1R (castPtr $ ptr im) (roiSZ $ vroi im) (step im) prect (castPtr $ ptr xmap) (step xmap) (castPtr $ ptr ymap) (step ymap) // dst r (vroi r)) (interCode mode) // checkIPP "ippiRemap_8u_C1R" [im,xmap,ymap]
     return (F r)
 
-
----------------------------------------------------------------
-
--- | Extracts the data in a I32f image into a list of lists.
-toListsF :: ImageFloat -> [[Float]]
-toListsF im = unsafePerformIO $ do
-    let sz = roiSize (theROI im)
-    r <- image sz
-    copyROI32f im (theROI im) r (theROI r)
-    getData32f r
-
--- | Creates a new image from a list of lists of pixel values
-fromListsF :: [[Float]] -> ImageFloat
-fromListsF fs = unsafePerformIO $ do
-    let r = length fs
-        c = length (head fs)
-    im <- image (Size r c)
-    setData32f im fs
-    return im
 
 --------------------------------------------------------------------------------
 

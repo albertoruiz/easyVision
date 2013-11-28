@@ -36,7 +36,7 @@ library
 
     exposed-modules:    Image.Processing
 
---    other-modules:
+    other-modules:
                         ImagProc.Ipp.Generic
                         ImagProc.Ipp.Pure
                         ImagProc.Ipp.Wrappers
@@ -46,6 +46,7 @@ library
                         ImagProc.Ipp.Structs
                         ImagProc.Ipp.AutoGen
                         ImagProc.Ipp.Auto
+                        ImagProc.Ipp.Contour
 
 
                         --ImagProc
