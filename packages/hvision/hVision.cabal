@@ -29,7 +29,7 @@ library
                         Vision.Apps.Contours
                         Vision.Apps.Contours.Polygons
                         Vision.Apps.Show
-                        Util.Camera
+                        Util.ShCamera
                         Vision.GUI
 
     ghc-prof-options:   -auto-all

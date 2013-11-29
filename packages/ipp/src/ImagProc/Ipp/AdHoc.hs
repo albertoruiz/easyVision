@@ -26,7 +26,8 @@ module ImagProc.Ipp.AdHoc(
     histogram, histogramN,
     floodFill8u, floodFill8uGrad,
     minmax,maxIndx32f,maxIndx8u,
-    otsuThreshold
+    otsuThreshold,
+    sum8u, sum32f
 )
 where
 
@@ -269,7 +270,7 @@ yuvToRGB (Y im) = unsafePerformIO $ do
 -- the enclosing ROI, area and value. This is the 8con version.
 floodFill8u :: Image I8u -> Pixel -> I8u -> IO (ROI, Int, I8u)
 floodFill8u im (Pixel r c) val = do
-    let droi@(ROI r1 r2 c1 c2) = roi im
+    let droi@(ROI r1 _ c1 _) = roi im
     pregion <- malloc
     pbufsize <- malloc
     (ippiFloodFillGetSize (roiSZ droi)) pbufsize // checkIPP "ippiFloodFillGetSize"
@@ -290,7 +291,7 @@ floodFill8u im (Pixel r c) val = do
 -- It returns the enclosing ROI, area and value. This is the 8con version.
 floodFill8uGrad :: Image I8u -> Pixel -> I8u -> I8u -> I8u-> IO (ROI, Int, I8u)
 floodFill8uGrad im (Pixel r c) dmin dmax val = do
-    let droi@(ROI r1 r2 c1 c2) = roi im
+    let droi@(ROI r1 _ c1 _) = roi im
     pregion <- malloc
     pbufsize <- malloc
     ippiFloodFillGetSize (roiSZ droi) pbufsize // checkIPP "ippiFloodFillGetSize"
@@ -335,7 +336,7 @@ maxIndx32f im = unsafePerformIO $ do
     free mx
     free px
     free py
-    let droi@(ROI r1 _ c1 _) = roi im
+    let ROI r1 _ c1 _ = roi im
     return (v,Pixel (r1+fromIntegral y) (c1+fromIntegral x))
 
 
@@ -352,7 +353,7 @@ maxIndx8u im = unsafePerformIO $ do
     free mx
     free px
     free py
-    let droi@(ROI r1 _ c1 _) = roi im
+    let ROI r1 _ c1 _ = roi im
     return (v,Pixel (r1 + fromIntegral y) (c1 + fromIntegral x))
 
 {-
@@ -389,25 +390,29 @@ copyMask8u (G im) (G mask) = unsafePerformIO $ do
     ippiCopy_8u_C1MR // src im roi // dst r roi // src mask roi // checkIPP "copyMask8uf" [im,mask]
     return $ G r {vroi = roi}
 
+-}
+
 
 -- | Sum of all pixels in the roi a 8u image
-sum8u :: ImageGray -> Double
-sum8u (G im) = unsafePerformIO $ do
+sum8u :: Image I8u -> Double
+sum8u im = unsafePerformIO $ do
     pf <- malloc
-    (ippiSum_8u_C1R // dst im (vroi im)) pf // checkIPP "sum8u" [im]
+    withImage im $ do
+        (ippiSum_8u_C1R // dst im) pf // checkIPP "sum8u"
     r <- peek pf
     free pf
     return r
 
-sum32f :: ImageFloat -> Double
-sum32f (F im) = unsafePerformIO $ do
+sum32f :: Image Float -> Double
+sum32f im = unsafePerformIO $ do
     pf <- malloc
-    (ippiSum_32f_C1R // dst im (vroi im)) pf (codeAlgHint AlgHintNone) // checkIPP "sum32f" [im]
+    withImage im $ do
+        (ippiSum_32f_C1R // dst im) pf (codeAlgHint AlgHintNone) // checkIPP "sum32f"
     r <- peek pf
     free pf
     return r
 
--}
+
 
 
 otsuThreshold :: Image I8u -> I8u

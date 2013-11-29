@@ -13,7 +13,8 @@ Manipulation of regions of interest.
 -----------------------------------------------------------------------------
 
 module Image.ROI
-( roiSize,
+( mkROI,
+  roiSize,
   fullROI,
   shrink,
   shift,
@@ -39,6 +40,9 @@ module Image.ROI
 
 import Image.Types
 import Util.Geometry
+
+mkROI :: Pixel -> Size -> ROI
+mkROI (Pixel r c) (Size h w) = ROI r (r+h-1) c (c+w-1)
 
 roiSize :: ROI -> Size
 roiSize (ROI a b x y) = Size { height = b-a+1, width = y-x+1 }

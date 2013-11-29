@@ -8,6 +8,7 @@ module ImagProc.Ipp.Generic(
     resizeFull,
     constant,
     blockImage,
+    crossCorrLoc,
     Channels(..),channelsFromRGB, grayscale, grayf,
     NPix(..)
 ) where
@@ -246,6 +247,17 @@ uradialG :: (Float -> Float -> Float -> Float -> Float -> Float -> Image p -> Im
 uradialG gen f k im = gen fp fp (fromIntegral w / 2) (fromIntegral h / 2) k 0 im
         where Size h w = size im
               fp = f * fromIntegral w / 2
+
+--------------------------------------------------------------------------------
+
+crossCorrLoc :: Pix p => Image p -> Image p -> Image Float -> (Float, ROI)
+crossCorrLoc t img corr = (v, mkROI (Pixel (r-ho) (c-wo)) szrt)
+  where
+    (v,Pixel r c) = maxIdx corr
+    Pixel r1 c1 = topLeft (roi corr)
+    szrt@(Size ht wt) = roiSize (roi t)
+    ho = ht `div` 2
+    wo = wt `div` 2
 
 --------------------------------------------------------------------------------
 

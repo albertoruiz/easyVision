@@ -12,6 +12,7 @@ module Image.Processing(
     (.*),(.+),
     (|+|),(|-|),absDiff,(|*|),(|/|), abs32f, sqrt32f,
     addC8u, add8u, absDiff8u, sub8u, sub8uRel,
+    sum8u,sum32f,
     -- * threshold and comparison
     thresholdVal32f, thresholdVal8u,
     compareC8u, compare8u, IppCmp(..),
@@ -27,7 +28,7 @@ module Image.Processing(
     sobelVert, sobelHoriz,
     gauss, gauss8u, laplace, median, highPass8u, Mask(..),
     -- * matching
-    crossCorr, sqrDist,
+    crossCorr, G.crossCorrLoc, sqrDist,
     -- * contours
     contours, localContours,
     -- * color transformations

@@ -1,7 +1,7 @@
 {-# LANGUAGE RecordWildCards, FlexibleContexts #-}
 
 -- additional tools for camera analysis and graphic representation
-module Util.Camera (
+module Util.ShCamera (
     CameraInfo(..),
     infoCam,
     showCam,

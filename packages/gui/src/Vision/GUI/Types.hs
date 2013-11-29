@@ -27,6 +27,7 @@ module Vision.GUI.Types
 , prepZoom, unZoom
 , withOrtho2D
 , winTitle
+, setRegion
 ) where
 
 import Graphics.UI.GLUT hiding (RGB, Matrix, Size, Point,color,clearColor,windowTitle,blend)
@@ -42,6 +43,7 @@ import Data.IORef
 import Util.Misc(debug)
 import Control.Concurrent
 import Util.Geometry(HPoint(..),Point3D(..),HPoint3D(..))
+import Image.ROI(poly2roi)
 
 ------------------------------------------------------------
 
@@ -313,6 +315,10 @@ blend d = Raw $ do
     GL.blendFunc   GL.$= (GL.SrcAlpha, GL.OneMinusSrcAlpha)
     render d
     GL.blend GL.$= GL.Disabled
+
+
+setRegion :: WinRegion -> Image p -> Image p
+setRegion (p1,p2) x = setROI (poly2roi (size x) (Closed [p1,p2])) x
 
 -----------------------------------------
 
