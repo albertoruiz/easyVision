@@ -9,6 +9,7 @@ module ImagProc.Ipp.Generic(
     constant,
     blockImage,
     crossCorrLoc,
+    (.<.), (.>.), otsuBinarize,
     Channels(..),channelsFromRGB, grayscale, grayf,
     NPix(..)
 ) where
@@ -326,4 +327,16 @@ instance NPix Float
     filterBox = filterBox32f
     gauss = gauss32f
     convolution = filter32f
+
+--------------------------------------------------------------------------------
+
+infix 4 .<., .>.
+
+(.<.), (.>.) :: Image I8u -> Int -> Image I8u
+
+img .<. v = compareC8u (fromIntegral v) IppCmpLess img
+
+img .>. v = compareC8u (fromIntegral v) IppCmpGreater img
+
+otsuBinarize x = x .>. fromIntegral (otsuThreshold x)
 

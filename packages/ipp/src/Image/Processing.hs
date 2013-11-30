@@ -1,6 +1,7 @@
 module Image.Processing(
-    -- * Types
-    Image(), Pix(), NPix(), Size(..), ROI(..),
+    -- * the image type
+    Image(),
+    module Image,
     -- * basic functions
     size, roi, setROI, modifyROI,
     G.constant, set, zeroP, copy, G.blockImage,
@@ -14,12 +15,13 @@ module Image.Processing(
     addC8u, add8u, sub8u, sub8uRel,
     sumPixels,
     -- * threshold and comparison
+    (G..<.),(G..>.),
     thresholdVal32f, thresholdVal8u,
     compareC8u, compare8u, IppCmp(..),
     minmax,maxIdx,
     maxEvery, minEvery,
     maxEvery8u, minEvery8u,
-    otsuThreshold,
+    otsuThreshold, G.otsuBinarize,
     -- * histograms
     histogram, histogramN,
     -- * filters
@@ -41,9 +43,9 @@ module Image.Processing(
     -- * misc
     ippSetNumThreads,
     floodFill8u, floodFill8uGrad,
-    -- * Basic Types
-    Point(..), Polyline(..), Segment(..),
-    module Image
+    -- * types
+    Pix(), NPix(), Size(..), ROI(..),
+    Point(..), Polyline(..), Segment(..)
 ) where
 
 import Image
