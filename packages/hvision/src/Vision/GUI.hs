@@ -16,7 +16,8 @@ Stability   :  provisional
 
 module Vision.GUI (
     module Vision.GUI.Simple,
-    Vision.GUI.camera, Vision.GUI.run
+    Vision.GUI.camera, Vision.GUI.run,
+    module Vision.Apps.Show
 ) where
 
 import Vision.GUI.Simple hiding (camera,run)
@@ -24,6 +25,7 @@ import Vision.GUI.Util
 import Image
 import Image.Processing
 import Numeric.LinearAlgebra
+import Vision.Apps.Show
 
 
 instance Renderable (Image Float) where

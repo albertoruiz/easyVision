@@ -6,6 +6,7 @@ module Image.Devel(
     Wrap11, wrap11,
     fi, ti,
     (//), checkFFI,
+    flattenImage,
     getDataFileName,
     module Image.Core,
     convert,
@@ -79,8 +80,6 @@ yuv2yuyv = wrap11 "yuv2yuyv" c_yuv2yuyv
 
 foreign import ccall "yuv2yuyv" c_yuv2yuyv :: Wrap11 YUV YCbCr
 
---------------------------------------------------------------------------------
-
 yuyv2rgb :: ImageYCbCr -> ImageRGB
 yuyv2rgb = wrap11 "yuyv2rgb" c_yuyv2rgb
 
@@ -93,4 +92,12 @@ gray2rgb :: Image I8u -> Image I8u3
 gray2rgb = wrap11 "gray2rgb" c_gray2rgb
 
 foreign import ccall "gray2rgb" c_gray2rgb :: Wrap11 I8u I8u3
+
+--------------------------------------------------------------------------------
+
+flattenImage :: Image I8u3 -> Image I8u
+flattenImage im = im { szpix = 1, size = Size h (3*w), roi = ROI r1 r2 (c1*3) (c2*3) }
+  where
+    Size h w = size im
+    ROI r1 r2 c1 c2 = roi im
 

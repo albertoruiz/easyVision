@@ -11,7 +11,7 @@ Description:
  simple gui for image processing and and computer vision
 
 Category:           Graphics
-tested-with:        GHC ==6.10.4, GHC ==6.12.1, GHC ==7.0
+tested-with:        GHC ==7.6.3
 
 cabal-version:      >=1.2
 build-type:         Simple

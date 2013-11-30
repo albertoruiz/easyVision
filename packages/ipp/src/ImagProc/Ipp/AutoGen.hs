@@ -35,6 +35,7 @@ module ImagProc.Ipp.AutoGen(
     auto_1_8u_C1RSfs,
 
     auto_2_8u_C1R,
+    auto_2_8u_C3R,
     auto_2_32f_C1R,
     auto_2_8u_C1RSfs,
 
@@ -166,6 +167,10 @@ auto_2 f msg rf rf1 rf2 im1 im2 = do
 
 auto_2_8u_C1R :: Auto_2 Word8
 auto_2_8u_C1R = auto_2
+
+auto_2_8u_C3R :: Auto_2 Word24
+auto_2_8u_C3R = auto_2
+
 
 auto_2_32f_C1R :: Auto_2 Float
 auto_2_32f_C1R = auto_2

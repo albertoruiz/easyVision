@@ -1,7 +1,7 @@
 import Vision.GUI
 import Image
 import Util.Geometry
-import Util.ShCamera ( computeHomography )
+import Vision.Camera ( computeHomography )
 import Util.Estimation ( procrustes )
 import Util.Homogeneous ( scaling, desp )
 import Numeric.LinearAlgebra

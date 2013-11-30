@@ -6,9 +6,9 @@ Author:             Alberto Ruiz
 Maintainer:         Alberto Ruiz <aruiz@um.es>
 Stability:          experimental
 Homepage:           https://github.com/albertoruiz/easyVision
-Synopsis:           reexport and high level tools
+Synopsis:           hVision tools
 Description:
-                    reexport and high level tools
+                    hVision tools
 
 Category:           Math
 
@@ -26,11 +26,12 @@ library
     hs-source-dirs:     src
 
     Exposed-modules:
-                        Vision.Apps.Contours
-                        Vision.Apps.Contours.Polygons
-                        Vision.Apps.Show
-                        Util.ShCamera
                         Vision.GUI
+                        
+
+    other-modules:     Vision.Apps.ShCamera
+                       Vision.Apps.Show
+                       Vision.Apps.Polygons
 
     ghc-prof-options:   -auto-all
 

@@ -25,7 +25,7 @@ showMatch t img corr | v > 0.5 = Draw [Draw (copy img [(t,topLeft r)])
                                       ]
                      | otherwise = Draw img
   where
-    (v,r) = crossCorrLoc t img corr
+    (v,r) = crossCorrLoc t corr
     p = roi2poly (size img) r
     p0 = last (polyPts p)
 

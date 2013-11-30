@@ -28,6 +28,8 @@ class Storable p => Pix p
     warpon :: Image p -> [(Matrix Double, Image p)] -> Image p
     crossCorr :: Image p -> Image p -> Image Float
     sqrDist   :: Image p -> Image p -> Image Float
+    absDiff   :: Image p -> Image p -> Image p
+    sumPixels :: Image p -> Double
     uradial :: Float -- ^ f parameter in normalized coordinates (e.g. 2.0)
             -> Float -- ^ k radial distortion (quadratic) parameter
             -> Image p -> Image p
@@ -47,6 +49,8 @@ instance Pix Word8
     uradial = uradialG undistortRadial8u
     crossCorr = crossCorr8u
     sqrDist = sqrDist8u
+    absDiff = absDiff8u
+    sumPixels = sum8u
     zeroP   = 0
 --    remap (LookupMap m) = remap8u m
 
@@ -60,6 +64,8 @@ instance Pix Float
     uradial = uradialG undistortRadial32f
     crossCorr = crossCorr32f
     sqrDist = sqrDist32f
+    absDiff = absDiff32f
+    sumPixels = sum32f
     zeroP   = 0
 --    remap (LookupMap m) = remap32f m
 
@@ -73,6 +79,8 @@ instance Pix Word24
     uradial = uradialG undistortRadial8u3
     crossCorr t = r3 . crossCorr8u3 t
     sqrDist t = r3 . sqrDist8u3 t
+    absDiff = absDiff8u3
+    sumPixels = sumPixels . flattenImage
     zeroP   = Word24 0 0 0
 --    remap (LookupMap m) = remapRGB m
     
@@ -250,11 +258,10 @@ uradialG gen f k im = gen fp fp (fromIntegral w / 2) (fromIntegral h / 2) k 0 im
 
 --------------------------------------------------------------------------------
 
-crossCorrLoc :: Pix p => Image p -> Image p -> Image Float -> (Float, ROI)
-crossCorrLoc t img corr = (v, mkROI (Pixel (r-ho) (c-wo)) szrt)
+crossCorrLoc :: Pix p => Image p -> Image Float -> (Float, ROI)
+crossCorrLoc t corr = (v, mkROI (Pixel (r-ho) (c-wo)) szrt)
   where
     (v,Pixel r c) = maxIdx corr
-    Pixel r1 c1 = topLeft (roi corr)
     szrt@(Size ht wt) = roiSize (roi t)
     ho = ht `div` 2
     wo = wt `div` 2

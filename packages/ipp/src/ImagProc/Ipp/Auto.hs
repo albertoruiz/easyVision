@@ -398,6 +398,12 @@ ioAbsDiff_8u_C1R  = {-# SCC "ippiAbsDiff_8u_C1R" #-} auto_2_8u_C1R f "ippiAbsDif
 {- |  Calculate absolute difference between corresponding pixels of the two images
            or between image pixels and scalar.
  -}
+ioAbsDiff_8u_C3R  = {-# SCC "ippiAbsDiff_8u_C3R" #-} auto_2_8u_C3R f "ippiAbsDiff_8u_C3R"
+    where f pSrc1 src1Step pSrc2 src2Step pDst dstStep roiSize = ippiAbsDiff_8u_C3R pSrc1 src1Step pSrc2 src2Step pDst dstStep roiSize
+
+{- |  Calculate absolute difference between corresponding pixels of the two images
+           or between image pixels and scalar.
+ -}
 ioAbsDiff_32f_C1R  = {-# SCC "ippiAbsDiff_32f_C1R" #-} auto_2_32f_C1R f "ippiAbsDiff_32f_C1R"
     where f pSrc1 src1Step pSrc2 src2Step pDst dstStep roiSize = ippiAbsDiff_32f_C1R pSrc1 src1Step pSrc2 src2Step pDst dstStep roiSize
 

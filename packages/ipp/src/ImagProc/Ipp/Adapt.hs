@@ -804,6 +804,14 @@ ippiAbsDiff_8u_C1R pSrc1 src1Step pSrc2 src2Step pDst dstStep roiSize = do
     free proiSize
     return r
 
+foreign import ccall "ippiAbsDiff_8u_C3Rx"
+    ippiAbsDiff_8u_C3Rx :: Ptr Word8 -> Int -> Ptr Word8 -> Int -> Ptr Word8 -> Int -> Ptr IppiSize -> IO CInt
+ippiAbsDiff_8u_C3R pSrc1 src1Step pSrc2 src2Step pDst dstStep roiSize = do
+    proiSize <- new roiSize
+    r <- ippiAbsDiff_8u_C3Rx pSrc1 src1Step pSrc2 src2Step pDst dstStep proiSize
+    free proiSize
+    return r
+
 foreign import ccall "ippiAbsDiff_32f_C1Rx"
     ippiAbsDiff_32f_C1Rx :: Ptr Float -> Int -> Ptr Float -> Int -> Ptr Float -> Int -> Ptr IppiSize -> IO CInt
 ippiAbsDiff_32f_C1R pSrc1 src1Step pSrc2 src2Step pDst dstStep roiSize = do

@@ -1,6 +1,7 @@
 {-# LANGUAGE RecordWildCards, TemplateHaskell #-}
 
 module Vision.Apps.Show (
+    showCamera,
     showVectorField
 ) where
 
@@ -10,6 +11,7 @@ import Image
 import Util.Geometry(Segment(..))
 import Image.Devel
 import GHC.Float(float2Double)
+import Vision.Apps.ShCamera
 
 --------------------------------------------------------------------------------
 

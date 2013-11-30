@@ -1,12 +1,7 @@
 {-# LANGUAGE RecordWildCards, FlexibleContexts #-}
 
--- additional tools for camera analysis and graphic representation
-module Util.ShCamera (
-    CameraInfo(..),
-    infoCam,
-    showCam,
-    computeCamera, computeLinearPose,
-    computeHomography
+module Vision.Apps.ShCamera (
+    showCamera
 ) where
 
 
@@ -15,47 +10,17 @@ import Image(Image,Size(..),size)
 import Numeric.LinearAlgebra
 import Numeric.LinearAlgebra.Util((¦),(#),row,norm,diagl)
 import Image.Processing(resize)
-import Vision.Camera(sepCam,computeCamera,computeHomography,computeLinearPose)
+import Vision.Camera(sepCam)
 import Util.Geometry
 import Util.Estimation
 import Data.Function(on)
 import Util.Misc(debugMat,debug,degree,median,Mat)
 import Util.Rotation
+import Util.Camera(CameraInfo(..),infoCam)
 
 type ImageFloat = Image Float
 
 auxImg = resize (Size 256 256) -- . float . grayscale . channelsFromRGB
-
-
-data CameraInfo = CameraInfo
-    { cam :: Camera -- original camera
-    , kCam :: Homography
-    , rtCam :: Camera
-    , fCam :: Double
-    , cenCam :: HPoint3D
-    , toImagePlane :: Double -> [Point] -> [HPoint3D] --
-    , cam2world :: Homography3D
-    , world2cam :: Homography3D
-    }
-
-
-infoCam :: Camera -> CameraInfo
-infoCam c = CameraInfo{..}
-  where
-    cam = c
-    m = toMatrix c
-    (k,rt) = sepCam m
-    kCam = unsafeFromMatrix k
-    rtCam = unsafeFromMatrix rt
-    cenCam = unsafeFromVector (nullVector m)
-    fCam = k@@>(0,0)
-    world2cam = unsafeFromMatrix $ rt # row [0,0,0,1]
-    cam2world = invTrans world2cam
-    ik = unsafeFromMatrix $ inv k ¦ 0 # row [0,0,0,1] :: Homography3D 
-    tip = cam2world ⊙ ik
-    toImagePlane sc ps = tip ◁  map as3D ps
-      where
-        as3D (Point x y) = HPoint3D x y 1 (recip sc)
 
 
 aspectRatio (Size r c) = fromIntegral c / fromIntegral r :: Double
@@ -108,14 +73,16 @@ wireCamera ic sc ar = lineStrip ps
     ps = [ -- x,c,y,c,z,
           z, c,p1,p2,p3,p4,p1,c,p2,p3,c,p4]
 
-showCam :: Double -> CameraInfo -> Maybe ImageFloat -> Drawing
+showCamera :: Double -> CameraInfo -> Maybe ImageFloat -> Drawing
 
-showCam sc ic@CameraInfo{..} Nothing = Draw [ wireCamera ic sc 1
-                                            , lineStrip (calibFrame ic sc)]
+showCamera sc ic@CameraInfo{..} Nothing
+    = Draw [ wireCamera ic sc 1
+           , lineStrip (calibFrame ic sc)
+           ]
   
-
-showCam sc ic (Just img) = Draw [ wireCamera ic sc (aspectRatio (size img))
-                                , drawImagePlane sc ic img
-                                , lineStrip (calibFrame ic sc) ]
-
+showCamera sc ic (Just img)
+    = Draw [ wireCamera ic sc (aspectRatio (size img))
+           , drawImagePlane sc ic img
+           , lineStrip (calibFrame ic sc)
+           ]
 

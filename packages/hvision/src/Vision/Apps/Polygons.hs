@@ -1,28 +1,20 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TemplateHaskell #-}
 
-module Vision.Apps.Contours.Polygons (
+module Vision.Apps.Polygons (
     polygonalize, PolygonParam(..),
     polygons, getFlats,  InfoPoint(..), extendedContour
 ) where
 
 import Vision.GUI.Simple
 import Util.Geometry
-import Contours hiding (contours)
-import Control.Arrow((***),(&&&))
-import Control.Applicative
-import Numeric.LinearAlgebra((<>),fromList,inv,(@>))
-import Numeric.LinearAlgebra.Util(diagl,norm)
-import Text.Printf(printf)
-import Util.Misc(stdpix,mean,vec,debug,degree,subListsBy)
-import Util.Rotation(rot3)
-import Util.Options
-import Util.Homogeneous(desp,inHomog,hv2pt,cross)
-import Util.Estimation(mseLine)
-import Control.Monad(when)
-import Data.List(minimumBy,sortBy,tails)
-import Data.Function(on)
-import Util.Geometry(toVector,meet)
+import Contours ( bisector, area )
+import Numeric.LinearAlgebra ( fromList, (@>) )
+import Numeric.LinearAlgebra.Util ( norm )
+import Util.Misc ( subListsBy, stdpix, degree )
+import Util.Homogeneous ( hv2pt, cross )
+import Util.Estimation ( mseLine )
+import Data.List ( tails )
 
 
 autoParam "PolygonParam" "polygon-"

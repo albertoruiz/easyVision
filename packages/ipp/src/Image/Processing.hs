@@ -11,8 +11,8 @@ module Image.Processing(
     -- * arithmetic functions
     (.*),(.+),
     (|+|),(|-|),absDiff,(|*|),(|/|), abs32f, sqrt32f,
-    addC8u, add8u, absDiff8u, sub8u, sub8uRel,
-    sum8u,sum32f,
+    addC8u, add8u, sub8u, sub8uRel,
+    sumPixels,
     -- * threshold and comparison
     thresholdVal32f, thresholdVal8u,
     compareC8u, compare8u, IppCmp(..),
@@ -38,10 +38,14 @@ module Image.Processing(
     toFloat, toGray, scale32f8u, scale8u32f,
     -- * misc
     ippSetNumThreads,
-    floodFill8u, floodFill8uGrad
+    floodFill8u, floodFill8uGrad,
+    -- * Basic Types
+    Point(..), Polyline(..), Segment(..),
+    module Image
 ) where
 
 import Image
+import Util.Geometry
 import ImagProc.Ipp.Generic(Pix,NPix)
 import qualified ImagProc.Ipp.Generic as G
 import ImagProc.Ipp.Pure
@@ -57,6 +61,8 @@ warpon i l = G.warpon i l
 uradial f g i = G.uradial f g i
 crossCorr a b = G.crossCorr a b
 sqrDist a b = G.sqrDist a b
+absDiff a b = G.absDiff a b
+sumPixels x = G.sumPixels x
 zeroP :: Pix p => p
 zeroP = G.zeroP
 

@@ -92,6 +92,7 @@ int ippiColorTwist32f_8u_C3Rx(unsigned char*, int, unsigned char*, int, void*, f
 int ippiSampleLine_8u_C1Rx(unsigned char*, int, void*, unsigned char*, void*, void*);
 int ippiSampleLine_32f_C1Rx(float*, int, void*, float*, void*, void*);
 int ippiAbsDiff_8u_C1Rx(unsigned char*, int, unsigned char*, int, unsigned char*, int, void*);
+int ippiAbsDiff_8u_C3Rx(unsigned char*, int, unsigned char*, int, unsigned char*, int, void*);
 int ippiAbsDiff_32f_C1Rx(float*, int, float*, int, float*, int, void*);
 int ippiIntegral_8u32f_C1Rx(unsigned char*, int, float*, int, void*, float);
 int ippiSqrIntegral_8u32f64f_C1Rx(unsigned char*, int, float*, int, double*, int, void*, float, double);

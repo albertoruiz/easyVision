@@ -12,9 +12,9 @@ Stability   :  provisional
 
 module ImagProc.Ipp.Pure (
     (.*),(.+),
-    (|+|),(|-|),absDiff,(|*|),(|/|),
+    (|+|),(|-|),absDiff32f,(|*|),(|/|),
     andI,orI,notI,xorI,
-    addC8u, add8u, absDiff8u, sub8u, sub8uRel,
+    addC8u, add8u, absDiff8u, absDiff8u3, sub8u, sub8uRel,
     toFloat, toGray, scale32f8u, scale8u32f,
     rgbToGray, rgbToHSV, hsvToRGB, yCbCrToRGB, rgbToYCbCr,
     thresholdVal32f, thresholdVal8u,
@@ -36,11 +36,9 @@ where
 
 import ImagProc.Ipp.Core
 import ImagProc.Ipp.Auto
-import System.IO.Unsafe(unsafePerformIO)
 import Foreign.Ptr
 import Debug.Trace
 
-debug x = trace (show x) x
 
 infixl 7  |*|, .*
 infixl 6  |+|, |-|
@@ -51,7 +49,7 @@ mkInt f a b = unsafePerformIO (f intersection intersection intersection a b)
 
 mkShrink s f = unsafePerformIO . f (shrink s)
 
-mkRel f a b = unsafePerformIO (f g (flip g) g a b) where
+mkRel f x y = unsafePerformIO (f g (flip g) g x y) where
     g a b = intersection a b' where
         d = getShift b a
         b' = shift d b
@@ -95,8 +93,8 @@ v .+ im = unsafePerformIO $ ioAddC_32f_C1R v id im
 (|/|) = flip (mkInt ioDiv_32f_C1R)
 
 -- | absolute difference of images, pixel by pixel
-absDiff :: Image Float -> Image Float -> Image Float
-absDiff = mkInt ioAbsDiff_32f_C1R
+absDiff32f :: Image Float -> Image Float -> Image Float
+absDiff32f = mkInt ioAbsDiff_32f_C1R
 
 andI :: Image Word8 -> Image Word8 -> Image Word8
 andI = mkInt ioAnd_8u_C1R
@@ -118,6 +116,11 @@ add8u k = flip (mkInt (ioAdd_8u_C1RSfs k))
 -- | absolute difference of images, pixel by pixel
 absDiff8u:: Image Word8 -> Image Word8 -> Image Word8
 absDiff8u = mkInt ioAbsDiff_8u_C1R
+
+-- | absolute difference of images, pixel by pixel
+absDiff8u3:: Image Word24 -> Image Word24 -> Image Word24
+absDiff8u3 = mkInt ioAbsDiff_8u_C3R
+
 
 -- | image difference
 sub8u :: Int -> Image Word8 -> Image Word8 -> Image Word8
