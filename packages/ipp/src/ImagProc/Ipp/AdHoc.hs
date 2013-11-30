@@ -27,7 +27,9 @@ module ImagProc.Ipp.AdHoc(
     floodFill8u, floodFill8uGrad,
     minmax,maxIndx32f,maxIndx8u,
     otsuThreshold,
-    sum8u, sum32f
+    sum8u, sum32f,
+    convolutionRow8u,convolutionColumn8u,convolution8u,
+    convolutionRow32f,convolutionColumn32f,convolution32f
 )
 where
 
@@ -559,8 +561,6 @@ histogramN bins im = map ((*sc).fromIntegral) h where
 
 -----------------------------------------------------------------------------------
 
-{-
-
 convolution32f :: [[Float]] -> ImageFloat -> ImageFloat
 convolution32f mask img = unsafePerformIO $ do
     pKernel <- newArray (concat mask)
@@ -618,6 +618,8 @@ convolutionRow8u mask divisor img = unsafePerformIO $ do
     r <- ioFilterRow_8u_C1R pKernel r rm divisor (shrink (0,rm)) img
     free pKernel
     return r
+
+{-
 
 -----------------------------------------------------------------------------------
 

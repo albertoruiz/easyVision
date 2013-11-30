@@ -23,10 +23,12 @@ module Image.Processing(
     -- * histograms
     histogram, histogramN,
     -- * filters
-    filterMax, filterMin, filterMax8u, filterMin8u,
-    filterBox, filterBox8u, filterMedian,
+    convolution,
+    filterMax, filterMin,
+    filterBox, filterMedian,
     sobelVert, sobelHoriz,
-    gauss, gauss8u, laplace, median, highPass8u, Mask(..),
+    gauss, laplace, median, highPass8u, Mask(..),
+    gaussS, gaussS', hessian, Grads(..), gradients,
     -- * matching
     crossCorr, G.crossCorrLoc, sqrDist,
     -- * contours
@@ -48,6 +50,7 @@ import Image
 import Util.Geometry
 import ImagProc.Ipp.Generic(Pix,NPix)
 import qualified ImagProc.Ipp.Generic as G
+import ImagProc.Ipp.Tools
 import ImagProc.Ipp.Pure
 import ImagProc.Ipp.AdHoc
 import ImagProc.Ipp.Contour
@@ -63,6 +66,11 @@ crossCorr a b = G.crossCorr a b
 sqrDist a b = G.sqrDist a b
 absDiff a b = G.absDiff a b
 sumPixels x = G.sumPixels x
+convolution m x = G.convolution m x
+filterMax k x = G.filterMax k x
+filterMin k x = G.filterMin k x
+filterBox i j x = G.filterBox i j x
+gauss m x = G.gauss m x
 zeroP :: Pix p => p
 zeroP = G.zeroP
 

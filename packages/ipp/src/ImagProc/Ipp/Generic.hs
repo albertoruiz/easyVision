@@ -268,17 +268,62 @@ crossCorrLoc t corr = (v, mkROI (Pixel (r-ho) (c-wo)) szrt)
 
 --------------------------------------------------------------------------------
 
+-- | general linear filter for 32f images.
+filter32f :: [[Float]]  -- ^ mask
+          -> ImageFloat -- ^ input image
+          -> ImageFloat -- ^ result
+filter32f mask = f where
+    r = length mask
+    c = length (head mask)
+    f = case (r,c) of
+        (1,_) -> convolutionRow32f (concat mask)
+        (_,1) -> convolutionColumn32f (concat mask)
+        _     -> convolution32f mask
+
+-- | general linear filter for 8u images.
+filter8u :: [[Int]]   -- ^ mask
+         -> Int       -- ^ divisor
+         -> ImageGray -- ^ input image
+         -> ImageGray -- ^ result
+filter8u mask = f where
+    r = length mask
+    c = length (head mask)
+    f = case (r,c) of
+        (1,_) -> convolutionRow8u (concat mask)
+        (_,1) -> convolutionColumn8u (concat mask)
+        _     -> convolution8u mask
+
+--------------------------------------------------------------------------------
+
 class Pix p => NPix p
   where
     maxIdx :: Image p -> (p, Pixel)
+    convolution :: [[Float]] -> Image p -> Image p
+    filterMax :: Int -> Image p -> Image p
+    filterMin :: Int -> Image p -> Image p
+    filterBox :: Int -> Int -> Image p -> Image p
+    gauss :: Mask -> Image p -> Image p
 
 
 instance NPix Word8
   where
     maxIdx = maxIndx8u
+    filterMax = filterMax8u
+    filterMin = filterMin8u
+    filterBox = filterBox8u
+    gauss = gauss8u
+    convolution mask = filter8u imask dmask
+      where
+        dmask = round . recip . minimum . concatMap (map abs) $ mask
+        imask = map (map (round . (* fromIntegral dmask))) $ mask
     
 
 instance NPix Float
   where
     maxIdx = maxIndx32f
+    filterMax = filterMax32f
+    filterMin = filterMin32f
+    filterBox = filterBox32f
+    gauss = gauss32f
+    convolution = filter32f
 

@@ -47,6 +47,7 @@ library
                         ImagProc.Ipp.AutoGen
                         ImagProc.Ipp.Auto
                         ImagProc.Ipp.Contour
+                        ImagProc.Ipp.Tools
 
 
                         --ImagProc

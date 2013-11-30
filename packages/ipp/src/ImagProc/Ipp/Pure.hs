@@ -19,12 +19,12 @@ module ImagProc.Ipp.Pure (
     rgbToGray, rgbToHSV, hsvToRGB, yCbCrToRGB, rgbToYCbCr,
     thresholdVal32f, thresholdVal8u,
     compareC8u, compare8u,
-    filterMax, filterMin, filterMax8u, filterMin8u,
-    filterBox, filterBox8u, filterMedian,
+    filterMax32f, filterMin32f, filterMax8u, filterMin8u,
+    filterBox32f, filterBox8u, filterMedian,
     maxEvery, minEvery,
     maxEvery8u, minEvery8u,
     sobelVert, sobelHoriz,
-    gauss, gauss8u, laplace, median, highPass8u,
+    gauss32f, gauss8u, laplace, median, highPass8u,
     magnitudePack,
     abs32f, sqrt32f, mirror8u,
     dilate3x3, erode3x3,
@@ -203,17 +203,17 @@ thresholdVal8u t v cmp = mkId (ioThreshold_Val_8u_C1R t v (codeCmp cmp))
 ------------------------------
 
 -- | Changes each pixel by the maximum value in its neighbourhood of given radius.
-filterMax :: Int -> Image Float -> Image Float
-filterMax 0 = id
-filterMax r = mkShrink (r,r) (ioFilterMax_32f_C1R sz pt) where
+filterMax32f :: Int -> Image Float -> Image Float
+filterMax32f 0 = id
+filterMax32f r = mkShrink (r,r) (ioFilterMax_32f_C1R sz pt) where
     d = fi (2*r+1)
     sz = IppiSize d d
     pt = IppiPoint (fi r) (fi r)
 
 -- | Changes each pixel by the minimum value in its neighbourhood of given radius.
-filterMin :: Int -> Image Float -> Image Float
-filterMin 0 = id
-filterMin r = mkShrink (r,r) (ioFilterMin_32f_C1R sz pt) where
+filterMin32f :: Int -> Image Float -> Image Float
+filterMin32f 0 = id
+filterMin32f r = mkShrink (r,r) (ioFilterMin_32f_C1R sz pt) where
     d = fi (2*r+1)
     sz = IppiSize d d
     pt = IppiPoint (fi r) (fi r)
@@ -237,9 +237,9 @@ filterMin8u r = mkShrink (r,r) (ioFilterMin_8u_C1R sz pt) where
 -------------------------------
 
 -- | image average in rectangles of given semiheight and semiwidth
-filterBox :: Int -> Int -> Image Float -> Image Float
-filterBox 0 0 = id
-filterBox h w = mkShrink (h,w) (ioFilterBox_32f_C1R sz pt) where
+filterBox32f :: Int -> Int -> Image Float -> Image Float
+filterBox32f 0 0 = id
+filterBox32f h w = mkShrink (h,w) (ioFilterBox_32f_C1R sz pt) where
     sz = IppiSize (fi (2*w+1)) (fi (2*h+1))
     pt = IppiPoint (fi w) (fi h)
 
@@ -261,9 +261,9 @@ sobelHoriz ::Image Float -> Image Float
 sobelHoriz = mkShrink (1,1) ioFilterSobelHoriz_32f_C1R
 
 -- | Convolution with a gaussian mask of the desired size.
-gauss :: Mask -> Image Float -> Image Float
-gauss Mask5x5 = mkShrink (2,2) (ioFilterGauss_32f_C1R (codeMask Mask5x5))
-gauss Mask3x3 = mkShrink (1,1) (ioFilterGauss_32f_C1R (codeMask Mask3x3))
+gauss32f :: Mask -> Image Float -> Image Float
+gauss32f Mask5x5 = mkShrink (2,2) (ioFilterGauss_32f_C1R (codeMask Mask5x5))
+gauss32f Mask3x3 = mkShrink (1,1) (ioFilterGauss_32f_C1R (codeMask Mask3x3))
 
 -- | Convolution with a gaussian mask of the desired size.
 gauss8u :: Mask -> Image Word8 -> Image Word8
