@@ -20,6 +20,7 @@ module ImagProc.Contrib.Contours (
 
 import Image.Devel
 import Foreign.Storable ( Storable(peek) )
+import Foreign.Ptr(castPtr)
 import Foreign.Marshal ( peekArray, copyArray, malloc, free )
 import Foreign.C.Types ( CInt(CInt) )
 import Vision.GUI.Parameters
@@ -68,7 +69,7 @@ rawContours th minlen options pack thPack imgSrc = unsafePerformIO $ do
     ptrConts <- malloc
 
     withImage im $ do
-        get_contours (starting im) (fi .step $ im) (v c1) (v c2) (v r1) (v r2)
+        get_contours (castPtr $ ptrAt im (Pixel 0 0)) (fi .step $ im) (v c1) (v c2) (v r1) (v r2)
                      (fi.width.size $ im) (fi.height.size $ im)
                      (fi th) (fi minlen)
                      ptrConts
