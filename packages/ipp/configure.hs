@@ -1,8 +1,7 @@
 #! /usr/bin/env runhaskell
 
 import System.Environment(getEnv)
-import Data.List.Split(splitOn)
-import Image.Devel(getDataFileName)
+import Image.Devel(getInclude)
 
 main = do
     ipp_inc <- getEnv "IPP_INC"
@@ -10,9 +9,9 @@ main = do
     ipp_lib <- getEnv "IPP_LIBS"
     ipp_lnk <- getEnv "IPP_LINK"
     putStrLn ipp_sha
-    fw <- getDataFileName "src/Image/Devel/wrappers.h"
+    incdir <- getInclude
     writeFile "imagproc.buildinfo" $ unlines
-        [ "include-dirs: " ++ head (splitOn "/wrappers.h" fw)
+        [ incdir
         , "include-dirs: "   ++ipp_inc
         , "extra-lib-dirs: " ++ f ipp_sha
         , "extra-libraries: "++ipp_lib

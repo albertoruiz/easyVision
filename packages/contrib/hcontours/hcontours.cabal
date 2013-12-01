@@ -9,14 +9,15 @@ Synopsis:           subpixel contour extraction
 Description:        interface to optimized C implementation of subpixel contour extraction
   
 Category:           Image Processing
-tested-with:        GHC ==7.4
+tested-with:        GHC ==7.6.3
 
 cabal-version:      >=1.2
 build-type:         Custom
 
 
 extra-tmp-files:        hcontours.buildinfo
-extra-source-files:     src/ImagProc/Contrib/Contours/struct.h
+extra-source-files:     configure configure.hs
+                        src/ImagProc/Contrib/Contours/struct.h
 
 library
     Build-Depends:      base >= 3 && < 5, hmatrix, hVision-base, hVision-gui

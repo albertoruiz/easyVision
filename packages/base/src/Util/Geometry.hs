@@ -45,7 +45,8 @@ module Util.Geometry
   -- * Derived types
 
     Polyline(..), Segment(..),
-    segmentLength, distPoints, bounding, cosAngleSegments
+    segmentLength, distPoints, bounding, cosAngleSegments,
+    DMat
 ) where
 
 import Util.Small
@@ -665,4 +666,7 @@ cosAngleSegments (Segment p q) (Segment p' q') = ca
      ca = uv/(sqrt (abs u2)*sqrt (abs v2))
 
 --------------------------------------------------------------------------------
+
+-- | a list of vectors compactly stored as rows of a matrix
+type DMat = Matrix Double
 

@@ -7,7 +7,7 @@ module Image.Devel(
     fi, ti,
     (//), checkFFI,
     flattenImage,
-    getDataFileName,
+    getInclude,
     module Image.Core,
     convert,
     yuyv2rgb, yuv2rgb, yuv2yuyv, gray2rgb,
@@ -24,6 +24,7 @@ import Foreign.Storable(Storable(..))
 import Control.Monad(when)
 import Foreign.Ptr(Ptr)
 import Util.Misc((//))
+import Data.List.Split(splitOn)
 import Image.Convert
 
 appI :: RawImage p t -> Image p -> t
@@ -92,6 +93,13 @@ gray2rgb :: Image I8u -> Image I8u3
 gray2rgb = wrap11 "gray2rgb" c_gray2rgb
 
 foreign import ccall "gray2rgb" c_gray2rgb :: Wrap11 I8u I8u3
+
+--------------------------------------------------------------------------------
+
+getInclude :: IO String
+getInclude = do
+    fw <- getDataFileName "src/Image/Devel/wrappers.h"
+    return $ "include-dirs: " ++ head (splitOn "/wrappers.h" fw)
 
 --------------------------------------------------------------------------------
 

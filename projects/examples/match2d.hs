@@ -2,7 +2,7 @@ import Vision.GUI
 import Image
 import Util.Geometry
 import Vision.Camera ( computeHomography )
-import Util.Estimation ( procrustes )
+import Util.Estimation ( estimateSimilar, estimateAffine )
 import Util.Homogeneous ( scaling, desp )
 import Numeric.LinearAlgebra
 import Numeric.LinearAlgebra.Util ((¿), (¦), row, (#) )
@@ -42,11 +42,8 @@ similar xs ys | ok = h ◁ xs
   where
     n = (min `on` length) xs ys
     ok = n > 1
-    [mxs,mys] = map datMat [take n xs, take n ys]
-    (s,r,t) = procrustes mys mxs
-    rh = fromBlocks [[r,0]
-                    ,[0,1]]
-    mh = scaling s <> desp (t@>0, t@>1) <> rh
+    [mx,my] = map datMat [take n xs, take n ys]
+    mh = estimateSimilar my mx
     h = unsafeFromMatrix mh :: Homography
 
 
@@ -56,9 +53,9 @@ affine xs ys | ok = h ◁ xs
   where
     n = (min `on` length) xs ys
     ok = n > 2
-    [mxs,mys] = map datMat [take n xs, take n ys]
-    mh = (mxs ¦ 1) <\> mys
-    h = unsafeFromMatrix $ trans mh # row [0,0,1] :: Homography
+    [mx,my] = map datMat [take n xs, take n ys]
+    mh = estimateAffine my mx
+    h = unsafeFromMatrix mh :: Homography
 
 
 simple :: [Point] -> [Point] -> [Point]

@@ -35,10 +35,15 @@ module Util.Estimation
 , estimateHomographyRaw
 , estimateHomography
 , estimateHomographyRansac
+-- * groups of transformations
+--, estimateEuclidean
+, estimateSimilar
+, estimateAffine
+-- , estimateProjective
 ) where
 
 import Numeric.LinearAlgebra hiding (eps)
-import Numeric.LinearAlgebra.Util(norm,unitary,diagl)
+import Numeric.LinearAlgebra.Util(norm,unitary,diagl,row,(#),(¦))
 import Util.Covariance
 import Util.Homogeneous
 import Data.List(transpose,nub,maximumBy,genericLength,sortBy,minimumBy)
@@ -265,7 +270,7 @@ mseLine ps
 
 --------------------------------------------------------------------------------
 
-procrustes :: Mat -> Mat -> (Double,Mat,Vec)
+procrustes :: DMat -> DMat -> (Double,Mat,Vec)
 -- ^ orthogonal procustes
 --
 -- procustes x y = (s,r,t) where x = s (r y + t)
@@ -304,4 +309,22 @@ checkpro2 = do
 -}
 
 --------------------------------------------------------------------------------
+
+estimateAffine :: DMat -> DMat -> Matrix Double
+estimateAffine y x = trans h # v
+  where
+    h = (x ¦ 1) <\> y
+    d = cols x
+    v = row (replicate d 0 ++ [1])
+
+estimateSimilar :: DMat -> DMat -> Matrix Double
+estimateSimilar y x = h # v
+  where
+    (s,r,t') = procrustes y x
+    t = asColumn t'
+    rh = fromBlocks [[r,t]
+                    ,[0,1]]
+    h = diagl (replicate d s ++[1]) <> rh
+    d = cols x
+    v = row (replicate d 0 ++ [1])
 

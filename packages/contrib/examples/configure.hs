@@ -1,11 +1,10 @@
 #! /usr/bin/env runhaskell
 
-import Image.Devel(getDataFileName)
-import Data.List.Split(splitOn)
+import Image.Devel(getInclude)
 
 main = do
-    fw <- getDataFileName "src/Image/Devel/wrappers.h"
+    incdir <- getInclude
     writeFile "hVision-contrib.buildinfo" $ unlines
-        [ "include-dirs: " ++ head (splitOn "/wrappers.h" fw)
+        [ incdir
         ]
 

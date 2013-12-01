@@ -16,22 +16,16 @@ module ImagProc.Contrib.Examples (
 )
 where
 
-import Image.Core
-import Foreign(Word8)
---import ImagProc.Generic(clone)
-import Foreign.C.Types
-import Foreign.Ptr
-import Foreign.ForeignPtr
-import Foreign.Marshal
-import Foreign.Storable
-import System.IO.Unsafe(unsafePerformIO)
+import Image.Devel
+import Foreign.Marshal ( malloc, free )
+import Foreign.Storable ( Storable(peek) )
 
 ----------------------------------------------------
 
 foreign import ccall "customSum"
-    c_customSum :: Ptr CInt -> RawImage Word8 (IO CInt)
+    c_customSum :: Ptr CInt -> RawImage I8u (IO CInt)
 
-sumInC :: ImageGray -> Int
+sumInC :: Image I8u -> Int
 sumInC x = ti . unsafePerformIO $ do
     presult <- malloc
     withImage x $ do
@@ -43,8 +37,8 @@ sumInC x = ti . unsafePerformIO $ do
 ------------------------------------------------
 
 foreign import ccall "customInvert"
-    c_customInvert :: RawImage Word8 (RawImage Word8 (IO CInt))
-invertInC :: ImageGray -> ImageGray
+    c_customInvert :: RawImage I8u (RawImage I8u (IO CInt))
+invertInC :: Image I8u -> Image I8u
 invertInC = wrap11 "invertInC" c_customInvert
 
 ----------------------------------------------------
