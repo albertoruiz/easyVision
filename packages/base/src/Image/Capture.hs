@@ -18,27 +18,23 @@ module Image.Capture(
     webcam, mplayer
 )where
 
-import Image.Core
-import Image.Convert(loadRGB)
-import Image.Devel(yuv2yuyv,parseSize)
-import Image.Capture.UVC(webcam)
-import Image.Capture.MPlayer
-import System.IO.Unsafe(unsafeInterleaveIO)
-import Data.List(isPrefixOf,foldl',tails,findIndex,isInfixOf,isSuffixOf,sort)
-import System.Directory(doesFileExist, getDirectoryContents)
-import Control.Applicative((<$>))
-import System.Environment(getArgs,getEnvironment)
-import Control.Concurrent
-import Control.Concurrent.MSampleVar
-import Data.IORef
-
+import Image.Core ( Size(Size), ImageYCbCr, ImageRGB )
+import Image.Convert ( loadRGB )
+import Image.Devel ( yuv2yuyv, parseSize )
+import Image.Capture.UVC ( webcam )
+import Image.Capture.MPlayer ( mplayer', mplayer, askSize )
+import System.IO.Unsafe ( unsafeInterleaveIO )
+import Data.List ( sort, isSuffixOf )
+import System.Directory ( getDirectoryContents )
+import Control.Applicative ( (<$>) )
+import System.Environment ( getArgs )
+import Control.Concurrent ( forkIO, writeChan, readChan, newChan )
+import Control.Concurrent.MSampleVar ( writeSV, readSV, newEmptySV )
 import Util.Options
-import Util.Misc(debug,errMsg)
-import Control.Monad
-import Util.LazyIO((>~>),lazyList,Generator)
-import Text.Printf
-import Data.List.Split(splitOn)
-
+import Util.Misc ( debug, errMsg )
+import Control.Monad ( when, forever )
+import Util.LazyIO ( Generator )
+import Data.List.Split ( splitOn )
 
 --------------------------------------------------------------------------------
 
@@ -78,6 +74,7 @@ gcam = do
 
 --------------------------------------------------------------------------------
 
+mplayer'' :: String -> Size -> IO (IO (Maybe ImageYCbCr))
 mplayer'' u s = fmap (fmap (fmap yuv2yuyv)) (mplayer u s)
 
 --------------------------------------------------------------------------------
@@ -110,13 +107,14 @@ readFolderIM :: FilePath -> IO [(ImageRGB,String)]
 readFolderIM path = do
     fs <- sort . filter isImage <$> getDirectoryContents path
     errMsg $ show (length fs) ++ " images in " ++ path
-    info        <- getFlag "--read-folder-progress"
+    info <- getFlag "--read-folder-progress"
+    verbose <- getFlag "-v"
     let tot = length fs
         progress k | info = putStrLn $ show k ++"/"++show tot
                    | otherwise = return ()
         f (k,p) = fmap (\x-> (x,p))
             . unsafeInterleaveIO . (\x -> progress k >> loadRGB x)
-            . debug "loading" (const p)
+            . (if verbose then debug "loading" (const p) else id)
             $ path++"/"++p
     mapM f (zip [1::Int ..] fs)
 
@@ -124,8 +122,9 @@ readFolderIM path = do
 readImages :: [FilePath] -> IO [ImageRGB]
 -- ^ lazily read a list of images
 readImages fs = do
+    verbose <- getFlag "-v"
     let f p = unsafeInterleaveIO . loadRGB
-            . debug "loading" (const p)
+            . (if verbose then debug "loading" (const p) else id)
             $ p
     mapM f fs
 
@@ -138,6 +137,7 @@ readFolderMP path mbsz = do
     let nframes = length (filter isImage fs)
     cam <- mplayer' ("mf://"++path++"/ -benchmark -loop 1") sz
     imgs <- sequence (replicate nframes cam)
-    errMsg $ show (length imgs) ++ " images in " ++ path
+    verbose <- getFlag "-v"
+    when verbose $ errMsg (show (length imgs) ++ " images in " ++ path)
     return $ zip (map yuv2yuyv imgs) (map show [(1::Int)..])
 

@@ -5,16 +5,10 @@ module OpenCV.MSER(
   MSERParams(..)
 ) where
 
-import ImagProc.Ipp.Core
+import Image.Develop
 import ImagProc.Generic
 import Foreign
 import Vision.GUI.Parameters
-
-------------------------------------------------------------------
-
-app1G f (G im) =
-    f (ptr im) (fi.step $ im) (fi $ width $ isize im) (fi $ height $ isize im)
-      (fi $ r1 $ vroi im) (fi $ r2 $ vroi im) (fi.c1.vroi $ im) (fi.c2.vroi $ im)
 
 ------------------------------------------------------------------
 

@@ -1,8 +1,11 @@
 #define GIMG(T,X) T * X##p, int X##step, int X##r1, int X##r2, int X##c1, int X##c2
+#define GIMS(T,X) T * X##p, int X##height, int X##width, int X##step, int X##r1, int X##r2, int X##c1, int X##c2
 
-#define IM1(X) GIMG(unsigned char,X)
+#define IMG(X) GIMG(unsigned char,X)
+#define IMGSZ(X) GIMS(unsigned char,X)
 #define P(X,r,c) (*(X##p+(r)*X##step+(c)))
 
+#define IM1(X) IMG(X)
 #define IM2(X) IM1(X)
 #define IM3(X) IM1(X)
 #define PM(X,r,c,k) (*(X##p+(r)*X##step+(3*(c))+(k)))
@@ -19,4 +22,13 @@
 #define MAX(a,b) ((a)>(b)?(a):(b))
 #define MIN(a,b) ((a)<(b)?(a):(b))
 #define CLIP(a) ((a)<0?0:(a)>255?255:(a))
+
+#define IPL(X,C) IplImage * ipl_##X = cvCreateImageHeader(cvSize(X##width,X##height), 8, C ); \
+                 ipl_##X->imageData = X##p; \
+                 ipl_##X->widthStep = X##step; \
+                 cvSetImageROI(ipl_##X,cvRect(X##c1,X##r1,X##c2-X##c1+1,X##r2-X##r1+1));
+
+typedef struct { double x1, y1, x2, y2; } TSegment;
+
+typedef struct { int r, c, h, w; } TRect;
 

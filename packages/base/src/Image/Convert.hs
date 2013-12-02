@@ -62,7 +62,7 @@ img2mat im = unsafePerformIO $ do
             return 0
     m <- createMatrix RowMajor r c
     withImage im $ do
-        app1 g mat (cmat m) "img2mat" >> return 0
+        app1 g mat (cmat m) "img2mat"
     return m
 
 ----------------------------------------------------------------------

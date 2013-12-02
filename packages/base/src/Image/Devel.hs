@@ -4,6 +4,8 @@
 module Image.Devel(
     RawImage, appI,
     Wrap11, wrap11,
+    RawImageS, appS,
+    Wrap11S, wrap11S,
     fi, ti,
     (//), checkFFI,
     flattenImage,
@@ -38,14 +40,37 @@ appI f img = f (ptrAt img (Pixel 0 0)) (fi.step $ img) (g r1) (g r2) (g c1) (g c
 
 type RawImage p t = Ptr p -> CInt -> CInt -> CInt -> CInt -> CInt -> t
 
+appS :: RawImageS p t -> Image p -> t
+appS f img = f (ptrAt img (Pixel 0 0)) (fi h) (fi w) (fi.step $ img) (g r1) (g r2) (g c1) (g c2)
+  where
+    g x = (fi . x . roi) img
+    r1 (ROI r _ _ _) = r
+    r2 (ROI _ r _ _) = r
+    c1 (ROI _ _ c _) = c
+    c2 (ROI _ _ _ c) = c
+    Size h w = size img
+
+type RawImageS p t = Ptr p -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> t
+
+
 type Wrap11 p q = RawImage p (RawImage q (IO CInt))
 
 wrap11 :: Storable b => String -> Wrap11 a b -> Image a -> Image b
 wrap11 msg f x = unsafePerformIO $ do
     r <- newImage undefined (size x)
     withImage x $ withImage r $ checkFFI msg $
-        appI f x `appI` r
+        f `appI` x `appI` r
     return r
+
+type Wrap11S p q = RawImageS p (RawImageS q (IO CInt))
+
+wrap11S :: Storable b => String -> Wrap11S a b -> Image a -> Image b
+wrap11S msg f x = unsafePerformIO $ do
+    r <- newImage undefined (size x)
+    withImage x $ withImage r $ checkFFI msg $
+        f `appS` x `appS` r
+    return r
+
 
 checkFFI :: String -> IO CInt -> IO ()
 checkFFI msg f = do

@@ -1,15 +1,14 @@
 #define CV_NO_BACKWARD_COMPATIBILITY
 
-#include "cv.h"
-
+#include <cv.h>
 #include <cstdio>
-
-#include <ipp.h>
 
 using namespace std;
 using namespace cv;
 
 extern "C" {
+
+#include "wrappers.h"
 
 void * initCascade(char * path) {
 
@@ -23,18 +22,13 @@ void * initCascade(char * path) {
 
 
 void cascadeDetect(CascadeClassifier * cascade,
-    void * pSrc, int height, int width, int sstep,
-    int sr1, int sr2, int sc1, int sc2,
-    int fmax, int* fn, IppiRect* res) {
+    GIMS(char,t),
+    int fmax, int* fn, TRect* res) {
 
-    IplImage * src = cvCreateImageHeader(cvSize(width,height), 8, 1 );
-    src->imageData = (char*)pSrc;
-    cvSetImageROI(src,cvRect(sc1,sr1,sc2-sc1+1,sr2-sr1+1));
-
-    //printf("%d\n", src->widthStep);
+    IPL(t,1)
 
     Mat frame;
-    frame = src;
+    frame = ipl_t;
 
     //equalizeHist( frame, frame);
 
@@ -53,18 +47,18 @@ void cascadeDetect(CascadeClassifier * cascade,
     *fn = MIN(fmax,faces.size());
 
     for(i=0; i< *fn; i++)
-    { res[i].x =faces[i].x;
-      res[i].y =faces[i].y;
-      res[i].width =faces[i].width;
-      res[i].height =faces[i].height;
+    { res[i].c =faces[i].x;
+      res[i].r =faces[i].y;
+      res[i].w =faces[i].width;
+      res[i].h =faces[i].height;
     }
 
-    cvReleaseImageHeader(&src);
+    cvReleaseImageHeader(&ipl_t);
 }
 
 //////////////////////////////////////////////////////////////////////
 
-
+/*
 void testMSER(int delta,
               int minArea,
               int maxArea,
@@ -127,6 +121,7 @@ void testMSER(int delta,
     //printf("release\n");
 }
 
+*/
 
 }
 

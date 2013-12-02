@@ -24,13 +24,9 @@ import Foreign.Ptr(alignPtr,minusPtr,Ptr,castPtr,plusPtr)
 import GHC.ForeignPtr(mallocPlainForeignPtrBytes)
 import Foreign.ForeignPtr.Unsafe(unsafeForeignPtrToPtr)
 import Foreign.ForeignPtr(withForeignPtr)
-import System.IO.Unsafe(unsafePerformIO)
 import Foreign.Storable(Storable(..))
-import Foreign(Word16,Word8)
-import Foreign.C.Types(CInt(..))
 import Control.Monad.ST(ST, runST)
 import Control.Monad.ST.Unsafe(unsafeIOToST)
-import Util.Misc((//))
 import Control.Monad(when)
 import Image.Types
 import Image.ROI

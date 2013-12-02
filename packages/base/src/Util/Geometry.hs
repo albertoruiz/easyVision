@@ -54,6 +54,9 @@ import Util.Misc(Mat,Vec)
 import Numeric.LinearAlgebra hiding (join, (|>))
 import qualified Numeric.LinearAlgebra as LA
 import Data.Function(on)
+import Foreign.Storable
+import Foreign.Ptr
+import Control.Applicative
 import qualified Numeric.LinearAlgebra.Tensor as T
 import qualified Numeric.LinearAlgebra.Array.Util as UT
 import qualified Numeric.LinearAlgebra.Exterior as E
@@ -63,6 +66,19 @@ import qualified Numeric.LinearAlgebra.Exterior as E
 -- | inhomogenous 2D point
 data Point = Point !Double !Double
   deriving (Eq, Show, Read)
+
+instance Storable Point where
+  sizeOf _ = 2*sizeOf (undefined::Double)
+  alignment _ = alignment (undefined::Double)
+  peek p = do
+    let pb = castPtr p
+    Point <$> peekElemOff pb 0 <*> peekElemOff pb 1
+
+  poke p (Point x y) = do
+    let pb = castPtr p
+    pokeElemOff pb 0 x
+    pokeElemOff pb 1 y
+
 
 instance Shaped Point where
     type Shape Point = Dim2 Double
@@ -624,6 +640,19 @@ tp h = unsafeMatDat . (<> trans (toMatrix h)) . datMat
 
 data Segment = Segment !Point !Point
   deriving (Show)
+
+instance Storable Segment where
+  sizeOf _ = 2*sizeOf (undefined::Point)
+  alignment _ = alignment (undefined::Point)
+  
+  peek p = do
+    let pb = castPtr p
+    Segment <$> peekElemOff pb 0 <*> peekElemOff pb 1
+  
+  poke p (Segment a b) = do
+    let pb = castPtr p
+    pokeElemOff pb 0 a
+    pokeElemOff pb 1 b
 
 --------------------------------------------------------------------------------
 

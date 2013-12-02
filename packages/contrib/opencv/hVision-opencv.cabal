@@ -1,0 +1,47 @@
+Name:               hVision-opencv
+Version:            0.2.0
+License:            LGPL
+License-file:       LICENSE
+Author:             Alberto Ruiz
+Maintainer:         Alberto Ruiz <aruiz@um.es>
+Stability:          experimental
+Homepage:           https://github.com/albertoruiz/easyVision
+Synopsis:           interface to selected opencv functions
+
+Description:        interface to selected opencv functions
+
+
+Category:           Math
+tested-with:        GHC ==7.6.3
+
+cabal-version:      >=1.2
+build-type:         Custom
+
+extra-source-files: configure configure.hs
+
+extra-tmp-files:    hVision-opencv.buildinfo
+
+library
+
+    Build-Depends:      base >= 3 && < 5,
+                        hVision-base, hVision-gui
+
+    hs-source-dirs:     src
+
+    Exposed-modules:   OpenCV
+               --        OpenCV.MSER
+
+    other-modules:
+
+    c-sources:          src/OpenCV/C/opencv.c
+                        src/OpenCV/C/opencv2.cpp
+
+    ghc-prof-options:   -auto-all
+
+    ghc-options:        -Wall
+                        -fno-warn-missing-signatures
+
+    extra-libraries: opencv_core opencv_imgproc opencv_objdetect
+    
+    include-dirs: /usr/include/opencv
+

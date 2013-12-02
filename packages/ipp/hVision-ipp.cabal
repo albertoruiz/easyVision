@@ -24,7 +24,7 @@ extra-source-files: configure configure.hs
                     src/ImagProc/C/Simple/simple.h
                     src/ImagProc/Ipp/ptr_adapt.h
 
-extra-tmp-files:    imagproc.buildinfo
+extra-tmp-files:    hVision-ipp.buildinfo
 
 library
     Build-Depends:      base >= 3 && < 5, directory, process,

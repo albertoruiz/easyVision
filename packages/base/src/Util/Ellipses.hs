@@ -27,7 +27,7 @@ module Util.Ellipses (
 ) where
 
 import Numeric.LinearAlgebra
-import Numeric.LinearAlgebra.Util(diagl,mt,norm)
+import Numeric.LinearAlgebra.Util(diagl,mt)
 import Numeric.GSL.Polynomials
 import Util.Homogeneous
 import Util.Misc(mat,Mat,impossible)
