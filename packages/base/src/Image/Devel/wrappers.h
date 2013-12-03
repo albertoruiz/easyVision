@@ -7,6 +7,8 @@
 
 #define IM1(X) IMG(X)
 #define IM2(X) IM1(X)
+#define P2(X,r,c,k) (*(X##p+(r)*X##step+(2*(c))+(k)))
+
 #define IM3(X) IM1(X)
 #define PM(X,r,c,k) (*(X##p+(r)*X##step+(3*(c))+(k)))
 
@@ -19,8 +21,12 @@
 #define TRAVR(X,r) for (r=X##r1; r<=X##r2; r++)
 #define TRAVC(X,c) for(c=X##c1; c<=X##c2; c++)
 
+#ifndef MAX
 #define MAX(a,b) ((a)>(b)?(a):(b))
+#endif
+#ifndef MIN
 #define MIN(a,b) ((a)<(b)?(a):(b))
+#endif
 #define CLIP(a) ((a)<0?0:(a)>255?255:(a))
 
 #define IPL(X,C) IplImage * ipl_##X = cvCreateImageHeader(cvSize(X##width,X##height), 8, C ); \

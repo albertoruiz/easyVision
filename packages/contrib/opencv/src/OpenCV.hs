@@ -3,21 +3,16 @@
 module OpenCV(
   canny,
   hough,
-  cascadeClassifier,
-
---  module OpenCV.MSER
+  cascadeClassifier
 ) where
 
 import Image.Devel
-import Image.ROI
 import Foreign.Ptr
 import Foreign.Marshal
 import Foreign.C.String
 import Foreign.Storable
-import Util.Geometry(Segment(..),Point(..))
+import Util.Geometry(Segment(..))
 import Control.Applicative
-
---import OpenCV.MSER
 
 -----------------------------------------------------------------
 

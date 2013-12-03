@@ -27,6 +27,16 @@ int gray2rgb(IM1(src), IM1(dst)) {
 }
 
 
+int rgb2gray(IM1(src), IM1(dst)) {
+    int r,c;
+    TRAV(src,0,r,c) {
+        P(dst,r,c) = (PM(src,r,c,0) + PM(src,r,c,1) + PM(src,r,c,2 ))/3; // FIXME
+    }
+    return 0;
+}
+
+
+
 int yuv2yuyv(IM1(s),IM2(d)) {
     int w = sc2-sc1+1, h = sr2-sr1+1, w2 = w/2;
     unsigned char *py = sp, *pu = py + w*h, *pv = pu + w*h/4;
@@ -39,6 +49,15 @@ int yuv2yuyv(IM1(s),IM2(d)) {
             *(d++) = py[i*w+2*j+1];
             *(d++) = pv[(i/2)*w2+j];
         }
+    }
+    return 0;
+}
+
+
+int yuyv2gray(IM2(src),IM1(dst)) {
+    int r,c;
+    TRAV(dst,0,r,c) {
+        P(dst,r,c) = P2(src,r,c,0);
     }
     return 0;
 }

@@ -23,23 +23,20 @@ extra-tmp-files:    hVision-opencv.buildinfo
 
 library
 
-    Build-Depends:      base >= 3 && < 5,
-                        hVision-base, hVision-gui
+    Build-Depends:      base, hVision-base
 
     hs-source-dirs:     src
 
-    Exposed-modules:   OpenCV
-               --        OpenCV.MSER
+    Exposed-modules:    OpenCV
 
     other-modules:
 
-    c-sources:          src/OpenCV/C/opencv.c
-                        src/OpenCV/C/opencv2.cpp
+    c-sources:          src/OpenCV/opencv1.c
+                        src/OpenCV/opencv2.cpp
 
     ghc-prof-options:   -auto-all
 
     ghc-options:        -Wall
-                        -fno-warn-missing-signatures
 
     extra-libraries: opencv_core opencv_imgproc opencv_objdetect
     

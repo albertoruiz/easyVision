@@ -12,7 +12,7 @@ module Image.Devel(
     getInclude,
     module Image.Core,
     convert,
-    yuyv2rgb, yuv2rgb, yuv2yuyv, gray2rgb,
+    yuyv2gray, yuyv2rgb, yuv2rgb, yuv2yuyv, gray2rgb, rgb2gray,
     mpSize, parseSize,
     unsafePerformIO,
     CInt(..), Storable, Ptr
@@ -103,21 +103,26 @@ mpSize k | k > 0     = Size (k*24) (k*32)
 
 yuv2yuyv :: ImageYUV -> ImageYCbCr
 yuv2yuyv = wrap11 "yuv2yuyv" c_yuv2yuyv
-
 foreign import ccall "yuv2yuyv" c_yuv2yuyv :: Wrap11 YUV YCbCr
 
 yuyv2rgb :: ImageYCbCr -> ImageRGB
 yuyv2rgb = wrap11 "yuyv2rgb" c_yuyv2rgb
-
 foreign import ccall "yuyv2rgb" c_yuyv2rgb :: Wrap11 YCbCr RGB
+
+yuyv2gray :: ImageYCbCr -> Image I8u
+yuyv2gray = wrap11 "yuyv2gray" c_yuyv2gray
+foreign import ccall "yuyv2gray" c_yuyv2gray :: Wrap11 YCbCr I8u
 
 yuv2rgb :: ImageYUV -> ImageRGB
 yuv2rgb = yuyv2rgb . yuv2yuyv
 
 gray2rgb :: Image I8u -> Image I8u3
 gray2rgb = wrap11 "gray2rgb" c_gray2rgb
-
 foreign import ccall "gray2rgb" c_gray2rgb :: Wrap11 I8u I8u3
+
+rgb2gray :: Image I8u3 -> Image I8u
+rgb2gray = wrap11 "rgb2gray" c_rgb2gray
+foreign import ccall "rgb2gray" c_rgb2gray :: Wrap11 I8u3 I8u
 
 --------------------------------------------------------------------------------
 

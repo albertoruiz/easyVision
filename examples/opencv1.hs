@@ -1,11 +1,11 @@
 import Vision.GUI.Simple
 import Image.Capture ( readImages )
-import Image.Processing ( rgbToGray )
+import Image.Devel ( rgb2gray )
 import qualified OpenCV ( hough, canny )
 
 main = do
     [img] <- readImages ["../data/images/calibration/cube3.png"]
-    let x = rgbToGray img
+    let x = rgb2gray img
         y = OpenCV.canny x
         seg = OpenCV.hough 50 y
 
