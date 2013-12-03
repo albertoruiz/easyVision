@@ -630,11 +630,9 @@ data Polyline = Closed { polyPts :: [Point] }
 instance Transformable Homography Polyline
   where
     type TResult Homography Polyline = Polyline
-    apTrans h (Closed ps) = Closed (tp h ps)
-    apTrans h (Open ps)   = Open   (tp h ps)
+    apTrans h (Closed ps) = Closed (apTrans h ps)
+    apTrans h (Open ps)   = Open   (apTrans h ps)
 
-tp :: Homography -> [Point] -> [Point]
-tp h = unsafeMatDat . (<> trans (toMatrix h)) . datMat
 
 --------------------------------------------------------------------------------
 
