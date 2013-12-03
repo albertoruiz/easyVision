@@ -6,9 +6,8 @@ import Util.Rotation(rot3)
 import Util.Homogeneous(ht)
 import Util.Optimize(optimize)
 
-import Vision.GUI
+import Vision.GUI.Simple
 import Util.ScatterPlot
-import ImagProc
 import Contours.Base
 
 import Data.Maybe(maybe)

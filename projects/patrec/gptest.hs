@@ -3,7 +3,7 @@ import Classifier
 import Classifier.ToyProblems
 import Numeric.LinearAlgebra
 import Util.Misc(vec)
-import Vision.GUI
+import Vision.GUI.Simple
 import System.Random(randomIO)
 import Text.Printf(printf)
 import qualified Util.GP as GP

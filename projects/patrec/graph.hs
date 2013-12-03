@@ -9,8 +9,8 @@ import Util.Gaussian(mixturePDF,findMixture)
 import Numeric.LinearAlgebra
 import Numeric.LinearAlgebra.Util(diagl)
 
-import Vision.GUI
-import ImagProc
+import Vision.GUI.Simple
+import Image
 
 import Graphics.UI.GLUT (vertex,renderPrimitive, PrimitiveMode(Lines))
 import Text.Printf(printf)

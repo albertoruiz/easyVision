@@ -12,7 +12,8 @@ import Data.Maybe(maybe)
 import System.Random(randomIO)
 import Text.Printf(printf)
 import Control.Monad((>=>))
-import ImagProc(Size(..),mat2img,resize)
+import Image(Size(..),mat2img)
+import Image.Processing(resize)
 
 import Util.ScatterPlot
 

@@ -21,7 +21,7 @@ module Util.GP (
 import Numeric.LinearAlgebra
 import Numeric.LinearAlgebra.Util(norm,pairwiseD2)
 import Classifier.Base
-import Util.Misc(vec,Vec,Mat,sqr,debug)
+import Util.Misc(vec,Vec,Mat,debug)
 
 dbg = debug "K" (\m->(rows m, cols m, rank m))
 
