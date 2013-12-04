@@ -1,0 +1,6 @@
+#!/bin/bash
+
+sed '3 s/<!TITLE>/'"`head -n1 $1`/" < HEADER
+
+tail -n+2 $1
+

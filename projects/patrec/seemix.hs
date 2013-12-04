@@ -2,22 +2,23 @@ import Vision.GUI.Simple
 import Util.Geometry
 import Numeric.LinearAlgebra
 import Util.Gaussian
-import Util.Misc(debug)
-
 
 main :: IO ()
 main = do
     runIt $ clickPoints "click points" "--points" () sh
 
 sh :: ([Point], ()) -> Drawing
-sh (ps,()) = Draw [ if okc then drwc else if okm then drwm else Draw ()
+sh (ps,()) = Draw [ if okc then drwmix else Draw ()
                   , pointSz 3 . color red  $ ps
                   ]
   where
-    (m,c) = meanCov $ datMat $ debug "L" length $  ps
+    x = datMat ps
+    (m,c) = meanCov x
     mp = unsafeFromVector m :: Point
     drwm = pointSz 5 . color blue $ mp
-    drwc = color blue $ map (flip ellipCov2D (N m c)) [0.75,1.5,3]
+    drwc = color blue $ ellipCov2D 2 (N m c)
     okm = length ps > 0
     okc = length ps > 2
+    mix = findMixture x
+    drwmix = color blue $ map (ellipCov2D 2 . snd) mix
 

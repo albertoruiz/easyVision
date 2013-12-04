@@ -2,19 +2,19 @@
 
 -- experiments with geometric median
 
-import Classifier.ToyProblems
-import Classifier(group,addNoise)
-import Util.Misc(debug,vec,Mat,Vec)
+import Classifier.ToyProblems ( moon )
+import Classifier ( group, addNoise )
+import Util.Misc ( vec, debug )
 import Numeric.LinearAlgebra
-import Numeric.LinearAlgebra.Util(diagl,pairwiseD2)
+import Numeric.LinearAlgebra.Util ( pairwiseD2 )
 import Vision.GUI.Simple
---import Data.Colour.Names as Col
-import Graphics.UI.GLUT hiding (Size,scale,color,windowTitle)
-import System.Random(randomIO)
-import Text.Printf(printf)
-import Control.Monad(when)
-import Util.ScatterPlot
-
+import Graphics.UI.GLUT
+    ( Vertex(vertex),
+      HasSetter(($=)),
+      PrimitiveMode(Points),
+      pointSize,
+      renderPrimitive )
+import System.Random ( randomIO )
 
 ----------------------------------------------------------------------
 

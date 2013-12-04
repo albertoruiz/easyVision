@@ -6,8 +6,7 @@ import Util.Misc(vec)
 import Vision.GUI.Simple
 import System.Random(randomIO)
 import Text.Printf(printf)
-import qualified Util.GP as GP
-import Util.ScatterPlot
+import qualified Classifier.GP as GP
 import Graphics.Plot
 
 

@@ -2,25 +2,18 @@
 
 -- experiments with spectral graph matching
 
-import Classifier.ToyProblems
-import Classifier(addNoise,boxAttr,preprocess)
-import Util.Misc(debug,vec,Mat,Vec)
-import Util.Gaussian(mixturePDF,findMixture)
+import Classifier.ToyProblems ( sshape )
+import Classifier ( addNoise, boxAttr, preprocess )
+import Util.Misc ( vec, debug )
+import Util.Gaussian ()
 import Numeric.LinearAlgebra
-import Numeric.LinearAlgebra.Util(diagl)
-
 import Vision.GUI.Simple
-import Image
+import Image ( Point(Point) )
+import Graphics.UI.GLUT
+    ( vertex, renderPrimitive, PrimitiveMode(Lines) )
+import Control.Monad ( when )
+import qualified Classifier.GP as GP ( gaussK )
 
-import Graphics.UI.GLUT (vertex,renderPrimitive, PrimitiveMode(Lines))
-import Text.Printf(printf)
-import Control.Monad(when)
-import qualified Util.GP as GP
-import Data.List(sort, sortBy)
-import Data.Function(on)
-import Data.Maybe
-
-import Util.ScatterPlot
 
 scw title p = browser title xs (const id)
   where

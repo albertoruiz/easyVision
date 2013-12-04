@@ -450,15 +450,21 @@ newPauser refPau = do
 
 callHelp wn = do
     pname <- getProgName
-    let helpnames = concatMap (\x -> [x,"help/"++x,"../help/"++x])
-          [ intercalate "-" [pname, wn, "help.md"]
-          , intercalate "-" [       wn, "help.md"]
-          , intercalate "-" [pname,     "help.md"]
-          , "help.md"
+    errMsg wn
+    errMsg pname
+    let helpnames = map (++".html") $ concatMap (\x -> [x,"help/"++x,"../help/"++x])
+          [ intercalate "-" [pname, wn']
+          , pname
+          , wn'
+          , "help"
           ]
     fs <- filterM doesFileExist helpnames
     let f = head fs
     if null fs
       then errMsg "no help file available"
-      else system ("markdown "++f++" > /tmp/help.html && xdg-open /tmp/help.html") >> return ()
+      else system ("xdg-open "++f) >> return ()
+  where
+    wn' = map f wn
+    f ' ' = '_'
+    f  x  =  x
 

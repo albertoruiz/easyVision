@@ -12,27 +12,42 @@ Show distribution of labeled vectors in space
 -}
 -----------------------------------------------------------------------------
 
-module Util.ScatterPlot (
+module Vision.GUI.ScatterPlot (
     scatter, drawDecisionRegion,
     scatter3D
 )where
 
-import Vision.GUI.Simple
-import Util.Geometry(Point(..))
-import Classifier
-import Numeric.LinearAlgebra
-import Data.Colour
-import Data.Colour.Names -- (brown,Colour)
-import Graphics.UI.GLUT as GL hiding (Point,color,Size,clearColor,windowTitle)
-import Control.Monad(forM_)
-import Util.Misc(debug)
+import Vision.GUI.Types
+import Vision.GUI.Draw
+import Util.Geometry ( Point(..) )
+import Numeric.LinearAlgebra hiding (i)
+import Data.Colour ( Colour )
+import Data.Colour.Names 
+import Graphics.UI.GLUT as GL
+    ( Vertex(vertex),
+      Vertex3(Vertex3),
+      PrimitiveMode(Points),
+      renderPrimitive )
+import qualified Data.List as L ( groupBy, group )
+import Data.Function(on)
+import Data.List(sort,sortBy)
 
+
+
+type Example x = (x,String)
+type Sample x = [Example x]
+
+labels :: Sample x -> [String]
+labels = map head . L.group . sort . map snd
+
+group :: Sample x -> [[x]]
+group = map (map fst) . L.groupBy ((==) `on` snd) . sortBy (compare `on` snd)
 
 scatter :: Sample (Vector Double)
         -> (Int, Int) -> [Colour Float] -> Drawing -> Drawing
 scatter examples (i,j) colornames prefun = clearColor white . prep $ [ prefun, pointSz 5 things]
   where
-    (gs,_) = group examples
+    gs = group examples
     things = zipWith f gs colors
     f g c = color c (plot g)
     plot = map (\v-> Point (v@>i) (v@>j))
@@ -65,7 +80,7 @@ drawDecisionRegion n prob colors clasif = pointSz 7 vals
     ranx = toList $ linspace n (a1,a2)
     rany = toList $ linspace n (b1,b2)
     dom = sequence [ranx,rany]
-    themap = zip (labels . snd . group $  prob) (colors ++ [pink, lightblue, lightgreen, yellow, orange] ++ repeat white)
+    themap = zip (labels prob) (colors ++ [pink, lightblue, lightgreen, yellow, orange] ++ repeat white)
     colorOf lab = maybe white id (lookup lab themap)
     vals = map d dom
     d p = color (colorOf $ clasif $ fromList $ p) ((\[x,y]->Point x y) p)
@@ -77,7 +92,7 @@ scatter3D
      -> (Int, Int, Int) -> [Colour Float] -> Drawing -> Drawing
 scatter3D examples (i,j,k) colornames prefun = clearColor white $ [ prefun, pointSz 3 things, lineWd 1 . color black $ axes]
   where
-    (gs,_) = group examples
+    gs = group examples
     things = zipWith f gs colors
     f g c = color c (plot g)
     plot = Raw . GL.renderPrimitive GL.Points . mapM_ (\v-> vertex (Vertex3 (doubleGL $ v@>i) (doubleGL $ v@>j) (doubleGL $ v@>k))) -- FIXME using Point3D
@@ -85,6 +100,7 @@ scatter3D examples (i,j,k) colornames prefun = clearColor white $ [ prefun, poin
     colors = take (length gs) (colornames++defaultColors)
     axes = axes3D 1
      
+defaultColors :: [Colour Float]
 defaultColors = [red, blue, green, orange, brown ] ++ repeat gray
 
 

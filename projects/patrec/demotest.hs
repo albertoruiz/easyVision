@@ -15,8 +15,6 @@ import Control.Monad((>=>))
 import Image(Size(..),mat2img)
 import Image.Processing(resize)
 
-import Util.ScatterPlot
-
 ---------------------------------------------------------------------------
 
 rawmnist = loadExamples "../../data/ml/mnist.txt"

@@ -1,22 +1,8 @@
+
 import Numeric.LinearAlgebra
 import Util.Gaussian
-import Util.Misc(vec,mat,Mat,debug,degree)
-import Util.Covariance
-import Util.Rotation(rot3)
-import Util.Homogeneous(ht)
-import Util.Optimize(optimize)
-
+import Util.Misc ( vec )
 import Vision.GUI.Simple
-import Util.ScatterPlot
-import Contours.Base
-
-import Data.Maybe(maybe)
-import System.Random(randomIO)
-import Text.Printf(printf)
-import Control.Monad((>=>))
-import Control.Arrow((&&&),(***))
-import Data.List(sortBy)
-import Data.Function(on)
 
 ----------------------------------------------------------------------
 
@@ -32,15 +18,7 @@ scws title p mixs = browser title xs (const id)
 
 shMix mix = lineWd 3 . color black . map (drawGaussian.snd) $ mix
 
-drawGaussian g = Draw (ellipCov g)
-  where
-    ellipCov (N m c) = transPol ((3><3)[1,0,(m@>0),0,1,(m@>1),0,0,1] <> rot3 (-angle)) circle
-      where
-        angle = atan2 vy vx
-        (l,v) = eigSH' c
-        [d1,d2] = toList (sqrt l)
-        [vx,vy] = toList $ head (toColumns v)
-        circle = Closed [Point (2*d1*cos(t*degree)) (2*d2*sin(t*degree)) | t <- [ 0, 10 .. 350 ]]
+drawGaussian g = Draw (ellipCov2D 2 g)
 
 ----------------------------------------------------------------------
 

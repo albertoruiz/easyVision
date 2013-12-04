@@ -1,2 +1,0 @@
-include ../projects/Makefile.include
-

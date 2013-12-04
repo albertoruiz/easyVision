@@ -28,7 +28,9 @@ module Util.Gaussian (
    mixturePDF,
    sampleMixture,
    em, emSeq,
-   findMixture
+   findMixture,
+   -- * Misc
+   ellipCov2D
 ) where
 
 import Numeric.LinearAlgebra
@@ -37,6 +39,10 @@ import Control.Arrow((***))
 import Data.List(sortBy)
 import Data.Function(on)
 import Util.Optimize(optimize)
+import Util.Geometry hiding (join)
+import Util.Misc(degree)
+import Util.Homogeneous(desp)
+import Util.Rotation(rot3)
 
 
 data Gaussian = N { mG :: Vec, cG :: Mat } deriving Show
@@ -166,7 +172,7 @@ diviG :: (Double, Gaussian) -> [(Double, Gaussian)]
 diviG (k,(N m c)) = [(0.5*k,N m1 c),(0.5*k, N m2 c)]
   where
     (l,v) = eigSH' c
-    l1 = sqrt (l@>0)
+    l1 = 2*sqrt (l@>0)
     v1 = l1 `scale` (head $ toColumns v)
     m1 = m + v1
     m2 = m - v1
@@ -204,4 +210,16 @@ mixturePDF mix = f
   where
     gs = [ (w*) . exp . gaussianLogLik g | (w,g) <- mix ]
     f x = sum (map ($x) gs)
+
+--------------------------------------------------------------------------------
+
+ellipCov2D :: Double -> Gaussian -> Polyline
+ellipCov2D σ (N m c) = h ◁ circle
+  where
+    angle = atan2 vy vx
+    (l,v) = eigSH' c
+    [d1,d2] = toList (sqrt l)
+    [vx,vy] = toList $ head (toColumns v)
+    circle = Closed [Point (σ*d1*cos(t*degree)) (σ*d2*sin(t*degree)) | t <- [ 0, 10 .. 350 ]]
+    h = unsafeFromMatrix $ desp (m@>0,m@>1) <> rot3 (-angle) :: Homography
 

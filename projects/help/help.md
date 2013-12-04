@@ -1,13 +1,8 @@
-<HEAD>
-    <TITLE>hVision Help</TITLE>
-    <META http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-    <STYLE>
-        body{margin:50px; font-family:sans-serif; max-width:600px}
-        ul {list-style-type:square;}
-    </STYLE>
-</HEAD>
+hVision Help
 
-# General Help
+# hVision GUI Help
+
+- - -
 
 ## Zoom
 
@@ -61,4 +56,7 @@
 **Shift-ESC** leave loop and kill mplayer (FIXME)
 
 **F1**: help
+
+
+LINKS
 

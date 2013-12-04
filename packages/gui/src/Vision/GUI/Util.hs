@@ -31,7 +31,8 @@ module Vision.GUI.Util (
     clickPoints,
     interactive2D, interactive3D,
     Drawer, mkDrawers,
-    clickKeep, clickList, clickTag
+    clickKeep, clickList, clickTag,
+    scatter, scatter3D, drawDecisionRegion
 ) where
 
 import Graphics.UI.GLUT hiding (Point,Size,color)
@@ -56,6 +57,7 @@ import System.CPUTime
 import Text.Printf(printf)
 import Data.IORef
 import Data.Maybe(fromJust)
+import Vision.GUI.ScatterPlot
 
 --createGrab :: [b] -> IO (IO b)
 --createGrab = fmap (fmap (fmap fromJust)) mkGenerator

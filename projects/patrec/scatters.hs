@@ -14,8 +14,6 @@ import Text.Printf(printf)
 import Control.Monad((>=>))
 import Image(Size(..),mat2img)
 
-import Util.ScatterPlot
-
 ---------------------------------------------------------------------------
 
 rawmnist = loadExamples "../../data/ml/mnist.txt"
