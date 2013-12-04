@@ -14,4 +14,6 @@ demo:
 	./gptest
 	./median
 	./ukf
+	./seecov
+	./seemix
 

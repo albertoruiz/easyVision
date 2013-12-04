@@ -1,12 +1,13 @@
 import Vision.GUI
-import ImagProc
+import Image
+import Image.Processing
 import Util.Options(optionFromFile,getRawOption)
 import Data.Traversable(traverse)
 import Numeric.LinearAlgebra hiding (join)
 import Vision(estimateHomography,scaling)
 import Util.Geometry as G
 import Util.Misc(debug)
-import Contours(bounding, poly2roi)
+--import Contours(bounding, poly2roi)
 
 main = do
     mbimg <- getRawOption "--image" >>= traverse loadRGB
@@ -32,5 +33,5 @@ g mbimg (k,_) (ps,_) = (k, [Draw [Draw smbimg, color red [ Draw sls, pointSz 5 s
     h = unsafeFromMatrix $ scaling (1/3) :: Homography
     sls = h <| ls
     sps = h <| ps
-    smbimg = warp  (50,0,0) (maybe (Size 400 400) size mbimg) (toMatrix h) `fmap` mbimg
+    smbimg = warp  (Word24 50 0 0) (maybe (Size 400 400) size mbimg) (toMatrix h) `fmap` mbimg
 

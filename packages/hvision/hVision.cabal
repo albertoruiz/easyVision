@@ -26,12 +26,12 @@ library
     hs-source-dirs:     src
 
     Exposed-modules:
-                        Vision.GUI
-                        
+                       Vision.GUI
+                       Contours.Polygons
 
     other-modules:     Vision.Apps.ShCamera
                        Vision.Apps.Show
-                       Vision.Apps.Polygons
+
 
     ghc-prof-options:   -auto-all
 

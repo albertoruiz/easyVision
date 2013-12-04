@@ -1,5 +1,5 @@
 import Vision.GUI
-import ImagProc hiding (Pixel(..))
+import Image.Processing
 import Util.Options(getRawOption,maybeOption)
 import Data.Traversable(traverse)
 import Numeric.LinearAlgebra
@@ -65,8 +65,8 @@ drw mbf mbimg1 mbimg2 (psl,psr) = clearColor white [ color gray $ axes3D 2 , dr 
     x = triangulate [(m, pts), (m', pts')]
     x3d = info $ map (\[x,y,z]->Point3D x y z) x
     
-    dr2 = Draw [ color red $ showCam szc im mbimg1'
-               , color blue $ showCam szc im' mbimg2'
+    dr2 = Draw [ color red $ showCamera szc im mbimg1'
+               , color blue $ showCamera szc im' mbimg2'
                , color black . pointSz 2 $ x3d
                --, color black . pointSz 2 $ drawPoints3DLabeled x3d
                , pointSz 5 . color red $ toImagePlane im szc [epi1]
@@ -83,7 +83,7 @@ drw mbf mbimg1 mbimg2 (psl,psr) = clearColor white [ color gray $ axes3D 2 , dr 
     
     mbimg1' = tf mbimg1
     mbimg2' = tf mbimg2
-    tf = fmap (float.grayscale.channelsFromRGB)
+    tf = fmap (toFloat.grayscale.channelsFromRGB)
     
     
     im = infoCam $ unsafeFromMatrix m
@@ -130,9 +130,9 @@ h (Just x1) (Just x2) (k,_) (psl,psr) = (k, [ Draw $ blockImage[[y1,y2]]
     (ep,ep') = epipoles f
     (h, h') = stereoRectifiers f pts pts'
     sz = Size 800 600
-    y1 = warp (80,0,0) sz h x1
-    y2 = warp (80,0,0) sz h' x2
+    y1 = warp (Word24 80 0 0) sz h x1
+    y2 = warp (Word24 80 0 0) sz h' x2
     y12 = 0.5 .* g y1 |+| 0.5 .* g y2
-    g = float . grayscale . channelsFromRGB
+    g = toFloat . grayscale . channelsFromRGB
 h _ _ (k,_) _ = (k,[])
 

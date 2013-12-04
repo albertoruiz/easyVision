@@ -1,9 +1,15 @@
 import Vision.GUI
-import ImagProc
-import Vision.Apps.Contours
+import Image.Processing
+import Contours.Polygons
+import Contours
+import Image.Processing
 import Util.Geometry
 import Vision(scaling)
 import Text.Printf(printf)
+
+otsuContours x = contours 1000 100 otsu
+  where
+    otsu = x .<. (fromIntegral (otsuThreshold x))
 
 quadrilaterals = take 1 . polygons 10 5 (4,4)
                . map (smoothPolyline 4)

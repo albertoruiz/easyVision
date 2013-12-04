@@ -1,5 +1,6 @@
 import Vision.GUI
-import ImagProc hiding (Pixel(..))
+import Image.Processing
+import Vision.Camera
 import Util.Options(getRawOption)
 import Data.Traversable(traverse)
 import Numeric.LinearAlgebra
@@ -35,7 +36,7 @@ g mbimg (n,_) (ps,_) = (n, [ clearColor white
                            ])
   where
     drcam | length ps < length ref = Draw ()
-          | otherwise = color green $ showCam 2 ic (fmap (float.grayscale.channelsFromRGB) mbimg)
+          | otherwise = color green $ showCamera 2 ic (fmap (toFloat.grayscale.channelsFromRGB) mbimg)
     cam = computeCamera ps ref
     ic = infoCam cam 
     ipts = toImagePlane ic 2 ps

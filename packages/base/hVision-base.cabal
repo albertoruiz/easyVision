@@ -72,7 +72,7 @@ library
                         Image.Capture
                         Image.Devel
                         Image.ROI
---    other-modules:
+    other-modules:
                         Image.Core
                         Image.Convert
                         Paths_hVision_base

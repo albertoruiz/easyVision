@@ -30,6 +30,8 @@ pinvline pts = unsafeFromVector (fromList [a',-1,b'])
     b = fromList $ map py pts
     x = col $ map px pts
     a = x ! 1
+    px (Point x _) = x
+    py (Point _ y) = y
 
 eigline :: [Point] -> HLine
 -- principal direction

@@ -1,7 +1,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TemplateHaskell #-}
 
-module Vision.Apps.Polygons (
+module Contours.Polygons (
     polygonalize, PolygonParam(..),
     polygons, getFlats,  InfoPoint(..), extendedContour
 ) where

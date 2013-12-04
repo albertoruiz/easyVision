@@ -1,5 +1,5 @@
-import Vision.GUI
-import ImagProc.Base(segmentLength, Polyline(..))
+import Vision.GUI.Simple
+import Image
 import Contours(asSegments)
 import Util.Ellipses
 import Util.Geometry

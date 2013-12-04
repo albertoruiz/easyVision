@@ -56,9 +56,9 @@ disp = putStr . dispf 5
 
 sht t = (putStrLn . formatFixed 2) t
 
-drcam c = color green $ showCam 0.5 (infoCam c) Nothing
+drcam c = color green $ showCamera 0.5 (infoCam c) Nothing
 
-drcamps c ps = color green [ showCam 0.5 ic Nothing
+drcamps c ps = color green [ showCamera 0.5 ic Nothing
                            , pointSz 3 $ (toImagePlane ic 0.5) ps
                            ]
   where

@@ -1,12 +1,12 @@
 import Vision.GUI
-import ImagProc
+import Image.Processing
+import Vision.Camera
 import Util.Options(getRawOption)
 import Data.Traversable(traverse)
 import Numeric.LinearAlgebra hiding (join)
+import Image.ROI
 import Util.Geometry as G
 import Util.Misc(debug)
-import Contours(bounding, poly2roi)
-import Util.Camera(computeHomography)
 import Control.Applicative((<*>),(<$>))
 
 main = do
@@ -29,7 +29,7 @@ g mbimg (k,_) (ps,_) = (k, [ dr rec2
                  ]
     rec1 = rectif <$> h <*> mbimg
     rec2 = rectif <$> h <*> (bnd ps <$> mbimg)
-    rectif = warp  (50,0,0) (Size 400 400) . toMatrix
+    rectif = warp  (Word24 50 0 0) (Size 400 400) . toMatrix
     h | length ps < 4 = Nothing
       | otherwise = Just $ computeHomography square ps
 
