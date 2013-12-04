@@ -24,7 +24,7 @@ import Image.Devel ( yuv2yuyv, parseSize )
 import Image.Capture.UVC ( webcam )
 import Image.Capture.MPlayer ( mplayer', mplayer, askSize )
 import System.IO.Unsafe ( unsafeInterleaveIO )
-import Data.List ( sort, isSuffixOf )
+import Data.List ( sort, isSuffixOf, isPrefixOf )
 import System.Directory ( getDirectoryContents )
 import Control.Applicative ( (<$>) )
 import System.Environment ( getArgs )
@@ -41,6 +41,7 @@ import Data.List.Split ( splitOn )
 gcam :: Generator ImageYCbCr
 gcam = do
     args <- getArgs
+    lastdev <- drop 5 . last . sort . filter (isPrefixOf "video") <$> getDirectoryContents "/dev"
     let clean = cleanOpts args
     a <- if null args
            then return "uvc"
@@ -50,7 +51,7 @@ gcam = do
     let opt = getSubOption a
         has = hasSubOption a
 
-        dev = "/dev/video" ++ opt "dev" "0"
+        dev = "/dev/video" ++ opt "dev" lastdev
         sz = parseSize $ opt "size" "640x480"
         fps = read (opt "fps" "30")
         

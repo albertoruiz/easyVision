@@ -66,6 +66,7 @@ library
                         Util.Audio
                         Util.Graph
                         Util.Camera
+                        Util.Text
 
                         Image
                         Image.Capture
