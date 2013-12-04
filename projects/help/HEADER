@@ -1,7 +1,5 @@
 <!DOCTYPE html>
 <HEAD>
-    <TITLE><!TITLE></TITLE>
-
     <META http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 
     <link href="http://fonts.googleapis.com/css?family=Crimson+Text" rel="stylesheet" type="text/css">
@@ -9,13 +7,16 @@
 
     <STYLE>
         body{margin:50px; font-family: sans-serif; max-width:600px}
-        ul {list-style-type:square;}
+        ul {list-style-type:square}
+        h2 {color: #000088;}
         p  {font-family: "Crimson Text", serif; font-size:21px; line-height:28px ; margin:10px}
+        pre {margin: 30px}
     </STYLE>
     
-    <!MATHJAX>
+    INCLUDE(MATHJAX.html)
     
-    <!HIGHLIGHT>
+    INCLUDE(HIGHLIGHT.html)
 
 </HEAD>
+
 

@@ -5,9 +5,11 @@ pages = $(sources:.md=.html)
 all: $(pages)
 
 %.html: %.md LINKS HEADER
-	cat $*.md | replace LINKS "`cat LINKS`" | markdown | sed -e '1 s/<p>//' -e '1 s/<\/p>//' > $*aux.html
-	./putheader $*aux.html > $*.html
-	rm $*aux.html
+	replace -r < $*.md \
+	| markdown \
+	| sed -e '1 s/<p/INCLUDE(HEADER)<TITLE/' -e '1 s/p>/TITLE>/' \
+	| replace -r | replace -r \
+	> $*.html
 
 clean:
 	rm $(pages)

@@ -4,7 +4,7 @@ hVision Help
 
 - - -
 
-## Zoom
+## zoom control
 
 **Ctrl-0** reset
 
@@ -14,7 +14,7 @@ hVision Help
 
 **Ctrl-Drag-LeftButton** move
 
-## Region of interest
+## define region of interest
 
 **Ctrl-Drag-RightButton** set region
 
@@ -28,7 +28,7 @@ hVision Help
 
 **O** reset view
 
-## Camera control
+## camera control
 
 **SPACE** pause stream
 
@@ -37,7 +37,7 @@ hVision Help
 **S** step (advance one frame)
 
 
-## Misc
+## misc
 
 **ESC** exit application
 
@@ -57,6 +57,11 @@ hVision Help
 
 **F1**: help
 
+- - -
 
-LINKS
+[command line options][options]
+
+[interactive point capture][points]
+
+INCLUDE(LINKS)
 
