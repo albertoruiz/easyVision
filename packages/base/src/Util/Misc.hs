@@ -5,7 +5,7 @@
 module Util.Misc(
     -- * Debug
     dimString, redString, errMsg, debug, debugMat,
-    impossible, assert, warning,
+    impossible, assert, warning, cTime, trap,
     -- * List utilities
     splitEvery, pairsWith, posMax, posMin, replaceAt, rep, selectPos, rotateLeft, sliding, slidingPeriodic, subListsBy,
     intersectSorted, unionSort,
@@ -42,6 +42,10 @@ import System.Time
 import System.Locale
 import Control.Applicative((<$>))
 import Data.Packed.Development((//))
+import Data.Binary
+import System.IO.Unsafe(unsafePerformIO)
+import Control.DeepSeq
+import System.IO(hPutStr)
 
 type Mat = Matrix Double
 type Vec = Vector Double
@@ -109,12 +113,12 @@ randomPermutation seed l = map fst $ sortBy (compare `on` snd) randomTuples wher
 randomSamples :: Seed -> Int -> [a] -> [[a]]
 randomSamples seed n dat = map (V.toList . V.backpermute vdat . V.fromList) goodsubsets
   where
-    
+
     randomIndices = randomRs (0, length dat -1) (mkStdGen seed)
     goodsubsets = filter unique $ splitEvery n randomIndices
 
     vdat = V.fromList dat
-    
+
     unique = g . sort
     g []  = True
     g [_] = True
@@ -181,7 +185,7 @@ replaceAt pos ys xs = zipWith f [0..] xs where
 -- | replace substring
 rep :: Eq a => ([a], [a]) -> [a] -> [a]
 rep (_,_) [] = []
-rep (c,r) f@(x:xs) 
+rep (c,r) f@(x:xs)
   | c `isPrefixOf` f = r ++ rep (c,r) (drop (length c) f)
   | otherwise        = x:(rep (c,r) xs)
 
@@ -283,4 +287,25 @@ formattedTime = do
 
 formattedDate :: IO String
 formattedDate = takeWhile (/='T') <$> formattedTime
+
+--------------------------------------------------------------------------------
+
+trap :: Binary b => String -> (a -> Bool) -> b -> a -> a
+trap msg goodcond y x =
+    if not (goodcond x)
+      then x
+      else unsafePerformIO $ do
+        encodeFile (msg++"_trapped.bin") y
+        error "trap!"
+
+cTime :: NFData a => String -> (t -> a) -> t -> a
+cTime msg f x = unsafePerformIO $ do
+    t0 <- getClockTime
+    let y = f x
+    hPutStr stderr ((\()->"") (rnf y))
+    t1 <- getClockTime
+    hPutStrLn stderr (dimString (msg ++ ": "++ show (dt t1 t0)++" ms"))
+    return y
+  where
+    dt (TOD s1 p1) (TOD s0 p0) = ((s1-s0) * 10^(12::Int) + (p1-p0) ) `div` 10^(9::Int)
 
