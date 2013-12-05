@@ -10,10 +10,11 @@ module ImagProc.Ipp.Generic(
     blockImage,
     crossCorrLoc,
     (.<.), (.>.), otsuBinarize,
-    Channels(..),channelsFromRGB, grayscale, grayf,
+    Channels(..),channelsFromRGB, channelsFromYUYV, grayscale, grayf,
     NPix(..)
 ) where
 
+import Image
 import Image.Devel
 import ImagProc.Ipp.Core
 import ImagProc.Ipp.AdHoc
@@ -138,20 +139,6 @@ blockImage = colImage . map rowImage
 
 --------------------------------------------------------------------------------
 
-data Channels = CHIm
-    { yuv  :: ImageYUV
-    , yCh  :: Image Word8
-    , uCh  :: Image Word8
-    , vCh  :: Image Word8
-    , rgb  :: Image Word24
-    , rCh  :: Image Word8
-    , gCh  :: Image Word8
-    , bCh  :: Image Word8
-    , hsv  :: Image Word24
-    , hCh  :: Image Word8
-    , sCh  :: Image Word8
-    , fCh  :: Image Float
-    }
 
 grayscale :: Channels -> Image Word8
 grayscale = yCh
@@ -182,24 +169,45 @@ channels img = CHIm{..}
 -}
 
 channelsFromRGB :: Image Word24 -> Channels
-channelsFromRGB img = CHIm{..}
+channelsFromRGB x = CHIm{..}
   where
-    yuv = yuvAux
-    yCh = rgbToGray img
+    rgb = x
+    yCh = rgbToGray x
+    fCh = toFloat yCh
+
+    rCh = getChannel 0 rgb
+    gCh = getChannel 1 rgb
+    bCh = getChannel 2 rgb
+
+    yuv = rgbToYUV rgb
+    (u,v) = yuvToUV yuv
     uCh = u
     vCh = v
-    rgb = img
-    rCh = getChannel 0 img
-    gCh = getChannel 1 img
-    bCh = getChannel 2 img
-    hsv = hsvAux
-    hCh = getChannel 0 hsvAux
-    sCh = getChannel 1 hsvAux
-    fCh = toFloat yCh
-    yuvAux = rgbToYUV img
-    hsvAux = rgbToHSV img
-    (u,v) = yuvToUV yuvAux
 
+    hsv = rgbToHSV rgb
+    hCh = getChannel 0 hsv
+    sCh = getChannel 1 hsv
+
+
+channelsFromYUYV :: Image Word16 -> Channels
+channelsFromYUYV x = CHIm{..} -- FIXME use original UV
+  where
+    rgb = yuyv2rgb x
+    yCh = yuyv2gray x
+    fCh = toFloat yCh
+
+    rCh = getChannel 0 rgb
+    gCh = getChannel 1 rgb
+    bCh = getChannel 2 rgb
+
+    yuv = rgbToYUV rgb
+    (u,v) = yuvToUV yuv
+    uCh = u
+    vCh = v
+
+    hsv = rgbToHSV rgb
+    hCh = getChannel 0 hsv
+    sCh = getChannel 1 hsv
 
 --------------------------------------------------------------------------------
 

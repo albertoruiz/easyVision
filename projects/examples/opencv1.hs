@@ -4,7 +4,7 @@ import Image.Devel ( rgb2gray )
 import qualified OpenCV ( hough, canny )
 
 main = do
-    [img] <- readImages ["../data/images/calibration/cube3.png"]
+    [img] <- readImages ["../../data/images/calibration/cube3.png"]
     let x = rgb2gray img
         y = OpenCV.canny x
         seg = OpenCV.hough 50 y

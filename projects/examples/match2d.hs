@@ -1,4 +1,4 @@
-import Vision.GUI
+import Vision.GUI.Simple
 import Image
 import Util.Geometry
 import Vision.Camera ( computeHomography )

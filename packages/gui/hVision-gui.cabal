@@ -39,7 +39,8 @@ library
                         Vision.GUI.Trackball
                         Vision.GUI.Arrow
 
-    other-modules:      Vision.GUI.ScatterPlot
+    other-modules:      Vision.GUI.Source
+                        Vision.GUI.ScatterPlot
 
     ghc-prof-options:   -auto-all
 

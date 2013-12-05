@@ -21,11 +21,14 @@ module Vision.GUI (
 ) where
 
 import Vision.GUI.Simple hiding (camera,run)
+import qualified Vision.GUI.Simple as S
 import Vision.GUI.Util
 import Image
+import Image.Capture(gcam)
 import Image.Processing
 import Numeric.LinearAlgebra
 import Vision.Apps.Show
+import Util.Options
 
 
 instance Renderable (Image Float) where
@@ -55,12 +58,21 @@ instance Renderable Channels
             hist = fromList $ histogramN [0..256] c
 
 
-camera :: Generator Channels
-camera = toRGB Vision.GUI.Util.camera
-
-toRGB :: Generator (Image RGB) -> Generator Channels
-toRGB = fmap (fmap (fmap channelsFromRGB))
+fillChannels :: Generator Channels -> Generator Channels
+fillChannels = fmap (fmap (fmap (channelsFromRGB.rgb)))
 
 run :: ITrans Channels b -> IO ()
 run t = ippSetNumThreads 1 >> runT_ Vision.GUI.camera (t >>> optDo "--freq" freqMonitor)
+
+camera :: Generator Channels
+camera = do
+    f <- hasValue "--photos"
+    g <- hasValue "--photosmp"
+    h <- hasValue "--sphotos"
+    if f || g || h
+      then fillChannels S.camera
+      else cameraV
+      
+cameraV :: Generator Channels
+cameraV = fmap (fmap (fmap channelsFromYUYV)) gcam
 

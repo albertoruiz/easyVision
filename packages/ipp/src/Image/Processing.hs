@@ -37,7 +37,7 @@ module Image.Processing(
     contours, localContours,
     -- * color transformations
     rgbToGray, rgbToHSV, hsvToRGB, yCbCrToRGB, rgbToYCbCr,
-    twistColors, G.Channels(..), G.channelsFromRGB, G.grayscale, G.grayf,
+    twistColors, G.Channels(..), G.channelsFromRGB, G.channelsFromYUYV, G.grayscale, G.grayf,
     -- * pixel transformations
     toFloat, toGray, scale32f8u, scale8u32f,
     -- * misc

@@ -30,7 +30,7 @@ int gray2rgb(IM1(src), IM1(dst)) {
 int rgb2gray(IM1(src), IM1(dst)) {
     int r,c;
     TRAV(src,0,r,c) {
-        P(dst,r,c) = (PM(src,r,c,0) + PM(src,r,c,1) + PM(src,r,c,2 ))/3; // FIXME
+        P(dst,r,c) = 0.2125*PM(src,r,c,0) + 0.7154*PM(src,r,c,1) + 0.0721*PM(src,r,c,2);
     }
     return 0;
 }

@@ -1,8 +1,8 @@
-import Vision.GUI
-import Image.Processing
+import Vision.GUI.Simple
+import Image
 import ImagProc.Contrib.Contours
 
-main = run  $   arr grayscale
+main = run  $   arr yCh
             >>> arr id &&& (npContours @@@ winParam)
             >>> sMonitor "contours" gs
 

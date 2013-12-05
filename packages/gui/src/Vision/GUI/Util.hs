@@ -15,8 +15,7 @@ common interfaces
 -----------------------------------------------------------------------------
 
 module Vision.GUI.Util (
-    run, camera,
-    observe, observe3D, camG, cameraFolderIM,
+    observe, observe3D,
     sMonitor,
     browser, browser3D,
     editor,
@@ -385,69 +384,4 @@ clickTag l r sh name = transUI $ interface (Size 240 320) name False ft updt [] 
     updt = [(key (MouseButton LeftButton), \_ _ sv -> not sv)]
     ft _ _ = return ()
 
---------------------------------------------------------------------------------
-
-{- |
-Returns the first image source given in the command line.
-
-It also admits --photos=path/to/folder/ containing separate image files (.jpg or .png), currently read using imagemagick (slower, lazy),
-and --photosmp=path/to/folder, to read images of the same type and size using mplayer (faster, strict).
--}
-camera :: Generator ImageRGB
-camera = do
-    f <- hasValue "--photos"
-    g <- hasValue "--photosmp"
-    h <- hasValue "--sphotos"
-    if f then cameraFolderIM
-         else if g then cameraFolderMP
-                   else if h then cameraP
-                             else cameraV
-
-cameraP :: Generator ImageRGB
-cameraP = do
-    hp <- optionString "--sphotos" "."
-    g <- readFolderIM hp
-    c <- mkGenerator g
-    return (fmap fst <$> c)
-
-cameraV :: Generator ImageRGB
-cameraV = toRGB gcam
-  where
-    toRGB = fmap (fmap (fmap yuyv2rgb))
-
-cameraFolderIM :: Generator ImageRGB
-cameraFolderIM = camG "--photos" r <*> dummy
-  where
-    r p _sz = readFolderIM p
-
-cameraFolderMP :: Generator ImageRGB
-cameraFolderMP = camG "--photosmp" rf <*> dummy
-  where
-    rf p sz = map (yuyv2rgb *** id) <$> readFolderMP p sz
-
-camG opt readf = do
-    path <- optionString opt "."
-    sz <- parseSize <$> optionString "--size" "640x480"
-    imgs <- readf path (Just sz)
-    interface (Size 240 320) "photos" (0,imgs) ft (keys imgs) [] r sh
-  where
-    keys xs = acts (length xs -1)
-    acts n = [ (key (MouseButton WheelUp),   \_ _ (k,xs) -> (min (k+1) n,xs))
-             , (key (SpecialKey  KeyUp),     \_ _ (k,xs) -> (min (k+1) n,xs))
-             , (key (MouseButton WheelDown), \_ _ (k,xs) -> (max (k-1) 0,xs))
-             , (key (SpecialKey  KeyDown),   \_ _ (k,xs) -> (max (k-1) 0,xs))]
-    r _ (k,xs) _ = ((k,xs), fst $ xs!!k)
-    sh _ (k,xs) _a x = Draw [Draw x, info (k,xs) ]
-    -- ft w _ = evPrefSize w $= Just (Size 240 320)
-    ft _ _ = return ()
-    info (k,xs) = Draw [color black $ textF Helvetica12 (Point 0.9 0.6)
-                        (show w ++ "x" ++ show h ++ " " ++snd ( xs!!k)) ]
-      where
-        Size h w = size (fst $ xs!!k)
-
-dummy :: Generator ()
-dummy = return (threadDelay 100000 >> return (Just ()))
-
-
-run t = runT_ camera (t >>> optDo "--freq" freqMonitor)
 

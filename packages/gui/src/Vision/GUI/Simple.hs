@@ -18,6 +18,7 @@ module Vision.GUI.Simple (
     module Vision.GUI.Parameters,
     module Vision.GUI.Objects,
     module Vision.GUI.Types,
+    module Vision.GUI.Source,
     module Data.Colour.Names,
     module Control.Arrow,
     module Control.Applicative,
@@ -33,6 +34,7 @@ import Vision.GUI.Interface
 import Vision.GUI.Parameters
 import Vision.GUI.Objects
 import Vision.GUI.Draw
+import Vision.GUI.Source
 import Data.Colour.Names(black,white,gray,red,green,blue,yellow,pink,orange,violet,
                          darkgray,lightgray,lightgreen,lightblue)
 import Control.Arrow

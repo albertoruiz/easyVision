@@ -12,4 +12,5 @@ findFiles.sh
 data
 packages/devel
 packages/newdevel
+projects/examples/tests
 
