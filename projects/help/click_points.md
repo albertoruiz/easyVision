@@ -19,9 +19,10 @@ $$
 An initial list of points can be loaded from a file indicated as a command line option.
 - - -
 
-[general GUI help][help]
+[general help][help]
 
-[command line options][options]
 
 INCLUDE(LINKS)
+
+INCLUDE(MATHJAX)
 

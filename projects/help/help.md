@@ -1,67 +1,29 @@
 hVision Help
 
-# hVision GUI Help
+# [hVision][project] help system
 
 - - -
 
-## zoom control
+Press **F1** in any graphical window to get help.
 
-**Ctrl-0** reset
+Your default Internet browser
+will open a local web page located in the the current directory, or in a directory
+called "help", under or above the current one. We try to open a web page with the same
+name as the program executable with extension html. If this page does not exist, we try the
+name of the window, or finally a generic "help.html" file like this.
 
-**Ctrl-KeyUp / Ctrl-WheelUp** zoom in
+We can write the html help files using markdown, using a simple Makefile and scripts to allow LaTeX (Mathjax) and syntax highlighting (Highlightjs) of code samples.
 
-**Ctrl-KeyDown / Ctrl-WheelDown** zoom out
+Help topics:
 
-**Ctrl-Drag-LeftButton** move
+- [GUI][gui]
 
-## define region of interest
+- [command line options][options]
 
-**Ctrl-Drag-RightButton** set region
+- [interactive point capture][points]
 
-**Alt-0** reset region
-
-## 3D window
-
-**Shift-Wheel** rotate view
-
-**M** auto rotate
-
-**O** reset view
-
-## camera control
-
-**SPACE** pause stream
-
-**Shift-SPACE** pause display
-
-**S** step (advance one frame)
-
-
-## misc
-
-**ESC** exit application
-
-**I** save window as ppm image file
-
-**F11** toggle show ROI and display stats
-
-**Ctrl-F3** minimize window (and inhibit display)
-
-**F3** toggle window resize mode
-
-**F10** toggle sync display
-
-**Ctrl-ESC** exit main loop only (useful in ghci)
-
-**Shift-ESC** leave loop and kill mplayer (FIXME)
-
-**F1**: help
 
 - - -
-
-[command line options][options]
-
-[interactive point capture][points]
 
 INCLUDE(LINKS)
 

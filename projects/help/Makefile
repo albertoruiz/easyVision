@@ -8,7 +8,7 @@ all: $(pages)
 	replace -r < $*.md \
 	| markdown \
 	| sed -e '1 s/<p/INCLUDE(HEADER)<TITLE/' -e '1 s/p>/TITLE>/' \
-	| replace -r | replace -r \
+	| replace -r \
 	> $*.html
 
 clean:
