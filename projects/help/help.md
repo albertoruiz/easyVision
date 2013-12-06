@@ -4,16 +4,6 @@ hVision Help
 
 - - -
 
-Press **F1** in any graphical window to get help.
-
-Your default Internet browser
-will open a local web page located in the the current directory, or in a directory
-called "help", under or above the current one. We try to open a web page with the same
-name as the program executable with extension html. If this page does not exist, we try the
-name of the window, or finally a generic "help.html" file like this.
-
-We can write the html help files using markdown, using a simple Makefile and scripts to allow LaTeX (Mathjax) and syntax highlighting (Highlightjs) of code samples.
-
 Help topics:
 
 - [GUI][gui]
@@ -22,8 +12,16 @@ Help topics:
 
 - [interactive point capture][points]
 
+- [tutorial][tutorial]
 
 - - -
+
+The hVision help system uses simple html pages. When you press **F1** in any graphical window the default Internet browser
+will open a local web page in the current directory, or in a "help" directory under or above the current one, with the same
+name as the program executable and extension .html. If this page does not exist, we try the
+name of the window, or finally a generic "help.html" file like this.
+
+We can write the help files using markdown and a simple Makefile and scripts to allow LaTeX (Mathjax) and syntax highlighting (Highlightjs) of code samples.
 
 INCLUDE(LINKS)
 

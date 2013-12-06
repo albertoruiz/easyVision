@@ -1,5 +1,3 @@
-#! /usr/bin/env runhaskell
-
 import System.Environment
 import Util.Text
 import Util.Misc(splitEvery)

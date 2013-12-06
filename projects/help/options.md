@@ -35,6 +35,11 @@ so in live video applications we usually don't need any command line argument:
 
 It is recommended that your editor / IDE is configured to be able to compile and run (or run in interpreted mode) the current program without the need of moving to a terminal.
 
+The suboption "drop" in the source url is used to return the most recent captured frame.
+
+The suboption "keep" in the source url is used to create a queue with all captures frames.
+This is used to guarantee that no frame is lost in the process, but it may produce a memory leak.
+
 **Directories of still images**
 
 We can work with all images in a directory, which are supplied to the application in
@@ -42,7 +47,12 @@ a transparent way.
 
 <pre><samp>
     ./program --photos=/path/to/images/
+</samp></pre>
+
+The user must explicitly move forward or backward pressing keys in the window.
+Alternatively, the images can be automatically loaded without user participation:
     
+<pre><samp>
     ./program --sphotos=/path/to/images/
 </samp></pre>
 
