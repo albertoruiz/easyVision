@@ -1,5 +1,5 @@
 import Vision.GUI.Simple
-import Image.Processing
+import Image
 
 main = run $ observe "source" rgb
 
