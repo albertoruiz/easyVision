@@ -30,7 +30,7 @@
 #include <sys/mman.h>
 #include <sys/select.h>
 #include <linux/videodev2.h>
-#include "avilib.h"
+//#include "avilib.h"
 
 #include "uvcvideo.h"
 #include "dynctrl-logitech.h"
@@ -74,7 +74,7 @@ struct vdIn {
     FILE *captureFile;
     unsigned int framesWritten;
     unsigned int bytesWritten;
-    avi_t *avifile;
+//    avi_t *avifile;
     char *avifilename;
     int framecount;
     int recordstart;

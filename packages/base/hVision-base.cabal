@@ -16,11 +16,7 @@ tested-with:        GHC ==7.6.3
 cabal-version:      >=1.2
 build-type:         Simple
 
-extra-source-files: src/Image/Capture/UVC/avilib.h
-                    src/Image/Capture/UVC/color.h
-                    src/Image/Capture/UVC/huffman.h
-                    src/Image/Capture/UVC/utils.h
-                    src/Image/Capture/UVC/v4l2uvc.h
+extra-source-files: src/Image/Capture/UVC/v4l2uvc.h
                     src/Image/Capture/UVC/dynctrl-logitech.h
                     src/Image/Capture/UVC/uvc_compat.h
                     src/Image/Capture/UVC/uvcvideo.h
@@ -95,10 +91,7 @@ library
     if flag(uvc)
         if ! os(OSX)
             cpp-options: -DHASUVC
-            c-sources:   src/Image/Capture/UVC/avilib.c
-                         src/Image/Capture/UVC/color.c
-                         src/Image/Capture/UVC/utils.c
-                         src/Image/Capture/UVC/v4l2uvc.c
+            c-sources:   src/Image/Capture/UVC/v4l2uvc.c
                          src/Image/Capture/UVC/capture.c
 
     include-dirs:        src/Image/Capture/UVC/

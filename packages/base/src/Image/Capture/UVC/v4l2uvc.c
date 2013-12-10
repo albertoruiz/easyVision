@@ -26,7 +26,7 @@
 #include <float.h>
 
 #include "v4l2uvc.h"
-#include "utils.h"
+//#include "utils.h"
 
 #define ARRAY_SIZE(a)		(sizeof(a) / sizeof((a)[0]))
 #define FOURCC_FORMAT		"%c%c%c%c"
@@ -124,7 +124,7 @@ init_videoIn(struct vdIn *vd, char *device, int width, int height, float fps,
 	printf("  Device path:  %s\n", vd->videodevice);
 #endif
     vd->toggleAvi = 0;
-    vd->avifile = NULL;
+//    vd->avifile = NULL;
     vd->avifilename = avifilename;
     vd->recordtime = 0;
     vd->framecount = 0;
@@ -587,100 +587,20 @@ int uvcGrab(struct vdIn *vd)
 
 	/* Capture a single raw frame */
 	if (vd->rawFrameCapture && vd->buf.bytesused > 0) {
-		FILE *frame = NULL;
-		char filename[13];
-		int ret;
-
-		/* Disable frame capturing unless we're in frame stream mode */
-		if(vd->rawFrameCapture == 1)
-			vd->rawFrameCapture = 0;
-
-		/* Create a file name and open the file */
-		sprintf(filename, "frame%03u.raw", vd->fileCounter++ % 1000);
-		frame = fopen(filename, "wb");
-		if(frame == NULL) {
-			perror("Unable to open file for raw frame capturing");
-			goto end_capture;
-		}
-		
-		/* Write the raw data to the file */
-		ret = fwrite(vd->mem[vd->buf.index], vd->buf.bytesused, 1, frame);
-		if(ret < 1) {
-			perror("Unable to write to file");
-			goto end_capture;
-		}
-		printf("Saved raw frame to %s (%u bytes)\n", filename, vd->buf.bytesused);
-		if(vd->rawFrameCapture == 2) {
-			vd->rfsBytesWritten += vd->buf.bytesused;
-			vd->rfsFramesWritten++;
-		}
-
-
-		/* Clean up */
-end_capture:
-		if(frame)
-			fclose(frame);
+    // removed
 	}
 
    
 
 	/* Capture raw stream data */
 	if (vd->captureFile && vd->buf.bytesused > 0) {
-		int ret;
-		ret = fwrite(vd->mem[vd->buf.index], vd->buf.bytesused, 1, vd->captureFile);
-		if (ret < 1) {
-			perror("Unable to write raw stream to file");
-			fprintf(stderr, "Stream capturing terminated.\n");
-			fclose(vd->captureFile);
-			vd->captureFile = NULL;
-			vd->framesWritten = 0;
-			vd->bytesWritten = 0;
-		} else {
-			vd->framesWritten++;
-			vd->bytesWritten += vd->buf.bytesused;
-			if (debug)
-				printf("Appended raw frame to stream file (%u bytes)\n", vd->buf.bytesused);
-		}
+	// removed
 	}
 
     switch (vd->formatIn) {
+    
     case V4L2_PIX_FMT_MJPEG:
-        if(vd->buf.bytesused <= HEADERFRAME1) {	/* Prevent crash on empty image */
-/*	    if(debug)*/
-	        printf("Ignoring empty buffer ...\n");
-	    return 0;
-        }
-	memcpy(vd->tmpbuffer, vd->mem[vd->buf.index],vd->buf.bytesused);
-	 /* avi recording is toggled on */
-    if (vd->toggleAvi) {
-        /* if vd->avifile is NULL, then we need to initialize it */
-        if (vd->avifile == NULL) {
-            vd->avifile = AVI_open_output_file(vd->avifilename);
-
-            /* if avifile is NULL, there was an error */
-            if (vd->avifile == NULL ) {
-                fprintf(stderr,"Error opening avifile %s\n",vd->avifilename);
-            }
-            else {
-                /* we default the fps to 15, we'll reset it on close */
-                AVI_set_video(vd->avifile, vd->width, vd->height,
-                    15, "MJPG");
-                printf("recording to %s\n",vd->avifilename);
-            }
-        } else {
-        /* if we have a valid avifile, record the frame to it */
-            AVI_write_frame(vd->avifile, vd->tmpbuffer,
-                vd->buf.bytesused, vd->framecount);
-            vd->framecount++;
-        }
-    }
-	if (jpeg_decode(&vd->framebuffer, vd->tmpbuffer, &vd->width,
-	     &vd->height) < 0) {
-	    printf("jpeg decode errors\n");
-	    goto err;
-	}
-	if (debug)
-	    printf("bytes in used %d\n", vd->buf.bytesused);
+    // removed
 	break;
     case V4L2_PIX_FMT_YUYV:
 	if (vd->buf.bytesused > vd->framesizeIn)
