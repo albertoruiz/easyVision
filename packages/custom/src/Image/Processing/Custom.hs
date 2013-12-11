@@ -12,7 +12,8 @@ Stability   :  provisional
 -----------------------------------------------------------------------------
 
 module Image.Processing.Custom (
-    histogram3D
+    histogram3D,
+    module Image.Processing.Simple
 )
 where
 
@@ -21,6 +22,7 @@ import Foreign.C.Types ( CInt(CInt) )
 import Data.Packed.Vector(Vector)
 import Data.Packed.Development(createVector)
 import Data.Packed.Foreign(appVectorLen)
+import Image.Processing.Simple
 
 --------------------------------------------------------------------------------
 

@@ -26,9 +26,10 @@ library
 
     Exposed-modules:    Image.Processing.Custom
 
-    other-modules:
+    other-modules:      Image.Processing.Simple
 
     c-sources:          src/Image/Processing/custom.c
+                        src/Image/Processing/simple.c
 
     cc-options:         -O4 -msse2
 

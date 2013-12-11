@@ -2,13 +2,12 @@
 
 -----------------------------------------------------------------------------
 {- |
-Module      :  ImagProc.C.Simple
-Copyright   :  (c) Alberto Ruiz 2006
-License     :  GPL-style
+Module      :  Image.Processing.Simple
+Copyright   :  (c) Alberto Ruiz 2006-13
+License     :  GPL
 
 Maintainer  :  Alberto Ruiz (aruiz at um dot es)
-Stability   :  very provisional
-Portability :  hmm...
+Stability   :  provisional
 
 Interface to a few simple algorithms implemented in C.
 
@@ -16,41 +15,44 @@ Interface to a few simple algorithms implemented in C.
 -----------------------------------------------------------------------------
 
 
-module ImagProc.C.Simple where
+module Image.Processing.Simple(
+    getPoints32f
+) where
 
-import ImagProc.Ipp.Core
-import ImagProc.Generic(clone,set)
-import Foreign.Ptr
-import Foreign.ForeignPtr
+import Image
+import Image.Devel
+
+--import ImagProc.Generic(clone,set)
+--import Foreign.Ptr
+--import Foreign.ForeignPtr
 import Foreign.Marshal
 import Foreign.Storable
-import System.IO.Unsafe(unsafePerformIO)
-import Foreign(Word8)
+--import System.IO.Unsafe(unsafePerformIO)
+--import Foreign(Word8)
 
--- | Explores an image and returns a list of pixels (as [row,column]) where the image is greater than 0.0.
-getPoints32f :: Int -> ImageFloat -> [Pixel]
-getPoints32f mx (F im) = unsafePerformIO $ do
+-- | Explores an image and returns a list of pixels where the image is greater than 0.0.
+getPoints32f :: Int -> Image Float -> [Pixel]
+getPoints32f mx im = unsafePerformIO $ do
     r <- mallocArray (2*mx)
     ptot <- malloc
-    ok <- c_getPoints32f (castPtr (ptr im)) (step im) 
-                   (r1 (vroi im)) (r2 (vroi im)) (c1 (vroi im)) (c2 (vroi im))
-                   mx ptot r
-    touchForeignPtr (fptr im)
+    withImage im $ checkFFI "getPoints32f" $
+        (c_getPoints32f `appI` im) (fi mx) ptot r
     tot <- peek ptot
     hp <- peekArray (fromIntegral tot) r
     free ptot
     free r
     return (partitPixel hp)
+  where
+    partitPixel :: [CInt] -> [Pixel]
+    partitPixel [] = []
+    partitPixel [a] = error "partitPixel on a list with odd number of entries"
+    partitPixel (r:c:l) = Pixel (fromIntegral r) (fromIntegral c) : partitPixel l
 
-partitPixel :: [CInt] -> [Pixel]
-partitPixel [] = []
-partitPixel [a] = error "partitPixel on a list with odd number of entries"
-partitPixel (r:c:l) = Pixel (fromIntegral r) (fromIntegral c) : partitPixel l
 
+foreign import ccall "getPoints32f"
+    c_getPoints32f :: RawImage Float (CInt -> Ptr CInt -> Ptr CInt -> IO CInt)
 
-foreign import ccall "Simple/simple.h getPoints32f"
-    c_getPoints32f :: Ptr Float -> Int -> Int -> Int -> Int -> Int ->
-                      Int -> Ptr CInt -> Ptr CInt -> IO Int
+{-
 
 -----------------------------------------------------------------------------
 
@@ -223,4 +225,6 @@ foreign import ccall "Simple/simple.h lookup2D"
      c_lookup2D :: Ptr Word8 -> Int -> Ptr Word8 -> Int -> Ptr Word8 -> Int -> Ptr Word8 -> Int
                    -> Int -> Int -> Int -> Int
                    -> IO Int
+
+-}
 
