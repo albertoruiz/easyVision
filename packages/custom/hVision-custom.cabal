@@ -1,0 +1,38 @@
+Name:               hVision-custom
+Version:            0.1
+License:            GPL
+License-file:       LICENSE
+Author:             Alberto Ruiz
+Maintainer:         Alberto Ruiz <aruiz@um.es>
+Stability:          experimental
+Homepage:           https://github.com/albertoruiz/easyVision
+Synopsis:           additional low level image processing functions
+Description:        additional low level image processing functions
+
+Category:           Math
+tested-with:        GHC ==7.6.3
+
+cabal-version:      >=1.2
+build-type:         Custom
+
+extra-source-files: configure configure.hs
+extra-tmp-files:    hVision-custom.buildinfo
+
+
+library
+    Build-Depends:      base, hVision-base, hmatrix
+
+    hs-source-dirs:     src
+
+    Exposed-modules:    Image.Processing.Custom
+
+    other-modules:
+
+    c-sources:          src/Image/Processing/custom.c
+
+    cc-options:         -O4 -msse2
+
+    ghc-prof-options:   -auto-all
+
+    ghc-options:        -Wall
+
