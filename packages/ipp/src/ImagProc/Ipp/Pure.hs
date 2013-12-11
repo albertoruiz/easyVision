@@ -21,7 +21,7 @@ module ImagProc.Ipp.Pure (
     compareC8u, compare8u,
     filterMax32f, filterMin32f, filterMax8u, filterMin8u,
     filterBox32f, filterBox8u, filterMedian,
-    maxEvery, minEvery,
+    maxEvery32f, minEvery32f,
     maxEvery8u, minEvery8u,
     sobelVert, sobelHoriz,
     gauss32f, gauss8u, laplace, median, highPass8u,
@@ -333,12 +333,12 @@ erode3x3 = mkShrink (1,1) ioErode3x3_8u_C1R
 ------------------------------------------------------
 
 -- | pixelwise maximum of two images
-maxEvery :: Image Float -> Image Float -> Image Float
-maxEvery = mkIdIPInt32f ioMaxEvery_32f_C1IR
+maxEvery32f :: Image Float -> Image Float -> Image Float
+maxEvery32f = mkIdIPInt32f ioMaxEvery_32f_C1IR
 
 -- | pixelwise minimum of two images
-minEvery :: Image Float -> Image Float -> Image Float
-minEvery = mkIdIPInt32f ioMinEvery_32f_C1IR
+minEvery32f :: Image Float -> Image Float -> Image Float
+minEvery32f = mkIdIPInt32f ioMinEvery_32f_C1IR
 
 
 -- | pixelwise maximum of two images

@@ -30,7 +30,8 @@ module ImagProc.Ipp.AdHoc(
     sum8u, sum32f,
     convolutionRow8u,convolutionColumn8u,convolution8u,
     convolutionRow32f,convolutionColumn32f,convolution32f,
-    compare32f, copyMask32f, copyMask8u, copyMask8u3
+    compare32f, copyMask32f, copyMask8u, copyMask8u3,
+    canny32f
 )
 where
 
@@ -542,24 +543,28 @@ genDistanceTransform f metrics (G im) = unsafePerformIO $ do
 
 -------------------------------------------------------------------------
 
+-}
+
 -- | Canny's edge detector.
-canny32f :: (ImageFloat,ImageFloat) -- ^ image gradient (dx,dy)
+canny32f :: (Image Float,Image Float) -- ^ image gradient (dx,dy)
       -> (Float,Float)           -- ^ low and high threshold
-      -> ImageGray               -- ^ resulting image
-canny32f (F dx, F dy) (l,h) = unsafePerformIO $ do
-    r <- img Gray (isize dx)
+      -> Image I8u               -- ^ resulting image
+canny32f (dx, dy) (l,h) = unsafePerformIO $ do
+    let droi = intersection (roi dx) (roi dy)
+    r <- setROI droi <$> newImage undefined (size dx)
     ps <- malloc
-    let roi = intersection (vroi dx) (vroi dy)
-    (ippiCannyGetSize (roiSZ roi)) ps // checkIPP "ippiCannyGetSize" []
+
+    (ippiCannyGetSize (roiSZ droi)) ps // checkIPP "ippiCannyGetSize"
     s <- peek ps
     buffer <- mallocBytes (fromIntegral s)
-    (ippiCanny_32f8u_C1R // src dx roi // src dy roi // dst r roi) l h buffer
-                         // checkIPP "ippiCanny_32f8u_C1R" [dx,dy]
+    withImage dx $ withImage dy $ do
+        (ippiCanny_32f8u_C1R // src dx droi // src dy droi // dst r) l h buffer
+                             // checkIPP "ippiCanny_32f8u_C1R"
     free buffer
     free ps
-    return (G r {vroi = roi})
+    return r
 
--}
+
 
 --------------------------------------------------------------------------------
 
@@ -594,9 +599,9 @@ convolution32f mask img = unsafePerformIO $ do
         rm = r `div` 2
         c = fi $ length (head mask)
         cm = c `div` 2
-    r <- ioFilter_32f_C1R pKernel (IppiSize r c) (IppiPoint cm rm) (shrink (ti rm,ti cm)) img
+    res <- ioFilter_32f_C1R pKernel (IppiSize r c) (IppiPoint cm rm) (shrink (ti rm,ti cm)) img
     free pKernel
-    return r
+    return res
 
 convolution8u :: [[Int]] -> Int -> ImageGray -> ImageGray
 convolution8u mask divisor img = unsafePerformIO $ do
@@ -605,45 +610,45 @@ convolution8u mask divisor img = unsafePerformIO $ do
         rm = r `div` 2
         c = fi $ length (head mask)
         cm = c `div` 2
-    r <- ioFilter_8u_C1R pKernel (IppiSize r c) (IppiPoint cm rm) divisor (shrink (ti rm,ti cm)) img
+    res <- ioFilter_8u_C1R pKernel (IppiSize r c) (IppiPoint cm rm) divisor (shrink (ti rm,ti cm)) img
     free pKernel
-    return r
+    return res
 
 convolutionColumn32f :: [Float] -> ImageFloat -> ImageFloat
 convolutionColumn32f mask img = unsafePerformIO $ do
     pKernel <- newArray mask
     let r = length mask
         rm = r `div` 2
-    r <- ioFilterColumn_32f_C1R pKernel r rm (shrink (rm,0)) img
+    res <- ioFilterColumn_32f_C1R pKernel r rm (shrink (rm,0)) img
     free pKernel
-    return r
+    return res
 
 convolutionColumn8u :: [Int] -> Int -> ImageGray -> ImageGray
 convolutionColumn8u mask divisor img = unsafePerformIO $ do
     pKernel <- newArray (map fromIntegral mask)
     let r = length mask
         rm = r `div` 2
-    r <- ioFilterColumn_8u_C1R pKernel r rm divisor (shrink (rm,0)) img
+    res <- ioFilterColumn_8u_C1R pKernel r rm divisor (shrink (rm,0)) img
     free pKernel
-    return r
+    return res
 
 convolutionRow32f :: [Float] -> ImageFloat -> ImageFloat
 convolutionRow32f mask img = unsafePerformIO $ do
     pKernel <- newArray mask
     let r = length mask
         rm = r `div` 2
-    r <- ioFilterRow_32f_C1R pKernel r rm (shrink (0,rm)) img
+    res <- ioFilterRow_32f_C1R pKernel r rm (shrink (0,rm)) img
     free pKernel
-    return r
+    return res
 
 convolutionRow8u :: [Int] -> Int -> ImageGray -> ImageGray
 convolutionRow8u mask divisor img = unsafePerformIO $ do
     pKernel <- newArray (map fromIntegral mask)
     let r = length mask
         rm = r `div` 2
-    r <- ioFilterRow_8u_C1R pKernel r rm divisor (shrink (0,rm)) img
+    res <- ioFilterRow_8u_C1R pKernel r rm divisor (shrink (0,rm)) img
     free pKernel
-    return r
+    return res
 
 {-
 

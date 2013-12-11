@@ -16,21 +16,20 @@ module Image.Processing(
     sumPixels,
     -- * threshold and comparison
     (G..<.),(G..>.), compareImages, IppCmp(..),
-    thresholdVal32f, thresholdVal8u,
+    thresholdVal,
     minmax,maxIdx,
     maxEvery, minEvery,
-    maxEvery8u, minEvery8u,
     otsuThreshold, G.otsuBinarize,
     -- * histograms
     histogram, histogramN,
     -- * filters
-    convolution,
+    Mask(..), gauss, median, laplace, highPass8u,
+    sobelVert, sobelHoriz,
     filterMax, filterMin,
     filterBox, filterMedian,
-    sobelVert, sobelHoriz,
-    gauss, laplace, median, highPass8u, Mask(..),
-    gaussS, gaussS', hessian, Grads(..), gradients,
     localMax,
+    convolution,
+    gaussS, gaussS', Grads(..), gradients, hessian, canny,
     -- * matching
     crossCorr, G.crossCorrLoc, sqrDist,
     -- * contours
@@ -86,4 +85,15 @@ copyMask :: Pix p
          -> Image I8u -- ^ mask
          -> Image p
 copyMask = G.copyMask
+minEvery a b = G.minEvery a b
+maxEvery a b = G.maxEvery a b
+
+thresholdVal :: NPix p
+    => p          -- ^ threshold
+    -> p          -- ^ value
+    -> IppCmp     -- ^ comparison function
+    -> Image p    -- ^ source image
+    -> Image p    -- ^ result
+thresholdVal t v a c = G.thresholdVal t v a c
+
 

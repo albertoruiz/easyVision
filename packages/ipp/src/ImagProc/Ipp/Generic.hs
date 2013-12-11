@@ -317,6 +317,13 @@ class Pix p => NPix p
     filterBox :: Int -> Int -> Image p -> Image p
     gauss :: Mask -> Image p -> Image p
     compareImages :: IppCmp -> Image p -> Image p -> Image I8u
+    minEvery :: Image p -> Image p -> Image p
+    maxEvery :: Image p -> Image p -> Image p
+    thresholdVal :: p          -- ^ threshold
+                 -> p          -- ^ value
+                 -> IppCmp     -- ^ comparison function
+                 -> Image p    -- ^ source image
+                 -> Image p    -- ^ result
 
 
 instance NPix Word8
@@ -331,7 +338,9 @@ instance NPix Word8
       where
         dmask = round . recip . minimum . concatMap (map abs) $ mask
         imask = map (map (round . (* fromIntegral dmask))) $ mask
-    
+    minEvery = minEvery8u
+    maxEvery = maxEvery8u
+    thresholdVal = thresholdVal8u
 
 instance NPix Float
   where
@@ -342,6 +351,9 @@ instance NPix Float
     gauss = gauss32f
     compareImages = compare32f
     convolution = filter32f
+    minEvery = minEvery32f
+    maxEvery = maxEvery32f
+    thresholdVal = thresholdVal32f
 
 --------------------------------------------------------------------------------
 
