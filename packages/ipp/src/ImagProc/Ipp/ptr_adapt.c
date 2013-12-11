@@ -230,6 +230,10 @@ int ippiCopy_8u_C1MRx(Ipp8u* pSrc, int srcStep, Ipp8u* pDst, int dstStep, IppiSi
     return ippiCopy_8u_C1MR(pSrc, srcStep, pDst, dstStep, *roiSize, pMask, maskStep);
 }
 
+int ippiCopy_8u_C3MRx(Ipp8u* pSrc, int srcStep, Ipp8u* pDst, int dstStep, IppiSize* roiSize, Ipp8u* pMask, int maskStep) {
+    return ippiCopy_8u_C3MR(pSrc, srcStep, pDst, dstStep, *roiSize, pMask, maskStep);
+}
+
 int ippiCopy_32f_C1Rx(Ipp32f* pSrc, int srcStep, Ipp32f* pDst, int dstStep, IppiSize* roiSize) {
     return ippiCopy_32f_C1R(pSrc, srcStep, pDst, dstStep, *roiSize);
 }

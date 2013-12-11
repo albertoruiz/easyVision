@@ -21,7 +21,6 @@ extra-source-files: configure configure.hs
                     src/ImagProc/Ipp/Parser.hs
                     src/ImagProc/Ipp/functions.txt
                     src/ImagProc/Ipp/auxIpp.h
-                    src/ImagProc/C/Simple/simple.h
                     src/ImagProc/Ipp/ptr_adapt.h
 
 extra-tmp-files:    hVision-ipp.buildinfo
@@ -61,7 +60,6 @@ library
 
 
     c-sources:          src/ImagProc/Ipp/auxIpp.c
-                        --src/ImagProc/C/Simple/simple.c
                         src/ImagProc/Ipp/ptr_adapt.c
 
     cc-options:         -Wall

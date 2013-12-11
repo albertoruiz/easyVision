@@ -4,7 +4,7 @@ module Image.Processing(
     module Image,
     -- * basic functions
     size, roi, setROI, modifyROI,
-    G.constant, set, zeroP, copy, G.blockImage,
+    G.constant, set, zeroP, copy, copyMask, G.blockImage,
     -- * spatial transformations
     resize, G.resizeFull, G.warp, warpon, uradial,
     -- * logical functions
@@ -15,9 +15,8 @@ module Image.Processing(
     addC8u, add8u, sub8u, sub8uRel,
     sumPixels,
     -- * threshold and comparison
-    (G..<.),(G..>.),
+    (G..<.),(G..>.), compareImages, IppCmp(..),
     thresholdVal32f, thresholdVal8u,
-    compareC8u, compare8u, IppCmp(..),
     minmax,maxIdx,
     maxEvery, minEvery,
     maxEvery8u, minEvery8u,
@@ -31,6 +30,7 @@ module Image.Processing(
     sobelVert, sobelHoriz,
     gauss, laplace, median, highPass8u, Mask(..),
     gaussS, gaussS', hessian, Grads(..), gradients,
+    localMax,
     -- * matching
     crossCorr, G.crossCorrLoc, sqrDist,
     -- * contours
@@ -43,6 +43,7 @@ module Image.Processing(
     -- * misc
     ippSetNumThreads,
     floodFill8u, floodFill8uGrad,
+    compareC8u,
     -- * types
     Pix(), NPix(), Size(..), ROI(..),
     Point(..), Polyline(..), Segment(..)
@@ -75,6 +76,14 @@ filterBox i j x = G.filterBox i j x
 gauss m x = G.gauss m x
 zeroP :: Pix p => p
 zeroP = G.zeroP
+compareImages c x y = G.compareImages c x y
 
 maxIdx x = G.maxIdx x
+
+copyMask :: Pix p
+         => Image p   -- ^ base image
+         -> Image p   -- ^ source image
+         -> Image I8u -- ^ mask
+         -> Image p
+copyMask = G.copyMask
 

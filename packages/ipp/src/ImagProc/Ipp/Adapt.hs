@@ -516,6 +516,14 @@ ippiCopy_8u_C1MR pSrc srcStep pDst dstStep roiSize pMask maskStep = do
     free proiSize
     return r
 
+foreign import ccall "ippiCopy_8u_C3MRx"
+    ippiCopy_8u_C3MRx :: Ptr Word8 -> Int -> Ptr Word8 -> Int -> Ptr IppiSize -> Ptr Word8 -> Int -> IO CInt
+ippiCopy_8u_C3MR pSrc srcStep pDst dstStep roiSize pMask maskStep = do
+    proiSize <- new roiSize
+    r <- ippiCopy_8u_C3MRx pSrc srcStep pDst dstStep proiSize pMask maskStep
+    free proiSize
+    return r
+
 foreign import ccall "ippiCopy_32f_C1Rx"
     ippiCopy_32f_C1Rx :: Ptr Float -> Int -> Ptr Float -> Int -> Ptr IppiSize -> IO CInt
 ippiCopy_32f_C1R pSrc srcStep pDst dstStep roiSize = do

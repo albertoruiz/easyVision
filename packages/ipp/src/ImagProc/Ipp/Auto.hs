@@ -209,6 +209,12 @@ ioCopy_8u_C1MR pMask maskStep = {-# SCC "ippiCopy_8u_C1MR" #-} auto_1_8u_C1MR (f
 {- |   copy pixel values from the source image to the destination  image
 
  -}
+ioCopy_8u_C3MR pMask maskStep = {-# SCC "ippiCopy_8u_C3MR" #-} auto_1_8u_C3MR (f pMask maskStep) "ippiCopy_8u_C3MR"
+    where f pMask maskStep pSrc srcStep pDst dstStep roiSize = ippiCopy_8u_C3MR pSrc srcStep pDst dstStep roiSize pMask maskStep
+
+{- |   copy pixel values from the source image to the destination  image
+
+ -}
 ioCopy_32f_C1R  = {-# SCC "ippiCopy_32f_C1R" #-} auto_1_32f_C1R f "ippiCopy_32f_C1R"
     where f pSrc srcStep pDst dstStep roiSize = ippiCopy_32f_C1R pSrc srcStep pDst dstStep roiSize
 

@@ -29,7 +29,8 @@ module ImagProc.Ipp.AdHoc(
     otsuThreshold,
     sum8u, sum32f,
     convolutionRow8u,convolutionColumn8u,convolution8u,
-    convolutionRow32f,convolutionColumn32f,convolution32f
+    convolutionRow32f,convolutionColumn32f,convolution32f,
+    compare32f, copyMask32f, copyMask8u, copyMask8u3
 )
 where
 
@@ -42,6 +43,7 @@ import ImagProc.Ipp.Auto
 import Data.ByteString.Internal as B
 import Foreign.Ptr(plusPtr,castPtr)
 import Foreign.Storable(peek)
+import Control.Applicative((<$>))
 
 
 -- | Writes into a existing image a desired value in a specified roi.
@@ -362,37 +364,61 @@ maxIndx8u im = unsafePerformIO $ do
 
 ----------------------------------------------------------------------
 
--- | The result is the pixelswise comparation of the two source images.
-compare32f :: IppCmp -> ImageFloat -> ImageFloat -> ImageGray
-compare32f cmp (F im1) (F im2) = unsafePerformIO $ do
-    r <- img Gray (isize im1)
-    let roi = intersection (vroi im1) (vroi im2)
-    (ippiCompare_32f_C1R // src im1 roi // src im2 roi // dst r roi) (codeCmp cmp) // checkIPP "compare32f" [im1,im2]
-    return (G r {vroi = roi})
-
--- | Creates a copy of the source image only on corresponding pixels in which mask=255
-copyMask32f :: ImageFloat    -- ^ source image
-            -> ImageGray     -- ^ mask image
-            -> ImageFloat    -- ^ result
-copyMask32f (F im) (G mask) = unsafePerformIO $ do
-    r <- imgAs im
-    let roi = intersection (vroi im) (vroi mask)
-    set32f 0.0 (fullroi r) (F r)
-    ippiCopy_32f_C1MR // src im roi // dst r roi // src mask roi // checkIPP "copyMask32f" [im,mask]
-    return $ F r {vroi = roi}
-
--- | Creates a copy of the source image only on corresponding pixels in which mask=255
-copyMask8u  :: ImageGray    -- ^ source image
-            -> ImageGray    -- ^ mask image
-            -> ImageGray    -- ^ result
-copyMask8u (G im) (G mask) = unsafePerformIO $ do
-    r <- imgAs im
-    let roi = intersection (vroi im) (vroi mask)
-    set8u 0 (fullroi r) (G r)
-    ippiCopy_8u_C1MR // src im roi // dst r roi // src mask roi // checkIPP "copyMask8uf" [im,mask]
-    return $ G r {vroi = roi}
-
 -}
+
+
+-- | The result is the pixelswise comparation of the two source images.
+compare32f :: IppCmp -> Image Float -> Image Float -> Image I8u
+compare32f cmp im1 im2 = unsafePerformIO $ do
+    let droi = intersection (roi im1) (roi im2)
+    r <- setROI droi <$> newImage undefined (size im1)
+    withImage im1 $ withImage im2 $ do
+        (ippiCompare_32f_C1R // src im1 droi // src im2 droi // dst r) (codeCmp cmp) // checkIPP "compare32f"
+    return r
+
+
+
+-- FIXME generic copyMask
+
+-- | Creates a copy of the source image only on corresponding pixels in which mask=255
+copyMask32f :: Image Float   -- ^ base image
+            -> Image Float   -- ^ source image
+            -> Image I8u     -- ^ mask image
+            -> Image Float   -- ^ result
+copyMask32f base im mask = unsafePerformIO $ do
+    let droi = intersection (roi im) (roi mask) `intersection` (roi base)
+    r <- cloneImage base
+    withImage im $ withImage mask $ do
+        ippiCopy_32f_C1MR // src im droi // dst (setROI droi r) // src mask droi // checkIPP "copyMask32f"
+    return r
+
+
+
+-- | Creates a copy of the source image only on corresponding pixels in which mask=255
+copyMask8u  :: Image I8u   -- ^ base image
+            -> Image I8u    -- ^ source image
+            -> Image I8u    -- ^ mask image
+            -> Image I8u    -- ^ result
+copyMask8u base im mask = unsafePerformIO $ do
+    let droi = intersection (roi im) (roi mask) `intersection` (roi base)
+    r <- cloneImage base
+    withImage im $ withImage mask $ do
+        ippiCopy_8u_C1MR // src im droi // dst (setROI droi r) // src mask droi // checkIPP "copyMask8u"
+    return r
+
+
+-- | Creates a copy of the source image only on corresponding pixels in which mask=255
+copyMask8u3  :: Image I8u3    -- ^ base image
+             -> Image I8u3    -- ^ source image
+             -> Image I8u     -- ^ mask image
+             -> Image I8u3    -- ^ result
+copyMask8u3 base im mask = unsafePerformIO $ do
+    let droi = intersection (roi im) (roi mask) `intersection` (roi base)
+    r <- cloneImage base
+    withImage im $ withImage mask $ do
+        ippiCopy_8u_C3MR // src im droi // dst (setROI droi r) // src mask droi // checkIPP "copyMask8u3"
+    return r
+
 
 
 -- | Sum of all pixels in the roi a 8u image

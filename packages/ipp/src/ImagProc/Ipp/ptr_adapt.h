@@ -57,6 +57,7 @@ int ippiCopy_8u_C1C3Rx(unsigned char*, int, unsigned char*, int, void*);
 int ippiCopy_8u_C1Rx(unsigned char*, int, unsigned char*, int, void*);
 int ippiCopy_8u_C3Rx(unsigned char*, int, unsigned char*, int, void*);
 int ippiCopy_8u_C1MRx(unsigned char*, int, unsigned char*, int, void*, unsigned char*, int);
+int ippiCopy_8u_C3MRx(unsigned char*, int, unsigned char*, int, void*, unsigned char*, int);
 int ippiCopy_32f_C1Rx(float*, int, float*, int, void*);
 int ippiCopy_32f_C1MRx(float*, int, float*, int, void*, unsigned char*, int);
 int ippiSet_8u_C1Rx(unsigned char, unsigned char*, int, void*);

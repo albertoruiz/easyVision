@@ -60,6 +60,7 @@ ippi.h  ippiMulC_32f_C1R
 ippi.h  ippiCompare_8u_C1R
 ippi.h  ippiCopy_32f_C1MR
 ippi.h  ippiCopy_8u_C1MR
+ippi.h  ippiCopy_8u_C3MR
 ippi.h  ippiImageJaehne_32f_C1R
 ippi.h  ippiMinMax_32f_C1R
 ippi.h  ippiMaxIndx_32f_C1R

@@ -11,7 +11,7 @@ int getPoints32f(float * pSrc, int sstep, int sr1, int sr2, int sc1, int sc2,
         for(c=sc1; c<=sc2; c++) {
             if(pos>=maxpos) {
                 *tot = max*2;
-                return 1;
+                return 0;
             }
             if(*(pSrc+r*sstep/4+c) > 0.) {
                 hp[pos] =  r;

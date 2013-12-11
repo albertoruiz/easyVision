@@ -36,6 +36,7 @@ class Storable p => Pix p
             -> Float -- ^ k radial distortion (quadratic) parameter
             -> Image p -> Image p
     zeroP   :: p
+    copyMask :: Image p -> Image p -> Image I8u -> Image p
 
 {-
 -- | transform an image according to a lookup table (see 'undistortMap')
@@ -54,6 +55,7 @@ instance Pix Word8
     absDiff = absDiff8u
     sumPixels = sum8u
     zeroP   = 0
+    copyMask = copyMask8u
 --    remap (LookupMap m) = remap8u m
 
 
@@ -69,6 +71,7 @@ instance Pix Float
     absDiff = absDiff32f
     sumPixels = sum32f
     zeroP   = 0
+    copyMask = copyMask32f
 --    remap (LookupMap m) = remap32f m
 
 
@@ -84,6 +87,7 @@ instance Pix Word24
     absDiff = absDiff8u3
     sumPixels = sumPixels . flattenImage
     zeroP   = Word24 0 0 0
+    copyMask = copyMask8u3
 --    remap (LookupMap m) = remapRGB m
     
 r3 x = resizeFull (Size r (c `div` 3)) x
@@ -312,6 +316,7 @@ class Pix p => NPix p
     filterMin :: Int -> Image p -> Image p
     filterBox :: Int -> Int -> Image p -> Image p
     gauss :: Mask -> Image p -> Image p
+    compareImages :: IppCmp -> Image p -> Image p -> Image I8u
 
 
 instance NPix Word8
@@ -321,6 +326,7 @@ instance NPix Word8
     filterMin = filterMin8u
     filterBox = filterBox8u
     gauss = gauss8u
+    compareImages = compare8u
     convolution mask = filter8u imask dmask
       where
         dmask = round . recip . minimum . concatMap (map abs) $ mask
@@ -334,6 +340,7 @@ instance NPix Float
     filterMin = filterMin32f
     filterBox = filterBox32f
     gauss = gauss32f
+    compareImages = compare32f
     convolution = filter32f
 
 --------------------------------------------------------------------------------

@@ -12,7 +12,7 @@ Stability   :  provisional
 
 module ImagProc.Ipp.Tools (
     --binarize8u, binarize32f, autoBinarize,
-    --localMax,
+    localMax,
     Grads(..), gradients,
     --canny,
     hessian,
@@ -31,7 +31,7 @@ import Util.Geometry
 import Data.List(transpose)
 import Util.Rotation(rot3)
 import Util.Homogeneous(desp)
-import Numeric.LinearAlgebra
+import Numeric.LinearAlgebra hiding (constant)
 
 {-
 -- | Binarizes a gray level image.
@@ -49,18 +49,19 @@ binarize32f :: Float    -- ^ threshold
            -> ImageFloat -- ^ result: higher values -> 1, lower values -> 0
 binarize32f th = thresholdVal32f th 0 IppCmpLess . thresholdVal32f th 1 IppCmpGreater
 
-
+-}
                   
 -- | Nonmaximum supression. Given an I32f image returns a copy of the input image with all the pixels which are not local maxima set to 0.0.
-localMax :: Int         -- ^ radius of the 'filterMax'
-         -> ImageFloat  -- ^ input image
-         -> ImageFloat   -- ^ result
-localMax r g = copyMask32f g mask where
+localMax :: Int           -- ^ radius of the 'filterMax'
+         -> Image Float   -- ^ input image
+         -> Image Float   -- ^ result
+localMax r g = copyMask32f b g mask where
     mg = filterMax r g
     mask = compare32f IppCmpEq mg g
+    b = setROI (roi mg) (constant 0 (size g))
 
 
--}
+
 
 data Grads = Grads { gm, gx, gy, gxx, gyy, gxy :: ImageFloat }
 

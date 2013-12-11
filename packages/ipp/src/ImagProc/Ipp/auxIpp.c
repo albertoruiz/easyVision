@@ -152,3 +152,9 @@ int auxInpainting_8u_C1R(float rad,     int method,
     return res;
 }
 
+//------------------------------------------------------------------------------
+
+int ippiCompare_32f_C1Rx(Ipp32f* pSrc1, int src1Step, Ipp32f* pSrc2, int src2Step, Ipp8u* pDst, int dstStep, IppiSize* roiSize, IppCmpOp ippCmpOp) {
+    return ippiCompare_32f_C1R(pSrc1, src1Step, pSrc2, src2Step, pDst, dstStep, *roiSize, ippCmpOp);
+}
+

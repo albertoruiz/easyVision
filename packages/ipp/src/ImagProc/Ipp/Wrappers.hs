@@ -20,6 +20,7 @@ module ImagProc.Ipp.Wrappers where
 import Foreign
 import Foreign.C.Types
 import Image.Devel
+import ImagProc.Ipp.Structs
 
 foreign import ccall "auxIpp.h ippGetStatusString" ippGetStatusString :: CInt -> IO (Ptr CChar)
 
@@ -78,4 +79,12 @@ foreign import ccall "auxInpainting_8u_C1R"
                             Ptr Word8 -> CInt ->
                             CInt -> CInt -> CInt -> CInt ->
                             IO CInt
+
+foreign import ccall "ippiCompare_32f_C1Rx"
+    ippiCompare_32f_C1Rx :: Ptr Float -> Int -> Ptr Float -> Int -> Ptr Word8 -> Int -> Ptr IppiSize -> CInt -> IO CInt
+ippiCompare_32f_C1R pSrc1 src1Step pSrc2 src2Step pDst dstStep roiSize ippCmpOp = do
+    proiSize <- new roiSize
+    r <- ippiCompare_32f_C1Rx pSrc1 src1Step pSrc2 src2Step pDst dstStep proiSize ippCmpOp
+    free proiSize
+    return r
 
