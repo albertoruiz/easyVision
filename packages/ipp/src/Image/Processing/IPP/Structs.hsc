@@ -1,7 +1,7 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
 -----------------------------------------------------------------------------
 {- |
-Module      :  ImagProc.Ipp.Structs
+Module      :  Image.Processing.IPP.Structs
 Copyright   :  (c) Alberto Ruiz 2008
 License     :  GPL-style
 
@@ -17,7 +17,7 @@ Storable instances of some ipp structs.
 #include <ipp.h>
 #let alignment t = "%lu", (unsigned long)offsetof(struct {char x__; t (y__); }, y__)
 
-module ImagProc.Ipp.Structs (
+module Image.Processing.IPP.Structs (
     IppiSize(..),
     IppiPoint(..),
     IppiRect(..),
@@ -136,3 +136,5 @@ codeSegment "IPP_SEGMENT_QUEUE"    = 0x01
 codeSegment "IPP_SEGMENT_DISTANCE" = 0x02
 codeSegment "IPP_SEGMENT_BORDER_4" = 0x40
 codeSegment "IPP_SEGMENT_BORDER_8" = 0x80
+codeSegment _ = error "unknown codeSegment"
+

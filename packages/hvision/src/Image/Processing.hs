@@ -4,7 +4,7 @@ module Image.Processing(
     module Image,
     -- * basic functions
     size, roi, setROI, modifyROI,
-    G.constant, set, zeroP, copy, copyMask, G.blockImage,
+    G.constantImage, set, zeroP, copy, copyMask, G.blockImage,
     -- * spatial transformations
     resize, G.resizeFull, G.warp, warpon, uradial,
     -- * logical functions
@@ -50,14 +50,13 @@ module Image.Processing(
 
 import Image
 import Util.Geometry
-import ImagProc.Ipp.Generic(Pix,NPix)
-import qualified ImagProc.Ipp.Generic as G
-import ImagProc.Ipp.Tools
-import ImagProc.Ipp.Pure
-import ImagProc.Ipp.AdHoc
-import ImagProc.Ipp.Contour
-import ImagProc.Ipp.Wrappers(ippSetNumThreads)
-import ImagProc.Ipp.Structs
+import Image.Processing.Generic(Pix,NPix)
+import qualified Image.Processing.Generic as G
+import Image.Processing.Tools
+import Image.Processing.IPP
+import Image.Processing.Contour
+--import ImagProc.Ipp.Wrappers(ippSetNumThreads)
+--import ImagProc.Ipp.Structs
 
 set  x l = G.set  x l
 copy x l = G.copy x l

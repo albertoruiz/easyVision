@@ -10,7 +10,7 @@ Stability   :  provisional
 -}
 -----------------------------------------------------------------------------
 
-module ImagProc.Ipp.Tools (
+module Image.Processing.Tools (
     --binarize8u, binarize32f, autoBinarize,
     localMax,
     Grads(..), gradients,
@@ -23,15 +23,14 @@ module ImagProc.Ipp.Tools (
     resizeIfGT
 ) where
 
-import ImagProc.Ipp.Core
-import ImagProc.Ipp.AdHoc
-import ImagProc.Ipp.Pure
-import ImagProc.Ipp.Generic
-import Util.Geometry
+import Image
+import Image.Processing.IPP
+import Image.Processing.Generic
+import Image.Devel
 import Data.List(transpose)
 import Util.Rotation(rot3)
 import Util.Homogeneous(desp)
-import Numeric.LinearAlgebra hiding (constant)
+import Numeric.LinearAlgebra
 
 {-
 -- | Binarizes a gray level image.
@@ -45,8 +44,8 @@ autoBinarize x = binarize8u (otsuThreshold x) x
 
 -- | Binarizes a float image.
 binarize32f :: Float    -- ^ threshold
-           -> ImageFloat -- ^ image source
-           -> ImageFloat -- ^ result: higher values -> 1, lower values -> 0
+           -> Image Float -- ^ image source
+           -> Image Float -- ^ result: higher values -> 1, lower values -> 0
 binarize32f th = thresholdVal32f th 0 IppCmpLess . thresholdVal32f th 1 IppCmpGreater
 
 -}
@@ -60,12 +59,12 @@ localMax :: NPix p
 localMax r g = copyMask b g mask where
     mg = filterMax r g
     mask = compareImages IppCmpEq mg g
-    b = setROI (roi mg) (constant zeroP (size g))
+    b = setROI (roi mg) (constantImage zeroP (size g))
 
 
 
 
-data Grads = Grads { gm, gx, gy, gxx, gyy, gxy :: ImageFloat }
+data Grads = Grads { gm, gx, gy, gxx, gyy, gxy :: Image Float }
 
 -- | convenience function for frequently used image gradients
 gradients :: Image Float -> Grads
@@ -78,7 +77,7 @@ gradients image = Grads {gm = m, gx = x, gy = y, gxx = xx, gyy = yy, gxy = xy }
           m = sqrt32f $ x |*| x |+| y |*| y
 
 -- | Obtains the determinant of the hessian operator
-hessian :: Grads -> ImageFloat
+hessian :: Grads -> Image Float
 hessian g = gxx g |*| gyy g |-| gxy g |*| gxy g
 
 -----------------------------------------------------------------
@@ -91,7 +90,7 @@ getCorners :: Int       -- ^ degree of smoothing (e.g. 1)
            -> Int       -- ^ radius of the localmin filter (e.g. 3)
            -> Float     -- ^ fraction of the maximum response allowed (e.g. 0.1)
            -> Int       -- ^ maximum number of interest points
-           -> ImageFloat  -- ^ source image
+           -> Image Float  -- ^ source image
            -> [Pixel]    -- ^ result
 getCorners smooth rad prop maxn im = hotPoints where
     suaviza x = iterate (gauss Mask5x5) x !! smooth
@@ -106,8 +105,8 @@ getCorners smooth rad prop maxn im = hotPoints where
 -- | A version of gaussS with controlable precision. 
 gaussS' :: Float      -- ^ mask radius (in sigma units)
         -> Float      -- ^ sigma
-        -> ImageFloat -- ^ source image
-        -> ImageFloat -- ^ result
+        -> Image Float -- ^ source image
+        -> Image Float -- ^ result
 gaussS' ext σ = convolution mask . convolution (transpose mask)
   where
     mask = nor [map (fg σ) [-k .. k]]
@@ -119,7 +118,7 @@ gaussS' ext σ = convolution mask . convolution (transpose mask)
             s = sum (concat m)
 
 -- | Gaussian filter of given sigma (implemented as two 1-d filters). Mask radius is 3 sigma (@gaussS = gaussS' 3@).
-gaussS :: Float -> ImageFloat -> ImageFloat
+gaussS :: Float -> Image Float -> Image Float
 gaussS s | s > 0     = gaussS' 3 s
          | otherwise = id
 
@@ -128,7 +127,7 @@ gaussS s | s > 0     = gaussS' 3 s
 -- | Canny's edge detector.
 canny :: (Float,Float) -- ^ low and high threshold
       -> Grads         -- ^ image gradient
-      -> ImageGray     -- ^ resulting image
+      -> Image I8u     -- ^ resulting image
 canny th g = canny32f ((-1) .* gx g, gy g) th
 
 --------------------------------------------------------------------

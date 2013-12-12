@@ -1,6 +1,6 @@
 -----------------------------------------------------------------------------
 {- |
-Module      :  ImagProc.Ipp.Pure
+Module      :  Image.Processing.IPP.Pure
 Copyright   :  (c) Alberto Ruiz 2007-13
 License     :  GPL
 
@@ -10,7 +10,7 @@ Stability   :  provisional
 -}
 -----------------------------------------------------------------------------
 
-module ImagProc.Ipp.Pure (
+module Image.Processing.IPP.Pure (
     (.*),(.+),
     (|+|),(|-|),absDiff32f,(|*|),(|/|),
     andI,orI,notI,xorI,
@@ -34,11 +34,9 @@ module ImagProc.Ipp.Pure (
 )
 where
 
-import ImagProc.Ipp.Core
-import ImagProc.Ipp.Auto
+import Image.Processing.IPP.Core
+import Image.Processing.IPP.Auto
 import Foreign.Ptr
-import Debug.Trace
-
 
 infixl 7  |*|, .*
 infixl 6  |+|, |-|
@@ -58,13 +56,13 @@ mkRel f x y = unsafePerformIO (f g (flip g) g x y) where
 mkIdIPInt32f f a b = unsafePerformIO $ do
     let r = intersection (roi a) (roi b)
     x <- ioCopy_32f_C1R (const r) b
-    f undefined (setROI r a) x
+    _ <- f undefined (setROI r a) x
     return x
 
 mkIdIPInt8u f a b = unsafePerformIO $ do
     let r = intersection (roi a) (roi b)
     x <- ioCopy_8u_C1R (const r) b
-    f undefined (setROI r a) x
+    _ <- f undefined (setROI r a) x
     return x
 
 

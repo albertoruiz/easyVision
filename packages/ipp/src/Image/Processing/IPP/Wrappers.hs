@@ -2,7 +2,7 @@
 
 -----------------------------------------------------------------------------
 {- |
-Module      :  ImagProc.Ipp.Wrappers
+Module      :  Image.Processing.IPP.Wrappers
 Copyright   :  (c) Alberto Ruiz 2006-10
 License     :  GPL
 
@@ -15,12 +15,12 @@ Special Interface to some IPP functions not yet automatically generated.
 -----------------------------------------------------------------------------
 
 
-module ImagProc.Ipp.Wrappers where
+module Image.Processing.IPP.Wrappers where
 
 import Foreign
 import Foreign.C.Types
 import Image.Devel
-import ImagProc.Ipp.Structs
+import Image.Processing.IPP.Structs
 
 foreign import ccall "auxIpp.h ippGetStatusString" ippGetStatusString :: CInt -> IO (Ptr CChar)
 
@@ -82,8 +82,8 @@ foreign import ccall "auxInpainting_8u_C1R"
 
 foreign import ccall "ippiCompare_32f_C1Rx"
     ippiCompare_32f_C1Rx :: Ptr Float -> Int -> Ptr Float -> Int -> Ptr Word8 -> Int -> Ptr IppiSize -> CInt -> IO CInt
-ippiCompare_32f_C1R pSrc1 src1Step pSrc2 src2Step pDst dstStep roiSize ippCmpOp = do
-    proiSize <- new roiSize
+ippiCompare_32f_C1R pSrc1 src1Step pSrc2 src2Step pDst dstStep roiSz ippCmpOp = do
+    proiSize <- new roiSz
     r <- ippiCompare_32f_C1Rx pSrc1 src1Step pSrc2 src2Step pDst dstStep proiSize ippCmpOp
     free proiSize
     return r

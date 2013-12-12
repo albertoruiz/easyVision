@@ -150,9 +150,9 @@ ht x = error $ " UNKNOWN TYPE: "++x
 
 wmod  = "-- generated automatically by adapter.hs\n\n"
      ++ "{-# LANGUAGE ForeignFunctionInterface #-}\n\n"
-     ++ "module ImagProc.Ipp.Adapt where\n\n"
+     ++ "module Image.Processing.IPP.Adapt where\n\n"
      ++ "import Foreign\nimport Foreign.C.Types\n"
-     ++ "import ImagProc.Ipp.Structs\n\n"
+     ++ "import Image.Processing.IPP.Structs\n\n"
 
 chead = "/* generated automatically by adapter.hs */\n\n"
 
@@ -224,6 +224,6 @@ suffix n = (iterate (tail.dropWhile (/='_')) n) !! k
     where k = length (filter (== '_') n) - 1
 
 automod  = "-- generated automatically by adapter.hs\n\n"
-     ++ "module ImagProc.Ipp.Auto where\n\n"
-     ++ "import ImagProc.Ipp.AutoGen\nimport ImagProc.Ipp.Adapt\n"
+     ++ "module Image.Processing.IPP.Auto where\n\n"
+     ++ "import Image.Processing.IPP.AutoGen\nimport Image.Processing.IPP.Adapt\n"
 

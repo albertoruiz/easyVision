@@ -25,12 +25,16 @@ library
 
     hs-source-dirs:     src
 
-    Exposed-modules:
+    Exposed-modules:   Image.Processing
                        Vision.GUI
                        Contours.Polygons
 
     other-modules:     Vision.Apps.ShCamera
                        Vision.Apps.Show
+                       Image.Processing.Generic
+                       Image.Processing.Tools
+                       Image.Processing.Moments
+                       Image.Processing.Contour
 
 
     ghc-prof-options:   -auto-all

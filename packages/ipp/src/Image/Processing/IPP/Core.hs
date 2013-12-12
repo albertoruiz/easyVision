@@ -2,7 +2,7 @@
 
 -----------------------------------------------------------------------------
 {- |
-Module      :  ImagProc.Ipp.Core
+Module      :  Image.Processing.IPP.Core
 Copyright   :  (c) Alberto Ruiz 2006-13
 License     :  GPL
 
@@ -11,21 +11,20 @@ Stability   :  provisional
 -}
 -----------------------------------------------------------------------------
 
-module ImagProc.Ipp.Core
+module Image.Processing.IPP.Core
     ( Src, src, Dst, dst, checkIPP, roiSZ, Word8, Word16
-    , module ImagProc.Ipp.Structs
+    , module Image.Processing.IPP.Structs
     , module Image.Devel
 ) where
 
-import Foreign(Word8,Word16)
 import Image.Devel
-import ImagProc.Ipp.Structs
-
+import Image.Processing.IPP.Structs
+import Image.Processing.IPP.Wrappers
+import Foreign(Word8,Word16)
 import Foreign.Ptr
-import Control.Monad(when)
-import ImagProc.Ipp.Wrappers
 import Foreign.C.String(peekCString)
 import Util.Misc(errMsg)
+import Control.Monad(when)
 
 type family PtrOf (c :: *)
 

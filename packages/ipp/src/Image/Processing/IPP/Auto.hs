@@ -1,9 +1,9 @@
 -- generated automatically by adapter.hs
 
-module ImagProc.Ipp.Auto where
+module Image.Processing.IPP.Auto where
 
-import ImagProc.Ipp.AutoGen
-import ImagProc.Ipp.Adapt
+import Image.Processing.IPP.AutoGen
+import Image.Processing.IPP.Adapt
 
 -------- arity 0 -------------
 

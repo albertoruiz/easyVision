@@ -1,19 +1,16 @@
 -----------------------------------------------------------------------------
 {- |
-Module      :  ImagProc.Ipp.Manual
-Copyright   :  (c) Alberto Ruiz 2006/8
-License     :  GPL-style
+Module      :  Image.Processing.IPP.AdHoc
+Copyright   :  (c) Alberto Ruiz 2006-13
+License     :  GPL
 
 Maintainer  :  Alberto Ruiz (aruiz at um dot es)
-Stability   :  very provisional
-Portability :  hmm...
-
-IPP functions which need an ad-hoc wrapper
+Stability   :  provisional
 
 -}
 -----------------------------------------------------------------------------
 
-module ImagProc.Ipp.AdHoc(
+module Image.Processing.IPP.AdHoc(
     set8u,set8u3,set32f,
     copy8u,copy8u3,copy32f,
     resize8u,resize8u3,resize32f,
@@ -35,12 +32,12 @@ module ImagProc.Ipp.AdHoc(
 )
 where
 
-import ImagProc.Ipp.Core
-import ImagProc.Ipp.Adapt
-import ImagProc.Ipp.Wrappers
+import Image.Processing.IPP.Core
+import Image.Processing.IPP.Adapt
+import Image.Processing.IPP.Wrappers
+import Image.Processing.IPP.Auto
 import Foreign.Marshal
 import Control.Monad(when)
-import ImagProc.Ipp.Auto
 import Data.ByteString.Internal as B
 import Foreign.Ptr(plusPtr,castPtr)
 import Foreign.Storable(peek)

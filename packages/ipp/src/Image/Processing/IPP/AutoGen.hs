@@ -1,6 +1,6 @@
 -----------------------------------------------------------------------------
 {- |
-Module      :  ImagProc.Ipp.AutoGen
+Module      :  Image.Processing.IPP.AutoGen
 Copyright   :  (c) Alberto Ruiz 2006-13
 License     :  GPL
 
@@ -12,7 +12,7 @@ Generators of Haskell style functions from IPP wrappers
 -}
 -----------------------------------------------------------------------------
 
-module ImagProc.Ipp.AutoGen(
+module Image.Processing.IPP.AutoGen(
     auto_0_8u_C1R,
     auto_0_8u_C3R,
     auto_0_32f_C1R,
@@ -47,7 +47,7 @@ module ImagProc.Ipp.AutoGen(
 
 ) where
 
-import ImagProc.Ipp.Core
+import Image.Processing.IPP.Core
 
 --------------------------------------------------------------------------------
 

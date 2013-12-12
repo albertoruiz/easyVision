@@ -1,12 +1,11 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ViewPatterns #-}
 
-
-module ImagProc.Ipp.Generic(
+module Image.Processing.Generic(
     Pix(..),
     warp,
     resizeFull,
-    constant,
+    constantImage,
     blockImage,
     crossCorrLoc,
     (.<.), (.>.), otsuBinarize,
@@ -16,11 +15,10 @@ module ImagProc.Ipp.Generic(
 
 import Image
 import Image.Devel
-import ImagProc.Ipp.Core
-import ImagProc.Ipp.AdHoc
-import ImagProc.Ipp.Pure
+import Image.Processing.IPP
 import Numeric.LinearAlgebra(Matrix, toLists, (<>), inv, rows, cols)
 import Control.Arrow((&&&))
+import Foreign(Word8,Word16)
 
 class Storable p => Pix p
   where
@@ -89,7 +87,8 @@ instance Pix Word24
     zeroP   = Word24 0 0 0
     copyMask = copyMask8u3
 --    remap (LookupMap m) = remapRGB m
-    
+
+r3 :: Image Float -> Image Float
 r3 x = resizeFull (Size r (c `div` 3)) x
   where
     Size r c = size x
@@ -115,14 +114,14 @@ resizeFull sz'@(Size h' w') im = unsafePerformIO $ do
     g n = fromIntegral n
 
 
-constant :: Pix p => p -> Size -> Image p
-constant v sz = unsafePerformIO $ do
+constantImage :: Pix p => p -> Size -> Image p
+constantImage v sz = unsafePerformIO $ do
     r <- newImage undefined sz
     return $ set r [(fullROI sz, v)]
 
 
 warp :: Pix p => p -> Size -> Matrix Double -> Image p -> Image p
-warp p sz h im = warpon (constant p sz) [(h,im)]
+warp p sz h im = warpon (constantImage p sz) [(h,im)]
 
 
 
@@ -136,7 +135,7 @@ blockImage = colImage . map rowImage
         n = length xs
         r = maximum (map (height.size) xs)
         c = maximum (map (width.size)  xs)
-        base = constant zeroP (f n r c)
+        base = constantImage zeroP (f n r c)
         rois = zipWith h [0..] (map roi xs)
           where
             h k (topLeft -> p) = g r c k p

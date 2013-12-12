@@ -1,7 +1,7 @@
 {-# LANGUAGE RecordWildCards #-}
 -----------------------------------------------------------------------------
 {- |
-Module      :  ImagProc.Moments
+Module      :  Image.Processing.Moments
 Copyright   :  (c) Alberto Ruiz 2010
 License     :  GPL
 
@@ -11,19 +11,17 @@ Stability   :  provisional
 -}
 -----------------------------------------------------------------------------
 
-module ImagProc.Moments (
+module Image.Processing.Moments (
     ImageBasis(..),
     imageBasis,
     momentsImage
 ) where
 
-import ImagProc.Ipp.Pure
-import ImagProc.Ipp.AdHoc
-import Image.Convert(mat2img)
-import Image.Core
+import Image.Processing.IPP
+import Image
 import Numeric.LinearAlgebra
 
-data ImageBasis = ImageBasis { zeroIb, oneIb, xIb, yIb, x2Ib, y2Ib, xyIb :: ImageFloat }
+data ImageBasis = ImageBasis { zeroIb, oneIb, xIb, yIb, x2Ib, y2Ib, xyIb :: Image Float }
 
 imageBasis :: Size -> ImageBasis
 imageBasis (Size r c) = ImageBasis {
@@ -41,7 +39,7 @@ imageBasis (Size r c) = ImageBasis {
     yI = mat2img $ single $ fromColumns (replicate c ycoord)
 
 -- | (mx,my,cxx,cyy,cxy)
-momentsImage :: ImageBasis -> ImageFloat -> (Double,Double,Double,Double,Double)
+momentsImage :: ImageBasis -> Image Float -> (Double,Double,Double,Double,Double)
 momentsImage ImageBasis {..} g = (mx,my,cxx,cyy,cxy)
   where
     s = sum32f g

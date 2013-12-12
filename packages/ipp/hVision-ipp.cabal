@@ -1,5 +1,5 @@
 Name:               hVision-ipp
-Version:            0.2
+Version:            0.3
 License:            LGPL
 License-file:       LICENSE
 Author:             Alberto Ruiz
@@ -17,50 +17,34 @@ cabal-version:      >=1.2
 build-type:         Custom
 
 extra-source-files: configure configure.hs
-                    src/ImagProc/Ipp/adapter.hs
-                    src/ImagProc/Ipp/Parser.hs
-                    src/ImagProc/Ipp/functions.txt
-                    src/ImagProc/Ipp/auxIpp.h
-                    src/ImagProc/Ipp/ptr_adapt.h
+                    src/Image/Processing/IPP/adapter.hs
+                    src/Image/Processing/IPP/Parser.hs
+                    src/Image/Processing/IPP/functions.txt
+                    src/Image/Processing/IPP/ptr_adapt.h
 
 extra-tmp-files:    hVision-ipp.buildinfo
 
 library
-    Build-Depends:      base >= 3 && < 5, directory, process,
-                        hmatrix >= 0.8.3,
+    Build-Depends:      base,
                         hVision-base,
-                        ghc-prim, binary, bytestring, deepseq
+                        bytestring
 
     hs-source-dirs:     src
 
-    exposed-modules:    Image.Processing
+    exposed-modules:    Image.Processing.IPP
 
-    other-modules:
-                        ImagProc.Ipp.Generic
-                        ImagProc.Ipp.Pure
-                        ImagProc.Ipp.Wrappers
-                        ImagProc.Ipp.Adapt
-                        ImagProc.Ipp.Core
-                        ImagProc.Ipp.AdHoc
-                        ImagProc.Ipp.Structs
-                        ImagProc.Ipp.AutoGen
-                        ImagProc.Ipp.Auto
-                        ImagProc.Ipp.Contour
-                        ImagProc.Ipp.Tools
+    other-modules:      Image.Processing.IPP.Pure
+                        Image.Processing.IPP.AdHoc                        
+                        Image.Processing.IPP.Wrappers
+                        Image.Processing.IPP.Adapt
+                        Image.Processing.IPP.Core
+                        Image.Processing.IPP.Structs
+                        Image.Processing.IPP.AutoGen
+                        Image.Processing.IPP.Auto
 
 
-                        --ImagProc
-                        --ImagProc.Tools
-                        --ImagProc.Moments
-
-                        --ImagProc.C.Simple
-                        --ImagProc.Ipp
-
-
-
-
-    c-sources:          src/ImagProc/Ipp/auxIpp.c
-                        src/ImagProc/Ipp/ptr_adapt.c
+    c-sources:          src/Image/Processing/IPP/auxIpp.c
+                        src/Image/Processing/IPP/ptr_adapt.c
 
     cc-options:         -Wall
     ghc-prof-options:   -auto-all

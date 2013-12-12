@@ -2,11 +2,11 @@
 
 {-# LANGUAGE ForeignFunctionInterface #-}
 
-module ImagProc.Ipp.Adapt where
+module Image.Processing.IPP.Adapt where
 
 import Foreign
 import Foreign.C.Types
-import ImagProc.Ipp.Structs
+import Image.Processing.IPP.Structs
 
 foreign import ccall "ippiAdd_8u_C1RSfsx"
     ippiAdd_8u_C1RSfsx :: Ptr Word8 -> Int -> Ptr Word8 -> Int -> Ptr Word8 -> Int -> Ptr IppiSize -> Int -> IO CInt

@@ -1,6 +1,6 @@
 -----------------------------------------------------------------------------
 {- |
-Module      :  ImagProc.Ipp.Contour
+Module      :  Image.Processing.Contour
 Copyright   :  (c) Alberto Ruiz 2007-13
 License     :  GPL
 
@@ -12,7 +12,7 @@ Contour Extraction.
 -}
 -----------------------------------------------------------------------------
 
-module ImagProc.Ipp.Contour (
+module Image.Processing.Contour (
     -- * Extraction
     contours,
     otsuContours,
@@ -25,16 +25,14 @@ module ImagProc.Ipp.Contour (
 where
 
 import Image.Devel
-import ImagProc.Ipp.Pure
-import ImagProc.Ipp.AdHoc
-import ImagProc.Ipp.Generic
+import Image.Processing.IPP
+import Image.Processing.Generic
 import Util.Geometry(Polyline(..))
-import ImagProc.Ipp.Core
 import Foreign.C.Types(CUChar)
 import System.IO.Unsafe(unsafePerformIO)
 import Debug.Trace
 import Data.List(sortBy, maximumBy, zipWith4, sort,foldl', tails)
-import Numeric.LinearAlgebra hiding (constant)
+import Numeric.LinearAlgebra
 import Numeric.LinearAlgebra.Util(diagl)
 import Util.Homogeneous
 import Util.Rotation
@@ -94,7 +92,7 @@ rawContour im start v = clean $ iterate (nextPos im v) (start, ToRight)
             | otherwise = v1: clean' p rest
 
 
-cloneClear im = return (copy (constant zeroP (size im)) [(im,topLeft (roi im))])
+cloneClear im = return (copy (constantImage zeroP (size im)) [(im,topLeft (roi im))])
 
 
 -- | extracts contours of active regions (255) from a binary image
