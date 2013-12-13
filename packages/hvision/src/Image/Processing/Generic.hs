@@ -316,6 +316,7 @@ class Pix p => NPix p
     filterBox :: Int -> Int -> Image p -> Image p
     gauss :: Mask -> Image p -> Image p
     compareImages :: IppCmp -> Image p -> Image p -> Image I8u
+    compareValue  :: IppCmp -> Image p -> p -> Image I8u
     minEvery :: Image p -> Image p -> Image p
     maxEvery :: Image p -> Image p -> Image p
     thresholdVal :: p          -- ^ threshold
@@ -333,6 +334,7 @@ instance NPix Word8
     filterBox = filterBox8u
     gauss = gauss8u
     compareImages = compare8u
+    compareValue c x v = compareC8u v c x
     convolution mask = filter8u imask dmask
       where
         dmask = round . recip . minimum . concatMap (map abs) $ mask
@@ -349,6 +351,7 @@ instance NPix Float
     filterBox = filterBox32f
     gauss = gauss32f
     compareImages = compare32f
+    compareValue c x v = compareC32f v c x
     convolution = filter32f
     minEvery = minEvery32f
     maxEvery = maxEvery32f
@@ -358,11 +361,12 @@ instance NPix Float
 
 infix 4 .<., .>.
 
-(.<.), (.>.) :: Image I8u -> Int -> Image I8u
+(.<.), (.>.) :: NPix p => Image p -> p -> Image I8u
 
-img .<. v = compareC8u (fromIntegral v) IppCmpLess img
+img .<. v = compareValue IppCmpLess img v
 
-img .>. v = compareC8u (fromIntegral v) IppCmpGreater img
+img .>. v = compareValue IppCmpGreater img v
 
-otsuBinarize x = x .>. fromIntegral (otsuThreshold x)
+otsuBinarize :: Image I8u -> Image I8u
+otsuBinarize x = x .>. otsuThreshold x
 

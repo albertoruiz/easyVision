@@ -27,7 +27,7 @@ module Image.Processing.IPP.AdHoc(
     sum8u, sum32f,
     convolutionRow8u,convolutionColumn8u,convolution8u,
     convolutionRow32f,convolutionColumn32f,convolution32f,
-    compare32f, copyMask32f, copyMask8u, copyMask8u3,
+    compareC32f, compare32f, copyMask32f, copyMask8u, copyMask8u3,
     canny32f
 )
 where
@@ -358,11 +358,15 @@ maxIndx8u im = unsafePerformIO $ do
     let ROI r1 _ c1 _ = roi im
     return (v,Pixel (r1 + fromIntegral y) (c1 + fromIntegral x))
 
-{-
 
 ----------------------------------------------------------------------
 
--}
+compareC32f :: Float -> IppCmp -> Image Float -> Image I8u
+compareC32f v cmp im = unsafePerformIO $ do
+    r <- setROI (roi im) <$> newImage undefined (size im)
+    withImage im $ checkIPP "compareC32f" $ do
+        ((ippiCompareC_32f_C1R // src im (roi im)) v // dst r) (codeCmp cmp)
+    return r
 
 
 -- | The result is the pixelswise comparation of the two source images.

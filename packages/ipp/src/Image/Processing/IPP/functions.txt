@@ -50,6 +50,7 @@ ippi.h  ippiAddC_8u_C1RSfs
 ippi.h  ippiSub_8u_C1RSfs
 ippi.h  ippiSubC_8u_C1RSfs
 ippi.h  ippiCompareC_8u_C1R
+-- ippi.h  ippiCompareC_32f_C1R
 ippcv.h ippiAbsDiff_8u_C1R
 ippcv.h ippiAbsDiff_8u_C3R
 ippcv.h ippiAbsDiff_32f_C1R

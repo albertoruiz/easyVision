@@ -158,3 +158,7 @@ int ippiCompare_32f_C1Rx(Ipp32f* pSrc1, int src1Step, Ipp32f* pSrc2, int src2Ste
     return ippiCompare_32f_C1R(pSrc1, src1Step, pSrc2, src2Step, pDst, dstStep, *roiSize, ippCmpOp);
 }
 
+int ippiCompareC_32f_C1Rx(Ipp32f* pSrc, int srcStep, Ipp32f value, Ipp8u* pDst, int dstStep, IppiSize* roiSize, IppCmpOp ippCmpOp) {
+    return ippiCompareC_32f_C1R(pSrc, srcStep, value, pDst, dstStep, *roiSize, ippCmpOp);
+}
+

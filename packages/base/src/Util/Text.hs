@@ -5,7 +5,7 @@ module Util.Text(
     wordAfter, lineAfter, include, codefile
 ) where
 
-import Data.List(isPrefixOf,tails)
+import Data.List(isPrefixOf,isInfixOf)
 import System.Process(system)
 import System.Exit(ExitCode(..))
 import Control.Arrow
@@ -101,7 +101,12 @@ wordAfter w = unwords . take 1 . drop 1 . dropWhile (d w) . words
     d = (/=) `on` map toLower
 
 lineAfter :: String -> String -> String
-lineAfter w = unwords . map (drop (length w)) . take 1 . dropWhile (not . (w `isPrefixOf`). map toLower) . map (takeWhile (/='\n')) . tails
+lineAfter w = unwords
+            . map (unwords . drop 1 . dropWhile (d w) . words)
+            . take 1 . dropWhile f . lines
+  where
+    d = (/=) `on` map toLower
+    f = not . isInfixOf w . map toLower
 
 include :: Rule
 include = "INCLUDE" :~> readFile

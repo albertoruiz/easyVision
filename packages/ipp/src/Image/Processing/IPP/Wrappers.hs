@@ -88,3 +88,11 @@ ippiCompare_32f_C1R pSrc1 src1Step pSrc2 src2Step pDst dstStep roiSz ippCmpOp = 
     free proiSize
     return r
 
+foreign import ccall "ippiCompareC_32f_C1Rx"
+    ippiCompareC_32f_C1Rx :: Ptr Float -> Int -> Float -> Ptr Word8 -> Int -> Ptr IppiSize -> CInt -> IO CInt
+ippiCompareC_32f_C1R pSrc srcStep value pDst dstStep roiSz ippCmpOp = do
+    proiSize <- new roiSz
+    r <- ippiCompareC_32f_C1Rx pSrc srcStep value pDst dstStep proiSize ippCmpOp
+    free proiSize
+    return r
+
