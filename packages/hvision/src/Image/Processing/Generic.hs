@@ -19,6 +19,7 @@ import Image.Processing.IPP
 import Numeric.LinearAlgebra(Matrix, toLists, (<>), inv, rows, cols)
 import Control.Arrow((&&&))
 import Foreign(Word8,Word16)
+import Image.Processing.Custom(getPoints32f,getPoints8u)
 
 class Storable p => Pix p
   where
@@ -324,6 +325,7 @@ class Pix p => NPix p
                  -> IppCmp     -- ^ comparison function
                  -> Image p    -- ^ source image
                  -> Image p    -- ^ result
+    getPoints :: Int -> Image p -> [Point]
 
 
 instance NPix Word8
@@ -342,6 +344,7 @@ instance NPix Word8
     minEvery = minEvery8u
     maxEvery = maxEvery8u
     thresholdVal = thresholdVal8u
+    getPoints n x = pixelsToPoints (size x) $ take n $ getPoints8u x
 
 instance NPix Float
   where
@@ -356,6 +359,7 @@ instance NPix Float
     minEvery = minEvery32f
     maxEvery = maxEvery32f
     thresholdVal = thresholdVal32f
+    getPoints n x = pixelsToPoints (size x) $ getPoints32f n x
 
 --------------------------------------------------------------------------------
 

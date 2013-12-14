@@ -13,6 +13,7 @@ Stability   :  provisional
 
 module Image.Processing.Custom (
     histogram3D,
+    getPoints8u,
     module Image.Processing.Simple
 )
 where
@@ -38,6 +39,17 @@ histogram3D b x = unsafePerformIO $ do
   where
     n = 2^b
     d = 8-b
+
+--------------------------------------------------------------------------------
+
+getPoints8u :: Image I8u -> [Pixel]
+getPoints8u x = go r1 c1 []
+  where
+    ROI r1 r2 c1 c2 = roi x
+    go r c ps | r > r2                      =                ps
+              | c > c2                      = go (r+1) c1    ps
+              | readPixel x (Pixel r c) > 0 = go r     (c+1) (Pixel r c:ps)
+              | otherwise                   = go r     (c+1) ps
 
 --------------------------------------------------------------------------------
 

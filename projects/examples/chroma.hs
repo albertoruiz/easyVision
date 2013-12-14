@@ -17,7 +17,7 @@ getBackground = clickKeep "click to set template" f g Nothing
 
 sh b (x,t) = copyMask b (rgb x) mask
   where
-    mask = uvdif2 x t .>. 20
+    mask = uvdif x t .>. 20
 
 uvdif :: Channels -> Channels -> Image I8u
 uvdif b x = resize (size (rgb x)) $ add8u 1 (dc uCh x b) (dc vCh x b)

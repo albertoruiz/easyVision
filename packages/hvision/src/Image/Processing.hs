@@ -20,6 +20,7 @@ module Image.Processing(
     minmax,maxIdx,
     maxEvery, minEvery,
     otsuThreshold, G.otsuBinarize,
+    getPoints,
     -- * histograms
     histogram, histogramN,
     -- * filters
@@ -75,6 +76,8 @@ gauss m x = G.gauss m x
 zeroP :: Pix p => p
 zeroP = G.zeroP
 compareImages c x y = G.compareImages c x y
+getPoints n x = G.getPoints n x
+
 
 maxIdx x = G.maxIdx x
 

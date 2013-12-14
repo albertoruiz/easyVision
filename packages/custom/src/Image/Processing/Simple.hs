@@ -45,7 +45,7 @@ getPoints32f mx im = unsafePerformIO $ do
   where
     partitPixel :: [CInt] -> [Pixel]
     partitPixel [] = []
-    partitPixel [a] = error "partitPixel on a list with odd number of entries"
+    partitPixel [_] = error "partitPixel on a list with odd number of entries"
     partitPixel (r:c:l) = Pixel (fromIntegral r) (fromIntegral c) : partitPixel l
 
 

@@ -21,7 +21,7 @@ library
     Build-Depends:      base >= 3 && < 5,
                         hmatrix,
                         hVision-base, hVision-contours, hVision-gui, hVision-ipp,
-                        hVision-geometry
+                        hVision-geometry, hVision-custom
 
     hs-source-dirs:     src
 
