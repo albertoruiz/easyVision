@@ -4,7 +4,7 @@ import Image.Capture
 
 
 main = do
-    [base] <- readImages ["../../data/images/calibration/cube3.png"]
+    base <- resize (Size 480 640) <$> loadRGB "../../data/images/transi/dscn2070.jpg"
     run $ getBackground
         >>> observe "template" (rgb.snd)
         >>> observe "image" (sh base)

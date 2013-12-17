@@ -44,6 +44,11 @@ module Image.Processing(
     ippSetNumThreads,
     floodFill8u, floodFill8uGrad,
     compareC8u,
+    -- * domain transformations
+    ImageBasis(..),
+    imageBasis,
+    momentsImage,
+    domainTrans32f,
     -- * types
     Pix(), NPix(), Size(..), ROI(..),
     Point(..), Polyline(..), Segment(..)
@@ -56,6 +61,9 @@ import qualified Image.Processing.Generic as G
 import Image.Processing.Tools
 import Image.Processing.IPP
 import Image.Processing.Contour
+import Image.Processing.Moments
+import Image.Processing.Custom(domainTrans32f)
+
 --import ImagProc.Ipp.Wrappers(ippSetNumThreads)
 --import ImagProc.Ipp.Structs
 

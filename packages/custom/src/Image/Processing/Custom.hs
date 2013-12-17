@@ -14,6 +14,7 @@ Stability   :  provisional
 module Image.Processing.Custom (
     histogram3D,
     getPoints8u,
+    domainTrans32f,
     module Image.Processing.Simple
 )
 where
@@ -52,4 +53,16 @@ getPoints8u x = go r1 c1 []
               | otherwise                   = go r     (c+1) ps
 
 --------------------------------------------------------------------------------
+
+domainTrans32f :: Image Float -> (Image Float, ImageFloat) -> ImageFloat -> ImageFloat
+domainTrans32f b (x,y) a = unsafePerformIO $ do
+    r <- cloneImage b
+    let droi = roi r `intersection` roi x `intersection` roi y
+    let w2 = fromIntegral (width (size r)) / 2
+    withImage b $ withImage x $ withImage y $ withImage a $ checkFFI "domainTrans32f" $ do
+        c_domainTrans32f w2 `appI` x `appI` y `appI` a `appI` (setROI droi r)
+    return r
+
+foreign import ccall unsafe "domainTrans32f"
+    c_domainTrans32f :: Float -> RawImage Float (RawImage Float (RawImage Float (RawImage Float (IO CInt))))
 

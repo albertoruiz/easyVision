@@ -17,3 +17,17 @@ int histogram3D(int n, int d, IM1(src), int vn, float*vp) {
     return 0;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
+int domainTrans32f(float w2, IMF(x),IMF(y),IMF(a),IMF(res)) {
+    int r,c,nr,nc;
+    TRAV(res,0,r,c) {
+        nr = r + (int)(0.5+w2*PF(y,r,c));
+        nc = c + (int)(0.5+w2*PF(x,r,c));
+        if (nr >= ar1 && nr <= ar2 && nc >= ac1 && nc <= ac2) {
+            PF(res,r,c) = PF(a,nr,nc);
+        }
+    }
+    return 0;
+}
+

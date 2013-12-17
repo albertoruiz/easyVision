@@ -34,7 +34,8 @@ imageBasis (Size r c) = ImageBasis {
     xyIb = xI |*| yI }
   where
     xcoord = linspace c (1,-1::Double)
-    ycoord = linspace r (0.75,-0.75::Double)
+    ar = fromIntegral r / fromIntegral c
+    ycoord = linspace r (ar,-ar::Double)
     xI = mat2img $ single $ fromRows (replicate r xcoord)
     yI = mat2img $ single $ fromColumns (replicate c ycoord)
 
