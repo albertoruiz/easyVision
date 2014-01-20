@@ -3,7 +3,8 @@
 module OpenCV(
   canny,
   hough,
-  cascadeClassifier
+  cascadeClassifier,
+  solvePNP
 ) where
 
 import Image.Devel
@@ -13,8 +14,12 @@ import Foreign.C.String
 import Foreign.Storable
 import Util.Geometry(Segment(..))
 import Control.Applicative
+import Data.Packed.Development
+import Numeric.LinearAlgebra
+import Numeric.LinearAlgebra.Util((¦))
+import Util.Homogeneous(rodrigues)
 
------------------------------------------------------------------
+--------------------------------------------------------------------------------
 
 data Rect = Rect !Pixel !Size
 
@@ -88,4 +93,20 @@ cascadeClassifier file = do
     return (\x n -> map rect2roi (cascadeDetect c x n))
   where
     rect2roi (Rect p s) = mkROI p s
+
+--------------------------------------------------------------------------------
+
+solvePNP :: Matrix Double -> Matrix Double -> Matrix Double -> Matrix Double
+solvePNP k vs ps = unsafePerformIO $ do
+    r <- createMatrix RowMajor 2 3
+    app4 c_PNP mat (cmat k) mat (cmat vs) mat (cmat ps) mat r "c_PNP"
+    let [rv,t] = toRows r
+    return $ k <> (rodrigues rv ¦ asColumn t)
+
+foreign import ccall unsafe "cPNP"
+    c_PNP :: CInt -> CInt -> Ptr Double
+          -> CInt -> CInt -> Ptr Double
+          -> CInt -> CInt -> Ptr Double
+          -> CInt -> CInt -> Ptr Double
+          -> IO CInt
 

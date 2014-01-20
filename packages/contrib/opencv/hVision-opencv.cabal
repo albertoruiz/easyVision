@@ -23,7 +23,7 @@ extra-tmp-files:    hVision-opencv.buildinfo
 
 library
 
-    Build-Depends:      base, hVision-base
+    Build-Depends:      base, hVision-base, hmatrix
 
     hs-source-dirs:     src
 
@@ -38,7 +38,7 @@ library
 
     ghc-options:        -Wall
 
-    extra-libraries: opencv_core opencv_imgproc opencv_objdetect
+    extra-libraries: opencv_core opencv_imgproc opencv_objdetect opencv_calib3d
     
     include-dirs: /usr/include/opencv
 

@@ -56,5 +56,36 @@ void cascadeDetect(CascadeClassifier * cascade,
     cvReleaseImageHeader(&ipl_t);
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
+int cPNP(int rk, int ck, double*pk,
+         int rv, int cv, double*pv,
+         int rp, int cp, double*pp,
+         int rr, int cr, double*pr) {
+
+    cv::Mat cameraMatrix( 3,3,CV_64F,pk);
+    cv::Mat  imagePoints(rv,2,CV_64F,pv);
+    cv::Mat objectPoints(rp,3,CV_64F,pp);
+
+    cv::Mat distCoeffs(4,1,cv::DataType<double>::type);
+    distCoeffs.at<double>(0) = 0;
+    distCoeffs.at<double>(1) = 0;
+    distCoeffs.at<double>(2) = 0;
+    distCoeffs.at<double>(3) = 0;
+
+    cv::Mat rvec(3,1,cv::DataType<double>::type);
+    cv::Mat tvec(3,1,cv::DataType<double>::type);
+
+    cv::solvePnP(objectPoints, imagePoints, cameraMatrix, distCoeffs, rvec, tvec);
+
+    int r,c;
+    for (r=0; r<2; r++) {
+        for (c=0; c<3; c++) {
+            pr[r*cr+c] = r==0? rvec.at<double>(c): tvec.at<double>(c);
+        }
+    }
+    return 0;
+}
+
 }
 

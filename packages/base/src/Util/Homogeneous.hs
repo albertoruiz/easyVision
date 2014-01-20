@@ -32,6 +32,7 @@ module Util.Homogeneous
 , asMat
 , cross
 , linf
+, rodrigues
 -- * Normalization
 , normatdet
 , normat
@@ -211,4 +212,16 @@ ln2hv (HLine a b c) = vec [a,b,c]
 
 hv2ln :: Vec -> HLine
 hv2ln v = HLine a b c where [a,b,c] = toList v
+
+--------------------------------------------------------------------------------
+
+rodrigues :: Vector Double -> Matrix Double
+rodrigues v = c * ident 3 + (1-c)*outer r r + s*asMat r
+  where
+    θ = pnorm PNorm2 v
+    r = v / scalar θ
+    c = scalar (cos θ)
+    s = scalar (sin θ)
+
+--------------------------------------------------------------------------------
 
