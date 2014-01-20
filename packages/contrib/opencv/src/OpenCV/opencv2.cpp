@@ -87,5 +87,28 @@ int cPNP(int rk, int ck, double*pk,
     return 0;
 }
 
+int cFindHomography(
+    int rv, int cv, double*pv,
+    int rp, int cp, double*pp,
+    int rr, int cr, double*pr) {
+
+    cv::Mat  imagePoints(rv,2,CV_64F,pv);
+    cv::Mat objectPoints(rp,2,CV_64F,pp);
+
+    cv::Mat h(3,3,CV_64F,pr);
+
+    h = cv::findHomography(objectPoints,imagePoints);
+
+    int r,c;
+    for (r=0; r<3; r++) {
+        for (c=0; c<3; c++) {
+            pr[r*3+c] = h.at<double>(r,c);
+        }
+    }
+
+    return 0;
+}
+
+
 }
 

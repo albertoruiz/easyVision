@@ -4,7 +4,8 @@ module OpenCV(
   canny,
   hough,
   cascadeClassifier,
-  solvePNP
+  solvePNP,
+  findHomography
 ) where
 
 import Image.Devel
@@ -109,4 +110,18 @@ foreign import ccall unsafe "cPNP"
           -> CInt -> CInt -> Ptr Double
           -> CInt -> CInt -> Ptr Double
           -> IO CInt
+
+--------------------------------------------------------------------------------
+
+findHomography :: Matrix Double -> Matrix Double -> Matrix Double
+findHomography vs ps = unsafePerformIO $ do
+    r <- createMatrix RowMajor 3 3
+    app3 c_FindHomography mat (cmat vs) mat (cmat ps) mat r "findHomography"
+    return r
+
+foreign import ccall unsafe "cFindHomography" c_FindHomography
+    :: CInt -> CInt -> Ptr Double
+    -> CInt -> CInt -> Ptr Double
+    -> CInt -> CInt -> Ptr Double
+    -> IO CInt
 
