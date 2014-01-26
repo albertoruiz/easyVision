@@ -40,15 +40,20 @@ democlas x = do
     runIt $ scatterPlots "" p
         [ (mode   . minDistance euclidean p,   "min euc dist")
         , (rej 1  . minDistance euclidean p,   "min euc dist, 1db")
-        , (rej 1  . lsc p,                     "lsc, 1db")
         , (mode   . minDistance mahalanobis p, "Mahalanobis dist")
         , (mode   . bayes gaussian p,          "gaussian model")
         , (rej 3  . bayes gaussian p,          "gaussian, 3db")
         , (mode   . bayes naiveGaussian p,     "naive gaussian")
         , (rej 15 . bayes gmm p,               "gaussian mixture, 15db")
-        , (rej 3 .  neural 0.1 0.05 100 [5] p, "NN [5], 3db")
-        , (rej 5 .  neural 0.05 0.05 200 [20,10,5] p, "NN [20,10,5], 5db")
-        ] 
+        , (mode   . minDistance nearestNeighbour p, "nearest neighbour")
+        , (rej 1  . lsc p,                     "linear, 1db")
+        , (rej 3  . neural 0.1 0.05 100 [] p, "neuron 3db")
+        , (rej 3  . neural 0.1 0.05 100 [5] p, "NN [5], 3db")
+        , (rej 5  . neural 0.05 0.05 200 [20,10,5] p, "NN [20,10,5], 5db")
+        , (mode   . multiclass (adaboost 100 stumps) p, "ADABOOST 100 stumps")
+        , (mode   . multiclass (treeOf (branch 3) (dicodist euclidean)) p, "tree of euc dist")
+        , (mode   . multiclass (treeOf (branch 5) (perceptron 0.1 0.05 100 [])) p, "tree of neuron")
+        ]
 
 ----------------------------------------------------------------------
 

@@ -146,13 +146,16 @@ confusion' ::Sample a -> Predictor a -> Matrix Double
 confusion' exs c = confusionMatrix where
     (_,lbs) = group exs
     l = getIndex lbs
-    estimatedLabels = map (r l.c.fst) exs
+    estimatedLabels = map (r l . h . c .fst) exs
     te = zip (map (l.snd) exs) estimatedLabels
     nc = length (labels lbs)
     confusionMatrix = fromArray2D $
         accumArray (+) (0::Double) ((0::Int,0::Int),(nc-1,nc)) (zip te [1,1 ..])
     r _ Nothing = nc
     r f (Just x)  = f x
+    testlabels = labels lbs
+    h (Just x) | x `elem` testlabels = (Just x)
+    h _ = Nothing
 
 
 -- | If the evidence is less than the desired decibels we return Nothing
