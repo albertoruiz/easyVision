@@ -1,5 +1,5 @@
 import Vision.GUI
-import ImagProc.Base
+import Image.Processing
 import Data.Time(getCurrentTime, UTCTime)
 import Control.Concurrent(threadDelay)
  

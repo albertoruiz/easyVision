@@ -1,5 +1,5 @@
 import Vision.GUI
-import ImagProc
+import Image.Processing
 import System.Random(randomIO)
 import Util.Misc(mean,splitEvery)
 import Control.Concurrent(threadDelay)
