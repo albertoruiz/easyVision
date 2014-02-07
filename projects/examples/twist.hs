@@ -1,5 +1,5 @@
 import Vision.GUI
-import ImagProc
+import Image.Processing
 import Numeric.LinearAlgebra
 
 main = run $ observe "source" rgb

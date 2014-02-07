@@ -1,5 +1,6 @@
 import Vision.GUI
-import ImagProc
+import Image.Processing
+import Image.ROI(shrink)
 
 main = run $ arr rgb
            >>> observe "original" id

@@ -1,15 +1,14 @@
-import Vision.GUI
-import ImagProc(Point(..),Size(..),Pixel(..),pixelsToPoints)
-import ImagProc.Base(Polyline(..))
+import Vision.GUI.Simple
+import Image.Devel ( pixelsToPoints )
+import Image.Processing
 import Contours
-import Graphics.UI.GLUT (motionCallback,($=),Position(..),postRedisplay)
-import Data.Function(on)
-import Data.List(minimumBy)
-import Numeric.GSL.Fourier
-import Util.Misc(memo)
-import Vision(ht,desp)
-import Util.Rotation(rot3)
+import Graphics.UI.GLUT
+    ( motionCallback, ($=), Position(..), postRedisplay )
+import Util.Misc ( memo )
+import Vision ( ht, desp )
+import Util.Rotation ( rot3 )
 import Numeric.LinearAlgebra
+
 
 main = runIt trazo
 

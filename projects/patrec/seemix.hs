@@ -18,7 +18,7 @@ sh (ps,()) = Draw [ if okc then drwmix else Draw ()
     drwm = pointSz 5 . color blue $ mp
     drwc = color blue $ ellipCov2D 2 (N m c)
     okm = length ps > 0
-    okc = length ps > 2
+    okc = length ps > 3
     mix = findMixture x
     drwmix = color blue $ map (ellipCov2D 2 . snd) mix
 

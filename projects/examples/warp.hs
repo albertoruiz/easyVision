@@ -1,7 +1,7 @@
 {-# LANGUAGE TemplateHaskell, RecordWildCards #-}
 
 import Vision.GUI
-import ImagProc
+import Image.Processing
 import Numeric.LinearAlgebra ((<>))
 import Vision(ht,desp,scaling,kgen)
 import Util.Rotation
@@ -20,7 +20,7 @@ main = run $    arr rgb
            >>>  deskew @@@ winParam
            >>>  observe "warped" id
 
-deskew par@CGParam{..} img = warp (80,0,0) (size img) r img
+deskew par@CGParam{..} img = warp (Word24 80 0 0) (size img) r img
   where
     h = conjugateRotation par
     [[a,b]] = ht h [[dx,-dy]]

@@ -1,6 +1,6 @@
 import Vision.GUI
-import ImagProc
-import ImagProc.Camera
+import Util.Geometry
+import Image.Processing
 import Numeric.LinearAlgebra
 import Util.Misc(degree,replaceAt,debug)
 

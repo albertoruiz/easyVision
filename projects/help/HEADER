@@ -2,15 +2,13 @@
 <HEAD>
     <META http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 
-    <link href="http://fonts.googleapis.com/css?family=Crimson+Text" rel="stylesheet" type="text/css">
-    <link href='http://fonts.googleapis.com/css?family=Oxygen' rel='stylesheet' type='text/css'>
-
     <STYLE>
-        body{max-width:600px; font-family: "Oxygen", sans-serif; margin:50px}
+        html{background-color: #d0d0e0}
+        body{max-width:600px; font-family: "FreeSans", sans-serif; font-size:18px; margin:0; background-color: white; border: 40px solid #d0d0e0; padding:20px}
         ul  {list-style-type:square}
         h2  {color: #006000}
-        p   {margin:10px; font-family: "Crimson Text", serif; font-size:21px; line-height:28px}
-        pre {margin: 30px}
+        p   {margin:10px; margin-left: 20px; margin-top: 20px}
+        pre {margin:20px; font-size: 16px}
     </STYLE>
 </HEAD>
 

@@ -1,9 +1,9 @@
-{-# LANGUAGE Arrows, DoRec #-}
+{-# LANGUAGE Arrows, RecursiveDo #-}
 
 import Vision.GUI
-import ImagProc
+import Image.Processing
 
-main = run  $ arr (float . grayscale)
+main = run  $ arr grayf
             >>> optDo "-v" (observe "source" id)
             >>> mix 3 (    tempdiff 3
                        >>> optDo "-v" (observe "tempdiff" gg)
@@ -20,9 +20,9 @@ drift alpha = proc x -> do
 
 tempdiff scale = proc x -> do
     px <- delay zero -< x
-    returnA -< (scale) .* thresholdVal32f 0 0 IppCmpLess (x |-| px)
+    returnA -< (scale) .* thresholdVal 0 0 IppCmpLess (x |-| px)
 
-zero = constImage 0 (Size 480 640)
+zero = constantImage 0 (Size 480 640)
 
 mix alpha p = proc x -> do
     r <- p -< x

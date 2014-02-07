@@ -44,6 +44,7 @@ module Image.Processing(
     ippSetNumThreads,
     floodFill8u, floodFill8uGrad,
     compareC8u,
+    mirror8u,
     -- * domain transformations
     ImageBasis(..),
     imageBasis,
