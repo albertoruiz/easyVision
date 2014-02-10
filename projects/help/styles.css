@@ -1,0 +1,17 @@
+
+html{ background-color: #d0d0e0
+    }
+
+body{ max-width:800px; 
+      font-family: "FreeSans", sans-serif ; font-size:18px; 
+      margin:0; background-color: white; border: 40px solid #d0d0e0; padding:20px
+    }
+
+ul  {list-style-type:square}
+
+h2  {color: #006000}
+
+p   {margin:10px; margin-left: 20px; margin-top: 20px}
+
+pre {margin:40px; font-size: 16px; border: 1px solid gray;}
+

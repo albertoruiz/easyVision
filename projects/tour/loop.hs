@@ -1,14 +1,14 @@
 {-# LANGUAGE Arrows #-}
 
 import Vision.GUI
-import ImagProc
+import Image.Processing
 
 main = run  $    observe "source" rgb
             >>>  f
             >>>  observe "result"  (5.*)
 
 f = proc img -> do
-    let x = (float . grayscale) img
+    let x = (toFloat . grayscale) img
     p <- delay' -< x
     returnA -< x |-| p
 

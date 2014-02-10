@@ -1,5 +1,6 @@
-import Vision.GUI
-import ImagProc
+import Vision.GUI.Simple
+import Image
+import Util.Geometry
 
 main = runIt $ do
     p <- click "click points"

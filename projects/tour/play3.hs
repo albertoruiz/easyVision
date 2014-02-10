@@ -1,5 +1,5 @@
 import Vision.GUI
-import ImagProc
+import Image.Processing
 import Util.Misc(splitEvery)
  
 main = run $ arrL f >>> observe "RGB" rgb >>> wait (100`div`30)

@@ -1,9 +1,10 @@
 import Vision.GUI
-import ImagProc
+import Image.Processing
 
-f = sum8u . grayscale
+f = sumPixels . grayscale
 
 main = do
     cam <- camera
     mbimg <- cam
     print (f `fmap` mbimg)
+

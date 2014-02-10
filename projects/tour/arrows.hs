@@ -1,7 +1,7 @@
 {-# LANGUAGE Arrows #-}
 
 import Vision.GUI
-import ImagProc
+import Image.Processing
 
 main = run  $    observe "source" rgb
             >>>  arr grayscale
@@ -9,7 +9,7 @@ main = run  $    observe "source" rgb
             >>>  observe "result"  (5.*)
 
 p = proc g -> do
-    let f = float g
+    let f = toFloat g
     x <- observe "x" id -< f
     s <- (observe "s" id <<< arr (gaussS 5)) -< f
     observe "inverted" notI -< g

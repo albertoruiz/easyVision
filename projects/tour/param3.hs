@@ -1,7 +1,7 @@
 {-# LANGUAGE TemplateHaskell, RecordWildCards #-}
 
 import Vision.GUI
-import ImagProc
+import Image.Processing
 
 autoParam "SParam" "g-"  [  ("radius","Int",intParam 2 0 10) ]
 

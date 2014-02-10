@@ -1,5 +1,5 @@
 import Vision.GUI
-import ImagProc
+import Image
 
 main = runIt win
 

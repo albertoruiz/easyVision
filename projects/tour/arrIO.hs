@@ -1,5 +1,5 @@
 import Vision.GUI
-import ImagProc
+import Image.Processing
 
 main = run $ observe "img" rgb >>> arrIO (print . size . grayscale)
 

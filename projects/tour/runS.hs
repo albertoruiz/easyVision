@@ -1,5 +1,5 @@
 import Vision.GUI
-import ImagProc
+import Image.Processing
 
 main = do
     r <- runS camera $ arr (size . grayscale)

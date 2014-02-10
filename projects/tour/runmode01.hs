@@ -1,8 +1,9 @@
 import Vision.GUI
-import ImagProc
+import Image.Processing
 
-f = sum8u . grayscale
+f = sumPixels . grayscale
 
 main = do
     rs <- runS camera $ arr f
     print rs
+

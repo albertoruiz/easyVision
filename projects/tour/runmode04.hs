@@ -1,9 +1,10 @@
-import ImagProc
+import Image.Processing
 import System.Environment
 
-f = sum8u . grayscale
+f = sumPixels . grayscale
 
 main = do
     filename:_ <- getArgs
     img <- channelsFromRGB `fmap` loadRGB filename
     print (f img)
+

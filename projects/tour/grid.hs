@@ -1,5 +1,5 @@
 import Vision.GUI
-import ImagProc
+import Image.Processing
 import Util.Misc(splitEvery)
 import Data.List(tails)
 

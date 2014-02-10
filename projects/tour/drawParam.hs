@@ -1,7 +1,7 @@
 {-# LANGUAGE TemplateHaskell, RecordWildCards #-}
 
 import Vision.GUI
-import ImagProc
+import Image
 
 autoParam "Position" ""
     [ ("x",  "Double",   realParam (0) (-1) 1)

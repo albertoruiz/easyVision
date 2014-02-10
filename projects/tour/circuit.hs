@@ -1,8 +1,10 @@
-{-# LANGUAGE Arrows, DoRec #-}
+{-# LANGUAGE Arrows, RecursiveDo #-}
 
 import Vision.GUI
-import ImagProc(grayscale, warpOn, Polyline(..), Point(..), segmentLength,constImage,Size(..))
-import Vision.Apps.Contours(otsuContours, smoothPolyline, polygons, asSegments)
+import Image.Processing
+import Util.Geometry
+import Contours
+import Contours.Polygons
 import Numeric.LinearAlgebra((<>))
 import Vision(cameraFromHomogZ0,estimateHomographyRaw,ht,scaling) 
 import Util.Misc(rotateLeft,posMax)
@@ -16,11 +18,13 @@ main = run $ proc im -> do
                 (y,_,_) <- sMonitor "recursive" dr -< (s,g,ps)
             returnA -< y
 
+otsuContours = contours 1000 100 . notI . otsuBinarize
+
 -- dr would not be in scope if defined inside the proc
 dr _ (s,g,ps) = [ Draw s
                 , Draw [ Draw g, (Draw . map (drawContourLabeled blue red white 2 3)) ps ] ]
 
-f a im (c:_) = warpOn im h a
+f a im (c:_) = warpon a [(h,im)]
   where
     h = estimateHomographyRaw (g c) [[1,r],[-1,r],[-1,-r],[1,-r]] <> scaling 0.95
       where
@@ -30,5 +34,5 @@ f a im (c:_) = warpOn im h a
         k = posMax $ map segmentLength (asSegments c)
 f _ x _ = x
 
-zero = constImage 0 (Size 100 100)
+zero = constantImage 0 (Size 200 200)
 

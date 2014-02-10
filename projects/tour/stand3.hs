@@ -1,5 +1,5 @@
 import Vision.GUI
-import ImagProc
+import Image
 import Util.Misc(replaceAt)
 
 main = runIt win

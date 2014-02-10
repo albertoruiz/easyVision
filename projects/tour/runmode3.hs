@@ -1,10 +1,10 @@
 -- non threaded GUI, discarding result
 
 import Vision.GUI
-import ImagProc
+import Image.Processing
 
 main = do
     prepare
-    runNT_ camera (observe "image" rgb >>> arr (sum8u.grayscale))
+    runNT_ camera (observe "image" rgb >>> arr (sumPixels.grayscale))
     putStrLn "bye!"
 

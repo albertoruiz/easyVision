@@ -9,7 +9,7 @@ hVision Help
 
 [interactive point capture][points]
 
-[programs][examples]
+[example programs][examples]
 
 [tutorial][tutorial]
 

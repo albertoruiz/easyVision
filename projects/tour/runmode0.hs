@@ -1,11 +1,11 @@
 -- no gui
 
 import Vision.GUI
-import ImagProc
+import Image.Processing
 
 main = do
     putStrLn "Working without GUI..."
-    x <- runS camera  $    arr (sum8u . grayscale)
+    x <- runS camera  $    arr (sumPixels . grayscale)
                       >>>  arrL (zip [1..] . take 10)
     print x
     print (length x)

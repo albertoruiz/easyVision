@@ -1,11 +1,15 @@
 import Vision.GUI
-import ImagProc(grayscale, warpOn, Polyline(..), Point(..), segmentLength)
-import Vision.Apps.Contours(otsuContours, smoothPolyline, polygons, asSegments)
+import Image.Processing
+import Contours.Polygons
+import Contours
+import Util.Geometry
 import Numeric.LinearAlgebra((<>))
 import Vision(cameraFromHomogZ0,estimateHomographyRaw,ht,scaling) 
 import Util.Misc(rotateLeft,posMax)
 
 darkContours = (id &&& (otsuContours >>> map (smoothPolyline 4)))
+
+otsuContours = contours 1000 100 . notI . otsuBinarize
 
 main = run $ arr grayscale
           >>> arr darkContours
@@ -17,7 +21,7 @@ main = run $ arr grayscale
 shinfo (im,ps) = Draw [ Draw im
                       , (Draw . map (drawContourLabeled blue red white 2 3)) ps ]
 
-f (a,_) (im,c:_) = (warpOn im h a, [c])
+f (a,_) (im,c:_) = (warpon im [(h,a)], [c])
   where
     h = estimateHomographyRaw (g c) [[1,r],[-1,r],[-1,-r],[1,-r]] <> scaling 0.95
       where

@@ -2,10 +2,10 @@
 -- (this mode drops display frames)
 
 import Vision.GUI
-import ImagProc
+import Image.Processing
 
 main = do
-    r <- runT camera (observe "image" rgb >>> arr (sum8u.grayscale))
+    r <- runT camera (observe "image" rgb >>> arr (sumPixels.grayscale))
     print r
     putStrLn "bye!"
 

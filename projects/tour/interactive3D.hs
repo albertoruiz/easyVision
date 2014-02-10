@@ -1,5 +1,4 @@
-import Vision.GUI
-import ImagProc
+import Vision.GUI.Simple
 import Util.Geometry
 
 pause = putStrLn "Press any key (here) to continue..." >> getChar

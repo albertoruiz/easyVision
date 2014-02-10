@@ -6,15 +6,14 @@
 {-# LANGUAGE Arrows #-}
 
 import Vision.GUI
-import ImagProc
+import Image.Processing
 import Util.Misc(splitEvery)
-import Data.List(tails,foldl1')
 
 fast n = map head . splitEvery n
 
 main = run $ arr rgb >>> proc2
 
-proc1, proc2, proc3 :: ITrans ImageRGB ImageRGB
+proc1, proc2, proc3 :: ITrans (Image RGB) (Image RGB)
 
 -- "normal" order: show orig, filter, show fast, output fast
 proc1 = proc x -> do

@@ -36,13 +36,18 @@ related work
 installation instructions
 -------------------------
 
-(Tested on Ubuntu)
+(Tested on Ubuntu 12.04)
 
 1. Get the source code:
 
         $ git clone git://github.com/albertoruiz/easyVision.git
 
-2. Install IPP. You can download a noncomercial version for Linux:
+    Checkout the reorg branch:
+
+        $ git checkout reorg
+
+2. Install IPP. You can download the noncomercial version 7.1 for Linux
+   (go to the link "Intel Integrated Performance Primitives (Intel IPP) 7.1 for Linux")
 
         http://software.intel.com/en-us/articles/non-commercial-software-download/
 
@@ -57,30 +62,32 @@ installation instructions
         export EASYVISION=/your/path/to/easyVision/
         export LD_LIBRARY_PATH=$IPP_SHARED:$EASYVISION/lib/lib32
 
-    Make sure that the IPP .h headers are in IPP_INC and the corresponding .so
-    libs are in IPP_SHARED (modify as required in 64bit machines). Directory
-    structure and required auxiliary libs frequently change in different IPP versions.
+    Modify as required to make sure that the IPP .h headers are in IPP_INC and 
+    the corresponding .so libs are in IPP_SHARED.
 
     Continue installation in a new terminal.
 
-4. Install the Haskell Platform:
+4.  Install the Haskell Platform:
 
         $ sudo apt-get install haskell-platform
         $ cabal update
 
-    You will probably get the message that a new version of cabal-install is available.
-    Don't worry about that now.
+    Note that this branch works better with GHC 7.6.3. The official binary package is available from:
+
+        https://www.haskell.org/ghc/download_ghc_7_6_3#x86linux
+    
+        $ ./configure --prefix=/path/to/desired/location/of/ghc7.6.3
+        $ ./make install
+
+    Change the path in .bashrc so this ghc is used instead of the ghc supplied by the Haskell Platform and
+    continue the installation in a new terminal.
 
 5. Install the required libraries:
 
-        $ sudo apt-get install libgsl0-dev liblapack-dev libglpk-dev
-        $ sudo apt-get install libghc6-glut-dev mplayer mencoder imagemagick
+        $ sudo apt-get install libgsl0-dev libatlas-base-dev libglpk-dev
+        $ sudo apt-get install mplayer mencoder imagemagick
 
 6. Install optional libraries:
-
-    ATLAS (optimized LAPACK):
-
-        $ sudo apt-get install libatlas-base-dev
 
     OPENCV:
 
@@ -98,25 +105,15 @@ installation instructions
         
         $ sudo apt-get install libzbar-dev
 
-    3ds:
-
-        $ sudo apt-get install libglew1.5-dev lib3ds-dev
-
 
 7. Install the Haskell packages:
 
         $ cd easyVision/packages
         $ make
 
-    The basic system will be correctly installed if "ev-apps-0.1.0" is shown by 
+    The basic system will be correctly installed if "hVision-0.3.0" is shown by 
 
         $ ghc-pkg list
-
-    You can also install the optional packages:
-
-        $ make optional
-
-    (Dont' worry if you get any error here)
 
 8. Run the demos:
 

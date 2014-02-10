@@ -1,10 +1,11 @@
 import Vision.GUI
-import ImagProc
-import Contours.Base(setRegion)
+import Image.Processing
+import Image.ROI
+
 
 main = run $ arr grayscale >>> getROI "change roi" >>> arr cleanROI >>> observe "only roi" Draw
 
-cleanROI im = resize (roiSize (theROI im)) im
+cleanROI im = resize (roiSize (roi im)) im
 
 getROI name = transUI
             $ interface (Size 240 360) name state0 firsttime updts acts result display
@@ -13,6 +14,6 @@ getROI name = transUI
     firsttime _ _ = return ()
     updts         = []
     acts          = []
-    result roi _s input = ((), setRegion roi input)
-    display _roi _s _input output = Draw output
+    result droi _s input = ((), setRegion droi input)
+    display _droi _s _input output = Draw output
 

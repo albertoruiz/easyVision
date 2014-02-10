@@ -1,17 +1,17 @@
 import Vision.GUI hiding (clickPoints)
-import ImagProc
+import Image.Processing
 
 main = run clickPoints
 
-clickPoints :: ITrans Channels ([Point], ImageGray)
+clickPoints :: ITrans Channels ([Point], Image Gray)
 clickPoints = transUI $ interface  (Size 240 320) "click points"
                                    state0 firsttime updts acts result display
   where
     state0 = []
     firsttime _ _ = return ()
-    updts = [(key (MouseButton LeftButton), \_roi pt pts -> pt:pts)]
+    updts = [(key (MouseButton LeftButton), \_droi pt pts -> pt:pts)]
     acts  = []
-    result _roi pts input = (pts, (pts, notI . grayscale $ input))
-    display _roi _pts _input (pts,x) = Draw  [ Draw x, drwpts ]
+    result _droi pts input = (pts, (pts, notI . grayscale $ input))
+    display _droi _pts _input (pts,x) = Draw  [ Draw x, drwpts ]
       where drwpts = (color green . pointSz 3) pts
 

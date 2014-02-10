@@ -2,7 +2,7 @@
 
 
 import Vision.GUI
-import ImagProc
+import Image.Processing
 import Vision.GUI.Draw
 import Numeric.LinearAlgebra
 

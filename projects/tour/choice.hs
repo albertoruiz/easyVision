@@ -1,7 +1,7 @@
 {-# LANGUAGE Arrows #-}
 
 import Vision.GUI
-import ImagProc
+import Image.Processing
 
 main = run  $    arrL (zip [0..])
             >>>  separ

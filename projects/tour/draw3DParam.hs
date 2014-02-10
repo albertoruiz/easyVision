@@ -1,7 +1,7 @@
 {-# LANGUAGE TemplateHaskell, RecordWildCards #-}
 
-import Vision.GUI
-import ImagProc
+import Vision.GUI.Simple
+import Image
 import Util.Geometry
 import qualified Graphics.UI.GLUT as GL
 

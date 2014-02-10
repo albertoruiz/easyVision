@@ -1,9 +1,9 @@
 import Vision.GUI
-import ImagProc
+import Image.Processing
  
 main = run $ transUI f >>> freqMonitor
  
-f :: VCN Channels ImageRGB
+f :: VCN Channels (Image RGB)
 f = return . adaptMb $ \cam -> do
     x <- cam
     let r = rgb x
