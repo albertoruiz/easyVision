@@ -1,4 +1,5 @@
-import Vision.GUI       (observe, run)
-import Image.Processing (rgb)
+import Vision.GUI.Simple
+import Image
 
-main = run (observe "image" rgb)
+main = run $ observe "source" rgb
+

@@ -41,7 +41,7 @@ hVision Help
 
 **ESC** exit application
 
-**I** save window as ppm image file
+**I** save window screenshot as png
 
 **F11** toggle show ROI and display stats
 
@@ -50,10 +50,6 @@ hVision Help
 **F3** toggle window resize mode
 
 **F10** toggle sync display
-
-**Ctrl-ESC** exit main loop only (useful in ghci)
-
-**Shift-ESC** leave loop and kill mplayer (FIXME)
 
 **F1**: help
 

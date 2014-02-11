@@ -6,10 +6,6 @@ examples
 
 ## projects/examples
 
-**hello**: show a single image.
-
-**play**: show live video.
-
 **grid**: manipulation of the live video stream using standard list functions.
 
 **gradient**: show the image gradient as a vector field.
@@ -67,6 +63,12 @@ examples
     ./pose '../../data/videos/rot4.avi -loop 0'
 
 **cameracontrol**: interactive control of webcam parameters: exposure, focus, etc.
+
+**matrix**: Usage of matrix functions on images:
+
+CODEFILE(../tour/matrix.hs)
+
+**cinematic**: compute very simple inverse cinematics.
 
 ## projects/wip
 
