@@ -921,3 +921,21 @@ ippiSegmentWatershed_8u_C1IR pSrc srcStep pMarker markerStep roiSize norm flag p
     free proiSize
     return r
 
+foreign import ccall "adapt.h ippsAtan2_32f_A11x"
+    ippsAtan2_32f_A11x :: Ptr Float -> Ptr Float -> Ptr Float -> Int32 -> IO Int
+ippsAtan2_32f_A11 a b r n = do
+    r <- ippsAtan2_32f_A11x a b r n
+    return r
+
+foreign import ccall "adapt.h ippsAtan2_32f_A21x"
+    ippsAtan2_32f_A21x :: Ptr Float -> Ptr Float -> Ptr Float -> Int32 -> IO Int
+ippsAtan2_32f_A21 a b r n = do
+    r <- ippsAtan2_32f_A21x a b r n
+    return r
+
+foreign import ccall "adapt.h ippsAtan2_32f_A24x"
+    ippsAtan2_32f_A24x :: Ptr Float -> Ptr Float -> Ptr Float -> Int32 -> IO Int
+ippsAtan2_32f_A24 a b r n = do
+    r <- ippsAtan2_32f_A24x a b r n
+    return r
+

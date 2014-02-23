@@ -107,3 +107,6 @@ int ippiUndistortRadial_32f_C1Rx(float*, int, float*, int, void*, float, float, 
 int ippiUndistortRadial_8u_C3Rx(unsigned char*, int, unsigned char*, int, void*, float, float, float, float, float, float, unsigned char*);
 int ippiSegmentWatershedGetBufferSize_8u_C1Rx(void*, int*);
 int ippiSegmentWatershed_8u_C1IRx(unsigned char*, int, unsigned char*, int, void*, int, int, unsigned char*);
+int ippsAtan2_32f_A11x(float*, float*, float*, int);
+int ippsAtan2_32f_A21x(float*, float*, float*, int);
+int ippsAtan2_32f_A24x(float*, float*, float*, int);

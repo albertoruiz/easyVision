@@ -105,4 +105,7 @@ ippi.h  ippiRemap_8u_C3R
 ippi.h  ippiRemap_32f_C1R
 ippi.h  ippiCrossCorrValid_NormLevel_32f_C1R
 ippcc.h ippiColorTwist32f_8u_C3R
+ippvm.h ippsAtan2_32f_A11
+ippvm.h ippsAtan2_32f_A21
+ippvm.h ippsAtan2_32f_A24
 

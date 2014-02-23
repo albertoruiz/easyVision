@@ -430,3 +430,15 @@ int ippiSegmentWatershed_8u_C1IRx(Ipp8u* pSrc, int srcStep, Ipp8u* pMarker, int 
     return ippiSegmentWatershed_8u_C1IR(pSrc, srcStep, pMarker, markerStep, *roiSize, norm, flag, pBuffer);
 }
 
+int ippsAtan2_32f_A11x(Ipp32f a[], Ipp32f b[], Ipp32f r[], Ipp32s n) {
+    return ippsAtan2_32f_A11(a, b, r, n);
+}
+
+int ippsAtan2_32f_A21x(Ipp32f a[], Ipp32f b[], Ipp32f r[], Ipp32s n) {
+    return ippsAtan2_32f_A21(a, b, r, n);
+}
+
+int ippsAtan2_32f_A24x(Ipp32f a[], Ipp32f b[], Ipp32f r[], Ipp32s n) {
+    return ippsAtan2_32f_A24(a, b, r, n);
+}
+
