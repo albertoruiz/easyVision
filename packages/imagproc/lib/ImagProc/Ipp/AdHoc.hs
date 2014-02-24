@@ -26,6 +26,7 @@ import Foreign.ForeignPtr
 import Foreign.Marshal
 import Foreign.Storable
 import Data.List(foldl1')
+import Debug.Trace
 
 -- | Writes into a existing image a desired value in a specified roi.
 set32f :: Float      -- ^ desired value
@@ -517,6 +518,23 @@ canny32f (F dx, F dy) (l,h) = unsafePerformIO $ do
     return (G r {vroi = roi})
 
 --------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------
+
+-- | atan2 for images
+atan2_32f :: (ImageFloat, ImageFloat) -- ^ image gradient (dx,dy)
+          -> ImageFloat               -- ^ resulting image
+atan2_32f (F dx, F dy) = unsafePerformIO $ do
+    im <- img I32f (isize dx)
+    let Size h w = isize im
+        s = traceShow ("atan2", "h", h, "w", w, "jump", jump im, "elems", res) $
+            res where res = fromIntegral $ h * jump im            
+        x = castPtr $ ptr dx
+        y = castPtr $ ptr dy
+        z = castPtr $ ptr im
+    ippsAtan2_32f_A21 x y z s // checkIPP "ippsAtan2_32f_A21" [dx,dy]
+    touchForeignPtr (fptr im)
+    return (F im)
 
 -- | Histogram of a 8u image. For instance, @histogram [0,64 .. 256] g@ computes an histogram with four bins equally spaced in the image range.
 histogram :: [Int] -- ^ bin bounds

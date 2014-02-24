@@ -109,3 +109,4 @@ ippvm.h ippsAtan2_32f_A11
 ippvm.h ippsAtan2_32f_A21
 ippvm.h ippsAtan2_32f_A24
 
+c
