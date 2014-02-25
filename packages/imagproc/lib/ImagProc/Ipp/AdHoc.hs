@@ -527,7 +527,7 @@ atan2_32f :: (ImageFloat, ImageFloat) -- ^ image gradient (dx,dy)
 atan2_32f (F dx, F dy) = unsafePerformIO $ do
     im <- img I32f (isize dx)
     let Size h w = isize im
-        s = traceShow ("atan2", "h", h, "w", w, "jump", jump im, "elems", res) $
+        s = --traceShow ("atan2", "h", h, "w", w, "jump", jump im, "elems", res) $
             res where res = fromIntegral $ h * jump im            
         x = castPtr $ ptr dx
         y = castPtr $ ptr dy
