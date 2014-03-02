@@ -54,7 +54,7 @@ preventing badCondition msg x = if badCondition then error msg else x
 trapping :: Bool -> String -> a -> Maybe a
 trapping badCondition msg x =
   if badCondition
-  then trace ("Trapping: " ++ msg) $
+  then -- trace ("Trapping: " ++ msg) $
        Nothing
   else Just x
 
