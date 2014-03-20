@@ -54,14 +54,13 @@ data Shape = Shape { shapeContour  :: Polyline
 
 
 analyzeShape mW (p,(mx,my,cxx,cyy,cxy))
-    | l2 > thl2 = Just (Shape {..})
+    | l2 > 0 && l2 > l1 / 1000**2 = Just (Shape {..})
     | otherwise = Nothing
   where
     shapeContour = p
     shapeMoments = (mx,my,cxx,cyy,cxy)
     shapeCenter = Point mx my
     shapeAxes @ (l1,l2,phi) = eig2x2Dir (cxx,cyy,cxy)
-    thl2 = (1 * 2/640)**2
     shapeWhitener = diagl [1/sqrt l1,1/sqrt l2,1] <> rot3 phi <> desp (-mx,-my)
     whiteShape = transPol shapeWhitener p
     fou = fourierPL whiteShape
