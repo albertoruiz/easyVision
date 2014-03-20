@@ -22,6 +22,7 @@ module Util.Misc(
     angleDiff,
     lambdify, (.:), (//),
     arrayOf, memo,
+    Cyclic(..), mkCyclic, cycAt,
     formattedTime,
     formattedDate
 ) where
@@ -158,6 +159,18 @@ memo mx f = g where
     m = listArray (-mx,mx::Int) [f k | k <- [-mx..mx]]
     g w = m ! w
 
+--------------------------------------------------------------------------------
+
+-- | O(1) access to a periodic array
+newtype Cyclic a = Cyclic { cycVect :: V.Vector a }
+
+mkCyclic :: [a] -> Cyclic a
+mkCyclic = Cyclic . V.fromList
+
+cycAt :: Cyclic a -> Int -> a
+cycAt (Cyclic v) k = v V.! (mod k (V.length v))
+
+--------------------------------------------------------------------------------
 
 -- | intersection of two lists of ordered elements (the result is also ordered).
 intersectSorted :: (Ord a) => [a] -> [a] -> [a]

@@ -25,7 +25,8 @@ module Contours.Base (
     intersectionLineSegment,
     bisector,
     tangentsTo,
-    isLeft
+    isLeft,
+    minkowskiConvex, minkowskiComponents
 )
 where
 
@@ -38,6 +39,7 @@ import Util.Homogeneous hiding (flipx)
 import Util.Misc(Vec)
 import Data.Function(on)
 import Util.Geometry as G
+import Util.Polygon
 
 
 -- | (for an open polyline is the length)
@@ -54,10 +56,7 @@ area = abs . orientedArea
 -- | Oriented area of a closed polyline. The clockwise sense is positive in the x-y world frame (\"floor\",z=0) and negative in the camera frame.
 orientedArea :: Polyline -> Double
 orientedArea (Open _) = error "undefined orientation of open polyline"
-orientedArea (Closed l) = -0.5 * orientation' (last l:l)
-
-orientation' [_] = 0
-orientation' (Point x1 y1:r@(Point x2 y2:_)) = x1*y2-x2*y1 + orientation' r
+orientedArea (Closed l) = orientation (Polygon l)
 
 rev (Closed ps) = Closed (reverse ps)
 rev (Open ps) = Open (reverse ps)
@@ -91,18 +90,11 @@ criticalPoint eps2 p1 p2 p3s = r where
 -}
 ----------------------------------------------------------------------
 
-asSegments :: Polyline -> [Segment]
-asSegments (Open ps') = zipWith Segment ps' (tail ps')
-asSegments (Closed ps) = asSegments $ Open $ ps++[head ps]
-
-----------------------------------------------------------------------
-
 transPol t (Closed ps) = Closed $ map l2p $ ht t (map p2l ps)
 transPol t (Open ps)   = Open   $ map l2p $ ht t (map p2l ps)
 
 p2l (Point x y) = [x,y]
 l2p [x,y] = Point x y
-
 
 ----------------------------------------------------------
 
@@ -169,9 +161,6 @@ pentominos =
 
 ----------------------------------------------------------------------
 
-isLeft :: Point -> Point -> Point -> Bool
-isLeft p1@(Point x1 y1) p2@(Point x2 y2) p3@(Point x3 y3) =
-    (x2 - x1)*(y3 - y1) - (y2 - y1)*(x3 - x1) > 0
 
 
 convexHull :: [Point] -> [Point]
@@ -208,28 +197,13 @@ canTans q x = can
               || not (isLeft q a b) && isLeft q b c
     cl2 (a:b:xs) = a:b:xs++[a,b]
 
-----------------------------------------------------------------------
-
-
--- compact expression from http://paulbourke.net/geometry/lineline2d/
-segmentIntersection :: Segment -> Segment -> Maybe Point
-segmentIntersection (Segment (Point x1 y1) (Point x2 y2)) (Segment (Point x3 y3) (Point x4 y4)) = r
-  where
-    d = (y4-y3)*(x2-x1)-(x4-x3)*(y2-y1)
-    u = ((x4-x3)*(y1-y3)-(y4-y3)*(x1-x3))/d
-    v = ((x2-x1)*(y1-y3)-(y2-y1)*(x1-x3))/d
-    ok = d /= 0 && 0 < u && u <= 1 && 0 < v && v <= 1
-    x = x1 + u*(x2-x1)
-    y = y1 + u*(y2-y1)
-    r | ok = Just (Point x y)
-      | otherwise = Nothing
-
 --------------------------------------------------------------------------------
 
-intersectionLineSegment :: HLine -> Segment -> Maybe Point
-intersectionLineSegment l (Segment p1 p2) | ok        = Just p
-                                          | otherwise = Nothing
-  where
-    p = inhomog (meet l (G.join p1 p2))
-    ok = (toVector p - toVector p1) `dot` (toVector p - toVector p2) < 0
+minkowskiComponents :: Polygon -> Polygon -> [Polygon]
+minkowskiComponents d p = [ minkowskiConvex di pj | di <- convexComponents d, pj <- convexComponents p]
+  
+minkowskiConvex :: Polygon -> Polygon -> Polygon
+minkowskiConvex a b = Polygon $ convexHull
+    [ Point (-x1+x2) (-y1+y2) | Point x1 y1 <- polygonNodes a
+                              , Point x2 y2 <- polygonNodes b ]
 

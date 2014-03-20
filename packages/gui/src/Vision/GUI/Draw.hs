@@ -28,9 +28,11 @@ module Vision.GUI.Draw
 , viewPoint
 , lineStrip, axes3D, text3DAtF
 , drawPolygon
+, fillPolygon
+, fillConvexPolygon
 ) where
 
-import Graphics.UI.GLUT hiding (RGB, Matrix, Size, Point,color)
+import Graphics.UI.GLUT hiding (RGB, Matrix, Size, Point, color, Polygon)
 import qualified Graphics.UI.GLUT as GL
 import Image.Devel
 import Util.Geometry
@@ -50,7 +52,7 @@ import Data.Colour
 import Data.Colour.Names
 import Control.Monad(when)
 import GHC.Float(double2Float)
-import Util.Geometry(HPoint(..),Point3D(..),HPoint3D(..),HLine3D(..),HPlane(..),Meet(..))
+import Util.Polygon(convexComponents)
 import Text.Printf(printf)
 
 szgl = glSize .roiSize . roi
@@ -93,7 +95,7 @@ drawTexture' im [v1,v2,v3,v4] = do
                 0
                 (PixelData Luminance Float (starting im))
     texture Texture2D $= Enabled
-    renderPrimitive Polygon $ do
+    renderPrimitive GL.Polygon $ do
         vert (TexCoord2 0 0) v1
         vert (TexCoord2 1 0) v2
         vert (TexCoord2 1 1) v3
@@ -190,7 +192,13 @@ instance Renderable Polyline where
     render (Closed ps) = renderPrimitive LineLoop (vertex (Closed ps))
     render (Open ps) = renderPrimitive LineStrip (vertex (Open ps))
 
+instance Renderable Polygon where
+    render (Polygon ps) = renderPrimitive LineLoop (mapM_ vertex ps)
+
 instance Renderable [Polyline] where
+    render = mapM_ render
+
+instance Renderable [Polygon] where
     render = mapM_ render
 
 instance Renderable (Vector Double) where
@@ -267,6 +275,12 @@ lineStrip = Raw . GL.renderPrimitive GL.LineStrip . mapM_ GL.vertex
 
 drawPolygon :: Vertex a => [a] -> Drawing
 drawPolygon = Raw . GL.renderPrimitive GL.Polygon . mapM_ GL.vertex
+
+fillPolygon :: Polygon -> Drawing
+fillPolygon p = Draw $ map fillConvexPolygon (convexComponents p)
+
+fillConvexPolygon :: Polygon -> Drawing
+fillConvexPolygon = drawPolygon . polygonNodes
 
 ------------------------------------------------------------
 

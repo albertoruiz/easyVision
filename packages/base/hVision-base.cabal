@@ -48,6 +48,7 @@ library
                         Util.Homogeneous
                         Util.Small
                         Util.Geometry
+                        Util.Polygon
                         Util.Covariance
                         Util.Probability
                         Util.Kalman

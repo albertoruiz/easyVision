@@ -32,6 +32,8 @@ module Util.Geometry
 
     Vectorlike(..), Matrixlike(..), Tensorial(..),
 
+    Vect2D(..),
+
   -- * Transformations
 
     Transformable(..), Composable(..), Invertible(..), BackTransformable(..),
@@ -45,7 +47,12 @@ module Util.Geometry
   -- * Derived types
 
     Polyline(..), Segment(..),
+    interPoint, normalSegment,
     segmentLength, distPoints, bounding, cosAngleSegments,
+    asSegments, isLeft,
+    segmentIntersection, intersectionLineSegment,
+    Polygon(..),
+    orientation, polygonSides,
     DMat
 ) where
 
@@ -84,6 +91,11 @@ instance Shaped Point where
     type Shape Point = Dim2 Double
     toArray (Point x1 x2) = vec2 x1 x2
     unsafeFromArray v = Point (v@>0) (v@>1)
+
+
+-- | 2D displacement
+data Vect2D = Vect2D !Double !Double
+  deriving (Eq, Show, Read)
 
 
 -- | inhomogenous 2D point
@@ -636,6 +648,16 @@ instance Transformable Homography Polyline
 
 --------------------------------------------------------------------------------
 
+newtype Polygon = Polygon { polygonNodes :: [Point] }
+           deriving (Show,Read)
+
+instance Transformable Homography Polygon
+  where
+    type TResult Homography Polygon = Polygon
+    apTrans h (Polygon ps) = Polygon (apTrans h ps)
+
+--------------------------------------------------------------------------------
+
 data Segment = Segment !Point !Point
   deriving (Show)
 
@@ -653,6 +675,22 @@ instance Storable Segment where
     pokeElemOff pb 1 b
 
 --------------------------------------------------------------------------------
+
+-- | linear interpolation between two points
+interPoint :: Double -> Point -> Point -> Point
+interPoint β (Point x1 y1) (Point x2 y2) = Point x3 y3
+  where
+    x3 = (1-β)*x1 + β*x2
+    y3 = (1-β)*y1 + β*y2
+
+
+-- | vector normal to a segment (to the "left")
+normalSegment :: Segment -> Vect2D
+normalSegment (Segment (Point x1 y1) (Point x2 y2)) = Vect2D (-dy/d) (dx/d)
+  where
+    dx = x2-x1
+    dy = y2-y1
+    d = sqrt (dx**2+dy**2)
 
 -- | The length of a segment.
 segmentLength :: Segment -> Double
@@ -691,6 +729,57 @@ cosAngleSegments (Segment p q) (Segment p' q') = ca
      v2 = vx*vx+vy*vy
      uv = ux*vx+uy*vy
      ca = uv/(sqrt (abs u2)*sqrt (abs v2))
+
+--------------------------------------------------------------------------------
+
+asSegments :: Polyline -> [Segment]
+asSegments (Open ps') = zipWith Segment ps' (tail ps')
+asSegments (Closed ps) = asSegments $ Open $ ps++[head ps]
+
+--------------------------------------------------------------------------------
+
+isLeft :: Point -> Point -> Point -> Bool
+isLeft (Point x1 y1) (Point x2 y2) (Point x3 y3) =
+    (x2 - x1)*(y3 - y1) - (y2 - y1)*(x3 - x1) > 0
+
+--------------------------------------------------------------------------------
+
+-- compact expression from http://paulbourke.net/geometry/lineline2d/
+segmentIntersection :: Segment -> Segment -> Maybe Point
+segmentIntersection (Segment (Point x1 y1) (Point x2 y2)) (Segment (Point x3 y3) (Point x4 y4)) = r
+  where
+    d = (y4-y3)*(x2-x1)-(x4-x3)*(y2-y1)
+    u = ((x4-x3)*(y1-y3)-(y4-y3)*(x1-x3))/d
+    v = ((x2-x1)*(y1-y3)-(y2-y1)*(x1-x3))/d
+    ok = d /= 0 && 0 < u && u <= 1 && 0 < v && v <= 1
+    x = x1 + u*(x2-x1)
+    y = y1 + u*(y2-y1)
+    r | ok = Just (Point x y)
+      | otherwise = Nothing
+
+--------------------------------------------------------------------------------
+
+intersectionLineSegment :: HLine -> Segment -> Maybe Point
+intersectionLineSegment l (Segment p1 p2) | ok        = Just p
+                                          | otherwise = Nothing
+  where
+    p = inhomog (meet l (join p1 p2))
+    ok = (toVector p - toVector p1) `dot` (toVector p - toVector p2) < 0
+
+--------------------------------------------------------------------------------
+
+-- | signed area of a polygon
+orientation :: Polygon -> Double
+orientation (Polygon []) = error "orientation requires at least two points"
+orientation (Polygon ps@(p:_)) = -0.5 * go ps
+  where
+    go [] = error "orientation requires at least two points"
+    go [q] = f q p
+    go (a:r@(b:_)) = f a b + go r
+    f (Point x1 y1) (Point x2 y2) = x1*y2-x2*y1
+
+polygonSides :: Polygon -> [Segment]
+polygonSides = asSegments . Closed . polygonNodes
 
 --------------------------------------------------------------------------------
 
