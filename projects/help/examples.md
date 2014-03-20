@@ -2,7 +2,6 @@ examples
 
 # hVision examples
 
-- - -
 
 ## projects/examples
 
@@ -60,23 +59,17 @@ examples
 
 **pose**: camera pose estimation and augmented reality from a planar reference. Run as:
 
+<pre id="samp">
     ./pose '../../data/videos/rot4.avi -loop 0'
+</pre>
 
 **cameracontrol**: interactive control of webcam parameters: exposure, focus, etc.
 
 **matrix**: Usage of matrix functions on images:
 
-CODEFILE(../tour/matrix.hs)
+HSFILE(../tour/matrix.hs)
 
 **cinematic**: compute very simple inverse cinematics.
-
-## projects/wip
-
-Not yet updated from branch "master":
-
-**undistort**: removing radial distortion.
-
-**transi**: create a video from transition sequences created from still images given initial and final rectangles.
 
 
 ## projects/vision/geom
@@ -89,13 +82,17 @@ See the Makefile or run "make" and "make demo" to run these programs with intere
 
 **conic**: click points and see the intersection line-conic.
 
+**crossratio**: predict position of equispaced points in image
+
 **linemodels**: click points and show the estimated line using different linear costs.
 
 **rectify**: click points in the image of a square to rectify the plane.
 
-**resection, resection2, resection4**: rich 3D illustration of camera estimation from 3D-2D correspondences
+**synthcam**: create a camera matrix from a projection center and a target point and show in 3D.
 
-**stereo**: rich 3D illustration of a stereo geometry.
+**resection, resection2, resection4**: interactive 3D illustration of camera estimation from 3D-2D correspondences
+
+**stereo**: interactive 3D illustration of a stereo geometry.
 
 **multiview**: experiments with the multiview tensors.
 

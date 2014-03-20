@@ -8,15 +8,14 @@ hVision Help
 
 The programs using the "run" function take the input source from the command line.
 
-CODEFILE(../examples/play.hs)
+HSFILE(../tour/play.hs)
 
 
 
 
 **Video files**
 
-
- Video files can be given directly:
+Video files can be given directly:
 
 <pre id="samp">
     ./play ../../data/videos/rot4.avi
@@ -47,8 +46,6 @@ It is recommended that your editor / IDE is configured to be able to compile and
 
 **"drop" and "keep"**
 
-tonto
-
 The suboption "drop" in the source url is used to return the most recent captured frame. This is useful to discard older frames that for some reason have not been processed and are no longer required.
 
 The suboption "keep" in the source url creates a fifo queue with all captured frames.
@@ -74,7 +71,7 @@ Alternatively, the images can be automatically loaded without user participation
 
 - - -
 
-[general help][help]
+[back to help][help]
 
 INCLUDE(LINKS)
 

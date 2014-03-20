@@ -1,10 +1,10 @@
 
-html{ background-color: #e0e0e0
+html{ display: table; margin: auto; background: white
     }
 
-body{ max-width:800px; 
+body{ width:800px;
       font-family: "FreeSans", sans-serif ; font-size:18px; 
-      margin:0; background-color: white; border: 40px solid #e0e0e0; padding:20px
+      margin:40px; background-color: #f8f8f8; border: 2px solid #afafaf; padding:20px
     }
 
 ul  {list-style-type:square}
@@ -13,7 +13,7 @@ h2  {color: #006000}
 
 p   {margin:10px; margin-left: 20px; margin-top: 20px}
 
-pre {margin:40px; font-size: 16px; border: 1px solid gray}
+pre {margin:40px; font-size: 16px; border: 1px solid gray; background: white; padding: 10px }
 
-#samp {margin:40px; font-size: 16px; border: none }
+#samp {margin:40px; font-size: 16px; border: none; background: #efefef; }
 

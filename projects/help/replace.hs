@@ -16,12 +16,12 @@ main = do
     rep <- getFlag "-r"
     if rep
       then do
-        putStr =<< ioReplace (rules++[include,codefile']) =<< getContents
+        putStr =<< ioReplace (rules++[include,codefile,hsfile]) =<< getContents
       else
         interact (replace rules)
 
-codefile' :: Rule
-codefile' = "CODEFILE" :~> \f -> (return . highlight . addName f) =<< readFile f
+hsfile :: Rule
+hsfile = "HSFILE" :~> \f -> (return . highlight . addName f) =<< readFile f
   where
     highlight = hscolour HTML col False True "" False
     col = defaultColourPrefs
@@ -30,6 +30,5 @@ codefile' = "CODEFILE" :~> \f -> (return . highlight . addName f) =<< readFile f
             , varop = [Foreground Green]
             , layout = [Normal]
             }
---    addName f xs = reverse (take 70 $ reverse f ++ " --" ++ repeat ' ') ++ "\n" ++ xs
     addName f xs = replicate 0 ' ' ++ "-- "++ drop 3 f++"\n\n"++ xs
 

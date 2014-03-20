@@ -60,6 +60,7 @@ sh3D (im,cs) = case rectifiers polys of
     polys = polygons 10 5 (length ref, length ref) cs
     dc cam im = Draw [ drawTexture floor floorcoords, 
                        --drawCamera 0.2 cam (Just (extractSquare 128 fim))
+                       axes3D 1,
                        showCamera 0.5 ic (Just fim) ]
       where
         fim = toFloat im
