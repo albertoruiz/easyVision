@@ -6,7 +6,7 @@ import Util.Geometry
 
 main = runIt $ clickPoints "conic" "--points" () (sh.fst)
 
-l = join (Point 0.5 0) (Point 0 0.5)
+l = gjoin (Point 0.5 0) (Point 0 0.5)
 
 sh pts | length pts >= 5 = Draw 
             [ drwpts

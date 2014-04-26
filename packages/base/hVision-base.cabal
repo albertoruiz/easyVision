@@ -1,5 +1,5 @@
 Name:               hVision-base
-Version:            0.4
+Version:            0.5
 License:            GPL
 License-file:       LICENSE
 Author:             Alberto Ruiz
@@ -31,7 +31,7 @@ flag uvc
 
 
 library
-    Build-Depends:      base >= 4 && < 5, hmatrix >= 0.15, vector, hTensor,
+    Build-Depends:      base >= 4 && < 5, hmatrix >= 0.16, vector, hTensor,
                         process, array, random, containers, directory,
                         old-locale, old-time,
                         hmatrix-glpk,

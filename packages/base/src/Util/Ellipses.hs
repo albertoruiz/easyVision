@@ -210,7 +210,7 @@ fromUnitCircle c = h
 
 
 intersectionConicLine :: Conic -> HLine -> [HPoint]
-intersectionConicLine c l = h · r <| ss
+intersectionConicLine c l = h ⊙ r <| ss
   where
     h = fromUnitCircle c
     l' = invTrans h <| l
@@ -224,5 +224,5 @@ intersectionConicLine c l = h · r <| ss
     
     dirNormal (HLine a b _c) = HPoint a b 0
 
-    closestToLine p m = G.join p (dirNormal m) `meet` m
+    closestToLine p m = G.gjoin p (dirNormal m) `meet` m
 

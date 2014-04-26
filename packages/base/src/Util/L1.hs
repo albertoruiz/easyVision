@@ -30,7 +30,7 @@ l1SolveO a y = debug "L1" (const j) $ vec (take n x)
     eye = ident m
     c = fromBlocks [[ a,-eye],
                     [-a,-eye]]
-    d = join [y,-y]
+    d = vjoin [y,-y]
     p = Dense $ zipWith (:<=:) (toLists c) (toList d)
     Optimal (j,x) = simplex (Minimize (replicate n 0 ++ replicate m 1)) p (map Free [1..(n+m)])
 

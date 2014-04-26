@@ -113,8 +113,8 @@ estimateEssential' (f0,f0') fund = (esen,(f,f'),err) where
 
 bougnoux :: Mat -> Double
 bougnoux fun = sqrt (- a / b) where
-    a = (p' <> asMat e' <> i' <> fun <.> p) * (p <> trans fun <.> p')
-    b = (p' <> asMat e' <> i' <> fun <> i' <> trans fun <.> p')
+    a = (p' <> asMat e' <> i' <> fun <> p) * (p <> trans fun <> p')
+    b = (p' <> asMat e' <> i' <> fun <> i' <> trans fun <> p')
     (_,e') = epipoles fun
     i' = diag $ vec [1,1,0]
     p = vec [0,0,1]

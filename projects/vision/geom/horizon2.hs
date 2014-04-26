@@ -33,13 +33,13 @@ sh (im,qs) = [dr]
                                      , text (Point 0.9 0) (printf "f ~ %.2f" f)
                                      ]
     Closed [p1,p2,p3,p4] = head sqs
-    l1 = join p1 p2
-    l2 = join p3 p4
-    l3 = join p1 p4
-    l4 = join p2 p3
+    l1 = gjoin p1 p2
+    l2 = gjoin p3 p4
+    l3 = gjoin p1 p4
+    l4 = gjoin p2 p3
     q1 = meet l1 l2
     q2 = meet l3 l4
-    l_inf' = join q1 q2
+    l_inf' = gjoin q1 q2
     n = inhomog $ closestToLine (HPoint 0 0 1) l_inf'
     x1 = distPoints (inhomog q1) n
     x2 = distPoints (inhomog q2) n
@@ -48,5 +48,5 @@ sh (im,qs) = [dr]
     
 dirNormal (HLine a b c) = HPoint a b 0
 
-closestToLine p l = join p (dirNormal l) `meet` l
+closestToLine p l = gjoin p (dirNormal l) `meet` l
 

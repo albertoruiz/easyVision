@@ -53,7 +53,7 @@ stumps p = stumpsOk (prepro p)
 -- useful precomputation: indices of the sorted features.
 prepro :: TwoGroups -> (([Vec], [Vec]), Vec, [[Double]], [[Double]], [[Int]])
 prepro (g1,g2) = ((g1,g2),lbs,xs,oxs,is) where
-    lbs = join [constant 1 (length g1), constant (-1) (length g2)]
+    lbs = vjoin [constant 1 (length g1), constant (-1) (length g2)]
     xs = transpose $ map toList (g1 ++ g2)
     s = map f xs
     f l = sortBy (compare `on` fst) (zip l [0..])
@@ -99,7 +99,7 @@ adaboostStep method (g1,g2) d = (f,d',e,a) where
     f = method d
     e1 = map (signum . max 0 . negate . f) g1
     e2 = map (signum . max 0 . f) g2
-    e = join [vec e1, vec e2] <.> d
+    e = vjoin [vec e1, vec e2] <> d
     a = 0.5 * log ((1-e)/e) -- it may be Infinity
     kp = exp (-a)
     kn = exp a
@@ -107,8 +107,8 @@ adaboostStep method (g1,g2) d = (f,d',e,a) where
     f2 v = if f v < 0 then kp else kn
     d1 = map f1 g1
     d2 = map f2 g2
-    dr = d * join [vec d1, vec d2]
-    d' = dr / scalar (dr <.> constant 1 (dim dr))
+    dr = d * vjoin [vec d1, vec d2]
+    d' = dr / scalar (dr `udot` constant 1 (dim dr))
 
 -- | creates a list of weak learners and associated information to build a strong learner using adaboost
 adaboostST :: Int -> WeightedDicotomizer -> TwoGroups -> [ADBST]
@@ -170,7 +170,7 @@ mseWeighted (g1,g2) d = f where
     rd  = sqrt d
     rd' = outer rd (constant 1 (cols m))
     w = (m*rd') <\> (b*rd)
-    f v = tanh ((v & 1) <.> w)
+    f v = tanh ((v & 1) <> w)
 
 
 -- | a minimum distance dicotomizer using weighted examples

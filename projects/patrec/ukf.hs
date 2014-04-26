@@ -24,8 +24,8 @@ printmc (m,c) = do
 main = do
     let m = 3 |> [1,2,3]
         --c = diagl [1,1,1]
-        c = (3><3) [1,0.5,0,0.5,4,0,0,0,9]
-        t = (2><3) [1,1,0,0,1,1]
+        c = (3><3) [1,0.5,0,0.5,4,0,0,0,9 :: Double]
+        t = (2><3) [1,1,0,0,1,1 :: Double]
         (sigmapoints,(wm,wc)) = unscentedSamples ukfDefaultParam (m,c)
     print $ fromRows sigmapoints
     print $ wm

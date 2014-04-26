@@ -2,12 +2,12 @@
 import Classifier
 import Classifier.ToyProblems
 import Numeric.LinearAlgebra
+import Numeric.LinearAlgebra.Util(mplot)
 import Util.Misc(vec)
 import Vision.GUI.Simple
 import System.Random(randomIO)
 import Text.Printf(printf)
 import qualified Classifier.GP as GP
-import Graphics.Plot
 
 
 ---------------------------------------------------------------------------

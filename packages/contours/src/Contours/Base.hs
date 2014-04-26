@@ -38,7 +38,7 @@ import Numeric.LinearAlgebra.Util(diagl)
 import Util.Homogeneous hiding (flipx)
 import Util.Misc(Vec)
 import Data.Function(on)
-import Util.Geometry as G
+import Util.Geometry
 import Util.Polygon
 
 
@@ -120,7 +120,7 @@ areaTriang p1 p2 p3 = sqrt $ p * (p-d1) * (p-d2) * (p-d3)
 
 
 bisector :: Segment -> HLine
-bisector (Segment (Point x0 y0) (Point x1 y1)) = G.join dir cen
+bisector (Segment (Point x0 y0) (Point x1 y1)) = gjoin dir cen
   where
     dx = x1-x0
     dy = y1-y0

@@ -24,10 +24,11 @@ data Quaternion = Quat {qs::Double, qv::Vec} deriving (Eq, Show)
 
 instance Num Quaternion where
     Quat{ qs = a, qv = u } + Quat{ qs = t, qv = v } = Quat { qs = a + t , qv = u + v }
-    Quat{ qs = a, qv = u } * Quat{ qs = t, qv = v } = Quat { qs = a*t - u<.>v, qv = a `scale` v + t `scale` u + cross u v }
+    Quat{ qs = a, qv = u } * Quat{ qs = t, qv = v } = Quat { qs = a*t - udot u v, qv = a `scale` v + t `scale` u + cross u v }
     abs Quat{ qs = s, qv = v } = Quat {qs = sqrt $ s**2 + norm v ** 2, qv = vec [0,0,0] }
     signum _ = error "signum of Quaternion not defined"
     fromInteger = quat . fromInteger
+    negate q = (-1) * q
 
 instance Fractional Quaternion where
     fromRational = quat . fromRational

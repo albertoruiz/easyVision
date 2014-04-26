@@ -39,7 +39,7 @@ import Control.Arrow((***))
 import Data.List(sortBy)
 import Data.Function(on)
 import Util.Optimize(optimize)
-import Util.Geometry hiding (join)
+import Util.Geometry
 import Util.Misc(degree)
 import Util.Homogeneous(desp)
 import Util.Rotation(rot3)
@@ -78,7 +78,7 @@ conditional y (N m c) = N m' c'
 jointLinear :: Gaussian -> Mat -> Gaussian -> Gaussian
 jointLinear (N m c) h (N o r) = N m' c'
   where
-    m' = join [m, h <> m + o]
+    m' = vjoin [m, h <> m + o]
     cxy = c <> trans h
     cyy = h <> cxy + r
     c' = fromBlocks [[ c        , cxy ]
@@ -111,7 +111,7 @@ gaussianLogLik (N m c) = f
     k = fromIntegral (dim m) * log (2*pi) + lad
     f z = -0.5*(k+dM2 z)
       where
-        dM2 x = xm <.> (ic <> xm)
+        dM2 x = xm <> ic <> xm
           where xm = x - m
 
 ----------------------------------------------------------------------

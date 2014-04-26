@@ -1,13 +1,12 @@
 -- simple example of L1 minimization and compressed sensing
 
 import Numeric.LinearAlgebra
-import Numeric.LinearAlgebra.Util(norm)
+import Numeric.LinearAlgebra.Util(norm,mplot)
 import Util.Misc(Mat,Vec,vec,debug,randomPermutation)
 import Util.L1
 import Text.Printf(printf)
 import Control.Monad(when)
 import Numeric.GSL.Fourier
-import Graphics.Plot
 
 
 gaussianMatrix seed (r,c) = reshape c $ randomVector seed Gaussian (r*c) / fromIntegral c
@@ -56,7 +55,7 @@ main = do
 
 dctBasis n = trans $ normRows $ fromColumns $ map (fst . fromComplex . subVector 0 n . (*corr) . ifft . dup) $ toColumns $ ident n
   where
-    dup v = join [v, rev v]
+    dup v = vjoin [v, rev v]
     rev = fromList . reverse . toList
     corr = fromList $ map g [0..2*fromIntegral n-1]
     g k = cis (2*pi*k*(1/4/fromIntegral n))

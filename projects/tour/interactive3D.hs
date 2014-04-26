@@ -26,7 +26,7 @@ main = do
         p2 = Point3D 3 3 3
     add $ (color green . pointSz 5) [p1, p2]
     pause
-    let l12 = join p1 p2
+    let l12 = gjoin p1 p2
     add $ color gray l12
     pause
     

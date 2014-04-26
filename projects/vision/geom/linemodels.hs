@@ -29,13 +29,13 @@ pinvline pts = unsafeFromVector (fromList [a',-1,b'])
     sol = a <\> b
     b = fromList $ map py pts
     x = col $ map px pts
-    a = x ! 1
+    a = x ¦ 1
     px (Point x _) = x
     py (Point _ y) = y
 
 eigline :: [Point] -> HLine
 -- principal direction
-eigline pts = G.join p q
+eigline pts = gjoin p q
   where
     x = fromRows $ map toVector pts
     (m,c) = meanCov x

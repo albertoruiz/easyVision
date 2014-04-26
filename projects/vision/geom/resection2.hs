@@ -4,7 +4,7 @@ import Vision.Camera
 import Util.Options(getRawOption)
 import Data.Traversable(traverse)
 import Numeric.LinearAlgebra
-import Numeric.LinearAlgebra.Util((!),(#),row, col, diagl)
+import Numeric.LinearAlgebra.Util((¦),(#),row, col, diagl)
 import Util.Geometry
 import Util.Camera
 
@@ -56,7 +56,7 @@ scaleit s = unsafeFromMatrix $ diagl [s,s,s,1]
 
 despla :: Double -> Double -> Double -> Homography3D
 despla x y z = unsafeFromMatrix $ 
-    ident 3 ! col[x,y,z]
+    ident 3 ¦ col[x,y,z]
     # row [0,0,0,1]
 
 cube = [p1,p2,p3,p4,p1

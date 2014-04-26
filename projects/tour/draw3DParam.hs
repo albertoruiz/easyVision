@@ -17,7 +17,7 @@ drws Position{..} =
     [ clearColor white . blend $
         [ color black . lineWd 2 $ axes3D 5
         , pointSz 3 . color red $ [p, p2]
-        , color blue (join p p2)
+        , color blue (gjoin p p2)
         , (lineWd 3 . color blue) (lineStrip [p, p2])
         , color orange l
         , color lightgray [ projs p, projs p2 ]
@@ -42,5 +42,5 @@ drws Position{..} =
 pol = map (meet p) ls
   where
     p = HPlane 1 1 1 (-4)
-    ls = map (join (Point3D 0 0 0)) [Point3D 1 0 0, Point3D 0 1 0, Point3D 0 0 1]
+    ls = map (gjoin (Point3D 0 0 0)) [Point3D 1 0 0, Point3D 0 1 0, Point3D 0 0 1]
 

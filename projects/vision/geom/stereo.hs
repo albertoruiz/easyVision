@@ -3,7 +3,7 @@ import Image.Processing
 import Util.Options(getRawOption,maybeOption)
 import Data.Traversable(traverse)
 import Numeric.LinearAlgebra
-import Numeric.LinearAlgebra.Util((!))
+import Numeric.LinearAlgebra.Util((¦))
 import Util.Geometry as G
 import Util.Camera
 import Vision
@@ -110,7 +110,7 @@ drw mbf mbimg1 mbimg2 (psl,psr) = clearColor white [ color gray $ axes3D 2 , dr 
          . debug "q" (const q)
          . debug "bougnoux" (const (bougnoux f))
 
-move d m = k <> (r ! asColumn (-r <> (scalar d * c)))
+move d m = k <> (r ¦ asColumn (-r <> (scalar d * c)))
   where
     (k,r,c) = factorizeCamera m
 

@@ -23,6 +23,8 @@ examples
 
 **crosscorr**: image matching of user-selected regions in live video using cross-correlation.
 
+**otsu**:  illustration of Otsu's method for automatic thresholding.
+
 **trail**: "ghost" effect using arrow notation and recursive do.
 
 **twist**: linear color transformation.

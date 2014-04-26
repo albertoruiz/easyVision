@@ -58,8 +58,7 @@ module Util.Geometry
 
 import Util.Small
 import Util.Misc(Mat,Vec)
-import Numeric.LinearAlgebra hiding (join, (|>))
-import qualified Numeric.LinearAlgebra as LA
+import Numeric.LinearAlgebra hiding ((|>))
 import Data.Function(on)
 import Foreign.Storable
 import Foreign.Ptr
@@ -467,7 +466,7 @@ instance Inhomog Point3D
 instance (Num (Vector t), Container Vector t) => Inhomog (Vector t)
   where
     type HResult (Vector t) = Vector t
-    homog v = LA.join [v,1]
+    homog v = vjoin [v,1]
 
 instance (Num (Vector t), Container Vector t) =>  Inhomog (Matrix t)
   where
@@ -555,7 +554,7 @@ class Meet s t where
 
 class Join s t where
     type s :/\: t :: *
-    join :: s -> t -> s :/\: t
+    gjoin :: s -> t -> s :/\: t
 
 -- line line
 
@@ -582,41 +581,41 @@ joinPoints p q = HLine (v@>0) (v@>1) (v@>2) where v = crossMat (toVector p) <> (
 
 instance Join HPoint HPoint where
     type HPoint :/\: HPoint = HLine
-    join = joinPoints
+    gjoin = joinPoints
 
 instance Join Point Point where
     type Point :/\: Point = HLine
-    join = join `on` homog
+    gjoin = gjoin `on` homog
 
 instance Join HPoint3D HPoint3D where
     type HPoint3D :/\: HPoint3D = HLine3D
-    join p q = HLine3D (UT.asMatrix t)
+    gjoin p q = HLine3D (UT.asMatrix t)
       where
         t = ((E./\) `on` toTensor) p q
 
 instance Join Point3D Point3D where
     type Point3D :/\: Point3D = HLine3D
-    join = join `on` homog
+    gjoin = gjoin `on` homog
 
 -- point line
 
 instance Join HPoint3D HLine3D where
     type HPoint3D :/\: HLine3D = HPlane
-    join p q = unsafeFromVector . UT.asVector . E.dual $ t
+    gjoin p q = unsafeFromVector . UT.asVector . E.dual $ t
       where
         t =  toTensor p   E./\   toTensor q
 
 instance Join Point3D HLine3D where
     type Point3D :/\: HLine3D = HPlane
-    join p q = join (homog p) q
+    gjoin p q = gjoin (homog p) q
 
 instance Join HLine3D HPoint3D where
     type HLine3D :/\: HPoint3D = HPlane
-    join q p = join p q
+    gjoin q p = gjoin p q
 
 instance Join HLine3D Point3D where
     type HLine3D :/\: Point3D = HPlane
-    join q p = join p q
+    gjoin q p = gjoin p q
 
 -- line plane
 
@@ -763,8 +762,8 @@ intersectionLineSegment :: HLine -> Segment -> Maybe Point
 intersectionLineSegment l (Segment p1 p2) | ok        = Just p
                                           | otherwise = Nothing
   where
-    p = inhomog (meet l (join p1 p2))
-    ok = (toVector p - toVector p1) `dot` (toVector p - toVector p2) < 0
+    p = inhomog (meet l (gjoin p1 p2))
+    ok = (toVector p - toVector p1) `udot` (toVector p - toVector p2) < 0
 
 --------------------------------------------------------------------------------
 

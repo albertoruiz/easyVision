@@ -72,7 +72,7 @@ onP = flip withPreprocess
 andP :: [Property a Vec] -> Property a Vec
 andP fs prob = f where
     ps = map ($prob) fs
-    f v = join $ map ($v) ps
+    f v = vjoin $ map ($v) ps
 
 -- | composition of properties
 ofP :: Property b c -> Property a b -> Property a c

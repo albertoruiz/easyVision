@@ -1,7 +1,7 @@
 -- simpler format for multiview problems
 
 import Numeric.LinearAlgebra
-import Numeric.LinearAlgebra.Util(diagl)
+import Numeric.LinearAlgebra.Util(diagl, mplot)
 import Vision hiding (selectSol)
 import Vision.LASBA
 import qualified Vision.Gea as G
@@ -12,7 +12,6 @@ import Vision.Epipolar
 import Vision.Bootstrap
 import Util.ShowReco
 import Util.Misc(mean,debug,dimString,pairsWith,degree,median,quartiles)
-import Graphics.Plot
 import System.Environment(getArgs)
 
 import Text.Printf

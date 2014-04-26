@@ -161,12 +161,12 @@ inHomogMat m = ma / (mb `outer` constant 1 (cols ma))
 
 infixl 7 !<>, <>!
 
-(!<>) :: (Product t, Mul a b c, G.Inhomog x, G.Homog (c t), G.HResult x ~ a t)
-      => x -> b t -> G.IHResult (c t)
+(!<>) ::  (Product t, Container Vector t, Num (Vector t))
+       => Matrix t -> Matrix t -> Matrix t
 a !<> b = G.inhomog (G.homog a <> b)
 
-(<>!) :: (Product t, Mul a b c, G.Inhomog x, G.Homog (c t), G.HResult x ~ b t)
-      => a t -> x -> G.IHResult (c t)
+(<>!) ::  (Product t, Container Vector t, Num (Vector t))
+       => Matrix t -> Matrix t -> Matrix t
 a <>! b = G.inhomog (a <> G.homog b)
 
 

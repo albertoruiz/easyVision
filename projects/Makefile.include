@@ -6,6 +6,7 @@ all: $(EXEC)
 %: %.hs
 	ghc --make -O2 -threaded -rtsopts $*
 	rm $*.o $*.hi
+	rm -f $*.dyn_o $*.dyn_hi
 
 clean:
 	rm -rf $(wildcard *.o)

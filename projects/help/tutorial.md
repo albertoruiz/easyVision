@@ -41,7 +41,7 @@ HSFILE(../tour/play1.hs)
 The above processing pipeline p produces grayscale images. The observation windows show some features of the processed objects, but the results are not sent forward.
 
 
-##sMonitor
+## sMonitor
 
 We can show different things in a window, selected with the mouse wheel:
 
@@ -55,6 +55,21 @@ HSFILE(../tour/chanShow.hs)
 We can apply an IO operation to each element in the input pipeline:
 
 HSFILE(../tour/arrIO.hs)
+
+## recommended program structure
+
+The development of certain algorithms requires displaying many
+intermediate results for debugging purposes. As a result of fast prototyping,
+some pieces of code are often included in the display functions, which at the end requires some
+refactoring.
+
+A way to keep things well organized is to separate the algorithmic work from the
+display functions. I find it useful to define a record with all the intermediate
+steps in a computation and populate it in a worker function possibly depending on
+interactive parameters. If the experiment is successful it is easy to extract the
+relevant code to a library function.
+
+HSFILE(../tour/work.hs)
 
 ## arrow interface
 
@@ -160,9 +175,9 @@ HSFILE(../tour/runmode04.hs)
 
 HSFILE(../tour/runmode05.hs)
 
-**runmode06**: process pipeline and the work with it:
+**runmode06**: process pipeline and then work with it:
 
-HSFILE(../tour/runmode05.hs)
+HSFILE(../tour/runmode06.hs)
 
 
 **runS**: same thing.
@@ -171,21 +186,27 @@ HSFILE(../tour/runS.hs)
 
 **scanl1**: scanl to perform a recursive computation. The video is shown inside the video. Run as
 
-    ./scanl1 ../../data/videos/rcube.avi
+<pre id="samp">
+$ ./scanl1 ../../data/videos/rcube.avi
+</pre>
 
 HSFILE(../tour/scanl1.hs)
 
 
 **single**: read a list of image files and lazily work with them. Run as
 
+<pre id="samp">
     (fixme)
+</pre>
 
 HSFILE(../tour/single.hs)
 
 
 **skip**: drop the first n frames of the input sequence
 
+<pre id="samp">
     (fixme)
+</pre>
 
 HSFILE(../tour/skip.hs)
 

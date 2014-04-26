@@ -14,7 +14,7 @@ sh mbi []      = Draw mbi
 sh mbi [p]     = Draw [ Draw mbi, color white . drawPointsLabeled $ [p] ]
 sh mbi [p1,p2] = Draw
     [ Draw mbi
-    , color gray (join p1 p2)
+    , color gray (gjoin p1 p2)
     , drawPointsLabeled  [p1,p2]
     ]
 sh mbi [p1,q2,p3] = Draw
@@ -25,14 +25,14 @@ sh mbi [p1,q2,p3] = Draw
     , pointSz 3 . color red $ more
     ]
   where
-    l = join p1 p3
+    l = gjoin p1 p3
     p2 = inhomog $ closest l (homog q2)
     more = map unsafeFromVector (continue p1 p2 p3) :: [Point]
 
 
 closest l@(HLine a b c) p@(HPoint x y w) = meet l n
   where
-    n = join p (HPoint a b 0)
+    n = gjoin p (HPoint a b 0)
 
 continue p1 p2 p3 = [ v3 + dir * scalar (solveCR cr a b) | cr <- [1/4, 1/2*2/3, 1/2*3/4, 1/2] ]
   where

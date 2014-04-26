@@ -2,7 +2,7 @@
 
 import Vision.GUI
 import Numeric.LinearAlgebra
-import Numeric.LinearAlgebra.Util((#),(&),row, col, diagl, norm)
+import Numeric.LinearAlgebra.Util((#),(&),row, col, diagl, norm, mplot)
 import Util.Geometry
 import Util.Camera
 import Util.Small(unsafeMap)
@@ -12,7 +12,6 @@ import Numeric.LinearAlgebra.Tensor hiding (scalar)
 import Numeric.LinearAlgebra.Array.Util hiding (scalar)
 import qualified Util.Homogeneous as H
 import Util.Estimation(homogSolve,procrustes)
-import Graphics.Plot(mplot)
 import Numeric.LinearAlgebra.Array.Solve
 import Vision.Stereo
 import Vision.Tensorial--(eps3)

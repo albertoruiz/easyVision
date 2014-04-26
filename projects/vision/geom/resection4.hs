@@ -4,7 +4,7 @@ import Vision.Camera
 import Util.Options(getRawOption)
 import Data.Traversable(traverse)
 import Numeric.LinearAlgebra
-import Numeric.LinearAlgebra.Util((!),(#),row, col, diagl)
+import Numeric.LinearAlgebra.Util((¦),(#),row, col, diagl)
 import Util.Geometry
 import Util.Camera
 import Util.Options

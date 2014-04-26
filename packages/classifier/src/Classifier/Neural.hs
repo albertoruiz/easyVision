@@ -42,7 +42,7 @@ createNet seed i hs o = NN ws where
 
 -- given a network and an input we obtain the activations of all nodes
 forward :: NeuralNet -> Vec -> [Vec]
-forward n v = scanl f (join [v,1]) (weights n)
+forward n v = scanl f (vjoin [v,1]) (weights n)
     where f w m = tanh (m <> w)
 
 -- given a network, activations and desired output it computes the gradient

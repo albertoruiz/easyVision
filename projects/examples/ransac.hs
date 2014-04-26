@@ -39,7 +39,7 @@ gpointsCircle = gpoints $ \m -> fromLists $ map p2l $ circle m 0.5 (Point 0 0)
 
 estimateLine = ransac estimator inlier 2 0.99
   where
-    estimator [a,b] = G.join a b
+    estimator [a,b] = gjoin a b
     inlier l p = distE2 l p < 0.01**2
 
 distE2 (HLine l1 l2 l3) (Point x y) = (l1*x + l2*y + l3)**2/(l1**2 + l2**2)

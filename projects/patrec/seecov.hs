@@ -10,7 +10,7 @@ main = do
     runIt $ clickPoints "click points" "--points" () sh
 
 sh :: ([Point], ()) -> Drawing
-sh (ps,()) = Draw [ if okc then drwc else if okm then drwm else Draw ()
+sh (ps,()) = clearColor white [ if okc then drwc else if okm then drwm else Draw ()
                   , pointSz 3 . color red  $ ps
                   ]
   where

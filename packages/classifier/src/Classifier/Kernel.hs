@@ -38,15 +38,15 @@ kernelMSE :: Double  -- ^ Numeric tolerance for the pseudoinverse (1 = machine p
           -> Kernel
           -> Dicotomizer
 kernelMSE tol kernel (g1,g2) = fun where
-    fun z = expan z `dot` a
+    fun z = expan z <> a
     expan z = vec $ map (kernel z) objs
     a = pinvTol tol (delta kernel objs objs) <> vlabels
     objs = g1 ++ g2
-    vlabels = join [constant 1 (length g1), constant (-1) (length g2)]
+    vlabels = vjoin [constant 1 (length g1), constant (-1) (length g2)]
 
 -- | polynomial 'Kernel' of order n
 polyK :: Int -> Kernel
-polyK n x y = (x `dot` y + 1)^n
+polyK n x y = (x <> y + 1)^n
 
 -- | gaussian 'Kernel' of with width sigma
 gaussK :: Double -> Kernel
