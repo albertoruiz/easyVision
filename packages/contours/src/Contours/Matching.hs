@@ -3,7 +3,7 @@
 module Contours.Matching(
     Shape(..), ShapeMatch(..),
     shape, shapeMatch, shapeMatches,
-    elongated, isEllipse,
+    elongated, isEllipse, stepGNS
 ) where
 
 import Control.Arrow((***),(&&&))
@@ -24,6 +24,7 @@ import Control.Monad(when)
 import Control.Applicative((<$>))
 import Data.Maybe(isJust)
 import Data.Function(on)
+import Contours.GNS
 
 
 shape :: Int -> Polyline -> Maybe Shape
@@ -50,6 +51,7 @@ data Shape = Shape { shapeContour  :: Polyline
                    , kShapes       :: [Polyline]
                    , kFeatsMirror  :: [CVec]
                    , kHypsMirror   :: [(CVec,Mat)]
+                   , shapeGN       :: GN
                    }
 
 
@@ -95,7 +97,7 @@ analyzeShape mW (p,(mx,my,cxx,cyy,cxy))
         (as,ks) = unzip (anglesKurt wshape)
 
         feat = fromList $ map (subtract (-25.1)) (take 2 ks) ++ [abs (da/degree - 90)]
-        ias = take 2 as >>= (\a->[a,a+pi])
+        ias = take 4 as >>= (\a->[a,a+pi])
 
         da = angleDiff (as!!0) (as!!1)
 
@@ -103,6 +105,8 @@ analyzeShape mW (p,(mx,my,cxx,cyy,cxy))
     symmet2 = pnorm PNorm2 (f1-f2)
     symmet4 = pnorm PNorm2 (f2-f3)
     symmet0 = pnorm PNorm2 (f1 - fromList (replicate (mW+1) 0 ++ 2: replicate (mW-1) 0))
+    
+    shapeGN = prepareGNS (1+4*3) p
     
 ----------------------------------------------------------------------
 
@@ -187,4 +191,6 @@ elongated r Shape { shapeAxes = (l1,l2,_) } = assert (l1 > thl1) "l1 very small 
                                             $ l2 / l1 < 1/r**2
   where
     thl1 = (1 * 2/640)**2
+
+--------------------------------------------------------------------------------
 
