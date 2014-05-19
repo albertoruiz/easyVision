@@ -109,6 +109,40 @@ int cFindHomography(
     return 0;
 }
 
+typedef struct { double x, y; } TPoint;
+
+void surf( GIMS(char,t),
+           int fmax, int* fn, TPoint* res) {
+
+    double minHessian = 400;
+    static SurfFeatureDetector detector( minHessian );
+    
+    IPL(t,1)
+
+    Mat frame;
+    frame = ipl_t;
+
+    std::vector<KeyPoint> keypoints;
+
+    detector.detect( frame, keypoints );
+
+    int i = 0;
+
+    *fn = MIN(fmax,keypoints.size());
+
+    double h2 = theight/2;
+    double w2 = twidth/2;
+
+    for(i=0; i< *fn; i++)
+    { res[i].x = (-keypoints[i].pt.x+w2)/w2;
+      res[i].y = (-keypoints[i].pt.y+h2)/w2;
+    }
+
+    cvReleaseImageHeader(&ipl_t);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 
 }
 

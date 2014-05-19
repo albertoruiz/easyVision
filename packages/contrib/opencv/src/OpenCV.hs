@@ -5,7 +5,8 @@ module OpenCV(
   hough,
   cascadeClassifier,
   solvePNP,
-  findHomography
+  findHomography,
+  surf
 ) where
 
 import Image.Devel
@@ -13,7 +14,7 @@ import Foreign.Ptr
 import Foreign.Marshal
 import Foreign.C.String
 import Foreign.Storable
-import Util.Geometry(Segment(..))
+import Util.Geometry(Segment(..),Point(..))
 import Control.Applicative
 import Data.Packed.Development
 import Numeric.LinearAlgebra
@@ -124,4 +125,22 @@ foreign import ccall unsafe "cFindHomography" c_FindHomography
     -> CInt -> CInt -> Ptr Double
     -> CInt -> CInt -> Ptr Double
     -> IO CInt
+
+--------------------------------------------------------------------------------
+
+foreign import ccall "surf"
+    c_surf :: RawImageS I8u (CInt -> Ptr CInt -> Ptr Point -> IO ())
+
+surf :: Int -> Image I8u -> [Point]
+surf fmax imag = unsafePerformIO $ do
+    pn <- malloc
+    pf <- mallocArray fmax
+    tmp <- cloneImage imag
+    withImage imag $ do
+        (c_surf `appS` tmp) (fi fmax) pn pf
+    n <- peek pn
+    r <- peekArray (ti n) pf
+    free pn
+    free pf
+    return r
 
