@@ -99,7 +99,7 @@ adaboostStep method (g1,g2) d = (f,d',e,a) where
     f = method d
     e1 = map (signum . max 0 . negate . f) g1
     e2 = map (signum . max 0 . f) g2
-    e = vjoin [vec e1, vec e2] <> d
+    e = vjoin [vec e1, vec e2] <.> d
     a = 0.5 * log ((1-e)/e) -- it may be Infinity
     kp = exp (-a)
     kn = exp a
@@ -170,7 +170,7 @@ mseWeighted (g1,g2) d = f where
     rd  = sqrt d
     rd' = outer rd (constant 1 (cols m))
     w = (m*rd') <\> (b*rd)
-    f v = tanh ((v & 1) <> w)
+    f v = tanh ((v & 1) <.> w)
 
 
 -- | a minimum distance dicotomizer using weighted examples

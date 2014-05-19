@@ -23,7 +23,7 @@ extra-tmp-files:    hVision-opencv.buildinfo
 
 library
 
-    Build-Depends:      base, hVision-base, hmatrix
+    Build-Depends:      base, hVision-base, hmatrix-base, hmatrix
 
     hs-source-dirs:     src
 

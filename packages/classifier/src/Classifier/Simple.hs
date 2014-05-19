@@ -94,7 +94,7 @@ bayes ds exs = c where
 mahalanobis :: Distance Vec
 mahalanobis vs = Dist f where
     Stat {meanVector = m, invCov = ic} = stat (fromRows vs)
-    f x = (x-m) <> ic <> (x-m)
+    f x = (x-m) <.> ic <.> (x-m)
 
 -- | gaussian -log likelihood (mahalanobis + 1\/2 log sqrt det cov)
 gaussian :: Likelihood Vec

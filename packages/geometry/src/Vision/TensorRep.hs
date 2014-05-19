@@ -13,7 +13,7 @@ import qualified Numeric.LinearAlgebra as LA
 import Numeric.LinearAlgebra
 import Numeric.LinearAlgebra.Util(unitary)
 import Numeric.LinearAlgebra.Array.Util as Array
-import Numeric.LinearAlgebra.Util(gnuplotpdf)
+import Graphics.Plot(gnuplotpdf)
 import System.Random
 import Vision.Camera
 import Control.Applicative

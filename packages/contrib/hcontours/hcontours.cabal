@@ -20,7 +20,7 @@ extra-source-files:     configure configure.hs
                         src/ImagProc/Contrib/Contours/struct.h
 
 library
-    Build-Depends:      base >= 3 && < 5, hmatrix, hVision-base, hVision-gui
+    Build-Depends:      base >= 3 && < 5, hmatrix-base, hVision-base, hVision-gui
 
     hs-source-dirs:     src
 

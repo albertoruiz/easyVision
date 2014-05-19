@@ -25,7 +25,7 @@ import Foreign.Marshal ( peekArray, copyArray, malloc, free )
 import Foreign.C.Types ( CInt(CInt) )
 import Vision.GUI.Parameters
 import Data.Packed.Development ( createVector, app1, vec )
-import Numeric.LinearAlgebra hiding (step)
+import Numeric.LinearAlgebra.Base hiding (step,size)
 import ImagProc.Contrib.Contours.Structs
 import Control.Monad ( when )
 import Foreign ( Word8 )
@@ -145,7 +145,7 @@ rawParse sz = go [] [] []
 
     tm = map cont2Mat
 
-    cont2Mat (xs,ys) = m <> trans h
+    cont2Mat (xs,ys) = m <.> trans h
       where
         h = single $ pixelToPointTrans sz
         m = fromColumns [xs,ys,1]

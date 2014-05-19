@@ -28,6 +28,7 @@ import Foreign.Ptr(Ptr)
 import Util.Misc((//))
 import Data.List.Split(splitOn)
 import Image.Convert
+import Data.Packed.Development(fi)
 
 appI :: RawImage p t -> Image p -> t
 appI f img = f (ptrAt img (Pixel 0 0)) (fi.step $ img) (g r1) (g r2) (g c1) (g c2)
@@ -77,8 +78,6 @@ checkFFI msg f = do
     err <- f
     when (err/=0)  (error $ "error in foreign function " ++ msg)
 
-fi :: Int -> CInt
-fi = fromIntegral
 ti :: CInt -> Int
 ti = fromIntegral
 

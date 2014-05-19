@@ -24,7 +24,9 @@ module Util.Misc(
     arrayOf, memo,
     Cyclic(..), mkCyclic, cycAt,
     formattedTime,
-    formattedDate
+    formattedDate,
+    -- * Matrix display
+    dispz, dispb, cleanZeros
 ) where
 
 
@@ -47,6 +49,7 @@ import Data.Binary
 import System.IO.Unsafe(unsafePerformIO)
 import Control.DeepSeq
 import System.IO(hPutStr)
+import Util.Text(replace,Rule((:>)))
 
 type Mat = Matrix Double
 type Vec = Vector Double
@@ -321,4 +324,23 @@ cTime msg f x = unsafePerformIO $ do
     return y
   where
     dt (TOD s1 p1) (TOD s0 p0) = ((s1-s0) * 10^(12::Int) + (p1-p0) ) `div` 10^(9::Int)
+
+--------------------------------------------------------------------------------
+
+dispb :: Int -> Matrix Double -> IO ()
+dispb n = putStr . replace ["·":>" "] . cleanZeros n
+
+dispz :: Int -> Matrix Double -> IO ()
+dispz n = putStr . cleanZeros n
+
+cleanZeros :: Int -> Matrix Double -> String
+cleanZeros n
+    = replace [" \n ":>"\n"]
+    . replace [" 0 ":>" · ", ("1."++zs):>("1."++bs), ("0."++zs):>(" ·"++bs)]
+    . replace ["\n":>" \n "]
+    . dispf n
+  where
+    zs = replicate n '0'++" "
+    bs = replicate (n+1) ' '
+
 

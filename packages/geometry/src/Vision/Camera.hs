@@ -69,7 +69,7 @@ import Util.Estimation(homogSolve, withNormalization, withNormalization', estima
 import Util.Rotation
 --import Data.List(transpose,nub,maximumBy,genericLength,elemIndex, genericTake, sort)
 --import System.Random
-import Numeric.LinearAlgebra.Util(gnuplotWin)
+import Graphics.Plot(gnuplotWin)
 
 import Util.Misc(mat,vec,Mat,Vec,degree,impossible,median)
 import Util.Ellipses(intersectionEllipses,InfoEllipse(..))
@@ -191,8 +191,6 @@ poseFromHomogZ0 :: Maybe Double      -- ^ focal distance (if known)
                 -> Maybe CameraParameters      -- ^ solution (the one above the floor)
 poseFromHomogZ0 mbf = fmap poseFromCamera . cameraFromHomogZ0 mbf
 
-extractColumns :: (Element t) => [Int] -> Matrix t -> Matrix t
-extractColumns cs = trans . extractRows cs . trans
 
 -- | Obtains the homography floor (Z=0) to image from a camera
 homogZ0 :: Mat -> Mat
@@ -518,7 +516,7 @@ circularConsistency (x,y) = innerLines n0 h where
     jh = fromList [x,y,1]
 
     innerLines l m = (l.*.m)/ sqrt (l.*.l) / sqrt(m.*.m)
-        where a.*.b = a <> mS <> b
+        where a.*.b = a <.> mS <.> b
 
 imagOfCircPt :: InfoEllipse -> InfoEllipse -> Maybe (Complex Double,Complex Double)
 imagOfCircPt e1 e2 = fst (selectSol m1 m2 (intersectionEllipses c1 c2))
@@ -742,8 +740,8 @@ epipolarMiniJac (r,r1,r2,r3,_,_,_,cx,cy,cz) (q,q1,q2,q3,_,_,_,dx,dy,dz) = result
     result =  (g [f], g [f1,f2,f3,f4,f5,f6], g [f7,f8,f9,f10,f11,f12])
 
 derNor :: Vec -> Vec -> Vec
-derNor v w = scale nv w + scale (-(w <> v)*vv*nv) v
-    where vv = recip (v <> v)
+derNor v w = scale nv w + scale (-(w <.> v)*vv*nv) v
+    where vv = recip (v <.> v)
           nv = sqrt vv
 
 --------------------------------------------------

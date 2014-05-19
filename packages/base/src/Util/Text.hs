@@ -2,7 +2,8 @@ module Util.Text(
     Rule(..),
     replace, ioReplace,
     script,
-    wordAfter, lineAfter, include, codefile
+    wordAfter, lineAfter, include, codefile,
+    myhscols, hsCol, hsfile, hsfilepart, hsfiledef, hsfragment
 ) where
 
 import Data.List(isPrefixOf,isInfixOf)
@@ -11,6 +12,9 @@ import System.Exit(ExitCode(..))
 import Control.Arrow
 import Data.Char(toLower)
 import Data.Function(on)
+import Language.Haskell.HsColour
+import Language.Haskell.HsColour.Colourise
+import Data.List.Split(splitOn)
 
 data Rule = String :> String
           | String :-> (String -> String)
@@ -113,4 +117,56 @@ include = "INCLUDE" :~> readFile
 
 codefile :: Rule
 codefile = "CODEFILE" :~> \f -> (return . (\s -> "<pre><code>" ++ s ++ "</code></pre>")) =<< readFile f
+
+--------------------------------------------------------------------------------
+
+-- hscolour tools
+
+myhscols :: ColourPrefs
+myhscols = defaultColourPrefs
+    { comment = [Italic, Dim, Foreground (Rgb 128 128 128)]
+    , keyword = [Bold]
+    , varop = [Foreground Green]
+    , keyglyph = [Foreground Black]
+    , layout = [Normal]
+    , string = [Foreground (Rgb 160 0 0)]
+    , number = [Foreground (Rgb 128 80 0)]
+    , conid = [Foreground Blue, Bold]
+    , definition = [Foreground Blue]
+    }
+
+hsfile :: Rule
+hsfile = "HSFILE" :~> \f -> (return . hsCol . addName f) =<< readFile f
+  where
+    addName f xs = replicate 0 ' ' ++ "-- "++ drop 3 f++"\n\n"++ xs
+
+hsfilepart :: Rule
+hsfilepart = "HSPART" :~> g
+  where
+    g fs = do
+        let filename:rest = words fs
+            section = unwords rest
+        f <- readFile filename
+        let [_,x0] = splitOn section f
+        let x:_ = splitOn "\n\n\n" (dropWhile (=='\n') x0)
+        return (hsCol x)
+
+hsfiledef :: Rule
+hsfiledef = "HSDEF" :~> g
+  where
+    g fs = do
+        let filename:rest = words fs
+            section = unwords rest
+        f <- readFile filename
+        let _:x0:_ = splitOn section f
+        let x:_ = splitOn "\n\n\n" (section ++ x0)
+        return (hsCol x)
+
+
+
+hsfragment :: Rule
+hsfragment = "HSCODE" :-> hsCol
+
+hsCol :: String -> String
+hsCol = hscolour HTML myhscols False True "" False
 
