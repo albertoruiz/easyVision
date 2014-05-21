@@ -3,7 +3,7 @@ pkgs=base gui geometry classifier contours custom contrib/examples contrib/openc
 all:
 	for p in $(pkgs); do \
 	  if [ -e $$p ]; then \
-	    do cd $$p; cabal install --force-reinstall --enable-documentation ; cd -; \
+	    cd $$p; cabal install --force-reinstall --enable-documentation ; cd -; \
 	  fi; \
 	done
 

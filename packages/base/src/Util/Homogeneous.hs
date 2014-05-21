@@ -44,7 +44,7 @@ module Util.Homogeneous
 , ln2hv, hv2ln
 ) where
 
-import Numeric.LinearAlgebra
+import Numeric.LinearAlgebra.Compat
 import Numeric.LinearAlgebra.Util((&),norm,diagl)
 import Util.Rotation(rot3)
 import Util.Misc(vec,Vec,mat,Mat,impossible)

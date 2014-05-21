@@ -39,7 +39,7 @@ module Vision.Stereo
 , depthsOfInducedPoint
 ) where
 
-import Numeric.LinearAlgebra
+import Numeric.LinearAlgebra.Compat
 import Numeric.LinearAlgebra.Util(unitary,norm,null1)
 import Numeric.GSL
 import Util.Homogeneous

@@ -16,7 +16,7 @@ module Vision.Types(
 
 import Data.Array
 import Data.List(foldl',foldl1',group,sort)
-import Numeric.LinearAlgebra hiding (i)
+import Numeric.LinearAlgebra.Compat hiding (i)
 import Numeric.LinearAlgebra.Util(unitary)
 import Util.Misc(Vec,Mat,arrayOf,vec,intersectSorted)
 import qualified Data.Map as M

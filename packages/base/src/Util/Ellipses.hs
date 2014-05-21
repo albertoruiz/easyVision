@@ -26,7 +26,7 @@ module Util.Ellipses (
     intersectionConicLine
 ) where
 
-import Numeric.LinearAlgebra
+import Numeric.LinearAlgebra.Compat
 import Numeric.LinearAlgebra.Util(diagl,mt)
 import Numeric.GSL.Polynomials
 import Util.Homogeneous

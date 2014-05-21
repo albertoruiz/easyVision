@@ -17,7 +17,7 @@ module Classifier.Neural (
      learnNetwork, neural, createNet, perceptron, neural',
 ) where
 
-import Numeric.LinearAlgebra hiding (i,eps)
+import Numeric.LinearAlgebra.Compat hiding (i,eps)
 import Numeric.LinearAlgebra.Util(norm)
 import Classifier.Base
 import Util.Misc(randomPermutation, Vec, Mat, Seed)

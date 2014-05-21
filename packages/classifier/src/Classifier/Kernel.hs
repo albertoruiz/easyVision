@@ -20,7 +20,7 @@ module Classifier.Kernel (
      kernelMSE
 ) where
 
-import Numeric.LinearAlgebra
+import Numeric.LinearAlgebra.Compat
 import Numeric.LinearAlgebra.Util(norm)
 import Classifier.Base
 import Util.Misc(vec,Vec,Mat)

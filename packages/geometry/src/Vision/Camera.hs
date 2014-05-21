@@ -62,7 +62,7 @@ module Vision.Camera
 
 import Util.Camera
 
-import Numeric.LinearAlgebra as LA
+import Numeric.LinearAlgebra.Compat as LA
 import qualified Numeric.GSL as G
 import Util.Homogeneous
 import Util.Estimation(homogSolve, withNormalization, withNormalization', estimateHomography,procrustes)

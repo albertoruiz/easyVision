@@ -25,7 +25,7 @@ import Foreign.Marshal ( peekArray, copyArray, malloc, free )
 import Foreign.C.Types ( CInt(CInt) )
 import Vision.GUI.Parameters
 import Data.Packed.Development ( createVector, app1, vec )
-import Numeric.LinearAlgebra.Base hiding (step,size)
+import Numeric.LinearAlgebra hiding (step,size)
 import ImagProc.Contrib.Contours.Structs
 import Control.Monad ( when )
 import Foreign ( Word8 )

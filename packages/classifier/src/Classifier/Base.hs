@@ -31,7 +31,7 @@ import Numeric.LinearAlgebra
 import qualified Data.List as L
 import qualified Data.Map as Map
 import Data.Array
-import Util.Misc(vec,Vec,Mat,Seed)
+import Util.Misc(vec,Vec,Mat)
 import Util.Probability(Prob,mode,evidence,weighted)
 import Text.Printf(printf)
 

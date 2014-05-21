@@ -8,7 +8,7 @@ import Util.Geometry
 import Contours.Base
 import Contours.Fourier
 import Util.Homogeneous
-import Numeric.LinearAlgebra
+import Numeric.LinearAlgebra.Compat
 import Numeric.LinearAlgebra.Util(col,(?),(¿),diagl)
 import Util.Misc(debug,rotateLeft,degree)
 -- import Vision(kgen,projectionAt',cameraModelOrigin)

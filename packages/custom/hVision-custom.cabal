@@ -20,7 +20,7 @@ extra-tmp-files:    hVision-custom.buildinfo
 
 
 library
-    Build-Depends:      base, hVision-base, hmatrix-base
+    Build-Depends:      base, hVision-base, hmatrix
 
     hs-source-dirs:     src
 

@@ -24,7 +24,7 @@ where
 
 import Contours.Base
 import Data.List(foldl')
-import Numeric.LinearAlgebra
+import Numeric.LinearAlgebra.Compat
 import Util.Homogeneous
 import Util.Rotation(rot3)
 import Util.Geometry(segmentLength, bounding)

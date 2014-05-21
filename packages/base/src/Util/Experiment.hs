@@ -15,7 +15,7 @@ import Numeric.LinearAlgebra
 import Util.Text
 import System.Exit(ExitCode(..))
 
-type Seed = Int
+
 type Trials = Int
 type Result = Double
 

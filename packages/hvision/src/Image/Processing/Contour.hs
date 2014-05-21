@@ -32,7 +32,7 @@ import Foreign.C.Types(CUChar)
 import System.IO.Unsafe(unsafePerformIO)
 import Debug.Trace
 import Data.List(sortBy, maximumBy, zipWith4, sort,foldl', tails)
-import Numeric.LinearAlgebra
+import Numeric.LinearAlgebra.Compat
 import Numeric.LinearAlgebra.Util(diagl)
 import Util.Homogeneous
 import Util.Rotation

@@ -30,7 +30,7 @@ module Util.Covariance (
 
 ) where
 
-import Numeric.LinearAlgebra hiding (eigenvalues)
+import Numeric.LinearAlgebra.Compat hiding (eigenvalues)
 import Numeric.LinearAlgebra.Util (diagl,norm)
 import Util.Misc(Vec,Mat,unliftRow, mean)
 
@@ -38,7 +38,7 @@ meanRow :: Mat -> Vec
 meanRow m = ones <> m
     where r = rows m
           k = 1 / fromIntegral r
-          ones = constant k r
+          ones = konst k r
 
 covar :: Mat -> Mat -> Mat
 covar a b = flip scale (trans a <> b) (recip $ fromIntegral (rows a-1))
@@ -129,7 +129,7 @@ whiteningTransf st = fromBlocks [[ w, -wm]
   where
     m = meanV st
     w = whitening st
-    wm = asColumn (w <> m)
+    wm = asColumn (w <.> m)
 
 whitener :: CovStr -> Codec
 whitener st = Codec { encodeRows = \x -> (x - m) <> trans w

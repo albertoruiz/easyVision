@@ -26,7 +26,7 @@ module Classifier.Adaboost (
      adaboost, adaboostST, adaFun
 ) where
 
-import Numeric.LinearAlgebra
+import Numeric.LinearAlgebra.Compat
 import Numeric.LinearAlgebra.Util(norm,(&),(¦),(#))
 import Classifier.Base
 import Classifier.Simple(multiclass)

@@ -27,6 +27,7 @@ import Data.List(zipWith4)
 import Numeric.LinearAlgebra
 import Numeric.GSL.Fourier(ifft)
 
+i = 0:+1 :: Complex Double
 
 -- | Exact Fourier series of a piecewise-linear closed curve
 fourierPL :: Polyline -> (Int -> Complex Double)

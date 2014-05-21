@@ -17,7 +17,7 @@ module Util.ICA (
   ica1, ica2
 ) where
 
-import Numeric.LinearAlgebra hiding (eigenvalues)
+import Numeric.LinearAlgebra.Compat hiding (eigenvalues)
 import Data.List(sortBy)
 import Data.Function(on)
 import Util.Misc(Vec,Mat)

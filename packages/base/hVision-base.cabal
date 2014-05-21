@@ -31,7 +31,7 @@ flag uvc
 
 
 library
-    Build-Depends:      base >= 4 && < 5, hmatrix-base, hmatrix >= 0.16, vector,
+    Build-Depends:      base >= 4 && < 5, hmatrix, hmatrix-gsl, vector,
                         process, array, random, containers, directory,
                         old-locale, old-time,
                         hmatrix-glpk,

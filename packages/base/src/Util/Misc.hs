@@ -30,7 +30,8 @@ module Util.Misc(
 ) where
 
 
-import Numeric.LinearAlgebra hiding (i)
+import Numeric.LinearAlgebra
+import Numeric.LinearAlgebra.Devel (Element,Container)
 import Debug.Trace
 import Data.Function(on)
 import Data.List(elemIndex, sortBy, sort, group, isPrefixOf, tails)
@@ -60,7 +61,6 @@ vec = fromList
 mat :: [[Double]] -> Mat
 mat = fromLists
 
-type Seed = Int
 
 debug :: (Show a) => String -> (a1 -> a) -> a1 -> a1
 debug msg f x = trace (dimString (msg ++ ": " ++ show (f x))) x

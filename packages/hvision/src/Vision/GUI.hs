@@ -26,7 +26,7 @@ import Vision.GUI.Util
 import Image
 import Image.Capture(gcam)
 import Image.Processing
-import Numeric.LinearAlgebra
+import Numeric.LinearAlgebra.Compat
 import Vision.Apps.Show
 import Util.Options
 

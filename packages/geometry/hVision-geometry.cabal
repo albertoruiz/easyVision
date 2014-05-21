@@ -21,7 +21,7 @@ extra-source-files:
 library
     Build-Depends:      base >= 3 && < 5, random, directory,
                         array, containers, process,
-                        hmatrix-base, hmatrix, hVision-base,
+                        hmatrix, hmatrix-gsl, hVision-base,
                         hTensor >= 0.5
 
     hs-source-dirs:     src

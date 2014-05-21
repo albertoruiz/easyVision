@@ -16,7 +16,7 @@ module Image.Processing.Generic(
 import Image
 import Image.Devel
 import Image.Processing.IPP
-import Numeric.LinearAlgebra(Matrix, toLists, (<>), inv, rows, cols)
+import Numeric.LinearAlgebra.Compat(Matrix, toLists, (<>), inv, rows, cols)
 import Control.Arrow((&&&))
 import Foreign(Word8,Word16)
 import Image.Processing.Custom(getPoints32f,getPoints8u)

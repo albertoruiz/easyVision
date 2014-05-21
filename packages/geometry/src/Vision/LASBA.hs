@@ -2,7 +2,7 @@ module Vision.LASBA(
     laSBA, laSBAg
 ) where
 
-import Numeric.LinearAlgebra as LA hiding (i)
+import Numeric.LinearAlgebra.Compat as LA hiding (i)
 import Numeric.LinearAlgebra.Util((¦))
 import Util.Misc(vec,Vec,Mat)
 

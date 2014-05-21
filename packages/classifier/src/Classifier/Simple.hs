@@ -26,7 +26,7 @@ module Classifier.Simple (
      multiclass, dicodist
 ) where
 
-import Numeric.LinearAlgebra
+import Numeric.LinearAlgebra.Compat
 import Numeric.LinearAlgebra.Util(norm,(&),(¦),(#))
 import Classifier.Base
 import Util.Probability(weighted)

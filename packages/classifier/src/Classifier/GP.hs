@@ -18,7 +18,7 @@ module Classifier.GP (
      gp, gp1
 ) where
 
-import Numeric.LinearAlgebra
+import Numeric.LinearAlgebra.Compat
 import Numeric.LinearAlgebra.Util ( pairwiseD2 )
 import Classifier.Base (Sample, TwoGroups, Dicotomizer, group )
 import Util.Misc ( Mat, Vec )

@@ -22,8 +22,6 @@ import System.Directory(doesFileExist)
 import Util.Misc(splitEvery,degree)
 
 
-type Seed = Int
-
 data VProb = VProb
     { p3d :: Tensor Double
     , cam :: Tensor Double
