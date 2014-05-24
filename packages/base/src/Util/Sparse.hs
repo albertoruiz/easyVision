@@ -7,7 +7,7 @@ module Util.Sparse(
     blockDiagSolveLU
 ) where
 
-import Numeric.LinearAlgebra.Compat hiding (i)
+import Numeric.LinearAlgebra hiding (i)
 --import qualified Data.Map as Map
 import qualified Data.Array as A
 import Data.List

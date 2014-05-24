@@ -11,7 +11,7 @@ module Util.Experiment(
 import System.Random
 import Control.Arrow
 import Data.List(intercalate)
-import Numeric.LinearAlgebra
+import Numeric.HMatrix
 import Util.Text
 import System.Exit(ExitCode(..))
 

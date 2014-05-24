@@ -30,9 +30,10 @@ module Util.Covariance (
 
 ) where
 
-import Numeric.LinearAlgebra.Compat hiding (eigenvalues)
-import Numeric.LinearAlgebra.Util (diagl,norm)
+import Numeric.LinearAlgebra
+import Numeric.LinearAlgebra.Util(diagl,norm)
 import Util.Misc(Vec,Mat,unliftRow, mean)
+
 
 meanRow :: Mat -> Vec
 meanRow m = ones <> m

@@ -30,8 +30,7 @@ module Util.Misc(
 ) where
 
 
-import Numeric.LinearAlgebra
-import Numeric.LinearAlgebra.Devel (Element,Container)
+import Numeric.HMatrix hiding ((!), mat)
 import Debug.Trace
 import Data.Function(on)
 import Data.List(elemIndex, sortBy, sort, group, isPrefixOf, tails)

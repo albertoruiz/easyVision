@@ -42,7 +42,7 @@ module Util.Estimation
 -- , estimateProjective
 ) where
 
-import Numeric.LinearAlgebra.Compat hiding (eps)
+import Numeric.LinearAlgebra hiding (eps)
 import Numeric.LinearAlgebra.Util(norm,unitary,diagl,row,(#),(¦))
 import Util.Covariance
 import Util.Homogeneous

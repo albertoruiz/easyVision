@@ -21,7 +21,7 @@ module Util.Stat (
 
 ) where
 
-import Numeric.LinearAlgebra.Compat hiding (eigenvalues)
+import Numeric.LinearAlgebra hiding (eigenvalues)
 import Numeric.LinearAlgebra.Util((#),(¦))
 import Util.Misc(Vec,Mat)
 

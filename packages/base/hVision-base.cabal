@@ -68,7 +68,6 @@ library
                         Util.Text
                         Util.SVG
                         Util.Experiment
-                        Devel.Sparse
 
                         Image
                         Image.Capture

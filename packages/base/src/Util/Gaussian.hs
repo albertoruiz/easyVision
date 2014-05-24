@@ -33,7 +33,7 @@ module Util.Gaussian (
    ellipCov2D
 ) where
 
-import Numeric.LinearAlgebra.Compat
+import Numeric.LinearAlgebra
 import Util.Misc(mat,Mat,Vec,Seed)
 import Control.Arrow((***))
 import Data.List(sortBy)

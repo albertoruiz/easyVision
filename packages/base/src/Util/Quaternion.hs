@@ -11,7 +11,8 @@ module Util.Quaternion(
     slerp
 ) where
 
-import Numeric.LinearAlgebra.Compat
+import Numeric.LinearAlgebra
+import Numeric.HMatrix(udot)
 import Numeric.LinearAlgebra.Util(norm,unitary)
 import Util.Homogeneous(cross)
 import Data.List(minimumBy,maximumBy)

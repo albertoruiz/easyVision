@@ -27,7 +27,7 @@ module Util.Camera
     , infoCam
     ) where
 
-import Numeric.LinearAlgebra.Compat
+import Numeric.LinearAlgebra
 import Numeric.LinearAlgebra.Util((#),row,(¦))
 import Util.Homogeneous(normat3)
 import Util.Geometry

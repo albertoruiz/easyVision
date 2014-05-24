@@ -24,7 +24,7 @@ module Util.Kalman (
     ukf, UKFParam(..), ukfDefaultParam
 ) where
 
-import Numeric.LinearAlgebra.Compat
+import Numeric.LinearAlgebra
 import Numeric.GSL.Differentiation
 import Util.Misc(Vec,Mat,vec,mat)
 
