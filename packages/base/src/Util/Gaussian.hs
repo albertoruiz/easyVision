@@ -111,7 +111,7 @@ gaussianLogLik (N m c) = f
     k = fromIntegral (dim m) * log (2*pi) + lad
     f z = -0.5*(k+dM2 z)
       where
-        dM2 x = xm <.> ic <.> xm
+        dM2 x = xm <> ic <.> xm
           where xm = x - m
 
 ----------------------------------------------------------------------

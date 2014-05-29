@@ -3,7 +3,7 @@ module Vision.GUI.Trackball (newTrackball) where
 import Vision.GUI.Types
 import Util.Quaternion
 import Util.Homogeneous(cross)
-import Numeric.LinearAlgebra.Compat
+import Numeric.LinearAlgebra
 import Graphics.UI.GLUT hiding (normalize, Matrix, matrix)
 import Data.IORef
 

@@ -5,7 +5,7 @@
 module Util.Misc(
     -- * Debug
     dimString, redString, errMsg, debug, debugMat,
-    impossible, assert, warning, cTime, trap,
+    impossible, assert, warning, cTime, ioTime, trap,
     -- * List utilities
     splitEvery, pairsWith, posMax, posMin, replaceAt, rep, selectPos, rotateLeft, sliding, slidingPeriodic, subListsBy,
     intersectSorted, unionSort,
@@ -323,6 +323,17 @@ cTime msg f x = unsafePerformIO $ do
     return y
   where
     dt (TOD s1 p1) (TOD s0 p0) = ((s1-s0) * 10^(12::Int) + (p1-p0) ) `div` 10^(9::Int)
+
+ioTime :: String -> IO () -> IO ()
+ioTime msg act = do
+    t0 <- getClockTime
+    act
+    t1 <- getClockTime
+    putStrLn $ msg ++ ": "++ show (dt t1 t0)++" ms"
+  where
+    dt (TOD s1 p1) (TOD s0 p0) = ((s1-s0) * 10^(12::Int) + (p1-p0) ) `div` 10^(9::Int)
+
+
 
 --------------------------------------------------------------------------------
 

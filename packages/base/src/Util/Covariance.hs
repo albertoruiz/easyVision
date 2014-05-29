@@ -130,7 +130,7 @@ whiteningTransf st = fromBlocks [[ w, -wm]
   where
     m = meanV st
     w = whitening st
-    wm = asColumn (w <.> m)
+    wm = asColumn (w <> m)
 
 whitener :: CovStr -> Codec
 whitener st = Codec { encodeRows = \x -> (x - m) <> trans w

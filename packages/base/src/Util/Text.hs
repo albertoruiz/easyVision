@@ -133,6 +133,8 @@ myhscols = defaultColourPrefs
     , number = [Foreground (Rgb 128 80 0)]
     , conid = [Foreground Blue, Bold]
     , definition = [Foreground Blue]
+    , selection = [Foreground Green]
+    , cpp = [Foreground Green]
     }
 
 hsfile :: Rule

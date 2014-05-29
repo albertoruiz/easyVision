@@ -39,7 +39,7 @@ import Util.Geometry
 --import ImagProc(resize,yuvToRGB, yCbCrToRGB, toGray,Channels(..),histogramN,blockImage)
 import Data.IORef
 import Foreign (touchForeignPtr,castPtr)
-import Numeric.LinearAlgebra.Compat hiding (step)
+import Numeric.LinearAlgebra hiding (step)
 import Util.Camera(toCameraSystem)
 import Vision.GUI.Objects(cameraOutline)
 import Util.Homogeneous(ht,desp)
