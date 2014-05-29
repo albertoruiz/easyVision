@@ -18,6 +18,7 @@ import Util.Geometry(Segment(..),Point(..))
 import Control.Applicative
 import Data.Packed.Development
 import Numeric.LinearAlgebra
+import Numeric.LinearAlgebra.Util((¦))
 import Util.Homogeneous(rodrigues)
 
 --------------------------------------------------------------------------------
@@ -102,7 +103,7 @@ solvePNP k vs ps = unsafePerformIO $ do
     r <- createMatrix RowMajor 2 3
     app4 c_PNP mat (cmat k) mat (cmat vs) mat (cmat ps) mat r "c_PNP"
     let [rv,t] = toRows r
-    return $ k <.> (rodrigues rv ¦ asColumn t)
+    return $ k <> (rodrigues rv ¦ asColumn t)
 
 foreign import ccall unsafe "cPNP"
     c_PNP :: CInt -> CInt -> Ptr Double

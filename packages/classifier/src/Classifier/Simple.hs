@@ -26,7 +26,7 @@ module Classifier.Simple (
      multiclass, dicodist
 ) where
 
-import Numeric.LinearAlgebra.Compat
+import Numeric.LinearAlgebra
 import Numeric.LinearAlgebra.Util(norm,(&),(¦),(#))
 import Classifier.Base
 import Util.Probability(weighted)
@@ -47,7 +47,7 @@ mse (g1,g2) = f where
     m = (fromRows g1 # fromRows g2) ¦ konst 1 (dim b,1)
     b = constant 1 (length g1) & constant (-1) (length g2)
     w = m <\> b
-    f v = tanh ((v & 1) `udot` w)
+    f v = tanh ((v & 1) <.> w)
 
 -- | linear least squares classifier
 lsc :: Learner Vec
@@ -94,7 +94,7 @@ bayes ds exs = c where
 mahalanobis :: Distance Vec
 mahalanobis vs = Dist f where
     Stat {meanVector = m, invCov = ic} = stat (fromRows vs)
-    f x = (x-m) <.> ic <.> (x-m)
+    f x = (x-m) <> ic <.> (x-m)
 
 -- | gaussian -log likelihood (mahalanobis + 1\/2 log sqrt det cov)
 gaussian :: Likelihood Vec

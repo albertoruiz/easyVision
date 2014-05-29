@@ -4,7 +4,7 @@ module Vision.IO(
 ) where
 
 import Vision.Types
-import Numeric.LinearAlgebra.Compat
+import Numeric.LinearAlgebra
 import Util.Misc(Vec,Mat,impossible,splitEvery)
 
 import Vision.Camera(factorizeCamera)

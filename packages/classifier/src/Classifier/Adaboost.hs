@@ -26,7 +26,7 @@ module Classifier.Adaboost (
      adaboost, adaboostST, adaFun
 ) where
 
-import Numeric.LinearAlgebra.Compat
+import Numeric.LinearAlgebra
 import Numeric.LinearAlgebra.Util(norm,(&),(¦),(#))
 import Classifier.Base
 import Classifier.Simple(multiclass)
@@ -108,7 +108,7 @@ adaboostStep method (g1,g2) d = (f,d',e,a) where
     d1 = map f1 g1
     d2 = map f2 g2
     dr = d * vjoin [vec d1, vec d2]
-    d' = dr / scalar (dr `udot` constant 1 (dim dr))
+    d' = dr / scalar (dr <.> constant 1 (dim dr))
 
 -- | creates a list of weak learners and associated information to build a strong learner using adaboost
 adaboostST :: Int -> WeightedDicotomizer -> TwoGroups -> [ADBST]

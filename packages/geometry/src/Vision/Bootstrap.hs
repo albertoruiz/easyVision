@@ -15,7 +15,7 @@ import Util.Rotation
 import Vision.Epipolar
 import Util.Misc(vec,Mat,Vec,debug,degree,impossible,arrayOf,unionSort)
 import Util.Graph(kruskal,path)
-import Numeric.LinearAlgebra.Compat hiding (i)
+import Numeric.LinearAlgebra hiding (i)
 import Numeric.LinearAlgebra.Util(unitary,(¦))
 import Numeric.LinearAlgebra.Tensor hiding (scalar)
 import Numeric.LinearAlgebra.Array.Util hiding (scalar)

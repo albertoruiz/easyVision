@@ -39,7 +39,7 @@ module Vision.Stereo
 , depthsOfInducedPoint
 ) where
 
-import Numeric.LinearAlgebra.Compat
+import Numeric.LinearAlgebra
 import Numeric.LinearAlgebra.Util(unitary,norm,null1)
 import Numeric.GSL
 import Util.Homogeneous
@@ -71,7 +71,7 @@ estimateFundamental :: [[Double]] -> [[Double]] -> Mat
 estimateFundamental = withNormalization trans f where
     f l r = correctFundamental (estimateFundamentalRaw l r)
 
-distPointLine [x,y,w] [a,b,c] = sqrt $ (a*x + b*y + c*w)^2 / (a^2+b^2) / w^2
+distPointLine [x,y,w] [a,b,c] = sqrt $ (a*x + b*y + c*w)**2 / (a**2+b**2) / w**2
 
 epipolarQuality :: Mat -> [[Double]] -> [[Double]] -> [Double]
 epipolarQuality f l r = zipWith fun l r where
@@ -113,8 +113,8 @@ estimateEssential' (f0,f0') fund = (esen,(f,f'),err) where
 
 bougnoux :: Mat -> Double
 bougnoux fun = sqrt (- a / b) where
-    a = (p' <.> asMat e' <.> i' <.> fun <.> p) * (p <.> trans fun <.> p')
-    b = (p' <.> asMat e' <.> i' <.> fun <.> i' <.> trans fun <.> p')
+    a = (p' <> asMat e' <> i' <> fun <.> p) * (p <> trans fun <.> p')
+    b = (p' <> asMat e' <> i' <> fun <> i' <> trans fun <.> p')
     (_,e') = epipoles fun
     i' = diag $ vec [1,1,0]
     p = vec [0,0,1]

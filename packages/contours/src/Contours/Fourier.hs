@@ -27,8 +27,6 @@ import Data.List(zipWith4)
 import Numeric.LinearAlgebra
 import Numeric.GSL.Fourier(ifft)
 
-i = 0:+1 :: Complex Double
-
 -- | Exact Fourier series of a piecewise-linear closed curve
 fourierPL :: Polyline -> (Int -> Complex Double)
 
@@ -45,7 +43,7 @@ fourierPL' (Closed ps) = g where
     g0 = 0.5 * sum (zipWith4 gamma zs ts (tail zs) (tail ts))
         where gamma z1 t1 z2 t2 = (z2+z1)*(t2-t1)
     g 0 = g0
-    g w = k* (udot (vhs**w') vas)
+    g w = k* (conj (vhs**w') <.> vas)
         where k = recip (2*pi*w'')^2
               w' = fromIntegral w  :: Vector (Complex Double)
               w'' = fromIntegral w :: Complex Double

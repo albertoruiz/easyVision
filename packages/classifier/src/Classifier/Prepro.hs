@@ -36,7 +36,7 @@ module Classifier.Prepro (
 ) where
 
 import Util.Stat
-import Numeric.LinearAlgebra.Compat
+import Numeric.LinearAlgebra
 import Classifier.Base
 import Util.Misc(Vec,vec,Mat)
 

@@ -7,7 +7,7 @@ module Contours.Matching(
 ) where
 
 import Control.Arrow((***),(&&&))
-import Numeric.LinearAlgebra.Compat
+import Numeric.LinearAlgebra
 import Numeric.LinearAlgebra.Util(norm,diagl)
 import Text.Printf(printf)
 import Data.List(minimumBy,sortBy,groupBy)

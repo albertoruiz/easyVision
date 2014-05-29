@@ -21,7 +21,7 @@ module Classifier.Regression (
     msError
 ) where
 
-import Numeric.LinearAlgebra.Compat
+import Numeric.LinearAlgebra
 import Numeric.LinearAlgebra.Util(norm)
 import Util.Stat
 import Util.Misc(Mat,Vec,mean)

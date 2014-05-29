@@ -18,7 +18,7 @@ module Classifier.GP (
      gp, gp1
 ) where
 
-import Numeric.LinearAlgebra.Compat
+import Numeric.LinearAlgebra
 import Numeric.LinearAlgebra.Util ( pairwiseD2 )
 import Classifier.Base (Sample, TwoGroups, Dicotomizer, group )
 import Util.Misc ( Mat, Vec )
@@ -54,7 +54,7 @@ gp1 n k p = (@>0) . f . asRow
 
 
 lik :: (Matrix Double, Vector Double) -> Double -> Double -> Double
-lik (x,y) s n = - 1/2 * ladm -1/2 * (y <.> im <.> y)
+lik (x,y) s n = - 1/2 * ladm -1/2 * (y <> im <.> y)
   where (im,(ladm,_)) = invlndet (gaussK s x x +  diag (constant (n**2) (dim y)))
 
 matData :: Sample (Vector Double) -> (Matrix Double, Vector Double)

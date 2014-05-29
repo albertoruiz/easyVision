@@ -30,7 +30,7 @@ import Image.Devel
 import Data.List(transpose)
 import Util.Rotation(rot3)
 import Util.Homogeneous(desp)
-import Numeric.LinearAlgebra.Compat
+import Numeric.LinearAlgebra
 
 {-
 -- | Binarizes a gray level image.

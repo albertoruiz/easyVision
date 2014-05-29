@@ -45,7 +45,7 @@ module Util.Homogeneous
 ) where
 
 import Numeric.LinearAlgebra
-import Numeric.LinearAlgebra.Util((&),norm,diagl,cross)
+import Numeric.LinearAlgebra.Util((&),norm,diagl)
 import Util.Rotation(rot3)
 import Util.Misc(vec,Vec,mat,Mat,impossible)
 import Util.Geometry(Point(..),HLine(..))
@@ -130,9 +130,9 @@ asMat v = (3><3) [ 0,-c, b,
           b = v@>1
           c = v@>2
 
--- -- | vector cross product
--- cross :: Field a => Vector a -> Vector a -> Vector a
--- cross a b = asMat a <> b
+-- | vector cross product
+cross :: Field a => Vector a -> Vector a -> Vector a
+cross a b = asMat a <> b
 
 -- | obtains a normalized version of a homogeneous matrix dividing by the bottom-right element.
 normat3 :: Mat -> Mat

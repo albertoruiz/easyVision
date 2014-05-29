@@ -15,7 +15,7 @@ module Vision.Tensorial(
 
 import Numeric.LinearAlgebra.Exterior
 import qualified Numeric.LinearAlgebra as LA
-import Numeric.LinearAlgebra.Compat
+import Numeric.LinearAlgebra
 import Numeric.LinearAlgebra.Util(diagl)
 import Numeric.LinearAlgebra.Array.Util as Array
 import Numeric.LinearAlgebra.Array.Solve

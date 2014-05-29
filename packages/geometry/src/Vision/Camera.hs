@@ -62,7 +62,7 @@ module Vision.Camera
 
 import Util.Camera
 
-import Numeric.LinearAlgebra.Compat as LA
+import Numeric.LinearAlgebra as LA
 import qualified Numeric.GSL as G
 import Util.Homogeneous
 import Util.Estimation(homogSolve, withNormalization, withNormalization', estimateHomography,procrustes)
@@ -508,6 +508,7 @@ focalFromCircularPoint (cx,cy) = x * sqrt (1-(y/x)**2) where
     y = norm pn
     -- alpha = asin (y/x)
 
+
 -- | Consistency with diag(f,f,1) camera.
 circularConsistency :: (Complex Double, Complex Double) -> Double
 circularConsistency (x,y) = innerLines n0 h where
@@ -516,7 +517,7 @@ circularConsistency (x,y) = innerLines n0 h where
     jh = fromList [x,y,1]
 
     innerLines l m = (l.*.m)/ sqrt (l.*.l) / sqrt(m.*.m)
-        where a.*.b = a <.> mS <.> b
+        where a.*.b = a <> mS <.> b
 
 imagOfCircPt :: InfoEllipse -> InfoEllipse -> Maybe (Complex Double,Complex Double)
 imagOfCircPt e1 e2 = fst (selectSol m1 m2 (intersectionEllipses c1 c2))

@@ -7,7 +7,7 @@ module Vision.Apps.ShCamera (
 
 import Vision.GUI.Simple
 import Image(Image,Size(..),size)
-import Numeric.LinearAlgebra.Compat
+import Numeric.LinearAlgebra
 import Numeric.LinearAlgebra.Util((¦),(#),row,norm,diagl)
 import Image.Processing(resize)
 import Vision.Camera(sepCam)

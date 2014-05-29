@@ -65,6 +65,8 @@ data InfoLabels = InfoLabels {
     getLabel :: Int -> String
 }
 
+type Seed = Int
+
 -----------------------------------------------------------
 
 -- | extracts the labels of a sample

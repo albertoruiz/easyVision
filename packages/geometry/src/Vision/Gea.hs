@@ -5,7 +5,7 @@ module Vision.Gea(
     epiHessian
 ) where
 
-import Numeric.LinearAlgebra.Compat as LA hiding (i)
+import Numeric.LinearAlgebra as LA hiding (i)
 import Numeric.LinearAlgebra.Util(norm)
 import Data.List
 import Vision.Camera
