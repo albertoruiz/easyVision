@@ -81,7 +81,7 @@ loadRGB filename
 
 loadRawPPM :: FilePath -> IO ImageRGB
 loadRawPPM filename = do
-    handle <- openFile filename ReadMode
+    handle <- openBinaryFile filename ReadMode
     sh <- header 4 handle
     -- print sh
     let ["P6",sw,sr,"255"] = sh
