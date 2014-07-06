@@ -59,7 +59,6 @@ module Util.Geometry
 import Util.Small
 import Util.Misc(Mat,Vec)
 import Numeric.LinearAlgebra hiding ((|>))
-import Numeric.HMatrix(udot)
 import Data.Function(on)
 import Foreign.Storable
 import Foreign.Ptr

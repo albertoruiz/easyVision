@@ -11,19 +11,22 @@ module Util.SVG(
     -- grid,
     range, 
     graph,
-    mkPlot, plotColor, PlotStyle, plotSymbol, circles, squares, legendStyles,  
+    mkPlot, plotColor, PlotStyle, plotFill, plotSymbol, circles, squares, plotErrorsY, plotQuartiles,
+    boxPlot, legendStyles,  
     vbar, hbar, vbars, hbars, boxdis, legendSquares,
     animate,
     Point(..),
-    simplePlot, PlotOptions(..), PlotItem(..), (~>)
+    simplePlot, PlotOptions(..), PlotItem(..), (~>), Sty(..),
+    hPlot,
+    mkHist
 )where
 
-import Numeric.LinearAlgebra(toLists,toList,linspace,Vector,minElement,maxElement)
+import Numeric.LinearAlgebra(toLists,fromList,toList,linspace,Vector,minElement,maxElement)
 import Util.Geometry(Point(..),datMat)
 import Text.Printf
 import Util.Text(replace, Rule((:>)))
 import Util.Misc(quartiles)
-import Control.Arrow((&&&))
+import Control.Arrow((&&&),(***))
 import Data.List(zipWith4)
 
 data TransRect = TR{
@@ -216,17 +219,32 @@ tMove (x,y) s = unlines
    r = replace ["X":>show x, "Y":>show y]
 
 circles :: PlotShape
-circles r = unlines . map (circle r)
-
+circles _ r = unlines . map (circle r)
+            -- unlines . zipWith circle [r,r+1..]
+             
 squares :: PlotShape
-squares r = unlines . map (rectCenter r r)
+squares _ r = unlines . map (rectCenter r r)
 
-type PlotShape = Double -> [Point] -> SVG
+errorsY :: Vector Double -> PlotShape
+errorsY eys t r = unlines . zipWith f (toList eys)
+  where
+    f e (Point x y) = unlines  
+        [ mpath [Point x y1, Point x y2]
+        , mpath [Point (x-r) y1, Point (x+r) y1]
+        , mpath [Point (x-r) y2, Point (x+r) y2]
+        ]  
+      where
+        y1 = y - tdY t e
+        y2 = y + tdY t e
 
-pathWith :: PlotShape -> Color -> Width -> Color -> Double -> [Point] -> SVG
-pathWith f coll w colc r ps = unlines
+
+type PlotShape = TransRect -> Double -> [Point] -> SVG
+
+
+pathWith :: TransRect -> PlotShape -> Color -> Width -> Color -> Double -> [Point] -> SVG
+pathWith t f coll w colc r ps = unlines
     [ pathSimple coll w ps 
-    , style "none" 1 colc [f r ps]
+    , style "none" 1 colc [f t r ps]
     ]
 
 vbars :: Point -> Double -> Double -> [Double] -> SVG
@@ -273,16 +291,16 @@ grid
      -> (b -> Double)
      -> (b -> [Char])
      -> String
-     -> String
-grid t sty x1 x2 rxs fpx fsx xlabel y1 y2 rys fpy fsy ylabel = unlines
-    [ xaxis t xlabel y1 x1 x2 rxs fpx fsx
-    , yaxis t ylabel x1 y1 y2 rys fpy fsy
-    , gstyle sty [ xtics t y1 y2 xs
-                 , ytics t x1 x2 ys
-                 ]
-    , gstyle sty2 [ xtics' t y1 y2 xs , ytics' t x1 x2 ys ]
-    ]
+     -> (String,String)
+grid t sty1 x1 x2 rxs fpx fsx xlabel y1 y2 rys fpy fsy ylabel = (bottom,top)
   where
+    top = unlines
+        [ xaxis t xlabel y1 x1 x2 rxs fpx fsx
+        , yaxis t ylabel x1 y1 y2 rys fpy fsy
+        , gstyle sty2 [ xtics' t y1 y2 xs , ytics' t x1 x2 ys ] ]
+    bottom = unlines 
+        [ gstyle sty1 [ xtics t y1 y2 xs, ytics t x1 x2 ys ]
+        ]
     xs = map fpx rxs
     ys = map fpy rys
     sty2 = "stroke:black; stroke-width:1"
@@ -382,25 +400,39 @@ graph (Point w1 h1) (Point w2 h2) color gridstyle
     region = rectangle (Point w1 h1) (Point w2 h2)
     diagram ds = unlines
         [ style "none" 1 color [region] 
-        , grid t gridstyle
-               x1 x2 xs fpx fsx xlabel
-               y1 y2 ys fpy fsy ylabel
-        , style "black" 1.5 "none" [region]
+        , bottom
         , clip region ds
-        ] 
+        , style "black" 1.5 "none" [region]
+        , top
+        ]
+      where
+        (bottom,top) = grid t gridstyle
+            x1 x2 xs fpx fsx xlabel
+            y1 y2 ys fpy fsy ylabel
 
 --------------------------------------------------------------------------------
 
 plotV
   :: TransRect
-     -> [(Color, Width, PlotShape, Color, Double)]
+     -> [PlotStyle]
      -> [(Vector Double, Vector Double)]
      -> String
 plotV _ [] _ = []
-plotV TR{..} ss xys = unlines $ zipWith (plotV1 tPoint) ss xys
+plotV t@TR{..} ss xys = unlines $ zipWith (plotV1 tPoint) ss xys
   where
-     plotV1 tp (coll, w, f, colc, r) (x,y)
-        = pathWith f coll w colc r (zipWith tp (toList x) (toList y))
+     plotV1 tp (st1, f, r, st2) (x,y)
+        = pathWithNew t f st1 st2 r (zipWith tp (toList x) (toList y))
+
+     pathWithNew tr f st1 st2 r ps = unlines
+        [ sty st1 [mpath ps]
+        , sty st2 [f tr r ps]
+        ]
+
+pathRich :: TransRect -> PlotStyle -> [Point] -> SVG
+pathRich tr (st1, f, r, st2) ps = unlines
+    [ sty st1 [mpath ps]
+    , sty st2 [f tr r ps]
+    ]
 
 
 autoRange :: Double -> Double -> Double -> [Double]
@@ -453,15 +485,17 @@ mkPlot :: Int
        -> Style
        -> Double
        -> [Label]
+       -> [PlotElem]
        -> SVG 
-mkPlot w h title colb col colg xlab x1 x2 dx sfx ylab y1 y2 dy sfy stys ps loc lsty sz names = mkSVG w h
+mkPlot w h title colb col colg xlab x1 x2 dx sfx ylab y1 y2 dy sfy stys ps loc lsty sz names elems = mkSVG w h
     [ back
     , tit
     , mkg [ plotV t stys ps ]
-    , if null names then "" else legendStyles (tP loc) lsty sz stys names
+    , if all null names then "" else legendStyles t (tP loc) lsty sz stys names
+    , unlines $ map ($t) elems
     ]
   where
-    (mkg,t@TR{..}) = autoGraph (Point 70 50) (Point (fromIntegral w-40) (fromIntegral h-50)) col colg
+    (mkg,t@TR{..}) = autoGraph (Point 70 h1) (Point (fromIntegral w-40) (fromIntegral h-50)) col colg
          xlab x1 x2 dx sfx
          ylab y1 y2 dy sfy
     back = if colb == "none" || colb == ""
@@ -470,11 +504,12 @@ mkPlot w h title colb col colg xlab x1 x2 dx sfx ylab y1 y2 dy sfy stys ps loc l
     tit = if title==""
             then ""
             else gstyle "text-anchor:middle" [text 14 (Point (fromIntegral w / 2) 30) title]
+    h1 = if null title then 10 else 50
 
-legendStyles :: Point -> Style -> Double -> [PlotStyle] -> [Label] -> SVG
-legendStyles loc bsty sz stys' names' =
+legendStyles :: TransRect -> Point -> Style -> Double -> [PlotStyle] -> [Label] -> SVG
+legendStyles t loc bsty sz stys' names' =
     unlines [ lback 
-            , clipit  $ zipWith f stys (take (length names) samples)
+            , clipit  $ zipWith (pathRich t) stys (take (length names) samples)
             , unlines $ zipWith g names ys
             ]
   where
@@ -484,20 +519,72 @@ legendStyles loc bsty sz stys' names' =
     ys = [0,delta..]
     samples = [[Point x (y+dy), Point (x+delta) (y+dy), Point (x+2*delta) (y+dy)]|dy<-ys]
     clipit = clip (rectangle (Point (x+5) (y-delta)) (Point (x+2*delta-5) (y+hmax*delta)))
-    f (coll, w, h, colc, r) = pathWith h coll w colc r
+--    f (st1, h, r, st2) = pathWith t h st1 r
     g name dy = text sz (Point (x+5+2*delta) (y+dy+3)) name
     lback = gstyle bsty [rectangle (Point (x-5) (y-delta)) (Point (x+wmax*sz*0.6+delta*2.5) (y+hmax*delta))]
     wmax = fromIntegral (maximum (map length names))
     hmax = fromIntegral (length names)
 
 
-type PlotStyle = (Color,Width,PlotShape,Color,Double)
+type PlotStyle = (Sty,PlotShape,Double,Sty)
+
+data Sty = Sty { colorFill   :: Color
+               , colorStroke :: Color
+               , widthStroke :: Double
+               }
+
+sty :: Sty -> [SVG] -> SVG
+sty Sty{..} = style colorStroke widthStroke colorFill
 
 plotColor :: Color -> Width -> PlotStyle
-plotColor col w = (col,w,\_ _ -> "","",0)
+plotColor col w = (Sty "none" col w, \_ _ _ -> "", 0, Sty "none" "none" 1)
 
 plotSymbol :: Color -> Width -> PlotShape -> Color -> Double -> PlotStyle
-plotSymbol coll w symb cols r = (coll,w,symb,cols,r)
+plotSymbol coll w symb cols r = (Sty "none" coll w, symb,r, Sty cols "none" 1)
+
+plotFill :: Color -> Color -> Width -> PlotStyle
+plotFill fcol col w = (Sty fcol col w, \_ _ _ -> "",0,Sty "none" "none" 1)
+
+plotErrorsY :: Vector Double -> Color -> Width -> PlotStyle
+plotErrorsY errs col w = (Sty "none" "none" 1, errorsY errs, w, Sty "none" col 1)
+
+type DistQ = (Double,Double,Double,Double,Double)
+
+plotQuartiles :: [DistQ] -> Color -> Width -> Width -> PlotStyle
+plotQuartiles dis col wl w = (Sty "none" col wl, distris dis, w, Sty col "black" 1)
+
+
+distris :: [DistQ] -> PlotShape
+distris dis TR{..} w = unlines . zipWith f dis
+  where
+    f (l,q1,m,q2,u) (Point x' _) = unlines  
+        [ mpath [tPoint x l, tPoint x q1]
+        , mpath [tPoint x q2, tPoint x u]
+        , mpath [tPoint (x-w4) l, tPoint (x+w4) l]
+        , mpath [tPoint (x-w4) u, tPoint (x+w4) u]
+        , vbar (tPoint x q1) h w
+        , mpath [tPoint (x-w2) m, tPoint (x+w2) m]
+        ]   
+      where
+        w2 = itdX (w/2)
+        w4 = itdX (w/4)
+        h = abs (tdY (q2-q1))
+        x = itX x'
+
+
+boxPlot
+  :: [Double]
+     -> [Double]
+     -> [Vector Double]
+     -> Color
+     -> Width
+     -> String
+     -> PlotOptions
+boxPlot x y samples col w name = Plots
+    [ (fromList x, fromList y) ~> (plotQuartiles dis col w 10,""), boxlegend name col w ]
+  where
+    boxlegend nm cl wd = (fromList[],fromList[]) ~> ((Sty "none" cl wd, squares, 4, Sty cl "black" 1),nm)
+    dis = map (quartiles . toList) samples
 
 --------------------------------------------------------------------------------
 
@@ -547,7 +634,8 @@ data PlotOptions
     | MaxX Double
     | MinY Double
     | MaxY Double
-
+    | Plots [PlotItem]
+    | Elems [PlotElem]
 
 
 defaultPlot :: [PlotOptions]
@@ -564,22 +652,33 @@ defaultPlot =
     ]
 
 data PlotItem = PlotItem
-    { plotxy  :: (Vector Double, Vector Double)
-    , plotsty :: PlotStyle
-    , plotlab :: String
-    }
+        { plotxy  :: (Vector Double, Vector Double)
+        , plotsty :: PlotStyle
+        , plotlab :: String
+        }
+
+type PlotElem = TransRect -> SVG
 
 (~>) :: (Vector Double, Vector Double) -> (PlotStyle, String) -> PlotItem
 x ~> (p,l) = PlotItem x p l
 
+
 simplePlot :: [PlotOptions] -> [PlotItem] -> SVG
-simplePlot opts things = mkPlot w h title "none" bkcol gridsty 
+simplePlot opts things = hPlot (opts ++ [Plots things])
+
+--------------------------------------------------------------------------------
+
+hPlot :: [PlotOptions] -> SVG
+hPlot opts = mkPlot w h title "none" bkcol gridsty 
     labelx x1m x2m deltax ("%."++show decx++"f")
     labely y1m y2m deltay ("%."++show decy++"f")
     stys
     xys
     (Point lx ly) legsty 12 labs
+    elems
   where
+    elems  = concat [x | Elems x <- ops ]
+    things = concat [x | Plots x <- ops ]
     xys  = map plotxy  things
     stys = map plotsty things
     labs = map plotlab things
@@ -594,19 +693,22 @@ simplePlot opts things = mkPlot w h title "none" bkcol gridsty
     lx   = x1m + (x2m-x1m) * labelxpos
     ly   = y1m + (y2m-y1m) * labelypos
     ops = defaultPlot ++ opts
-    (w, h) = last $ [(x,y) | PlotSize x y <- ops ] ++ [(x+110,y+100) | VisibleSize x y <- ops ]
+    (w, h) = last $ [(x,y) | PlotSize x y <- ops ] ++ [(x+110,y+h1) | VisibleSize x y <- ops ]
     (labelxpos, labelypos) = last [(x,y) | LegendPos x y <- ops ]
     (labelx, labely) = last [(x,y) | Labels x y <- ops ]
     title = last [x | Title x <- ops ]
+    h1 = if null title then 100 - 40 else 100
     bkcol = last [x | BKColor x <- ops ]
     gridsty  = last [x | GridSty x <- ops ]
     legsty = last [x | LegendSty x <- ops ]
     marginx = last [x | MarginX x <- ops ]
     marginy = last [x | MarginY x <- ops ]
-    ordx = orderOf (x2-x1)
-    ordy = orderOf (y2-y1)
-    deltax = improve (x2-x1) $ last [x | DeltaX x <- DeltaX (10**fromIntegral(ordx-1)) : ops ]
-    deltay = improve (y2-y1) $ last [x | DeltaY x <- DeltaY (10**fromIntegral(ordy-1)) : ops ]
+    ordx = orderOf (x2m-x1m)
+    ordy = orderOf (y2m-y1m)
+    deltaxDef = improve (x2m-x1m) (10**fromIntegral(ordx-1))
+    deltayDef = improve (y2m-y1m) (10**fromIntegral(ordy-1))
+    deltax = last [ x | DeltaX x <- DeltaX deltaxDef : ops ]
+    deltay = last [ x | DeltaY x <- DeltaY deltayDef : ops ]
     decx = max 0 $ fromIntegral $ last [x | DecX x <- DecX (max 0 (1-ordx)) : ops ] :: Int
     decy = max 0 $ fromIntegral $ last [x | DecY x <- DecY (max 0 (1-ordy)) : ops ] :: Int
     orderOf x = round $ logBase 10 x
@@ -615,4 +717,12 @@ simplePlot opts things = mkPlot w h title "none" bkcol gridsty
         | otherwise = delta
       where
         n = rang / delta
+
+--------------------------------------------------------------------------------
+
+mkHist :: (Vector Double, (Vector Double, Vector Double)) -> (Vector Double, Vector Double)
+mkHist (v,(l,r)) = (fromList . concat *** fromList . concat)
+                $ unzip $ zipWith3 d (toList v) (toList l) (toList r)
+  where
+    d z xl xr = ([xl,xl,xr,xr],[0,z,z,0])
 

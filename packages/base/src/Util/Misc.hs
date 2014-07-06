@@ -17,7 +17,7 @@ module Util.Misc(
     unliftVector, unliftRow,
     norMax, nulln, orthm,
     -- * Simple statistics
-    mean, median, quartiles, shDist,
+    mean, median, quartiles, shDist, histogram,
     -- * Misc
     angleDiff,
     lambdify, (.:), (//),
@@ -30,7 +30,7 @@ module Util.Misc(
 ) where
 
 
-import Numeric.HMatrix hiding ((!), mat)
+import Numeric.LinearAlgebra.HMatrix hiding ((!))
 import Debug.Trace
 import Data.Function(on)
 import Data.List(elemIndex, sortBy, sort, group, isPrefixOf, tails)
@@ -288,7 +288,7 @@ nulln :: Int -> Matrix Double -> [Vector Double]
 nulln n = reverse . take n . reverse . toColumns . snd . rightSV
 
 orthm :: Matrix Double -> Matrix Double
-orthm = fromColumns . orth
+orthm = orth
 
 --------------------------------------------------------------------------------
 
@@ -353,4 +353,17 @@ cleanZeros n
     zs = replicate n '0'++" "
     bs = replicate (n+1) ' '
 
+--------------------------------------------------------------------------------
+
+histogram :: Int -> (ℝ,ℝ) -> Vector Double -> (Vector Double,(Vector Double,Vector Double))
+histogram n (a,b) xs = (scale s h,(l,r)) 
+  where
+    nxs = (xs - scalar a) * scalar (fromIntegral n / (b-a))
+    idxs = f $ map floor $ toList nxs
+    h = accum (konst 0 n) (+) (map (flip (,) 1) idxs)
+    z = linspace (n+1) (a,b)
+    l = subVector 0 n z
+    r = subVector 1 n z
+    f = filter (>=0) . filter (<n)
+    s = fromIntegral n / fromIntegral (size xs) / (b-a)
 

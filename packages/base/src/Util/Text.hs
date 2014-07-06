@@ -1,12 +1,15 @@
+{-# LANGUAGE ViewPatterns #-}
+
+
 module Util.Text(
     Rule(..),
     replace, ioReplace,
     script,
-    wordAfter, lineAfter, include, codefile,
-    myhscols, hsCol, hsfile, hsfilepart, hsfiledef, hsfragment
+    wordAfter, lineAfter, include, codefile, ignore,
+    myhscols, hsCol, hsColG, hsfile, hsfilepart, hsfiledef, hsfragment
 ) where
 
-import Data.List(isPrefixOf,isInfixOf)
+import Data.List(isPrefixOf,isInfixOf,intercalate)
 import System.Process(system)
 import System.Exit(ExitCode(..))
 import Control.Arrow
@@ -112,11 +115,39 @@ lineAfter w = unwords
     d = (/=) `on` map toLower
     f = not . isInfixOf w . map toLower
 
-include :: Rule
-include = "INCLUDE" :~> readFile
 
 codefile :: Rule
 codefile = "CODEFILE" :~> \f -> (return . (\s -> "<pre><code>" ++ s ++ "</code></pre>")) =<< readFile f
+
+ignore :: Rule
+ignore = "IGNORE" :-> const ""
+
+{-
+include :: Rule
+include = "INCLUDE" :~> readFile
+-}
+
+include :: Rule
+include = "INCLUDE" :~> h
+  where
+    h (args->(file,rules)) = do
+        x <- readFile file
+        let res | null rules = x
+                | otherwise  = replace rules x
+        return res
+args s = (file, rules)
+      where
+        w:ws = splitOn ":" s
+        file = wu w
+        rest = intercalate ":" ws        
+        rules = map g . filter (/=[""]) . map (splitOn "->") . splitOn "," $ rest
+        wu = unwords.words
+        --g [l,r] = (wu l, wu r)
+        g [l,r] = wu l :> wu r
+
+-- args "kk.txt:X   ->  20 , Y   ->  2 e  "
+-- args "kk.txt:X   ->  20"
+-- args "kk.txt"
 
 --------------------------------------------------------------------------------
 
@@ -160,15 +191,24 @@ hsfiledef = "HSDEF" :~> g
         let filename:rest = words fs
             section = unwords rest
         f <- readFile filename
-        let _:x0:_ = splitOn section f
-        let x:_ = splitOn "\n\n\n" (section ++ x0)
+        let _:x0 = splitOn section f
+        let x:_ = splitOn "\n\n\n" (section ++ intercalate section x0)
         return (hsCol x)
 
 
-
-hsfragment :: Rule
-hsfragment = "HSCODE" :-> hsCol
+-- code explicitly given
+hsfragment :: Bool -> Rule
+hsfragment mode = "HSCODE" :-> (hsColG mode . replace rules)
+  where
+    rules = ["{\\-":>"{-", "-\\}":>"-}"]
 
 hsCol :: String -> String
 hsCol = hscolour HTML myhscols False True "" False
+
+hsColG :: Bool -> String -> String
+hsColG False = hsCol -- html
+hsColG True = id -- fix . hscolour LaTeX myhscols False True "" False -- latex
+  where
+    fix = id -- replace ["\\rm":>""]
+
 
