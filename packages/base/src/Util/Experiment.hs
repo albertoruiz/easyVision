@@ -4,16 +4,13 @@ module Util.Experiment(
     tryS,
     select,
     delete,
-    Exper,
-    export,
-    exportPDF) where
+    Exper)
+where
 
 import System.Random
 import Control.Arrow
-import Data.List(intercalate)
 import Numeric.LinearAlgebra.HMatrix
-import Util.Text
-import System.Exit(ExitCode(..))
+
 
 
 type Trials = Int
@@ -96,7 +93,7 @@ export name rs codes = do
 -}
 
 --------------------------------------------------------------------------------
-
+{-
 export :: String -> FilePath -> Results -> [String] -> IO ()
 export sep name rs epilog = do
     let m = fromColumns (map (fromList.snd) rs)
@@ -132,4 +129,5 @@ exportPDF sep name path exper epilog = do
         , "rm NAME.m NAMEdat.txt NAME.svg"
         , "mv NAME.pdf PATH"
         ]
+-}
 

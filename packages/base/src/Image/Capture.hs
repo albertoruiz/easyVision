@@ -31,7 +31,7 @@ import System.Environment ( getArgs )
 import Control.Concurrent ( forkIO, writeChan, readChan, newChan )
 import Control.Concurrent.MSampleVar ( writeSV, readSV, newEmptySV )
 import Util.Options
-import Util.Misc ( debug, errMsg )
+import Util.Debug ( debug, errMsg )
 import Control.Monad ( when, forever )
 import Util.LazyIO ( Generator )
 import Data.List.Split ( splitOn )

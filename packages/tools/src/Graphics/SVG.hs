@@ -1,6 +1,6 @@
 {-# LANGUAGE RecordWildCards #-}
 
-module Util.SVG(
+module Graphics.SVG(
     SVG, mkSVG,
     TransRect(..), mkTransRect,
     Color, Width, Style, Label,
@@ -11,23 +11,35 @@ module Util.SVG(
     -- grid,
     range, 
     graph,
-    mkPlot, plotColor, PlotStyle, plotFill, plotSymbol, circles, squares, plotErrorsY, plotQuartiles,
+    mkPlot, plotColor, PlotStyle, plotFill, plotSymbol, plotFullSymbol, circles, squares, diamonds,
+    plotErrorsY, plotQuartiles,
     boxPlot, legendStyles,  
     vbar, hbar, vbars, hbars, boxdis, legendSquares,
     animate,
     Point(..),
     simplePlot, PlotOptions(..), PlotItem(..), (~>), Sty(..),
     hPlot,
-    mkHist
+    mkHist,
+    textAt,
+    plotErrorMark,
+    fromY,
+    plotHistogram,
+    plot,
+    plotMark,
+    plotFullMark
 )where
 
-import Numeric.LinearAlgebra(toLists,fromList,toList,linspace,Vector,minElement,maxElement)
-import Util.Geometry(Point(..),datMat)
+import Numeric.LinearAlgebra.HMatrix hiding (col,cols,tr)
+---(scalar,fromList,toList,linspace,Vector,minElement,maxElement)
+--import Util.Geometry(Point(..),datMat)
 import Text.Printf
 import Util.Text(replace, Rule((:>)))
-import Util.Misc(quartiles)
+import Util.Statistics(quartiles)
 import Control.Arrow((&&&),(***))
 import Data.List(zipWith4)
+
+data Point = Point !Double !Double
+  deriving (Eq, Show, Read)
 
 data TransRect = TR{
     tX :: Double -> Double,
@@ -120,13 +132,10 @@ style col width fill x = unlines
 mpath :: [Point] -> SVG
 mpath ps =
     replace
-      ["PTS"   :> (concatMap p . toLists . datMat) ps]
+      ["PTS" :> concatMap p ps]
       "<path  d = 'M PTS' />"
   where
-    p [x,y] = printf "%.3f %.3f " x y
-    p _ = error "mpath"
-
-
+    p (Point x y) = printf "%.3f %.3f " x y
 
 
 pathSimple :: Color -> Width -> [Point] -> SVG
@@ -156,6 +165,14 @@ rectCenter rx ry (Point xc yc) = replace
     y = yc - ry
     w = 2*rx
     h = 2*ry
+
+diamond :: Double -> Double -> Point -> SVG
+diamond rx ry (Point xc yc) = mpath
+    [ Point (xc-rx) (yc)
+    , Point (xc) (yc+ry)
+    , Point (xc+rx) (yc)
+    , Point (xc) (yc-ry)
+    , Point (xc-rx) (yc)]
 
 text :: Double -> Point -> String -> SVG
 text sz (Point x y) t = replace
@@ -224,6 +241,9 @@ circles _ r = unlines . map (circle r)
              
 squares :: PlotShape
 squares _ r = unlines . map (rectCenter r r)
+
+diamonds :: PlotShape
+diamonds _ r = unlines . map (diamond r r)
 
 errorsY :: Vector Double -> PlotShape
 errorsY eys t r = unlines . zipWith f (toList eys)
@@ -542,6 +562,17 @@ plotColor col w = (Sty "none" col w, \_ _ _ -> "", 0, Sty "none" "none" 1)
 plotSymbol :: Color -> Width -> PlotShape -> Color -> Double -> PlotStyle
 plotSymbol coll w symb cols r = (Sty "none" coll w, symb,r, Sty cols "none" 1)
 
+plotFullSymbol
+  :: Color
+     -> Width
+     -> PlotShape
+     -> Color
+     -> Double
+     -> Color
+     -> Width
+     -> PlotStyle
+plotFullSymbol coll w symb cols r colbs wbs = (Sty "none" coll w, symb,r, Sty cols colbs wbs)
+
 plotFill :: Color -> Color -> Width -> PlotStyle
 plotFill fcol col w = (Sty fcol col w, \_ _ _ -> "",0,Sty "none" "none" 1)
 
@@ -636,6 +667,7 @@ data PlotOptions
     | MaxY Double
     | Plots [PlotItem]
     | Elems [PlotElem]
+    | PlotGroup [PlotOptions]
 
 
 defaultPlot :: [PlotOptions]
@@ -692,7 +724,7 @@ hPlot opts = mkPlot w h title "none" bkcol gridsty
     y2m  = last [ z | MaxY z <- MaxY (y2 + (y2-y1)*marginy) : ops ]
     lx   = x1m + (x2m-x1m) * labelxpos
     ly   = y1m + (y2m-y1m) * labelypos
-    ops = defaultPlot ++ opts
+    ops = defaultPlot ++ concatMap flattenplot opts
     (w, h) = last $ [(x,y) | PlotSize x y <- ops ] ++ [(x+110,y+h1) | VisibleSize x y <- ops ]
     (labelxpos, labelypos) = last [(x,y) | LegendPos x y <- ops ]
     (labelx, labely) = last [(x,y) | Labels x y <- ops ]
@@ -717,6 +749,8 @@ hPlot opts = mkPlot w h title "none" bkcol gridsty
         | otherwise = delta
       where
         n = rang / delta
+    flattenplot (PlotGroup xs) = concatMap flattenplot xs
+    flattenplot x          = [x]
 
 --------------------------------------------------------------------------------
 
@@ -725,4 +759,70 @@ mkHist (v,(l,r)) = (fromList . concat *** fromList . concat)
                 $ unzip $ zipWith3 d (toList v) (toList l) (toList r)
   where
     d z xl xr = ([xl,xl,xr,xr],[0,z,z,0])
+
+textAt :: Double -> Double -> String -> PlotOptions
+textAt x y s = Elems [ f ]
+  where
+    f TR{..} = gstyle ("text-anchor:middle;fill:") [text 16 (tP (Point x y)) s]
+
+plotErrorMark
+  :: Vector Double
+     -> Vector Double
+     -> Vector Double
+     -> Color
+     -> Width
+     -> PlotShape
+     -> Color
+     -> Double
+     -> Color
+     -> Width
+     -> String
+     -> PlotOptions
+plotErrorMark x y e coll w shape cols sz cole we name = 
+  Plots [ (x,y) ~> (plotErrorsY e cole we,"")
+        , (x,y) ~> (plotSymbol coll w shape cols sz, name) ]
+
+fromY :: R -> (V,V) -> (V,V)
+fromY z (x,y) = (vjoin [scalar(x!0),x,scalar(x!(size x-1))]
+                ,vjoin [scalar z,y, scalar z])
+
+type R = Double
+type V = Vector Double
+--type M = Matrix Double
+
+plotHistogram
+  :: (V, (V, V))
+     -> Color -> Color -> Width -> String -> PlotOptions
+plotHistogram hist colf col w name =
+    Plots [ mkHist hist ~> (plotFill colf col w,  name) ]
+
+plot :: V -> V -> Color -> Width -> String -> PlotOptions
+plot x y col w name = Plots [ (x, y) ~> (plotColor col w, name) ]
+
+plotMark
+    :: V -> V
+    -> Color
+    -> Width
+    -> PlotShape
+    -> Color
+    -> Double
+    -> String
+    -> PlotOptions
+plotMark x y coll w shape cols sz name = 
+  Plots [ (x, y)~> (plotSymbol coll w shape cols sz, name) ]
+
+
+plotFullMark
+    :: V -> V
+    -> Color
+    -> Width
+    -> PlotShape
+    -> Color
+    -> Double
+    -> Color
+    -> Width
+    -> String
+    -> PlotOptions
+plotFullMark x y coll w shape cols sz colbs wbs name = 
+  Plots [ (x, y)~> (plotFullSymbol coll w shape cols sz colbs wbs, name) ]
 

@@ -47,7 +47,8 @@ module Util.Homogeneous
 import Numeric.LinearAlgebra
 import Numeric.LinearAlgebra.Util((&),norm,diagl)
 import Util.Rotation(rot3)
-import Util.Misc(vec,Vec,mat,Mat,impossible)
+import Util.Misc(vec,Vec,mat,Mat)
+import Util.Debug(impossible)
 import Util.Geometry(Point(..),HLine(..))
 import qualified Util.Geometry as G
 

@@ -17,7 +17,7 @@ module Util.Optimize (
     optimizeLM
 ) where
 
-import Util.Misc(impossible)
+import Util.Debug(impossible)
 
 convergence :: (Ord t1, Ord t2) => t1 -> t2 -> [(t, t1, t2)] -> [t1] -> (t, [t1])
 convergence _ _ [] _  = impossible "convergence"

@@ -35,7 +35,7 @@ import Numeric.LinearAlgebra ( Matrix, rows, cols )
 import Data.Char ( toLower )
 import qualified Data.ByteString as BS ( writeFile, append )
 import qualified Data.ByteString.Char8 as BSC ( pack )
-import Util.Misc ( formattedTime )
+import Util.Time ( formattedTime )
 import System.IO.Unsafe(unsafePerformIO)
 
 ----------------------------------------------------------------------

@@ -11,7 +11,7 @@ import Numeric.LinearAlgebra hiding (i)
 --import qualified Data.Map as Map
 import qualified Data.Array as A
 import Data.List
-import Util.Misc(impossible)
+import Util.Debug(impossible)
 
 data MatrixBlock t = Zero
                    | Diagonal [Matrix t]

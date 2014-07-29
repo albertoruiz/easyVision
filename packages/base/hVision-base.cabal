@@ -38,12 +38,14 @@ library
                         hTensor,
                         hscolour,
                         process, temporary, split, SafeSemaphore,
-                        ghc-prim, binary, bytestring, deepseq
+                        ghc-prim, binary, bytestring, deepseq,
+                        artools
 
     hs-source-dirs:     src
 
-    Exposed-modules:    Util.Misc
-                        Util.Options
+    Exposed-modules:    
+                        --Util.Misc
+                        --Util.Options
                         Util.LazyIO
                         Util.Rotation
                         Util.Estimation
@@ -65,8 +67,8 @@ library
                         Util.Audio
                         Util.Graph
                         Util.Camera
-                        Util.Text
-                        Util.SVG
+                        --Util.Text
+                        --Util.SVG
                         Util.Experiment
 
                         Image

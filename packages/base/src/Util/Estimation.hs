@@ -48,7 +48,9 @@ import Util.Covariance
 import Util.Homogeneous
 import Data.List(transpose,nub,maximumBy,genericLength,sortBy,minimumBy)
 import System.Random
-import Util.Misc(mat,vec,Mat,Vec,splitEvery,impossible,posMax,debug,median)
+import Util.Misc(mat,vec,Mat,Vec,splitEvery,posMax)
+import Util.Debug(impossible,debug)
+import Util.Statistics(median)
 import Data.Function(on)
 import Util.Geometry hiding (homog)
 #if __GLASGOW_HASKELL__ < 704

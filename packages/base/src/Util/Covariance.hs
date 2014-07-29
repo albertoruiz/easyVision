@@ -32,7 +32,8 @@ module Util.Covariance (
 
 import Numeric.LinearAlgebra
 import Numeric.LinearAlgebra.Util(diagl,norm)
-import Util.Misc(Vec,Mat,unliftRow, mean)
+import Util.Misc(Vec,Mat,unliftRow)
+import Util.Statistics(mean)
 
 
 meanRow :: Mat -> Vec

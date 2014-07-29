@@ -1,0 +1,64 @@
+Name:               artools
+Version:            0.1.0
+License:            BSD3
+License-file:       LICENSE
+Author:             Alberto Ruiz
+Maintainer:         Alberto Ruiz <aruiz@um.es>
+Stability:          experimental
+Homepage:           https://github.com/albertoruiz/hmatrix
+Synopsis:           General purpose utilities
+Description:        General purpose utilities
+
+Category:           Utils
+tested-with:        GHC ==7.8
+
+cabal-version:      >=1.8
+build-type:         Simple
+
+library
+    build-depends:      base, hmatrix>=0.16, split, hscolour, process, directory,
+                        old-time, old-locale, deepseq, vector, random, binary, array
+
+    hs-source-dirs:     src
+
+    exposed-modules:    Util.Text
+                        Util.Options
+                        Util.Time
+                        Util.Replace
+                        Util.Misc
+                        Util.Statistics
+                        Util.Debug
+                        Graphics.SVG
+
+    ghc-options:        -Wall
+
+
+executable hreplace
+    build-depends:      base, artools, split
+    main-is:            hreplace.hs
+    hs-source-dirs:     src/tools
+    ghc-options:        -Wall
+
+executable hextract
+    build-depends:      base, artools, parsec, transformers
+    main-is:            hextract.hs
+    hs-source-dirs:     src/tools
+    ghc-options:        -Wall    
+
+executable hsplice
+    build-depends:      base, artools, parsec, transformers, split
+    main-is:            hsplice.hs
+    hs-source-dirs:     src/tools
+    ghc-options:        -Wall    
+
+executable mkwb
+    build-depends:      base, artools, process
+    main-is:            mkwb.hs
+    hs-source-dirs:     src/tools
+    ghc-options:        -Wall  
+
+
+source-repository head
+    type:     git
+    location: https://github.com/albertoruiz/hmatrix
+

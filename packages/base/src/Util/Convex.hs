@@ -4,12 +4,15 @@ module Util.Convex where
 
 import Numeric.LinearAlgebra.HMatrix hiding (hess)
 import Control.Arrow((&&&))
-import Util.Misc(debugMat, debug)
+--import Util.Debug(debugMat, debug)
 
 type V = Vector Double
 type M = Matrix Double
 
+vect :: [ℝ] -> V
 vect = vector
+
+mat:: Int -> [ℝ] -> Matrix ℝ
 mat = matrix
 
 elems :: V -> [Double]
@@ -135,11 +138,11 @@ newtonStepBarrier f cs a b t x = (dec2,dx)
     res = a #>x -b
     dec2 = dx <·> h #> dx
 
-deb msg = debug msg (minElement.eigenvaluesSH)
+--deb msg = debug msg (minElement.eigenvaluesSH)
 
-infix 0  ///, //>
-m /// msg = debugMat msg 2 id m
-v //> msg = debugMat msg 2 asRow v
+--infix 0  ///, //>
+--m /// msg = debugMat msg 2 id m
+--v //> msg = debugMat msg 2 asRow v
 
 backtrack
     :: Double
@@ -204,19 +207,42 @@ interiorBarrierPhaseII α β μ μ0 ϵ  f fs a b x0 = outerloop
 --------------------------------------------------------------------------------
 
 
-
+pathDetails :: (t, [FunAp]) -> [[V]] -> [Matrix Double]
 pathDetails (_,fs) path = filter ((>0).rows) $ zipWith (¦) (map fromRows path) (map fromRows cons)
   where
     howcons z = fromList $ map (flip evF z) fs
     cons = map (map howcons) path
 
-
+interiorBarrierII
+    :: Double
+    -> Double
+    -> Double
+    -> Double
+    -> Double
+    -> FunAp
+    -> [FunAp]
+    -> M
+    -> V
+    -> Vector Double
+    -> [Matrix Double]
 interiorBarrierII α β μ μ0 ϵ  f fs a b x0 = pathDetails (fs,fs) path
   where
     path = interiorBarrierPhaseII α β μ μ0 ϵ  f fs a b x0
 
-
-interiorBarrierPhaseIa what α β μ μ0 ϵ  f fs a b x0
+interiorBarrierPhaseIa
+    :: (([FunAp], [FunAp]) -> [[V]] -> t2)
+    -> Double
+    -> Double
+    -> Double
+    -> Double
+    -> Double
+    -> t
+    -> [FunAp]
+    -> Matrix t3
+    -> t1
+    -> Vector Double
+    -> t2
+interiorBarrierPhaseIa what α β μ μ0 ϵ  _ fs a _ x0
     | rows a > 0 = error "phase I not yet implemented with equality constraints"
     | otherwise = what (fs,fs') path
   where
@@ -239,13 +265,36 @@ interiorBarrierPhaseIa what α β μ μ0 ϵ  f fs a b x0
                                          ,[ 0 , zero]]
 
 
-
+interiorBarrierI
+    :: Double
+    -> Double
+    -> Double
+    -> Double
+    -> Double
+    -> t
+    -> [FunAp]
+    -> Matrix t2
+    -> t1
+    -> Vector Double
+    -> [Matrix Double]
 interiorBarrierI α β μ μ0 ϵ  f fs a b x0
     = interiorBarrierPhaseIa pathDetails α β μ μ0 ϵ  f fs a b x0
 
 
-
-interiorBarrierPhaseIb what α β μ μ0 ϵ  _ fs a b x0
+interiorBarrierPhaseIb
+    :: (([FunAp], [FunAp]) -> [[V]] -> t2)
+    -> Double
+    -> Double
+    -> Double
+    -> Double
+    -> Double
+    -> t
+    -> [FunAp]
+    -> Matrix t3
+    -> t1
+    -> Vector Double
+    -> t2
+interiorBarrierPhaseIb what α β μ μ0 ϵ  _ fs a _ x0
     | rows a > 0 = error "phase I not yet implemented with equality constraints"
     | otherwise = what (fs,fs') path
   where
@@ -264,10 +313,22 @@ interiorBarrierPhaseIb what α β μ μ0 ϵ  _ fs a b x0
         evH (vars -> (x,_)) = fromBlocks [[h x,  0 ]
                                          ,[ 0 ,  0 ]]
 
-
+interiorBarrierIb
+    :: Double
+    -> Double
+    -> Double
+    -> Double
+    -> Double
+    -> t
+    -> [FunAp]
+    -> Matrix t2
+    -> t1
+    -> Vector Double
+    -> [Matrix Double]
 interiorBarrierIb α β μ μ0 ϵ  f fs a b x0
     = interiorBarrierPhaseIb pathDetails α β μ μ0 ϵ  f fs a b x0
 
+untilOk :: ([FunAp], t) -> [[Vector Double]] -> [Vector Double]
 untilOk (fs,_) = takeUntil feasible . concat
   where
     feasible z = all g fs
@@ -275,7 +336,17 @@ untilOk (fs,_) = takeUntil feasible . concat
          x = subVector 0 (size z -1) z
          g f = evF f x < 0
 
-
+interiorBarrier
+    :: Double
+    -> Double
+    -> Double
+    -> Double
+    -> Double
+    -> FunAp
+    -> [FunAp]
+    -> Matrix Double
+    -> V
+    -> Maybe V
 interiorBarrier α β μ μ0 ϵ f fs a b 
     | feasible x0 = Just (last $ concat $ interiorBarrierPhaseII α β μ μ0 ϵ f fs a b x0)
     | otherwise = Nothing
@@ -284,6 +355,7 @@ interiorBarrier α β μ μ0 ϵ f fs a b
     x0 = subVector 0 n $ last $ interiorBarrierPhaseIb untilOk α β μ0 μ ϵ f fs a b (konst 0 n)
     feasible x = all ((<0) . flip evF x) fs
 
+solveL_Inf' :: Matrix Double -> V -> V
 solveL_Inf' a b = sol
   where
     n = cols a
@@ -294,8 +366,10 @@ solveL_Inf' a b = sol
     fs = zipWith (mk 1) as bs ++ zipWith (mk (-1)) as bs
     Just sol = optimizer 1E-4 f fs (mat (n+1) []) (fromList[]::V)
 
+solveL_Inf :: Matrix Double -> V -> Vector Double
 solveL_Inf a b = subVector 0 (cols a) $ solveL_Inf' a b
 
+solveL_1' :: Matrix Double -> V -> V
 solveL_1' a b = sol
   where
     n = cols a
@@ -309,9 +383,10 @@ solveL_1' a b = sol
     e k = assoc ns 0 [(k,1)]
     Just sol = optimizer 1E-4 f fs (mat (n+ns) []) (fromList[]::V)
 
+solveL_1 :: Matrix Double -> V -> Vector Double
 solveL_1 a b = subVector 0 (cols a) $ solveL_1' a b
 
-
+optimizer :: Double -> FunAp -> [FunAp] -> Matrix Double -> V -> Maybe V
 optimizer = interiorBarrier α β μ0 μ
   where
     α = 0.01

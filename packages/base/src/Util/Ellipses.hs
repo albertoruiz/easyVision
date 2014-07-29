@@ -30,7 +30,8 @@ import Numeric.LinearAlgebra
 import Numeric.LinearAlgebra.Util(diagl,mt)
 import Numeric.GSL.Polynomials
 import Util.Homogeneous
-import Util.Misc(mat,Mat,impossible)
+import Util.Misc(mat,Mat)
+import Util.Debug(impossible)
 import Util.Estimation(homogSolve)
 import Util.Rotation(rot3)
 import Util.Geometry as G
