@@ -24,7 +24,8 @@ module Classifier.Regression (
 import Numeric.LinearAlgebra
 import Numeric.LinearAlgebra.Util(norm)
 import Util.Stat
-import Util.Misc(Mat,Vec,mean)
+import Util.Misc(Mat,Vec)
+import Util.Statistics(mean)
 
 -- working with variables with zero mean and unit deviation
 
