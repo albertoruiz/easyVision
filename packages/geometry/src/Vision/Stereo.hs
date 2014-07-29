@@ -50,7 +50,8 @@ import Util.Stat
 import Data.List(transpose,nub,maximumBy,genericLength,elemIndex, genericTake)
 import System.Random
 import Debug.Trace(trace)
-import Util.Misc(vec,Vec, mat,Mat,debugMat)
+import Util.Misc(vec,Vec, mat,Mat)
+import Util.Debug(debugMat)
 
 
 --------------------- Basic Stereo -----------------------

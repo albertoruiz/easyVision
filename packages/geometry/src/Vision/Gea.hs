@@ -15,7 +15,8 @@ import Vision.Types(Motion)
 import Util.Sparse
 import Data.Function(on)
 import Data.Maybe(fromJust)
-import Util.Misc(debug,Mat,Vec)
+import Util.Misc(Mat,Vec)
+import Util.Debug(debug)
 
 
 -- | refine cameras using global epipolar adjustment (all views and default parameters)

@@ -5,7 +5,8 @@ module Vision.IO(
 
 import Vision.Types
 import Numeric.LinearAlgebra
-import Util.Misc(Vec,Mat,impossible,splitEvery)
+import Util.Misc(Vec,Mat,splitEvery)
+import Util.Debug(impossible)
 
 import Vision.Camera(factorizeCamera)
 import Util.Geometry(Point(..))

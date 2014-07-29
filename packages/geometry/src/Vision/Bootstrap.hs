@@ -13,7 +13,8 @@ module Vision.Bootstrap(
 
 import Util.Rotation
 import Vision.Epipolar
-import Util.Misc(vec,Mat,Vec,debug,degree,impossible,arrayOf,unionSort)
+import Util.Misc(vec,Mat,Vec,degree,arrayOf,unionSort)
+import Util.Debug(debug,impossible)
 import Util.Graph(kruskal,path)
 import Numeric.LinearAlgebra hiding (i)
 import Numeric.LinearAlgebra.Util(unitary,(¦))

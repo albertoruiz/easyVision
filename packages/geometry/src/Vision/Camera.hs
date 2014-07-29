@@ -71,7 +71,9 @@ import Util.Rotation
 --import System.Random
 import Graphics.Plot(gnuplotWin)
 
-import Util.Misc(mat,vec,Mat,Vec,degree,impossible,median)
+import Util.Misc(mat,vec,Mat,Vec,degree)
+import Util.Debug(impossible)
+import Util.Statistics(median)
 import Util.Ellipses(intersectionEllipses,InfoEllipse(..))
 
 import Util.Geometry

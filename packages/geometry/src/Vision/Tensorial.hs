@@ -28,7 +28,9 @@ import Data.Function(on)
 import Control.Applicative
 import Control.Monad hiding (join)
 import Vision.TensorRep
-import Util.Misc(splitEvery,pairsWith,mean,debug)
+import Util.Misc(splitEvery,pairsWith)
+import Util.Statistics(mean)
+import Util.Debug(debug)
 import Util.Estimation(procrustes)
 import Util.Geometry(homog,inhomog)
 

@@ -29,7 +29,9 @@ import Numeric.LinearAlgebra.Util(unitary,norm)
 import Numeric.GSL.Minimization
 import Util.Homogeneous
 import Vision.Camera
-import Util.Misc(degree,vec,Mat,Vec,median,impossible)
+import Util.Misc(degree,vec,Mat,Vec)
+import Util.Statistics(median)
+import Util.Debug(impossible)
 import Data.Maybe(catMaybes)
 
 
