@@ -20,7 +20,7 @@ extra-source-files:
 library
     Build-Depends:      base,
                         hmatrix, hmatrix-gsl,
-                        hVision-base
+                        hVision-base, artools
 
     hs-source-dirs:     src
 

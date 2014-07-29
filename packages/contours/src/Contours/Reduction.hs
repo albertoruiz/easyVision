@@ -22,7 +22,8 @@ where
 import Contours.Base
 import Data.List(maximumBy)
 import Data.Function(on)
-import Util.Misc(splitEvery,mean)
+import Util.Misc(splitEvery)
+import Util.Statistics(mean)
 
 
 reduceDP :: Double -> Polyline -> Polyline

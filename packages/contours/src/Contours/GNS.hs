@@ -10,7 +10,7 @@ import Contours.Fourier
 import Util.Homogeneous
 import Numeric.LinearAlgebra
 import Numeric.LinearAlgebra.Util(col,(?),(¿),diagl)
-import Util.Misc(debug,rotateLeft,degree)
+import Util.Misc(rotateLeft,degree)
 -- import Vision(kgen,projectionAt',cameraModelOrigin)
 import Util.Rotation
 import Numeric.GSL.Differentiation

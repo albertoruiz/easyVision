@@ -11,7 +11,8 @@ import Numeric.LinearAlgebra
 import Numeric.LinearAlgebra.Util(norm,diagl)
 import Text.Printf(printf)
 import Data.List(minimumBy,sortBy,groupBy)
-import Util.Misc(Mat,Vec,degree,debug,posMax,angleDiff,assert,warning)
+import Util.Misc(Mat,Vec,degree,posMax,angleDiff)
+import Util.Debug(debug,assert,warning)
 import Util.Rotation
 --import Classifier(Sample)
 import Util.Homogeneous(ht,desp)
