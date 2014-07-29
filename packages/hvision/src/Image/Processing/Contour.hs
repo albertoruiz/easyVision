@@ -36,7 +36,8 @@ import Numeric.LinearAlgebra
 import Numeric.LinearAlgebra.Util(diagl)
 import Util.Homogeneous
 import Util.Rotation
-import Util.Misc(degree,debug)
+import Util.Misc(degree)
+import Util.Debug(debug)
 import Numeric.GSL.Polynomials(polySolve)
 import Numeric.GSL.Fourier(ifft)
 

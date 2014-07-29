@@ -14,7 +14,9 @@ import Vision.Camera(sepCam)
 import Util.Geometry
 import Util.Estimation
 import Data.Function(on)
-import Util.Misc(debugMat,debug,degree,median,Mat)
+import Util.Misc(degree,Mat)
+import Util.Debug(debugMat,debug)
+import Util.Statistics(median)
 import Util.Rotation
 import Util.Camera(CameraInfo(..),infoCam)
 
