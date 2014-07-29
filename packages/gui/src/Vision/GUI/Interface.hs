@@ -43,7 +43,7 @@ import Control.Monad(when,forever,join,filterM)
 import System.Environment
 import qualified Data.Map as Map
 import Data.Map hiding (null,map)
-import Util.Misc(debug,errMsg)
+import Util.Debug(debug,errMsg)
 --import Data.Traversable
 import Control.Applicative
 import Control.Arrow

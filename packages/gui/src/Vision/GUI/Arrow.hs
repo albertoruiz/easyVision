@@ -31,7 +31,7 @@ import Control.Monad
 import Control.Monad.Fix
 import Control.Arrow.Operations(ArrowCircuit(..))
 import Control.Concurrent
-import Util.Misc(debug)
+import Util.Debug(debug)
 import Data.IORef
 import System.Exit       (exitWith, ExitCode(ExitSuccess))
 import Graphics.UI.GLUT (mainLoopEvent)

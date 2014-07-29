@@ -40,7 +40,7 @@ import Data.Colour.SRGB(RGB(..),toSRGB)
 import GHC.Float(double2Float)
 import Unsafe.Coerce(unsafeCoerce)
 import Data.IORef
-import Util.Misc(debug)
+import Util.Debug(debug)
 import Control.Concurrent
 import Util.Geometry(HPoint(..),Point3D(..),HPoint3D(..))
 import Image.ROI(poly2roi)

@@ -44,7 +44,8 @@ import Util.Camera(toCameraSystem)
 import Vision.GUI.Objects(cameraOutline)
 import Util.Homogeneous(ht,desp)
 import Util.Rotation
-import Util.Misc(degree,debug,Mat)
+import Util.Misc(degree,Mat)
+import Util.Debug(debug)
 import Vision.GUI.Types
 import qualified Data.Colour.RGBSpace as Col
 import Data.Colour.SRGB hiding (RGB)
