@@ -27,7 +27,8 @@ extra-tmp-files:    hVision-ipp.buildinfo
 library
     Build-Depends:      base,
                         hVision-base,
-                        bytestring
+                        bytestring,
+                        artools
 
     hs-source-dirs:     src
 

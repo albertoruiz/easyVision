@@ -23,7 +23,7 @@ import Image.Processing.IPP.Wrappers
 import Foreign(Word8,Word16)
 import Foreign.Ptr
 import Foreign.C.String(peekCString)
-import Util.Misc(errMsg)
+import Util.Debug(errMsg)
 import Control.Monad(when)
 
 type family PtrOf (c :: *)
