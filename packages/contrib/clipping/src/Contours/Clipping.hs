@@ -28,7 +28,7 @@ where
 
 import Util.Geometry
 import Contours.Base(orientedArea,rev)
-import Util.Misc(debug)
+import Util.Debug(debug)
 
 import Contours.ClipRaw
 

@@ -20,7 +20,8 @@ extra-source-files:     src/Contours/Clipping/clipping.h
 extra-tmp-files:
 
 library
-    Build-Depends:      base >= 3 && < 5, hmatrix, hVision-base, hVision-contours
+    Build-Depends:      base >= 3 && < 5, hmatrix, hVision-base, hVision-contours,
+                        artools
 
     hs-source-dirs:     src
 

@@ -28,10 +28,10 @@ where
 import Util.Geometry
 import Image.Devel
 import Foreign.C.Types
-import Foreign.Ptr
+--import Foreign.Ptr
 import Foreign.Marshal
 import Foreign.Storable
-import System.IO.Unsafe(unsafePerformIO)
+--import System.IO.Unsafe(unsafePerformIO)
 import Control.Applicative((<$>))
 import Data.Packed.Vector(takesV,fromList,toList)
 
