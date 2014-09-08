@@ -1,4 +1,4 @@
-hVision Help
+!TITLE(hVision Help - click points)
 
 # hVision help
 
@@ -22,7 +22,7 @@ An initial list of points can be loaded from a file indicated as a command line 
 [general help][help]
 
 
-INCLUDE(LINKS)
+!INCLUDE(LINKS)
 
-INCLUDE(MATHJAX)
+!INCLUDE(MATHJAX)
 

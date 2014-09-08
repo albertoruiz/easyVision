@@ -1,4 +1,4 @@
-examples
+!TITLE(hVision examples)
 
 # hVision examples
 

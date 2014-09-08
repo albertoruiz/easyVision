@@ -1,4 +1,4 @@
-hVision Help
+!TITLE(hVision Help - command line options)
 
 # hVision command line options
 
@@ -73,6 +73,6 @@ Alternatively, the images can be automatically loaded without user participation
 
 [back to help][help]
 
-INCLUDE(LINKS)
+!INCLUDE(LINKS)
 
 

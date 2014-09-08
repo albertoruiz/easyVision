@@ -1,4 +1,4 @@
-hVision Help
+!TITLE(hVision Help)
 
 # [hVision][project] help
 
@@ -15,5 +15,5 @@ hVision Help
 
 [help on help][helponhelp]
 
-INCLUDE(LINKS)
+!INCLUDE(LINKS)
 

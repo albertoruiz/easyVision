@@ -4,17 +4,12 @@ pages = $(sources:.md=.html)
 
 all: $(pages)
 
-replace: replace.hs
-	ghc -O replace.hs
-	rm *.o *.hi
-
-%.html: %.md LINKS HEADER replace
-	./replace -r < $*.md \
+%.html: %.md LINKS HEADER
+	hreplace < $*.md \
 	| markdown \
-	| sed -e '1 s/<p/INCLUDE(HEADER)<TITLE/' -e '1 s/p>/TITLE>/' \
-	| ./replace -r \
+	| hreplace --rules='HSFILE name = #!HSCOLOUR>{-- name\n\n#!INCLUDE name};<p>!TITLE X = #!REPLACE>{#!INCLUDE(HEADER)!WITH[title]=X}<p>' \
 	> $*.html
 
 clean:
-	rm $(pages) replace
+	rm $(pages)
 

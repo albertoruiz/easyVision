@@ -1,4 +1,4 @@
-hVision Help
+!TITLE(hVision tutorial)
 
 # [hVision][project] tutorial
 
@@ -306,5 +306,5 @@ HSFILE(../examples/cameracontrol.hs)
 
 [back to help][help]
 
-INCLUDE(LINKS)
+!INCLUDE(LINKS)
 

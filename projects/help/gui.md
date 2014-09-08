@@ -1,4 +1,4 @@
-hVision Help
+!TITLE(hVision Help - GUI)
 
 # hVision GUI Help
 
@@ -57,5 +57,5 @@ hVision Help
 
 [general help][help]
 
-INCLUDE(LINKS)
+!INCLUDE(LINKS)
 
