@@ -2,6 +2,7 @@
 
 # hVision examples
 
+A short description of selected available programs:
 
 ## projects/examples
 
@@ -67,9 +68,7 @@
 
 **cameracontrol**: interactive control of webcam parameters: exposure, focus, etc.
 
-**matrix**: Usage of matrix functions on images:
-
-HSFILE(../tour/matrix.hs)
+**matrix**: Usage of matrix functions on images.
 
 **cinematic**: compute very simple inverse cinematics.
 

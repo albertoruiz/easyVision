@@ -6,24 +6,8 @@ module Util.Replace(
 ) where
 
 import Data.List(isPrefixOf,intercalate)
---import System.Process(system)
---import System.Exit(ExitCode(..))
 import Data.List.Split(splitOn)
 import qualified Util.Text as T
-
---import Debug.Trace
-
---debug x = trace ("***> " ++ show x) x
-
-{-
-data Rule = String :> String
-          | String :>> String
-          | String :-> (String -> String)
-          | String :->> (String -> String)
-          | String :~> (String -> IO String)
-          | String :~>> (String -> IO String)
-          | Define
--}
 
 data Rule = String :>  IO ([Rule], String)
           | String :-> (String -> IO ([Rule], String))
@@ -150,33 +134,15 @@ findArg lhs x | null rest && sep2 /= '\n' = error $ "replace, no closing bracket
 
 --------------------------------------------------------------------------------
 
---script :: [Rule] -> [String] -> IO ExitCode
---script rules ls = system . snd =<< ioReplace [] rules (unlines ls)
-
-
 ignore :: Rule
 ignore = "!IGNORE" :-> const (return ([],""))
+
 
 quote :: Rule
 quote = "!QUOTE" :-> h
   where
     h thing = return ([],"\""++replace ["\\"-:>"\\\\", "\""-:>"\\\""] thing ++"\"")
 
-{-
-include' :: Rule
-include' = "!INCLUDE" :-> h
-  where
-    h (fileargs->(file,rules)) = do
-        x <- readFile file
-        let res | null rules = return ([],x)
-                | otherwise  = ioReplace [] rules x
-        res
-    fileargs s = (file, parseRules rest)
-      where
-        w:ws = splitOn ":" s
-        file = wu w
-        rest = intercalate ":" ws        
--}
 
 define :: Rule
 define = "!DEFINE" :-> h
@@ -197,6 +163,7 @@ hsfile = "!HSFILE" :-> g
               | otherwise = x
         return ([], T.hsCol y)
 
+
 include :: Rule
 include = "!INCLUDE" :-> g
   where
@@ -209,7 +176,6 @@ include = "!INCLUDE" :-> g
             y | null rest = f
               | otherwise = x
         return ([], y)
-
 
 
 hscolour :: Bool -> Rule
@@ -228,278 +194,4 @@ local = "!REPLACE" :-> h
       where
         thing:ws = splitOn "!WITH" s
         rest = intercalate "!WITH" ws        
-
-
-
-{-
-
-hsfile :: Rule
-hsfile = "!HSFILE" :~> \f -> (return . T.hsCol . addName f) =<< readFile f
-  where
-    -- addName f xs = replicate 0 ' ' ++ "-- "++ drop 3 f++"\n\n"++ xs
-    addName _ = id
-
-hsfilepart :: Rule
-hsfilepart = "!HSPART" :~> g
-  where
-    g fs = do
-        let filename:rest = words fs
-            section = unwords rest
-        f <- readFile filename
-        let [_,x0] = splitOn section f
-        let x:_ = splitOn "\n\n\n" (dropWhile (=='\n') x0)
-        return (T.hsCol x)
-
-hsfiledef :: Rule
-hsfiledef = "!HSDEF" :~> g
-  where
-    g fs = do
-        let filename:rest = words fs
-            section = unwords rest
-        f <- readFile filename
-        let _:x0 = splitOn section f
-        let x:_ = splitOn "\n\n\n" (section ++ intercalate section x0)
-        return (T.hsCol x)
-
-
--- code explicitly given
-hsfragment :: Bool -> Rule
-hsfragment mode = "!HSCODE" :-> ((if mode then id else T.hsCol) . T.replace rules)
-  where
-    rules = ["{\\-"-:>"{-", "-\\}"-:>"-}"]
-
--}
-
-{-
-splitOn ";" ""
-print . snd =<< ioReplace (parseRules "w=W;g Y = bYb ; z=az; f X = aXa", "hello world! and z and f(35 and g[67] and f[4])")
-print . snd =<< ioReplace [] (parseRules "z=az; az=y; y=zb") "tonto y"
-print . snd =<< ioReplace (parseRules "g Y = bYb ; f X = aXa", "hello world! and z and f(35 and g[67] and f[4])")
-print . snd =<< ioReplace [] (parseRules "w=W;g Y= bYb; f x = axa") "No empieza f(35 and g[67] and f[4])"
-print . snd =<< ioReplace [] (parseRules "z=az; x=cy; y=bz") "tonto x"
-print . snd =<< ioReplace [] (parseRules "f(0) = 1; f x = 1 + f[x]+f[0]") "f[3]"
-print . snd =<< ioReplace [] ([ignore]) "hola !IGNORE(algo)word!"
-print . snd =<< ioReplace [] ([ignore,include]) "hola !INCLUDE(borrar.txt: bonito=feo) word!"
-print . snd =<< ioReplace [] ([ignore,include,define]) "Hello !INCLUDE(borrar.txt: bonito=feo) world!"
-print . snd =<< ioReplace [] ([ignore,include,define]) "Hello !INCLUDE(borrar.txt: bonito=feo) world!"
--}
-
-{-
-matchString :: Rule -> String
-matchString (x :>   _ ) = x
-matchString (x :>>  _ ) = x
-matchString (x :->  _ ) = x
-matchString (x :->> _ ) = x
-matchString (x :~> _  ) = x
-matchString (x :~>> _ ) = x
-matchString Define      = "!DEFINE"
-
-
-{-
-isRec (_ :>> _)  = True
-isRec (_ :->> _) = True
-isRec (_ :~>> _) = True
-isRec _          = False
-
-
-instance Show Rule
-  where
-    show (a :> b)  = show a ++" :> "++show b
-    show (a :>> b) = show a ++" :>> "++show b
-    show (a :-> _) = show a ++" :-> pure fun"
-    show (a :->> _) = show a ++" :->> pure fun"
-    show (a :~> _) = show a ++" :~> IO fun"
-    show (a :~>> _) = show a ++" :~>> IO fun"
-    show Define    = "Define"
--}
-
---------------------------------------------------------------------------------
-
--- IO transformations
-ioReplace :: [Rule] -> String -> IO (String,[Rule])
-
-ioReplace rs [] = return ([],rs)
-
-ioReplace rs xs@(y:ys) = do
-    m <- match rs xs
-    case m of
-        Nothing      ->
-            do (res,ruls) <- ioReplace rs ys
-               return (y:res, ruls)
-{-        Just (lhs,n,rhs,newrules,rec) ->
-            do  let rep = ioReplace (newrules++rs)
-                a <- (if rec then (fmap fst) . rep else return) rhs
-                b <- rep (drop n xs)
-                return $ (a ++ b, newrules ++ rs)
--}
-
-match :: [Rule] -> String -> IO (Maybe (String, Int, String, [Rule], Bool))
-match [] _ = return Nothing
-
-match ((lhs :> rhs):rs) x
-    | lhs `isPrefixOf` x = (return . Just) (lhs,length lhs, rhs,[], False)
-    | otherwise = match rs x
-
-match ((lhs :>> rhs):rs) x
-    | lhs `isPrefixOf` x = (return . Just) (lhs,length lhs, rhs,[], True)
-    | otherwise = match rs x
-
-match ((lhs :-> rhs):rs) x = match ((lhs :~> (return . rhs)):rs) x
-match ((lhs :->> rhs):rs) x = match ((lhs :~>> (return . rhs)):rs) x
-
-match ((lhs :~> rhs):rs) x
-    | lhs `isPrefixOf` x = do
-        res <- rhs arg
-        (return . Just) (lhs, l, res, [],False)
-    | otherwise = match rs x
-  where
-    (arg,l) = findArg lhs x
-
-match ((lhs :~>> rhs):rs) x
-    | lhs `isPrefixOf` x = do
-        res <- rhs arg
-        (return . Just) (lhs, l, debug res, [],True)
-    | otherwise = match rs x
-  where
-    (arg,l) = findArg lhs x
-
-
-match (Define:rs) x
-    | "!DEFINE" `isPrefixOf` x =  (return . Just) ("!DEFINE", l, "", parseRules arg, False)
-    | otherwise = match rs x
-  where
-    (arg,l) = findArg "!DEFINE" x
-
---------------------------------------------------------------------------------
-
-findArg :: String -> String -> (String, Int)
-findArg lhs x | null rest = error $ "replace, no closing bracket for " ++ lhs
-              | otherwise = {-debug "REST" (const rest) -} (arg,l)
-  where
-    aux = drop (length lhs) $ x
-    sep1 | null aux  = error $ "replace, no opening bracket for " ++ lhs
-         | otherwise = head aux
-    (arg,rest) = span (/=sep2) . drop 1 $ aux
-    l = length lhs + length arg + 2
-    sep2 = case sep1 of
-        ' ' -> '\n'
-        ':' -> '\n'
-        '(' -> ')'
-        '[' -> ']'
-        '<' -> '>'
-        s   ->  s
-
-wu :: String -> String
-wu = unwords . words
-
-parseRules :: String -> [Rule]
-parseRules x = r1 x ++ r2 x
-  where
-    r1 = concatMap (t False "=") . ok "->" . filter (/=[""]) . map (splitOn "=") . splitOn ";"
-    r2 = concatMap (t True "->") . ok "="  . filter (/=[""]) . map (splitOn "->") . splitOn ";"
-    t rec sep (l:r:rest) = [mkD rec l (esp (wu r'))]
-      where
-        r' = intercalate sep (r:rest)
-    t _ _ _ = []
-    ok sep = filter (not .isInfixOf sep . head)
-
-mkD :: Bool -> String -> String -> Rule      
-mkD rec hd body
-    | null args = esp name `op1` body
-    | otherwise = name `op2` \x -> T.replace (rules x) body
-  where
-   name:args = words hd
-   rules x = zipWith (-:>) args (splitOn "," (esp x))
-   op1 = if rec then (:>>) else (:>)
-   op2 = if rec then (:->>) else (:->)
-
-esp :: String -> String
-esp = T.replace [ "!SEMICOLON" -:> ";"
-              , "!COMMA" -:> ";"
-              , "!ARROW" -:> "->"
-              , "!EQUAL" -:> "="
-              , "\\\\" -:> "\\"
-              , "\\n" -:> "\n"
-              , "!SPACE" -:> " "
-              ]
-
--- args "kk.txt:X   ->  20 , Y   ->  2 e  "
--- args "kk.txt:X   ->  20"
--- args "kk.txt"
--- args "kk.txt:X   ->  20, hello->goodbye->no"
--- replace [mkD "!ADJ X Y" "tonto, X, Y, pero"] "yo soy !ADJ(listo,caca) hello!"
--- replace (parseRules "!ADJ X Y = tonto!COMMA X!COMMA Y!COMMA pero") "yo soy !ADJ(listo,caca) hello!"
--- replace (parseRules "KKK= <pre id=\"hsex\"> bla bla </pre>") "yo soy KKK hola"
--- replace (parseRules "PRE X Y = <pre X> Y</pre>, EXAMPLE X -> PRE(hsr!COMMAX)") "EXAMPLE(hola)"
--- ioReplace (include:parseRules "COSA X -> !INCLUDE(X)") "una COSA(kk.hs)"
-
---------------------------------------------------------------------------------
-
-script :: [Rule] -> [String] -> IO ExitCode
-script rules ls = system . fst =<< ioReplace rules (unlines ls)
-
---------------------------------------------------------------------------------
-
-ignore :: Rule
-ignore = "!IGNORE" :-> const ""
-
-
-include :: Rule
-include = "!INCLUDE" :~> h
-  where
-    h (fileargs->(file,rules)) = do
-        x <- readFile file
-        --print x
-        let res | null rules =  return x
-                | otherwise  = ioReplace rules x
-        -- putStr $ "==> include:" ++ res
-        res
-
-    fileargs s = (file, parseRules rest)
-      where
-        w:ws = splitOn ":" s
-        file = wu w
-        rest = intercalate ":" ws        
-
-includerec :: Rule
-includerec = "!IMPORT" :~>> readFile
-
---------------------------------------------------------------------------------
-
-hsfile :: Rule
-hsfile = "!HSFILE" :~> \f -> (return . T.hsCol . addName f) =<< readFile f
-  where
-    -- addName f xs = replicate 0 ' ' ++ "-- "++ drop 3 f++"\n\n"++ xs
-    addName _ = id
-
-hsfilepart :: Rule
-hsfilepart = "!HSPART" :~> g
-  where
-    g fs = do
-        let filename:rest = words fs
-            section = unwords rest
-        f <- readFile filename
-        let [_,x0] = splitOn section f
-        let x:_ = splitOn "\n\n\n" (dropWhile (=='\n') x0)
-        return (T.hsCol x)
-
-hsfiledef :: Rule
-hsfiledef = "!HSDEF" :~> g
-  where
-    g fs = do
-        let filename:rest = words fs
-            section = unwords rest
-        f <- readFile filename
-        let _:x0 = splitOn section f
-        let x:_ = splitOn "\n\n\n" (section ++ intercalate section x0)
-        return (T.hsCol x)
-
-
--- code explicitly given
-hsfragment :: Bool -> Rule
-hsfragment mode = "!HSCODE" :-> ((if mode then id else T.hsCol) . T.replace rules)
-  where
-    rules = ["{\\-"-:>"{-", "-\\}"-:>"-}"]
-
--}
 

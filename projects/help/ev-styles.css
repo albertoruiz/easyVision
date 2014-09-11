@@ -1,0 +1,45 @@
+
+html{ display: table; margin: auto; background: #f8f8f8
+    }
+
+body{ width:800px;
+      font-family: "FreeSans", sans-serif ; font-size:18px;
+      margin:40px; background-color: #f8f8f8; padding:20px
+    }
+
+a {text-decoration:none}
+
+ul  {list-style-type:square}
+
+h2  {color: #006000}
+
+p   {margin:10px}
+
+pre {margin:40px; font-size: 16px; border: 1px solid gray; background: white; padding: 10px}
+
+code {font-size: 16px; font-weight: bold; color: gray}
+
+#samp {margin:40px; font-size: 16px; border: none; background: #efefef; }
+
+#hsr {margin-top: 0px; background: #f0f0f8; border: none}
+#hsw {margin-top: 0px; background: #f0f0f8; border: none; color: gray}
+#hsd {background: #f0f0f8; border: none; margin-bottom: 20px;
+      color: brown; font-weight: bold}
+#hsc {background: #f0f0f8; border: none; margin-bottom: 0px; margin-top: 20px;
+      color: brown; font-weight: bold}
+#hsno {background: #f8f8f8; border: none; margin-bottom: 0px; margin-top: 0px;
+       font-family: "FreeSans", sans-serif }
+#example {background: #f8f8f8; border: none; margin-bottom: 20px; border-left: 3px solid lightgray; margin-left: 10px; padding-left: 20px }
+
+#nav {
+    text-align: justify;
+    min-width: 500px;
+}
+#nav:after {
+    content: '';
+    display: inline-block;
+    width: 100%;
+}
+#nav li {
+    display: inline-block;
+}

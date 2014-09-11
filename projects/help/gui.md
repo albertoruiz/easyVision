@@ -51,11 +51,8 @@
 
 **F10** toggle sync display
 
-**F1**: help
+**F1**: [help](helponhelp.html)
 
-- - -
-
-[general help][help]
 
 !INCLUDE(LINKS)
 

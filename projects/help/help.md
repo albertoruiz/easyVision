@@ -3,17 +3,25 @@
 # [hVision][project] help
 
 
-[GUI][gui]
+## system
 
-[command line options][options]
+- [tutorial][tutorial]
 
-[interactive point capture][points]
+- [example programs][examples]
 
-[example programs][examples]
+- [introductory slides](http://dis.um.es/~alberto/material/ev1.pdf)
 
-[tutorial][tutorial]
+- [old blog](http://covector.blogspot.com.es/)
 
-[help on help][helponhelp]
+## programs
+
+- [GUI key binding][gui]
+
+- [command line options][options]
+
+- [interactive point capture][points]
+
+- [help in apps][helponhelp]
 
 !INCLUDE(LINKS)
 

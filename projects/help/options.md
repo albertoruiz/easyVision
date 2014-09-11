@@ -1,5 +1,7 @@
 !TITLE(hVision Help - command line options)
 
+!DEFINE SAMP X = <pre id="samp">X</pre>
+
 # hVision command line options
 
 - - -
@@ -17,9 +19,9 @@ HSFILE(../tour/play.hs)
 
 Video files can be given directly:
 
-<pre id="samp">
+SAMP!
     ./play ../../data/videos/rot4.avi
-</pre>
+!
 
 We can add "suboptions":
 
