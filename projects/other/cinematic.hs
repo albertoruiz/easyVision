@@ -2,12 +2,12 @@
 
 import Vision.GUI
 import Image.Processing
-import Numeric.LinearAlgebra(subVector, (@>), inv, rcond, pinv, pinvTol, linearSolveSVD)
-import Devel.Numeric.LinearAlgebra.Simple
+import Numeric.LinearAlgebra
+import Numeric.LinearAlgebra.Util(diagl)
 import Util.Rotation
 import Util.Homogeneous(desp)
 import Util.Geometry(inhomog,unsafeFromVector)
-import Util.Misc (degree,debug)
+import Util.Misc (degree)
 
 autoParam "Angles" "" $ let r = 90*degree in
     [ ("a",  "Double",   realParam (0) (-r) r)
@@ -24,7 +24,7 @@ autoParam "Position" "" $ let r = 4; s = 90*degree in
     ]
 
 
-main = runIt $   drawParam "forward" drwsA
+main = runIt $  drawParam "forward" drwsA
              >> drawParam "inverse" drwsP
 
 

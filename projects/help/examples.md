@@ -70,9 +70,6 @@ A short description of selected available programs:
 
 **matrix**: Usage of matrix functions on images.
 
-**cinematic**: compute very simple inverse cinematics.
-
-
 ## projects/vision/geom
 
 See the Makefile or run "make" and "make demo" to run these programs with interesting command line arguments.
@@ -130,4 +127,13 @@ See the Makefile or run "make" and "make demo" to run these programs with intere
 **ukf**: check UKF (unscented Kalman filter) functions.
 
 **ferns**: experiment with naive bayes and ferns.
+
+## projects/other
+
+**cinematic**: compute very simple inverse cinematics.
+
+**minkowsky**: example of Minkowsky polygon sum.
+
+**lander**: path planning using Dijkstra's algorithm in the fgl package. Click on the
+scene to set the target point, and press '1' to show the graph.
 
