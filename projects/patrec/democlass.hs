@@ -3,7 +3,7 @@ import Classifier.ToyProblems
 import Util.Stat
 import Classifier.Regression(msError)
 import Util.ICA
-import Util.Misc(debug,randomPermutation)
+import Util.Statistics(randomPermutation)
 import Util.Gaussian(mixturePDF,findMixture)
 
 import Numeric.LinearAlgebra

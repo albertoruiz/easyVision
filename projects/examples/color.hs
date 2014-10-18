@@ -2,7 +2,7 @@ import Vision.GUI
 import Image.Processing
 import Image.Processing.Custom(histogram3D)
 import Numeric.LinearAlgebra
-import Util.Misc(debug)
+import Util.Debug(debug)
 
 main = run $ getTemplate
          >>> observe "template" snd

@@ -6,7 +6,7 @@ import Data.Traversable(traverse)
 import Numeric.LinearAlgebra hiding (join)
 import Image.ROI
 import Util.Geometry as G
-import Util.Misc(debug)
+import Util.Debug(debug)
 import Control.Applicative((<*>),(<$>))
 
 main = do

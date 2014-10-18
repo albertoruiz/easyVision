@@ -2,7 +2,7 @@ import Vision.GUI
 import Util.Geometry
 import Image.Processing
 import Numeric.LinearAlgebra
-import Util.Misc(degree,replaceAt,debug)
+import Util.Misc(degree,replaceAt)
 
 main = runIt $ splineWin
 

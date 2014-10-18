@@ -3,7 +3,7 @@ import Image.Capture         ( readImages )
 import Image.Processing      ( Size(Size), warp, zeroP, saveImage )
 import Util.Options          ( optionString, getFlag )
 import Util.Homogeneous      ( scaling, desp )
-import Numeric.LinearAlgebra ( Contraction((<>)) )
+import Numeric.LinearAlgebra
 import Text.Printf           ( printf )
 
 --------------------------------------------------------------------------------

@@ -4,7 +4,8 @@
 
 import Classifier.ToyProblems ( moon )
 import Classifier ( group, addNoise )
-import Util.Misc ( vec, debug )
+import Util.Misc ( vec )
+import Util.Debug(debug)
 import Numeric.LinearAlgebra
 import Numeric.LinearAlgebra.Util ( pairwiseD2 )
 import Vision.GUI.Simple

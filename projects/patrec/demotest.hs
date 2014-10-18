@@ -3,7 +3,8 @@ import Classifier.ToyProblems
 import Util.Stat
 import Classifier.Regression(msError)
 import Util.ICA
-import Util.Misc(debug,randomPermutation)
+import Util.Statistics(randomPermutation)
+import Util.Debug(debug)
 import Util.Gaussian(mixturePDF,findMixture)
 
 import Numeric.LinearAlgebra
@@ -101,7 +102,7 @@ testBrowser n c = runIt $ do
 
 
 expand x m bs = x : r : map (scale 1) cs'  where
-    ys = map (<>(x - m)) bs
+    ys = map (<.>(x - m)) bs
     cs = zipWith scale ys bs
     r = sum cs'
     n = fromIntegral $ length bs
@@ -109,7 +110,7 @@ expand x m bs = x : r : map (scale 1) cs'  where
     cs' = map (+m')  cs
 
 expand' x m bs = x : r : m : cs where
-    ys = map (<>(x - m)) bs
+    ys = map (<.>(x - m)) bs
     cs = zipWith scale ys bs
     r = sum (m : cs)
 

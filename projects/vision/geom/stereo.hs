@@ -7,7 +7,7 @@ import Numeric.LinearAlgebra.Util((¦))
 import Util.Geometry as G
 import Util.Camera
 import Vision
-import Util.Misc(debug,debugMat)
+import Util.Debug(debug,debugMat)
 import Data.Maybe(isJust)
 
 main = do

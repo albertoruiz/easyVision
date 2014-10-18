@@ -6,7 +6,7 @@ import Data.Traversable(traverse)
 import Numeric.LinearAlgebra hiding (gjoin)
 import Vision(estimateHomography,scaling)
 import Util.Geometry as G
-import Util.Misc(debug)
+import Util.Debug(debug)
 --import Contours(bounding, poly2roi)
 
 main = do

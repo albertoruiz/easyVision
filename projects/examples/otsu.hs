@@ -4,7 +4,8 @@ import Vision.GUI
 import Contours
 import Image.Processing
 import Image.ROI
-import Util.Misc(vec,debug,stdpix)
+import Util.Misc(vec,stdpix)
+import Util.Debug(debug)
 import Numeric.LinearAlgebra
 
 autoParam "DemoParam" ""

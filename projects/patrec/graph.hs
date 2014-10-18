@@ -4,7 +4,8 @@
 
 import Classifier.ToyProblems ( sshape )
 import Classifier ( addNoise, boxAttr, preprocess )
-import Util.Misc ( vec, debug )
+import Util.Misc ( vec )
+import Util.Debug(debug)
 import Util.Gaussian ()
 import Numeric.LinearAlgebra
 import Vision.GUI.Simple

@@ -3,7 +3,8 @@ import Util.Geometry
 import Numeric.LinearAlgebra
 import Numeric.LinearAlgebra.Util(rand,randn)
 import System.Random(randomIO)
-import Util.Misc(randomPermutation,vec,debug,degree)
+import Util.Misc(vec,degree)
+import Util.Statistics(randomPermutation)
 import Util.Homogeneous(homog,inHomog)
 import Vision(cross,mS)
 import Util.Estimation(ransac)

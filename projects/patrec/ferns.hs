@@ -9,7 +9,9 @@ import qualified Data.Map as M
 import Data.Maybe(fromMaybe)
 import Control.Arrow((&&&))
 import Text.Printf(printf)
-import Util.Misc(splitEvery, randomPermutation, Vec, Seed)
+import Util.Misc(splitEvery,Vec)
+import Util.Statistics(randomPermutation)
+import Numeric.LinearAlgebra.HMatrix(Seed)
 import Util.Options
 
 
@@ -23,7 +25,7 @@ study prob meth = do
 
 
 main = do
-    m <- fromFile "../../data/ml/mnist.txt" (5000,785)
+    m <- loadMatrix "../../data/ml/mnist.txt"
     n <- getOption "--n" 100 -- number of ferns
     s <- getOption "--s" 10 -- size of each fern
     let vs = toRows (takeColumns 784 m)

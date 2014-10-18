@@ -2,7 +2,7 @@
 import Classifier
 import Classifier.ToyProblems
 import Numeric.LinearAlgebra
-import Numeric.LinearAlgebra.Util(mplot)
+import Graphics.Plot(mplot)
 import Util.Misc(vec)
 import Vision.GUI.Simple
 import System.Random(randomIO)

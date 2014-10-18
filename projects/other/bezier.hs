@@ -4,7 +4,7 @@ import Contours(asSegments)
 import Util.Ellipses
 import Util.Geometry
 import Numeric.LinearAlgebra
-import Util.Misc(debug)
+import Util.Debug(debug)
 
 
 main = runIt $ clickPoints "Bezier" "--points" () (sh.fst)

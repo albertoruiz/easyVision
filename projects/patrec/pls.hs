@@ -1,7 +1,8 @@
 import Classifier.Regression
 import Numeric.LinearAlgebra
+import Numeric.LinearAlgebra.HMatrix(Seed)
 import Text.Printf
-import Util.Misc(Mat,Vec,randomPermutation,Seed, mean, vec)
+import Util.Statistics(mean,randomPermutation)
 import Control.Monad(forM_)
 
 disp = putStrLn . dispf 3
@@ -47,3 +48,4 @@ main = do
     study pls
     line "pcr"
     study pcr
+

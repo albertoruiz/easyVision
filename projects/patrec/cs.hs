@@ -1,13 +1,16 @@
 -- simple example of L1 minimization and compressed sensing
 
 import Numeric.LinearAlgebra
-import Numeric.LinearAlgebra.Util(norm,mplot)
-import Util.Misc(Mat,Vec,vec,debug,randomPermutation)
-import Util.L1
+import Numeric.LinearAlgebra.HMatrix(norm_2)
+import Graphics.Plot(mplot)
+import Util.Misc(Mat,Vec,vec)
+import Util.Statistics(randomPermutation)
+import Numeric.LinearProgramming.L1
 import Text.Printf(printf)
 import Control.Monad(when)
 import Numeric.GSL.Fourier
 
+norm = norm_2
 
 gaussianMatrix seed (r,c) = reshape c $ randomVector seed Gaussian (r*c) / fromIntegral c
 

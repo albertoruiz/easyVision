@@ -2,7 +2,7 @@ import Vision.GUI.Simple
 import Util.Geometry
 import Numeric.LinearAlgebra
 import Util.Gaussian
-import Util.Misc(debug)
+import Util.Debug(debug)
 
 
 main :: IO ()

@@ -137,3 +137,5 @@ See the Makefile or run "make" and "make demo" to run these programs with intere
 **lander**: path planning using Dijkstra's algorithm in the fgl package. Click on the
 scene to set the target point, and press '1' to show the graph.
 
+**bezier**: experiment to fit a polyline to a Bezier curve.
+

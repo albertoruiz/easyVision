@@ -1,6 +1,6 @@
 import Vision.GUI
 import Image.Processing
-import Util.Misc(debug)
+import Util.Debug(debug)
 
 main = run $ observe "image" rgb
            >>> arr (debug "S" (sumPixels.grayscale))
