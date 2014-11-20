@@ -47,7 +47,7 @@ module Util.Geometry
   -- * Derived types
 
     Polyline(..), Segment(..),
-    interPoint, normalSegment,
+    interPoint, normalSegment, rotPoint,
     segmentLength, distPoints, bounding, cosAngleSegments,
     asSegments, isLeft,
     segmentIntersection, intersectionLineSegment,
@@ -681,6 +681,21 @@ interPoint β (Point x1 y1) (Point x2 y2) = Point x3 y3
   where
     x3 = (1-β)*x1 + β*x2
     y3 = (1-β)*y1 + β*y2
+
+-- | rotation of a point
+rotPoint
+  :: Point  -- ^ center
+  -> Double -- ^ angle
+  -> Point  -- ^ target
+  -> Point
+rotPoint (Point cx cy) ang (Point x y) = Point (cx+rx) (cy+ry)
+  where
+    c = cos ang
+    s = sin ang
+    dx = x-cx
+    dy = y-cy
+    rx =  c*dx-s*dy
+    ry = s*dx+c*dy
 
 
 -- | vector normal to a segment (to the "left")

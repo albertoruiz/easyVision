@@ -20,6 +20,7 @@ module Vision.GUI.Interface (
     Command, WinInit,
     interface, standalone, interface3D, standalone3D,
     -- * Tools
+    Size(..),
     prepare, runIt,
     evWindow,
     inWin, getW, putW, updateW, putWRaw, updateWRaw,

@@ -29,12 +29,13 @@ module Vision.GUI.Util (
     connectWith, connectWith',
     clickPoints,
     interactive2D, interactive3D,
+    animate,
     Drawer, mkDrawers,
     clickKeep, clickList, clickTag,
     scatter, scatter3D, drawDecisionRegion
 ) where
 
-import Graphics.UI.GLUT hiding (Point,Size,color)
+import Graphics.UI.GLUT hiding (Point,Size,color,windowTitle)
 import Vision.GUI.Types
 import Vision.GUI.Interface
 import Vision.GUI.Parameters(ParamRecord(..))
@@ -384,4 +385,13 @@ clickTag l r sh name = transUI $ interface (Size 240 320) name False ft updt [] 
     updt = [(key (MouseButton LeftButton), \_ _ sv -> not sv)]
     ft _ _ = return ()
 
+--------------------------------------------------------------------------------
+
+animate :: Int -> Size -> String -> (Int -> Drawing) -> IO()
+animate delay sz title frame = runT_ clock $ arrL (map fst . zip [0..]) >>> observe "animation" disp
+  where
+    disp n = Draw [ if n <= 5 then init else Draw (), frame n ]
+    clock = return (threadDelay delay >> Just `fmap` getCurrentTime )
+    init = windowTitle title
+         $ Raw (windowSize $= glSize sz)
 

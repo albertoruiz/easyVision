@@ -26,6 +26,7 @@ module Util.Probability (
     evidence,
     mode,
     prob,
+    unprob,
     -- * Simple distributions
     weighted, uniform, bernoulli,
     -- * Misc
@@ -124,8 +125,14 @@ compose f g = h where
 prob :: (Eq a) => a -> Prob a -> Double
 prob a (Prob xs) = maybe 0 id (lookup a xs)
 
----------------------------------------------------------
+--------------------------------------------------------
 
+unprob :: Ord t => Prob t -> [(t, Double)]
+unprob = f . collect
+  where
+    f (Prob xs) = xs
+
+---------------------------------------------------------
 
 -- | in db
 evidence :: (Ord a) => a -> Prob a -> Double
