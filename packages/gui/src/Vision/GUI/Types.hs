@@ -16,7 +16,7 @@ module Vision.GUI.Types
    EVWindow(..), MoveStatus(..), ResizePolicy(..), PauseStatus(..), WinRegion, WStatus(..)
 -- * Drawing abstraction
 ,  Renderable(..), Drawing(..)
-,  color, text, textF, pointSz, lineWd, windowTitle , clearColor, draws, colorAlpha, blend
+,  color, text, textF, pointSz, lineWd, windowTitle , clearColor, draws, colorAlpha, blend, sRGB
 -- * Tools
 , pointCoordinates, pointCoords
 , pixelCoordinates, pixelCoords
@@ -36,7 +36,7 @@ import Image hiding (RGB)
 import Util.Geometry
 import Numeric.LinearAlgebra hiding (step)
 import Data.Colour(Colour)
-import Data.Colour.SRGB(RGB(..),toSRGB)
+import Data.Colour.SRGB(RGB(..),toSRGB,sRGB)
 import GHC.Float(double2Float)
 import Unsafe.Coerce(unsafeCoerce)
 import Data.IORef
