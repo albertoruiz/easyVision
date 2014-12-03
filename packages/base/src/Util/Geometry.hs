@@ -47,7 +47,7 @@ module Util.Geometry
   -- * Derived types
 
     Polyline(..), Segment(..),
-    interPoint, normalSegment, rotPoint,
+    interPoint, normalSegment, rotPoint, localFrame, localCoords,
     segmentLength, distPoints, bounding, cosAngleSegments,
     asSegments, isLeft,
     segmentIntersection, intersectionLineSegment,
@@ -696,6 +696,49 @@ rotPoint (Point cx cy) ang (Point x y) = Point (cx+rx) (cy+ry)
     dy = y-cy
     rx =  c*dx-s*dy
     ry = s*dx+c*dy
+
+--------------------------------------------------------------------------------
+
+-- | create a point from coordinates in the local reference frame defined by two points.
+
+localFrame
+    :: Point -- ^ origin
+    -> Point -- ^ a point the X axis
+    -> Double -> Double -- ^ absolute and relative (to length of segment) coordinates x
+    -> Double -> Double -- ^ absoulte and relative coordinates y
+    -> Point
+localFrame (Point x1 y1) (Point x2 y2) x xl y yl = Point x3 y3
+  where
+    ux' = x2-x1
+    uy' = y2-y1
+    un  = sqrt (ux'*ux'+uy'*uy')
+    ux  = ux'/un
+    uy  = uy'/un
+    vx = uy
+    vy = -ux
+    x3 = x1 + x*ux + xl*ux' + y*vx + yl*vx*un
+    y3 = y1 + x*uy + xl*uy' + y*vy + yl*vy*un
+
+-- | compute coordinates of a point in frame defined by a segment
+localCoords
+    :: Point -- ^ origin
+    -> Point -- ^ a point in X axis
+    -> Point -- ^ target point
+    -> Point -- ^ coordinates of target in this reference frame
+localCoords (Point x1 y1) (Point x2 y2) (Point x3 y3) = Point x y
+  where
+    ux' = x2-x1
+    uy' = y2-y1
+    un  = sqrt (ux'*ux'+uy'*uy')
+    ux  = ux'/un
+    uy  = uy'/un
+    vx = uy
+    vy = -ux
+    x = (x3-x1)*ux+(y3-y1)*uy
+    y = (x3-x1)*vx+(y3-y1)*vy
+
+
+--------------------------------------------------------------------------------
 
 
 -- | vector normal to a segment (to the "left")
