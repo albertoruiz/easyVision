@@ -44,8 +44,8 @@ prepareGNS n prt = (f0,j0,fun)
     zerot = replicate 8 0
 
 
-stepGNS :: GN -> Polyline -> Polyline
-stepGNS (f0,j0,fun) tgt = res
+stepGNS :: GN -> Polyline -> (Polyline,Double)
+stepGNS (f0,j0,fun) tgt = (res, norm2 err)
   where
     err = fun tgt - f0
     dx = (trans j0 <> j0) <\> (trans j0 <> err)

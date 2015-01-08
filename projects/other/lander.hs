@@ -83,7 +83,7 @@ inner = minkowskiConvex (triang 0    0 0)
 mapper = arrL (scanl f []) >>> sMonitor "SLAM" shmap
   where
     f prev  st =  take 200 $ map g (filter ((<0.195) . segmentLength) (sensors st)) ++ prev
-    g (Segment p q) = q
+    g (Segment p q) = q .-. p
     shmap _ pts = [pointSz 3 pts]
 
 --------------------------------------------------------------------------------

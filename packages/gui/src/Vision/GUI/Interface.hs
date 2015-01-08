@@ -169,7 +169,7 @@ drawRegion w = do
                    ++ " draws (" ++ show (evNCall stats - evNDraw stats) ++ ")"
                    ++ shpsz ++ "wSize: " ++ shSize (evSize wsz)
         --         ++ "   zoom = " ++ printf "(%.2f,%.1f,%.1f)" z a b
-        render $ Draw [ color white . lineWd 1 $
+        render $ Draw [ color red . lineWd 1.5 $
                         Closed [ Point x1 y1, Point x2 y1
                                , Point x2 y2, Point x1 y2]
                       , textF Helvetica10 (Point 0.95 (-0.7)) info
