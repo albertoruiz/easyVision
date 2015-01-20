@@ -1,4 +1,4 @@
-pkgs=tools base gui geometry classifier contours custom contrib/examples contrib/opencv contrib/clipping contrib/hcontours ipp hvision devel
+pkgs=tools base gui geometry classifier contours custom contrib/examples contrib/opencv contrib/clipping contrib/hcontours contrib/CLK ipp hvision devel
 
 all:
 	for p in $(pkgs); do \
