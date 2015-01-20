@@ -31,7 +31,8 @@ library
                         Contours.Orientation
                         Contours.Matching
                         Contours.Reduction
-    Other-modules:      Contours.GNS               
+                        Contours.Resample
+    Other-modules:      Contours.GNS
 
     ghc-prof-options:   -auto-all
 

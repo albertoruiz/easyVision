@@ -18,7 +18,8 @@ module Contours (
     module Contours.Fourier,
     module Contours.Orientation,
     module Contours.Matching,
-    module Contours.Reduction
+    module Contours.Reduction,
+    module Contours.Resample
 ) where
 
 import Contours.Base
@@ -27,4 +28,5 @@ import Contours.Fourier
 import Contours.Orientation
 import Contours.Matching
 import Contours.Reduction
+import Contours.Resample
 

@@ -1,7 +1,7 @@
 module Contours.GNS(
     GN,
-    prepareGNS,
-    stepGNS)
+    prepareGNS, prepareGNP,
+    stepGN)
 where
 
 import Util.Geometry
@@ -14,6 +14,7 @@ import Util.Misc(rotateLeft,degree)
 -- import Vision(kgen,projectionAt',cameraModelOrigin)
 import Util.Rotation
 import Numeric.GSL.Differentiation
+import Contours.Resample
 
 
 feat :: Polyline -> Int -> Double
@@ -44,8 +45,8 @@ prepareGNS n prt = (f0,j0,fun)
     zerot = replicate 8 0
 
 
-stepGNS :: GN -> Polyline -> (Polyline,Double)
-stepGNS (f0,j0,fun) tgt = (res, norm2 err)
+stepGN :: GN -> Polyline -> (Polyline,Double)
+stepGN (f0,j0,fun) tgt = (res, norm2 err)
   where
     err = fun tgt - f0
     dx = (trans j0 <> j0) <\> (trans j0 <> err)
@@ -90,4 +91,25 @@ refinePose n cam0 tgt prt = map model (iterate work zerot)
         xs' = zipWith (+) xs (toList dxs)
         info = (norm2 (f0 - fun xs - j<>dxs), norm2 (f0 - fun xs'))
 -}
+
+--------------------------------------------------------------------------------
+
+-- resampled features
+
+prepareGNP :: Int -> Polyline -> GN
+prepareGNP n prt = (f0,j0,fun)
+  where
+    fun tgt = featRS (n `div` 2) tgt
+    f0 = fun prt
+    trans k xs = feat n (transPol (mktP xs) prt) k
+    j0 = jacobian (map trans dimfeat) zerot
+    dimfeat = [0..n-1]
+    zerot = replicate 8 0
+    
+    featRS s c = flatten (datMat (resample s c))
+    
+    feat n cont = h
+      where
+        v = featRS (n `div` 2) cont
+        h k = v@>k
 

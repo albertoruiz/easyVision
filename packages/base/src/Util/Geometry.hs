@@ -50,7 +50,8 @@ module Util.Geometry
     interPoint, normalSegment, rotPoint, localFrame, localCoords,
     segmentLength, distPoints, bounding, cosAngleSegments,
     asSegments, isLeft,
-    segmentIntersection, intersectionLineSegment,
+    segmentIntersection, segmentIntersection',
+    intersectionLineSegment,
     Polygon(..),
     orientation, polygonSides,
     DMat
@@ -809,6 +810,19 @@ segmentIntersection (Segment (Point x1 y1) (Point x2 y2)) (Segment (Point x3 y3)
     u = ((x4-x3)*(y1-y3)-(y4-y3)*(x1-x3))/d
     v = ((x2-x1)*(y1-y3)-(y2-y1)*(x1-x3))/d
     ok = d /= 0 && 0 < u && u <= 1 && 0 < v && v <= 1
+    x = x1 + u*(x2-x1)
+    y = y1 + u*(y2-y1)
+    r | ok = Just (Point x y)
+      | otherwise = Nothing
+
+-- including both extremes
+segmentIntersection' :: Segment -> Segment -> Maybe Point
+segmentIntersection' (Segment (Point x1 y1) (Point x2 y2)) (Segment (Point x3 y3) (Point x4 y4)) = r
+  where
+    d = (y4-y3)*(x2-x1)-(x4-x3)*(y2-y1)
+    u = ((x4-x3)*(y1-y3)-(y4-y3)*(x1-x3))/d
+    v = ((x2-x1)*(y1-y3)-(y2-y1)*(x1-x3))/d
+    ok = d /= 0 && 0 <= u && u <= 1 && 0 <= v && v <= 1
     x = x1 + u*(x2-x1)
     y = y1 + u*(y2-y1)
     r | ok = Just (Point x y)
