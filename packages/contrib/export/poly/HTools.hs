@@ -1,3 +1,5 @@
+-- example of exporting a contour processing function to C
+
 {-# LANGUAGE ForeignFunctionInterface #-}
 
 module HTools(fun, hfun,
@@ -13,13 +15,11 @@ import Contours
 
 --------------------------------------------------------------------------------
 
--- function with arguments, some of them typically provided by initialization
-
 funInit :: HInit
 funInit = return ()
 
 fun :: HFun
-fun = Closed . resample 8
+fun n = Closed . resample n
 
 --------------------------------------------------------------------------------
 
@@ -32,12 +32,11 @@ foreign export ccall hfunInit :: CInit
 type HInit = IO ()
 type CInit = IO ()
 
-type HFun = Polyline -> Polyline
+type HFun = Int -> Polyline -> Polyline
 
 type CFun =  CInt
-          -> Ptr Point
-          -> Ptr CInt
-          -> Ptr (Ptr Point)
+          -> CInt -> Ptr Point
+          -> Ptr CInt -> Ptr (Ptr Point)
           -> IO Int
 
 --------------------------------------------------------------------------------
@@ -47,10 +46,10 @@ mkC (init, f) = (cInit, cFun)
   where
     cInit = init
 
-    cFun n ps pm pps = do
+    cFun s n ps pm pps = do
       x <- peekArray (fromIntegral n) ps
       
-      let y = f (Closed x)
+      let y = f (fromIntegral s) (Closed x)
           rps = polyPts y
           m = length rps
 

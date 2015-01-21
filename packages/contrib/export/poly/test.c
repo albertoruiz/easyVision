@@ -1,4 +1,4 @@
-// ghc test.c -o testc HTools.hs -I/home/brutus/apps/ghc/lib/ghc-7.8.3/include/ -no-hs-main
+// use Haskell to resample a polyline
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -18,7 +18,7 @@ int main(int argc, char *argv[]) {
     int m;
     TPoint *res;
 
-    hfun(n,cont,&m,&res);
+    hfun(8,n,cont,&m,&res);
     
     //printf("%p\n",&m);
     //printf("%p\n",&res);
