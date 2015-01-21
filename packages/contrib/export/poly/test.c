@@ -8,7 +8,6 @@ typedef struct { double x; double y; } TPoint;
 
 int main(int argc, char *argv[]) {
     hs_init(&argc,&argv); // haskell init
-    hfunInit(); // HTools init (in this case do nothing)
 
     // load test input
     int n = 4;
