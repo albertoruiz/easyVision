@@ -25,7 +25,7 @@ void cascadeDetect(CascadeClassifier * cascade,
     GIMS(char,t),
     int fmax, int* fn, TRect* res) {
 
-    IPL(t,1)
+    IPL(t,8,1)
 
     Mat frame;
     frame = ipl_t;
@@ -117,7 +117,7 @@ void surf( GIMS(char,t),
     double minHessian = 400;
     static SurfFeatureDetector detector( minHessian );
     
-    IPL(t,1)
+    IPL(t,8,1)
 
     Mat frame;
     frame = ipl_t;

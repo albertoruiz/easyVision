@@ -29,7 +29,7 @@
 #endif
 #define CLIP(a) ((a)<0?0:(a)>255?255:(a))
 
-#define IPL(X,C) IplImage * ipl_##X = cvCreateImageHeader(cvSize(X##width,X##height), 8, C ); \
+#define IPL(X,S,C) IplImage * ipl_##X = cvCreateImageHeader(cvSize(X##width,X##height), S, C ); \
                  ipl_##X->imageData = X##p; \
                  ipl_##X->widthStep = X##step; \
                  cvSetImageROI(ipl_##X,cvRect(X##c1,X##r1,X##c2-X##c1+1,X##r2-X##r1+1));

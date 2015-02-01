@@ -6,6 +6,7 @@ module Image.Devel(
     Wrap11, wrap11,
     RawImageS, appS,
     Wrap11S, wrap11S,
+    MAT, withCMatrix, appMat,
     fi, ti,
     (//), checkFFI,
     flattenImage,
@@ -13,6 +14,7 @@ module Image.Devel(
     module Image.Core,
     convert,
     yuyv2gray, yuyv2rgb, yuv2rgb, yuv2yuyv, gray2rgb, rgb2gray,
+    gray2float, float2gray,
     mpSize, parseSize,
     unsafePerformIO,
     CInt(..), Storable, Ptr
@@ -29,6 +31,10 @@ import Util.Misc((//))
 import Data.List.Split(splitOn)
 import Image.Convert
 import Data.Packed.Development(fi)
+import Foreign.ForeignPtr(withForeignPtr)
+import Foreign.ForeignPtr.Unsafe(unsafeForeignPtrToPtr)
+import Numeric.LinearAlgebra.HMatrix(Matrix,flatten,rows,cols)
+import Numeric.LinearAlgebra.Devel(orderOf, MatrixOrder(..),unsafeToForeignPtr)
 
 appI :: RawImage p t -> Image p -> t
 appI f img = f (ptrAt img (Pixel 0 0)) (fi.step $ img) (g r1) (g r2) (g c1) (g c2)
@@ -72,6 +78,26 @@ wrap11S msg f x = unsafePerformIO $ do
         f `appS` x `appS` r
     return r
 
+--------------------------------------------------------------------------------
+
+type MAT t = CInt -> CInt -> Ptr Double -> t
+
+withCMatrix :: Matrix Double -> IO b -> IO b
+withCMatrix m act
+   | orderOf m == RowMajor = withForeignPtr fp $ \_ -> act
+   | otherwise = error "withMatrix ColumnMajor"
+  where
+    (fp,_,_) = unsafeToForeignPtr (flatten m)
+
+appMat :: MAT t -> Matrix Double -> t
+appMat f m = f r c p
+  where
+    r = fi (rows m)
+    c = fi (cols m)
+    (fp,_,_) = unsafeToForeignPtr (flatten m)
+    p = unsafeForeignPtrToPtr fp
+
+--------------------------------------------------------------------------------
 
 checkFFI :: String -> IO CInt -> IO ()
 checkFFI msg f = do
@@ -122,6 +148,14 @@ foreign import ccall "gray2rgb" c_gray2rgb :: Wrap11 I8u I8u3
 rgb2gray :: Image I8u3 -> Image I8u
 rgb2gray = wrap11 "rgb2gray" c_rgb2gray
 foreign import ccall "rgb2gray" c_rgb2gray :: Wrap11 I8u3 I8u
+
+gray2float :: Image I8u -> Image Float
+gray2float = wrap11 "gray2float" c_gray2float
+foreign import ccall "gray2float" c_gray2float :: Wrap11 I8u I32f
+
+float2gray :: Image Float -> Image I8u
+float2gray = wrap11 "float2gray" c_float2gray
+foreign import ccall "float2gray" c_float2gray :: Wrap11 I32f I8u
 
 --------------------------------------------------------------------------------
 

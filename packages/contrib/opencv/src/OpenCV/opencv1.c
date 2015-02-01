@@ -6,8 +6,8 @@
 
 void opencv_canny(IMGSZ(s),IMGSZ(d)) {
 
-    IPL(s,1)
-    IPL(d,1)
+    IPL(s,8,1)
+    IPL(d,8,1)
 
     cvSmooth( ipl_s , ipl_d, CV_GAUSSIAN, 5, 0,0,0);
     cvCanny( ipl_d, ipl_d, 10,100,3);
@@ -23,8 +23,8 @@ void opencv_canny(IMGSZ(s),IMGSZ(d)) {
 void opencv_warp8u(int g, int r, int c, double*p, IMGSZ(s),IMGSZ(d)) {
 #define AT(i,j) (p[(i)*c+(j)]) 
 
-    IPL(s,1)
-    IPL(d,1)
+    IPL(s,8,1)
+    IPL(d,8,1)
 
     CvMat* h = cvCreateMat(3, 3, CV_32F);
     cvSetReal2D(h, 0, 0, AT(0,0));
@@ -47,12 +47,6 @@ void opencv_warp8u(int g, int r, int c, double*p, IMGSZ(s),IMGSZ(d)) {
 
 //---------------------------------------------------
 
-// FIXME in wrappers.h and update here
-#undef IPL
-#define IPL(X,S,C) IplImage * ipl_##X = cvCreateImageHeader(cvSize(X##width,X##height), S, C ); \
-                 ipl_##X->imageData = X##p; \
-                 ipl_##X->widthStep = X##step; \
-                 cvSetImageROI(ipl_##X,cvRect(X##c1,X##r1,X##c2-X##c1+1,X##r2-X##r1+1));
 
 void opencv_warp32f(float g, int r, int c, double*p, IMGSZ(s),IMGSZ(d)) {
 #define AT(i,j) (p[(i)*c+(j)]) 

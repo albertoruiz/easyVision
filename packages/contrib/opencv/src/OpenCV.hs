@@ -16,8 +16,6 @@ import Foreign.Marshal
 import Foreign.C.String
 import Foreign(Word8)
 import Foreign.Storable
-import Foreign.ForeignPtr(withForeignPtr)
-import Foreign.ForeignPtr.Unsafe(unsafeForeignPtrToPtr)
 import Util.Geometry(Segment(..),Point(..))
 import Control.Applicative
 import Data.Packed.Development
@@ -54,6 +52,14 @@ foreign import ccall "opencv_canny"
 
 ------------------------------------------------------------------
 
+wrap11SHS :: Storable b => String -> MAT (Wrap11S a b) -> Size -> Matrix Double -> Image a -> Image b
+wrap11SHS msg f sz m x = unsafePerformIO $ do
+    r <- newImage undefined sz
+    let cm = cmat $ inv (pixelToPointTrans (size r)) <> m <> pixelToPointTrans (size x)
+    withCMatrix cm $ withImage x $ withImage r $ checkFFI msg $
+        f `appMat` cm `appS` x `appS` r
+    return r
+
 warp8u :: Word8 -> Size -> Matrix Double -> Image I8u -> Image I8u
 warp8u g = wrap11SHS "opencv_warp8u" (c_opencv_warp8u g)
 
@@ -63,31 +69,6 @@ warp8u3 g = wrap11SHS "opencv_warp8u3" (c_opencv_warp8u3 g)
 warp32f :: Float -> Size -> Matrix Double -> Image Float -> Image Float
 warp32f g = wrap11SHS "opencv_warp32f" (c_opencv_warp32f g)
 
-
-type MAT t = CInt -> CInt -> Ptr Double -> t
-
-withCMatrix :: Matrix Double -> IO b -> IO b
-withCMatrix m act 
-   | orderOf m == RowMajor = withForeignPtr fp $ \_ -> act
-   | otherwise = error "withMatrix ColumnMajor"
-  where
-    (fp,_,_) = unsafeToForeignPtr (flatten m)
-
-appMat :: MAT t -> Matrix Double -> t
-appMat f m = f r c p 
-  where
-    r = fi (rows m)
-    c = fi (cols m)
-    (fp,_,_) = unsafeToForeignPtr (flatten m)
-    p = unsafeForeignPtrToPtr fp
-
-wrap11SHS :: Storable b => String -> MAT (Wrap11S a b) -> Size -> Matrix Double -> Image a -> Image b
-wrap11SHS msg f sz m x = unsafePerformIO $ do
-    r <- newImage undefined sz
-    let cm = cmat $ inv (pixelToPointTrans (size r)) <> m <> pixelToPointTrans (size x)
-    withCMatrix cm $ withImage x $ withImage r $ checkFFI msg $
-        f `appMat` cm `appS` x `appS` r
-    return r
 
 foreign import ccall "opencv_warp8u"
     c_opencv_warp8u :: Word8 -> MAT (RawImageS I8u (RawImageS I8u (IO CInt)))

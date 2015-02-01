@@ -15,6 +15,22 @@ int exampleInvert(IM1(src), IM1(dst)) {
     return 0;
 }
 
+int gray2float(IM1(src), IMF(dst)) {
+    int r,c;
+    TRAV(dst,0,r,c) {
+        PF(dst,r,c) = (float)(P(src,r,c))/255;
+    }
+    return 0;
+}
+
+int float2gray(IMF(src), IM1(dst)) {
+    int r,c;
+    TRAV(dst,0,r,c) {
+        P(dst,r,c) = 255*(PF(src,r,c));
+    }
+    return 0;
+}
+
 int gray2rgb(IM1(src), IM1(dst)) {
     int r,c;
     TRAV(src,0,r,c) {
