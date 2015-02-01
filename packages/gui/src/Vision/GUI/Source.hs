@@ -56,7 +56,7 @@ someChannelsFromYUYV x = CHIm {..}
     hsv = no
     hCh = no
     sCh = no
-    fCh = no
+    fCh = gray2float yCh
     no = error "channel not available. Use hVision-ipp"
 
 someChannelsFromRGB x = CHIm {..}
@@ -72,7 +72,7 @@ someChannelsFromRGB x = CHIm {..}
     hsv = no
     hCh = no
     sCh = no
-    fCh = no
+    fCh = gray2float yCh
     no = error "channel not available. Use hVision-ipp"
 
 
