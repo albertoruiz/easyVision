@@ -18,86 +18,58 @@ void opencv_canny(IMGSZ(s),IMGSZ(d)) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+#define ATM(m,c,i,j) (p[(i)*c+(j)])
+#define COPYM(DST,SRC,R,C) { int r, c; for (r=0; r<R; r++) for (c=0; c<C; c++) cvSetReal2D(DST,r,c, ATM(SRC,C,r,c)); }
 
 
 void opencv_warp8u(int g, int r, int c, double*p, IMGSZ(s),IMGSZ(d)) {
-#define AT(i,j) (p[(i)*c+(j)]) 
 
     IPL(s,8,1)
     IPL(d,8,1)
 
     CvMat* h = cvCreateMat(3, 3, CV_32F);
-    cvSetReal2D(h, 0, 0, AT(0,0));
-    cvSetReal2D(h, 0, 1, AT(0,1));
-    cvSetReal2D(h, 0, 2, AT(0,2));
-    cvSetReal2D(h, 1, 0, AT(1,0));
-    cvSetReal2D(h, 1, 1, AT(1,1));
-    cvSetReal2D(h, 1, 2, AT(1,2));
-    cvSetReal2D(h, 2, 0, AT(2,0));
-    cvSetReal2D(h, 2, 1, AT(2,1));
-    cvSetReal2D(h, 2, 2, AT(2,2));
+    COPYM(h,p,3,3);
 
     cvWarpPerspective(ipl_s, ipl_d, h, CV_INTER_LINEAR+CV_WARP_FILL_OUTLIERS, cvScalarAll(g) );
 
     cvReleaseImageHeader(&ipl_s);
     cvReleaseImageHeader(&ipl_d);
 
-#undef AT
 }
 
 //---------------------------------------------------
 
 
 void opencv_warp32f(float g, int r, int c, double*p, IMGSZ(s),IMGSZ(d)) {
-#define AT(i,j) (p[(i)*c+(j)]) 
 
     IPL(s,32,1)
     IPL(d,32,1)
 
     CvMat* h = cvCreateMat(3, 3, CV_32F);
-    cvSetReal2D(h, 0, 0, AT(0,0));
-    cvSetReal2D(h, 0, 1, AT(0,1));
-    cvSetReal2D(h, 0, 2, AT(0,2));
-    cvSetReal2D(h, 1, 0, AT(1,0));
-    cvSetReal2D(h, 1, 1, AT(1,1));
-    cvSetReal2D(h, 1, 2, AT(1,2));
-    cvSetReal2D(h, 2, 0, AT(2,0));
-    cvSetReal2D(h, 2, 1, AT(2,1));
-    cvSetReal2D(h, 2, 2, AT(2,2));
+    COPYM(h,p,3,3);
 
     cvWarpPerspective(ipl_s, ipl_d, h, CV_INTER_LINEAR+CV_WARP_FILL_OUTLIERS, cvScalarAll(g) );
 
     cvReleaseImageHeader(&ipl_s);
     cvReleaseImageHeader(&ipl_d);
 
-#undef AT
 }
 
 //-----------------------------------------------
 
 void opencv_warp8u3(float g, int r, int c, double*p, IMGSZ(s),IMGSZ(d)) {
-#define AT(i,j) (p[(i)*c+(j)]) 
 
     IPL(s,8,3)
     IPL(d,8,3)
 
     CvMat* h = cvCreateMat(3, 3, CV_32F);
-    cvSetReal2D(h, 0, 0, AT(0,0));
-    cvSetReal2D(h, 0, 1, AT(0,1));
-    cvSetReal2D(h, 0, 2, AT(0,2));
-    cvSetReal2D(h, 1, 0, AT(1,0));
-    cvSetReal2D(h, 1, 1, AT(1,1));
-    cvSetReal2D(h, 1, 2, AT(1,2));
-    cvSetReal2D(h, 2, 0, AT(2,0));
-    cvSetReal2D(h, 2, 1, AT(2,1));
-    cvSetReal2D(h, 2, 2, AT(2,2));
+    COPYM(h,p,3,3);
 
     cvWarpPerspective(ipl_s, ipl_d, h, CV_INTER_LINEAR+CV_WARP_FILL_OUTLIERS, cvScalarAll(g) );
 
     cvReleaseImageHeader(&ipl_s);
     cvReleaseImageHeader(&ipl_d);
 
-#undef AT
 }
 
 
