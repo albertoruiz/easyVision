@@ -7,7 +7,9 @@ module Contours.CLK (
     lkd,
     refineProjective,
     refineDeformable,
-    homographyFromContours
+    homographyFromContours,
+    diffCont,
+    warpStep, projective
 )where
 
 import Numeric.LinearAlgebra hiding (hess)

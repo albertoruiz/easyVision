@@ -24,6 +24,7 @@ library
     hs-source-dirs:     src
 
     Exposed-modules:    Contours.CLK
+                        Contours.CLKP
 
     ghc-prof-options:   -auto-all
 
