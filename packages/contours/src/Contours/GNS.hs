@@ -1,7 +1,7 @@
 module Contours.GNS(
     GN,
     prepareGNS, prepareGNP,
-    stepGN)
+    stepGN, stepGN')
 where
 
 import Util.Geometry
@@ -51,6 +51,24 @@ stepGN (f0,j0,fun) tgt = (res, norm2 err)
     err = fun tgt - f0
     dx = (trans j0 <> j0) <\> (trans j0 <> err)
     res = transPol (inv (mktP (toList dx))) tgt
+
+
+type M = Matrix Double
+type V = Vector Double
+
+stepGN' :: GN -> (Polyline, M, V, Double) -> (Polyline, M, V, Double)
+stepGN' (f0,j0,fun) (t,h,err,_) = (t', h', err', norm2 err')
+  where
+    dx = (trans j0 <> j0) <\> (trans j0 <> err)
+--    dh = mktP (toList (-dx))
+--    t' = transPol (inv dh) t
+--    h' = h <> dh
+
+    dh = mktP (toList dx)
+    t' = transPol (inv dh) t
+    h' = h <> dh
+
+    err' = fun t' - f0
 
 --------------------------------------------------------------------------------
 

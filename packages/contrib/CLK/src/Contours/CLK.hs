@@ -7,6 +7,7 @@ module Contours.CLK (
     lkd,
     refineProjective,
     refineDeformable,
+    refineHN,
     homographyFromContours,
     diffCont,
     warpStep, projective
@@ -19,11 +20,11 @@ import Util.Homogeneous ( scaling )
 import Util.Geometry
     ( Matrixlike(toMatrix), segmentLength, distPoints )
 import Util.Misc ( Mat, Vec)
-import Util.Debug( debug )
+import Util.Debug( debug, debugMat )
 import Util.Optimize ( optimize2 )
 import Data.List ( partition, transpose, foldl' )
 import Contours.Clipping ( deltaContour )
-import Control.Arrow ( Arrow((***)) )
+import Control.Arrow ( Arrow((***), (&&&)) )
 
 
 ----------------------------------------------------------------------
@@ -363,7 +364,7 @@ scaledesp = (scaledespI,mktSD)
 warpStep :: Model -> Polyline -> (Mat,Polyline) -> ((Mat,Polyline),Double)
 warpStep (ps,mk) a = f
   where
-    h = {- debugMat "H" 2 id $ -} hess ps (DefCont a [] [])
+    h = debug "H" (rows &&& cols) $ {- debugMat "H" 2 id $ -} hess ps (DefCont a [] [])
     mih = - inv h
     f (s,b) = ((t<>s,r), {- debug "diff" id . -} sum . map (abs.snd) $ da)
       where
@@ -450,6 +451,12 @@ lkd model x = LKDResult{..}
     lkdAlignment = transPol lkdHomography baseDef
     lkdSource = baseDef
 
+
+refineHN n a b = LKDResult{..}
+  where
+    ((lkdHomography,lkdAlignment),lkdErrors) = optimize2 1E-3 1 n (warpStep projective a) (ident 3, b)
+    lkdAlphas = []
+    lkdSource = a
 
 
 -- h takes proto to target, giving xor err

@@ -3,7 +3,7 @@
 module Contours.Matching(
     Shape(..), ShapeMatch(..),
     shape, shapeMatch, shapeMatches,
-    elongated, isEllipse, stepGN
+    elongated, isEllipse, stepGN, stepGN'
 ) where
 
 import Control.Arrow((***),(&&&))
@@ -54,6 +54,7 @@ data Shape = Shape { shapeContour  :: Polyline
                    , kHypsMirror   :: [(CVec,Mat)]
                    , shapeGNS      :: GN
                    , shapeGNP      :: GN
+                   , gRefiner      :: Int -> Polyline -> (Mat,Double)
                    }
 
 
@@ -111,6 +112,8 @@ analyzeShape mW (p,(mx,my,cxx,cyy,cxy))
     shapeGNS = prepareGNS (1+4*3) p
     shapeGNP = prepareGNP 20 p
     
+    gRefiner = undefined
+
 ----------------------------------------------------------------------
 
 data ShapeMatch = ShapeMatch
