@@ -10,7 +10,7 @@ main = do
     ipp_lnk <- getEnv "IPP_LINK"
     putStrLn ipp_sha
     incdir <- getInclude
-    writeFile "imagproc.buildinfo" $ unlines
+    writeFile "hVision-ipp.buildinfo" $ unlines
         [ incdir
         , "include-dirs: "   ++ipp_inc
         , "extra-lib-dirs: " ++ f ipp_sha

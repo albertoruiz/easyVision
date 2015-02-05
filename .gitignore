@@ -13,4 +13,5 @@ data
 packages/devel
 packages/newdevel
 projects/examples/tests
+lib/ippicv_lnx
 

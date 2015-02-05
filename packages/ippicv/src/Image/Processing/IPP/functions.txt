@@ -1,0 +1,4 @@
+ipp.h ippiRGBToGray_8u_C3C1R
+ipp.h ippiCopy_32f_C1R
+ipp.h ippiCopy_8u_C1R
+

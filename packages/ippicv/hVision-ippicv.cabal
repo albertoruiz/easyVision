@@ -1,0 +1,60 @@
+Name:               hVision-ippicv
+Version:            0.1
+License:            LGPL
+License-file:       LICENSE
+Author:             Alberto Ruiz
+Maintainer:         Alberto Ruiz <aruiz@um.es>
+Stability:          experimental
+Homepage:           https://github.com/albertoruiz/easyVision
+Synopsis:           Image processing based on IPPICV
+Description:
+ Image processing using the freely available subset of Intel's IPP for OpenCV
+
+Category:           Math
+tested-with:        GHC ==7.8.3
+
+cabal-version:      >=1.2
+build-type:         Custom
+
+extra-source-files: configure configure.hs
+                    src/Image/Processing/IPP/adapter.hs
+                    src/Image/Processing/IPP/Parser.hs
+                    src/Image/Processing/IPP/functions.txt
+                    src/Image/Processing/IPP/ptr_adapt.h
+
+extra-tmp-files:    hVision-ippicv.buildinfo
+
+library
+    Build-Depends:      base,
+                        hVision-base,
+                        bytestring,
+                        artools
+
+    hs-source-dirs:     src
+
+    exposed-modules:    Image.Processing.IPPICV
+
+
+    other-modules:
+                        Image.Processing.IPP.Pure
+                        Image.Processing.IPP.AdHoc                        
+                        Image.Processing.IPP.Wrappers
+                        Image.Processing.IPP.Adapt
+                        Image.Processing.IPP.Core
+                        Image.Processing.IPP.Structs
+                        Image.Processing.IPP.AutoGen
+                        Image.Processing.IPP.Auto
+
+
+    c-sources:          
+                        src/Image/Processing/IPP/auxIpp.c
+                        src/Image/Processing/IPP/ptr_adapt.c
+
+    cc-options:         -Wall
+    ghc-prof-options:   -auto-all
+
+    ghc-options:        -Wall -fno-warn-missing-signatures
+
+    extra-libraries:    ippicv
+
+
