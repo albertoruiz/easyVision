@@ -2,7 +2,7 @@ IPPICV='http://sourceforge.net/projects/opencvlibrary/files/3rdparty/ippicv/ippi
 
 pkgs=tools base gui geometry classifier contours custom contrib/examples contrib/opencv contrib/clipping contrib/hcontours contrib/CLK ippicv ipp hvision devel
 
-getipp:
+getippicv:
 	if [ ! -e ../lib/ippicv_lnx ]; then   \
 	  cd ../lib;                          \
 	  wget $(IPPICV);                     \
