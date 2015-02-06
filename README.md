@@ -1,7 +1,7 @@
 Haskell packages for Computer Vision
 ====================================
 
-This is an experimental [Haskell][haskell] framework for fast prototyping of computer vision and image processing applications. We take advantage of the expressive power of functional programming to write elegant programs supported by standard low level specialized libraries.
+This is an experimental Haskell framework for fast prototyping of computer vision and image processing applications. We take advantage of the expressive power of functional programming to write elegant programs supported by standard low level specialized libraries.
 
 [help](http://dis.um.es/~alberto/ev/help.html)
 
@@ -27,7 +27,7 @@ This branch works better with ghc >= 7.8.3
         export EASYVISION=/your/path/to/easyVision/
         export LD_LIBRARY_PATH=$EASYVISION/lib/lib32
 
-2. (IPP 7.1) Add the following environment variables to `~/.bashrc`:
+2. (optional, IPP 7.1) Add the following environment variables to `~/.bashrc`:
 
         export IPP_INC=/opt/intel/composerxe/ipp/include
         export IPP_SHARED="/opt/intel/ipp/lib/ia32/:/opt/intel/lib/ia32/"
