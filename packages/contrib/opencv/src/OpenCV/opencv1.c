@@ -1,6 +1,7 @@
 #define CV_NO_BACKWARD_COMPATIBILITY
 
 #include <cv.h>
+#include <highgui.h>
 #include <stdio.h>
 #include "wrappers.h"
 
@@ -108,5 +109,31 @@ void hough(IMGSZ(t),int fmax, int* fn, TSegment* res) {
 
     cvReleaseImageHeader(&ipl_t);
     cvReleaseMemStorage(&storage);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+void * openOCVC(int videodevice, int* width, int* height, int* fps){
+
+    CvCapture* capture = cvCreateCameraCapture(videodevice);
+    
+    cvSetCaptureProperty(capture,CV_CAP_PROP_FRAME_WIDTH,*width);
+    cvSetCaptureProperty(capture,CV_CAP_PROP_FRAME_HEIGHT,*height);
+    
+    *width = cvGetCaptureProperty(capture,CV_CAP_PROP_FRAME_WIDTH);
+    *height = cvGetCaptureProperty(capture,CV_CAP_PROP_FRAME_HEIGHT);
+
+    return capture;
+}
+
+int grabOCVC(CvCapture * v, IMGSZ(d)) {
+    
+    IPL(d,8,3)
+    IplImage* frame;
+    
+    frame = cvQueryFrame(v);
+    cvCvtColor(frame,ipl_d,CV_BGR2RGB);
+    
+    return 0;
 }
 

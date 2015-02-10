@@ -7,7 +7,8 @@ module OpenCV(
   solvePNP,
   findHomography,
   surf,
-  warp8u, warp8u3, warp32f
+  warp8u, warp8u3, warp32f,
+  webcam
 ) where
 
 import Image.Devel
@@ -174,4 +175,34 @@ surf fmax imag = unsafePerformIO $ do
     free pn
     free pf
     return r
+
+--------------------------------------------------------------------------------
+
+foreign import ccall "openOCVC"
+    c_openOCVC :: CInt -> Ptr CInt -> Ptr CInt -> Ptr CInt -> IO (Ptr ())
+
+foreign import ccall "grabOCVC"
+    c_grabOCVC :: Ptr () -> RawImageS I8u3 (IO CInt)
+
+
+webcam
+  :: String  -- ^ device
+  -> Size    -- ^ requested size
+  -> Int     -- ^ frame rate
+  -> IO (IO (Maybe ImageRGB))
+webcam d (Size h w) fps = do
+    let dev = read [last d]
+    pw <- new (fi w)
+    ph <- new (fi h)
+    pf <- new (fi fps)
+    han <- c_openOCVC dev pw ph pf
+    tw <- ti <$> peek pw
+    th <- ti <$> peek ph
+    mapM_ free [pw,ph,pf]
+    return $ do
+        im <- newImage undefined (Size th tw)
+        ok <- c_grabOCVC han `appS` im
+        if ok==0
+          then return (Just im)
+          else return Nothing
 
