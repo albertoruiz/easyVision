@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include "wrappers.h"
 
-void opencv_canny(IMGSZ(s),IMGSZ(d)) {
+int opencv_canny(IMGSZ(s),IMGSZ(d)) {
 
     IPL(s,8,1)
     IPL(d,8,1)
@@ -14,6 +14,8 @@ void opencv_canny(IMGSZ(s),IMGSZ(d)) {
 
     cvReleaseImageHeader(&ipl_s);
     cvReleaseImageHeader(&ipl_d);
+    
+    return 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -22,7 +24,7 @@ void opencv_canny(IMGSZ(s),IMGSZ(d)) {
 #define COPYM(DST,SRC,R,C) { int r, c; for (r=0; r<R; r++) for (c=0; c<C; c++) cvSetReal2D(DST,r,c, ATM(SRC,C,r,c)); }
 
 
-void opencv_warp8u(int g, int r, int c, double*p, IMGSZ(s),IMGSZ(d)) {
+int opencv_warp8u(unsigned char g, int r, int c, double*p, IMGSZ(s),IMGSZ(d)) {
 
     IPL(s,8,1)
     IPL(d,8,1)
@@ -34,13 +36,15 @@ void opencv_warp8u(int g, int r, int c, double*p, IMGSZ(s),IMGSZ(d)) {
 
     cvReleaseImageHeader(&ipl_s);
     cvReleaseImageHeader(&ipl_d);
+    
+    return 0;
 
 }
 
 //---------------------------------------------------
 
 
-void opencv_warp32f(float g, int r, int c, double*p, IMGSZ(s),IMGSZ(d)) {
+int opencv_warp32f(float g, int r, int c, double*p, IMGSZ(s),IMGSZ(d)) {
 
     IPL(s,32,1)
     IPL(d,32,1)
@@ -52,12 +56,14 @@ void opencv_warp32f(float g, int r, int c, double*p, IMGSZ(s),IMGSZ(d)) {
 
     cvReleaseImageHeader(&ipl_s);
     cvReleaseImageHeader(&ipl_d);
+    
+    return 0;
 
 }
 
 //-----------------------------------------------
 
-void opencv_warp8u3(float g, int r, int c, double*p, IMGSZ(s),IMGSZ(d)) {
+int opencv_warp8u3(unsigned char g, int r, int c, double*p, IMGSZ(s),IMGSZ(d)) {
 
     IPL(s,8,3)
     IPL(d,8,3)
@@ -69,6 +75,8 @@ void opencv_warp8u3(float g, int r, int c, double*p, IMGSZ(s),IMGSZ(d)) {
 
     cvReleaseImageHeader(&ipl_s);
     cvReleaseImageHeader(&ipl_d);
+    
+    return 0;
 
 }
 

@@ -1,5 +1,8 @@
 #define CV_NO_BACKWARD_COMPATIBILITY
 
+#ifdef OPENCV24
+#include "opencv2/nonfree/features2d.hpp"
+#endif
 #include <cv.h>
 #include <cstdio>
 
