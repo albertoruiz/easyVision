@@ -1,5 +1,3 @@
-#define CV_NO_BACKWARD_COMPATIBILITY
-
 #include <cv.h>
 #include <highgui.h>
 #include <stdio.h>
@@ -92,7 +90,11 @@ void hough(IMGSZ(t),int fmax, int* fn, TSegment* res) {
     CvMemStorage* storage = cvCreateMemStorage(0);
     CvSeq* lines = 0;
 
+    #ifdef OPENCV3
+    lines = cvHoughLines2( ipl_t, storage, CV_HOUGH_PROBABILISTIC, 1, CV_PI/180, 50, 50, 10, 0, CV_PI );
+    #else
     lines = cvHoughLines2( ipl_t, storage, CV_HOUGH_PROBABILISTIC, 1, CV_PI/180, 50, 50, 10 );
+    #endif
 
     *fn = MIN(fmax,lines->total);
 

@@ -1,9 +1,22 @@
-#define CV_NO_BACKWARD_COMPATIBILITY
-
 #ifdef OPENCV24
 #include "opencv2/nonfree/features2d.hpp"
 #endif
+
+#ifdef OPENCV3
+#include "opencv2/objdetect.hpp"
+#include "opencv2/calib3d.hpp"
+#include "opencv2/imgcodecs.hpp"
+#include "opencv2/videoio.hpp"
+#include "opencv2/highgui.hpp"
+#include "opencv2/imgproc.hpp"
+#include "opencv2/features2d.hpp"
+#include "opencv2/core/utility.hpp"
+#include "opencv2/videoio/videoio_c.h"
+#include "opencv2/highgui/highgui_c.h"
+#else
 #include <cv.h>
+#endif
+
 #include <cstdio>
 
 using namespace std;
@@ -31,7 +44,7 @@ void cascadeDetect(CascadeClassifier * cascade,
     IPL(t,8,1)
 
     Mat frame;
-    frame = ipl_t;
+    frame = cvarrToMat(ipl_t);
 
     //equalizeHist( frame, frame);
 
@@ -118,16 +131,21 @@ void surf( GIMS(char,t),
            int fmax, int* fn, TPoint* res) {
 
     double minHessian = 400;
+    
+#ifndef OPENCV3
     static SurfFeatureDetector detector( minHessian );
+#endif
     
     IPL(t,8,1)
 
     Mat frame;
-    frame = ipl_t;
+    frame = cvarrToMat(ipl_t);
 
     std::vector<KeyPoint> keypoints;
 
+#ifndef OPENCV3
     detector.detect( frame, keypoints );
+#endif
 
     int i = 0;
 
