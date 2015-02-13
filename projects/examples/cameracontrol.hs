@@ -1,6 +1,6 @@
 {-# LANGUAGE TemplateHaskell, RecordWildCards #-}
 
-import Vision.GUI
+import Vision.GUI.Simple
 import System.Process
 import Data.IORef
 import Control.Monad(join,when)
