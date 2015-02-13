@@ -1,6 +1,7 @@
 #include "v4l2uvc.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 struct vdIn * openUVC(char * videodevice, int* width, int* height, int* fps){
 
@@ -17,6 +18,10 @@ struct vdIn * openUVC(char * videodevice, int* width, int* height, int* fps){
     *width  = videoIn->width;
     *height = videoIn->height;
     *fps    = videoIn->fps;
+
+    // magic to avoid strange v4l2 error "timer expired"
+    usleep(5000000);
+    uvcGrab(videoIn);
 
     return videoIn;
 }

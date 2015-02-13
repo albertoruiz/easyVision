@@ -3,6 +3,7 @@
 #include <cv.h>
 #include <highgui.h>
 #include <stdio.h>
+#include <unistd.h>
 #include "wrappers.h"
 
 int opencv_canny(IMGSZ(s),IMGSZ(d)) {
@@ -123,6 +124,9 @@ void * openOCVC(int videodevice, int* width, int* height, int* fps){
     *width = cvGetCaptureProperty(capture,CV_CAP_PROP_FRAME_WIDTH);
     *height = cvGetCaptureProperty(capture,CV_CAP_PROP_FRAME_HEIGHT);
 
+    // magic to avoid strange v4l2 error "timer expired"
+    usleep(5000000);
+    cvQueryFrame(capture);
     return capture;
 }
 
