@@ -1,7 +1,7 @@
 module Contours.GNS(
     GN,
     prepareGNS, prepareGNP,
-    stepGN, stepGN')
+    stepGN, stepGN', featF, mktP)
 where
 
 import Util.Geometry
@@ -17,11 +17,10 @@ import Numeric.GSL.Differentiation
 import Contours.Resample
 
 
-feat :: Polyline -> Int -> Double
-feat cont = h
+featF :: Double -> (Int -> Complex Double) -> (Int -> Double)
+featF a fou = h
   where
-    fou = fourierPL cont
-    g = normalizeStart fou
+    g = normalizeStart ((*cis a) . fou) 
 
     h k = (sel . g) j
       where
@@ -30,6 +29,12 @@ feat cont = h
             | otherwise = realPart
         sgn | (k+2) `mod` 4 > 1 = -1
             | otherwise         = 1
+
+
+feat :: Polyline -> Int -> Double
+feat cont = featF 0 fou
+  where
+    fou = fourierPL cont
 
 
 type GN = (Vector Double, Matrix Double, Polyline -> Vector Double)
@@ -60,9 +65,6 @@ stepGN' :: GN -> (Polyline, M, V, Double) -> (Polyline, M, V, Double)
 stepGN' (f0,j0,fun) (t,h,err,_) = (t', h', err', norm2 err')
   where
     dx = (trans j0 <> j0) <\> (trans j0 <> err)
---    dh = mktP (toList (-dx))
---    t' = transPol (inv dh) t
---    h' = h <> dh
 
     dh = mktP (toList dx)
     t' = transPol (inv dh) t

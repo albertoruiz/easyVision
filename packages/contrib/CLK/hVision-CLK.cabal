@@ -25,6 +25,7 @@ library
 
     Exposed-modules:    Contours.CLK
                         Contours.CLKP
+                        Contours.Refine
 
     ghc-prof-options:   -auto-all
 

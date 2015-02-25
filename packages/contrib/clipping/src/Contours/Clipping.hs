@@ -28,7 +28,7 @@ where
 
 import Util.Geometry
 import Contours.Base(orientedArea,rev)
-import Util.Debug(debug)
+--import Util.Debug(debug)
 
 import Contours.ClipRaw
 
@@ -44,7 +44,7 @@ clip m a b = map (fst.fst) (fixOrientation p)
 
 deltaContour :: Polyline -> Polyline -> [((Polyline,Double),[Polyline])]
 deltaContour a b | ins == 0 = fixOrientation p
-                 | otherwise = debug "disj!" (const ()) donothing
+                 | otherwise = {-debug "disj!" (const ()) -} donothing
   where
     (p,_n,ins) = preclip ClipXOR a b
     donothing = [((undefined,0),[Open $ clo $ polyPts b])] --FIXME
