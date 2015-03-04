@@ -7,6 +7,7 @@ module Image.Devel(
     RawImageS, appS,
     Wrap11S, wrap11S,
     MAT, withCMatrix, appMat,
+    VEC, withVector, appVec,
     fi, ti,
     (//), checkFFI,
     flattenImage,
@@ -33,7 +34,8 @@ import Image.Convert
 import Data.Packed.Development(fi)
 import Foreign.ForeignPtr(withForeignPtr)
 import Foreign.ForeignPtr.Unsafe(unsafeForeignPtrToPtr)
-import Numeric.LinearAlgebra.HMatrix(Matrix,flatten,rows,cols)
+import Numeric.LinearAlgebra.HMatrix(Matrix,flatten,rows,cols,Vector)
+import qualified Numeric.LinearAlgebra.HMatrix as M
 import Numeric.LinearAlgebra.Devel(orderOf, MatrixOrder(..),unsafeToForeignPtr)
 
 appI :: RawImage p t -> Image p -> t
@@ -95,6 +97,22 @@ appMat f m = f r c p
     r = fi (rows m)
     c = fi (cols m)
     (fp,_,_) = unsafeToForeignPtr (flatten m)
+    p = unsafeForeignPtrToPtr fp
+
+--------------------------------------------------------------------------------
+
+type VEC t = CInt -> Ptr Double -> t
+
+withVector :: Vector Double -> IO b -> IO b
+withVector v act = withForeignPtr fp $ \_ -> act
+  where
+    (fp,_,_) = unsafeToForeignPtr v
+
+appVec :: VEC t -> Vector Double -> t
+appVec f v = f n p
+  where
+    n = fi (M.size v)
+    (fp,_,_) = unsafeToForeignPtr v
     p = unsafeForeignPtrToPtr fp
 
 --------------------------------------------------------------------------------

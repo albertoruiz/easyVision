@@ -8,6 +8,7 @@ module OpenCV(
   findHomography,
   surf,
   warp8u, warp8u3, warp32f,
+  undistort8u,
   webcam
 ) where
 
@@ -50,6 +51,20 @@ canny = wrap11S "opencv_canny" c_opencv_canny
 
 foreign import ccall "opencv_canny"
     c_opencv_canny :: RawImageS I8u (RawImageS I8u (IO CInt))
+
+------------------------------------------------------------------
+
+foreign import ccall "opencv_undistort8u"
+    c_opencv_undistort8u :: MAT (VEC (MAT (RawImageS I8u (RawImageS I8u (IO CInt)))))
+
+undistort8u :: Matrix Double -> Vector Double -> Matrix Double -> Image I8u -> Image I8u
+undistort8u k d nk x = unsafePerformIO $ do
+    r <- newImage undefined (size x)
+    let cm  = cmat k
+        cm2 = cmat nk
+    withCMatrix cm $ withVector d $ withCMatrix cm2 $ withImage x $ withImage r $ checkFFI "opencv_undistort8u" $
+        c_opencv_undistort8u `appMat` cm `appVec` d `appMat` cm2 `appS` x `appS` r
+    return r
 
 ------------------------------------------------------------------
 

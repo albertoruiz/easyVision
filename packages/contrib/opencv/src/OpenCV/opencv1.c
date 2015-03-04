@@ -23,6 +23,31 @@ int opencv_canny(IMGSZ(s),IMGSZ(d)) {
 #define ATM(m,c,i,j) (p[(i)*c+(j)])
 #define COPYM(DST,SRC,R,C) { int r, c; for (r=0; r<R; r++) for (c=0; c<C; c++) cvSetReal2D(DST,r,c, ATM(SRC,C,r,c)); }
 
+int opencv_undistort8u(int r, int c, double*p, int nr, double*dr, int r2, int c2, double*p2, IMGSZ(s),IMGSZ(d)) {
+
+    IPL(s,8,1)
+    IPL(d,8,1)
+
+    CvMat* k = cvCreateMat(3, 3, CV_32F);
+    COPYM(k,p,3,3);
+    CvMat* nk = cvCreateMat(3, 3, CV_32F);
+    COPYM(nk,p2,3,3);
+    CvMat* q = cvCreateMat(nr, 1, CV_32F);
+    {int j; for (j=0;j<nr;j++) cvSetReal1D(q,j,dr[j]);}
+
+    cvUndistort2(ipl_s, ipl_d, k, q , nk);
+
+    cvReleaseImageHeader(&ipl_s);
+    cvReleaseImageHeader(&ipl_d);
+    
+    return 0;
+
+}
+
+//---------------------------------------------------
+
+
+
 
 int opencv_warp8u(unsigned char g, int r, int c, double*p, IMGSZ(s),IMGSZ(d)) {
 
