@@ -2,14 +2,14 @@
 
 module Contours.Matching(
     Shape(..), ShapeMatch(..),
-    shape, shapeMatches,
+    shape, shapeMatches, shapeMatch,
     elongated, isEllipse,
     GN, prepareGNS, stepGN, stepGN'
 ) where
 
 import Control.Arrow((***),(&&&))
 import Numeric.LinearAlgebra
-import Numeric.LinearAlgebra.Util(norm,diagl)
+import Numeric.LinearAlgebra.Util(norm,diagl,(¦),(¿))
 import Text.Printf(printf)
 import Data.List(minimumBy,sortBy,groupBy)
 import Util.Misc(Mat,Vec,degree,posMax,angleDiff)
@@ -27,6 +27,8 @@ import Control.Applicative((<$>))
 import Data.Maybe(isJust)
 import Data.Function(on)
 import Contours.GNS
+import Contours.Resample
+import Util.Geometry(datMat)
 
 
 shape :: Int -> Polyline -> Maybe Shape
@@ -57,6 +59,8 @@ data Shape = Shape { shapeContour  :: Polyline
                    , gRefiner      :: Int -> Polyline -> (Mat,Double)
                    , wj0, wj0i     :: Mat
                    , wf0           :: Vec
+                   , rspm3,rspm4   :: Mat
+                   , rsp           :: Polyline
                    }
 
 
@@ -114,7 +118,12 @@ analyzeShape mW (p,(mx,my,cxx,cyy,cxy))
     
     (wf0,wj0,_) = prepareGNS (1+4*3) whiteShape
     wj0i = (trans wj0 <> wj0) <\> (trans wj0)
-
+    
+    prs = Closed (resample 10 p)
+    rspm4 = (datMat (polyPts prs) ¦ 0) ¦ 1
+    rspm3 = rspm4 ¿ [0,1,3]
+    
+    rsp = Closed (resample 50 p)
 
 ----------------------------------------------------------------------
 
@@ -123,9 +132,7 @@ data ShapeMatch = ShapeMatch
     , label      :: String
     , target     :: Shape
     , invDist    :: Double
-    , ksDist     :: Double
     , alignDist  :: Double
-    , p1Dist     :: Double
     , wt, wp, wa :: Mat
     , wh         :: Mat
     , waRot      :: Double
@@ -159,7 +166,6 @@ shapeMatches prots c = concatMap (sm c) prots
         label = l
         target = x
         invDist = (dist `on` invAffine) x y
-        ksDist = (dist `on` invKS) x y
         dist a b = norm (a-b)
         (alignDist,((ft,(wt,at)),(fp,(wp,ap)))) = minimumBy (compare `on` fst) $
             [ (d ht hp, (ht,hp)) | hp <- take 4 $ kHyps proto, ht <- take 1 $ kHyps target]
@@ -171,11 +177,30 @@ shapeMatches prots c = concatMap (sm c) prots
         err   = fromList (map (featF (ap-at) (wfou target)) [0..13]) - wf0 proto
         delta = wj0i proto <> err
         dh = mktP (toList delta)
-        
-        p1Dist = norm2 $ wj0 proto <> delta - err
-        
-        
-   
+
+---------------------------------------------------------------------
+
+shapeMatch :: [(Shape,String)] -> Shape -> [ShapeMatch]
+shapeMatch prots c = map (match c) prots
+  where
+    match x (y,l) = ShapeMatch {..}
+      where
+        proto = y
+        label = l
+        target = x
+        invDist = (dist `on` invAffine) x y
+        dist a b = norm (a-b)
+        (alignDist,((ft,(wt,at)),(fp,(wp,ap)))) = minimumBy (compare `on` fst) $
+            [ (d ht hp, (ht,hp)) | hp <- take 4 $ kHyps proto, ht <- take 1 $ kHyps target]
+        d (u,_) (v,_) = pnorm PNorm2 (u-v)
+
+        wa = inv (wt <> shapeWhitener target) <> wp <> shapeWhitener proto
+        waRot = rotTrans wa
+        wh = inv (wt <> shapeWhitener target) <> wp <> dh <> shapeWhitener proto
+
+        err   = fromList (map (featF (ap-at) (wfou target)) [0..13]) - wf0 proto
+        delta = wj0i proto <> err
+        dh = mktP (toList delta)
 
 ----------------------------------------------------------------------  
 

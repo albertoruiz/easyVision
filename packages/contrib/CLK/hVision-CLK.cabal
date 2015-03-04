@@ -19,7 +19,7 @@ extra-source-files:
 
 library
     Build-Depends:      base, hVision-base, hVision-contours, hclipping,
-                        hmatrix, hVision-geometry, artools
+                        hmatrix, hVision-geometry, artools, hVision-opencv
 
     hs-source-dirs:     src
 

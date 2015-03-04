@@ -1,7 +1,7 @@
 module Contours.GNS(
     GN,
     prepareGNS, prepareGNP,
-    stepGN, stepGN', featF, mktP)
+    stepGN, stepGN', featF, mktP, featRS)
 where
 
 import Util.Geometry
@@ -116,6 +116,8 @@ refinePose n cam0 tgt prt = map model (iterate work zerot)
 
 -- resampled features
 
+featRS s c = flatten (datMat (resample s c))
+
 prepareGNP :: Int -> Polyline -> GN
 prepareGNP n prt = (f0,j0,fun)
   where
@@ -126,7 +128,7 @@ prepareGNP n prt = (f0,j0,fun)
     dimfeat = [0..n-1]
     zerot = replicate 8 0
     
-    featRS s c = flatten (datMat (resample s c))
+
     
     feat n cont = h
       where

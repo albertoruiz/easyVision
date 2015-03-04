@@ -1,5 +1,6 @@
 module Contours.Refine (
-    prepro, refineMatch, normalizedXORError
+    prepro, normalizedXORError,
+    refineH, refineP
 )where
 
 import Contours
@@ -10,6 +11,7 @@ import Vision(cameraFromHomogZ0,kgen,refineNewton)
 import Util.Geometry(datMat,homog,segmentLength)
 import Control.Arrow((&&&))
 import Util.Misc(stdpix)
+import OpenCV
 
 
 prepro :: Polyline -> Maybe Shape
@@ -19,16 +21,9 @@ prepro = fmap andMore . shape 10
                                            else (,) (ident 3) . last . lkdErrors . refineHN 0 (shapeContour s)
                   }
 
-refineMatch
-    :: Int
-    -> Int
-    -> Int
-    -> Int
-    -> Double
-    -> ShapeMatch
-    -> (Matrix Double, Matrix Double)
 
-refineMatch k1 k2 k3 k4 f r = (h,p)
+refineH :: Int -> Int -> ShapeMatch -> Matrix Double
+refineH k1 k2 r = h
   where
     prep@(f0,_j0,ffeat) = shapeGNS (proto r)   -- or shapeGNP
     hInit = wh r
@@ -41,15 +36,27 @@ refineMatch k1 k2 k3 k4 f r = (h,p)
     (hxor,_errxor) = gRefiner (proto r) k2 tH
     h = rHomog <> inv hxor
 
+
+refineP :: Int -> Int -> Double -> ShapeMatch -> Matrix Double -> Matrix Double
+refineP k3 k4 f r h = p
+  where
+    model = shapeContour (proto r)
+    obs = shapeContour (target r)
     mbpose0 = cameraFromHomogZ0 (Just f) h
-    rPose = case mbpose0 of
+    rPose' = case mbpose0 of
               Just rPose0 -> refineNewton k3 rPose0 views points
               Nothing     -> kgen f
        where
-         pproj  = transPol h prs
-         prs    = Closed (resample 10 model)
-         views  = homog $ datMat (polyPts pproj)
-         points = (datMat (polyPts prs) ¦ 0) ¦ 1
+         views  = rspm3 (proto r) <> tr h
+         points = rspm4 (proto r)
+
+    rPose = solvePNP (kgen f) views points
+      where
+        pproj  = transPol h prs
+        prs    = Closed (resample 10 model)
+        views  = datMat (polyPts pproj)
+        points = datMat (polyPts prs) ¦ 0
+
 
     ik = kgen (1/f)
 
@@ -57,8 +64,8 @@ refineMatch k1 k2 k3 k4 f r = (h,p)
     norobs = transPol ik obs
     p = kgen f <> fillr3 ((iterate refine c0)!!k4)
       where
-        refine c = poseStep rp c norobs
-        rp = Closed (resample 50 model)
+        refine c = poseStep rs c norobs
+        rs = rsp (proto r)
 
 
 fillr3 :: Matrix Double -> Matrix Double
@@ -79,5 +86,5 @@ normalizedXORError predicted observed
 
     lpred = perimeter predicted
     lobs  = perimeter observed
-    ok = abs (lpred-lobs)/lobs < 0.1
+    ok = abs (lpred-lobs)/lobs < 0.25
 
