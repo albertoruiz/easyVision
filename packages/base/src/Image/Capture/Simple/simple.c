@@ -2,10 +2,6 @@
 #include <stdlib.h>
 #include "wrappers.h"
 
-#define R(C,D,E) CLIP(( 298 * (C)             + 409 * (E) + 128) >> 8)
-#define G(C,D,E) CLIP(( 298 * (C) - 100 * (D) - 208 * (E) + 128) >> 8)
-#define B(C,D,E) CLIP(( 298 * (C) + 516 * (D)             + 128) >> 8)
-
 
 int exampleInvert(IM1(src), IM1(dst)) {
     int r,c;
@@ -14,6 +10,33 @@ int exampleInvert(IM1(src), IM1(dst)) {
     }
     return 0;
 }
+
+int setroi8u(unsigned char v, IM1(dst)) {
+    int r,c;
+    TRAV(dst,0,r,c) {
+        P(dst,r,c) = v;
+    }
+    return 0;
+}
+
+int setroi8u3(unsigned char v1, unsigned char v2, unsigned char v3, IM3(dst)) {
+    int r,c;
+    TRAV(dst,0,r,c) {
+        PM(dst,r,c,0)=v1;
+        PM(dst,r,c,1)=v2;
+        PM(dst,r,c,2)=v3;
+    }
+    return 0;
+}
+
+int setroi32f(float v, IMF(dst)) {
+    int r,c;
+    TRAV(dst,0,r,c) {
+        PF(dst,r,c) = v;
+    }
+    return 0;
+}
+
 
 int gray2float(IM1(src), IMF(dst)) {
     int r,c;
@@ -78,6 +101,10 @@ int yuyv2gray(IM2(src),IM1(dst)) {
     return 0;
 }
 
+
+#define R(C,D,E) CLIP(( 298 * (C)             + 409 * (E) + 128) >> 8)
+#define G(C,D,E) CLIP(( 298 * (C) - 100 * (D) - 208 * (E) + 128) >> 8)
+#define B(C,D,E) CLIP(( 298 * (C) + 516 * (D)             + 128) >> 8)
 
 int yuyv2rgb(IM2(x),IM3(y)) {
     int k, ks=0, kd=0;
