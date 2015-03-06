@@ -1,13 +1,14 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
+{-# LANGUAGE TypeSynonymInstances #-}
 
 module OpenCV(
   canny,
   hough,
   cascadeClassifier,
   solvePNP,
-  findHomography,
+  findHomography, findHomographyRANSAC, findHomographyLMEDS,
   surf,
-  warp8u, warp8u3, warp32f,
+  warp8u, warp8u3, warp32f, CVPix(..), warp,
   undistort8u,
   webcam
 ) where
@@ -24,19 +25,23 @@ import Data.Packed.Development
 import Numeric.LinearAlgebra
 import Numeric.LinearAlgebra.Util((¦))
 import Util.Homogeneous(rodrigues)
+import Control.Arrow((&&&))
 
 --------------------------------------------------------------------------------
+
+type M = Matrix Double
+type V = Vector Double
 
 data Rect = Rect !Pixel !Size
 
 instance Storable Rect where
   sizeOf _ = 4*sizeOf (undefined::CInt)
   alignment _ = alignment (undefined::CInt)
-  
+
   peek p = do
     let r k = fromIntegral <$> peekElemOff (castPtr p :: Ptr CInt) k
     Rect <$> (Pixel <$> r 0 <*> r 1) <*> (Size <$> r 2 <*> r 3)
-  
+
   poke p (Rect (Pixel r c) (Size h w)) = do
     let s k = pokeElemOff (castPtr p:: Ptr CInt) k . fromIntegral
     s 0 r
@@ -57,7 +62,7 @@ foreign import ccall "opencv_canny"
 foreign import ccall "opencv_undistort8u"
     c_opencv_undistort8u :: MAT (VEC (MAT (RawImageS I8u (RawImageS I8u (IO CInt)))))
 
-undistort8u :: Matrix Double -> Vector Double -> Matrix Double -> Image I8u -> Image I8u
+undistort8u :: M -> V -> M -> Image I8u -> Image I8u
 undistort8u k d nk x = unsafePerformIO $ do
     r <- newImage undefined (size x)
     let cm  = cmat k
@@ -68,7 +73,7 @@ undistort8u k d nk x = unsafePerformIO $ do
 
 ------------------------------------------------------------------
 
-wrap11SHS :: Storable b => String -> MAT (Wrap11S a b) -> Size -> Matrix Double -> Image a -> Image b
+wrap11SHS :: Storable b => String -> MAT (Wrap11S a b) -> Size -> M -> Image a -> Image b
 wrap11SHS msg f sz m x = unsafePerformIO $ do
     r <- newImage undefined sz
     let cm = cmat $ inv (pixelToPointTrans (size r)) <> m <> pixelToPointTrans (size x)
@@ -76,25 +81,72 @@ wrap11SHS msg f sz m x = unsafePerformIO $ do
         f `appMat` cm `appS` x `appS` r
     return r
 
-warp8u :: Word8 -> Size -> Matrix Double -> Image I8u -> Image I8u
-warp8u g = wrap11SHS "opencv_warp8u" (c_opencv_warp8u g)
+warp8u :: Word8 -> Size -> M -> Image I8u -> Image I8u
+warp8u g = wrap11SHS "opencv_warp8u" (c_opencv_warp8u 1 g)
 
-warp8u3 :: Word8 -> Size -> Matrix Double -> Image I8u3 -> Image I8u3
-warp8u3 g = wrap11SHS "opencv_warp8u3" (c_opencv_warp8u3 g)
+warp8u3 :: Word8 -> Size -> M -> Image I8u3 -> Image I8u3
+warp8u3 g = wrap11SHS "opencv_warp8u3" (c_opencv_warp8u3 1 g)
 
-warp32f :: Float -> Size -> Matrix Double -> Image Float -> Image Float
-warp32f g = wrap11SHS "opencv_warp32f" (c_opencv_warp32f g)
+warp32f :: Float -> Size -> M -> Image Float -> Image Float
+warp32f g = wrap11SHS "opencv_warp32f" (c_opencv_warp32f 1 g)
+
+iowarpg :: Num q => String -> (CInt -> q -> MAT (RawImageS p (RawImageS p (IO CInt)))) -> M -> Image p -> Image p -> IO ()
+iowarpg msg f m x r = do
+    let cm = cmat $ inv (pixelToPointTrans (size r)) <> m <> pixelToPointTrans (size x)
+    withCMatrix cm $ withImage x $ withImage r $ checkFFI msg $
+        f 0 0 `appMat` cm `appS` x `appS` r
+
+iowarp8u :: M -> Image I8u -> Image I8u -> IO ()
+iowarp8u = iowarpg "iowarp8u" c_opencv_warp8u
+
+iowarp8u3 :: M -> Image I8u3 -> Image I8u3 -> IO ()
+iowarp8u3 = iowarpg "iowarp8u3" c_opencv_warp8u3
+
+iowarp32f :: M -> Image Float -> Image Float -> IO ()
+iowarp32f = iowarpg "iowarp32f" c_opencv_warp32f
+
+warpong ::  (M -> Image p -> Image p -> IO ()) -> Image p -> [(M,Image p)] -> Image p
+warpong f base hxs = unsafePerformIO $ do
+    res <- cloneImage base
+    mapM_ (g res) hxs
+    return res
+  where
+    g res (h,x)
+        | ok = f h x res
+        | otherwise = error $ "warpon with transformation "++show shz
+      where
+        shz = (rows &&& cols) h
+        ok = shz == (3,3)
+
+class BPix p => CVPix p
+  where
+    warpon :: Image p -> [(Matrix Double,Image p)] -> Image p
+
+instance CVPix I8u
+  where
+    warpon = warpong iowarp8u
+
+instance CVPix I8u3
+  where
+    warpon = warpong iowarp8u3
+
+instance CVPix Float
+  where
+    warpon = warpong iowarp32f
+
+warp :: CVPix p => p -> Size -> M -> Image p -> Image p
+warp v sz h x = warpon (constantImage v sz) [(h,x)]
 
 
 foreign import ccall "opencv_warp8u"
-    c_opencv_warp8u :: Word8 -> MAT (RawImageS I8u (RawImageS I8u (IO CInt)))
+    c_opencv_warp8u :: CInt -> Word8 -> MAT (RawImageS I8u (RawImageS I8u (IO CInt)))
 
 foreign import ccall "opencv_warp8u3"
-    c_opencv_warp8u3 :: Word8 -> MAT (RawImageS I8u3 (RawImageS I8u3 (IO CInt)))
+    c_opencv_warp8u3 :: CInt -> Word8 -> MAT (RawImageS I8u3 (RawImageS I8u3 (IO CInt)))
 
 foreign import ccall "opencv_warp32f"
-    c_opencv_warp32f :: Float -> MAT (RawImageS Float (RawImageS Float (IO CInt)))
-    
+    c_opencv_warp32f :: CInt -> Float -> MAT (RawImageS Float (RawImageS Float (IO CInt)))
+
 ------------------------------------------------------------------
 
 foreign import ccall "hough"
@@ -164,14 +216,23 @@ foreign import ccall unsafe "cPNP"
 findHomography :: Matrix Double -> Matrix Double -> Matrix Double
 findHomography vs ps = unsafePerformIO $ do
     r <- createMatrix RowMajor 3 3
-    app3 c_FindHomography mat (cmat vs) mat (cmat ps) mat r "findHomography"
+    app3 (c_FindHomography 0 0) mat (cmat vs) mat (cmat ps) mat r "findHomography"
+    return r
+
+findHomographyRANSAC :: Double -> M -> M -> M
+findHomographyRANSAC th vs ps = unsafePerformIO $ do
+    r <- createMatrix RowMajor 3 3
+    app3 (c_FindHomography 1 th) mat (cmat vs) mat (cmat ps) mat r "findHomographyRANSAC"
+    return r
+
+findHomographyLMEDS :: M -> M -> M
+findHomographyLMEDS vs ps = unsafePerformIO $ do
+    r <- createMatrix RowMajor 3 3
+    app3 (c_FindHomography 2 0) mat (cmat vs) mat (cmat ps) mat r "findHomographyLMEDS"
     return r
 
 foreign import ccall unsafe "cFindHomography" c_FindHomography
-    :: CInt -> CInt -> Ptr Double
-    -> CInt -> CInt -> Ptr Double
-    -> CInt -> CInt -> Ptr Double
-    -> IO CInt
+    :: CInt -> Double -> MAT (MAT (MAT (IO CInt)))
 
 --------------------------------------------------------------------------------
 

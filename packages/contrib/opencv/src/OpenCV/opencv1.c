@@ -49,7 +49,7 @@ int opencv_undistort8u(int r, int c, double*p, int nr, double*dr, int r2, int c2
 
 
 
-int opencv_warp8u(unsigned char g, int r, int c, double*p, IMGSZ(s),IMGSZ(d)) {
+int opencv_warp8u(int fill, unsigned char g, int r, int c, double*p, IMGSZ(s),IMGSZ(d)) {
 
     IPL(s,8,1)
     IPL(d,8,1)
@@ -57,7 +57,7 @@ int opencv_warp8u(unsigned char g, int r, int c, double*p, IMGSZ(s),IMGSZ(d)) {
     CvMat* h = cvCreateMat(3, 3, CV_32F);
     COPYM(h,p,3,3);
 
-    cvWarpPerspective(ipl_s, ipl_d, h, CV_INTER_LINEAR+CV_WARP_FILL_OUTLIERS, cvScalarAll(g) );
+    cvWarpPerspective(ipl_s, ipl_d, h, CV_INTER_LINEAR+fill*CV_WARP_FILL_OUTLIERS, cvScalarAll(g) );
 
     cvReleaseImageHeader(&ipl_s);
     cvReleaseImageHeader(&ipl_d);
@@ -69,7 +69,7 @@ int opencv_warp8u(unsigned char g, int r, int c, double*p, IMGSZ(s),IMGSZ(d)) {
 //---------------------------------------------------
 
 
-int opencv_warp32f(float g, int r, int c, double*p, IMGSZ(s),IMGSZ(d)) {
+int opencv_warp32f(int fill, float g, int r, int c, double*p, IMGSZ(s),IMGSZ(d)) {
 
     IPL(s,32,1)
     IPL(d,32,1)
@@ -77,7 +77,7 @@ int opencv_warp32f(float g, int r, int c, double*p, IMGSZ(s),IMGSZ(d)) {
     CvMat* h = cvCreateMat(3, 3, CV_32F);
     COPYM(h,p,3,3);
 
-    cvWarpPerspective(ipl_s, ipl_d, h, CV_INTER_LINEAR+CV_WARP_FILL_OUTLIERS, cvScalarAll(g) );
+    cvWarpPerspective(ipl_s, ipl_d, h, CV_INTER_LINEAR+fill*CV_WARP_FILL_OUTLIERS, cvScalarAll(g) );
 
     cvReleaseImageHeader(&ipl_s);
     cvReleaseImageHeader(&ipl_d);
@@ -88,7 +88,7 @@ int opencv_warp32f(float g, int r, int c, double*p, IMGSZ(s),IMGSZ(d)) {
 
 //-----------------------------------------------
 
-int opencv_warp8u3(unsigned char g, int r, int c, double*p, IMGSZ(s),IMGSZ(d)) {
+int opencv_warp8u3(int fill, unsigned char g, int r, int c, double*p, IMGSZ(s),IMGSZ(d)) {
 
     IPL(s,8,3)
     IPL(d,8,3)
@@ -96,7 +96,7 @@ int opencv_warp8u3(unsigned char g, int r, int c, double*p, IMGSZ(s),IMGSZ(d)) {
     CvMat* h = cvCreateMat(3, 3, CV_32F);
     COPYM(h,p,3,3);
 
-    cvWarpPerspective(ipl_s, ipl_d, h, CV_INTER_LINEAR+CV_WARP_FILL_OUTLIERS, cvScalarAll(g) );
+    cvWarpPerspective(ipl_s, ipl_d, h, CV_INTER_LINEAR+fill*CV_WARP_FILL_OUTLIERS, cvScalarAll(g) );
 
     cvReleaseImageHeader(&ipl_s);
     cvReleaseImageHeader(&ipl_d);

@@ -103,7 +103,7 @@ int cPNP(int rk, int ck, double*pk,
     return 0;
 }
 
-int cFindHomography(
+int cFindHomography(int code, double th,
     int rv, int cv, double*pv,
     int rp, int cp, double*pp,
     int rr, int cr, double*pr) {
@@ -113,7 +113,14 @@ int cFindHomography(
 
     cv::Mat h(3,3,CV_64F,pr);
 
-    h = cv::findHomography(objectPoints,imagePoints);
+    int method;
+    switch(code) {
+        case  1: method = CV_RANSAC; break;
+        case  2: method = CV_LMEDS;  break;
+        default: method = 0;
+    }
+
+    h = cv::findHomography(objectPoints,imagePoints,method,th);
 
     int r,c;
     for (r=0; r<3; r++) {
@@ -124,6 +131,8 @@ int cFindHomography(
 
     return 0;
 }
+
+////////////////////////////////////////////////////////////////////////////////
 
 typedef struct { double x, y; } TPoint;
 
