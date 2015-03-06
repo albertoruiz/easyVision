@@ -14,7 +14,7 @@ module Image.Processing.Generic(
 ) where
 
 import Image
-import Image.Devel
+import Image.Devel hiding (constantImage)
 import Image.Processing.IPP
 import Numeric.LinearAlgebra(Matrix, toLists, (<>), inv, rows, cols)
 import Control.Arrow((&&&))

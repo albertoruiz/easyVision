@@ -24,7 +24,7 @@ module Image.Processing.Contour (
 )
 where
 
-import Image.Devel
+import Image.Devel hiding (constantImage)
 import Image.Processing.IPP
 import Image.Processing.Generic
 import Util.Geometry(Polyline(..))

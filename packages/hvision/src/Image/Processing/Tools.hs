@@ -26,7 +26,7 @@ module Image.Processing.Tools (
 import Image
 import Image.Processing.IPP
 import Image.Processing.Generic
-import Image.Devel
+import Image.Devel hiding (constantImage)
 import Data.List(transpose)
 import Util.Rotation(rot3)
 import Util.Homogeneous(desp)
