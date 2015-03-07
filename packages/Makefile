@@ -1,6 +1,6 @@
 IPPICV='http://sourceforge.net/projects/opencvlibrary/files/3rdparty/ippicv/ippicv_linux_20141027.tgz'
 
-pkgs=tools base gui geometry classifier contours/contours ip/custom contrib/examples ip/opencv contours/clipping contours/hcontours contrib/CLK ip/ippicv ip/ipp hvision devel
+pkgs=tools base gui geometry classifier contours/contours ip/custom contrib/examples ip/opencv contours/clipping contours/hcontours contours/CLK ip/ippicv ip/ipp hvision devel
 
 getippicv:
 	if [ ! -e ../lib/ippicv_lnx ]; then   \
