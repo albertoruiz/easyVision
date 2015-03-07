@@ -44,8 +44,6 @@ library
     hs-source-dirs:     src
 
     Exposed-modules:    
-                        --Util.Misc
-                        --Util.Options
                         Util.LazyIO
                         Util.Rotation
                         Util.Estimation
@@ -67,8 +65,7 @@ library
                         Util.Audio
                         Util.Graph
                         Util.Camera
-                        --Util.Text
-                        --Util.SVG
+                        Util.NLHash
                         Util.Experiment
 
                         Image
