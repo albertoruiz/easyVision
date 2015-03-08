@@ -11,34 +11,24 @@ getippicv:
 	fi
 
 
-selpkgs=contours contrib/clipping contrib/hcontours contrib/CLK
+selpkgs=contours/contours contours/clipping contours/hcontours contours/CLK
+
+cabalcmd =                         \
+      for p in $(1); do            \
+	  if [ -e $$p ]; then          \
+	    cd $$p; cabal $(2) ; cd -; \
+	  fi;                          \
+	done
 
 all:
-	for p in $(pkgs); do \
-	  if [ -e $$p ]; then \
-	    cd $$p; cabal install --force-reinstall --enable-documentation ; cd -; \
-	  fi; \
-	done
+	$(call cabalcmd, $(pkgs), install --force-reinstall --enable-documentation)
 
 selected:
-	for p in $(selpkgs); do \
-	  if [ -e $$p ]; then \
-	    cd $$p; cabal install --force-reinstall ; cd -; \
-	  fi; \
-	done
-
+	$(call cabalcmd, $(selpkgs), install --force-reinstall)
 
 fast:
-	for p in $(pkgs); do \
-	  if [ -e $$p ]; then \
-	    cd $$p; cabal install --force-reinstall ; cd -; \
-	  fi; \
-	done
+	$(call cabalcmd, $(pkgs), install --force-reinstall)
 
-local:
-	for p in $(pkgs); do \
-	  if [ -e $$p ]; then \
-	    cd $$p; cabal sdist && uploadlocal ; cd -; \
-	  fi; \
-	done
+clean:
+	$(call cabalcmd, $(pkgs), clean)
 
