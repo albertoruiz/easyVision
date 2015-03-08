@@ -19,6 +19,8 @@ Stability   :  provisional
 
 Type safe small arrays.
 
+(superseded by HMatrix.Static (to be done))
+
 -}
 -----------------------------------------------------------------------------
 

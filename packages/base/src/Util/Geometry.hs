@@ -54,7 +54,8 @@ module Util.Geometry
     intersectionLineSegment,
     Polygon(..),
     orientation, polygonSides,
-    DMat
+    DMat,
+    Trust(..)
 ) where
 
 import Util.Small
@@ -229,6 +230,15 @@ class Transformable t x
 apMat :: (Vectorlike a, Vectorlike b, Matrixlike t) => (Mat -> Mat) -> t -> [a] -> [b]
 apMat _ _ [] = []
 apMat g h xs = (map unsafeFromVector . toRows) . (<> (g.trans) (toMatrix h)) . fromRows . (map toVector) $ xs
+
+newtype Trust t = Trust t
+
+instance Transformable Homography x => Transformable (Trust (Matrix Double)) x
+  where
+    type TResult (Trust (Matrix Double)) x = TResult Homography x
+    apTrans (Trust m) = apTrans h
+      where
+        h = unsafeFromMatrix m :: Homography
 
 instance Transformable Homography [HPoint]
   where
@@ -645,7 +655,6 @@ instance Transformable Homography Polyline
     apTrans h (Closed ps) = Closed (apTrans h ps)
     apTrans h (Open ps)   = Open   (apTrans h ps)
 
-
 --------------------------------------------------------------------------------
 
 newtype Polygon = Polygon { polygonNodes :: [Point] }
@@ -673,6 +682,16 @@ instance Storable Segment where
     let pb = castPtr p
     pokeElemOff pb 0 a
     pokeElemOff pb 1 b
+
+instance Transformable Homography [Segment]
+  where
+    type TResult Homography [Segment] = [Segment]
+    apTrans h = map (apTrans h)
+
+instance Transformable Homography Segment
+  where
+    type TResult Homography Segment = Segment
+    apTrans t (Segment p q) = Segment (apTrans t p) (apTrans t q)
 
 --------------------------------------------------------------------------------
 
