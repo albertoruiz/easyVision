@@ -14,10 +14,10 @@ autoParam "CGParam" "cg-"
     [ ("pan",  "Double",   realParam (0) (-40) (40))
     , ("dx",  "Double",    realParam (0) (-1) (1))
     , ("dy",  "Double",    realParam (0) (-1) (1))
-    , ("rot", "Double",    realParam (0) (-30) (30))
+    , ("rot", "Double",    realParam (0) (-50) (50))
     , ("tilt", "Double",   realParam (0) (-20) (80))
     , ("roll",  "Double",  realParam  0 (-40) (40))
-    , ("focal",  "Double", listParam 1.6 [0.5, 0.7, 1, 1.6, 2, 2.4, 2.8, 3.5, 5, 7, 9 ,12])
+    , ("focal",  "Double", listParam 1.6 [0.5, 0.7, 1, 1.6, 1.8, 2, 2.4, 2.8, 3.5, 5, 7, 9 ,12])
     , ("scale",  "Double", listParam 1 [1.05**k|k<-[-40..10]])]
 
 main = run $    arr rgb -- fCh
