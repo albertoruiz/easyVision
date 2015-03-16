@@ -106,12 +106,14 @@ int cPNP(int rk, int ck, double*pk,
 int cFindHomography(int code, double th,
     int rv, int cv, double*pv,
     int rp, int cp, double*pp,
-    int rr, int cr, double*pr) {
+    int rr, int cr, double*pr,
+    int nmask, unsigned char *pmask) {
 
     cv::Mat  imagePoints(rv,2,CV_64F,pv);
     cv::Mat objectPoints(rp,2,CV_64F,pp);
 
     cv::Mat h(3,3,CV_64F,pr);
+    cv::Mat mask(nmask,1,CV_8U,pmask);
 
     int method;
     switch(code) {
@@ -120,7 +122,7 @@ int cFindHomography(int code, double th,
         default: method = 0;
     }
 
-    h = cv::findHomography(objectPoints,imagePoints,method,th);
+    h = cv::findHomography(objectPoints,imagePoints,method,th,mask);
 
     int r,c;
     for (r=0; r<3; r++) {

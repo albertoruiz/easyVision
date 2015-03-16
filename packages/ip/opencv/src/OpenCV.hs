@@ -17,6 +17,7 @@ import Image.Devel
 import Foreign.Ptr
 import Foreign.Marshal
 import Foreign.C.String
+import Foreign.C.Types(CUChar)
 import Foreign(Word8)
 import Foreign.Storable
 import Util.Geometry(Segment(..),Point(..))
@@ -213,26 +214,34 @@ foreign import ccall unsafe "cPNP"
 
 --------------------------------------------------------------------------------
 
+type Mask = Vector CUChar
+
 findHomography :: Matrix Double -> Matrix Double -> Matrix Double
 findHomography vs ps = unsafePerformIO $ do
     r <- createMatrix RowMajor 3 3
-    app3 (c_FindHomography 0 0) mat (cmat vs) mat (cmat ps) mat r "findHomography"
+    mask <- createVector (rows vs)
+    app4 (c_FindHomography 0 0) mat (cmat vs) mat (cmat ps) mat r vec mask "findHomography"
     return r
 
-findHomographyRANSAC :: Double -> M -> M -> M
+findHomographyRANSAC :: Double -> M -> M -> (M,[Int])
 findHomographyRANSAC th vs ps = unsafePerformIO $ do
     r <- createMatrix RowMajor 3 3
-    app3 (c_FindHomography 1 th) mat (cmat vs) mat (cmat ps) mat r "findHomographyRANSAC"
-    return r
+    mask <- createVector (rows vs)
+    app4 (c_FindHomography 1 th) mat (cmat vs) mat (cmat ps) mat r vec mask "findHomographyRANSAC"
+    return (r, findMask mask)
 
-findHomographyLMEDS :: M -> M -> M
+findHomographyLMEDS :: M -> M -> (M,[Int])
 findHomographyLMEDS vs ps = unsafePerformIO $ do
     r <- createMatrix RowMajor 3 3
-    app3 (c_FindHomography 2 0) mat (cmat vs) mat (cmat ps) mat r "findHomographyLMEDS"
-    return r
+    mask <- createVector (rows vs)
+    app4 (c_FindHomography 2 0) mat (cmat vs) mat (cmat ps) mat r vec mask "findHomographyLMEDS"
+    return (r, findMask mask)
 
 foreign import ccall unsafe "cFindHomography" c_FindHomography
-    :: CInt -> Double -> MAT (MAT (MAT (IO CInt)))
+    :: CInt -> Double -> MAT (MAT (MAT (CInt -> Ptr CUChar -> IO CInt)))
+
+findMask :: Mask -> [Int]
+findMask = find (>0.5) . fromList . map (fromIntegral :: CUChar -> Float) . toList
 
 --------------------------------------------------------------------------------
 
