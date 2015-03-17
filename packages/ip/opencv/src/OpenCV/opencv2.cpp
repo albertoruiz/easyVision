@@ -3,19 +3,11 @@
 #endif
 
 #ifdef OPENCV3
-#include "opencv2/objdetect.hpp"
-#include "opencv2/calib3d.hpp"
-#include "opencv2/imgcodecs.hpp"
-#include "opencv2/videoio.hpp"
-#include "opencv2/highgui.hpp"
-#include "opencv2/imgproc.hpp"
-#include "opencv2/features2d.hpp"
-#include "opencv2/core/utility.hpp"
-#include "opencv2/videoio/videoio_c.h"
-#include "opencv2/highgui/highgui_c.h"
+#include "opencv2/opencv.hpp"
 #else
 #include <cv.h>
 #endif
+
 
 #include <cstdio>
 
@@ -112,7 +104,7 @@ int cFindHomography(int code, double th,
     cv::Mat  imagePoints(rv,2,CV_64F,pv);
     cv::Mat objectPoints(rp,2,CV_64F,pp);
 
-    cv::Mat h(3,3,CV_64F,pr);
+    cv::Mat h(rr,cr,CV_64F,pr);
     cv::Mat mask(nmask,1,CV_8U,pmask);
 
     int method;
@@ -122,12 +114,16 @@ int cFindHomography(int code, double th,
         default: method = 0;
     }
 
-    h = cv::findHomography(objectPoints,imagePoints,method,th,mask);
-
+    if (code==3) {
+        h = cv::estimateRigidTransform(objectPoints,imagePoints,false);
+    } else {
+        h = cv::findHomography(objectPoints,imagePoints,method,th,mask);
+    }
+    
     int r,c;
-    for (r=0; r<3; r++) {
-        for (c=0; c<3; c++) {
-            pr[r*3+c] = h.at<double>(r,c);
+    for (r=0; r<rr; r++) {
+        for (c=0; c<cr; c++) {
+            pr[r*cr+c] = h.at<double>(r,c);
         }
     }
 

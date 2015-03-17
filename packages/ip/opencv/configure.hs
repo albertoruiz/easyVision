@@ -14,7 +14,7 @@ main = do
                 then [ "cc-options: -DOPENCV3"
                      , "include-dirs: /usr/local/include /usr/local/include/opencv"
                      , "extra-lib-dirs: /usr/local/lib"
-                     , "extra-libraries: opencv_core opencv_calib3d opencv_imgproc opencv_objdetect opencv_videoio opencv_highgui"
+                     , "extra-libraries: opencv_core opencv_calib3d opencv_imgproc opencv_video opencv_objdetect opencv_videoio opencv_highgui"
                      ]
                 else if ver "2.4"
                       then [ "cc-options: -DOPENCV24"

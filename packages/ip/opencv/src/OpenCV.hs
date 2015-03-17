@@ -7,6 +7,7 @@ module OpenCV(
   cascadeClassifier,
   solvePNP,
   findHomography, findHomographyRANSAC, findHomographyLMEDS,
+  estimateRigidTransform,
   surf,
   warp8u, warp8u3, warp32f, CVPix(..), warp,
   undistort8u,
@@ -25,6 +26,7 @@ import Control.Applicative
 import Data.Packed.Development
 import Numeric.LinearAlgebra
 import Numeric.LinearAlgebra.Util((¦))
+import Numeric.LinearAlgebra.HMatrix((===),row)
 import Util.Homogeneous(rodrigues)
 import Control.Arrow((&&&))
 
@@ -215,6 +217,13 @@ foreign import ccall unsafe "cPNP"
 --------------------------------------------------------------------------------
 
 type Mask = Vector CUChar
+
+estimateRigidTransform :: Matrix Double -> Matrix Double -> Matrix Double
+estimateRigidTransform vs ps = unsafePerformIO $ do
+    r <- createMatrix RowMajor 2 3
+    mask <- createVector (rows vs)
+    app4 (c_FindHomography 3 0) mat (cmat vs) mat (cmat ps) mat r vec mask "estimateRigidTransform"
+    return (r === row [0,0,1])
 
 findHomography :: Matrix Double -> Matrix Double -> Matrix Double
 findHomography vs ps = unsafePerformIO $ do
