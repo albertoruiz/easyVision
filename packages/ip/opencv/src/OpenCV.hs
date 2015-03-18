@@ -8,6 +8,7 @@ module OpenCV(
   solvePNP,
   findHomography, findHomographyRANSAC, findHomographyLMEDS,
   estimateRigidTransform,
+  MotionType(..), findTransformECC,
   surf,
   warp8u, warp8u3, warp32f, CVPix(..), warp,
   undistort8u,
@@ -26,7 +27,7 @@ import Control.Applicative
 import Data.Packed.Development
 import Numeric.LinearAlgebra
 import Numeric.LinearAlgebra.Util((¦))
-import Numeric.LinearAlgebra.HMatrix((===),row)
+import Numeric.LinearAlgebra.HMatrix((===),row,(!))
 import Util.Homogeneous(rodrigues)
 import Control.Arrow((&&&))
 
@@ -251,6 +252,29 @@ foreign import ccall unsafe "cFindHomography" c_FindHomography
 
 findMask :: Mask -> [Int]
 findMask = find (>0.5) . fromList . map (fromIntegral :: CUChar -> Float) . toList
+
+--------------------------------------------------------------------------------
+
+data MotionType
+    = Translation
+    | Euclidean
+    | Affine
+    | Projective
+  deriving (Eq, Enum, Read, Show)
+
+findTransformECC :: MotionType -> Image I8u -> Image I8u -> M -> (M,Double)
+findTransformECC mot dst src h0 = unsafePerformIO $ do
+    let hr = if mot == Projective then 3 else 2
+    h <- createMatrix RowMajor hr 3
+    let ch0  = cmat $ takeRows hr $ h0 / scalar (h0!2!2) -- inv (pixelToPointTrans (size r)) <> h0 <> pixelToPointTrans (size x)
+        code = fromIntegral (fromEnum mot)
+    r <- withCMatrix ch0 $ withCMatrix h $ withImage dst $ withImage src $ do
+        c_findTransformECC code `appS` src `appS` dst `appMat` ch0 `appMat` h
+    let oh = if mot == Projective then h else h === row [0,0,1]
+    return (oh,r)
+
+foreign import ccall "cFindTransformECC"
+    c_findTransformECC :: CInt -> RawImageS I8u (RawImageS I8u (MAT (MAT (IO Double))))
 
 --------------------------------------------------------------------------------
 

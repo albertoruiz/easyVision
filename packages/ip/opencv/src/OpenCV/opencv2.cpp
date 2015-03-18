@@ -119,7 +119,7 @@ int cFindHomography(int code, double th,
     } else {
         h = cv::findHomography(objectPoints,imagePoints,method,th,mask);
     }
-    
+
     int r,c;
     for (r=0; r<rr; r++) {
         for (c=0; c<cr; c++) {
@@ -132,17 +132,68 @@ int cFindHomography(int code, double th,
 
 ////////////////////////////////////////////////////////////////////////////////
 
+#define ATM(m,c,i,j) (m[(i)*c+(j)])
+#define COPYM(DST,SRC,R,C) { int r, c; for (r=0; r<R; r++) for (c=0; c<C; c++) cvSetReal2D(DST,r,c, ATM(SRC,C,r,c)); }
+
+int cFindTransformECC(int code, GIMS(char,s), GIMS(char,d), int r1, int c1, double * h1, int r2, int c2, double* h2) {
+
+    IPL(s,8,1)
+    IPL(d,8,1)
+
+    CvMat* h = cvCreateMat(r1, c1, CV_32F);
+    COPYM(h,h1,r1,c1);
+    Mat hm = cvarrToMat(h);
+
+    Mat sframe;
+    sframe = cvarrToMat(ipl_s);
+    Mat dframe;
+    dframe = cvarrToMat(ipl_d);
+
+#ifdef OPENCV3
+
+    int method;
+    switch(code) {
+        case  0: method = MOTION_TRANSLATION; break;
+        case  1: method = MOTION_EUCLIDEAN;  break;
+        case  2: method = MOTION_AFFINE; break;
+        default: method = MOTION_HOMOGRAPHY;
+    }
+
+    cv::findTransformECC(sframe, dframe, hm, method);
+
+#else
+    printf("sorry, findTransformECC requires OpenCV 3.0\n");
+    exit(0);
+#endif
+
+
+
+    int r,c;
+    for (r=0; r<r2; r++) {
+        for (c=0; c<c2; c++) {
+            h2[r*c2+c] = hm.at<float>(r,c);
+        }
+    }
+
+    cvReleaseImageHeader(&ipl_s);
+    cvReleaseImageHeader(&ipl_d);
+
+    return 0;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 typedef struct { double x, y; } TPoint;
 
 void surf( GIMS(char,t),
            int fmax, int* fn, TPoint* res) {
 
     double minHessian = 400;
-    
+
 #ifndef OPENCV3
     static SurfFeatureDetector detector( minHessian );
 #endif
-    
+
     IPL(t,8,1)
 
     Mat frame;

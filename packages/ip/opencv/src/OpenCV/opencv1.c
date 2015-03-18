@@ -20,7 +20,7 @@ int opencv_canny(IMGSZ(s),IMGSZ(d)) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-#define ATM(m,c,i,j) (p[(i)*c+(j)])
+#define ATM(m,c,i,j) (m[(i)*c+(j)])
 #define COPYM(DST,SRC,R,C) { int r, c; for (r=0; r<R; r++) for (c=0; c<C; c++) cvSetReal2D(DST,r,c, ATM(SRC,C,r,c)); }
 
 int opencv_undistort8u(int r, int c, double*p, int nr, double*dr, int r2, int c2, double*p2, IMGSZ(s),IMGSZ(d)) {
