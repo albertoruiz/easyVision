@@ -2,6 +2,7 @@
 {-# LANGUAGE TypeSynonymInstances #-}
 
 module OpenCV(
+  gaussianBlur,
   canny,
   hough,
   cascadeClassifier,
@@ -60,6 +61,15 @@ canny = wrap11S "opencv_canny" c_opencv_canny
 
 foreign import ccall "opencv_canny"
     c_opencv_canny :: RawImageS I8u (RawImageS I8u (IO CInt))
+
+------------------------------------------------------------------
+
+gaussianBlur :: Double -> Image I8u -> Image I8u
+gaussianBlur s | s <= 0 = id
+gaussianBlur s = wrap11S "opencv_gaussianBlur" (c_opencv_gaussianBlur s)
+
+foreign import ccall "opencv_gaussian"
+    c_opencv_gaussianBlur :: Double -> RawImageS I8u (RawImageS I8u (IO CInt))
 
 ------------------------------------------------------------------
 
@@ -266,7 +276,7 @@ findTransformECC :: MotionType -> Image I8u -> Image I8u -> M -> (M,Double)
 findTransformECC mot dst src h0 = unsafePerformIO $ do
     let hr = if mot == Projective then 3 else 2
     h <- createMatrix RowMajor hr 3
-    let ch0  = cmat $ takeRows hr $ h0 / scalar (h0!2!2) -- inv (pixelToPointTrans (size r)) <> h0 <> pixelToPointTrans (size x)
+    let ch0  = cmat $ takeRows hr $ h0 / scalar (h0!2!2)
         code = fromIntegral (fromEnum mot)
     r <- withCMatrix ch0 $ withCMatrix h $ withImage dst $ withImage src $ do
         c_findTransformECC code `appS` src `appS` dst `appMat` ch0 `appMat` h

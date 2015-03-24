@@ -20,6 +20,22 @@ int opencv_canny(IMGSZ(s),IMGSZ(d)) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+int opencv_gaussian(double sigma, IMGSZ(s),IMGSZ(d)) {
+
+    IPL(s,8,1)
+    IPL(d,8,1)
+
+    cvSmooth( ipl_s , ipl_d, CV_GAUSSIAN, 0,0,sigma,0);
+
+    cvReleaseImageHeader(&ipl_s);
+    cvReleaseImageHeader(&ipl_d);
+    
+    return 0;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+
 #define ATM(m,c,i,j) (m[(i)*c+(j)])
 #define COPYM(DST,SRC,R,C) { int r, c; for (r=0; r<R; r++) for (c=0; c<C; c++) cvSetReal2D(DST,r,c, ATM(SRC,C,r,c)); }
 

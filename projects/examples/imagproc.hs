@@ -21,6 +21,7 @@ f droi (DemoParam{..},x) =
            ,  msg "gaussian fixed"     [ Draw smooth ]
            ,  msg "gaussian variable"  [ Draw gsig ]
            ,  msg "median filter"      [ Draw med ]
+           ,  msg "box filter"         [ Draw box ]
            ,  msg "canny edges"        [ Draw (notI edges) ]
            ,  msg "Otsu threshold"     [ Draw otsu ]
            ,  msg "raw Otsu contours"  [ proi, color blue . lineWd 2 $ draws rawconts ]
@@ -40,6 +41,7 @@ f droi (DemoParam{..},x) =
     smooth = gauss Mask5x5 . toFloat $ g
     gsig   = gaussS sigma . toFloat $ g
     med   = filterMedian rad g
+    box   = filterBox rad rad g
     edges  = canny (0.1,0.3) . gradients $ smooth
     otsu   = compareC8u (otsuThreshold g) IppCmpGreater g
     rawconts = contours 1000 100 $ otsu
