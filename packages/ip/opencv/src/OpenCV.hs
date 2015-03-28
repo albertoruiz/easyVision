@@ -272,19 +272,19 @@ data MotionType
     | Projective
   deriving (Eq, Enum, Read, Show)
 
-findTransformECC :: MotionType -> Image I8u -> Image I8u -> M -> (M,Double)
-findTransformECC mot dst src h0 = unsafePerformIO $ do
+findTransformECC :: MotionType -> Int -> Double -> Image I8u -> Image I8u -> M -> (M,Double)
+findTransformECC mot maxCount epsilon dst src h0 = unsafePerformIO $ do
     let hr = if mot == Projective then 3 else 2
     h <- createMatrix RowMajor hr 3
     let ch0  = cmat $ takeRows hr $ h0 / scalar (h0!2!2)
         code = fromIntegral (fromEnum mot)
     r <- withCMatrix ch0 $ withCMatrix h $ withImage dst $ withImage src $ do
-        c_findTransformECC code `appS` src `appS` dst `appMat` ch0 `appMat` h
+        c_findTransformECC code (fi maxCount) epsilon `appS` src `appS` dst `appMat` ch0 `appMat` h
     let oh = if mot == Projective then h else h === row [0,0,1]
     return (oh,r)
 
 foreign import ccall "cFindTransformECC"
-    c_findTransformECC :: CInt -> RawImageS I8u (RawImageS I8u (MAT (MAT (IO Double))))
+    c_findTransformECC :: CInt -> CInt -> Double -> RawImageS I8u (RawImageS I8u (MAT (MAT (IO Double))))
 
 --------------------------------------------------------------------------------
 

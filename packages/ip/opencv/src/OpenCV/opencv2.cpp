@@ -132,11 +132,24 @@ int cFindHomography(int code, double th,
 
 ////////////////////////////////////////////////////////////////////////////////
 
+int handleError(int status, const char* func_name,
+                const char* err_msg, const char* file_name,
+                int line, void* userdata ) {
+    //Do nothing -- will suppress console output
+    return 0;   //Return value is not used
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+
 #define ATM(m,c,i,j) (m[(i)*c+(j)])
 #define COPYM(DST,SRC,R,C) { int r, c; for (r=0; r<R; r++) for (c=0; c<C; c++) cvSetReal2D(DST,r,c, ATM(SRC,C,r,c)); }
 
-int cFindTransformECC(int code, GIMS(char,s), GIMS(char,d), int r1, int c1, double * h1, int r2, int c2, double* h2) {
-
+double cFindTransformECC(int code, int maxCount, double epsilon,
+                         GIMS(char,s), GIMS(char,d),
+                         int r1, int c1, double * h1,
+                         int r2, int c2, double* h2)
+{
     IPL(s,8,1)
     IPL(d,8,1)
 
@@ -149,6 +162,8 @@ int cFindTransformECC(int code, GIMS(char,s), GIMS(char,d), int r1, int c1, doub
     Mat dframe;
     dframe = cvarrToMat(ipl_d);
 
+    double cc = 0;
+
 #ifdef OPENCV3
 
     int method;
@@ -159,13 +174,19 @@ int cFindTransformECC(int code, GIMS(char,s), GIMS(char,d), int r1, int c1, doub
         default: method = MOTION_HOMOGRAPHY;
     }
 
-    cv::findTransformECC(sframe, dframe, hm, method);
+    cv::redirectError(handleError);
+    try {
+      cc = cv::findTransformECC(sframe, dframe, hm, method,TermCriteria (TermCriteria::COUNT+TermCriteria::EPS,maxCount,epsilon));
+    }
+    catch(...) {
+       cc = 0;
+    }
+    cv::redirectError(NULL);
 
 #else
     printf("sorry, findTransformECC requires OpenCV 3.0\n");
     exit(0);
 #endif
-
 
 
     int r,c;
@@ -178,7 +199,7 @@ int cFindTransformECC(int code, GIMS(char,s), GIMS(char,d), int r1, int c1, doub
     cvReleaseImageHeader(&ipl_s);
     cvReleaseImageHeader(&ipl_d);
 
-    return 0;
+    return cc;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
