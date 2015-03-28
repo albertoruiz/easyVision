@@ -114,10 +114,13 @@ int cFindHomography(int code, double th,
         default: method = 0;
     }
 
+    mask=0;
+
     if (code==3) {
         h = cv::estimateRigidTransform(objectPoints,imagePoints,false);
     } else {
         h = cv::findHomography(objectPoints,imagePoints,method,th,mask);
+        if (countNonZero(mask) < 4) return 0;
     }
 
     int r,c;
