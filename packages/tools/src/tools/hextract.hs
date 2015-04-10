@@ -5,7 +5,6 @@ import Text.ParserCombinators.Parsec
 import Text.Parsec.Prim(ParsecT)
 import Data.Functor.Identity(Identity)
 
-import Control.Applicative((<$>))
 import System.Environment(getArgs)
 import Data.List(partition)
 

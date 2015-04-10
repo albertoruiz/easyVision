@@ -4,7 +4,6 @@
 import Text.ParserCombinators.Parsec
 import Text.Parsec.Prim(ParsecT)
 import Data.Functor.Identity(Identity)
-import Control.Applicative((<$>))
 import Data.List.Split(splitOn)
 import Data.List(partition,intercalate)
 import Util.Text

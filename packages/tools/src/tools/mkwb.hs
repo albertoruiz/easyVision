@@ -2,7 +2,6 @@ import System.Process
 import System.Exit
 import Util.Options
 import System.Environment(getArgs)
-import Control.Applicative((<$>))
 import Control.Monad(when)
 import Util.Text
 

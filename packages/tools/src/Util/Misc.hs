@@ -26,7 +26,7 @@ import qualified Data.Array as A
 import Foreign.Storable(Storable)
 import Data.Array(listArray,(!))
 import qualified Data.Vector as V
-import Data.Packed.Development((//))
+import Numeric.LinearAlgebra.Devel((//))
 
 
 type Mat = Matrix Double

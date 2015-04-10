@@ -1,5 +1,5 @@
 Name:               artools
-Version:            0.1.0
+Version:            0.2.0
 License:            BSD3
 License-file:       LICENSE
 Author:             Alberto Ruiz
@@ -16,7 +16,7 @@ cabal-version:      >=1.8
 build-type:         Simple
 
 library
-    build-depends:      base, hmatrix>=0.16, split, hscolour, process, directory,
+    build-depends:      base, hmatrix>=0.17, split, hscolour, process, directory,
                         old-time, old-locale, deepseq, vector, random, binary, array
 
     hs-source-dirs:     src

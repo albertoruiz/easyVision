@@ -4,10 +4,10 @@ import Util.Options
 
 main :: IO ()
 main = do
-    pure <- getFlag "--pure"
+    puro <- getFlag "--pure"
     tex <- getFlag "--latex"
     grules <- optionString "--rules" ""
-    let rules = parseRules grules ++ (if pure then [] else other tex)
+    let rules = parseRules grules ++ (if puro then [] else other tex)
     putStr . snd =<< ioReplace [] rules =<< getContents
 
 other :: Bool -> [Rule]

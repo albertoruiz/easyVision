@@ -19,8 +19,6 @@ import Data.List.Split(splitOn)
 import System.Environment(getArgs)
 import System.Directory(getDirectoryContents)
 import Control.Monad(join,when)
-import Control.Applicative((<$>))
-import Data.Traversable(sequenceA)
 
 -- | extracts an option from the command line. From --alpha=1.5 we get 1.5::Double.
 getOption :: Read a

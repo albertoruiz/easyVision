@@ -5,7 +5,6 @@ import System.Time
 import System.Locale
 import System.IO.Unsafe(unsafePerformIO)
 import Control.DeepSeq
-import Control.Applicative((<$>))
 
 dimString :: String -> String
 dimString s = "\^[[2m"++s++"\^[[0m"
