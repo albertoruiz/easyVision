@@ -20,6 +20,7 @@ module Image.Core (
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Internal as B
 import Data.ByteString(ByteString)
+import System.IO.Unsafe(unsafePerformIO)
 import Foreign.Ptr(alignPtr,minusPtr,Ptr,castPtr,plusPtr)
 import GHC.ForeignPtr(mallocPlainForeignPtrBytes)
 import Foreign.ForeignPtr.Unsafe(unsafeForeignPtrToPtr)
@@ -32,7 +33,6 @@ import Image.Types
 import Image.ROI
 import Data.Binary
 import Control.DeepSeq
-import Control.Applicative
 
 
 data Image t = Image
@@ -156,7 +156,7 @@ ioRead x p = withImage x $ peek (ptrAt x p)
 
 {-# INLINE readPixel #-}
 readPixel :: Storable a => Image a -> Pixel -> a
-readPixel x p = B.inlinePerformIO (ioRead x p)
+readPixel x p = unsafePerformIO (ioRead x p)
 
 {-# INLINE ioWrite #-}
 ioWrite :: Storable t => Image t -> Pixel -> t -> IO ()

@@ -21,7 +21,6 @@ import Foreign
 import Foreign.C.Types
 import Foreign.C.String(newCString)
 import Image.Devel
-import Control.Applicative((<$>))
 
 -- #define HASUVC
 #ifdef HASUVC

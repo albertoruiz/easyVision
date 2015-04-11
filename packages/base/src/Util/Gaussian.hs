@@ -33,8 +33,8 @@ module Util.Gaussian (
    ellipCov2D
 ) where
 
-import Numeric.LinearAlgebra
-import Util.Misc(mat,Mat,Vec,Seed)
+import Numeric.LinearAlgebra.HMatrix
+import Util.Misc(mat,Mat,Vec)
 import Control.Arrow((***))
 import Data.List(sortBy)
 import Data.Function(on)
@@ -48,10 +48,10 @@ import Util.Rotation(rot3)
 data Gaussian = N { mG :: Vec, cG :: Mat } deriving Show
 
 extractVarsM ::[Int] -> Mat -> Mat
-extractVarsM vs = trans . extractRows vs . trans . extractRows vs
+extractVarsM vs = tr . (?vs) . tr . (?vs)
 
 extractVarsV :: [Int] -> Vec -> Vec
-extractVarsV vs x = fromList $ map (x@>) vs
+extractVarsV vs x = fromList $ map (x!) vs
 
 marginal :: [Int] -> Gaussian -> Gaussian
 marginal vs (N m c) = N m' c'
@@ -63,13 +63,13 @@ marginal vs (N m c) = N m' c'
 conditional :: Vec -> Gaussian -> Gaussian
 conditional y (N m c) = N m' c'
   where
-    vs = [dim m - dim y, dim y]
-    mx = subVector 0 (dim m - dim y) m
-    my = subVector (dim mx) (dim y) m
+    vs = [size m - size y, size y]
+    mx = subVector 0 (size m - size y) m
+    my = subVector (size mx) (size y) m
     [[cxx,cxy],
      [cyx,cyy]] = toBlocks vs vs c
     r = cxy <> inv cyy
-    m' = mx + r <> (y-my)
+    m' = mx + r #> (y-my)
     c' = cxx - r <> cyx
 
 -- a linear transformation of x is convolved with (suffers additive noise)
@@ -78,11 +78,11 @@ conditional y (N m c) = N m' c'
 jointLinear :: Gaussian -> Mat -> Gaussian -> Gaussian
 jointLinear (N m c) h (N o r) = N m' c'
   where
-    m' = vjoin [m, h <> m + o]
-    cxy = c <> trans h
+    m' = vjoin [m, h #> m + o]
+    cxy = c <> tr h
     cyy = h <> cxy + r
-    c' = fromBlocks [[ c        , cxy ]
-                    ,[ trans cxy, cyy ]]
+    c' = fromBlocks [[ c      , cxy ]
+                    ,[ tr cxy, cyy ]]
 
 -- direct, alternative method
 bayesGaussianLinear :: Vec -> Gaussian -> Mat -> Gaussian -> Gaussian
@@ -90,16 +90,16 @@ bayesGaussianLinear y (N m c) h (N o r) = N m' c'
   where
     ir = inv r
     ic = inv c
-    c' = inv (ic + trans h <> ir <> h)
-    m' = c' <> (trans h <> ir <> (y - o) + ic <> m)
+    c' = inv (ic + tr h <> ir <> h)
+    m' = c' #> (tr h #> ir #> (y - o) + ic #> m)
 
 -- kalman-style method
 bayesGaussianLinearK :: Vec -> Gaussian -> Mat -> Gaussian -> Gaussian
 bayesGaussianLinearK y (N m c) h (N o r) = N m' c'
   where
-    k = c <> trans h <> inv (h <> c <> trans h + r)
-    c' = (ident (dim m) - k <> h) <> c
-    m' = m + k <> (y - h <> m - o)
+    k = c <> tr h <> inv (h <> c <> tr h + r)
+    c' = (ident (size m) - k <> h) <> c
+    m' = m + k #> (y - h #> m - o)
 
 ----------------------------------------------------------------------
 
@@ -108,10 +108,10 @@ gaussianLogLik :: Gaussian -> Vec -> Double
 gaussianLogLik (N m c) = f
   where
     (ic,(lad,_)) = invlndet c
-    k = fromIntegral (dim m) * log (2*pi) + lad
+    k = fromIntegral (size m) * log (2*pi) + lad
     f z = -0.5*(k+dM2 z)
       where
-        dM2 x = xm <> ic <.> xm
+        dM2 x = xm <·> ic #> xm
           where xm = x - m
 
 ----------------------------------------------------------------------
@@ -132,7 +132,7 @@ eStep dat (mix,_) = (probs,loglik)
     xs = toRows dat
     fs = map (\(w,g)-> ((*w). exp . gaussianLogLik g)) mix
     liks = mat [ [ f x | f <- fs ] | x <- xs ]
-    sumRows = liks <> constant 1 (cols liks)
+    sumRows = liks #> konst 1 (cols liks)
     probs = liks / asColumn sumRows
     loglik = (sumElements $ log sumRows) / fromIntegral (rows dat)
 
@@ -153,7 +153,7 @@ mStep dat (probs,l) = (mix,l)
     cs = zipWith3 f ws ps ms
       where f w p m = scale (recip (w*n)) t
               where xc = dat - asRow m
-                    t = trans (xc * p) <> xc
+                    t = tr (xc * p) <> xc
 
 em :: Mat -> Mixture -> (Mixture,Double)
 em dat mix = fst $ -- debug "EM lik" snd $
@@ -172,7 +172,7 @@ diviG :: (Double, Gaussian) -> [(Double, Gaussian)]
 diviG (k,(N m c)) = [(0.5*k,N m1 c),(0.5*k, N m2 c)]
   where
     (l,v) = eigSH' c
-    l1 = 2*sqrt (l@>0)
+    l1 = 2*sqrt (l!0)
     v1 = l1 `scale` (head $ toColumns v)
     m1 = m + v1
     m2 = m - v1
@@ -193,7 +193,7 @@ mdl dat (mix,lik) = -lik * n + (k * np - 1)/2* log n
   where
     k = fromIntegral (length mix)
     n = fromIntegral (rows dat)
-    d = fromIntegral $ dim (mG $ snd $ head mix)
+    d = fromIntegral $ size (mG $ snd $ head mix)
     np = 1 + d + d*(d-1)/2
 
 findMixture :: Mat -> Mixture
@@ -221,5 +221,5 @@ ellipCov2D σ (N m c) = h ◁ circle
     [d1,d2] = toList (sqrt l)
     [vx,vy] = toList $ head (toColumns v)
     circle = Closed [Point (σ*d1*cos(t*degree)) (σ*d2*sin(t*degree)) | t <- [ 0, 10 .. 350 ]]
-    h = unsafeFromMatrix $ desp (m@>0,m@>1) <> rot3 (-angle) :: Homography
+    h = unsafeFromMatrix $ desp (m!0,m!1) <> rot3 (-angle) :: Homography
 

@@ -3,7 +3,7 @@ module Util.Audio(
     savePlayAudio
 ) where
 
-import Numeric.LinearAlgebra
+import Numeric.LinearAlgebra.HMatrix
 import System.Process(system)
 
 -- | load an audio file (currently using sox, TO DO: read sample rate)

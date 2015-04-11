@@ -1,4 +1,5 @@
 {-# LANGUAGE ViewPatterns, RecordWildCards #-}
+{-# LANGUAGE TypeFamilies #-}
 
 module Util.Convex where
 

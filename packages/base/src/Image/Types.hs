@@ -19,10 +19,9 @@ module Image.Types
 ) where
 
 import Util.Geometry(Point(..))
-import Numeric.LinearAlgebra
+import Numeric.LinearAlgebra.HMatrix
 import Util.Homogeneous(ht)
 import Data.Binary
-import Control.Applicative
 
 data Size  = Size  {height :: !Int, width :: !Int}
   deriving (Show, Eq)

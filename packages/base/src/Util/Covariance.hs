@@ -30,20 +30,19 @@ module Util.Covariance (
 
 ) where
 
-import Numeric.LinearAlgebra
-import Numeric.LinearAlgebra.Util(diagl,norm)
+import Numeric.LinearAlgebra.HMatrix
 import Util.Misc(Vec,Mat,unliftRow)
 import Util.Statistics(mean)
 
 
 meanRow :: Mat -> Vec
-meanRow m = ones <> m
+meanRow m = tr m #> ones
     where r = rows m
           k = 1 / fromIntegral r
           ones = konst k r
 
 covar :: Mat -> Mat -> Mat
-covar a b = flip scale (trans a <> b) (recip $ fromIntegral (rows a-1))
+covar a b = flip scale (tr a <> b) (recip $ fromIntegral (rows a-1))
 
 ----------------------------------------------------------------------
 
@@ -70,7 +69,7 @@ covStr x = s where
                , varV   = vars
                , covarM = c
                , eigvalCov = l
-               , eigvecCov = trans v'
+               , eigvecCov = tr v'
                }
 
 ----------------------------------------------------------------------
@@ -100,7 +99,7 @@ data PCARequest = ReconstructionQuality Double -- ^ ratio of variance
 -- | Given the desired compression criterion, from the 'Stat'istics of a dataset it creates a linear 'Codec' based on principal component analysis  (which minimizes mean squared reconstruction error).
 pca :: PCARequest -> CovStr -> Codec
 pca (NewDimension n) st = Codec
-    { encodeRows = \x -> (x - asRow m) <> trans vp
+    { encodeRows = \x -> (x - asRow m) <> tr vp
     , decodeRows = \y -> (y <> vp) + asRow m }
   where
     vp = takeRows n (eigvecCov st)
@@ -131,10 +130,10 @@ whiteningTransf st = fromBlocks [[ w, -wm]
   where
     m = meanV st
     w = whitening st
-    wm = asColumn (w <> m)
+    wm = asColumn (w #> m)
 
 whitener :: CovStr -> Codec
-whitener st = Codec { encodeRows = \x -> (x - m) <> trans w
+whitener st = Codec { encodeRows = \x -> (x - m) <> tr w
                     , decodeRows = \y -> (y <> w) + m }
   where
     m = asRow $ meanV st
@@ -148,10 +147,10 @@ isoDistTransf z st = fromBlocks [[ w, -wm]
                                 ,[ 0,  1 ]]
   where
     m = meanV st
-    w = diagl (replicate (dim m) d)
-    wm = asColumn (w <> m)
+    w = diagl (replicate (size m) d)
+    wm = asColumn (w #> m)
     
-    d = recip . (/sqrt 2) . mean . map norm . toRows $ z- asRow m
+    d = recip . (/sqrt 2) . mean . map norm_2 . toRows $ z- asRow m
 
 
 
@@ -160,7 +159,7 @@ isoDist z st = Codec { encodeRows = \x -> (x - m) / scalar d
                      , decodeRows = \y -> (y * scalar d) + m }
   where
     m = asRow $ meanV st
-    d = (/sqrt 2) . mean . map norm . toRows $ z-m
+    d = (/sqrt 2) . mean . map norm_2 . toRows $ z-m
 
 --------------------------------------------------------------
 

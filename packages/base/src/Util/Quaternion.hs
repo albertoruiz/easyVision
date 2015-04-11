@@ -11,9 +11,8 @@ module Util.Quaternion(
     slerp
 ) where
 
-import Numeric.LinearAlgebra
-import Numeric.LinearAlgebra.Util(norm,unitary)
-import Util.Homogeneous(cross)
+import Numeric.LinearAlgebra.HMatrix
+import Numeric.LinearAlgebra.HMatrix.Util(unitary)
 import Data.List(minimumBy,maximumBy)
 import Data.Function(on)
 import Util.Misc(vec,Vec,Mat)
@@ -25,7 +24,7 @@ data Quaternion = Quat {qs::Double, qv::Vec} deriving (Eq, Show)
 instance Num Quaternion where
     Quat{ qs = a, qv = u } + Quat{ qs = t, qv = v } = Quat { qs = a + t , qv = u + v }
     Quat{ qs = a, qv = u } * Quat{ qs = t, qv = v } = Quat { qs = a*t - udot u v, qv = a `scale` v + t `scale` u + cross u v }
-    abs Quat{ qs = s, qv = v } = Quat {qs = sqrt $ s**2 + norm v ** 2, qv = vec [0,0,0] }
+    abs Quat{ qs = s, qv = v } = Quat {qs = sqrt $ s**2 + norm_2 v ** 2, qv = vec [0,0,0] }
     signum _ = error "signum of Quaternion not defined"
     fromInteger = quat . fromInteger
     negate q = (-1) * q
@@ -43,7 +42,7 @@ quat x = Quat {qs = x, qv = vec [0,0,0] }
 
 normalize :: Quaternion -> Quaternion
 normalize Quat{ qs = s, qv = v } = Quat { qs = s/m, qv = v / scalar m }
-    where m = sqrt $ s**2 + norm v ** 2
+    where m = sqrt $ s**2 + norm_2 v ** 2
 
 
 -- | composition of rotations (Grassmann product)
@@ -62,9 +61,9 @@ axisToQuat phi axis = Quat { qs = cos (phi/2), qv = sin (phi/2) `scale` v }
 quatToAxis :: Quaternion -> (Double, Vec)
 quatToAxis q = r where
     Quat s v = normalize q
-    vn = norm v
+    vn = norm_2 v
     phi = 2 * atan2 vn s
-    r = if vn > 100*eps then (phi, v / scalar vn) else (0, vec [1,0,0])
+    r = if vn > 100*peps then (phi, v / scalar vn) else (0, vec [1,0,0])
 
 --------------------------------------
 
@@ -103,11 +102,11 @@ rotToAxis :: Mat -> (Double, Vec)
 rotToAxis rot = (angle,axis) where
     (l,v) = eig rot
     r = zip (toList l) (toColumns v)
-    axis = mapVector realPart $ snd $ minimumBy (compare `on` (abs.imagPart.fst)) r
+    axis = cmap realPart $ snd $ minimumBy (compare `on` (abs.imagPart.fst)) r
     angleraw = phase $ maximumBy (compare `on` imagPart) (toList l)
     mx = maximum $ map abs $ toList $ flatten $ rot
     rec = quatToRot $ axisToQuat angleraw axis
-    ok = (pnorm PNorm1 (flatten rot - flatten rec)) / mx < 1E-8
+    ok = (norm_1 (flatten rot - flatten rec)) / mx < 1E-8
     angle = if ok then angleraw else -angleraw
 
 -------------------------------------------------------

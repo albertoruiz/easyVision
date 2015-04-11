@@ -24,7 +24,7 @@ module Util.Kalman (
     ukf, UKFParam(..), ukfDefaultParam
 ) where
 
-import Numeric.LinearAlgebra
+import Numeric.LinearAlgebra.HMatrix
 import Numeric.GSL.Differentiation
 import Util.Misc(Vec,Mat,vec,mat)
 
@@ -45,20 +45,20 @@ type Measurement = Vec
 
 kalman' :: LinearSystem -> State -> Measurement -> State
 kalman' (LinearSystem f h q r) (State x p _) z = State x' p' zp where
-    px = f <> x                            -- prediction
-    pq = f <> p <> trans f + q             -- its covariance
-    zp = h <> px                           -- predicted measurement
+    px = f #> x                            -- prediction
+    pq = f <> p <> tr f + q             -- its covariance
+    zp = h #> px                           -- predicted measurement
     y  = z - zp                            -- residue
-    cy = h <> pq <> trans h + r            -- its covariance
-    k  = pq <> trans h <> inv cy           -- kalman gain
-    x' = px + k <> y                       -- new state
-    p' = (ident (dim x) - k <> h) <> pq    -- its covariance
+    cy = h <> pq <> tr h + r            -- its covariance
+    k  = pq <> tr h <> inv cy           -- kalman gain
+    x' = px + k #> y                       -- new state
+    p' = (ident (size x) - k <> h) <> pq    -- its covariance
 
 
 blindKalman :: LinearSystem -> State -> State
-blindKalman (LinearSystem f h q _r) (State x p _) = State x' p' (h <> x') where
-    x' = f <> x
-    p' = f <> p <> trans f + q
+blindKalman (LinearSystem f h q _r) (State x p _) = State x' p' (h #> x') where
+    x' = f #> x
+    p' = f <> p <> tr f + q
 
 -- | Kalman filter update step
 kalman :: LinearSystem -> State -> Maybe Measurement -> State
@@ -92,20 +92,20 @@ ekf' (System f h q r) (State vx p _) z = State x' p' zp where
     jh = mat (jacobian h x)
 
     px = f x                               -- prediction
-    pq = jf <> p <> trans jf + q           -- its covariance
+    pq = jf <> p <> tr jf + q           -- its covariance
     zp = vec (h px)                     -- predicted measurement
     y  = z - zp                            -- residue
-    cy = jh <> pq <> trans jh + r          -- its covariance
-    k  = pq <> trans jh <> inv cy          -- kalman gain
-    x' = vec px + k <> y                -- new state
-    p' = (ident (dim x') - k <> jh) <> pq  -- its covariance
+    cy = jh <> pq <> tr jh + r          -- its covariance
+    k  = pq <> tr jh <> inv cy          -- kalman gain
+    x' = vec px + k #> y                -- new state
+    p' = (ident (size x') - k <> jh) <> pq  -- its covariance
 
 
 blindEKF :: System -> State -> State
 blindEKF (System f h q _r) (State vx p _) = State (vec x') p' (vec (h x')) where
     x = toList vx
     x' = f x
-    p' = jf <> p <> trans jf + q
+    p' = jf <> p <> tr jf + q
     jf = mat (jacobian f x)
 
 -- | Extended Kalman Filter update step
@@ -134,9 +134,9 @@ unscentedSamples UKFParam {..} (med,cov) = (med : concat [pos,neg], (wm,wc)) whe
     wc = (lambda/(nr+lambda) + 1- ukfAlpha**2 + ukfBeta) : ws
     ws = replicate (2*n) (1/2/(nr+lambda))
     lambda = ukfAlpha**2 * (nr + ukfKappa n) - nr
-    n  = dim med
+    n  = size med
     nr = fromIntegral n
-    --mr m = trans $ v <> diag (sqrt l) where (l,v) = eigSH m
+    --mr m = tr $ v <> diag (sqrt l) where (l,v) = eigSH m
     mr = cholSH -- no symmetry check
 
 
@@ -149,7 +149,7 @@ unscentedTransformWithSamples
 unscentedTransformWithSamples param f g = ((m',c'),(s',w)) where
     (s, w@(wm,wc)) = unscentedSamples param g
     s' = map f s
-    m' = fromList wm <> fromRows s'
+    m' = tr (fromRows s') #> fromList wm
     c' = sum (zipWith h wc s') where h ww v = ww `scale` outer vm vm where vm = v - m'
 
 
@@ -164,12 +164,12 @@ ukf' param (System f h q r) (State vx p _) z = State x' p' mz where
     y  = z - mz                            -- residue
     cy = cz + r                            -- its covariance
 
-    cross = sum (zipWith3 hh wc sx sz)    -- !!!
+    crossc = sum (zipWith3 hh wc sx sz)    -- !!!
         where hh w x zz = w `scale` outer (x-px) (zz-mz)
 
-    k  = cross <> inv cy                   -- kalman gain
-    x' = px + k <> y                       -- new state
-    p' = pq - k <> cy <> trans k           -- its covariance
+    k  = crossc <> inv cy                  -- kalman gain
+    x' = px + k #> y                       -- new state
+    p' = pq - k <> cy <> tr k           -- its covariance
 
 
 blindUKF :: UKFParam -> System -> State -> State
@@ -183,3 +183,4 @@ blindUKF param (System f h q _r) (State vx p _) = State px pq (h' px) where
 ukf :: UKFParam -> System -> State -> Maybe Measurement -> State
 ukf param sys st (Just m) = ukf'     param sys st m
 ukf param sys st Nothing  = blindUKF param sys st
+

@@ -1,7 +1,3 @@
-{-# LANGUAGE CPP #-}
-#if __GLASGOW_HASKELL__ < 704
-{-# LANGUAGE TypeFamilies #-}
-#endif
 -----------------------------------------------------------------------------
 {- |
 Module      :  Util.Estimation
@@ -42,8 +38,8 @@ module Util.Estimation
 -- , estimateProjective
 ) where
 
-import Numeric.LinearAlgebra hiding (eps)
-import Numeric.LinearAlgebra.Util(norm,unitary,diagl,row,(#),(¦))
+import Numeric.LinearAlgebra.HMatrix
+import Numeric.LinearAlgebra.HMatrix.Util(unitary)
 import Util.Covariance
 import Util.Homogeneous
 import Data.List(transpose,nub,maximumBy,genericLength,sortBy,minimumBy)
@@ -53,9 +49,6 @@ import Util.Debug(impossible,debug)
 import Util.Statistics(median)
 import Data.Function(on)
 import Util.Geometry hiding (homog)
-#if __GLASGOW_HASKELL__ < 704
-import Util.Small(Shaped(..),DArray)
-#endif
 
 
 -- | Minimum squared error solution of a (possibly overconstrained) homogeneous linear system.
@@ -74,14 +67,14 @@ homogSolveG meth coeffs = (sol,err) where
       | otherwise = error "homogSolve with rows<cols-1"
     (s,v) = meth m
     sol = flatten $ dropColumns (c-1) v
-    err = s @> (c-1)
+    err = s ! (c-1)
 
 
 -- | reduced coefficient matrix for a homogeneous linear system
 compact :: Int -> Mat -> Mat
 compact nr x = takeRows (rows x `min` nr) c
-    where (l,v) = eigSH' (trans x <> x)
-          c = diag (sqrt (abs l)) <> trans v
+    where (l,v) = eigSH' (tr x <> x)
+          c = diag (sqrt (abs l)) <> tr v
 
 --------------------------------------------------------------------------------
 
@@ -137,13 +130,8 @@ estimateHomography :: [[Double]] -> [[Double]] -> Mat
 estimateHomography = withNormalization inv estimateHomographyRaw
 
 --------------------------------------------------------------------------------
-#if __GLASGOW_HASKELL__ < 704
-withNormalization' :: (Shaped x, Vectorlike x, Shaped y, Vectorlike y,
-                       DArray (Shape x) ~ Vec, DArray (Shape y) ~ Vec)
-#else
 -- | combinator to estimate models with normalized (whitened) coordinates
 withNormalization' :: (Vectorlike x, Vectorlike y)
-#endif
                    => (Mat -> Mat) -- ^ left modifier (inv for homographies, trans for fundamental matrices)
                    -> ([x] -> [y] -> Mat) -- ^ estimator
                    -> ([x] -> [y] -> Mat) -- ^ estimator with normalized coordinates
@@ -223,9 +211,9 @@ ransac estimator isInlier n prob dat = (bestModel,okinliers) where
 --------------------------
 
 isInlierTrans :: Double -> Mat -> ([Double], [Double]) -> Bool
-isInlierTrans t h (dst,src) = norm (vd - vde) < t 
+isInlierTrans t h (dst,src) = norm_2 (vd - vde) < t 
     where vd  = vec dst
-          vde = inHomog $ h <> homog (vec src)
+          vde = inHomog $ h #> homog (vec src)
 
 estimateHomographyRansac
     :: Double  -- ^ distance threshold for inliers
@@ -284,13 +272,13 @@ procrustes x y = (s,r,t)
     yc = y - asRow my
     xcs = toRows xc
     ycs = toRows yc
-    s = median $ zipWith (\x' y' -> norm x' / norm y') xcs ycs
+    s = median $ zipWith (\x' y' -> norm_2 x' / norm_2 y') xcs ycs
     syc = scalar s * yc
-    k = trans syc <> xc
+    k = tr syc <> xc
     (u,_,v) = svd k
-    r = v <> diagl (replicate (cols x -1) 1 ++[w]) <> trans u
-    w = det (v <> trans u)
-    t = scalar (recip s) * mx - r <> my
+    r = v <> diagl (replicate (cols x -1) 1 ++[w]) <> tr u
+    w = det (v <> tr u)
+    t = scalar (recip s) * mx - r #> my
 
 {-
 checkpro1 = do
@@ -313,14 +301,14 @@ checkpro2 = do
 --------------------------------------------------------------------------------
 
 estimateAffine :: DMat -> DMat -> Matrix Double
-estimateAffine y x = trans h # v
+estimateAffine y x = tr h === v
   where
     h = (x ¦ 1) <\> y
     d = cols x
     v = row (replicate d 0 ++ [1])
 
 estimateSimilar :: DMat -> DMat -> Matrix Double
-estimateSimilar y x = h # v
+estimateSimilar y x = h === v
   where
     (s,r,t') = procrustes y x
     t = asColumn t'

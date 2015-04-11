@@ -1,5 +1,5 @@
 Name:               hVision-base
-Version:            0.5
+Version:            0.6
 License:            GPL
 License-file:       LICENSE
 Author:             Alberto Ruiz
@@ -11,7 +11,7 @@ Description:
  Utilities for pattern recognition and computer vision.
 
 Category:           Math
-tested-with:        GHC ==7.6.3
+tested-with:        GHC ==7.10.1
 
 cabal-version:      >=1.2
 build-type:         Simple
@@ -31,7 +31,7 @@ flag uvc
 
 
 library
-    Build-Depends:      base >= 4 && < 5, hmatrix, hmatrix-gsl, vector,
+    Build-Depends:      base >= 4 && < 5, hmatrix>=0.17, hmatrix-gsl, vector,
                         process, array, random, containers, directory,
                         old-locale, old-time,
          --               hmatrix-glpk,

@@ -1,3 +1,5 @@
+{-# LANGUAGE FlexibleContexts #-}
+
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Util.Ellipses
@@ -26,8 +28,7 @@ module Util.Ellipses (
     intersectionConicLine
 ) where
 
-import Numeric.LinearAlgebra
-import Numeric.LinearAlgebra.Util(diagl,mt)
+import Numeric.LinearAlgebra.HMatrix
 import Numeric.GSL.Polynomials
 import Util.Homogeneous
 import Util.Misc(mat,Mat)
@@ -52,6 +53,12 @@ estimateConicRaw ps = con where
 computeConic :: [Point] -> Conic
 computeConic = unsafeFromMatrix . estimateConicRaw
 
+(@@>) :: Mat -> (Int,Int) -> Double
+(@@>) = atIndex
+
+mt :: Mat -> Mat
+mt = inv . tr
+
 --------------------------------------------------------------------
 
 data InfoEllipse = InfoEllipse {
@@ -74,7 +81,7 @@ analyzeEllipse m = InfoEllipse {
     c = m@@>(0,1)
     phi = 0.5 * atan2 (2*c) (b-a)
     t1 = rot3 (-phi)
-    m1 = t1 <> m <> trans t1
+    m1 = t1 <> m <> tr t1
     a' = m1@@>(0,0)
     b' = m1@@>(1,1)
     t2 = diagl [sqrt (abs $ a'/b'), 1,1]
@@ -88,7 +95,7 @@ analyzeEllipse m = InfoEllipse {
     t3 = scaling (1/sc) <> desp (d'',e'')
     t = t3 <> t2 <> t1
     --m3 = mt t <> m <> inv t
-    [mx,my,_] = toList (inv t <> fromList [0,0,1])
+    [mx,my,_] = toList (inv t #> fromList [0,0,1])
     [sx,sy,_] = toList $ sc `scale` (1 / takeDiag t2)
     (dx,dy,alpha) = if sx > sy
         then (sx,sy,-phi)
@@ -100,8 +107,8 @@ reduceConics :: Mat -> Mat -> (Mat, Mat)
 reduceConics c1 c2 = (w, c2') where
     (s,v) = eigSH' c1
     sg = signum s
-    p = (if sg@>1 < 0 then flipud else id) (ident 3)
-    w1 = mt $ p <> diag (sg / sqrt (abs s)) <> trans v
+    p = (if sg!1 < 0 then flipud else id) (ident 3)
+    w1 = mt $ p <> diag (sg / sqrt (abs s)) <> tr v
     InfoEllipse {conicCenter = (mx,my), conicAngle = a} = analyzeEllipse (mt w1 <> c2 <> inv w1)
     w2 = chooseRot mx my a
     w = w2 <> w1
@@ -121,7 +128,7 @@ reduceConics' c1 c2 = (w, c2') where
 chooseRot :: Double -> Double -> Double -> Mat
 chooseRot mx my a = w where
     v = fromList [mx,my,1]
-    [mx',my',_] = toList $ rot3 a <> v
+    [mx',my',_] = toList $ rot3 a #> v
     w = if abs mx' > abs my'
         then rot3 a
         else rot3 (a+pi/2)

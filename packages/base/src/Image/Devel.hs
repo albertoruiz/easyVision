@@ -35,12 +35,11 @@ import Foreign.Ptr(Ptr)
 import Util.Misc((//))
 import Data.List.Split(splitOn)
 import Image.Convert
-import Data.Packed.Development(fi)
 import Foreign.ForeignPtr(withForeignPtr)
 import Foreign.ForeignPtr.Unsafe(unsafeForeignPtrToPtr)
 import Numeric.LinearAlgebra.HMatrix(Matrix,flatten,rows,cols,Vector)
 import qualified Numeric.LinearAlgebra.HMatrix as M
-import Numeric.LinearAlgebra.Devel(orderOf, MatrixOrder(..),unsafeToForeignPtr)
+import Numeric.LinearAlgebra.Devel(fi,orderOf, MatrixOrder(..),unsafeToForeignPtr)
 
 type RawImage p t = Ptr p -> CInt -> CInt -> CInt -> CInt -> CInt -> t
 

@@ -1,3 +1,5 @@
+{-# LANGUAGE TypeFamilies #-}
+
 module Util.NLHash(bestOrientation) where
 
 import Util.Geometry ( Segment(Segment), Point(Point) )

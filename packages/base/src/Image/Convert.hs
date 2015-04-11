@@ -24,14 +24,13 @@ import Image.Core
 import Foreign.Ptr ( plusPtr )
 import Foreign.Marshal ( copyBytes )
 import Control.Monad ( when )
-import Control.Applicative ( (<$>) )
 import System.IO
 import System.Exit ( ExitCode(ExitSuccess) )
 import System.Process ( system )
 import Data.List ( isSuffixOf, intercalate )
 import Data.List.Split ( splitOn )
-import Data.Packed.Development
-import Numeric.LinearAlgebra ( Matrix, rows, cols )
+import Numeric.LinearAlgebra.HMatrix ( Matrix, rows, cols )
+import Numeric.LinearAlgebra.Devel
 import Data.Char ( toLower )
 import qualified Data.ByteString as BS ( writeFile, append )
 import qualified Data.ByteString.Char8 as BSC ( pack )

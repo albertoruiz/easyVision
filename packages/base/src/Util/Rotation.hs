@@ -17,10 +17,11 @@ module Util.Rotation
 ( rot1, rot1d, rot1g
 , rot2, rot2d, rot2g
 , rot3, rot3d, rot3g
+, degree
 ) where
 
-import Numeric.LinearAlgebra
-import Util.Misc(Mat)
+import Numeric.LinearAlgebra.HMatrix
+import Util.Misc(Mat,degree)
 
 
 

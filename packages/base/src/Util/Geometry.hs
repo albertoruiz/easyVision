@@ -60,11 +60,10 @@ module Util.Geometry
 
 import Util.Small
 import Util.Misc(Mat,Vec)
-import Numeric.LinearAlgebra hiding ((|>))
+import Numeric.LinearAlgebra.HMatrix hiding ((|>))
 import Data.Function(on)
 import Foreign.Storable
 import Foreign.Ptr
-import Control.Applicative
 import qualified Numeric.LinearAlgebra.Tensor as T
 import qualified Numeric.LinearAlgebra.Array.Util as UT
 import qualified Numeric.LinearAlgebra.Exterior as E
@@ -91,7 +90,7 @@ instance Storable Point where
 instance Shaped Point where
     type Shape Point = Dim2 Double
     toArray (Point x1 x2) = vec2 x1 x2
-    unsafeFromArray v = Point (v@>0) (v@>1)
+    unsafeFromArray v = Point (v!0) (v!1)
 
 
 -- | 2D displacement
@@ -105,7 +104,7 @@ data HPoint = HPoint !Double !Double !Double deriving (Eq, Show, Read)
 instance Shaped HPoint where
     type Shape HPoint = Dim3 Double
     toArray (HPoint x y w) = vec3 x y w
-    unsafeFromArray v = HPoint (v@>0) (v@>1) (v@>2)
+    unsafeFromArray v = HPoint (v!0) (v!1) (v!2)
 
 
 -- | inhomogenous 3D point
@@ -114,7 +113,7 @@ data Point3D = Point3D !Double !Double !Double deriving (Eq, Show, Read)
 instance Shaped Point3D where
     type Shape Point3D = Dim3 Double
     toArray (Point3D x y w) = vec3 x y w
-    unsafeFromArray v = Point3D (v@>0) (v@>1) (v@>2)
+    unsafeFromArray v = Point3D (v!0) (v!1) (v!2)
 
 
 -- | homogenous 3D point
@@ -123,7 +122,7 @@ data HPoint3D = HPoint3D !Double !Double !Double !Double deriving (Eq, Show, Rea
 instance Shaped HPoint3D where
     type Shape HPoint3D = Dim4 Double
     toArray (HPoint3D x y z w) = vec4 x y z w
-    unsafeFromArray v = HPoint3D (v@>0) (v@>1) (v@>2) (v@>3)
+    unsafeFromArray v = HPoint3D (v!0) (v!1) (v!2) (v!3)
 
 
 
@@ -133,7 +132,7 @@ data HLine = HLine !Double !Double !Double deriving (Eq, Show, Read)
 instance Shaped HLine where
     type Shape HLine = Dim3 Double
     toArray (HLine a b c) = vec3 a b c
-    unsafeFromArray v = HLine(v@>0) (v@>1) (v@>2)
+    unsafeFromArray v = HLine(v!0) (v!1) (v!2)
 
 
 -- | 3D line (provisional)
@@ -151,7 +150,7 @@ data HPlane = HPlane !Double !Double !Double !Double deriving (Eq, Show, Read)
 instance Shaped HPlane where
     type Shape HPlane = Dim4 Double
     toArray (HPlane a b c d) = vec4 a b c d
-    unsafeFromArray v = HPlane (v@>0) (v@>1) (v@>2) (v@>3)
+    unsafeFromArray v = HPlane (v!0) (v!1) (v!2) (v!3)
 
 
 --------------------------------------------------------------------------------
@@ -229,7 +228,7 @@ class Transformable t x
 
 apMat :: (Vectorlike a, Vectorlike b, Matrixlike t) => (Mat -> Mat) -> t -> [a] -> [b]
 apMat _ _ [] = []
-apMat g h xs = (map unsafeFromVector . toRows) . (<> (g.trans) (toMatrix h)) . fromRows . (map toVector) $ xs
+apMat g h xs = (map unsafeFromVector . toRows) . (<> (g.tr) (toMatrix h)) . fromRows . (map toVector) $ xs
 
 newtype Trust t = Trust t
 
@@ -265,7 +264,7 @@ instance Transformable Homography Point
 instance Transformable Homography [HLine]
   where
     type TResult Homography [HLine] = [HLine]
-    apTrans = apMat (inv.trans)
+    apTrans = apMat (inv.tr)
 
 instance Transformable Homography HLine
   where
@@ -276,7 +275,7 @@ instance Transformable Homography HLine
 instance Transformable Homography Conic
   where
     type TResult Homography Conic = Conic
-    apTrans (Homography t) (Conic c) = Conic (trans it <> c <> it)
+    apTrans (Homography t) (Conic c) = Conic (tr it <> c <> it)
       where
         it = inv t
 
@@ -289,7 +288,7 @@ instance Transformable Homography [Conic]
 instance Transformable Homography DualConic
   where
     type TResult Homography DualConic = DualConic
-    apTrans (Homography t) (DualConic c) = DualConic (t <> c <> trans t)
+    apTrans (Homography t) (DualConic c) = DualConic (t <> c <> tr t)
 
 instance Transformable Homography [DualConic]
   where
@@ -377,17 +376,17 @@ class BackTransformable t x
 instance BackTransformable Homography [HLine]
   where
     type BResult Homography [HLine] = [HLine]
-    bTrans = apMat trans
+    bTrans = apMat tr
 
 instance BackTransformable Homography3D [HPlane]
   where
     type BResult Homography3D [HPlane] = [HPlane]
-    bTrans = apMat trans
+    bTrans = apMat tr
 
 instance BackTransformable Camera [HLine]
   where
     type BResult Camera [HLine] = [HPlane]
-    bTrans = apMat trans
+    bTrans = apMat tr
 
 ---------------------------------------------------------------------
 
@@ -504,12 +503,12 @@ instance Homog HPoint3D
     type IHResult HPoint3D = Point3D
     inhomog (HPoint3D x y z w) = Point3D (x/w) (y/w) (z/w)
 
-instance (Num (Vector t), Container Vector t) => Homog (Vector t)
+instance (Num (Vector t), Indexable (Vector t) t, Numeric t) => Homog (Vector t)
   where
     type IHResult (Vector t) = Vector t
-    inhomog v = subVector 0 d (v / scalar (v@>d))
+    inhomog v = subVector 0 d (v / scalar (v!d))
       where
-        d = dim v - 1
+        d = size v - 1
 
 instance (Num (Vector t), Container Vector t) => Homog (Matrix t)
   where
@@ -574,12 +573,12 @@ crossMat :: Vec -> Mat
 crossMat v = (3><3) [ 0,-c, b,
                       c, 0,-a,
                      -b, a, 0]
-    where a = v@>0
-          b = v@>1
-          c = v@>2
+    where a = v!0
+          b = v!1
+          c = v!2
 
 meetLines :: HLine -> HLine -> HPoint
-meetLines l m = HPoint (v@>0) (v@>1) (v@>2) where v = crossMat (toVector l) <> (toVector m)
+meetLines l m = HPoint (v!0) (v!1) (v!2) where v = crossMat (toVector l) #> (toVector m)
 
 instance Meet HLine HLine where
     type HLine :\/: HLine = HPoint
@@ -588,7 +587,7 @@ instance Meet HLine HLine where
 -- point point
 
 joinPoints :: HPoint -> HPoint -> HLine
-joinPoints p q = HLine (v@>0) (v@>1) (v@>2) where v = crossMat (toVector p) <> (toVector q)
+joinPoints p q = HLine (v!0) (v!1) (v!2) where v = crossMat (toVector p) #> (toVector q)
 
 instance Join HPoint HPoint where
     type HPoint :/\: HPoint = HLine

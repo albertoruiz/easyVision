@@ -40,7 +40,6 @@ import Data.List(sortBy,groupBy,intercalate)
 import Util.Misc(posMax)
 import Text.Printf(printf)
 import Control.Monad(ap)
-import Control.Applicative
 
 data Prob a = Prob [(a,Double)] deriving Eq
 

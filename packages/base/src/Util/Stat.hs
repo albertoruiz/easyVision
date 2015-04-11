@@ -21,15 +21,14 @@ module Util.Stat (
 
 ) where
 
-import Numeric.LinearAlgebra hiding (eigenvalues)
-import Numeric.LinearAlgebra.Util((#),(¦))
+import Numeric.LinearAlgebra.HMatrix hiding (eigenvalues)
 import Util.Misc(Vec,Mat)
 
 meanRow :: Mat -> Vec
-meanRow m = ones <> m
+meanRow m = tr m #> ones
     where r = rows m
           k = 1 / fromIntegral r
-          ones = constant k r
+          ones = konst k r
 
 -- | 1st and 2nd order statistics and other useful information extracted from a multivariate sample, where observations are given as rows of a matrix.
 
@@ -53,9 +52,9 @@ stat :: Mat -> Stat
 stat x = s where
     m = meanRow x
     xc = x - asRow m
-    c = (trans xc <> xc) / fromIntegral (rows x -1)
+    c = (tr xc <> xc) / fromIntegral (rows x -1)
     (l,v') = eigSH' c
-    v = trans v'
+    v = tr v'
     lastrow = asRow $ fromList $ replicate (cols x) 0 ++[1.0::Double]
     w = diag (1/sqrt l) <> v
     n = rows x
@@ -70,9 +69,9 @@ stat x = s where
              , eigenvectors = v
              , invCov = inv c
              , whitener = w
-             , whiteningTransformation = w ¦ asColumn (-w <> m)
-                                       # lastrow
-             , whitenedData = xc <> trans w
+             , whiteningTransformation = w ||| asColumn (-w #> m)
+                                       === lastrow
+             , whitenedData = xc <> tr w
              , varianceVector = vars
              , normalizedData = (x - asRow m) / asRow (sqrt vars)
              , normalize = f
@@ -103,12 +102,12 @@ pca :: PCARequest -> Stat -> Codec
 pca (NewDimension n) st =
     Codec { encodeVector = encv
           , decodeVector = decv
-          , encodeMatrix = \x -> (x - asRow m) <> trans vp
+          , encodeMatrix = \x -> (x - asRow m) <> tr vp
           , decodeMatrix = \y -> (y <> vp) + asRow m
 
 } where
-    encv x = vp <> (x - m)
-    decv x = (x <> vp) + m
+    encv x = vp #> (x - m)
+    decv x = (tr vp #> x) + m
     vp = takeRows n (eigenvectors st)
     m = meanVector st
 

@@ -7,7 +7,7 @@ module Util.Sparse(
     blockDiagSolveLU
 ) where
 
-import Numeric.LinearAlgebra hiding (i)
+import Numeric.LinearAlgebra.HMatrix hiding (mkSparse, toDense)
 --import qualified Data.Map as Map
 import qualified Data.Array as A
 import Data.List
@@ -48,10 +48,10 @@ toDense sp = fromBlocks [[f (sat sp (i,j)) | j<-[0..c-1]] | i<- [0..r-1]]
           f (Dense x) = x
           f (Diagonal l) = blockDiag l
 
-spTrans :: MatrixBlock t -> MatrixBlock t
+spTrans :: Numeric t => MatrixBlock t -> MatrixBlock t
 spTrans Zero = Zero
-spTrans (Dense x) = Dense (trans x)
-spTrans (Diagonal l) = Diagonal (map trans l)
+spTrans (Dense x) = Dense (tr x)
+spTrans (Diagonal l) = Diagonal (map tr l)
 
 spAdd :: (Container Vector t, Num (Vector t))
       => MatrixBlock t -> MatrixBlock t -> MatrixBlock t
@@ -76,7 +76,7 @@ spew op (Diagonal l) (Dense x) = Dense (blockDiag l `op` x)
 spew op (Diagonal x) (Diagonal y) = Diagonal (zipWith op x y) -- allow different sizes?
 spew _ _ _ = impossible "spew in Sparse"
 
-spMul :: (Product t)
+spMul :: (Numeric t)
       => MatrixBlock t -> MatrixBlock t -> MatrixBlock t
 spMul Zero _ = Zero
 spMul _ Zero = Zero
@@ -87,11 +87,11 @@ spMul (Diagonal x) (Diagonal y) = Diagonal (zipWith (<>) x y) -- allow different
 
 -------------------------------
 
-bTrans :: SparseMatrix t -> SparseMatrix t
+bTrans :: Numeric t => SparseMatrix t -> SparseMatrix t
 bTrans (SparseMatrix r c at) = SparseMatrix c r at'
     where at' (i,j) = spTrans (at (j,i))
 
-bMul :: (Product t, Container Vector t, Num (Vector t))
+bMul :: (Numeric t, Num (Vector t))
      => SparseMatrix t -> SparseMatrix t -> SparseMatrix t
 bMul (SparseMatrix rx cx atx) (SparseMatrix _ry cy aty) = mkSparse l where
     l = [((i,j), foldl' spAdd Zero [atx (i,k) `spMul` aty (k,j) | k<-ks])| i<-is, j<-js]
@@ -114,7 +114,7 @@ blockDiag bs = fromBlocks [ [ f i j | i<-ns ] | j<-ns ] where
 blockDiagSolveLU :: (Field t) => [(Matrix t, [Int])] -> Matrix t -> Matrix t
 blockDiagSolveLU lus m = blockDiagOpG (rows.fst) luSolve lus m
 
-blockDiagMul :: (Product t) => [Matrix t] -> Matrix t -> Matrix t
+blockDiagMul :: (Numeric t) => [Matrix t] -> Matrix t -> Matrix t
 blockDiagMul bs m = blockDiagOp (<>) bs m
 
 blockDiagOp :: (Element t2, Element t1) 

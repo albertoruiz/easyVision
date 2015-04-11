@@ -44,8 +44,7 @@ module Util.Homogeneous
 , ln2hv, hv2ln
 ) where
 
-import Numeric.LinearAlgebra
-import Numeric.LinearAlgebra.Util((&),norm,diagl)
+import Numeric.LinearAlgebra.HMatrix
 import Util.Rotation(rot3)
 import Util.Misc(vec,Vec,mat,Mat)
 import Util.Debug(impossible)
@@ -115,29 +114,26 @@ linf = vec [0,0,1]
 
 -- | obtains the ordinary vector corresponding to a homogeneous vector (divides by the last component). Note that no ideal point checking is done.
 inHomog :: Vec -> Vec
-inHomog v = subVector 0 l v  / scalar (v@>l) where l = dim v - 1
+inHomog v = subVector 0 l v  / scalar (v!l) where l = size v - 1
 
 -- | creates a homogeneus version of an ordinary vector (appends a constant component equal to 1)
 homog :: Vec -> Vec
-homog v = v & 1
+homog v = vjoin [v, 1]
 
 
 -- | 3x3 antisymmetric matrix
-asMat :: Field a => Vector a -> Matrix a
+asMat :: (Field a, Indexable (Vector a) a) => Vector a -> Matrix a
 asMat v = (3><3) [ 0,-c, b,
                    c, 0,-a,
                   -b, a, 0]
-    where a = v@>0
-          b = v@>1
-          c = v@>2
+    where a = v!0
+          b = v!1
+          c = v!2
 
--- | vector cross product
-cross :: Field a => Vector a -> Vector a -> Vector a
-cross a b = asMat a <> b
 
 -- | obtains a normalized version of a homogeneous matrix dividing by the bottom-right element.
 normat3 :: Mat -> Mat
-normat3 m = m / scalar (m@@>(rows m -1, cols m -1))
+normat3 m = m / scalar (m `atIndex` (rows m -1, cols m -1))
 
 -- | obtains a normalized version of a homogeneous matrix such that the biggest square submatrix on the left has determinant == 1
 normatdet :: Mat -> Mat
@@ -149,7 +145,7 @@ normatdet m = m / scalar k where
 
 -- | obtains a normalized version of a homogeneous matrix such that the vector of all entries has 2-norm ==1
 normat :: Mat -> Mat
-normat m = m / scalar (norm (flatten m))
+normat m = m / scalar (norm_2 (flatten m))
 
 homogMat :: (Container Vector t, Num (Vector t))
          => Matrix t -> Matrix t
@@ -162,18 +158,18 @@ inHomogMat m = ma / (mb `outer` konst 1 (cols ma))
 
 infixl 7 !<>, <>!
 
-(!<>) ::  (Product t, Container Vector t, Num (Vector t))
+(!<>) ::  (Numeric t, Num (Vector t))
        => Matrix t -> Matrix t -> Matrix t
 a !<> b = G.inhomog (G.homog a <> b)
 
-(<>!) ::  (Product t, Container Vector t, Num (Vector t))
+(<>!) ::  (Numeric t, Num (Vector t))
        => Matrix t -> Matrix t -> Matrix t
 a <>! b = G.inhomog (a <> G.homog b)
 
 
-htc :: (Product t, Container Vector t, Num (Vector t)) => Matrix t -> [[t]] -> [[t]]
+htc :: (Numeric t, Num (Vector t)) => Matrix t -> [[t]] -> [[t]]
 htc _ [] = []
-htc h l  = toLists. inHomogMat . (<> trans h) . homogMat . fromLists $ l
+htc h l  = toLists. inHomogMat . (<> tr h) . homogMat . fromLists $ l
 
 -- | transforms a list of inhomogeneous vectors, given as lists, using a homogeneous transformation.
 ht :: Mat -> [[Double]] -> [[Double]]
@@ -183,7 +179,7 @@ ht = htc
 htm :: Mat -- ^ transformation
     -> Mat -- ^ inhomogeneous input vectors (as rows)
     -> Mat -- ^ transformed vectors (as rows)
-htm h = inHomogMat . (<> trans h) . homogMat
+htm h = inHomogMat . (<> tr h) . homogMat
 
 -- | Computes a similar 2D homogeneous transformation with moves 2 points to desired positions.
 similarFrom2Points :: [Double] -> [Double] -> [Double] -> [Double] -> Mat
@@ -219,7 +215,7 @@ hv2ln v = HLine a b c where [a,b,c] = toList v
 rodrigues :: Vector Double -> Matrix Double
 rodrigues v = c * ident 3 + (1-c)*outer r r + s*asMat r
   where
-    θ = pnorm PNorm2 v
+    θ = norm_2 v
     r = v / scalar θ
     c = scalar (cos θ)
     s = scalar (sin θ)

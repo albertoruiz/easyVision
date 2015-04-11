@@ -27,8 +27,7 @@ module Util.Camera
     , infoCam
     ) where
 
-import Numeric.LinearAlgebra
-import Numeric.LinearAlgebra.Util((#),row,(¦))
+import Numeric.LinearAlgebra.HMatrix
 import Util.Homogeneous(normat3)
 import Util.Geometry
 
@@ -47,8 +46,8 @@ kgen f = (3><3) [ f,0,0
 toCameraSystem :: Matrix Double -> (Matrix Double, Double)
 toCameraSystem cam = (inv m, f) where
     (k,r,c) = factorizeCamera cam
-    m = r ¦ asColumn (-r <> c)
-      # row [0,0,0,1]
+    m = r ¦ asColumn (-r #> c)
+      === row [0,0,0,1]
     (f:_):_ = toLists k
 
 
@@ -56,7 +55,7 @@ mkCamera :: Matrix Double -- ^ K
          -> Matrix Double -- ^ R
          -> Vector Double -- ^ C
          -> Matrix Double
-mkCamera k r c = k <> fromBlocks [[r, - asColumn (r <> c)]]
+mkCamera k r c = k <> fromBlocks [[r, - asColumn (r #> c)]]
 
 
 
@@ -114,11 +113,11 @@ infoCam c = CameraInfo{..}
     (k,rt) = sepCam m
     kCam = unsafeFromMatrix k
     rtCam = unsafeFromMatrix rt
-    cenCam = unsafeFromVector (nullVector m)
-    fCam = k@@>(0,0)
-    world2cam = unsafeFromMatrix $ rt # row [0,0,0,1]
+    cenCam = unsafeFromVector (null1 m)
+    fCam = k `atIndex` (0,0)
+    world2cam = unsafeFromMatrix $ rt === row [0,0,0,1]
     cam2world = invTrans world2cam
-    ik = unsafeFromMatrix $ inv k ¦ 0 # row [0,0,0,1] :: Homography3D 
+    ik = unsafeFromMatrix $ inv k ¦ 0 === row [0,0,0,1] :: Homography3D 
     tip = cam2world ⊙ ik
     toImagePlane sc ps = tip ◁  map as3D ps
       where

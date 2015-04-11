@@ -21,7 +21,6 @@ module Image.Capture.MPlayer (
   saveYUV4Mpeg, yuvHeader, openYUV4Mpeg
 )where
 
-import Control.Applicative
 import Control.Monad
 import Data.IORef
 import Data.List(isInfixOf,isPrefixOf)

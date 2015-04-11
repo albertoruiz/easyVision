@@ -6,8 +6,6 @@
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE OverlappingInstances #-}
-{-# LANGUAGE CPP #-}
 -----------------------------------------------------------------------------
 {- |
 Module      :  Util.Small
@@ -26,10 +24,7 @@ Type safe small arrays.
 
 module Util.Small
 (   Shaped(..),
-#if __GLASGOW_HASKELL__ < 704
-    Array, DArray,
-#endif
-    Dim2(..),Dim3(..),Dim4(..), Build, (!), (#),
+    Dim2(..),Dim3(..),Dim4(..), Build, (¡), (#),
     Dim2x2,Dim3x3,Dim4x4,Dim3x4,
     vec2,vec3,vec4,
     Vectorlike(..), Matrixlike(..),
@@ -37,11 +32,11 @@ module Util.Small
 --    , v,m, KK(..)
 ) where
 
-import Numeric.LinearAlgebra(Vector,(@>),(><),fromRows,toRows,toList,flatten)
+import Numeric.LinearAlgebra.HMatrix(Vector,(!),(><),fromRows,toRows,toList,flatten)
 import Foreign.Storable
 import Foreign.Ptr
 import Util.Misc(Mat,Vec)
-import Data.Packed.ST(runSTVector,newUndefinedVector,writeVector)
+import Numeric.LinearAlgebra.Devel(runSTVector,newUndefinedVector,writeVector)
 
 --------------------------------------------------------------------------------
 
@@ -81,9 +76,9 @@ class Build p e g | e p -> g, g -> e, g -> p
   where
     build :: p -> e -> g
 
-infixl 3 !
-(!) :: Build p e g => p -> e -> g
-(!) = build
+infixl 3 ¡
+(¡) :: Build p e g => p -> e -> g
+(¡) = build
 
 infixl 2 #
 (#) :: Build p e g => p -> e -> g
@@ -120,7 +115,6 @@ type instance DArray Dim4x4        = Mat
 type family Array (m :: *)
 type instance Array a = DArray (Shape a)
 
-#
 class Shaped a where
     type Shape a
     toArray         :: a -> Array a
@@ -134,17 +128,17 @@ class Shaped a where
 instance Shaped (Dim2 Double) where
     type Shape (Dim2 Double) = Dim2 Double
     toArray (D2 x1 x2) = vec2 x1 x2
-    unsafeFromArray v = D2 (v@>0) (v@>1)
+    unsafeFromArray v = D2 (v!0) (v!1)
 
 instance Shaped (Dim3 Double) where
     type Shape (Dim3 Double) = Dim3 Double
     toArray (D3 x1 x2 x3) = vec3 x1 x2 x3
-    unsafeFromArray v = D3 (v@>0) (v@>1) (v@>2)
+    unsafeFromArray v = D3 (v!0) (v!1) (v!2)
 
 instance Shaped (Dim4 Double) where
     type Shape (Dim4 Double) = Dim4 Double
     toArray (D4 x1 x2 x3 x4) = vec4 x1 x2 x3 x4
-    unsafeFromArray v = D4 (v@>0) (v@>1) (v@>2) (v@>3)
+    unsafeFromArray v = D4 (v!0) (v!1) (v!2) (v!3)
 
 instance Shaped Dim2x2 where
     type Shape Dim2x2 = Dim2x2
@@ -185,23 +179,7 @@ instance Shaped Dim4x4 where
          [d1,d2,d3,d4] = map unsafeFromArray (toRows m)
 
 --------------------------------------------------------------------------------
-#if __GLASGOW_HASKELL__ < 704
-class Matrixlike x where
-    toMatrix         :: (Shaped x, Array x ~ Mat) => x -> Mat
-    unsafeFromMatrix :: (Shaped x, Array x ~ Mat) => Mat -> x
-    toMatrix = toArray
-    unsafeFromMatrix = unsafeFromArray
 
-class Vectorlike x where
-    toVector         :: (Shaped x, Array x ~ Vec) => x -> Vec
-    unsafeFromVector :: (Shaped x, Array x ~ Vec) => Vec -> x
-    toVector = toArray
-    unsafeFromVector = unsafeFromArray
-    datMat :: (Shaped x, DArray (Shape x) ~ Vec) => [x] -> Mat
-    datMat = fromRows . map toVector
-    unsafeMatDat :: (Shaped x, DArray (Shape x) ~ Vec) => Mat -> [x]
-    unsafeMatDat = map unsafeFromVector . toRows
-#else
 class (Shaped x, Array x ~ Mat) => Matrixlike x where
     toMatrix         :: x -> Mat
     unsafeFromMatrix :: Mat -> x
@@ -217,7 +195,6 @@ class (Shaped x, Array x ~ Vec) => Vectorlike x where
     datMat = fromRows . map toVector
     unsafeMatDat :: Mat -> [x]
     unsafeMatDat = map unsafeFromVector . toRows
-#endif
 
 instance (Shaped x, Array x ~ Mat) => Matrixlike x
 
@@ -291,17 +268,17 @@ unsafeMap f = unsafeFromArray . f . toArray
  -- tests
 {-
 
-v = 2 ! 3 :: Dim2 Double
+v = 2 ¡ 3 :: Dim2 Double
 
-m = 1 ! 2 ! 3
-  # 3 ! 4 ! 0
-  # 5 ! 6 ! 0 :: Dim3x3
+m = 1 ¡ 2 ¡ 3
+  # 3 ¡ 4 ¡ 0
+  # 5 ¡ 6 ¡ 0 :: Dim3x3
 
 data KK = KK Double Double deriving Show
 
 instance Shaped KK where
     type Shape KK = Dim2 Double
     toArray (KK x1 x2) = vec2 x1 x2
-    unsafeFromArray v = KK (v@>0) (v@>1)
+    unsafeFromArray v = KK (v!0) (v!1)
 -}
 
