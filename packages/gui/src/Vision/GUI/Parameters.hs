@@ -29,7 +29,6 @@ import GHC.Float
 import Numeric
 import Data.List as L
 import Control.Monad(ap,join)
-import Control.Applicative((<$>),(<*>))
 import Util.Options(getOption,optionString)
 import Util.LazyIO(Generator)
 
@@ -48,9 +47,9 @@ createParameters :: String -- ^ window name
                  -> IO (EVWindow (Map String Parameter))
 createParameters winname pref ops = do
     ops' <- zip (map fst ops) `fmap` mapM (uncurry (defcomlin pref)) ops
-    let sz@(Size ih iw) = Size (2+length ops * sizePar) 200
+    let sz@(Size ih _iw) = Size (2+length ops * sizePar) 200
         nops = length ops - 1
-        which h y = (fromIntegral y `div` round (fromIntegral sizePar * fromIntegral h / fromIntegral ih)) `min` nops
+        which h y = (fromIntegral y `div` round (fromIntegral sizePar * fromIntegral h / fromIntegral ih :: Double)) `min` nops
     w <- evWindow (Map.fromList ops') winname sz (kbdopts which kbdQuit)
              
     displayCallback $= do
@@ -88,7 +87,7 @@ createParameters winname pref ops = do
 
     kbdopts which def opts = kbd where
         kbd (MouseButton WheelUp) Down _ (Position _x y) = do
-            Size h w <- evSize <$> get windowSize
+            Size h _w <- evSize <$> get windowSize
             m <- getW opts
             let s' = keys m
             let s = (s' !! which h y)
@@ -97,7 +96,7 @@ createParameters winname pref ops = do
             putW opts m'
             postRedisplay Nothing
         kbd (MouseButton WheelDown) Down _ (Position _x y) = do
-            Size h w <- evSize <$> get windowSize
+            Size h _w <- evSize <$> get windowSize
             m <- getW opts
             let s' = keys m
             let s = (s' !! which h y)
@@ -111,13 +110,11 @@ createParameters winname pref ops = do
             let s' = keys m
             let s = (s' !! which h y)
             let v = m!s 
-            let m' = Map.insert s (setpo (round (fromIntegral x * 200 / fromIntegral w)) v) m
+            let m' = Map.insert s (setpo (round (fromIntegral x * 200 / fromIntegral w :: Double)) v) m
             putW opts m'
             postRedisplay Nothing
         kbd a b c d = def a b c d
 
-
-type Parameters = IORef (Map String Parameter)
 
 data Parameter = Percent Int
                | RealParam Double Double Double
@@ -274,12 +271,6 @@ defcomlin pref name (StringParam _p s list) = do
 -- Warning: check RLParam and StrinParam
 
 -------------------------------------------------------
-
-instance Lift Double where
-    lift = liftD
-
-liftD :: Double -> ExpQ
-liftD = litE . rationalL . toRational
 
 instance Lift Parameter where
     lift (Percent x) = conE 'Percent `appE` lift x

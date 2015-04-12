@@ -20,29 +20,19 @@ module Vision.GUI.Source (
 import Graphics.UI.GLUT hiding (Point,Size,color)
 import Vision.GUI.Types
 import Vision.GUI.Interface
-import Vision.GUI.Parameters(ParamRecord(..))
-import Control.Arrow((***),(>>>),arr)
-import Control.Monad((>=>),join)
-import Control.Applicative((<*>),(<$>))
-import Util.Geometry hiding (join)
+import Control.Arrow((***),(>>>))
+import Util.Geometry
 import Image
 import Image.Devel
 import Image.Capture
 import Vision.GUI.Arrow--(ITrans, Trans,transUI,transUI2,runT_)
-import Util.LazyIO((~>),(>~>),mkGenerator,Generator)
-import Util.Misc(replaceAt,posMin)
+import Util.LazyIO(mkGenerator)
 import Util.Options
-import Control.Concurrent(threadDelay,forkIO)
-import Control.Monad(when)
+import Control.Concurrent(threadDelay)
 import Data.Colour.Names
-import Data.Time
-import System.CPUTime
-import Text.Printf(printf)
-import Data.IORef
-import Data.Maybe(fromJust)
 import Vision.GUI.Util
 
-
+someChannelsFromYUYV :: ImageYCbCr -> Channels
 someChannelsFromYUYV x = CHIm {..}
   where
     yuv = no
@@ -59,6 +49,7 @@ someChannelsFromYUYV x = CHIm {..}
     fCh = gray2float yCh
     no = error "channel not available. Use hVision-ipp"
 
+someChannelsFromRGB :: Image Word24 -> Channels
 someChannelsFromRGB x = CHIm {..}
   where
     yuv = no
@@ -113,6 +104,11 @@ cameraFolderMP = camG "--photosmp" rf <*> dummy
   where
     rf p sz = map (someChannelsFromYUYV *** id) <$> readFolderMP p sz
 
+
+camG
+    :: String
+    -> (String -> Maybe Size -> IO [(Channels, [Char])])
+    -> IO (IO (Maybe t) -> IO (Maybe Channels))
 camG opt readf = do
     path <- optionString opt "."
     sz <- parseSize <$> optionString "--size" "640x480"
@@ -136,5 +132,6 @@ camG opt readf = do
 dummy :: Generator ()
 dummy = return (threadDelay 100000 >> return (Just ()))
 
+run :: ITrans Channels b -> IO ()
 run t = runT_ camera (t >>> optDo "--freq" freqMonitor)
 

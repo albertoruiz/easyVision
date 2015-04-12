@@ -20,7 +20,7 @@ module Vision.GUI.ScatterPlot (
 import Vision.GUI.Types
 import Vision.GUI.Draw
 import Util.Geometry ( Point(..) )
-import Numeric.LinearAlgebra hiding (i)
+import Numeric.LinearAlgebra.HMatrix
 import Data.Colour ( Colour )
 import Data.Colour.Names 
 import Graphics.UI.GLUT as GL
@@ -50,9 +50,9 @@ scatter examples (i,j) colornames prefun = clearColor white . prep $ [ prefun, p
     gs = group examples
     things = zipWith f gs colors
     f g c = color c (plot g)
-    plot = map (\v-> Point (v@>i) (v@>j))
-    xs = map ((@>i).fst) examples
-    ys = map ((@>j).fst) examples
+    plot = map (\v-> Point (v!i) (v!j))
+    xs = map ((!i).fst) examples
+    ys = map ((!j).fst) examples
     a1 = minimum xs
     a2 = maximum xs
     b1 = minimum ys
@@ -71,8 +71,8 @@ drawDecisionRegion
      -> Drawing
 drawDecisionRegion n prob colors clasif = pointSz 7 vals
   where
-    xs = map ((@>0).fst) prob
-    ys = map ((@>1).fst) prob
+    xs = map ((!0).fst) prob
+    ys = map ((!1).fst) prob
     a1 = minimum xs
     a2 = maximum xs
     b1 = minimum ys
@@ -95,7 +95,7 @@ scatter3D examples (i,j,k) colornames prefun = clearColor white $ [ prefun, poin
     gs = group examples
     things = zipWith f gs colors
     f g c = color c (plot g)
-    plot = Raw . GL.renderPrimitive GL.Points . mapM_ (\v-> vertex (Vertex3 (doubleGL $ v@>i) (doubleGL $ v@>j) (doubleGL $ v@>k))) -- FIXME using Point3D
+    plot = Raw . GL.renderPrimitive GL.Points . mapM_ (\v-> vertex (Vertex3 (doubleGL $ v!i) (doubleGL $ v!j) (doubleGL $ v!k))) -- FIXME using Point3D
     
     colors = take (length gs) (colornames++defaultColors)
     axes = axes3D 1

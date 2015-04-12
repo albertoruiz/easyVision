@@ -40,23 +40,17 @@ import Vision.GUI.Types
 import Vision.GUI.Interface
 import Vision.GUI.Parameters(ParamRecord(..))
 import Control.Arrow((***),(>>>),arr)
-import Control.Monad((>=>),join)
-import Control.Applicative((<*>),(<$>))
-import Util.Geometry hiding (join)
-import Image.Devel
-import Image.Capture
-import Vision.GUI.Arrow--(ITrans, Trans,transUI,transUI2,runT_)
-import Util.LazyIO((~>),(>~>),mkGenerator,Generator)
+import Control.Monad(join)
+import Util.Geometry
+import Vision.GUI.Arrow hiding (delay)
 import Util.Misc(replaceAt,posMin)
 import Util.Options
 import Control.Concurrent(threadDelay,forkIO)
 import Control.Monad(when)
-import Data.Colour.Names
 import Data.Time
 import System.CPUTime
 import Text.Printf(printf)
 import Data.IORef
-import Data.Maybe(fromJust)
 import Vision.GUI.ScatterPlot
 
 --createGrab :: [b] -> IO (IO b)
@@ -66,7 +60,7 @@ import Vision.GUI.ScatterPlot
 
 editor :: [Command (Int,[x]) (Int,[x])] -> [Command (Int,[x]) (IO())]
        -> String -> [x] -> (Int -> x -> Drawing) -> IO (EVWindow (Int,[x]))
-editor upds acts name xs drw = standalone (Size 400 400) name (0,xs) (upds ++ move) acts f
+editor upds acts name zs drw = standalone (Size 400 400) name (0,zs) (upds ++ move) acts f
   where
     f (k,xs) | null xs = text (Point 0 0) "empty list!"
              | otherwise = drw j (xs !! j)
@@ -81,9 +75,11 @@ editor upds acts name xs drw = standalone (Size 400 400) name (0,xs) (upds ++ mo
 --    g1 = map (id *** const.const.(snd.))
 --    g3 = map (id *** const.const)
 
-
---updateItem :: key -> (a -> a) -> (key, roi -> pt -> (Int, [a]) -> (Int, [a]))
-updateItem key f = (key, \roi pt (k,xs) -> (k, replaceAt [k] [f roi pt (xs!!k)] xs))
+updateItem
+    :: key
+    -> (roi -> pt -> a -> a)
+    -> (key, roi -> pt -> (Int, [a]) -> (Int, [a]))
+updateItem kkey f = (kkey, \roi pt (k,xs) -> (k, replaceAt [k] [f roi pt (xs!!k)] xs))
 
 --------------------------------------------------------------------------------
 
@@ -93,7 +89,7 @@ browser = editor [] []
 -- editor 3D?
 
 browser3D :: String -> [x] -> (Int -> x -> Drawing) -> IO (EVWindow (Int,[x]))
-browser3D name xs drw = standalone3D (Size 400 400) name (0,xs) move [] f
+browser3D name zs drw = standalone3D (Size 400 400) name (0,zs) move [] f
   where
     f (k,xs) | null xs = text (Point 0 0) "empty list!"
              | otherwise = drw j (xs !! j)
@@ -116,9 +112,7 @@ browseLabeled name examples disp = browser name examples f
 
 --------------------------------------------------------------------------------
 
-sMonitor :: String ->
-            (WinRegion -> b -> [Drawing])
-            -> ITrans b b
+sMonitor :: String -> (WinRegion -> b -> [Drawing]) -> ITrans b b
 sMonitor name f = optDont ("--no-"++name)
                 $ optDont ("--no-gui")
                 $ transUI
@@ -162,9 +156,10 @@ observe3D name f = optDont ("--no-"++name)
 
 --------------------------------------------------------------------------------
 
+frameRate :: VCN a (a, (Double, Double))
 frameRate = do
-    t0 <- getCurrentTime
-    rt <- newIORef (t0,(1/20,0.01))
+    tz <- getCurrentTime
+    rt <- newIORef (tz,(1/20,0.01))
     return $ \cam -> do
             (t0,(av,cav)) <- readIORef rt
             ct0 <- getCPUTime
@@ -190,6 +185,7 @@ freqMonitor = transUI frameRate >>> transUI g
 
 --------------------------------------------------------------------------------
 
+wait :: Int -> ITrans b b
 wait n = transUI $ return $ \cam -> do
     x <- cam
     threadDelay (n*1000)
@@ -209,6 +205,7 @@ optDo flag trans = choose (getFlag (fixFlag flag)) trans (arr id)
 optDont :: String -> ITrans a a -> ITrans a a
 optDont flag trans = choose (getFlag (fixFlag flag)) (arr id) trans
 
+fixFlag :: String -> String
 fixFlag = map sp
   where
     sp ' ' = '_'
@@ -237,6 +234,7 @@ draw3DParam title f = connectParamWithWin g (browser3D title [] (const id))
     g (k,_) p = (k, f p)
 
 
+connectParamWith :: (st -> t -> st) -> (EVWindow st1, IO t) -> EVWindow st -> IO ()
 connectParamWith f (wp,gp) b = do
     (evNotify wp) $= do
         p <- gp
@@ -245,17 +243,22 @@ connectParamWith f (wp,gp) b = do
         postRedisplay (Just (evW b))
     join . get . evNotify $ wp
 
+
+connectParamWithWin :: ParamRecord t => (st -> t -> st) -> IO (EVWindow st) -> IO ()
 connectParamWithWin f win = do
     p <- mkParam
     b <- win
     connectParamWith f p b
 
 
+connectWithG
+    :: (EVWindow st -> t -> IO a)
+    -> (st -> st1 -> t) -> EVWindow st1 -> EVWindow st -> IO ()
 connectWithG p f w1 w2 = do
     (evNotify w1) $~ (>> do
         s1 <- getW w1
         s2 <- getW w2
-        p w2 (f s2 s1)
+        _ <- p w2 (f s2 s1)
         postRedisplay (Just (evW w2)) )
     join . get . evNotify $ w1
 
@@ -273,9 +276,9 @@ clickPoints :: String -- ^ window name
              -> a      -- ^ additional state
              -> (([Point],a) -> Drawing) -- ^ display function
              -> IO (EVWindow ([Point],a))
-clickPoints name ldopt st sh = do
+clickPoints name ldopt s sh = do
     pts <- optionFromFile ldopt []
-    standalone (Size 400 400) name (pts,st) updts acts sh
+    standalone (Size 400 400) name (pts,s) updts acts sh
   where
 
     updts = [ (key (MouseButton LeftButton), const new)
@@ -302,6 +305,9 @@ interactive3D :: String -> IO (Drawing -> IO (), Drawing -> IO ())
 -- ^ interactive 3D drawing, useful for ghci and more
 interactive3D = interactiveG browser3D
 
+interactiveG
+    :: (t -> [t1] -> (b -> a -> a) -> IO (EVWindow (Int, [Drawing])))
+    -> t -> IO (Drawing -> IO (), Drawing -> IO ())
 interactiveG f name = do
         prepare
         b <- f name [] (const id)
@@ -313,7 +319,7 @@ interactiveG f name = do
                     postRedisplay . Just . evW $ b
                     writeIORef okr False
         addTimerCallback 1000 callback
-        forkIO mainLoop
+        _ <- forkIO mainLoop
         return (resetDrawing okr b, addDrawing okr b)
   where
     resetDrawing okr w d =
@@ -340,7 +346,7 @@ mkDrawers names = do
             when ok $ mapM_ (postRedisplay. Just . evW) bs
             writeIORef okr False
         addTimerCallback 1000 callback
-        forkIO mainLoop
+        _ <- forkIO mainLoop
         return (map (f okr) bs)
   where
     f okr w ds = do
@@ -390,8 +396,7 @@ clickTag l r sh name = transUI $ interface (Size 240 320) name False ft updt [] 
 animate :: Int -> Size -> String -> (Int -> Drawing) -> IO()
 animate delay sz title frame = runT_ clock $ arrL (map fst . zip [0..]) >>> observe "animation" disp
   where
-    disp n = Draw [ if n <= 5 then init else Draw (), frame n ]
+    disp n = Draw [ if n <= 5 then ini else Draw (), frame n ]
     clock = return (threadDelay delay >> Just `fmap` getCurrentTime )
-    init = windowTitle title
-         $ Raw (windowSize $= glSize sz)
+    ini = windowTitle title $ Raw (windowSize $= glSize sz)
 

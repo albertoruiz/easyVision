@@ -2,25 +2,22 @@ module Vision.GUI.Trackball (newTrackball) where
 
 import Vision.GUI.Types
 import Util.Quaternion
-import Util.Homogeneous(cross)
-import Numeric.LinearAlgebra
+import Numeric.LinearAlgebra.HMatrix
 import Graphics.UI.GLUT hiding (normalize, Matrix, matrix)
 import Data.IORef
-
-vector v = fromList  v :: Vector Double
-norm x = pnorm PNorm2 x
 
 
 -- adapted from tracball.h and trackball.c 
 -- A virtual trackball implementation
 -- Written by Gavin Bell for Silicon Graphics, November 1988.
 
+projectToSphere :: Double -> (Double, Double) -> Double
 projectToSphere r (x,y) = z where
-    d = sqrt $ x^2 + y^2
+    d = sqrt $ x**2 + y**2
     t = r / sqrt 2
     z = if d < r * 0.707
-        then sqrt (r^2 - d^2)   -- inside sphere
-        else t*t / d            -- on hyperbola
+        then sqrt (r**2 - d**2)   -- inside sphere
+        else t*t / d              -- on hyperbola
 
 -------------------------------------------------------
 
@@ -39,6 +36,7 @@ projectToSphere r (x,y) = z where
  */
 -}
 
+trackball :: (Double, Double) -> (Double, Double) -> Quaternion
 trackball (x',y') (x,y)
     | x'==x && y'==y = Quat { qs = 1.0, qv = vector [0,0,0]}  -- zero rotation
     | otherwise = axisToQuat phi axis
@@ -50,7 +48,7 @@ trackball (x',y') (x,y)
     p2 = vector [x, y, projectToSphere trackballSize (x ,y )]
 
     phi = 2 * asin t
-    t' = norm (p1-p2) / (2*trackballSize)
+    t' = norm_2 (p1-p2) / (2*trackballSize)
     t = max (-1) (min 1 t')
 
 ----------------------------------------------------------------------
@@ -67,7 +65,7 @@ newTrackball = do
     st <- newIORef TBST { tbQuat = Quat {qs = 1.0, qv = vector [0,0,0]},
                           prev = [], dist = 20, wsize = 400, vertAngle = 0,
                           autoSpeed = 0 }
-    let trackball = do
+    let trckbll = do
             s <- readIORef st
             let rot = map doubleGL $ getRotationHL (tbQuat s)
             mat <- newMatrix RowMajor rot :: IO (GLmatrix GLdouble)
@@ -85,10 +83,19 @@ newTrackball = do
             writeIORef st s {wsize = fromIntegral sz}
             -- postRedisplay Nothing
 
-    return (trackball, quatkbd st, quatmot st, autoRot st)
+    return (trckbll, quatkbd st, quatmot st, autoRot st)
 
 
-quatkbd str _ _ (MouseButton LeftButton) Down _ pos@(Position x y) = do
+quatkbd
+    :: IORef TrackballState
+    -> (t -> Key -> KeyState -> Modifiers -> Position -> IO ())
+    -> t
+    -> Key
+    -> KeyState
+    -> Modifiers
+    -> Position
+    -> IO ()
+quatkbd str _ _ (MouseButton LeftButton) Down _ (Position x y) = do
     st <- readIORef str
     let sz = wsize st
     let sz2 = sz/2
@@ -125,19 +132,23 @@ quatkbd st _ _ (SpecialKey KeyDown) _ (Modifiers{ctrl=Down}) _ = do
 
 quatkbd _ k st b s m p = k st b s m p
 
-quatmot str pos@(Position x y) = do
+
+quatmot :: IORef TrackballState -> Position -> IO ()
+quatmot str (Position x y) = do
     st <- readIORef str
     let sz = wsize st
     let sz2 = sz/2
     let [xc,yc] = [(fromIntegral x - sz2 )/ sz,
                   -(fromIntegral y - sz2) / sz]
-    case prev st of
-        [] -> return ()
+    case prev st of        
         [xp,yp] -> do
             let q = trackball (xp,yp) (xc,yc) .*. tbQuat st
             writeIORef str st {tbQuat = q, prev = [xc,yc]}
+        _ -> return ()
     postRedisplay Nothing
 
+
+autoRot :: IORef TrackballState -> IO Bool
 autoRot st = do
     s <- readIORef st
     writeIORef st $ s {vertAngle = vertAngle s + fromIntegral (autoSpeed s)/10}

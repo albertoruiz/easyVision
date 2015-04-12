@@ -31,50 +31,65 @@ module Vision.GUI.Interface (
 import Vision.GUI.Types
 import Vision.GUI.Draw
 import Vision.GUI.Trackball
-import Util.Geometry hiding (join)
+import Util.Geometry
 --import ImagProc.Ipp(ippSetNumThreads)
 import Image
 import Image.Devel(shSize,pixelsToPoints)
 import Graphics.UI.GLUT hiding (RGB, Matrix, Size, None, Point,color)
-import qualified Graphics.UI.GLUT as GL
 import Data.IORef
-import System.Process(system,readProcessWithExitCode)
+import System.Process(system)
 import System.Exit
-import Control.Monad(when,forever,join,filterM)
+import Control.Monad(when,join,filterM)
+import Control.Monad.IO.Class(MonadIO)
 import System.Environment
-import qualified Data.Map as Map
-import Data.Map hiding (null,map)
-import Util.Debug(debug,errMsg)
---import Data.Traversable
-import Control.Applicative
-import Control.Arrow
+import Util.Debug(errMsg)
 import Data.Colour.Names
 import Control.Concurrent
-import Text.Printf(printf)
 import Data.List(intercalate)
 import System.Directory
 
+
+keyAction
+    :: [((Key, KeyState, Modifiers), WinRegion -> Point -> st -> st)]
+    -> [((Key, KeyState, Modifiers), WinRegion -> Point -> st -> IO ())]
+    -> (Key -> KeyState -> Modifiers -> Position -> IO ())
+    -> EVWindow st
+    -> Key
+    -> KeyState
+    -> Modifiers
+    -> Position
+    -> IO ()
 keyAction upds acts def w a b c d = do
     st <- getW w
     gp <- unZoomPoint w
-    roi <- get (evRegion w)
+    roii <- get (evRegion w)
     case Prelude.lookup (a,b,c) upds of
-        Just op -> putW w (withPoint op roi gp d st)
+        Just op -> putW w (withPoint op roii gp d st)
         Nothing -> case Prelude.lookup (a,b,c) (help acts) of
-                        Just op -> withPoint op roi gp d st
+                        Just op -> withPoint op roii gp d st
                         Nothing -> def a b c d
   where
-    withPoint f roi gp pos = f roi (gp pos)
-    help acts = acts ++ [(key (SpecialKey KeyF1), \p r w -> callHelp s)]
+    withPoint f roii gp pos = f roii (gp pos)
+    help actss = actss ++ [(key (SpecialKey KeyF1), \_p _r _w -> callHelp s)]
     s = evWinTitle w
 
+modif :: Modifiers
 modif = Modifiers {ctrl = Up, shift = Up, alt = Up }
 
-kCtrl (k,s,m)  = (k, s, m {ctrl = Down})
+kCtrl :: (t, t1, Modifiers) -> (t, t1, Modifiers)
+kCtrl (k,s,m) = (k, s, m {ctrl = Down})
+
+kShift :: (t, t1, Modifiers) -> (t, t1, Modifiers)
 kShift (k,s,m) = (k, s, m {shift = Down})
-kAlt (k,s,m)   = (k, s, m {alt = Down})
-kUp (k,s,m)    = (k, Up, m)
-key k          = (k, Down, modif)
+
+kAlt :: (t, t1, Modifiers) -> (t, t1, Modifiers)
+kAlt (k,s,m) = (k, s, m {alt = Down})
+
+kUp :: (t1, t, t2) -> (t1, KeyState, t2)
+kUp (k,_s,m) = (k, Up, m)
+
+key :: t -> (t, KeyState, Modifiers)
+key k = (k, Down, modif)
 
 --------------------------------------------------------------------------------
 
@@ -83,15 +98,16 @@ type WinInit state input = EVWindow state -> input -> IO()
 
 type VCN a b = IO (IO (Maybe a) -> IO (Maybe b))
 
-interface :: Size                                 -- win size
-             -> String                            -- win title
-             -> s                                 -- state 0
-             -> WinInit s a                       -- init Window
-             -> [Command s s]                     -- upds
-             -> [Command s (IO())]                -- acts
-             -> (WinRegion -> s -> a -> (s,b))    -- result
-             -> (WinRegion -> s -> a -> b -> Drawing)  -- draw 
-             -> VCN a b
+interface
+    :: Size                              -- win size
+    -> String                            -- win title
+    -> s                                 -- state 0
+    -> WinInit s a                       -- init Window
+    -> [Command s s]                     -- upds
+    -> [Command s (IO())]                -- acts
+    -> (WinRegion -> s -> a -> (s,b))    -- result
+    -> (WinRegion -> s -> a -> b -> Drawing)  -- draw 
+    -> VCN a b
 
 interface = interfaceG False
 
@@ -103,6 +119,19 @@ interface3D :: Size -> String -> s
 
 interface3D = interfaceG True
 
+
+interfaceG
+    :: Bool
+    -> Size
+    -> String
+    -> st
+    -> (EVWindow st -> t -> IO a1)
+    -> [((Key, KeyState, Modifiers), WinRegion -> Point -> st -> st)]
+    -> [((Key, KeyState, Modifiers),
+         WinRegion -> Point -> st -> IO ())]
+    -> (WinRegion -> st -> t -> (st, a))
+    -> (WinRegion -> st -> t -> a -> Drawing)
+    -> IO (IO (Maybe t) -> IO (Maybe a))
 interfaceG threeD sz0 name st0 ft upds acts resultFun resultDisp = do
 
     firstTimeRef <- newIORef True
@@ -124,7 +153,7 @@ interfaceG threeD sz0 name st0 ft upds acts resultFun resultDisp = do
         ready <- readMVar (evReady w)
         when (visible && ready && not sync) $ do
             postRedisplay (Just (evW w))
-            swapMVar (evReady w) False
+            _ <- swapMVar (evReady w) False
             return ()
 
     pauser <- newPauser (evPause w)
@@ -140,19 +169,20 @@ interfaceG threeD sz0 name st0 ft upds acts resultFun resultDisp = do
         firstTime <- readIORef firstTimeRef
         when firstTime $ ft w thing >> writeIORef firstTimeRef False
         state <- getW w
-        roi <- get (evRegion w)
-        let (newState, result) = resultFun roi state thing
-            drawing = resultDisp roi newState thing result
+        roii <- get (evRegion w)
+        let (newState, result) = resultFun roii state thing
+            drawing = resultDisp roii newState thing result
         seq newState $ putW w newState
         pause <- readIORef (evPause w)
         when (not (pause==PauseDraw)) $ swapMVar (evDraw w) drawing >> return ()
-        swapMVar(evReady w) True
+        _ <- swapMVar(evReady w) True
         --putStrLn "W"
         sync <- readIORef (evSync w)
         when sync $ postRedisplay (Just (evW w))
         modifyIORef (evStats w) (\s -> s { evNCall = evNCall s + 1 })
         return (Just result)
 
+drawRegion :: EVWindow st -> IO ()
 drawRegion w = do
     ok <- readIORef (evDrReg w)
     modifyIORef (evStats w) (\s -> s { evNDraw = evNDraw s + 1 })
@@ -160,7 +190,7 @@ drawRegion w = do
         (Point x1 y1, Point x2 y2) <- readIORef (evRegion w)
         stats <- readIORef (evStats w)
         psz <- readIORef (evPrefSize w)
-        (z,a,b) <- readIORef (evZoom w)
+        -- (z,a,b) <- readIORef (evZoom w)
         wsz <- get windowSize
         let shpsz = case psz of
                 Nothing -> "  "
@@ -189,6 +219,16 @@ standalone3D :: Size -> String -> s
              -> IO (EVWindow s)
 standalone3D = standaloneG True
 
+standaloneG
+    :: Renderable x
+    => Bool
+    -> Size
+    -> String
+    -> st
+    -> [((Key, KeyState, Modifiers), WinRegion -> Point -> st -> st)]
+    -> [((Key, KeyState, Modifiers), WinRegion -> Point -> st -> IO ())]
+    -> (st -> x)
+    -> IO (EVWindow st)
 standaloneG threeD sz0 name st0 upds acts disp = do
     let evWin = if threeD then evWindow3D else evWindow
     w <- evWin st0 name sz0 (keyAction upds acts kbdQuit)
@@ -209,12 +249,13 @@ standaloneG threeD sz0 name st0 upds acts disp = do
 -- | Initializes the HOpenGL system.
 prepare :: IO ()
 prepare = do
-    getArgsAndInitialize
+    _ <- getArgsAndInitialize
     initialDisplayMode $= [DoubleBuffered, WithDepthBuffer]
     -- ippSetNumThreads 1
     return ()
 
 
+callbackFreq :: Timeout -> IO () -> IO ()
 callbackFreq freq worker = do
     let callback = do
         addTimerCallback (1000 `div` freq) callback
@@ -227,19 +268,24 @@ runIt f = prepare >> f >> mainLoop
 
 ----------------------------------------------------------------
 
+irr :: (Point, Point)
 irr = (Point p p, Point n n)
   where p = 0.5; n = -0.5    
 
-evWindow st0 name size kbd = do
+evWindow
+    :: st
+    -> String
+    -> Size
+    -> (EVWindow st -> Key -> KeyState -> Modifiers -> Position -> IO ())
+    -> IO (EVWindow st)
+evWindow st0 name sz kbd = do
     st <- newIORef st0
     glw <- createWindow name
     iconTitle $= name
-    windowSize $= glSize size
+    windowSize $= glSize sz
 
 --  actionOnWindowClose $= ContinueExectuion
 --  Exit by default
-
-    let Size h w = size
 
     rr <- newIORef irr
     drr <- newIORef False
@@ -285,6 +331,12 @@ evWindow st0 name size kbd = do
     return w
 
 
+evWindow3D
+    :: st
+    -> String
+    -> Size
+    -> (EVWindow st -> KeyboardMouseCallback)
+    -> IO (EVWindow st)
 evWindow3D ist name sz kbd = do
     (trackball,kc,mc,auto) <- newTrackball
     w <- evWindow ist name sz (kc kbd)
@@ -302,31 +354,42 @@ evWindow3D ist name sz kbd = do
 
 ---------------------------------------------------------------
 
+inWin :: EVWindow st -> IO a -> IO ()
 inWin w f = do
     saved <- get currentWindow
     currentWindow $= Just (evW w)
     evInit w
-    f
+    _ <- f
     swapBuffers
     currentWindow $= saved
 
+getW :: EVWindow a -> IO a
 getW = get . evSt
 
+putWRaw :: MonadIO m => EVWindow a -> a -> m ()
 putWRaw    w x = evSt w $= x
+
+updateWRaw :: MonadIO m => EVWindow a -> (a -> a) -> m ()
 updateWRaw w f = evSt w $~ f
 
+putW :: EVWindow st -> st -> IO ()
 putW    w x = putWRaw    w x >> (join . get . evNotify) w
+
+updateW :: EVWindow st -> (st -> st) -> IO ()
 updateW w f = updateWRaw w f >> (join . get . evNotify) w
 
 ----------------------------------------------------------------
 
+nextPolicy :: ResizePolicy -> ResizePolicy
 nextPolicy UserSize = DynamicSize
 nextPolicy StaticSize = UserSize
 nextPolicy DynamicSize = UserSize
 
+nextPauseDraw :: PauseStatus -> PauseStatus
 nextPauseDraw NoPause = PauseDraw
 nextPauseDraw _ = NoPause
 
+nextPauseCam :: PauseStatus -> PauseStatus
 nextPauseCam NoPause = PauseCam
 nextPauseCam _ = NoPause
 
@@ -351,11 +414,19 @@ kbdQuit a Down m _            = errMsg (show a ++ " " ++ show m ++ " not defined
 kbdQuit _ _ _ _               = return ()
 
 
+kbdroi
+    :: EVWindow st
+    -> (Key -> KeyState -> Modifiers -> Position -> IO ())
+    -> Key
+    -> KeyState
+    -> Modifiers
+    -> Position
+    -> IO ()
 kbdroi w _ (Char '0') Down Modifiers {alt=Down} _ = do
     mbsz <- readIORef (evPrefSize w)
     case mbsz of
         Nothing -> return ()
-        Just (Size h w') -> writeIORef (evRegion w) irr
+        Just _ -> writeIORef (evRegion w) irr
 
 kbdroi w _ (MouseButton WheelUp) Down Modifiers {ctrl=Down} _ =
     modifyIORef (evZoom w) (\(z,x,y)->(z*1.1,x*1.1,y*1.1))
@@ -403,9 +474,9 @@ kbdroi w _ (Char '\27') Down Modifiers {ctrl=Down} _ = writeIORef (evEnd w) True
 kbdroi _ defaultFunc a b c d = defaultFunc a b c d
 
 
+mvroi :: EVWindow st -> Position -> IO ()
 mvroi w (Position x1' y1') = do
     ms <- readIORef (evMove w)
-    z@(z0,_,dy) <- readIORef (evZoom w)
     gp <- unZoomPoint w
     let pt = gp (Position x1' y1') 
     case ms of
@@ -418,6 +489,7 @@ mvroi w (Position x1' y1') = do
             writeIORef (evMove w) (MoveZoom x1' y1')
 
 
+unZoomPoint :: EVWindow st -> IO (Position -> Point)
 unZoomPoint w = do
     z@(z0,_,dy) <- readIORef (evZoom w)
     vp <- get viewport
@@ -430,6 +502,7 @@ unZoomPoint w = do
 
 --------------------------------------------------------------------------------
 
+newPauser :: IORef PauseStatus -> IO (IO b -> IO b)
 newPauser refPau = do
     frozen <- newIORef Nothing
     return $ \cam -> do
@@ -449,6 +522,7 @@ newPauser refPau = do
 
 --------------------------------------------------------------------------------
 
+callHelp :: String -> IO ()
 callHelp wn = do
     pname <- getProgName
     errMsg wn
@@ -466,6 +540,7 @@ callHelp wn = do
       else system ("xdg-open "++f) >> return ()
   where
     wn' = map f wn
-    f ' ' = '_'
-    f  x  =  x
+      where
+        f ' ' = '_'
+        f  x  =  x
 

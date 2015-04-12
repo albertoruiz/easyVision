@@ -1,5 +1,5 @@
 Name:               hVision-gui
-Version:            0.3.0
+Version:            0.4.0
 License:            GPL
 License-file:       LICENSE
 Author:             Alberto Ruiz
@@ -24,7 +24,7 @@ library
                         OpenGL, GLUT,
                         containers, process, directory,
                         template-haskell, ghc-prim,
-                        arrows,
+                        arrows, transformers,
                         hmatrix, hVision-base, artools
 
     hs-source-dirs:     src

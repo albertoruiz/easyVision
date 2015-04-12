@@ -1,4 +1,6 @@
 {-# LANGUAGE FlexibleInstances, ExistentialQuantification, RecordWildCards, ViewPatterns #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
+
 -----------------------------------------------------------------------------
 {- |
 Module      :  Vision.GUI.Types
@@ -34,15 +36,12 @@ import Graphics.UI.GLUT hiding (RGB, Matrix, Size, Point,color,clearColor,window
 import qualified Graphics.UI.GLUT as GL
 import Image hiding (RGB)
 import Util.Geometry
-import Numeric.LinearAlgebra hiding (step)
+import Numeric.LinearAlgebra.HMatrix as LA hiding (step)
 import Data.Colour(Colour)
 import Data.Colour.SRGB(RGB(..),toSRGB,sRGB)
-import GHC.Float(double2Float)
 import Unsafe.Coerce(unsafeCoerce)
 import Data.IORef
-import Util.Debug(debug)
 import Control.Concurrent
-import Util.Geometry(HPoint(..),Point3D(..),HPoint3D(..))
 import Image.ROI(poly2roi)
 
 ------------------------------------------------------------
@@ -71,10 +70,11 @@ pixelCoordinates (Size h w) = draw2Dwith (ortho2D eps (fromIntegral w -eps) (fro
 pixelCoords :: IO ()
 pixelCoords = get windowSize >>= pixelCoordinates . evSize
 
-draw2Dwith ortho = do
+draw2Dwith :: IO a -> IO ()
+draw2Dwith ort = do
     matrixMode $= Projection
     loadIdentity
-    ortho
+    _ <- ort
     matrixMode $= Modelview 0
     loadIdentity
 
@@ -133,8 +133,9 @@ instance Vertex Segment where
     vertexv = undefined
 
 instance Vertex (Vector Double) where
-    vertex v | dim v == 2 = vertex (Vertex2 (doubleGL $ v@>0) (doubleGL $ v@>1))
-             | dim v == 3 = vertex (Vertex3 (doubleGL $ v@>0) (doubleGL $ v@>1) (doubleGL $ v@>2))
+    vertex v | LA.size v == 2 = vertex (Vertex2 (doubleGL $ v!0) (doubleGL $ v!1))
+             | LA.size v == 3 = vertex (Vertex3 (doubleGL $ v!0) (doubleGL $ v!1) (doubleGL $ v!2))
+             | otherwise      = error $ "vertex undefined for Vector of size=" ++ show (LA.size v)
     vertexv = undefined
 
 instance Vertex (Vector (Complex Double)) where
@@ -151,13 +152,15 @@ instance Vertex Polyline where
 
 
 ----------------------------------------------------------------------
-
+text2D :: Float -> Float -> String -> IO ()
 text2D x y s = do
     rasterPos (Vertex2 (floatGL x) (floatGL y))
     renderString Helvetica12 s
 
+textAt :: Point -> String -> IO ()
 textAt = textAtF Helvetica12
-    
+
+textAtF :: Font a => a -> Point -> String -> IO ()
 textAtF f (Point x y) s = do
     rasterPos (Vertex2 (doubleGL x) (doubleGL y))
     renderString f s
@@ -231,7 +234,7 @@ data Drawing = forall a . (Renderable a) => Draw a
 
 instance Renderable Drawing where
     renderIn w (Draw x) = renderIn w x
-    renderIn w (Raw f) = f
+    renderIn _ (Raw f) = f
 
 instance Renderable [Drawing] where
     renderIn w = mapM_ (renderIn w)
@@ -281,19 +284,26 @@ pointSz s d = Raw $ do
     render d
     pointSize $= s'
 
+textF :: Font a => a -> Point -> String -> Drawing
 textF f p s = Raw (textAtF f p s)
 
+text :: Point -> String -> Drawing
 text = textF Helvetica18
 
+winTitle :: String -> Drawing
 winTitle = Raw . (GL.windowTitle $=)
 
+windowTitle :: Renderable a => String -> a -> Drawing
 windowTitle name f = Draw [ winTitle name, Draw f ]
 
-clearColor col d = Draw [ Raw $ GL.clearColor $= clampfColor col, Draw d ]
+clearColor :: Renderable a => Colour Float -> a -> Drawing
+clearColor c d = Draw [ Raw $ GL.clearColor $= clampfColor c, Draw d ]
 
 instance Renderable () where
     render = return
 
+
+withOrtho2D :: Renderable a => GLdouble -> GLdouble -> GLdouble -> GLdouble -> a -> Drawing
 withOrtho2D x1 x2 y1 y2 f = Draw [g, Draw f]
   where g = Raw $ do
                 matrixMode $= Projection
@@ -303,13 +313,15 @@ withOrtho2D x1 x2 y1 y2 f = Draw [g, Draw f]
                 loadIdentity
 
 
-colorAlpha col alpha d = color col $ Raw $ do
+colorAlpha :: Renderable x => Colour Float -> GLfloat -> x -> Drawing
+colorAlpha c alpha d = color c $ Raw $ do
     GL.Color4 r g b a <- GL.get GL.currentColor
     GL.currentColor GL.$= GL.Color4 r g b alpha
     render d
     GL.currentColor GL.$= GL.Color4 r g b a
 
 
+blend :: Renderable x => x -> Drawing
 blend d = Raw $ do
     GL.blend GL.$= GL.Enabled
     GL.blendFunc   GL.$= (GL.SrcAlpha, GL.OneMinusSrcAlpha)
@@ -318,10 +330,11 @@ blend d = Raw $ do
 
 
 setRegion :: WinRegion -> Image p -> Image p
-setRegion (p1,p2) x = setROI (poly2roi (size x) (Closed [p1,p2])) x
+setRegion (p1,p2) x = setROI (poly2roi (Image.size x) (Closed [p1,p2])) x
 
 -----------------------------------------
 
+prepZoom :: EVWindow st -> IO ()
 prepZoom evW = do
     (Size h w) <- evSize `fmap` get windowSize
     (z,dx,dy) <- readIORef (evZoom evW)
@@ -331,7 +344,9 @@ prepZoom evW = do
     viewport $= (Position (-fromIntegral zx + round dx) (-fromIntegral zy + round dy), sz)
     pointCoords -- inates (evSize sz) 
 
-unZoom (z,dx,dy) (Position vpx vpy, sz) (x,y) = (round x', round y')
+
+unZoom :: (Double, Double, Double) -> (Position, GL.Size) -> (GLint, GLint) -> (Int, Int)
+unZoom (z,dx,dy) (Position _vpx _vpy, sz) (x,y) = (round x', round y')
   where
     Size h w = evSize sz
     rh = fromIntegral h / z

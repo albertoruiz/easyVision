@@ -1,6 +1,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 
 -----------------------------------------------------------------------------
 {- |
@@ -34,50 +35,30 @@ module Vision.GUI.Draw
 
 import Graphics.UI.GLUT hiding (RGB, Matrix, Size, Point, color, Polygon)
 import qualified Graphics.UI.GLUT as GL
-import Image.Devel
+import Image.Devel as Image
 import Util.Geometry
 --import ImagProc(resize,yuvToRGB, yCbCrToRGB, toGray,Channels(..),histogramN,blockImage)
 import Data.IORef
-import Foreign (touchForeignPtr,castPtr)
-import Numeric.LinearAlgebra hiding (step)
+import qualified Numeric.LinearAlgebra.HMatrix as LA
+import Numeric.LinearAlgebra.HMatrix as LA hiding (step,size)
 import Util.Camera(toCameraSystem)
 import Vision.GUI.Objects(cameraOutline)
 import Util.Homogeneous(ht,desp)
 import Util.Rotation
-import Util.Misc(degree,Mat)
-import Util.Debug(debug)
+import Util.Misc(Mat)
 import Vision.GUI.Types
-import qualified Data.Colour.RGBSpace as Col
 import Data.Colour.SRGB hiding (RGB)
-import Data.Colour
 import Data.Colour.Names
 import Control.Monad(when)
 import GHC.Float(double2Float)
 import Util.Polygon(convexComponents)
 import Text.Printf(printf)
 
+szgl :: Image t -> GL.Size
 szgl = glSize .roiSize . roi
 
-{-
-myDrawPixels m@Img{itype=RGB} = do
-    GL.rowLength Unpack $= fromIntegral (step m `quot` (datasize m * layers m))
-    GL.drawPixels (szgl m) (PixelData GL.RGB UnsignedByte (pstart m))
 
-myDrawPixels m@Img{itype=Gray} = do
-    GL.rowLength Unpack $= fromIntegral (step m `quot` (datasize m * layers m))
-    GL.drawPixels (szgl m) (PixelData Luminance UnsignedByte (pstart m))
-
-myDrawPixels m@Img{itype=I32f} = do
-    GL.rowLength Unpack $= fromIntegral (step m `quot` (datasize m * layers m))
-    GL.drawPixels (szgl m) (PixelData Luminance Float (pstart m))
-
-myDrawPixels m@Img{itype=YCbCr} = do
-    GL.rowLength Unpack $= fromIntegral (step m `quot` (datasize m * layers m))
-    GL.drawPixels (szgl m) (PixelData YCBCR422 UnsignedByte (pstart m))
-
-myDrawPixels m@Img{itype=YUV} = error "myDrawPixels undefined for YUV"
--}
-
+myDrawPixels :: PixelFormat -> DataType -> Int -> Image t -> IO ()
 myDrawPixels m t s img@Image{..} = withImage img $ do
     GL.rowLength Unpack $= fromIntegral (step `quot` s)
     GL.drawPixels (szgl img) (PixelData m t (starting img))
@@ -104,11 +85,13 @@ drawTexture' im [v1,v2,v3,v4] = do
     texture Texture2D $= Disabled
 
   where
-    Size h w = size im
+    Size h w = Image.size im
     vert :: TexCoord2 GLdouble -> [Double] -> IO ()
     vert t p = do
           multiTexCoord (TextureUnit 0) t
           vertex p
+
+drawTexture' _ _ = error "drawTexture' requires 4 vertexes"
 
 ------------------------------------------------------------
 
@@ -140,22 +123,22 @@ captureGL :: IO ImageRGB
 captureGL = do
     sz@(GL.Size w h) <- get windowSize
     img <- newImage undefined (evSize sz)
-    let (ps,c) = rowPtrs img
+    let (ps,_c) = rowPtrs img
         f k ptr = readPixels (Position 0 k) (GL.Size w 1) (PixelData GL.RGB UnsignedByte ptr)
     withImage img $ sequence_ $ zipWith f [h-1, h-2 ..] ps
     return img
 
 ----------------------------------------------------------------
 
---renderImageIn :: EVWindow st -> Image t -> IO ()
+renderImageIn :: EVWindow st -> PixelFormat -> DataType -> Int -> Image t -> IO ()
 renderImageIn evW m t s img = do
     policy <- readIORef (evPolicy evW)
     prefSize <- readIORef (evPrefSize evW)
-    let imSize@(Size h w) = size img
+    let imSize@(Size h w) = Image.size img
         szI = limitSize 800 imSize
     when (prefSize == Nothing || policy == DynamicSize) $
         writeIORef (evPrefSize evW) (Just szI)
-    szW@(GL.Size vw vh) <- get windowSize
+    szW@(GL.Size vw _vh) <- get windowSize
     Just szP <-readIORef (evPrefSize evW)
     let szT = if policy == UserSize then szW else glSize szP
     when (szW /= szT) $ windowSize $= szT >> postRedisplay Nothing
@@ -167,7 +150,7 @@ renderImageIn evW m t s img = do
     let zw = fromIntegral vw/ fromIntegral w
         z = (floatGL . double2Float) z' * zw
         ROI r1 r2 c1 c2 = roi img
-        szTe@(Size th tw) = evSize szT
+        szTe@(Size th _tw) = evSize szT
         r0 = round (fromIntegral r1 * zw + (fromIntegral th-fromIntegral h*zw)/2)
         c0 = round (fromIntegral c1 * zw)
         [Point x0 y0] =pixelsToPoints szTe [Pixel (max 0 r0) c0]
@@ -205,7 +188,7 @@ instance Renderable [Polygon] where
 instance Renderable (Vector Double) where
     render v = renderPrimitive LineStrip (vertex $ fromColumns [t,v])
       where
-        t = linspace (dim v) (0.9,-0.9)
+        t = linspace (LA.size v) (0.9,-0.9)
 
 instance Renderable [Point] where
   render = renderPrimitive Points . mapM_ vertex
@@ -257,6 +240,7 @@ instance Renderable Segment where
   render s = render [s]
 
 
+shIP :: InterestPoint -> IO ()
 shIP (IP (Point x y) s o _) = do
     renderPrimitive LineLoop box
   where
@@ -285,6 +269,7 @@ fillConvexPolygon = drawPolygon . polygonNodes
 
 ------------------------------------------------------------
 
+axes3D :: Double -> Drawing
 axes3D l = Draw [ lineStrip
                     [ Point3D 0 0 0
                     , Point3D l 0 0
@@ -298,6 +283,7 @@ axes3D l = Draw [ lineStrip
                 ]
 
 
+text3DAtF :: Font a => a -> Point3D -> String -> Drawing
 text3DAtF f (Point3D x y z) s = Raw $ do
     GL.rasterPos (GL.Vertex3 (doubleGL x) (doubleGL y) (doubleGL z))
     GL.renderString f s

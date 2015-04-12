@@ -21,7 +21,7 @@ module Vision.GUI.Arrow(
     runNT, runNT_, adaptMb
 )where
 
-import Control.Concurrent   (forkIO)
+import Control.Concurrent
 import Util.LazyIO          (mkGenerator, lazyList, Generator)
 import Vision.GUI.Interface (runIt,VCN)
 
@@ -30,13 +30,9 @@ import Control.Arrow
 import Control.Monad
 import Control.Monad.Fix
 import Control.Arrow.Operations(ArrowCircuit(..))
-import Control.Concurrent
-import Util.Debug(debug)
 import Data.IORef
-import System.Exit       (exitWith, ExitCode(ExitSuccess))
 import Graphics.UI.GLUT (mainLoopEvent)
 import Data.Maybe(fromJust)
-import Data.Traversable
 import Graphics.UI.GLUT(leaveMainLoop)
 import System.IO.Unsafe(unsafeInterleaveIO)
 
@@ -240,7 +236,7 @@ runT :: Generator a -> ITrans a b -> IO [b]
 -- ^ run a camera generator on a transformer, returning the results in a lazy list
 runT gcam gt = do
     rbs <- newChan
-    forkIO $ runIt $ do
+    _ <- forkIO $ runIt $ do
         bs <- runS gcam gt
         forkIO $ mapM_ (writeChan rbs . Just) bs >> writeChan rbs Nothing >> leaveMainLoop
     getChanContents' rbs

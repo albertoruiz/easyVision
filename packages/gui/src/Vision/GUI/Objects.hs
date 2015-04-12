@@ -20,6 +20,7 @@ import Graphics.UI.GLUT
 import Vision.GUI.Types(doubleGL,setColor,setColor')
 import Data.Colour.Names
 
+asymRef :: [[Double]]
 asymRef = map (map (*0.54))
        [ [ 0, 0]
        , [ 0, 2]
@@ -27,6 +28,7 @@ asymRef = map (map (*0.54))
        , [ 2, 1]
        , [ 2, 0] ]
 
+cornerRef :: [[Double]]
 cornerRef = map (map (*0.58))
        [ [ 0, 0]
        , [ 0, 2]
@@ -36,13 +38,16 @@ cornerRef = map (map (*0.58))
        , [ 2, 0] ]
 
 
+a4Ref :: [[Double]]
 a4Ref = [[   0, 0]
         ,[   0, r]
         ,[   1, r]
         ,[   1, 0]] where r = sqrt 2
 
+v :: Double -> Double -> Double -> IO ()
 v a b c = vertex $ Vertex3 (doubleGL a) (doubleGL b) (doubleGL c)
 
+houseModel :: IO ()
 houseModel = do
     setColor 1 0.5 0.5
     renderPrimitive Polygon $ do
