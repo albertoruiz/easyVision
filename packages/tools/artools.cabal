@@ -10,7 +10,7 @@ Synopsis:           General purpose utilities
 Description:        General purpose utilities
 
 Category:           Utils
-tested-with:        GHC ==7.8
+tested-with:        GHC ==7.10.1
 
 cabal-version:      >=1.8
 build-type:         Simple

@@ -26,8 +26,7 @@ module Classifier.Adaboost (
      adaboost, adaboostST, adaFun
 ) where
 
-import Numeric.LinearAlgebra
-import Numeric.LinearAlgebra.Util(norm,(&),(¦),(#))
+import Numeric.LinearAlgebra.HMatrix
 import Classifier.Base
 import Classifier.Simple(multiclass)
 import Data.List(sortBy, transpose,partition)
@@ -35,6 +34,9 @@ import Util.Misc(posMin)
 import Data.Function(on)
 import Util.Misc(Vec,vec,posMax)
 import System.Random
+
+(&) :: Vector Double -> Vector Double -> Vector Double
+u & v = vjoin [u,v]
 
 type Weights = Vector Double
 -- | An improved 'Dicotomizer' which admits a distribution on the given examples.
@@ -53,7 +55,7 @@ stumps p = stumpsOk (prepro p)
 -- useful precomputation: indices of the sorted features.
 prepro :: TwoGroups -> (([Vec], [Vec]), Vec, [[Double]], [[Double]], [[Int]])
 prepro (g1,g2) = ((g1,g2),lbs,xs,oxs,is) where
-    lbs = vjoin [constant 1 (length g1), constant (-1) (length g2)]
+    lbs = vjoin [konst 1 (length g1), konst (-1) (length g2)]
     xs = transpose $ map toList (g1 ++ g2)
     s = map f xs
     f l = sortBy (compare `on` fst) (zip l [0..])
@@ -65,10 +67,10 @@ stumpsOk ((g1,g2),lbs,_xs,oxs,is) d = f where
     wl = lbs*d
     n1 = length g1
     n2 = length g2
-    d1 = pnorm PNorm1 $ subVector  0 n1 d
-    d2 = pnorm PNorm1 $ subVector n1 n2 d
+    d1 = norm_1 $ subVector  0 n1 d
+    d2 = norm_1 $ subVector n1 n2 d
 
-    owls = map (map (wl@>)) is
+    owls = map (map (wl!)) is
     cs = map (sel .dt . scanl (+) 0 . init) owls
     dt x = ((k,v),(q,w)) where
         k = posMin x
@@ -84,7 +86,7 @@ stumpsOk ((g1,g2),lbs,_xs,oxs,is) d = f where
     j = {- debug $ -} posMin (map (abs.fst) r)
     (_,(u,sg)) = r!!j
 
-    f x = sg * signum' (x @> j - u)
+    f x = sg * signum' (x ! j - u)
     signum' x = if x > 0 then 1 else -1
 
 
@@ -99,7 +101,7 @@ adaboostStep method (g1,g2) d = (f,d',e,a) where
     f = method d
     e1 = map (signum . max 0 . negate . f) g1
     e2 = map (signum . max 0 . f) g2
-    e = vjoin [vec e1, vec e2] <.> d
+    e = vjoin [vec e1, vec e2] <·> d
     a = 0.5 * log ((1-e)/e) -- it may be Infinity
     kp = exp (-a)
     kn = exp a
@@ -108,7 +110,7 @@ adaboostStep method (g1,g2) d = (f,d',e,a) where
     d1 = map f1 g1
     d2 = map f2 g2
     dr = d * vjoin [vec d1, vec d2]
-    d' = dr / scalar (dr <.> constant 1 (dim dr))
+    d' = dr / scalar (dr <·> konst 1 (size dr))
 
 -- | creates a list of weak learners and associated information to build a strong learner using adaboost
 adaboostST :: Int -> WeightedDicotomizer -> TwoGroups -> [ADBST]
@@ -125,7 +127,7 @@ adaboostST n m p = r where
 initAdaboost :: WeightedDicotomizer -> TwoGroups -> (Weights -> Feature, ADBST)
 initAdaboost method gs =  (f, adaboostStep f gs w)
     where f = method gs
-          w = constant (1 / fromIntegral m) m
+          w = konst (1 / fromIntegral m) m
           m = length g1 + length g2 where (g1,g2) = gs
 
 -- | combines the weak learners obtained by 'adaboostST'
@@ -144,7 +146,7 @@ adaboost n m = adaFun . adaboostST n m
 unweight :: WeightedDicotomizer -> Dicotomizer
 unweight dic (g1,g2) = dic (g1,g2) w where
     m = length g1 + length g2
-    w = constant (1/fromIntegral m) m
+    w = konst (1/fromIntegral m) m
 
 -- | Converts a 'Dicotomizer' into a 'WeightedDicotomizer' (by resampling).
 weight :: Int -- ^ seed of the random sequence
@@ -165,12 +167,12 @@ weight seed dic (g1,g2) w = dic (g1',g2') where
 -- | mse with weighted examples
 mseWeighted :: WeightedDicotomizer
 mseWeighted (g1,g2) d = f where
-    m = (fromRows g1 # fromRows g2) ¦ konst 1 (dim b,1)
-    b = constant 1 (length g1) & constant (-1) (length g2)
+    m = (fromRows g1 === fromRows g2) ||| konst 1 (size b,1)
+    b = konst 1 (length g1) & konst (-1) (length g2)
     rd  = sqrt d
-    rd' = outer rd (constant 1 (cols m))
+    rd' = outer rd (konst 1 (cols m))
     w = (m*rd') <\> (b*rd)
-    f v = tanh ((v & 1) <.> w)
+    f v = tanh ((v & 1) <·> w)
 
 
 -- | a minimum distance dicotomizer using weighted examples
@@ -180,13 +182,13 @@ distWeighted (g1,g2) d = f where
     n2 = length g2
     d1 = subVector  0 n1 d
     d2 = subVector n1 n2 d
-    ones = constant 1 (dim (head g1))
+    ones = konst 1 (size (head g1))
     a1 = outer d1 ones * fromRows g1
     a2 = outer d2 ones * fromRows g2
-    m1 = sumColumns a1 / scalar (pnorm PNorm1 d1)
-    m2 = sumColumns a2 / scalar (pnorm PNorm1 d2)
-    f x = norm (x-m2) - norm (x-m1)
-    sumColumns m = constant 1 (rows m) <> m
+    m1 = sumColumns a1 / scalar (norm_1 d1)
+    m2 = sumColumns a2 / scalar (norm_1 d2)
+    f x = norm_2 (x-m2) - norm_2 (x-m1)
+    sumColumns m = konst 1 (rows m) <# m
 
 -- just to check that they are not completely wrong
 

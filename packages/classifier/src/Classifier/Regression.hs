@@ -21,8 +21,7 @@ module Classifier.Regression (
     msError
 ) where
 
-import Numeric.LinearAlgebra
-import Numeric.LinearAlgebra.Util(norm)
+import Numeric.LinearAlgebra.HMatrix
 import Util.Stat
 import Util.Misc(Mat,Vec)
 import Util.Statistics(mean)
@@ -52,7 +51,7 @@ normalizer dat = (nz,f,g) where
 
 -- | naive multivariate linear regression
 mlr :: RegressionMethod
-mlr xc yc = (<>m)
+mlr xc yc = (tr m #>)
     where m = linearSolveSVD xc yc
 
 --------------------------------------------------
@@ -71,7 +70,7 @@ latent p = g $ singularValues m
 
 -- | multivariate linear regression through a reduced subspace
 mlrReduced :: Int -> RegressionMethod
-mlrReduced n xc yc = (<>q) . (<>w)
+mlrReduced n xc yc = (<#q) . (<#w)
     where m = linearSolveSVD xc yc
           (u,_,_) = svd m
           w = takeColumns n u
@@ -82,9 +81,9 @@ mlrReduced n xc yc = (<>q) . (<>w)
 
 -- | a simple form of partial least squares
 pls :: Int -> RegressionMethod
-pls n xc yc = (<>q) . (<>w)
+pls n xc yc = (<#q) . (<#w)
     where
-    (_,_,v) = svd (trans yc <> xc)
+    (_,_,v) = svd (tr yc <> xc)
     w = takeColumns n v
     t = xc <> w
     q = linearSolveSVD t yc
@@ -93,9 +92,9 @@ pls n xc yc = (<>q) . (<>w)
 
 -- | regression from the principal components of the input vector
 pcr :: Int -> RegressionMethod
-pcr n xc yc = (<>q) . (<>w) where
+pcr n xc yc = (<#q) . (<#w) where
     w = takeColumns n v
-    (_,v) = eigSH (trans xc <> xc)
+    (_,v) = eigSH (tr xc <> xc)
     t = xc <> w
     q = linearSolveSVD t yc
 
@@ -104,5 +103,6 @@ pcr n xc yc = (<>q) . (<>w) where
 -- | in sigma per component
 msError :: Regressor -> DataPairs -> Double
 msError f prob = sqrt (k * mse)
-    where k = recip $ fromIntegral $ dim (snd (head prob))
-          mse = mean [ norm (y - f x )**2 | (x,y) <- prob ]
+    where k = recip $ fromIntegral $ size (snd (head prob))
+          mse = mean [ norm_2 (y - f x )**2 | (x,y) <- prob ]
+

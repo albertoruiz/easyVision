@@ -20,8 +20,7 @@ module Classifier.Kernel (
      kernelMSE
 ) where
 
-import Numeric.LinearAlgebra
-import Numeric.LinearAlgebra.Util(norm)
+import Numeric.LinearAlgebra.HMatrix
 import Classifier.Base
 import Util.Misc(vec,Vec,Mat)
 
@@ -38,17 +37,17 @@ kernelMSE :: Double  -- ^ Numeric tolerance for the pseudoinverse (1 = machine p
           -> Kernel
           -> Dicotomizer
 kernelMSE tol kernel (g1,g2) = fun where
-    fun z = expan z <.> a
+    fun z = expan z <·> a
     expan z = vec $ map (kernel z) objs
-    a = pinvTol tol (delta kernel objs objs) <> vlabels
+    a = pinvTol tol (delta kernel objs objs) #> vlabels
     objs = g1 ++ g2
-    vlabels = vjoin [constant 1 (length g1), constant (-1) (length g2)]
+    vlabels = vjoin [konst 1 (length g1), konst (-1) (length g2)]
 
 -- | polynomial 'Kernel' of order n
 polyK :: Int -> Kernel
-polyK n x y = (x <.> y + 1)^n
+polyK n x y = (x <·> y + 1)^n
 
 -- | gaussian 'Kernel' of with width sigma
 gaussK :: Double -> Kernel
-gaussK s x y = exp (- (norm (x-y) / s)**2)
+gaussK s x y = exp (- (norm_2 (x-y) / s)**2)
 

@@ -27,7 +27,7 @@ module Classifier.Base (
      InfoLabels(..),
 ) where
 
-import Numeric.LinearAlgebra
+import Numeric.LinearAlgebra.HMatrix
 import qualified Data.List as L
 import qualified Data.Map as Map
 import Data.Array
@@ -65,7 +65,6 @@ data InfoLabels = InfoLabels {
     getLabel :: Int -> String
 }
 
-type Seed = Int
 
 -----------------------------------------------------------
 
@@ -91,7 +90,7 @@ selectClasses validset exs = filter ( (`elem` validset) .snd) exs
 addNoise :: Seed -> Double -> Sample Vec -> Sample Vec
 addNoise seed sigma l = zip rvs lbs where
     (vs,lbs) = unzip l
-    n = dim (head vs)
+    n = size (head vs)
     m = length vs
     randomVectors = toRows $ reshape n $ scalar sigma * randomVector seed Gaussian (n*m)
     rvs = zipWith (+) vs randomVectors

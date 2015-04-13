@@ -1,3 +1,5 @@
+{-# LANGUAGE FlexibleContexts #-}
+
 -----------------------------------------------------------------------------
 {- |
 Module      :  Classifier.ToyProblems
@@ -17,7 +19,7 @@ module Classifier.ToyProblems (
      linsep, linsepmulti, nosep, ring, moon, rings, sshape, testProb
 ) where
 
-import Numeric.LinearAlgebra
+import Numeric.LinearAlgebra.HMatrix
 import Classifier.Base
 import Util.Misc(vec,Vec)
 

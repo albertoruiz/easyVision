@@ -18,8 +18,8 @@ module Classifier.GP (
      gp, gp1
 ) where
 
-import Numeric.LinearAlgebra
-import Numeric.LinearAlgebra.Util ( pairwiseD2 )
+import Numeric.LinearAlgebra.HMatrix
+import Numeric.LinearAlgebra.HMatrix.Util(pairwiseD2)
 import Classifier.Base (Sample, TwoGroups, Dicotomizer, group )
 import Util.Misc ( Mat, Vec )
 
@@ -42,25 +42,25 @@ gp :: Double -> GKernel -> TwoGroups -> (Mat -> Vec)
 gp noise kernel (g1,g2) = fun
   where
     objs = fromRows $ g1 ++ g2
-    vlabels = vjoin [constant 1 (length g1), constant (-1) (length g2)]
-    k = kernel objs objs + diag (constant (noise**2) (dim vlabels))
+    vlabels = vjoin [konst 1 (length g1), konst (-1) (length g2)]
+    k = kernel objs objs + diag (konst (noise**2) (size vlabels))
     a = {-dbg-} k <\> vlabels
     -----
-    fun z = kernel z objs <> a
+    fun z = kernel z objs #> a
 
 gp1 :: Double -> GKernel -> Dicotomizer
-gp1 n k p = (@>0) . f . asRow
+gp1 n k p = (!0) . f . asRow
   where f = gp n k p
 
 
 lik :: (Matrix Double, Vector Double) -> Double -> Double -> Double
-lik (x,y) s n = - 1/2 * ladm -1/2 * (y <> im <.> y)
-  where (im,(ladm,_)) = invlndet (gaussK s x x +  diag (constant (n**2) (dim y)))
+lik (x,y) s n = - 1/2 * ladm -1/2 * (y <·> im #> y)
+  where (im,(ladm,_)) = invlndet (gaussK s x x +  diag (konst (n**2) (size y)))
 
 matData :: Sample (Vector Double) -> (Matrix Double, Vector Double)
 matData prob = (x, y)
   where
     [g1,g2] = fst (group prob)
     x = fromRows $ g1 ++ g2
-    y = vjoin [constant 1 (length g1), constant (-1) (length g2)]
+    y = vjoin [konst 1 (length g1), konst (-1) (length g2)]
 

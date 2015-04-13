@@ -26,8 +26,7 @@ module Classifier.Simple (
      multiclass, dicodist
 ) where
 
-import Numeric.LinearAlgebra
-import Numeric.LinearAlgebra.Util(norm,(&),(¦),(#))
+import Numeric.LinearAlgebra.HMatrix
 import Classifier.Base
 import Util.Probability(weighted)
 
@@ -41,13 +40,16 @@ import Data.Maybe(fromMaybe)
 import qualified Data.List as L
 import Control.Arrow((&&&),(***))
 
+(&) :: Vector Double -> Vector Double -> Vector Double
+u & v = vjoin [u,v]
+
 -- | mse linear discriminant using the pseudoinverse
 mse :: Dicotomizer
 mse (g1,g2) = f where
-    m = (fromRows g1 # fromRows g2) ¦ konst 1 (dim b,1)
-    b = constant 1 (length g1) & constant (-1) (length g2)
+    m = (fromRows g1 === fromRows g2) ||| konst 1 (size b,1)
+    b = konst 1 (length g1) & konst (-1) (length g2)
     w = m <\> b
-    f v = tanh ((v & 1) <.> w)
+    f v = tanh ((v & 1) <·> w)
 
 -- | linear least squares classifier
 lsc :: Learner Vec
@@ -55,7 +57,7 @@ lsc prob = f where
     (_,lbs) = group prob
     (x,y) = ((¦1).fromRows *** fromRows) $ unzip (vectorLabels prob)
     w = x `linearSolveLS` y
-    f v = weighted $ zip (labels lbs) (toList $ exp $ trans w <> (v&1))
+    f v = weighted $ zip (labels lbs) (toList $ exp $ tr w #> (v&1))
     
 --------------------------------------------------------------------------------
 
@@ -94,7 +96,7 @@ bayes ds exs = c where
 mahalanobis :: Distance Vec
 mahalanobis vs = Dist f where
     Stat {meanVector = m, invCov = ic} = stat (fromRows vs)
-    f x = (x-m) <> ic <.> (x-m)
+    f x = (x-m) <·> ic #> (x-m)
 
 -- | gaussian -log likelihood (mahalanobis + 1\/2 log sqrt det cov)
 gaussian :: Likelihood Vec
@@ -113,23 +115,23 @@ gmm xs = LogLik (log . mixturePDF mix)
 euclidean :: Distance Vec
 euclidean vs = Dist f where
     Stat {meanVector = m} = stat (fromRows vs)
-    f x = norm (x-m)
+    f x = norm_2 (x-m)
 
 -- | distance to the nearest neighbour
 nearestNeighbour :: Distance Vec
 nearestNeighbour vs = Dist $ \v -> minimum (map (dist v) vs)
-    where dist x y = norm (x-y)
+    where dist x y = norm_2 (x-y)
 
 -- | distance to the pca subspace of each class
 subspace :: PCARequest -> Distance Vec
 subspace req vs = Dist f where
     Codec {encodeVector = e, decodeVector = d} = pca req (stat (fromRows vs))
-    f v = norm (v - (d.e) v)
+    f v = norm_2 (v - (d.e) v)
 
 -- | distance to the robust location (with proportion prop)
 robustLoc :: Double -> Distance Vec
 robustLoc prop l = Dist f where
-    dist x y = norm (x-y)
+    dist x y = norm_2 (x-y)
     f = dist m
     m = fst (ds!!k)
     ds = robustLocation dist l
@@ -144,7 +146,7 @@ naiveGaussian vs = LogLik f where
     m2 = meanVector (stat (x*x))
     s = sqrt (m2 - m*m)
     k = sumElements (log s)
-    f v = - k - 0.5*(norm ((v-m)/s))**2
+    f v = - k - 0.5*(norm_2 ((v-m)/s))**2
 
 
 -- | a bayesian classifier based on the estimated probabilities
