@@ -1,5 +1,5 @@
 Name:               hVision-contours
-Version:            0.2.0
+Version:            0.3.0
 License:            GPL
 License-file:       LICENSE
 Author:             Alberto Ruiz
@@ -36,5 +36,5 @@ library
 
     ghc-prof-options:   -auto-all
 
---    ghc-options:        -Wall
+    ghc-options:        -Wall
 

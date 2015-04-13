@@ -1,5 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeFamilies #-}
+
 -----------------------------------------------------------------------------
 {- |
 Module      :  Contours.Base
@@ -31,15 +32,13 @@ module Contours.Base (
 where
 
 
---import ImagProc.Ipp.Core(size,setROI)
-import Data.List(sortBy, maximumBy, sort,foldl',tails)
-import Numeric.LinearAlgebra
-import Numeric.LinearAlgebra.Util(diagl)
+import Data.List(sortBy)
+import Numeric.LinearAlgebra.HMatrix
 import Util.Homogeneous hiding (flipx)
-import Util.Misc(Vec)
 import Data.Function(on)
 import Util.Geometry
 import Util.Polygon
+import Util.Misc(Mat)
 
 
 -- | (for an open polyline is the length)
@@ -47,8 +46,9 @@ perimeter :: Polyline -> Double
 perimeter (Open l) = perimeter' l
 perimeter (Closed l) = perimeter' (last l:l)
 
-perimeter' [_] = 0
+perimeter' :: [Point] -> Double
 perimeter' (a:b:rest) = distPoints a b + perimeter' (b:rest)
+perimeter' _ = 0
 
 area :: Polyline -> Double
 area = abs . orientedArea
@@ -58,6 +58,7 @@ orientedArea :: Polyline -> Double
 orientedArea (Open _) = error "undefined orientation of open polyline"
 orientedArea (Closed l) = orientation (Polygon l)
 
+rev :: Polyline -> Polyline
 rev (Closed ps) = Closed (reverse ps)
 rev (Open ps) = Open (reverse ps)
 
@@ -90,47 +91,20 @@ criticalPoint eps2 p1 p2 p3s = r where
 -}
 ----------------------------------------------------------------------
 
+transPol :: Util.Misc.Mat -> Polyline -> Polyline
 transPol t (Closed ps) = Closed $ map l2p $ ht t (map p2l ps)
 transPol t (Open ps)   = Open   $ map l2p $ ht t (map p2l ps)
 
+p2l :: Point -> [Double]
 p2l (Point x y) = [x,y]
+
+l2p :: [Double] -> Point
 l2p [x,y] = Point x y
+l2p _ = error "l2p"
 
 ----------------------------------------------------------
 
-cang p1@(Point x1 y1) p2@(Point x2 y2) p3@(Point x3 y3) = c
-  where
-    dx1 = (x2-x1)
-    dy1 = (y2-y1)
-    
-    dx2 = (x3-x2)
-    dy2 = (y3-y2)
-    
-    l1 = sqrt (dx1**2 + dy1**2)
-    l2 = sqrt (dx2**2 + dy2**2)
-
-    c = (dx1*dx2 + dy1*dy2) / l1 / l2
-
-areaTriang p1 p2 p3 = sqrt $ p * (p-d1) * (p-d2) * (p-d3)
-  where
-    d1 = distPoints p1 p2
-    d2 = distPoints p1 p3
-    d3 = distPoints p2 p3
-    p = (d1+d2+d3)/2
-
-
-bisector :: Segment -> HLine
-bisector (Segment (Point x0 y0) (Point x1 y1)) = gjoin dir cen
-  where
-    dx = x1-x0
-    dy = y1-y0
-    cx = (x0+x1)/2
-    cy = (y0+y1)/2
-    dir = HPoint (-dy) dx 0
-    cen = HPoint cx cy 1
-
-----------------------------------------------------------------------
-
+flipx :: Polyline -> Polyline
 flipx = transPol (diagl[-1,1,1])
 
 pentominos :: [(Polyline,String)]
@@ -161,7 +135,8 @@ pentominos =
 
 ----------------------------------------------------------------------
 
-
+impossible :: a
+impossible = undefined
 
 convexHull :: [Point] -> [Point]
 convexHull ps | length ps > 3 = go [q0] rs
@@ -178,7 +153,9 @@ convexHull ps | length ps > 3 = go [q0] rs
     go (p:c) (x:q:r) | isLeft p x q  = go (x:p:c)   (q:r)
                      | otherwise     = go c       (p:q:r)
     
-    ncosangle p1@(Point x1 y1) p2@(Point x2 y2) = (x1-x2) / distPoints p1 p2
+    go _ _ = impossible
+    
+    ncosangle p1@(Point x1 _) p2@(Point x2 _) = (x1-x2) / distPoints p1 p2
 
 
 tangentsTo :: Point -> Polyline -> Maybe (Point,Point)
@@ -189,13 +166,15 @@ tangentsTo q x = r
     [a,b] = can
     can = canTans q x
 
+canTans :: Point -> Polyline -> [Point]
 canTans q x = can
   where
     xs = cl2 $ convexHull $ polyPts $ x
     can = [a | t@(_,a,_) <- zipWith3 (,,) xs (tail xs) (tail (tail xs)), f t ]
     f (a,b,c) = isLeft q a b && not (isLeft q b c)
               || not (isLeft q a b) && isLeft q b c
-    cl2 (a:b:xs) = a:b:xs++[a,b]
+    cl2 (a:b:zs) = a:b:zs++[a,b]
+    cl2 _ = impossible
 
 --------------------------------------------------------------------------------
 

@@ -14,7 +14,7 @@ resample :: Int -> Polyline -> [Point]
 resample n c = take n $ splitDelta delta delta xs
   where
     s = zip [0..] (asSegments c)
-    ((k, Segment p q), r)
+    ((k, Segment _ _), r)
        | null ints = (s!!0, Point x y) -- FIXME
        | otherwise = head ints
     ints = sortBy (compare `on` px) $ catMaybes (map (si (Segment (Point (x-100) y) (Point (100+x) y))) s)
@@ -25,12 +25,14 @@ resample n c = take n $ splitDelta delta delta xs
     xs = zip ss ds
     delta = perimeter c / fromIntegral n
     (x,y,_,_,_) = momentsContour (polyPts c)
-    si a (k,b) = fmap ((,) (k,b)) (segmentIntersection' a b)
-    px (_,Point x _) = x
+    si a (q,b) = fmap ((,) (q,b)) (segmentIntersection' a b)
+    px (_,Point xx _) = xx
 
+splitDelta :: Double -> Double -> [(Segment, Double)] -> [Point]
 splitDelta dl delta ((Segment p q,l):xs)
     | l > dl = p : splitDelta delta delta ((Segment r q, l-dl) : xs)
     | otherwise = p: tail (splitDelta (dl-l) delta xs)
   where
     r = interPoint (dl/l) p q
+splitDelta _ _ _ = undefined
 

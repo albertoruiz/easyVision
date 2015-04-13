@@ -1,3 +1,5 @@
+{-# OPTIONS_GHC -fno-warn-type-defaults #-}
+
 -----------------------------------------------------------------------------
 {- |
 Module      :  Contours.Normalization
@@ -24,12 +26,20 @@ where
 
 import Contours.Base
 import Data.List(foldl')
-import Numeric.LinearAlgebra
+import Numeric.LinearAlgebra.HMatrix
 import Util.Homogeneous
 import Util.Rotation(rot3)
 import Util.Geometry(segmentLength, bounding)
 
+default (Int)
 
+type D6 = (Double, Double, Double, Double, Double, Double)
+
+impossible :: a
+impossible = undefined
+
+auxContour
+    :: D6 -> Segment -> D6
 auxContour (s,sx,sy,sx2,sy2,sxy) seg@(Segment (Point x1 y1) (Point x2 y2))
     = (s+l,
        sx+l*(x1+x2)/2,
@@ -39,7 +49,10 @@ auxContour (s,sx,sy,sx2,sy2,sxy) seg@(Segment (Point x1 y1) (Point x2 y2))
        sxy+l*(2*x1*y1 + x2*y1 + x1*y2 + 2*x2*y2)/6)
   where l = segmentLength seg
 
-auxSolid (s,sx,sy,sx2,sy2,sxy) seg@(Segment (Point x1 y1) (Point x2 y2))
+
+auxSolid
+    :: D6 -> Segment -> D6
+auxSolid (s,sx,sy,sx2,sy2,sxy) (Segment (Point x1 y1) (Point x2 y2))
     = (s   + (x1*y2-x2*y1)/2,
        sx  + ( 2*x1*x2*(y2-y1)-x2^2*(2*y1+y2)+x1^2*(2*y2+y1))/12,
        sy  + (-2*y1*y2*(x2-x1)+y2^2*(2*x1+x2)-y1^2*(2*x2+x1))/12,
@@ -47,6 +60,10 @@ auxSolid (s,sx,sy,sx2,sy2,sxy) seg@(Segment (Point x1 y1) (Point x2 y2))
        sy2 + (-(y1^2*y2+y1*y2^2)*(x2-x1) - (y1^3-y2^3)*(x1+x2))/12,
        sxy + ((x1*y2-x2*y1)*(x1*(2*y1+y2)+x2*(y1+2*y2)))/24)
 
+
+moments2Gen
+    :: (D6 -> Segment -> D6)
+    -> [Point] -> (Double, Double, Double, Double, Double)
 moments2Gen method l = (mx,my,cxx,cyy,cxy)
     where (s,sx,sy,sx2,sy2,sxy) = (foldl' method (0,0,0,0,0,0). asSegments . Closed) l
           mx = sx/s
@@ -73,7 +90,7 @@ eig2x2Dir (cxx,cyy,cxy) = (l1,l2,a')
           l1 = 0.5*(cxx+cyy+ra) `max` 0
           l2 = 0.5*(cxx+cyy-ra) `max` 0
           a = atan2 (2*cxy) ((cxx-cyy+ra))
-          a' | abs cxy < eps && cyy > cxx = pi/2
+          a' | abs cxy < peps && cyy > cxx = pi/2
              | otherwise = a
 
 -- | Equalizes the eigenvalues of the covariance matrix of a continuous piecewise-linear contour. It preserves the general scale, position and orientation.
@@ -82,14 +99,16 @@ equalizeContour c@(Closed ps) = transPol t c where
     (mx,my,cxx,cyy,cxy) = momentsContour ps
     (l1,l2,a) = eig2x2Dir (cxx,cyy,cxy)
     t = desp (mx,my) <> rot3 (-a) <> diag (fromList [sqrt (l2/l1),1,1]) <> rot3 (a) <> desp (-mx,-my)
+equalizeContour _ = impossible
 
 -- | Finds a transformation that equalizes the eigenvalues of the covariance matrix of a continuous piecewise-linear contour. It is affine invariant modulo rotation.
 whitener :: Polyline -> Matrix Double
 whitener (Closed ps) = t where
-    (mx,my,cxx,cyy,cxy) = momentsContour ps
-    (l1,l2,a) = eig2x2Dir (cxx,cyy,cxy)
+    --(mx,my,cxx,cyy,cxy) = momentsContour ps
+    --(l1,l2,a) = eig2x2Dir (cxx,cyy,cxy)
     --t = diag (fromList [1/sqrt l1,1/sqrt l2,1]) <> rot3 (a) <> desp (-mx,-my)
     t = whitener' (momentsContour ps)
+whitener _ = impossible
 
 -- | Based on closed-form Cholesky Factorization
 whitener' :: (Double,Double,Double,Double,Double) -> Matrix Double
@@ -103,6 +122,7 @@ whitener' (mx,my,cxx,cyy,cxy) = (3><3) [ a, b, -a*mx-b*my
     c = delta
 
 
+whitenContour :: Polyline -> Polyline
 whitenContour t = transPol w t
   where
     w = whitener t

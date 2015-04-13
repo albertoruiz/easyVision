@@ -7,24 +7,17 @@ module Contours.Matching(
     GN, prepareGNS, stepGN, stepGN'
 ) where
 
-import Control.Arrow((***),(&&&))
-import Numeric.LinearAlgebra
-import Numeric.LinearAlgebra.Util(norm,diagl,(¦),(¿))
-import Text.Printf(printf)
-import Data.List(minimumBy,sortBy,groupBy)
-import Util.Misc(Mat,Vec,degree,posMax,angleDiff)
-import Util.Debug(debug,assert,warning,debugMat)
+import Control.Arrow((&&&))
+import Numeric.LinearAlgebra.HMatrix
+import Data.List(minimumBy)
+import Util.Misc(Mat,Vec,angleDiff)
+import Util.Debug(assert)
 import Util.Rotation
---import Classifier(Sample)
-import Util.Homogeneous(ht,desp)
-import Util.Options(optionFromFile)
+import qualified Util.Homogeneous as H
 import Contours.Base
 import Contours.Normalization
 import Contours.Fourier
 import Contours.Orientation
-import Control.Monad(when)
-import Control.Applicative((<$>))
-import Data.Maybe(isJust)
 import Data.Function(on)
 import Contours.GNS
 import Contours.Resample
@@ -64,6 +57,7 @@ data Shape = Shape { shapeContour  :: Polyline
                    }
 
 
+analyzeShape :: Int -> (Polyline, (Double, Double, Double, Double, Double)) -> Maybe Shape
 analyzeShape mW (p,(mx,my,cxx,cyy,cxy))
     | l2 > 0 && l2 > l1 / 1000**2 = Just (Shape {..})
     | otherwise = Nothing
@@ -72,7 +66,7 @@ analyzeShape mW (p,(mx,my,cxx,cyy,cxy))
     shapeMoments = (mx,my,cxx,cyy,cxy)
     shapeCenter = Point mx my
     shapeAxes @ (l1,l2,phi) = eig2x2Dir (cxx,cyy,cxy)
-    shapeWhitener = diagl [1/sqrt l1,1/sqrt l2,1] <> rot3 phi <> desp (-mx,-my)
+    shapeWhitener = diagl [1/sqrt l1,1/sqrt l2,1] <> rot3 phi <> H.desp (-mx,-my)
     whiteShape = transPol shapeWhitener p
     fou = fourierPL whiteShape
     wfou = fou
@@ -107,9 +101,9 @@ analyzeShape mW (p,(mx,my,cxx,cyy,cxy))
         da = angleDiff (as!!0) (as!!1)
 
     f1:f2:f3:_ = kFeats
-    symmet2 = pnorm PNorm2 (f1-f2)
-    symmet4 = pnorm PNorm2 (f2-f3)
-    symmet0 = pnorm PNorm2 (f1 - fromList (replicate (mW+1) 0 ++ 2: replicate (mW-1) 0))
+    symmet2 = norm_2 (f1-f2)
+    symmet4 = norm_2 (f2-f3)
+    symmet0 = norm_2 (f1 - fromList (replicate (mW+1) 0 ++ 2: replicate (mW-1) 0))
     
     shapeGNS = prepareGNS (1+4*3) p
     shapeGNP = prepareGNP 20 p
@@ -117,7 +111,7 @@ analyzeShape mW (p,(mx,my,cxx,cyy,cxy))
     gRefiner = undefined
     
     (wf0,wj0,_) = prepareGNS (1+4*3) whiteShape
-    wj0i = (trans wj0 <> wj0) <\> (trans wj0)
+    wj0i = (tr wj0 <> wj0) <\> (tr wj0)
     
     prs = Closed (resample 10 p)
     rspm4 = (datMat (polyPts prs) ¦ 0) ¦ 1
@@ -139,13 +133,12 @@ data ShapeMatch = ShapeMatch
     }
 
 
-        
+rotTrans :: Mat -> Double        
 rotTrans w = rho
   where
-    [[a1,a2],[b1,b2],[c1,c2]] = ht w [[0,0],[0,1],[1,0]]
+    [[a1,a2],[b1,b2],[_c1,_c2]] = H.ht w [[0,0],[0,1],[1,0]]
     dx = b1-a1
     dy = b2-a2
-    d  = max eps $ sqrt $ abs (dx*dx + dy*dy)
     rho = atan2 dx dy
 
 
@@ -159,23 +152,22 @@ shapeMatches prots c = concatMap (sm c) prots
     asym4 (y,_) = 0.2 < symmet4 y
     r0 = ident 3
     r1 = rot3 pi
-    r2 = rot3 (pi/2)
     match r x (y,l) = ShapeMatch {..}
       where
         proto = y
         label = l
         target = x
         invDist = (dist `on` invAffine) x y
-        dist a b = norm (a-b)
-        (alignDist,((ft,(wt,at)),(fp,(wp,ap)))) = minimumBy (compare `on` fst) $
+        dist a b = norm_2 (a-b)
+        (alignDist,((_ft,(wt,at)),(_fp,(wp,ap)))) = minimumBy (compare `on` fst) $
             [ (d ht hp, (ht,hp)) | hp <- take 4 $ kHyps proto, ht <- take 1 $ kHyps target]
-        d (u,_) (v,_) = pnorm PNorm2 (u-v)
+        d (u,_) (v,_) = norm_2 (u-v)
         wa = inv (wt <> shapeWhitener target) <> r <> wp <> shapeWhitener proto
         waRot = rotTrans wa
         wh = inv (wt <> shapeWhitener target) <> r <> wp <> dh <> shapeWhitener proto
 
         err   = fromList (map (featF (ap-at) (wfou target)) [0..13]) - wf0 proto
-        delta = wj0i proto <> err
+        delta = wj0i proto #> err
         dh = mktP (toList delta)
 
 ---------------------------------------------------------------------
@@ -189,17 +181,17 @@ shapeMatch prots c = map (match c) prots
         label = l
         target = x
         invDist = (dist `on` invAffine) x y
-        dist a b = norm (a-b)
-        (alignDist,((ft,(wt,at)),(fp,(wp,ap)))) = minimumBy (compare `on` fst) $
+        dist a b = norm_2 (a-b)
+        (alignDist,((_ft,(wt,at)),(_fp,(wp,ap)))) = minimumBy (compare `on` fst) $
             [ (d ht hp, (ht,hp)) | hp <- take 4 $ kHyps proto, ht <- take 1 $ kHyps target]
-        d (u,_) (v,_) = pnorm PNorm2 (u-v)
+        d (u,_) (v,_) = norm_2 (u-v)
 
         wa = inv (wt <> shapeWhitener target) <> wp <> shapeWhitener proto
         waRot = rotTrans wa
         wh = inv (wt <> shapeWhitener target) <> wp <> dh <> shapeWhitener proto
 
         err   = fromList (map (featF (ap-at) (wfou target)) [0..13]) - wf0 proto
-        delta = wj0i proto <> err
+        delta = wj0i proto #> err
         dh = mktP (toList delta)
 
 ----------------------------------------------------------------------  
@@ -211,11 +203,12 @@ isEllipse tol c = (ft-f1)/ft < fromIntegral tol/1000 where
     wc = whitenContour c   -- required?
     f  = fourierPL wc
     f0 = magnitude (f 0)
-    f1 = sqrt (magnitude (f (-1)) ^2 + magnitude (f 1) ^2)
-    ft = sqrt (norm2Cont wc - f0 ^2)
+    f1 = sqrt (magnitude (f (-1)) ^(2::Int) + magnitude (f 1) ^(2::Int))
+    ft = sqrt (norm2Cont wc - f0 ^(2::Int))
 
 ----------------------------------------------------------------------
 
+elongated :: Double -> Shape -> Bool
 elongated r Shape { shapeAxes = (l1,l2,_) } = assert (l1 > thl1) "l1 very small in elongated"
                                             $ l2 / l1 < 1/r**2
   where

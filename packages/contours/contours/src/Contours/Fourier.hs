@@ -24,7 +24,7 @@ where
 import Util.Geometry(Polyline(..),Point(..),distPoints)
 import Contours.Base(perimeter)
 import Data.List(zipWith4)
-import Numeric.LinearAlgebra
+import Numeric.LinearAlgebra.HMatrix
 import Numeric.GSL.Fourier(ifft)
 
 -- | Exact Fourier series of a piecewise-linear closed curve
@@ -33,23 +33,26 @@ fourierPL :: Polyline -> (Int -> Complex Double)
 fourierPL c = f
     where
         g = fourierPL' c
-        p = map g [0..]
+        p = map g [0 ::Int ..]
         n = map g [0,-1 .. ]
         f w | w >= 0    = p !! w
             | otherwise = n !! (-w)
 
+fourierPL' :: Polyline -> Int -> Complex Double
 fourierPL' (Closed ps) = g where
     (zs,ts,aAs,hs) = prepareFourierPL ps
     g0 = 0.5 * sum (zipWith4 gamma zs ts (tail zs) (tail ts))
         where gamma z1 t1 z2 t2 = (z2+z1)*(t2-t1)
     g 0 = g0
     g w = k* ((vhs**w') `udot` vas)
-        where k = recip (2*pi*w'')^2
+        where k = recip (2*pi*w'')^(2::Int)
               w' = fromIntegral w  :: Vector (Complex Double)
               w'' = fromIntegral w :: Complex Double
     vhs = fromList hs
     vas = fromList $ take (length hs) aAs
+fourierPL' _ = error "fourierPL on open polyline"
 
+prepareFourierPL :: [Point] -> ([ℂ], [ℂ], [ℂ], [ℂ])
 prepareFourierPL c = (zs,ts,aAs,hs) where
     zs = map p2c (c++[head c])
         where p2c (Point x y) = x:+y
@@ -57,7 +60,7 @@ prepareFourierPL c = (zs,ts,aAs,hs) where
         where acclen = scanl (+) 0 (zipWith sl zs (tail zs))
               sl z1 z2 = abs (z2-z1)
     hs = tail $ map exp' ts
-        where exp' t = exp (-2*pi*i*t)
+        where exp' t = exp (-2*pi*iC*t)
     as = cycle $ zipWith4 alpha zs ts (tail zs) (tail ts)
         where alpha z1 t1 z2 t2 = (z2-z1)/(t2-t1)
     aAs = zipWith (-) as (tail as)
@@ -68,12 +71,13 @@ prepareFourierPL c = (zs,ts,aAs,hs) where
 -- | it is the same as sum [magnitude (f k) ^2 | k <- [- n .. n]] where n is sufficiently large
 -- | and f = fourierPL contour
 norm2Cont :: Polyline -> Double
-norm2Cont c@(Closed ps) = 1/3/perimeter c * go (ps++[head ps]) where
-    go [_] = 0
+norm2Cont c@(Closed ps) = 1/3/perimeter c * go (ps++[head ps]) where    
     go (a@(Point x1 y1) : b@(Point x2 y2) : rest) =
         distPoints a b *
         (x1*x1 + x2*x2 + x1*x2 + y1*y1 + y2*y2 + y1*y2)
         + go (b:rest)
+    go _ = 0
+norm2Cont _ = error "norm2cont on open polyline"
 
 ----------------------------------------------------------------------
 

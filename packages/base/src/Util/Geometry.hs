@@ -52,6 +52,7 @@ module Util.Geometry
     asSegments, isLeft,
     segmentIntersection, segmentIntersection',
     intersectionLineSegment,
+    bisector, areaTriang,
     Polygon(..),
     orientation, polygonSides,
     DMat,
@@ -874,4 +875,26 @@ polygonSides = asSegments . Closed . polygonNodes
 
 -- | a list of vectors compactly stored as rows of a matrix
 type DMat = Matrix Double
+
+--------------------------------------------------------------------------------
+
+areaTriang :: Point -> Point -> Point -> Double
+areaTriang p1 p2 p3 = sqrt $ p * (p-d1) * (p-d2) * (p-d3)
+  where
+    d1 = distPoints p1 p2
+    d2 = distPoints p1 p3
+    d3 = distPoints p2 p3
+    p = (d1+d2+d3)/2
+
+--------------------------------------------------------------------------------
+
+bisector :: Segment -> HLine
+bisector (Segment (Point x0 y0) (Point x1 y1)) = gjoin dir cen
+  where
+    dx = x1-x0
+    dy = y1-y0
+    cx = (x0+x1)/2
+    cy = (y0+y1)/2
+    dir = HPoint (-dy) dx 0
+    cen = HPoint cx cy 1
 

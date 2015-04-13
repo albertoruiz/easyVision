@@ -7,12 +7,7 @@ where
 import Util.Geometry
 import Contours.Base
 import Contours.Fourier
-import Util.Homogeneous
-import Numeric.LinearAlgebra
-import Numeric.LinearAlgebra.Util(col,(?),(¿),diagl)
-import Util.Misc(rotateLeft,degree)
--- import Vision(kgen,projectionAt',cameraModelOrigin)
-import Util.Rotation
+import Numeric.LinearAlgebra.HMatrix
 import Numeric.GSL.Differentiation
 import Contours.Resample
 
@@ -51,10 +46,10 @@ prepareGNS n prt = (f0,j0,fun)
 
 
 stepGN :: GN -> Polyline -> (Polyline,Double)
-stepGN (f0,j0,fun) tgt = (res, norm2 err)
+stepGN (f0,j0,fun) tgt = (res, norm_2 err)
   where
     err = fun tgt - f0
-    dx = (trans j0 <> j0) <\> (trans j0 <> err)
+    dx = (tr j0 <> j0) <\> (tr j0 #> err)
     res = transPol (inv (mktP (toList dx))) tgt
 
 
@@ -62,9 +57,9 @@ type M = Matrix Double
 type V = Vector Double
 
 stepGN' :: GN -> (Polyline, M, V, Double) -> (Polyline, M, V, Double)
-stepGN' (f0,j0,fun) (t,h,err,_) = (t', h', err', norm2 err')
+stepGN' (f0,j0,fun) (t,h,err,_) = (t', h', err', norm_2 err')
   where
-    dx = (trans j0 <> j0) <\> (trans j0 <> err)
+    dx = (tr j0 <> j0) <\> (tr j0 #> err)
 
     dh = mktP (toList dx)
     t' = transPol (inv dh) t
@@ -77,17 +72,21 @@ stepGN' (f0,j0,fun) (t,h,err,_) = (t', h', err', norm2 err')
 jacobian :: [[Double] -> Double] -> [Double] -> Matrix Double
 jacobian fs xs = fromLists $ map (\f -> gradient f xs) fs
 
+gradient :: ([Double] -> Double) -> [Double] -> [Double]
 gradient f v = [partialDerivative k f v | k <- [0 .. length v -1]]
 
+partialDerivative :: Int -> ([Double] -> Double) -> [Double] -> Double
 partialDerivative n f v = fst (derivCentral 0.01 g (v!!n)) where
     g x = f (concat [a,x:b])
     (a,_:b) = splitAt n v
 
 --------------------------------------------------------------------------------
 
+mktP :: [Double] -> Matrix Double
 mktP [a,d,c,b,e,f,g,h] = (3><3) [ 1+a, c,   e,
                                   b  , 1+d, f,
                                   g  ,   h, 1] :: Matrix Double
+mktP _ = error "mktP"
 
 --------------------------------------------------------------------------------
 {-
@@ -116,6 +115,7 @@ refinePose n cam0 tgt prt = map model (iterate work zerot)
 
 -- resampled features
 
+featRS :: Int -> Polyline -> Vector Double
 featRS s c = flatten (datMat (resample s c))
 
 prepareGNP :: Int -> Polyline -> GN
@@ -123,15 +123,15 @@ prepareGNP n prt = (f0,j0,fun)
   where
     fun tgt = featRS (n `div` 2) tgt
     f0 = fun prt
-    trans k xs = feat n (transPol (mktP xs) prt) k
+    trans k xs = feature n (transPol (mktP xs) prt) k
     j0 = jacobian (map trans dimfeat) zerot
     dimfeat = [0..n-1]
     zerot = replicate 8 0
     
 
     
-    feat n cont = h
+    feature m cont = h
       where
-        v = featRS (n `div` 2) cont
-        h k = v@>k
+        v = featRS (m `div` 2) cont
+        h k = v!k
 
