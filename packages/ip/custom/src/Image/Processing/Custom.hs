@@ -19,11 +19,10 @@ module Image.Processing.Custom (
 )
 where
 
-import Image.Devel
+import Image.Devel as Image
 import Foreign.C.Types ( CInt(CInt) )
-import Data.Packed.Vector(Vector)
-import Data.Packed.Development(createVector)
-import Data.Packed.Foreign(appVectorLen)
+import Numeric.LinearAlgebra.HMatrix
+import Numeric.LinearAlgebra.Devel
 import Image.Processing.Simple
 
 --------------------------------------------------------------------------------
@@ -58,7 +57,7 @@ domainTrans32f :: Image Float -> (Image Float, ImageFloat) -> ImageFloat -> Imag
 domainTrans32f b (x,y) a = unsafePerformIO $ do
     r <- cloneImage b
     let droi = roi r `intersection` roi x `intersection` roi y
-    let w2 = fromIntegral (width (size r)) / 2
+    let w2 = fromIntegral (width (Image.size r)) / 2
     withImage b $ withImage x $ withImage y $ withImage a $ checkFFI "domainTrans32f" $ do
         c_domainTrans32f w2 `appI` x `appI` y `appI` a `appI` (setROI droi r)
     return r

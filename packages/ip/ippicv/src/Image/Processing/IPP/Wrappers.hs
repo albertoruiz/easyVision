@@ -20,7 +20,7 @@ module Image.Processing.IPP.Wrappers where
 import Foreign
 import Foreign.C.Types
 import Image.Devel
-import Image.Processing.IPP.Structs
+--import Image.Processing.IPP.Structs
 
 {-
 

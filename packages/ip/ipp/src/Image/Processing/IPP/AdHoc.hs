@@ -41,7 +41,6 @@ import Control.Monad(when)
 import Data.ByteString.Internal as B
 import Foreign.Ptr(plusPtr,castPtr)
 import Foreign.Storable(peek)
-import Control.Applicative((<$>))
 
 
 -- | Writes into a existing image a desired value in a specified roi.

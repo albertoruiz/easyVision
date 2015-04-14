@@ -1,5 +1,8 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
 {-# LANGUAGE TemplateHaskell, RecordWildCards #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE FlexibleContexts #-}
+
 -----------------------------------------------------------------------------
 {- |
 Module      :  ImagProc.Contrib.Contours
@@ -18,14 +21,14 @@ module ImagProc.Contrib.Contours (
 --   , compute_HoG
 ) where
 
-import Image.Devel
+import Image.Devel as I
 import Foreign.Storable ( Storable(peek) )
 import Foreign.Ptr(castPtr)
 import Foreign.Marshal ( peekArray, copyArray, malloc, free )
 import Foreign.C.Types ( CInt(CInt) )
 import Vision.GUI.Parameters
-import Data.Packed.Development ( createVector, app1, vec )
-import Numeric.LinearAlgebra hiding (step)
+import Numeric.LinearAlgebra.Devel ( createVector, app1, vec )
+import Numeric.LinearAlgebra.HMatrix as LA hiding (step)
 import ImagProc.Contrib.Contours.Structs
 import Control.Monad ( when )
 import Foreign ( Word8 )
@@ -70,7 +73,7 @@ rawContours th minlen options pack thPack imgSrc = unsafePerformIO $ do
 
     withImage im $ do
         get_contours (castPtr $ ptrAt im (Pixel 0 0)) (fi .step $ im) (v c1) (v c2) (v r1) (v r2)
-                     (fi.width.size $ im) (fi.height.size $ im)
+                     (fi.width.I.size $ im) (fi.height.I.size $ im)
                      (fi th) (fi minlen)
                      ptrConts
                      options // checkFFI "rawContours"
@@ -101,7 +104,7 @@ rawContours th minlen options pack thPack imgSrc = unsafePerformIO $ do
                 --putStrLn "vectors created"
                 app1 (\_ d -> copyArray d (x conts) n >> return 0) vec xs "memcopy npbRaw x"
                 app1 (\_ d -> copyArray d (y conts) n >> return 0) vec ys "memcopy npbRaw y"
-                --putStrLn "vectors copied";  print (dim xs, dim ys)
+                --putStrLn "vectors copied";  print (LA.size xs, LA.size ys)
                 return (takesV c' xs, takesV c' ys)
 
 
@@ -138,14 +141,14 @@ rawParse sz = go [] [] []
 
     closed (xs,ys) = x1==x2 && y1==y2
       where
-        x1 = xs@>0
-        x2 = xs@>(dim xs -1)
-        y1 = ys@>0
-        y2 = ys@>(dim ys -1)
+        x1 = xs!0
+        x2 = xs!(LA.size xs -1)
+        y1 = ys!0
+        y2 = ys!(LA.size ys -1)
 
     tm = map cont2Mat
 
-    cont2Mat (xs,ys) = m <> trans h
+    cont2Mat (xs,ys) = m <> tr h
       where
         h = single $ pixelToPointTrans sz
         m = fromColumns [xs,ys,1]
@@ -157,7 +160,7 @@ getOptions NPParam {..} = sum $ zipWith (*) [alloca, open, dark, light, subpixel
 npContours :: NPParam -> ImageGray -> (([Polyline], [Polyline]), [Polyline])
 -- ^ subpixel contour extraction ((dark, light), open)
 npContours p@NPParam {..} x = asPolylines
-                            . rawParse (size x)
+                            . rawParse (I.size x)
                             . rawContours thres minlen (fi $ getOptions p) (pack==1) thPack
                             $ x
   where
@@ -169,7 +172,7 @@ npContours p@NPParam {..} x = asPolylines
 
         matToPoly = map v2p . toRows . double -- . spy
           where
-            v2p v = Point (v@>0) (v@>1)
+            v2p v = Point (v!0) (v!1)
 
         protect n = filter ((>= n).rows)
 

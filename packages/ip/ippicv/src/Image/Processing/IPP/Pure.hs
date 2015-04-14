@@ -17,11 +17,12 @@ where
 
 import Image.Processing.IPP.Core
 import Image.Processing.IPP.Auto
-import Foreign.Ptr
+--import Foreign.Ptr
 
 
 mkId f = unsafePerformIO . f id
 
+{-
 mkInt f a b = unsafePerformIO (f intersection intersection intersection a b)
 
 mkShrink s f = unsafePerformIO . f (shrink s)
@@ -30,6 +31,7 @@ mkRel f x y = unsafePerformIO (f g (flip g) g x y) where
     g a b = intersection a b' where
         d = getShift b a
         b' = shift d b
+-}
 
 {-
 -- should be generic using clone (must break cycle of import)
@@ -40,12 +42,13 @@ mkIdIPInt32f f a b = unsafePerformIO $ do
     return x
 -}
 
+{-
 mkIdIPInt8u f a b = unsafePerformIO $ do
     let r = intersection (roi a) (roi b)
     x <- ioCopy_8u_C1R (const r) b
     _ <- f undefined (setROI r a) x
     return x
-
+-}
 
 {-
 

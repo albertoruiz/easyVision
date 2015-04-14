@@ -16,7 +16,7 @@ module OpenCV(
   webcam
 ) where
 
-import Image.Devel
+import Image.Devel as I
 import Foreign.Ptr
 import Foreign.Marshal
 import Foreign.C.String
@@ -24,11 +24,8 @@ import Foreign.C.Types(CUChar)
 import Foreign(Word8)
 import Foreign.Storable
 import Util.Geometry(Segment(..),Point(..))
-import Control.Applicative
-import Data.Packed.Development
-import Numeric.LinearAlgebra
-import Numeric.LinearAlgebra.Util((¦))
-import Numeric.LinearAlgebra.HMatrix((===),row,(!))
+import Numeric.LinearAlgebra.HMatrix
+import Numeric.LinearAlgebra.Devel
 import Util.Homogeneous(rodrigues)
 import Control.Arrow((&&&))
 
@@ -78,7 +75,7 @@ foreign import ccall "opencv_undistort8u"
 
 undistort8u :: M -> V -> M -> Image I8u -> Image I8u
 undistort8u k d nk x = unsafePerformIO $ do
-    r <- newImage undefined (size x)
+    r <- newImage undefined (I.size x)
     let cm  = cmat k
         cm2 = cmat nk
     withCMatrix cm $ withVector d $ withCMatrix cm2 $ withImage x $ withImage r $ checkFFI "opencv_undistort8u" $
@@ -90,7 +87,7 @@ undistort8u k d nk x = unsafePerformIO $ do
 wrap11SHS :: Storable b => String -> MAT (Wrap11S a b) -> Size -> M -> Image a -> Image b
 wrap11SHS msg f sz m x = unsafePerformIO $ do
     r <- newImage undefined sz
-    let cm = cmat $ inv (pixelToPointTrans (size r)) <> m <> pixelToPointTrans (size x)
+    let cm = cmat $ inv (pixelToPointTrans (I.size r)) <> m <> pixelToPointTrans (I.size x)
     withCMatrix cm $ withImage x $ withImage r $ checkFFI msg $
         f `appMat` cm `appS` x `appS` r
     return r
@@ -106,7 +103,7 @@ warp32f g = wrap11SHS "opencv_warp32f" (c_opencv_warp32f 1 g)
 
 iowarpg :: Num q => String -> (CInt -> q -> MAT (RawImageS p (RawImageS p (IO CInt)))) -> M -> Image p -> Image p -> IO ()
 iowarpg msg f m x r = do
-    let cm = cmat $ inv (pixelToPointTrans (size r)) <> m <> pixelToPointTrans (size x)
+    let cm = cmat $ inv (pixelToPointTrans (I.size r)) <> m <> pixelToPointTrans (I.size x)
     withCMatrix cm $ withImage x $ withImage r $ checkFFI msg $
         f 0 0 `appMat` cm `appS` x `appS` r
 

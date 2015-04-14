@@ -1,5 +1,5 @@
 Name:               hVision-ipp
-Version:            0.3
+Version:            0.4
 License:            LGPL
 License-file:       LICENSE
 Author:             Alberto Ruiz
@@ -47,8 +47,8 @@ library
     c-sources:          src/Image/Processing/IPP/auxIpp.c
                         src/Image/Processing/IPP/ptr_adapt.c
 
-    cc-options:         -Wall
+    cc-options:         -Wall -Wno-deprecated-declarations
     ghc-prof-options:   -auto-all
 
-    ghc-options:        -Wall -fno-warn-missing-signatures
+    ghc-options:        -Wall -fno-warn-missing-signatures -fno-warn-name-shadowing
 

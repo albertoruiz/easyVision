@@ -1,5 +1,4 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-{-# OPTIONS_GHC -O0 #-}
 
 -----------------------------------------------------------------------------
 {- |
@@ -28,12 +27,9 @@ where
 import Util.Geometry
 import Image.Devel
 import Foreign.C.Types
---import Foreign.Ptr
 import Foreign.Marshal
 import Foreign.Storable
---import System.IO.Unsafe(unsafePerformIO)
-import Control.Applicative((<$>))
-import Data.Packed.Vector(takesV,fromList,toList)
+import Numeric.LinearAlgebra.HMatrix(takesV,fromList,toList)
 
 --------------------------------------------------------------------------------
 

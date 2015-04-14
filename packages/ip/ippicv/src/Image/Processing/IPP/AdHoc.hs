@@ -17,16 +17,14 @@ where
 
 
 import Image.Processing.IPP.Core
-import Image.Processing.IPP.Adapt
+--import Image.Processing.IPP.Adapt
 import Image.Processing.IPP.Wrappers
-import Image.Processing.IPP.Auto
-import Foreign.Marshal
+--import Image.Processing.IPP.Auto
+--import Foreign.Marshal
 import Control.Monad(when)
-import Data.ByteString.Internal as B
-import Foreign.Ptr(plusPtr,castPtr)
-import Foreign.Storable(peek)
-import Control.Applicative((<$>))
-
+--import Data.ByteString.Internal as B
+--import Foreign.Ptr(plusPtr,castPtr)
+--import Foreign.Storable(peek)
 
 --------------------------------------------------------------------------------
 
