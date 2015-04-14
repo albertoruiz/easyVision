@@ -8,9 +8,8 @@ module Contours.Polygons (
 
 import Vision.GUI.Simple
 import Util.Geometry
-import Contours ( bisector, area )
-import Numeric.LinearAlgebra ( fromList, (@>) )
-import Numeric.LinearAlgebra.Util ( norm )
+import Contours ( area )
+import Numeric.LinearAlgebra.HMatrix ( fromList )
 import Util.Misc ( subListsBy, stdpix, degree )
 import Util.Homogeneous ( hv2pt, cross )
 import Util.Estimation ( mseLine )
@@ -25,6 +24,7 @@ autoParam "PolygonParam" "polygon-"
 
 --------------------------------------------------------------------------------
 
+polygonalize :: PolygonParam -> [Polyline] -> [Polyline]
 polygonalize PolygonParam {..} = polygons maxCurv maxAng (minSides,maxSides)
 
 --------------------------------------------------------------------------------
@@ -98,12 +98,12 @@ extendedContour (Open ps) = mkInfo envs
 mkInfo :: [[Point]] -> [InfoPoint]
 mkInfo envs = map curvat envs
   where
-    curvat ps@[p0@(Point x0 y0),p1@(Point x1 y1),p2@(Point x2 y2)] = InfoPoint p1 wx wy k
+    curvat [p0@(Point x0 y0),p1@(Point x1 y1),p2@(Point x2 y2)] = InfoPoint p1 wx wy k
       where
         l1 = bisector (Segment p0 p1)
         l2 = bisector (Segment p1 p2)
         hc = toVector $ meet l1 l2
-        tooflat = abs(hc@>2 /norm hc) < 1E-3
+        -- tooflat = abs(hc!2 /norm_2 hc) < 1E-3
         cen@(Point kcx kcy) =  hv2pt hc
         k = distPoints cen p1 `min` 10
         vx = (x2-x0)/2
@@ -117,4 +117,6 @@ mkInfo envs = map curvat envs
 
         (wx,wy) | True = (vx,vy)
                 | otherwise = (cvx*l, cvy*l)
+
+    curvat _ = undefined
 

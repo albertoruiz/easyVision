@@ -24,22 +24,10 @@ module Image.Processing.Contour (
 )
 where
 
-import Image.Devel hiding (constantImage)
+import Image.Devel as I hiding (constantImage)
 import Image.Processing.IPP
 import Image.Processing.Generic
 import Util.Geometry(Polyline(..))
-import Foreign.C.Types(CUChar)
-import System.IO.Unsafe(unsafePerformIO)
-import Debug.Trace
-import Data.List(sortBy, maximumBy, zipWith4, sort,foldl', tails)
-import Numeric.LinearAlgebra
-import Numeric.LinearAlgebra.Util(diagl)
-import Util.Homogeneous
-import Util.Rotation
-import Util.Misc(degree)
-import Util.Debug(debug)
-import Numeric.GSL.Polynomials(polySolve)
-import Numeric.GSL.Fourier(ifft)
 
 
 
@@ -87,13 +75,15 @@ rawContour :: ImageGray -- ^ source image
            -> [Pixel]   -- ^ contour of the region
 rawContour im start v = clean $ iterate (nextPos im v) (start, ToRight)
     where clean ((a,_):rest) = a : clean' a rest
-          clean' p ((v1,s1):rest@((v2,s2):_))
+          clean _ = undefined
+          clean' p ((v1,_):rest@((_,_):_))
             | p  == v1  = []
   --          | s1 == s2  = clean' p rest
             | otherwise = v1: clean' p rest
+          clean' _ _ = undefined
 
-
-cloneClear im = return (copy (constantImage zeroP (size im)) [(im,topLeft (roi im))])
+cloneClear :: Image I8u -> IO (Image I8u)
+cloneClear im = return (copy (constantImage zeroP (I.size im)) [(im,topLeft (roi im))])
 
 
 -- | extracts contours of active regions (255) from a binary image
@@ -107,7 +97,7 @@ rawContours n d im = unsafePerformIO $ do
     return r
 
 
-
+auxCont :: Int -> Int -> Image I8u -> IO [([Pixel], Int, ROI)]
 auxCont n d aux = do
     let (v,p) = maxIndx8u aux
     if n==0 || (v<255)
@@ -128,7 +118,7 @@ contourAt dif img start = unsafePerformIO $ do
     aux <- cloneClear (median Mask5x5 img)
     let ROI lr1 lr2 lc1 lc2 = roi aux
         d = fromIntegral dif
-    (r@(ROI r1 r2 c1 c2),a,_) <- floodFill8uGrad aux start d d 0
+    (ROI r1 r2 c1 c2,_,_) <- floodFill8uGrad aux start d d 0
     let st = findStart aux start
         touches = r1 == lr1 || c1 == lc1 || r2 == lr2 || c2 == lc2
         pol = if not touches
@@ -136,16 +126,20 @@ contourAt dif img start = unsafePerformIO $ do
                 else Nothing
     return pol
 
+findStart :: Image I8u -> Pixel -> Pixel
 findStart im = fixp (findLimit im left . findLimit im top)
 
+findLimit :: Image I8u -> (Pixel -> Pixel) -> Pixel -> Pixel
 findLimit im dir pix
     | readPixel im neig == 0 = findLimit im dir neig
     | otherwise          = pix
   where neig = dir pix
 
+top,left :: Pixel -> Pixel
 top  (Pixel r c) = Pixel (r-1) c
 left (Pixel r c) = Pixel r (c-1)
 
+fixp :: Eq a => (a -> a) -> a -> a
 fixp f p = if s == p then p else fixp f s
     where s = f p
 
@@ -159,7 +153,7 @@ contours :: Int         -- ^ maximum number of contours
 contours nc ma x = map proc . rawContours nc ma $ x
   where
     fst3 (a,_,_) = a
-    proc = Closed . pixelsToPoints (size x) . fst3
+    proc = Closed . pixelsToPoints (I.size x) . fst3
 
 
 --------------------------------------------------------------------------------
@@ -193,7 +187,7 @@ localContours rth len g = (cs difB, cs difW)
     cs dif = filter good $ rcs
       where
         rcs = contours 1000 len $ dif `andI` mask
-        good = ok . head . pointsToPixels (size dif) . polyPts
+        good = ok . head . pointsToPixels (I.size dif) . polyPts
 
     ok p = readPixel mx p > readPixel th p && readPixel mn p < readPixel th p
 

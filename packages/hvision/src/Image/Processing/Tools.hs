@@ -30,7 +30,7 @@ import Image.Devel hiding (constantImage)
 import Data.List(transpose)
 import Util.Rotation(rot3)
 import Util.Homogeneous(desp)
-import Numeric.LinearAlgebra
+import Numeric.LinearAlgebra.HMatrix
 
 {-
 -- | Binarizes a gray level image.
@@ -59,7 +59,7 @@ localMax :: NPix p
 localMax r g = copyMask b g mask where
     mg = filterMax r g
     mask = compareImages IppCmpEq mg g
-    b = setROI (roi mg) (constantImage zeroP (size g))
+    b = setROI (roi mg) (constantImage zeroP (Image.size g))
 
 
 
@@ -136,9 +136,10 @@ canny th g = canny32f ((-1) .* gx g, gy g) th
 --   (A slightly larger roi (3/2) is actually rotated to ensure that the whole final region has valid data,
 --   but this cannot be guaranteed if the desired roi is too close to the valid roi of the source.)
 
+rotateROI :: Pix p => Double -> ROI -> Image p -> Image p
 rotateROI angle droi im = im'
   where
-    sz = size im
+    sz = Image.size im
     p = roiCenter droi
     rad = roiRadius droi
     [Point x y] = pixelsToPoints sz [p]
@@ -150,19 +151,22 @@ rotateROI angle droi im = im'
 
 ----------------------------------------------------------------------
 
+pyramid :: Image I8u -> [Image I8u]
 pyramid x = zipWith g (iterate decimate x) [0..]
   where
     g z k = modifyROI (shrink (k,k)) z
 
+decimate :: Image I8u -> Image I8u
 decimate x = resizeFull sz2 . gauss8u Mask3x3 $  x
   where
-    (Size h w) = size x
+    (Size h w) = Image.size x
     sz2 = (Size (h `div` 2) (w `div` 2))
 
 ----------------------------------------------------------------------
 
 -- ^ resize image preserving aspect ratio if any dimension is greater than given size
-resizeIfGT sz x = if (size x) == sz' then x else resize sz' x
+resizeIfGT :: Pix t => Int -> Image t -> Image t
+resizeIfGT sz x = if (Image.size x) == sz' then x else resize sz' x
   where
-    sz' = limitSize sz (size x)
+    sz' = limitSize sz (Image.size x)
 

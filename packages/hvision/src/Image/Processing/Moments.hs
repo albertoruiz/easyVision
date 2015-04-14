@@ -19,7 +19,7 @@ module Image.Processing.Moments (
 
 import Image.Processing.IPP
 import Image
-import Numeric.LinearAlgebra
+import Numeric.LinearAlgebra.HMatrix
 
 data ImageBasis = ImageBasis { zeroIb, oneIb, xIb, yIb, x2Ib, y2Ib, xyIb :: Image Float }
 

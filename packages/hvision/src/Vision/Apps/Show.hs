@@ -7,8 +7,6 @@ module Vision.Apps.Show (
 
 import Vision.GUI.Simple
 import Image.Processing
-import Image
-import Util.Geometry(Segment(..))
 import Image.Devel
 import GHC.Float(float2Double)
 import Vision.Apps.ShCamera
@@ -32,6 +30,7 @@ showVectorField name f = withParam (,) >>> observe name sh >>> arr snd
         extreme2 (Segment _ p) = p
 
 
+gradLines :: Int -> Double -> (Image Float, Image Float) -> [Segment]
 gradLines d s (gx,gy) = ss
   where
     ROI r1 r2 c1 c2 = intersection (roi gx) (roi gy)

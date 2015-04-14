@@ -6,31 +6,25 @@ module Vision.Apps.ShCamera (
 
 
 import Vision.GUI.Simple
-import Image(Image,Size(..),size)
-import Numeric.LinearAlgebra
-import Numeric.LinearAlgebra.Util((¦),(#),row,norm,diagl)
+import Image as I (Image,size)
+import Numeric.LinearAlgebra.HMatrix
 import Image.Processing(resize)
-import Vision.Camera(sepCam)
 import Util.Geometry
-import Util.Estimation
-import Data.Function(on)
-import Util.Misc(degree,Mat)
-import Util.Debug(debugMat,debug)
-import Util.Statistics(median)
-import Util.Rotation
-import Util.Camera(CameraInfo(..),infoCam)
+import Util.Camera(CameraInfo(..))
 
 type ImageFloat = Image Float
 
+auxImg :: Image Float -> Image Float
 auxImg = resize (Size 256 256) -- . float . grayscale . channelsFromRGB
 
-
+aspectRatio :: Size -> Double
 aspectRatio (Size r c) = fromIntegral c / fromIntegral r :: Double
 
 
+drawImagePlane :: Double -> CameraInfo -> Image Float -> Drawing
 drawImagePlane sc caminf img = drawTexture (auxImg img) ps
   where
-    ar = aspectRatio (size img)
+    ar = aspectRatio (I.size img)
     ps = map (toList . toVector . inhomog) (imageFrame caminf sc ar)
 
 
@@ -67,11 +61,12 @@ calibFrame CameraInfo{..} sc = cam2world <| ps
          , HPoint3D x    (-y) z w
          , HPoint3D x    y    z w ]
 
+wireCamera :: CameraInfo -> Double -> Double -> Drawing
 wireCamera ic sc ar = lineStrip ps
   where
     [p1,p2,p3,p4] = imageFrame ic sc ar
     c = cenCam ic
-    [x,y,z] = cam2world ic <| [HPoint3D sc 0 0 1, HPoint3D 0 sc 0 1, HPoint3D 0 0 (2*sc) 1]
+    [_x,_y,z] = cam2world ic <| [HPoint3D sc 0 0 1, HPoint3D 0 sc 0 1, HPoint3D 0 0 (2*sc) 1]
     ps = [ -- x,c,y,c,z,
           z, c,p1,p2,p3,p4,p1,c,p2,p3,c,p4]
 
@@ -83,7 +78,7 @@ showCamera sc ic@CameraInfo{..} Nothing
            ]
   
 showCamera sc ic (Just img)
-    = Draw [ wireCamera ic sc (aspectRatio (size img))
+    = Draw [ wireCamera ic sc (aspectRatio (I.size img))
            , drawImagePlane sc ic img
            , lineStrip (calibFrame ic sc)
            ]

@@ -22,11 +22,10 @@ module Vision.GUI (
 
 import Vision.GUI.Simple hiding (camera,run)
 import qualified Vision.GUI.Simple as S
-import Vision.GUI.Util
 import Image
 import Image.Capture(gcam)
 import Image.Processing
-import Numeric.LinearAlgebra
+import Numeric.LinearAlgebra.HMatrix
 import Vision.Apps.Show
 import Util.Options
 
@@ -52,7 +51,7 @@ instance Renderable Channels
       where
         things = (blockImage . map (map f)) [[yCh, rCh],[gCh,bCh]]
         f = resize (Size (h `div`2) (w `div` 2))
-        Size h w = size (yCh)
+        Size h w = Image.size (yCh)
         histn c = hist / scalar (maxElement hist) - 0.6
           where
             hist = fromList $ histogramN [0..256] c

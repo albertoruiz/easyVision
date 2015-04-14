@@ -3,7 +3,6 @@ module Image.Processing(
     Image(),
     module Image,
     -- * basic functions
-    size, roi, setROI, modifyROI,
     G.constantImage, set, zeroP, copy, copyMask, G.blockImage,
     -- * spatial transformations
     resize, G.resizeFull, G.warp, warpon, uradial,
@@ -64,30 +63,66 @@ import Image.Processing.IPP
 import Image.Processing.Contour
 import Image.Processing.Moments
 import Image.Processing.Custom(domainTrans32f)
+import Numeric.LinearAlgebra.HMatrix
 
 --import ImagProc.Ipp.Wrappers(ippSetNumThreads)
 --import ImagProc.Ipp.Structs
 
+set :: Pix p => Image p -> [(ROI, p)] -> Image p
 set  x l = G.set  x l
+
+copy :: Pix p => Image p -> [(Image p, Pixel)] -> Image p
 copy x l = G.copy x l
+
+resize :: Pix p => Size -> Image p -> Image p
 resize s i = G.resize s i
+
+warpon
+  :: Pix p =>
+     Image p -> [(Matrix Double, Image p)] -> Image p
 warpon i l = G.warpon i l
+
+uradial :: Pix p => Float -> Float -> Image p -> Image p
 uradial f g i = G.uradial f g i
+
+crossCorr :: Pix p => Image p -> Image p -> Image Float
 crossCorr a b = G.crossCorr a b
+
+sqrDist :: Pix p => Image p -> Image p -> Image Float
 sqrDist a b = G.sqrDist a b
+
+absDiff :: Pix p => Image p -> Image p -> Image p
 absDiff a b = G.absDiff a b
+
+sumPixels :: Pix p => Image p -> Double
 sumPixels x = G.sumPixels x
+
+convolution :: NPix p => [[Float]] -> Image p -> Image p
 convolution m x = G.convolution m x
+
+filterMax :: NPix p => Int -> Image p -> Image p
 filterMax k x = G.filterMax k x
+
+filterMin :: NPix p => Int -> Image p -> Image p
 filterMin k x = G.filterMin k x
+
+filterBox :: NPix p => Int -> Int -> Image p -> Image p
 filterBox i j x = G.filterBox i j x
+
+gauss :: NPix p => Mask -> Image p -> Image p
 gauss m x = G.gauss m x
+
 zeroP :: Pix p => p
 zeroP = G.zeroP
+
+compareImages :: NPix p => IppCmp -> Image p -> Image p -> Image I8u
 compareImages c x y = G.compareImages c x y
+
+getPoints :: NPix p => Int -> Image p -> [Point]
 getPoints n x = G.getPoints n x
 
 
+maxIdx :: NPix p => Image p -> (p, Pixel)
 maxIdx x = G.maxIdx x
 
 copyMask :: Pix p
@@ -96,7 +131,11 @@ copyMask :: Pix p
          -> Image I8u -- ^ mask
          -> Image p
 copyMask = G.copyMask
+
+minEvery :: NPix p => Image p -> Image p -> Image p
 minEvery a b = G.minEvery a b
+
+maxEvery :: NPix p => Image p -> Image p -> Image p
 maxEvery a b = G.maxEvery a b
 
 thresholdVal :: NPix p
