@@ -7,8 +7,9 @@ import Contours
 import Contours.CLK
 import Contours.CLKP
 import Numeric.LinearAlgebra.HMatrix
-import Vision(cameraFromHomogZ0,kgen,refineNewton)
-import Util.Geometry(datMat,homog,segmentLength)
+--import Vision(cameraFromHomogZ0,kgen,refineNewton)
+import Vision(kgen)
+import Util.Geometry(datMat,segmentLength)
 import Control.Arrow((&&&))
 import Util.Misc(stdpix)
 import OpenCV
@@ -27,7 +28,6 @@ refineH k1 k2 r = h
   where
     prep@(f0,_j0,ffeat) = shapeGNS (proto r)   -- or shapeGNP
     hInit = wh r
-    model = shapeContour (proto r)
     obs = shapeContour (target r)
     iniTarget = transPol (inv hInit) obs
     err0 = ffeat iniTarget - f0
@@ -42,6 +42,7 @@ refineP k3 k4 f r h = p
   where
     model = shapeContour (proto r)
     obs = shapeContour (target r)
+{-
     mbpose0 = cameraFromHomogZ0 (Just f) h
     rPose' = case mbpose0 of
               Just rPose0 -> refineNewton k3 rPose0 views points
@@ -49,7 +50,7 @@ refineP k3 k4 f r h = p
        where
          views  = rspm3 (proto r) <> tr h
          points = rspm4 (proto r)
-
+-}
     rPose = solvePNP (kgen f) views points
       where
         pproj  = transPol h prs

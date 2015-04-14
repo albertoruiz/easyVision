@@ -10,17 +10,18 @@ module Contours.CLK (
     refineHN,
     homographyFromContours,
     diffCont,
-    warpStep, projective
+    warpStep,
+    projective, affine, displac, scaledesp
 )where
 
-import Numeric.LinearAlgebra hiding (hess)
+import Numeric.LinearAlgebra.HMatrix hiding (hess)
 import Contours
 import Vision.Camera ( computeHomography )
 import Util.Homogeneous ( scaling )
 import Util.Geometry
     ( Matrixlike(toMatrix), segmentLength, distPoints )
 import Util.Misc ( Mat, Vec)
-import Util.Debug( debug, debugMat )
+import Util.Debug( debug )
 import Util.Optimize ( optimize2 )
 import Data.List ( partition, transpose, foldl' )
 import Contours.Clipping ( deltaContour )
@@ -33,19 +34,22 @@ data DeformableContour = DefCont { dmBase :: Polyline
                                  , dmModes :: [Polyline]
                                  , dmAlphas :: [Double] }
 
+noDeformable :: Polyline -> DeformableContour
 noDeformable p = DefCont p [] []
 
 ----------------------------------------------------------------------
 
 shareWeights :: ((t, Double), [Polyline]) -> [(Segment, Double)]
-shareWeights ((p,oa),ps) = {-debug "MX" (maximum . map snd) $ -} map f ss
+shareWeights ((_p,oa),ps) = {-debug "MX" (maximum . map snd) $ -} map f ss
   where
     ss = concatMap asSegments ps
     l = sum $ map segmentLength ss
     f s = (s, clipp maxerr $ oa/l)
 
+maxerr :: Double
 maxerr = 1000 -- 1E-2
 
+clipp :: Double -> Double -> Double
 clipp h = min h . max (-h)
 
 
@@ -66,7 +70,7 @@ deltaContourSimple a b = joinAll (deltaContour a b)
 
 
 -- vienen ordenados los subtramos?
-
+{-
 sortDelta :: [((Polyline, Double), [Polyline])] -> [((Polyline, Double), [Polyline])]
 sortDelta x = sortD [] x
   where
@@ -80,6 +84,7 @@ sortDelta x = sortD [] x
         [s] | length ss == 1 = ss
             | otherwise = error $ "DOUBLE region" ++ show x
         f (extres->(c,d)) = c==b
+-}
 
 
 -- empty result means problems! (change to Maybe?)
@@ -92,12 +97,13 @@ sortDeltaM x = sortD [] x
     sortD prev (t:xs) | ok = sortD (prev++[t]) (s:rs)
                       | otherwise = []
       where
-        (a,b) = extres t
+        (_a,b) = extres t
         (ss,rs) = partition f xs
         ok = length ss == 1
         [s] = ss
-        f (extres->(c,d)) = c==b
+        f (extres->(c,_d)) = c==b
 
+    sortD _ _ = undefined
 
 
 diffModes :: Polyline -> DeformableContour -> [([Segment], Double)]
@@ -118,38 +124,42 @@ syncWeights x = until ((p==).extreme1.fst.head) rot
       where
         p = head (polyPts x)
         rot (y:ys) = ys++[y]
-        extreme1 (Segment p _) = p
+        rot [] = []
+        extreme1 (Segment pt _) = pt
 
 
 
 prepModes :: Polyline -> [(a, [Polyline])] -> [[Double]]
-prepModes base' delta = (map paramVals (separ a b))
+prepModes base' delta = (map paramVals (separ u v))
   where
-    a = cl $ polyPts base
-    b = cl $ sync base (odelta delta)
+    u = cl $ polyPts base
+    v = cl $ sync base (odelta delta)
     base | orientedArea base' < 0 = error $ "base needs > orientation: " ++ show base'
          | otherwise = base'
 
     cl xs = xs++[head xs]
     
-    separ [_]       _ = []
-    separ (a:b:xs) zs = (ys++[b]) : separ (b:xs) rs
+    separ (_:x:xs) zs = (ys++[x]) : separ (x:xs) rs
       where
-        (ys,rs) = span (/=b) zs
+        (ys,rs) = span (/=x) zs
+    separ [_] _ = []
+    separ []  _ = error "separ [] in prepModes"
 
     sync x = until ((p==).head) rot
       where
         p = head (polyPts x)
-        rot (x:xs) = xs++[x]
+        rot (y:ys) = ys++[y]
+        rot [] = []
 
     odelta = concatMap (tail.polyPts). next [] . concatMap snd
       where
         extres = \(Open ps)->(head ps,last ps)
-        next prev [a] = prev++[a]
-        next prev (t@(extres->(a,b)):xs) = next (prev++[t]) (s:rs)
+        next _    []  = error "next _ [] in prepModes"
+        next prev [x] = prev++[x]
+        next prev (t@(extres->(_,b)):xs) = next (prev++[t]) (s:rs)
           where
             ([s],rs) = partition f xs
-            f (extres->(c,d)) = c==b
+            f (extres->(c,_)) = c==b
 
     paramVals ps = map (f a b) qs
       where
@@ -177,6 +187,7 @@ data InfoSeg = InfoSeg {
     }
 
 
+infoSeg :: Segment -> InfoSeg
 infoSeg (Segment (Point x1 y1) (Point x2 y2)) = InfoSeg {
     seglen = d,
     gx = dy/d,
@@ -229,8 +240,8 @@ infoSeg (Segment (Point x1 y1) (Point x2 y2)) = InfoSeg {
                   (d2*x1*x2*y1*y2)/15 + (d1*x2**2*y1*y2)/30 + (d2*x2**2*y1*y2)/15 + 
                   (d1*x1**2*y2**2)/60 + (d2*x1**2*y2**2)/60 + (d1*x1*x2*y2**2)/30 + 
                   (d2*x1*x2*y2**2)/15 + (d1*x2**2*y2**2)/30 + (d2*x2**2*y2**2)/6
-    c d1 d2 n m = error $ show (n,m)
-    
+    c _ _ i j = error $ "infoSeg "++ show (i,j)
+
 {-
 -- it can be written in general in terms of hyperg_2F1
 gmpq (Segment (Point x1 y1) (Point x2 y2)) n m = 
@@ -279,6 +290,8 @@ hessElem (PMode i) (PMode j) ((infoSeg -> InfoSeg{..}): ms) = r * seglen
       + gy*gx*(dy1*ex1 + dy1*(ex2-ex1)/2 + (dy2-dy1)*ex1/2 + (dy2-dy1)*(ex2-ex1)/3)
       + gy*gy*(dy1*ey1 + dy1*(ey2-ey1)/2 + (dy2-dy1)*ey1/2 + (dy2-dy1)*(ey2-ey1)/3)
 
+hessElem _ _ [] = undefined
+
 
 hess :: [ParamDeriv] -> DeformableContour -> Mat
 hess ps (DefCont c ms _) = r
@@ -302,6 +315,8 @@ gradElem (PMode k) (s:ms,err) = r*err
     dxa = (dx1+dx2)/2
     dya = (dy1+dy2)/2
 
+gradElem _ ([],_) = undefined
+
 
 grad :: [ParamDeriv] -> [([Segment], Double)] -> Vec
 grad ps dc = r
@@ -314,6 +329,7 @@ type Model = ([ParamDeriv], [Double] -> Mat)
     
 sc_x, sc_y, sc_c, d_x, d_y, sk_x, sk_y, p_x, p_y :: ParamDeriv
 
+z :: (Double, Int, Int)
 z = (0,0,0)
 
 sc_x = PTran  (1,1,0)     z
@@ -327,37 +343,42 @@ p_x  = PTran (-1,2,0) (-1,1,1)
 p_y  = PTran (-1,1,1) (-1,0,2)
 
 
-affineI = [sc_x, sc_y, sk_x, sk_y, d_x, d_y]
-mktA [a,d,c,b,e,f] = (3><3) [1+a,c,   e,
-                             b  ,1+d, f,
-                             0  ,  0, 1] :: Matrix Double
-
 affine :: Model
 affine = (affineI,mktA)
+  where
+    affineI = [sc_x, sc_y, sk_x, sk_y, d_x, d_y]
+    mktA [a,d,c,b,e,f] = (3><3) [1+a,c,   e,
+                                 b  ,1+d, f,
+                                 0  ,  0, 1]
+    mktA _ = error "affine has 6 parameters"
+    
 
-projectiveI = [sc_x, sc_y, sk_x, sk_y, d_x, d_y, p_x, p_y]
-mktP [a,d,c,b,e,f,g,h] = (3><3) [ 1+a, c,   e,
-                                  b  , 1+d, f,
-                                  g  ,   h, 1] :: Matrix Double
 projective :: Model
 projective = (projectiveI, mktP)
-
-
-desI = [d_x, d_y]
-mktD [e,f] = (3><3) [1, 0, e,
-                     0, 1, f,
-                     0, 0, 1] :: Matrix Double
+  where
+    projectiveI = [sc_x, sc_y, sk_x, sk_y, d_x, d_y, p_x, p_y]
+    mktP [a,d,c,b,e,f,g,h] = (3><3) [ 1+a, c,   e,
+                                      b  , 1+d, f,
+                                      g  ,   h, 1]
+    mktP _ = error "projective has 8 parameters"
 
 displac :: Model
 displac = (desI,mktD)
-
-scaledespI = [sc_c, d_x, d_y]
-mktSD [s,e,f] = (3><3) [1+s,  0, e,
-                        0,  1+s, f,
-                        0,    0, 1] :: Matrix Double
+  where
+    desI = [d_x, d_y]
+    mktD [e,f] = (3><3) [1, 0, e,
+                         0, 1, f,
+                         0, 0, 1]
+    mktD _ = error "displac has 2 parameters"
 
 scaledesp :: Model
 scaledesp = (scaledespI,mktSD)
+  where
+    scaledespI = [sc_c, d_x, d_y]
+    mktSD [s,e,f] = (3><3) [1+s,  0, e,
+                            0,  1+s, f,
+                            0,    0, 1]
+    mktSD _ = error "scaledesp has 3 parameters"
 
 --------------------------------------------------------------------------------
 
@@ -370,13 +391,13 @@ warpStep (ps,mk) a = f
       where
         da = map (return *** id) $ diffCont b a
         g = grad ps da
-        x = mih <> g
+        x = mih #> g
         t = mk (toList $ x)
         r = transPol t b
 
 
 warpStepDef :: Model -> DeformableContour -> Polyline -> (Mat,[Double])
-warpStepDef (pars,mk) p@(DefCont a as _) b | null da = debug "HORROR"  (length.snd) (ident 3, replicate (length as) 0)
+warpStepDef (pars,mk) p@(DefCont _ as _) b | null da = debug "HORROR"  (length.snd) (ident 3, replicate (length as) 0)
                                            | otherwise = (t,p2)
   where
     param = pars++ map PMode [1..length as]
@@ -388,25 +409,27 @@ warpStepDef (pars,mk) p@(DefCont a as _) b | null da = debug "HORROR"  (length.s
     
     g = -- debug "G" id $
         grad param da
-    x = mih <> g
+    x = mih #> g
     --x = - 0.5 * g
     (p1,p2) = splitAt (length pars) (toList x)
     t = mk p1
 
 --------------------------------------------------------------------------------
 
-
+zipPolyWith :: (Point -> Point -> Point) -> Polyline -> Polyline -> Polyline
 zipPolyWith f (Closed ps) (Closed qs) = Closed (zipWith f ps qs)
 zipPolyWith f (Open ps) (Open qs) = Open (zipWith f ps qs)
-zipPolyWith f _ _ = error "zipWithPoly Open-Closed"
+zipPolyWith _ _ _ = error "zipWithPoly Open-Closed"
 
-
+(~+~) :: Polyline -> Polyline -> Polyline
 (~+~) = zipPolyWith (.+.)
   where
     Point x1 y1 .+. Point x2 y2 = Point (x1+x2) (y1+y2)
-        
+
+(~*~) :: Double -> Polyline -> Polyline      
 s ~*~ p = transPol (scaling s) p
 
+stepDef :: (Polyline, DeformableContour) -> (Polyline, DeformableContour)
 stepDef (img, p@(DefCont prot modes accAlphas)) = (img', q)
   where
      (hh,alphas) = warpStepDef projective p img
@@ -415,13 +438,7 @@ stepDef (img, p@(DefCont prot modes accAlphas)) = (img', q)
      q | orientedArea prot' > 0 = DefCont prot' modes (zipWith (subtract) alphas accAlphas)
        | otherwise = p
 
-
-
-
-
-
 --------------------------------------------------------------------------------
-
 
 data LKDResult = LKDResult
     { lkdSource     :: Polyline  -- ^ protype, possibly deformed
@@ -452,6 +469,7 @@ lkd model x = LKDResult{..}
     lkdSource = baseDef
 
 
+refineHN :: Int -> Polyline -> Polyline -> LKDResult
 refineHN n a b = LKDResult{..}
   where
     ((lkdHomography,lkdAlignment),lkdErrors) = optimize2 1E-3 1 n (warpStep projective a) (ident 3, b)
@@ -460,6 +478,7 @@ refineHN n a b = LKDResult{..}
 
 
 -- h takes proto to target, giving xor err
+refineProjective :: ShapeMatch -> (Matrix Double, Double, Polyline)
 refineProjective ShapeMatch{..} = (lkdHomography<>wa , head lkdErrors, lkdAlignment)
   where
     a = shapeContour target
@@ -467,19 +486,21 @@ refineProjective ShapeMatch{..} = (lkdHomography<>wa , head lkdErrors, lkdAlignm
     LKDResult{..} = lkd (noDeformable a) b
 
 -- starting from affine alignment
+homographyFromContours :: Polyline -> Polyline -> (Matrix Double, Double, Polyline)
 homographyFromContours dst src =
     case md of
-        Just d  -> refineProjective (affine d)
+        Just d  -> refineProjective (affineInit d)
         Nothing -> error $ "homographyFromContours cannot initialize target" ++ show dst
   where
     md = shape 10 dst
     ms = shape 10 src
-    affine = case ms of
+    affineInit = case ms of
         Just s -> head . shapeMatches [(s, "")]
         Nothing -> error $ "homographyFromContours cannot initialize source" ++ show src
 
 --------------------------------------------------------------------------------
 
+refineDeformable :: ShapeMatch -> DeformableContour -> LKDResult
 refineDeformable ShapeMatch {..} model = r { lkdAlignment = align, lkdHomography = h }
   where
     imag = transPol (inv wa) $ shapeContour target
