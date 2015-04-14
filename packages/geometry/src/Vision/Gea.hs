@@ -1,3 +1,5 @@
+{-# LANGUAGE FlexibleContexts #-}
+
 module Vision.Gea(
     geaFull,
     gea,
@@ -5,8 +7,7 @@ module Vision.Gea(
     epiHessian
 ) where
 
-import Numeric.LinearAlgebra as LA hiding (i)
-import Numeric.LinearAlgebra.Util(norm)
+import Numeric.LinearAlgebra.HMatrix as LA hiding (toDense, mkSparse)
 import Data.List
 import Vision.Camera
 import Util.Optimize(optimize)
@@ -50,8 +51,8 @@ newtonStep lambda m sol = sol' where
     jac = snd (m sol)
     hes = toDense $ bMul (bTrans jac) jac
     grad = toDense $ bMul (bTrans jac) fun
-    sol' = sol - (flatten $ linearSolve (aug lambda hes) grad)
-    aug lam mat = mat + diag (constant lam (rows mat))
+    sol' = sol - (flatten $ linearSolveLS (aug lambda hes) grad)
+    aug lam mat = mat + diag (konst lam (rows mat))
 
 prepareEpipolarSelect
     :: [Int]
@@ -65,9 +66,9 @@ prepareEpipolarSelect used free obs initcams = (getBlocks, vsol, newSol, fcost) 
     mbk0s = replicate nC (Just (kgen 1))
     origins = zipWith cameraModelOrigin mbk0s initcams
     newSol sol = zipWith ($) (map projectionAt'' origins) (fill sol)
-    vsol = constant (0::Double) (6* length free)
+    vsol = konst (0::Double) (6* length free)
 
-    fill minisol = map snd $ sortBy (compare `on` fst) $ zip free (takesV (replicate (length free) 6) minisol) ++ zip ([0..nC -1] \\ free) (repeat (constant 0 6))
+    fill minisol = map snd $ sortBy (compare `on` fst) $ zip free (takesV (replicate (length free) 6) minisol) ++ zip ([0..nC -1] \\ free) (repeat (konst 0 6))
 
     preJaco vs = zipWith auxCamJac origins (fill vs)
     fromSel = fromJust . flip lookup (zip free [0..])
@@ -89,7 +90,7 @@ prepareEpipolarSelect used free obs initcams = (getBlocks, vsol, newSol, fcost) 
                   c = ((k,fromSel j), Dense (d <>f2))
                   d = m_hat epi
 
-    fcost sol = 1E4 * sqrt ((norm v)**2 / fromIntegral (dim v))
+    fcost sol = 1E4 * sqrt ((norm_2 v)**2 / fromIntegral (size v))
         where v = flatten $ toDense $ fst $ getBlocks sol
 
 

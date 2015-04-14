@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleInstances, TypeSynonymInstances #-}
+{-# LANGUAGE FlexibleContexts #-}
 
 module Vision.Epipolar(
     Epi(..), EpiPairs,
@@ -6,7 +7,7 @@ module Vision.Epipolar(
 ) where
 
 import Vision.Types
-import Numeric.LinearAlgebra hiding (i)
+import Numeric.LinearAlgebra.HMatrix
 import Util.Misc(Mat,Vec,vec)
 import Vision.Stereo
 import Util.Homogeneous
@@ -59,9 +60,9 @@ prepEpi s ((i,j),(m,ks)) = ((i,j),
     ebad = linearEssen m
     ps  = map (\k-> toList $ inHomog $ ako s (k,i)) ks
     ps' = map (\k-> toList $ inHomog $ ako s (k,j)) ks
-    egood = trans $ estimateFundamental ps ps'
+    egood = tr $ estimateFundamental ps ps'
     h = estimateHomography ps ps'
-    he = sqrt $ pnorm Frobenius (fromLists ps - fromLists (ht h ps')) ** 2 / fromIntegral (length ks)
+    he = sqrt $ norm_Frob (fromLists ps - fromLists (ht h ps')) ** 2 / fromIntegral (length ks)
     e = if length ks > 8 then egood else ebad
     sm = singularValues m
     mbrot = rotOfCam `fmap` m'
@@ -73,7 +74,7 @@ prepEpi s ((i,j),(m,ks)) = ((i,j),
 -- compute the essential matrix of the pair
 -- from the reduced measurement matrix M^
 linearEssen :: Mat -> Mat
-linearEssen = trans . reshape 3 . last . toColumns . snd . rightSV
+linearEssen = tr . reshape 3 . last . toColumns . snd . rightSV
 
 
 mkEpiObs :: Projections Calibrated -> EpiPairs

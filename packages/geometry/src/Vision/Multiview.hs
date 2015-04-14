@@ -9,7 +9,7 @@ import Vision.Types
 import Vision.Epipolar
 import Vision.Stereo
 import Util.Homogeneous
-import Numeric.LinearAlgebra
+import Numeric.LinearAlgebra.HMatrix
 import Vision.IO
 
 data VisualProblem = VP { rawviews :: Projections Uncalibrated

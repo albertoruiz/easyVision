@@ -1,4 +1,5 @@
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE FlexibleContexts #-}
 
 module Vision.Tensorial(
     fundamental, trifocal, quadrifocal,
@@ -14,9 +15,7 @@ module Vision.Tensorial(
 )where
 
 import Numeric.LinearAlgebra.Exterior
-import qualified Numeric.LinearAlgebra as LA
-import Numeric.LinearAlgebra
-import Numeric.LinearAlgebra.Util(diagl)
+import Numeric.LinearAlgebra.HMatrix as LA hiding((!),vector,size)
 import Numeric.LinearAlgebra.Array.Util as Array
 import Numeric.LinearAlgebra.Array.Solve
 import System.Random
@@ -49,10 +48,10 @@ unitT :: Tensor Double -> Tensor Double
 unitT t = t / Array.scalar (frobT t)
 
 frobT :: Tensor Double -> Double
-frobT = pnorm PNorm2 . coords
+frobT = norm_2 . coords
 
 normInfT :: Tensor Double -> Double
-normInfT t = pnorm Infinity . coords $ t
+normInfT t = norm_Inf . coords $ t
 
 
 -- Very frequently used tensors:
@@ -88,7 +87,7 @@ correctFundamental :: Matrix Double -> Matrix Double
 correctFundamental f = f' where
    (u,s,v) = svd f
    s1:s2:_ = toList s
-   f' = u <> diag (fromList [s1,s2,0.0]) <> trans v
+   f' = u <> diag (fromList [s1,s2,0.0]) <> tr v
 
 
 -- The algorithm in Hartley and Zisserman
@@ -317,7 +316,7 @@ alignPtsTo p q = if e1 < e2 then q1 else q2
         di = diagl [sg,1,1]
         a = asMatrix $ inhomogT "x" $ p3d q
         b = asMatrix $ inhomogT "x" $ p3d p
-        (s,r,d) = procrustes b (a <> trans di)
+        (s,r,d) = procrustes b (a <> tr di)
         m = diagl [s,s,s,1]
             <>
             fromBlocks [[r,asColumn d],
@@ -327,7 +326,7 @@ alignPtsTo p q = if e1 < e2 then q1 else q2
         it = (transf $ toLists $ inv m) !"xy"
         okp3d = (p3d q * t) !"nx"
         okCams = (cam q * it) !"cvx"
-        err = pnorm Frobenius (a - LA.scalar s * (b <> trans r + asRow d))
+        err = norm_Frob (a - LA.scalar s * (b <> tr r + asRow d))
 
 --------------------------------------------------------------------------------
 
@@ -337,12 +336,12 @@ ihPoints3D = map coords . flip parts "n" . inhomogT "x" . p3d
 
 --dstmat :: (Normed b, Num b) => [b] -> [Double]
 dstmat pts = pairsWith dist pts where
-  dist u v = pnorm PNorm2 (u-v)
+  dist u v = norm_2 (u-v)
 
 --metricConsis :: (Normed b, Num b) => (a -> [b]) -> a -> a -> Double
 metricConsis f = on dist (nor. dstmat .f) where
   nor x = fromList x / LA.scalar (mean x)
-  dist u v = pnorm Infinity (u-v)
+  dist u v = norm_Inf (u-v)
 
 objectQuality :: VProb -> VProb -> Double
 objectQuality = metricConsis ihPoints3D

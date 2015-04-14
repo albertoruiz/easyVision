@@ -14,10 +14,10 @@ module Vision.Types(
     rms
 ) where
 
-import Data.Array
+import Data.Array as A
 import Data.List(foldl',foldl1',group,sort)
-import Numeric.LinearAlgebra hiding (i)
-import Numeric.LinearAlgebra.Util(unitary)
+import Numeric.LinearAlgebra.HMatrix
+import Numeric.LinearAlgebra.HMatrix.Util(unitary)
 import Util.Misc(Vec,Mat,arrayOf,vec,intersectSorted)
 import qualified Data.Map as M
 import Vision.Stereo(triangulate1)
@@ -48,8 +48,8 @@ mkProjections :: [Proj] -> Projections t
 mkProjections p = Projections { nCam = nc
                               , nPts = np
                               , projs = p
-                              , v_of_p = (vop!)
-                              , p_of_v = (pov!)
+                              , v_of_p = (vop A.!)
+                              , p_of_v = (pov A.!)
                               , ako = fastAccess p
                               }
   where
@@ -65,7 +65,7 @@ calibrateProjections :: Calibration -> [Proj] -> [Proj]
 calibrateProjections ks = map f where
     k = arrayOf (map inv ks)
     f ((i,j), Point x y) = ((i,j), Point (x'/w) (y'/w))
-        where [x',y',w] = toList (k j <> vec [x,y,1])
+        where [x',y',w] = toList (k j #> vec [x,y,1])
 
 ----------------------------------------------------------------------
 
@@ -106,7 +106,7 @@ rms obs ks cs ps = sqrt (e2/2) where
     c = arrayOf (zipWith (<>) ks cs)
     p = arrayOf ps
     g ac ((i,j), Point x y) = ac + (x-a/w)**2 + (y-b/w)**2
-        where [a,b,w] = toList $ c j <> p i
+        where [a,b,w] = toList $ c j #> p i
     e2 = foldl' g 0 obs / n
 
 

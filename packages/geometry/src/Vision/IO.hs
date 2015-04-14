@@ -4,7 +4,7 @@ module Vision.IO(
 ) where
 
 import Vision.Types
-import Numeric.LinearAlgebra
+import Numeric.LinearAlgebra.HMatrix
 import Util.Misc(Vec,Mat,splitEvery)
 import Util.Debug(impossible)
 
@@ -37,7 +37,7 @@ saveQCams file cams = writeFile file (unlines $ map f cams)
   where
     f cam = printf "%f %f %f %f %f %f %f" s a b c x y z
       where
-         [x,y,z] = toList (- rot <> cen)
+         [x,y,z] = toList (- rot #> cen)
          [a,b,c] = toList v
          Quat s v = rotToQuat rot
          (_,rot,cen) = factorizeCamera cam

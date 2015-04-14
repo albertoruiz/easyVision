@@ -1,3 +1,6 @@
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE TypeFamilies #-}
+
 module Vision.Bootstrap(
     -- * Rotations
     initRots, refineRots,
@@ -16,8 +19,8 @@ import Vision.Epipolar
 import Util.Misc(vec,Mat,Vec,degree,arrayOf,unionSort)
 import Util.Debug(debug,impossible)
 import Util.Graph(kruskal,path)
-import Numeric.LinearAlgebra hiding (i)
-import Numeric.LinearAlgebra.Util(unitary,(¦))
+import Numeric.LinearAlgebra.HMatrix hiding ((!))
+import Numeric.LinearAlgebra.HMatrix.Util(unitary)
 import Numeric.LinearAlgebra.Tensor hiding (scalar)
 import Numeric.LinearAlgebra.Array.Util hiding (scalar)
 import Vision.Types
@@ -50,12 +53,12 @@ solveEcs w resi = (sol',err)
     sol' = fromRows $ vec [0,0,0] : toRows sol
     sol = weight (debug "rotation system size: " f c) `linearSolveSVD` (weight d)
     err = (norm (c <> sol - d), norm d)
-    norm x = sqrt (pnorm Frobenius x ** 2 / fromIntegral (rows x)) / degree
+    norm x = sqrt (norm_Frob x ** 2 / fromIntegral (rows x)) / degree
     f m = (rows m, cols m, rank m)
     weight m = asColumn w * m
 
 fixRot :: Mat -> [Double] -> Mat
-fixRot r [a,b,c] = r <> trans dr
+fixRot r [a,b,c] = r <> tr dr
     where --dr = expm (scalar a * g1 |+| scalar b * g2 |+| scalar c * g3 )
           dr = expm (scalar a * rot1g + scalar b * rot2g + scalar c * rot3g)
 fixRot _ _ = impossible "fixRot"
@@ -89,7 +92,7 @@ solveCams rs sel = (cams1, cams2) where
     cens = fst $ debug "centers system error" snd $ estimateCenters rs sel
     cams1 = zipWith f rs cens
     cams2 = zipWith f rs (map negate cens)
-    f r c = r ¦ asColumn (-r <> c)
+    f r c = r ¦ asColumn (-r #> c)
 
 
 estimateCenters :: [Mat] -> EpiPairs -> ([Vec], Double)
@@ -118,12 +121,12 @@ unRotEpi :: [Mat] -- ^ Rotations
          -> [((Int, Int), Mat)] -- ^ original M hat 
          -> [((Int, Int), Mat)] -- ^ unrotated and reduced to 2x3
 unRotEpi rots = map f
-    where r = arrayOf $ map (listArray[3,3].toList.flatten .trans) rots
+    where r = arrayOf $ map (listArray[3,3].toList.flatten .tr) rots
           f ((i,j),m) = ((i,j), (compact 2 .s.h) (g i j m))
           g i j m = r i!"ai" * t m * r j!"bj"
           t m = (!"kij").listArray[rows m,3,3].toList $ flatten m
           h x = reshape 9 $ coords (x~>"kab")
-          s m = m <> trans sel
+          s m = m <> tr sel
           sel = (3><9) [ 0,  0, 0, 0, 0, -1,  0, 1, 0,
                          0,  0, 1, 0, 0,  0, -1, 0, 0,
                          0, -1, 0, 1, 0,  0,  0, 0, 0 ]
@@ -140,7 +143,7 @@ selectUsefulPoints n p = obs where
 
 estimatePointsCenters :: Int -> [Mat] -> Projections Calibrated -> (Motion,Motion)
 estimatePointsCenters n rots p = (newCams sol, newCams (-sol)) where
-    irk = arrayOf $ map trans rots
+    irk = arrayOf $ map tr rots
     obs = selectUsefulPoints n p
     coefs = fromBlocks $ map (return . ec) obs
     pmax = maximum (map (fst.fst) obs)
@@ -151,7 +154,7 @@ estimatePointsCenters n rots p = (newCams sol, newCams (-sol)) where
                                ++ [-x]
                                ++ replicate (cmax-j) z
                                 ]
-        where [a,b,c] = toList $ irk j <> hv pix
+        where [a,b,c] = toList $ irk j #> hv pix
               x = (3><3) [0,-c,b
                           ,c,0,-a
                           ,-b,a,0]
@@ -160,7 +163,7 @@ estimatePointsCenters n rots p = (newCams sol, newCams (-sol)) where
     sol = reshape 3 $ fst $ homogSolve $ debug "systemPC" inforank $ dropColumns 3 coefs
       where inforank m = (rows m, cols m)
     newcens s = toRows $ dropRows (pmax) s
-    newCams s = zipWith f rots (newcens s) where f r c = r ¦ asColumn (-r <> c)
+    newCams s = zipWith f rots (newcens s) where f r c = r ¦ asColumn (-r #> c)
     hv (Point x y) = unitary (vec [x,y,1])
 
 -----------------------------------------------------------------
@@ -181,7 +184,7 @@ graphInit t rots = paths
         f (i,j) = case lookup (i,j) rots of
                      Just r -> r
                      Nothing -> case lookup (j,i) rots of
-                                   Just r -> trans r
+                                   Just r -> tr r
                                    Nothing -> error $ "graphInit" ++ show (i,j)
 
 -- | Basic initial estimation of rotations from the best s2 spanning tree of the view graph
@@ -197,9 +200,9 @@ initRots epi = r0 where
 lieAverage :: Vec -> Double -> [Mat] -> [((Int,Int),Mat)] -> [Mat]
 lieAverage w angMax r0 sel = debug "rotation system error gain: " (const err) rs where
     r = arrayOf r0
-    f ((i,j),rel) = ((i,j), coordsRot $ trans (r j) <> rel <> r i)
+    f ((i,j),rel) = ((i,j), coordsRot $ tr (r j) <> rel <> r i)
     d = debug "rot residuals: " (map (round.h.snd))
-    h = (/degree). pnorm PNorm2 . vec
+    h = (/degree). norm_2 . vec
     g = filter ((<angMax).h.snd) . debug "removed: " (map fst . filter ((>=angMax).h.snd))
     resi = d . g $ map f sel
     (sol,err) = solveEcs w resi

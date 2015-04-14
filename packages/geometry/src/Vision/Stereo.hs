@@ -39,8 +39,8 @@ module Vision.Stereo
 , depthsOfInducedPoint
 ) where
 
-import Numeric.LinearAlgebra
-import Numeric.LinearAlgebra.Util(unitary,norm,null1)
+import Numeric.LinearAlgebra.HMatrix
+import Numeric.LinearAlgebra.HMatrix.Util(unitary)
 import Numeric.GSL
 import Util.Homogeneous
 import Util.Estimation
@@ -53,6 +53,7 @@ import Debug.Trace(trace)
 import Util.Misc(vec,Vec, mat,Mat)
 import Util.Debug(debugMat)
 
+trans = tr
 
 --------------------- Basic Stereo -----------------------
 
@@ -77,7 +78,7 @@ distPointLine [x,y,w] [a,b,c] = sqrt $ (a*x + b*y + c*w)**2 / (a**2+b**2) / w**2
 epipolarQuality :: Mat -> [[Double]] -> [[Double]] -> [Double]
 epipolarQuality f l r = zipWith fun l r where
     fun [a1,a2] [b1,b2] = distPointLine [a1,a2,1.0] epb where
-        epb = toList (f <> vec [b1,b2,1.0])
+        epb = toList (f #> vec [b1,b2,1.0])
 
 qualityOfEssential :: Mat -> Double
 qualityOfEssential e = (s1-s2)/(s1+s2) where
@@ -114,8 +115,8 @@ estimateEssential' (f0,f0') fund = (esen,(f,f'),err) where
 
 bougnoux :: Mat -> Double
 bougnoux fun = sqrt (- a / b) where
-    a = (p' <> asMat e' <> i' <> fun <.> p) * (p <> trans fun <.> p')
-    b = (p' <> asMat e' <> i' <> fun <> i' <> trans fun <.> p')
+    a = (p' <·> asMat e' #> i' #> fun #> p) * (p <·> trans fun #> p')
+    b = (p' <·> asMat e' #> i' #> fun #> i' #> trans fun #> p')
     (_,e') = epipoles fun
     i' = diag $ vec [1,1,0]
     p = vec [0,0,1]
@@ -195,10 +196,10 @@ cameraDirection m = unitary (scalar (det a) * m3) where
     [_,_,m3] = toRows a
 
 depthOfPoint :: [Double] -> Mat -> Double
-depthOfPoint p m = (signum (det a) / norm m3) * w3 where
+depthOfPoint p m = (signum (det a) / norm_2 m3) * w3 where
     a = takeColumns 3 m
     [_,_,m3] = toRows a
-    w = m <> homog (vec p)
+    w = m #> homog (vec p)
     [_,_,w3] = toList w
 
 depthsOfInducedPoint :: [Double] -> [Double] -> Mat -> Mat -> (Double,Double)
@@ -234,7 +235,7 @@ canonicalCameras f = (cameraAtOrigin, m2) where
 
 fundamentalFromCameras :: Mat -> Mat -> Mat
 fundamentalFromCameras p p' = asMat e' <> p' <> pinv p where
-    e' = p' <> c
+    e' = p' #> c
     c = flatten $ dropColumns 3 v 
     (_,_,v) = svd $ fromBlocks [[p],
                                 [0]]
@@ -268,7 +269,7 @@ stereoRectifiers fund pts pts' = (h,h') where    -- HZ p.307
     eqs = mat $ zipWith eq t t'
     coef = takeColumns 3 eqs
     term = flatten $ dropColumns 3 eqs
-    [a,b,c] = toList $ pinv coef <> term
+    [a,b,c] = toList $ coef <\> term
 
 isInlierFund :: Double -> Mat -> ([Double], [Double]) -> Bool
 isInlierFund t f (x',x) = head (epipolarQuality f [x'] [x]) < t

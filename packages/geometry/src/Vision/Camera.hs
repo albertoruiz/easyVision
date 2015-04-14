@@ -1,4 +1,6 @@
 {-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE TypeFamilies #-}
 
 -----------------------------------------------------------------------------
 {- |
@@ -62,7 +64,8 @@ module Vision.Camera
 
 import Util.Camera
 
-import Numeric.LinearAlgebra as LA
+import Numeric.LinearAlgebra.HMatrix as LA
+import Numeric.LinearAlgebra.HMatrix.Util(unitary)
 import qualified Numeric.GSL as G
 import Util.Homogeneous
 import Util.Estimation(homogSolve, withNormalization, withNormalization', estimateHomography,procrustes)
@@ -78,8 +81,12 @@ import Util.Ellipses(intersectionEllipses,InfoEllipse(..))
 
 import Util.Geometry
 import Util.Small(unsafeMap)
-import Numeric.LinearAlgebra.Util((¦),(#),row,norm,unitary,diagl)
-import Control.Arrow
+import Control.Arrow((***))
+
+(@@>) = atIndex
+x @> k =  x ! k
+trans m = tr m
+norm x = norm_2 x
 
 -- | A nice camera parameterization.
 data CameraParameters 
@@ -174,10 +181,10 @@ poseFromFactorization (k,r,c) = cp where
     f = (k@@>(0,0)+k@@>(1,1))/2 -- hmm
     [cx,cy,cz] = toList c
     [r1,r2,_] = toColumns r
-    h = fromColumns [r1,r2,-r<>c]
-    b = trans h <> linf
+    h = fromColumns [r1,r2,-r#>c]
+    b = tr h #> linf
     beta = atan2 (b@>0) (b@>1)
-    n = k <> h <> mS <> b
+    n = k #> h #> mS #> b
     ni = inHomog n
     rho = atan2 (ni@>0) (ni@>1)
     alpha = atan2 f (norm ni)
@@ -196,7 +203,7 @@ poseFromHomogZ0 mbf = fmap poseFromCamera . cameraFromHomogZ0 mbf
 
 -- | Obtains the homography floor (Z=0) to image from a camera
 homogZ0 :: Mat -> Mat
-homogZ0 cam = extractColumns [0,1,3] cam
+homogZ0 cam = cam ¿ [0,1,3]
 
 -- | Recovers a camera matrix from the homography floor (Z=0) to image. There are actually two solutions, above and below the ground. We return the camera over the floor
 cameraFromHomogZ0 :: Maybe Double              -- ^ focal distance (if known)
@@ -218,7 +225,7 @@ cameraFromHomogZ0 mbf c = res where
     r3 = unitary (cross s1 s2)
     r2 = cross r3 r1
     rot = fromColumns [r1,r2,r3]
-    cen1 = - (trans rot <> t)
+    cen1 = - (trans rot #> t)
     m1 = kgen f <> fromColumns [ r1, r2,r3, t]
     m2 = kgen f <> fromColumns [-r1,-r2,r3,-t]
     m = if cen1@>2 > 0 then m1 else m2
@@ -413,7 +420,7 @@ cameraFromPlane prec nmax mbf image world = camera where
         initsol = par2list $ poseFromCamera cam
         (betterpar, path) = minimize cost initsol
         betterCam = syntheticCamera $ list2par betterpar
-        cost lpar = pnorm Frobenius (mview - htm c mworld)
+        cost lpar = norm_Frob (mview - htm c mworld)
             where c = syntheticCamera $ list2par lpar
         minimize f xi = G.minimize G.NMSimplex2 prec nmax  [0.01,5*degree,5*degree,5*degree,0.1,0.1,0.1] f xi
 
@@ -421,7 +428,7 @@ cameraFromPlane prec nmax mbf image world = camera where
         f:initsol = par2list $ poseFromCamera cam
         (betterpar, path) = minimize cost initsol
         betterCam = syntheticCamera $ list2par (f:betterpar)
-        cost lpar = {-# SCC "cost2" #-} pnorm Frobenius (mview - htm c mworld)
+        cost lpar = {-# SCC "cost2" #-} norm_Frob (mview - htm c mworld)
             where c = syntheticCamera $ list2par (f:lpar)
         minimize f' xi = G.minimize G.NMSimplex2 prec nmax [5*degree,5*degree,5*degree,0.1,0.1,0.1] f' xi
 
@@ -438,9 +445,9 @@ linearPose :: [Point] -> [Point3D] -> Camera
 linearPose image world = unsafeFromMatrix (r ¦ asColumn t)
   where
     x = fromRows (map toVector world)
-    m = trans x # 1
-    v = fromColumns $ nullspacePrec 1 m
-    p = trans (fromRows $ map toVector image) # 1
+    m = trans x ||| 1
+    v = nullspace m
+    p = trans (fromRows $ map toVector image) ||| 1
     d = diagBlock $ map asColumn $ toColumns p
     vk = kronecker (trans v) (ident 3)
     a = vk <> d
@@ -506,7 +513,7 @@ focalFromCircularPoint :: (Complex Double,Complex Double) -> Double
 focalFromCircularPoint (cx,cy) = x * sqrt (1-(y/x)**2) where
     j' = fromList [cx,cy]
     pn = fst $ fromComplex j'
-    x = pnorm PNorm2 (complex pn - j')
+    x = norm_2 (complex pn - j')
     y = norm pn
     -- alpha = asin (y/x)
 
@@ -519,7 +526,7 @@ circularConsistency (x,y) = innerLines n0 h where
     jh = fromList [x,y,1]
 
     innerLines l m = (l.*.m)/ sqrt (l.*.l) / sqrt(m.*.m)
-        where a.*.b = a <> mS <.> b
+        where a.*.b = a <·> mS #> b
 
 imagOfCircPt :: InfoEllipse -> InfoEllipse -> Maybe (Complex Double,Complex Double)
 imagOfCircPt e1 e2 = fst (selectSol m1 m2 (intersectionEllipses c1 c2))
@@ -573,18 +580,18 @@ projectionDerivAt k0 r0 cx0 cy0 cz0 p t r cx cy cz x y z = ms where
     c =  b <> r3
     d =  c <> r0
     e = vec [x-cx0-cx, y-cy0-cy, z-cz0-cz]
-    m0 = d <> e
-    m4 = d <> vec [-1,0,0]
-    m5 = d <> vec [0,-1,0]
-    m6 = d <> vec [0,0,-1]
+    m0 = d #> e
+    m4 = d #> vec [-1,0,0]
+    m5 = d #> vec [0,-1,0]
+    m6 = d #> vec [0,0,-1]
     m7 = -m4
     m8 = -m5
     m9 = -m6
-    f = r0 <> e
-    m3 = b <> rot3d r <> f
-    g = r3 <> f
-    m2 = a <> rot2d t <> g
-    m1 = k0 <> rot1d p <> r2 <> g
+    f = r0 #> e
+    m3 = b #> rot3d r #> f
+    g = r3 #> f
+    m2 = a #> rot2d t #> g
+    m1 = k0 #> rot1d p #> r2 #> g
     m0l = toList m0
     ms = iH m0l : map (derIH m0l . toList) [m1,m2,m3,m4,m5,m6,m7,m8,m9]
 
@@ -599,20 +606,20 @@ projectionDerivAtF k0 r0 cx0 cy0 cz0 f' p t r cx cy cz x y z = ms where
     c =  b <> r3
     d =  c <> r0
     e = vec [x-cx0-cx, y-cy0-cy, z-cz0-cz]
-    m0 = d <> e
-    m4 = d <> vec [-1,0,0]
-    m5 = d <> vec [0,-1,0]
-    m6 = d <> vec [0,0,-1]
+    m0 = d #> e
+    m4 = d #> vec [-1,0,0]
+    m5 = d #> vec [0,-1,0]
+    m6 = d #> vec [0,0,-1]
     m7 = -m4
     m8 = -m5
     m9 = -m6
-    f = r0 <> e
-    m3 = b <> rot3d r <> f
-    g = r3 <> f
-    m2 = a <> rot2d t <> g
-    h = r2 <> g
-    m1 = u <> rot1d p <> h
-    mf = diagl[1,1,0] <> k0 <> r1 <> h
+    f = r0 #> e
+    m3 = b #> rot3d r #> f
+    g = r3 #> f
+    m2 = a #> rot2d t #> g
+    h = r2 #> g
+    m1 = u #> rot1d p #> h
+    mf = diagl[1,1,0] #> k0 #> r1 #> h
     m0l = toList m0
     ms = iH m0l : map (derIH m0l . toList) [mf,m1,m2,m3,m4,m5,m6,m7,m8,m9]
 
@@ -672,10 +679,10 @@ auxCamJac (_,r0,cx0,cy0,cz0) (toList -> [p,t,r,cx,cy,cz]) = (rt,rt1,rt2,rt3,m4,m
 projectionDerivAt' :: CamJacobianData -> Vec -> (Vec,Mat,Mat)
 projectionDerivAt' (rt,rt1,rt2,rt3,m4,m5,m6,cx,cy,cz) (toList -> [x',y',z']) = result where
     e = fromList [x'-cx, y'-cy, z'-cz]
-    m0 = rt <> e
-    m1 = rt1 <> e
-    m2 = rt2 <> e
-    m3 = rt3 <> e
+    m0 = rt  #> e
+    m1 = rt1 #> e
+    m2 = rt2 #> e
+    m3 = rt3 #> e
     m7 = -m4
     m8 = -m5
     m9 = -m6
@@ -693,10 +700,10 @@ projectionDerivAt' (rt,rt1,rt2,rt3,m4,m5,m6,cx,cy,cz) (toList -> [x',y',z']) = r
 projectionDerivAtH (rt,rt1,rt2,rt3,m4,m5,m6,cx,cy,cz) pt@(toList -> [x',y',z',w'])  = result where
     e = fromList [x'-w'*cx, y'-w'*cy, z'-w'*cz]
     h = (*scalar w')
-    m0 = rt <> e
-    m1 = rt1 <> e
-    m2 = rt2 <> e
-    m3 = rt3 <> e
+    m0 = rt  #> e
+    m1 = rt1 #> e
+    m2 = rt2 #> e
+    m3 = rt3 #> e
     [x,y,w] = toList m0
     d1 = recip w
     d2 = -x/w**2
@@ -743,8 +750,8 @@ epipolarMiniJac (r,r1,r2,r3,_,_,_,cx,cy,cz) (q,q1,q2,q3,_,_,_,dx,dy,dz) = result
     result =  (g [f], g [f1,f2,f3,f4,f5,f6], g [f7,f8,f9,f10,f11,f12])
 
 derNor :: Vec -> Vec -> Vec
-derNor v w = scale nv w + scale (-(w <.> v)*vv*nv) v
-    where vv = recip (v <.> v)
+derNor v w = scale nv w + scale (-(w <·> v)*vv*nv) v
+    where vv = recip (v <·> v)
           nv = sqrt vv
 
 --------------------------------------------------
@@ -807,9 +814,9 @@ newtonStep lambda m sol = sol'
   where
     (fun,jac) = m sol
     hes = trans jac <> jac
-    grad = trans jac <> fun
+    grad = trans jac #> fun
     sol' = sol - (aug lambda hes) <\> grad
-    aug lam mat = mat + diag (constant lam (rows mat))
+    aug lam mat = mat + diag (konst lam (rows mat))
 
 
 mkJac cam views points = (origin, g)

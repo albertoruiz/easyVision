@@ -1,4 +1,5 @@
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE FlexibleContexts #-}
 
 module Vision.TensorRep(
     VProb(..), VPParam(..), stdprob, mkVProb, randomVProb, mkHelix,
@@ -9,9 +10,8 @@ module Vision.TensorRep(
 )where
 
 import Numeric.LinearAlgebra.Exterior
-import qualified Numeric.LinearAlgebra as LA
-import Numeric.LinearAlgebra
-import Numeric.LinearAlgebra.Util(unitary)
+import Numeric.LinearAlgebra.HMatrix as LA hiding ((!))
+import Numeric.LinearAlgebra.HMatrix.Util(unitary)
 import Numeric.LinearAlgebra.Array.Util as Array
 import Graphics.Plot(gnuplotpdf)
 import System.Random
@@ -20,9 +20,6 @@ import Control.Applicative
 import Control.Monad hiding (join)
 import System.Directory(doesFileExist)
 import Util.Misc(splitEvery,degree)
-
-
-type Seed = Int
 
 data VProb = VProb
     { p3d :: Tensor Double
@@ -181,7 +178,7 @@ eps3 = cov     (leviCivita 3)
 
 addNoise :: Seed -> Double -> Tensor Double -> Tensor Double
 addNoise seed sigma t = t + Array.scalar sigma .* noise
-    where noise = mapArray (const $ randomVector seed Gaussian (dim $ coords t)) t
+    where noise = mapArray (const $ randomVector seed Gaussian (LA.size $ coords t)) t
 
 
 shProb :: String -> VProb -> IO ()

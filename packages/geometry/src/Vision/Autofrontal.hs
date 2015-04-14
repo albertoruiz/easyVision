@@ -24,8 +24,8 @@ module Vision.Autofrontal (
 
 -- experiments on planar rectification
 
-import Numeric.LinearAlgebra
-import Numeric.LinearAlgebra.Util(unitary,norm)
+import Numeric.LinearAlgebra.HMatrix
+import Numeric.LinearAlgebra.HMatrix.Util(unitary)
 import Numeric.GSL.Minimization
 import Util.Homogeneous
 import Vision.Camera
@@ -84,10 +84,10 @@ quality ihs mbOmgs c = sum qs / fromIntegral (length ihs) where
 
 -- this gives a low value if h is a similar transformation
 similarityDegree :: Mat -> Double
-similarityDegree h = pnorm PNorm1 (m'-v) where
+similarityDegree h = norm_1 (m'-v) where
     v = vec [1,0,0,0,1,0,0,0,0]
-    m = flatten (h <> mS <> trans h)
-    m' = m / scalar (m@>0)
+    m = flatten (h <> mS <> tr h)
+    m' = m / scalar (m!0)
 
 
 omegaGen :: Double -> Mat
@@ -95,11 +95,11 @@ omegaGen f = kgen (recip (f*f))
 
 -- this gives a measure of the difference with a camera homography, for known f
 orthogonality :: Mat -> Mat -> Double
-orthogonality omega c = pnorm PNorm1 (m'-v) where
+orthogonality omega c = norm_1 (m'-v) where
     v = vec [1,0,0,1]
     m = flatten $ subMatrix (0,0) (2,2) q
-    m' = m / scalar (m@>0)
-    q = trans c <> omega <> c
+    m' = m / scalar (m!0)
+    q = tr c <> omega <> c
 
 -- if given f (omega) it uses it, otherwise we try to estimate it. If not possible we check if this is a similar transformation.
 autoOrthogonality :: Maybe Mat -> Mat -> Double
@@ -131,7 +131,7 @@ camera0 ((rho,yh),f) = (3 >< 3) [
           sr = - sin rho      
 
 {-
-northPoint c = c <> mS <> trans c <> linf    
+northPoint c = c <> mS <> tr c <> linf    
     
 ryf c = focalFromHomogZ0 c >>= \f -> Just ((rho,yh),f) where
     [x,y,w] = toList $ northPoint $ c   
@@ -146,7 +146,7 @@ polarHoriz :: PolarHorizon -> Vec
 polarHoriz (r',y) = h where
     r = -(r'+3*pi/2)
     n = vec [y* cos r, y* sin r , 1]
-    h = cross n (mA<>n)
+    h = cross n (mA#>n)
     
   
 -- estimation of f1 given a polar horiz (r,y) and a interimage homograpy 1<-k
@@ -154,15 +154,15 @@ estimateFTransfer :: PolarHorizon -> Mat -> Maybe Double
 estimateFTransfer (r,y) h = res 
   where
     horiz = polarHoriz (r,y) -- horiz in view 1
-    hp = trans h <> horiz  -- horiz in view k
-    d = mA <> hp
+    hp = tr h #> horiz  -- horiz in view k
+    d = mA #> hp
     n = cross hp d 
-    a = inHomog $ unitary $ h <> n
-    b = inHomog $ unitary $ h <> d
-    ni = inHomog $ unitary $ cross horiz (mA <> horiz)
-    yh = norm ni
-    x1 = norm (a-ni)
-    x2 = norm (b-ni)
+    a = inHomog $ unitary $ h #> n
+    b = inHomog $ unitary $ h #> d
+    ni = inHomog $ unitary $ cross horiz (mA #> horiz)
+    yh = norm_2 ni
+    x1 = norm_2 (a-ni)
+    x2 = norm_2 (b-ni)
     f = sqrt (x1*x2-yh*yh)
     res = if f > 0.5 && f < 10 && x1 < 20 &&  x2 < 20 -- parametrizar mejor
             then Just f
