@@ -20,7 +20,6 @@ import Util.Misc(vec,Mat,Vec,degree,arrayOf,unionSort)
 import Util.Debug(debug,impossible)
 import Util.Graph(kruskal,path)
 import Numeric.LinearAlgebra.HMatrix hiding ((!))
-import Numeric.LinearAlgebra.HMatrix.Util(unitary)
 import Numeric.LinearAlgebra.Tensor hiding (scalar)
 import Numeric.LinearAlgebra.Array.Util hiding (scalar)
 import Vision.Types

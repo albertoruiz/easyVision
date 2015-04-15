@@ -40,7 +40,6 @@ module Vision.Stereo
 ) where
 
 import Numeric.LinearAlgebra.HMatrix
-import Numeric.LinearAlgebra.HMatrix.Util(unitary)
 import Numeric.GSL
 import Util.Homogeneous
 import Util.Estimation

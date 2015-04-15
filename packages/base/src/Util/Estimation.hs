@@ -39,7 +39,6 @@ module Util.Estimation
 ) where
 
 import Numeric.LinearAlgebra.HMatrix
-import Numeric.LinearAlgebra.HMatrix.Util(unitary)
 import Util.Covariance
 import Util.Homogeneous
 import Data.List(transpose,nub,maximumBy,genericLength,sortBy,minimumBy)

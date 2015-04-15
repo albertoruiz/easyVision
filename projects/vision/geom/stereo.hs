@@ -2,8 +2,7 @@ import Vision.GUI
 import Image.Processing
 import Util.Options(getRawOption,maybeOption)
 import Data.Traversable(traverse)
-import Numeric.LinearAlgebra
-import Numeric.LinearAlgebra.Util((¦))
+import Numeric.LinearAlgebra.HMatrix
 import Util.Geometry as G
 import Util.Camera
 import Vision
@@ -35,7 +34,7 @@ addepi (p2,_) (p1,_) = (p2, Draw l)
     pts = map p2l p2
     pts' = map p2l p1
     f = estimateFundamental pts' pts
-    l = unsafeFromVector $ trans f <> pt2hv (last p1) :: HLine
+    l = unsafeFromVector $ tr f #> pt2hv (last p1) :: HLine
 
 
 sh mbimg (pts,l) = Draw [ Draw $ fmap (rgb.channelsFromRGB) mbimg
@@ -102,15 +101,15 @@ drw mbf mbimg1 mbimg2 (psl,psr) = clearColor white [ color gray $ axes3D 2 , dr 
     rays2 = invc2 <| G.homog sp2
     
     
-    epi1 = unsafeFromVector $ inHomog $ nullVector f
-    epi2 = unsafeFromVector $ inHomog $ nullVector $ trans f
+    epi1 = unsafeFromVector $ inHomog $ null1 f
+    epi2 = unsafeFromVector $ inHomog $ null1 $ tr f
 
     info = debugMat "F" 6 (const $ normat3 f)
          . debug "f" (const df) 
          . debug "q" (const q)
          . debug "bougnoux" (const (bougnoux f))
 
-move d m = k <> (r ¦ asColumn (-r <> (scalar d * c)))
+move d m = k <> (r ¦ asColumn (-r #> (scalar d * c)))
   where
     (k,r,c) = factorizeCamera m
 

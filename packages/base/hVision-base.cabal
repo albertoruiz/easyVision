@@ -67,6 +67,7 @@ library
                         Util.Camera
                         Util.NLHash
                         Util.Experiment
+                        Util.Kron
 
                         Image
                         Image.Capture

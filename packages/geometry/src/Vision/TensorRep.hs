@@ -11,7 +11,6 @@ module Vision.TensorRep(
 
 import Numeric.LinearAlgebra.Exterior
 import Numeric.LinearAlgebra.HMatrix as LA hiding ((!))
-import Numeric.LinearAlgebra.HMatrix.Util(unitary)
 import Numeric.LinearAlgebra.Array.Util as Array
 import Graphics.Plot(gnuplotpdf)
 import System.Random

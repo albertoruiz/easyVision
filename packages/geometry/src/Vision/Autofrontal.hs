@@ -25,7 +25,6 @@ module Vision.Autofrontal (
 -- experiments on planar rectification
 
 import Numeric.LinearAlgebra.HMatrix
-import Numeric.LinearAlgebra.HMatrix.Util(unitary)
 import Numeric.GSL.Minimization
 import Util.Homogeneous
 import Vision.Camera

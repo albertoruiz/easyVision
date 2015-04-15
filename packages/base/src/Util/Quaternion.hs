@@ -12,7 +12,6 @@ module Util.Quaternion(
 ) where
 
 import Numeric.LinearAlgebra.HMatrix
-import Numeric.LinearAlgebra.HMatrix.Util(unitary)
 import Data.List(minimumBy,maximumBy)
 import Data.Function(on)
 import Util.Misc(vec,Vec,Mat)

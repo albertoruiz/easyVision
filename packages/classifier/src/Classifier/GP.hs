@@ -19,7 +19,6 @@ module Classifier.GP (
 ) where
 
 import Numeric.LinearAlgebra.HMatrix
-import Numeric.LinearAlgebra.HMatrix.Util(pairwiseD2)
 import Classifier.Base (Sample, TwoGroups, Dicotomizer, group )
 import Util.Misc ( Mat, Vec )
 

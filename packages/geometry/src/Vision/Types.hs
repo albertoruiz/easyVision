@@ -17,7 +17,6 @@ module Vision.Types(
 import Data.Array as A
 import Data.List(foldl',foldl1',group,sort)
 import Numeric.LinearAlgebra.HMatrix
-import Numeric.LinearAlgebra.HMatrix.Util(unitary)
 import Util.Misc(Vec,Mat,arrayOf,vec,intersectSorted)
 import qualified Data.Map as M
 import Vision.Stereo(triangulate1)

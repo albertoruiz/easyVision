@@ -65,7 +65,6 @@ module Vision.Camera
 import Util.Camera
 
 import Numeric.LinearAlgebra.HMatrix as LA
-import Numeric.LinearAlgebra.HMatrix.Util(unitary)
 import qualified Numeric.GSL as G
 import Util.Homogeneous
 import Util.Estimation(homogSolve, withNormalization, withNormalization', estimateHomography,procrustes)
