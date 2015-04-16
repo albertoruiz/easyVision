@@ -106,6 +106,7 @@ int cFindHomography(int code, double th,
 
     cv::Mat h(rr,cr,CV_64F,pr);
     cv::Mat mask(nmask,1,CV_8U,pmask);
+    cv::Scalar zero = 0;
 
     int method;
     switch(code) {
@@ -114,7 +115,7 @@ int cFindHomography(int code, double th,
         default: method = 0;
     }
 
-    mask=Scalar(0);
+    mask=zero;
 
     if (code==3) {
         h = cv::estimateRigidTransform(objectPoints,imagePoints,false);
