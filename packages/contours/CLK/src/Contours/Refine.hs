@@ -1,11 +1,12 @@
 module Contours.Refine (
     prepro, normalizedXORError,
-    refineH, refineP
+    refineH, refineP, refinePB
 )where
 
 import Contours
 import Contours.CLK
 import Contours.CLKP
+import Vision.Ippe
 import Numeric.LinearAlgebra.HMatrix
 --import Vision(cameraFromHomogZ0,kgen,refineNewton)
 import Vision(kgen)
@@ -68,6 +69,20 @@ refineP k3 k4 f r h = p
         refine c = poseStep rs c norobs
         rs = rsp (proto r)
 
+refinePB :: Int -> ShapeMatch -> Matrix Double -> Matrix Double
+refinePB k4 r h = p
+  where
+    model = shapeContour (proto r)
+    obs = shapeContour (target r)
+    
+    rPose = (fst . h2p) h
+    ik = kgen (1)
+    c0 = rPose ¿ [0,1,3]
+    norobs = transPol ik obs
+    p = kgen 1 <> fillr3 ((iterate refine c0)!!k4)
+      where
+        refine c = poseStep rs c norobs
+        rs = rsp (proto r)
 
 fillr3 :: Matrix Double -> Matrix Double
 fillr3 m = fromColumns [r1,r2,r3,t]

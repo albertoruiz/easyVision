@@ -39,6 +39,7 @@ library
                         Vision.IO
                         Vision.LASBA
                         Vision.Autofrontal
+                        Vision.Ippe
 
     other-modules:
 
