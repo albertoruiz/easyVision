@@ -4,6 +4,7 @@
 
 #ifdef OPENCV3
 #include "opencv2/opencv.hpp"
+#include "opencv2/xfeatures2d.hpp"
 #else
 #include <cv.h>
 #endif
@@ -246,6 +247,159 @@ void surf( GIMS(char,t),
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+
+#define DYN_VECT(type,name) int* n##name, type** pp##name
+#define CREATE_DYN_VECT(type,name,size) *n##name = (size); type *p##name = (type*)malloc(*n##name * sizeof(type)); *pp##name = p##name;
+#define FILL_DYN_VECT(name,exprk) for(int k=0; k<*n##name; k++) {p##name[k] = (exprk);}
+
+/*
+int c_vVector (int m, int* n, double** pp) {
+    *n = 2*m;
+    double* p = (double*)malloc(*n * sizeof(double));
+    *pp = p;
+    for(int j=0; j<*n; j++) {
+        p[j] = j;
+    }
+    return 0;
+}
+*/
+
+int c_vVector (int m, DYN_VECT(double,res)) {
+    CREATE_DYN_VECT(double,res,2*m)
+    FILL_DYN_VECT(res,2*k)
+    return 0;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+int c_sift( int maxk, double ct, double et, GIMS(char,t), DYN_VECT(double,locs), DYN_VECT(float,descs)) {
+
+#ifndef OPENCV3
+    CREATE_DYN_VECT(double,locs,4*0)
+    CREATE_DYN_VECT(float,descs,128*0)
+    return 0;
+#else
+
+    IPL(t,8,1)
+    Mat frame;
+    frame = cvarrToMat(ipl_t);
+    std::vector<KeyPoint> keypoints;
+    cv::Ptr<Feature2D> f2d = xfeatures2d::SIFT::create(maxk,3,ct,et);
+    Mat features;
+
+    f2d->detectAndCompute( frame, noArray(), keypoints, features );
+    int tot = keypoints.size();
+    CREATE_DYN_VECT(double,locs,4*tot)
+
+    double h2 = theight/2;
+    double w2 = twidth/2;
+
+    for(int i=0; i< tot; i++) {
+        plocs[4*i+0] = (-keypoints[i].pt.x+w2)/w2;
+        plocs[4*i+1] = (-keypoints[i].pt.y+h2)/w2;
+        plocs[4*i+2] = (keypoints[i].size)/w2;
+        plocs[4*i+3] = keypoints[i].angle;
+    }
+    
+    //cout << features.type() << endl;
+    //cout << features.row(0) << endl;
+
+    CREATE_DYN_VECT(float,descs,128*tot)
+    for(int i=0; i< tot; i++) {
+        for(int j=0; j<128; j++) {
+            pdescs[128*i+j] = features.at<float>(i,j);
+        }
+    }
+    
+    cvReleaseImageHeader(&ipl_t);
+    return 0;
+
+#endif
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+int c_match(int code, double th,
+    int rv, int cv, float*pv,
+    int rp, int cp, float*pp,
+    int nr, int* pr) {
+
+    cv::Mat mv(rv,cv,CV_32F,pv);
+    cv::Mat mp(rp,cp,CV_32F,pp);
+
+    BFMatcher matcher(NORM_L2, true);
+    std::vector< DMatch > matches;
+
+    int method;
+    switch(code) {
+        default: method = 0;
+    }
+
+    matcher.match( mv, mp, matches);
+
+//---------------------------------------------------------------
+    
+    double max_dist = 0; double min_dist = 10000;
+
+    //-- Quick calculation of max and min distances between keypoints
+    for( int i = 0; i < matches.size(); i++ ) {
+        double dist = matches[i].distance;
+        if( dist < min_dist ) min_dist = dist;
+        if( dist > max_dist ) max_dist = dist;
+    }
+
+    // printf("-- Max dist : %f \n", max_dist );
+    // printf("-- Min dist : %f \n", min_dist );
+
+    std::vector< DMatch > good_matches;
+
+    for( int i = 0; i < matches.size(); i++ ) {
+        // if( matches[i].distance <= max(2*min_dist, 0.02))
+        if(matches[i].distance <= th)
+            good_matches.push_back( matches[i]);
+    }
+
+    // cout << th << " " << rv << " " << rp << " " << matches.size() << " " << good_matches.size() << endl;
+
+
+
+    for (int k=0; k<nr; k++) {
+        pr[k] = -1;
+    }
+
+    for (int k=0; k<good_matches.size(); k++) {
+        //cout << k << " " << good_matches[k].queryIdx << " " << good_matches[k].trainIdx << endl;
+        pr[good_matches[k].queryIdx] = good_matches[k].trainIdx;
+    }
+
+    return 0;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+#define COPYMat(TY,DST,SRC,R,C) { int r, c; for (r=0; r<R; r++) for (c=0; c<C; c++) DST.at<TY>(r,c)=ATM(SRC,C,r,c); }
+
+int opencv_warp8u3_bis(int fill, unsigned char g, int r, int c, double*p, GIMS(char,s), GIMS(char,d)) {
+
+    IPL(s,8,3)
+    IPL(d,8,3)
+
+    Mat ms; ms = cvarrToMat(ipl_s);
+    Mat md; md = cvarrToMat(ipl_d);
+
+    Mat h(3, 3, CV_32F);
+    COPYMat(float,h,p,3,3);
+
+    cout << "hi" << endl;
+
+    cv::warpPerspective(ms,md,h,md.size(),cv::INTER_LANCZOS4,cv::BORDER_TRANSPARENT);
+
+    cvReleaseImageHeader(&ipl_s);
+    cvReleaseImageHeader(&ipl_d);
+    
+    return 0;
+
+}
 
 
 }

@@ -255,6 +255,24 @@ instance Renderable [InterestPoint] where
   render = mapM_ render
 
 
+instance Renderable KeyPoint where
+  render = shKP
+
+instance Renderable [KeyPoint] where
+  render = mapM_ render
+
+shKP :: KeyPoint -> IO ()
+shKP (KeyPoint (Point x y) s' o) = do
+    GL.renderPrimitive GL.LineStrip box
+  where
+    s = s'/2
+    m = unsafeFromMatrix (desp (x,y) <> rot3 o) :: Homography
+    ps = m <| [HPoint 0 0 1, HPoint (-s) 0 1, HPoint (-s) (-s) 1, HPoint (-s) (s) 1, HPoint (s) (s) 1, HPoint(s) (-s) 1, HPoint (-s) (-s) 1, HPoint (-s) 0 1]
+    box = mapM_ GL.vertex ps
+
+
+
+
 lineStrip :: Vertex a => [a] -> Drawing
 lineStrip = Raw . GL.renderPrimitive GL.LineStrip . mapM_ GL.vertex
 

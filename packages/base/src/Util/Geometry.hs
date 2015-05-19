@@ -55,6 +55,7 @@ module Util.Geometry
     bisector, areaTriang,
     Polygon(..),
     orientation, polygonSides,
+    KeyPoint(..),
     DMat,
     Trust(..)
 ) where
@@ -897,4 +898,13 @@ bisector (Segment (Point x0 y0) (Point x1 y1)) = gjoin dir cen
     cy = (y0+y1)/2
     dir = HPoint (-dy) dx 0
     cen = HPoint cx cy 1
+
+--------------------------------------------------------------------------------
+
+data KeyPoint = KeyPoint !Point !Double !Double
+
+instance Shaped KeyPoint where
+    type Shape KeyPoint = Dim4 Double
+    toArray (KeyPoint (Point x y) s a) = vector [x,y,s,a]
+    unsafeFromArray v = KeyPoint (Point (v!0) (v!1)) (v!2) (v!3)
 
