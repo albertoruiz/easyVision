@@ -7,13 +7,16 @@ module OpenCV(
   hough,
   cascadeClassifier,
   solvePNP,
-  findHomography, findHomographyRANSAC, findHomographyLMEDS,
+  findHomography, findHomographyRANSAC, hackRANSAC, findHomographyLMEDS,
   estimateRigidTransform,
   MotionType(..), findTransformECC,
   surf,
   warp8u, warp8u3, warp32f, CVPix(..), warp,
   undistort8u,
-  webcam
+  webcam,
+  vVect,
+  sift,
+  match
 ) where
 
 import Image.Devel as I
@@ -28,11 +31,17 @@ import Numeric.LinearAlgebra.HMatrix
 import Numeric.LinearAlgebra.Devel
 import Util.Homogeneous(rodrigues)
 import Control.Arrow((&&&))
+import Data.Vector.Storable(unsafeWith)
+import Data.List(maximumBy)
+import Data.Function(on)
+import Util.Misc(rotateLeft)
 
 --------------------------------------------------------------------------------
 
 type M = Matrix Double
 type V = Vector Double
+
+type MF = Matrix Float
 
 data Rect = Rect !Pixel !Size
 
@@ -330,4 +339,88 @@ webcam d (Size h w) fps = do
         if ok==0
           then return (Just im)
           else return Nothing
+
+--------------------------------------------------------------------------------
+
+foreign import ccall "c_vVector"
+    c_vVector :: CInt -> Ptr CInt -> Ptr (Ptr Double) -> IO CInt
+
+vVect :: Int -> V
+vVect m = unsafePerformIO $ do
+    pn <-  malloc
+    pp <- malloc
+    _ok <- c_vVector (fi m) pn pp
+    n <- peek pn
+    p <- peek pp
+    v <- createVector (ti n)
+    unsafeWith v $ \pv -> copyBytes pv p (ti n*sizeOf (v!0))
+    free p
+    free pp
+    free pn
+    return v
+
+--------------------------------------------------------------------------------
+
+type DynV t s = Ptr CInt -> Ptr (Ptr t) -> s
+
+foreign import ccall "c_sift"
+    c_sift :: CInt -> Double -> Double -> RawImageS I8u (DynV Double (DynV Float (IO CInt)))
+
+sift :: Int -> Double -> Double -> Image I8u -> (M, MF)
+sift maxf cth eth imag = unsafePerformIO $ do
+    pn <- malloc; pp <- malloc
+    pm <- malloc; pd <- malloc
+    withImage imag $ do
+        _ok <- (c_sift (fi maxf) cth eth `appS` imag) pn pp pm pd
+        return ()
+    n <- peek pn; p <- peek pp; v <- createVector (ti n)
+    unsafeWith v $ \pv -> copyBytes pv p (ti n*sizeOf (v!0))
+    free p; free pp; free pn
+
+    m <- peek pm; d <- peek pd; w <- createVector (ti m)
+    unsafeWith w $ \pv -> copyBytes pv d (ti m*sizeOf (w!0))
+    free d; free pd; free pm
+
+    return (reshape 4 v, reshape 128 w)
+
+--------------------------------------------------------------------------------
+
+type FMAT t = CInt -> CInt -> Ptr Float -> t
+type IVEC t = CInt -> Ptr CInt -> t
+
+foreign import ccall "c_match"
+    c_match :: CInt -> Double -> FMAT (FMAT (IVEC (IO CInt)))
+
+match :: Double -> MF -> MF -> [(Int,Int)]
+match th vs ps = unsafePerformIO $ do
+    r <- createVector (rows vs)
+    let a = cmat vs
+        b = cmat ps
+    app3 (c_match 0 th) mat a mat b vec r "match"
+    return (filter ((>=0).snd) $ zip [0..] $ map ti (toList r))
+
+--------------------------------------------------------------------------------
+
+-- | call findHomographyRANSAC several times and get the run with most inliers
+hackRANSAC
+    :: Int      -- ^ number of repetitions
+    -> Double   -- ^ inlier threshold
+    -> M        -- ^ dst
+    -> M        -- ^ src
+    -> (M, (M, M)) -- ^ (H, (dst inl, src inl))
+hackRANSAC _ _ dst src | rows dst < 4 = (ident 3, (dst,src))
+hackRANSAC m th dst src = maximumBy (compare `on` rows.fst.snd) -- $ debug "INL" (map (rows.fst.snd))
+    [ f d s
+        | k <- [0..m-1]
+        , let d = rotMatUp k dst
+        , let s = rotMatUp k src
+    ]
+  where
+    rotMatUp n = fromRows . rotateLeft n . toRows
+
+    f d s = (h,(di,si))
+      where
+        (h,inl) = OpenCV.findHomographyRANSAC th d s
+        di = d?inl
+        si = s?inl
 
