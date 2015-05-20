@@ -324,6 +324,13 @@ int c_match(int code, double th,
     int rp, int cp, float*pp,
     int nr, int* pr) {
 
+#ifndef OPENCV3
+    for (int k=0; k<nr; k++) {
+        pr[k] = -1;
+    }
+    return 0;
+#else
+
     cv::Mat mv(rv,cv,CV_32F,pv);
     cv::Mat mp(rp,cp,CV_32F,pp);
 
@@ -373,6 +380,8 @@ int c_match(int code, double th,
     }
 
     return 0;
+
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////////////////
