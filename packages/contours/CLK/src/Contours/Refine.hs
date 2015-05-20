@@ -1,6 +1,6 @@
 module Contours.Refine (
     prepro, normalizedXORError,
-    refineH, refineP, refinePB
+    refineH, refineP, refinePB, refinePGen, initPoseEV, initPosePnP, initBartoli
 )where
 
 import Contours
@@ -8,13 +8,13 @@ import Contours.CLK
 import Contours.CLKP
 import Vision.Ippe
 import Numeric.LinearAlgebra.HMatrix
---import Vision(cameraFromHomogZ0,kgen,refineNewton)
-import Vision(kgen)
+import Vision(cameraFromHomogZ0,kgen,refineNewton)
 import Util.Geometry(datMat,segmentLength)
 import Control.Arrow((&&&))
 import Util.Misc(stdpix)
 import OpenCV
 
+type M = Matrix Double
 
 prepro :: Polyline -> Maybe Shape
 prepro = fmap andMore . shape 10
@@ -24,7 +24,7 @@ prepro = fmap andMore . shape 10
                   }
 
 
-refineH :: Int -> Int -> ShapeMatch -> Matrix Double
+refineH :: Int -> Int -> ShapeMatch -> M
 refineH k1 k2 r = h
   where
     prep@(f0,_j0,ffeat) = shapeGNS (proto r)   -- or shapeGNP
@@ -38,51 +38,65 @@ refineH k1 k2 r = h
     h = rHomog <> inv hxor
 
 
-refineP :: Int -> Int -> Double -> ShapeMatch -> Matrix Double -> Matrix Double
-refineP k3 k4 f r h = p
+type InitPose = Double -> ShapeMatch -> M -> M
+
+refinePGen :: InitPose -> Int -> Int -> Double -> ShapeMatch -> M -> M
+refinePGen initFun nint k4 f r h = p
   where
-    model = shapeContour (proto r)
     obs = shapeContour (target r)
-{-
-    mbpose0 = cameraFromHomogZ0 (Just f) h
-    rPose' = case mbpose0 of
-              Just rPose0 -> refineNewton k3 rPose0 views points
+
+    rPose = initFun f r h
+
+    ik = kgen (1/f)
+    c0 = ik <> rPose ¿ [0,1,3]
+    norobs = transPol ik obs
+
+    rs  | nint <= 50 = preSamp
+        | otherwise  = customSamp
+      where
+        preSamp    = rsp (proto r)
+        customSamp = Closed $ resample nint (shapeContour $ proto r)
+
+    refine c = poseStep rs c norobs
+
+    p = kgen f <> fillr3 ((iterate refine c0)!!k4)
+
+
+initPoseEV :: Int -> InitPose
+initPoseEV k3 f r h = p
+  where
+    mbp0 = cameraFromHomogZ0 (Just f) h
+    p = case mbp0 of
+              Just p0 -> refineNewton k3 p0 views points
               Nothing     -> kgen f
        where
          views  = rspm3 (proto r) <> tr h
          points = rspm4 (proto r)
--}
-    rPose = solvePNP (kgen f) views points
-      where
-        pproj  = transPol h prs
-        prs    = Closed (resample 10 model)
-        views  = datMat (polyPts pproj)
-        points = datMat (polyPts prs) ¦ 0
 
 
-    ik = kgen (1/f)
-
-    c0 = ik <> rPose ¿ [0,1,3]
-    norobs = transPol ik obs
-    p = kgen f <> fillr3 ((iterate refine c0)!!k4)
-      where
-        refine c = poseStep rs c norobs
-        rs = rsp (proto r)
-
-refinePB :: Int -> ShapeMatch -> Matrix Double -> Matrix Double
-refinePB k4 r h = p
+initPosePnP :: InitPose
+initPosePnP f r h = solvePNP (kgen f) views points
   where
     model = shapeContour (proto r)
-    obs = shapeContour (target r)
-    
-    rPose = (fst . h2p) h
-    ik = kgen (1)
-    c0 = rPose ¿ [0,1,3]
-    norobs = transPol ik obs
-    p = kgen 1 <> fillr3 ((iterate refine c0)!!k4)
-      where
-        refine c = poseStep rs c norobs
-        rs = rsp (proto r)
+    pproj  = transPol h prs
+    prs    = Closed (resample 10 model)
+    views  = datMat (polyPts pproj)
+    points = datMat (polyPts prs) ¦ 0
+
+
+initBartoli :: InitPose
+initBartoli f _ h = k <> (fst . h2p) (ik <> h)
+  where
+    k  = kgen f
+    ik = kgen (1/f)
+
+
+refineP :: Int -> Double -> ShapeMatch -> M -> M
+refineP = refinePGen initPosePnP 50
+
+refinePB :: Int -> Double -> ShapeMatch -> M -> M
+refinePB = refinePGen initBartoli 1000
+
 
 fillr3 :: Matrix Double -> Matrix Double
 fillr3 m = fromColumns [r1,r2,r3,t]
@@ -102,5 +116,5 @@ normalizedXORError predicted observed
 
     lpred = perimeter predicted
     lobs  = perimeter observed
-    ok = abs (lpred-lobs)/lobs < 0.25
+    ok = abs (lpred-lobs)/lobs < 0.25  -- FIXME needed now?
 
