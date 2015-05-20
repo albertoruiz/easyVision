@@ -88,7 +88,7 @@ mkSVG w h = header w h . unlines
 header :: Int -> Int -> String -> String
 header w h x = unlines
     [ "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>" 
-    , r "<svg xmlns='http://www.w3.org/2000/svg' version='1.1' width='W' height='H' >"
+    , r "<svg xmlns='http://www.w3.org/2000/svg' version='1.1' viewBox='0 0 W H' >"
     , x
     ,"</svg>"
     ]
