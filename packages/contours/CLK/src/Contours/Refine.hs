@@ -1,6 +1,7 @@
 module Contours.Refine (
     prepro, normalizedXORError,
-    refineH, refineP, refinePB, refinePGen, initPoseEV, initPosePnP, initBartoli
+    refineH, refineP, refinePB, refinePGen,
+    initPoseEV, initPosePnP, initBartoli, initPoseNaive
 )where
 
 import Contours
@@ -72,6 +73,15 @@ initPoseEV k3 f r h = p
        where
          views  = rspm3 (proto r) <> tr h
          points = rspm4 (proto r)
+
+
+initPoseNaive :: InitPose
+initPoseNaive f _ h = p
+  where
+    mbp0 = cameraFromHomogZ0 (Just f) h
+    p = case mbp0 of
+              Just p0 -> p0
+              Nothing -> kgen f
 
 
 initPosePnP :: InitPose
