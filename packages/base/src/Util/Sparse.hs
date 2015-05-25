@@ -39,7 +39,7 @@ mkSparse' asc = SparseMatrix {srows = r, scols = c, sat = at }
           c = succ . maximum . map snd . Map.keys $ m
 -}
 
-toDense :: (Container Vector t, Num (Vector t))
+toDense :: (Container Vector t, Num t, Num (Vector t))
         => SparseMatrix t -> Matrix t
 toDense sp = fromBlocks [[f (sat sp (i,j)) | j<-[0..c-1]] | i<- [0..r-1]]
     where r = srows sp
@@ -53,7 +53,7 @@ spTrans Zero = Zero
 spTrans (Dense x) = Dense (tr x)
 spTrans (Diagonal l) = Diagonal (map tr l)
 
-spAdd :: (Container Vector t, Num (Vector t))
+spAdd :: (Container Vector t, Num t, Num (Vector t))
       => MatrixBlock t -> MatrixBlock t -> MatrixBlock t
 spAdd Zero x = x
 spAdd x Zero = x
@@ -65,7 +65,7 @@ spSub x Zero = x
 spSub x y = spew (-) x y
 -}
 
-spew :: (Container Vector t1, Num (Vector t1), Container Vector t, Num (Vector t))
+spew :: (Container Vector t1, Num t1, Num (Vector t1), Container Vector t, Num t, Num (Vector t))
      => (Matrix t -> Matrix t1 -> Matrix t2)
     -> MatrixBlock t
     -> MatrixBlock t1
@@ -101,7 +101,7 @@ bMul (SparseMatrix rx cx atx) (SparseMatrix _ry cy aty) = mkSparse l where
 
 --------------------------------------------
 
-blockDiag :: (Container Vector t, Num (Vector t)) 
+blockDiag :: (Container Vector t, Num t, Num (Vector t)) 
           => [Matrix t] -> Matrix t
 blockDiag bs = fromBlocks [ [ f i j | i<-ns ] | j<-ns ] where
     ns = [ 0 .. length bs -1]

@@ -147,27 +147,27 @@ normatdet m = m / scalar k where
 normat :: Mat -> Mat
 normat m = m / scalar (norm_2 (flatten m))
 
-homogMat :: (Container Vector t, Num (Vector t))
+homogMat :: (Container Vector t, Num t, Num (Vector t))
          => Matrix t -> Matrix t
 homogMat m = fromBlocks [[m,1]]
 
-inHomogMat :: (Container Vector t, Product t, Num (Vector t)) => Matrix t -> Matrix t
+inHomogMat :: (Container Vector t, Fractional t, Product t, Num (Vector t)) => Matrix t -> Matrix t
 inHomogMat m = ma / (mb `outer` konst 1 (cols ma))
     where ma = takeColumns (cols m -1) m
           mb = flatten $ dropColumns (cols m -1) m
 
 infixl 7 !<>, <>!
 
-(!<>) ::  (Numeric t, Num (Vector t))
+(!<>) ::  (Numeric t, Fractional t, Num (Vector t))
        => Matrix t -> Matrix t -> Matrix t
 a !<> b = G.inhomog (G.homog a <> b)
 
-(<>!) ::  (Numeric t, Num (Vector t))
+(<>!) ::  (Numeric t, Fractional t, Num (Vector t))
        => Matrix t -> Matrix t -> Matrix t
 a <>! b = G.inhomog (a <> G.homog b)
 
 
-htc :: (Numeric t, Num (Vector t)) => Matrix t -> [[t]] -> [[t]]
+htc :: (Numeric t, Fractional t, Num (Vector t)) => Matrix t -> [[t]] -> [[t]]
 htc _ [] = []
 htc h l  = toLists. inHomogMat . (<> tr h) . homogMat . fromLists $ l
 

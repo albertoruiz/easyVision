@@ -191,7 +191,7 @@ angleDiff x y = min (abs (x-y)) (abs (opos x - opos y))
 
 ----------------------------------------------------------------------
 
-norMax :: (Num (c e), Container c e) => e -> c e -> c e
+norMax :: (Num (c e), Fractional e, Container c e) => e -> c e -> c e
 norMax s m = m * scalar (s / v)
   where
     p = maxIndex (abs m)

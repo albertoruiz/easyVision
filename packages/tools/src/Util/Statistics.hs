@@ -6,7 +6,7 @@ module Util.Statistics(
 ) where
 
 
-import Numeric.LinearAlgebra.HMatrix hiding (step)
+import Numeric.LinearAlgebra.HMatrix hiding (step,idxs)
 import Data.List(sortBy, sort)
 import System.Random
 import qualified Data.Vector as V

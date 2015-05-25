@@ -29,7 +29,7 @@ module Graphics.SVG(
     plotFullMark
 )where
 
-import Numeric.LinearAlgebra.HMatrix hiding (col,cols,tr)
+import Numeric.LinearAlgebra.HMatrix hiding (col,cols,tr,range)
 ---(scalar,fromList,toList,linspace,Vector,minElement,maxElement)
 --import Util.Geometry(Point(..),datMat)
 import Text.Printf

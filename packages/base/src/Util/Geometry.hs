@@ -480,7 +480,7 @@ instance (Num (Vector t), Container Vector t) => Inhomog (Vector t)
     type HResult (Vector t) = Vector t
     homog v = vjoin [v,1]
 
-instance (Num (Vector t), Container Vector t) =>  Inhomog (Matrix t)
+instance (Num t, Num (Vector t), Container Vector t) =>  Inhomog (Matrix t)
   where
     type HResult (Matrix t) = Matrix t
     homog m = fromBlocks [[m , 1 ]]
@@ -505,21 +505,21 @@ instance Homog HPoint3D
     type IHResult HPoint3D = Point3D
     inhomog (HPoint3D x y z w) = Point3D (x/w) (y/w) (z/w)
 
-instance (Num (Vector t), Indexable (Vector t) t, Numeric t) => Homog (Vector t)
+instance (Num (Vector t), Indexable (Vector t) t, Numeric t, Fractional t) => Homog (Vector t)
   where
     type IHResult (Vector t) = Vector t
     inhomog v = subVector 0 d (v / scalar (v!d))
       where
         d = size v - 1
 
-instance (Num (Vector t), Container Vector t) => Homog (Matrix t)
+instance (Num (Vector t), Container Vector t, Fractional t) => Homog (Matrix t)
   where
     type IHResult (Matrix t) = Matrix t
     inhomog m = takeColumns (c-1) (m / dropColumns (c-1) m)
       where
         c = cols m
 
-instance (Show (UT.NArray i x), UT.Compat i, UT.Coord x) => Homog (UT.NArray i x) where
+instance (Show (UT.NArray i x), UT.Compat i, UT.Coord x, Fractional x) => Homog (UT.NArray i x) where
   type IHResult (UT.NArray i x) = UT.Name -> UT.NArray i x
   inhomog t n = (init `UT.onIndex` n) t / last (UT.parts t n)
 
