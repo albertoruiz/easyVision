@@ -786,7 +786,7 @@ fromY :: R -> (V,V) -> (V,V)
 fromY z (x,y) = (vjoin [scalar(x!0),x,scalar(x!(size x-1))]
                 ,vjoin [scalar z,y, scalar z])
 
-type R = Double
+--type R = Double
 type V = Vector Double
 --type M = Matrix Double
 

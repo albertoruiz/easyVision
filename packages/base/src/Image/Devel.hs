@@ -39,7 +39,7 @@ import Foreign.ForeignPtr(withForeignPtr)
 import Foreign.ForeignPtr.Unsafe(unsafeForeignPtrToPtr)
 import Numeric.LinearAlgebra.HMatrix(Matrix,flatten,rows,cols,Vector)
 import qualified Numeric.LinearAlgebra.HMatrix as M
-import Numeric.LinearAlgebra.Devel(fi,orderOf, MatrixOrder(..),unsafeToForeignPtr)
+import Numeric.LinearAlgebra.Devel(fi,ti,orderOf, MatrixOrder(..),unsafeToForeignPtr)
 
 type RawImage p t = Ptr p -> CInt -> CInt -> CInt -> CInt -> CInt -> t
 
@@ -123,9 +123,6 @@ checkFFI :: String -> IO CInt -> IO ()
 checkFFI msg f = do
     err <- f
     when (err/=0)  (error $ "error in foreign function " ++ msg)
-
-ti :: CInt -> Int
-ti = fromIntegral
 
 --------------------------------------------------------------------------------
 
