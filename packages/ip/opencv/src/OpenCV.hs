@@ -38,6 +38,11 @@ import Util.Misc(rotateLeft)
 
 --------------------------------------------------------------------------------
 
+infixl 1 #
+(#) :: TransArray c => TransRaw c b -> c -> b
+a # b = applyRaw a b
+{-# INLINE (#) #-}
+
 type M = Matrix Double
 type V = Vector Double
 
@@ -220,7 +225,7 @@ cascadeClassifier file = do
 solvePNP :: Matrix Double -> Matrix Double -> Matrix Double -> Matrix Double
 solvePNP k vs ps = unsafePerformIO $ do
     r <- createMatrix RowMajor 2 3
-    app4 c_PNP mat (cmat k) mat (cmat vs) mat (cmat ps) mat r "c_PNP"
+    c_PNP # (cmat k) # (cmat vs) # (cmat ps) # r #|"c_PNP"
     let [rv,t] = toRows r
     return $ k <> (rodrigues rv ¦ asColumn t)
 
@@ -239,28 +244,28 @@ estimateRigidTransform :: Matrix Double -> Matrix Double -> Matrix Double
 estimateRigidTransform vs ps = unsafePerformIO $ do
     r <- createMatrix RowMajor 2 3
     mask <- createVector (rows vs)
-    app4 (c_FindHomography 3 0) mat (cmat vs) mat (cmat ps) mat r vec mask "estimateRigidTransform"
+    c_FindHomography 3 0 # (cmat vs) # (cmat ps) # r # mask #|"estimateRigidTransform"
     return (r === row [0,0,1])
 
 findHomography :: Matrix Double -> Matrix Double -> Matrix Double
 findHomography vs ps = unsafePerformIO $ do
     r <- createMatrix RowMajor 3 3
     mask <- createVector (rows vs)
-    app4 (c_FindHomography 0 0) mat (cmat vs) mat (cmat ps) mat r vec mask "findHomography"
+    c_FindHomography 0 0 # (cmat vs) # (cmat ps) # r # mask #|"findHomography"
     return r
 
 findHomographyRANSAC :: Double -> M -> M -> (M,[Int])
 findHomographyRANSAC th vs ps = unsafePerformIO $ do
     r <- createMatrix RowMajor 3 3
     mask <- createVector (rows vs)
-    app4 (c_FindHomography 1 th) mat (cmat vs) mat (cmat ps) mat r vec mask "findHomographyRANSAC"
+    c_FindHomography 1 th # (cmat vs) # (cmat ps) # r # mask #|"findHomographyRANSAC"
     return (r, findMask mask)
 
 findHomographyLMEDS :: M -> M -> (M,[Int])
 findHomographyLMEDS vs ps = unsafePerformIO $ do
     r <- createMatrix RowMajor 3 3
     mask <- createVector (rows vs)
-    app4 (c_FindHomography 2 0) mat (cmat vs) mat (cmat ps) mat r vec mask "findHomographyLMEDS"
+    c_FindHomography 2 0 # (cmat vs) # (cmat ps) # r # mask #|"findHomographyLMEDS"
     return (r, findMask mask)
 
 foreign import ccall unsafe "cFindHomography" c_FindHomography
@@ -396,7 +401,7 @@ match th vs ps = unsafePerformIO $ do
     r <- createVector (rows vs)
     let a = cmat vs
         b = cmat ps
-    app3 (c_match 0 th) mat a mat b vec r "match"
+    c_match 0 th # a # b # r #|"match"
     return (filter ((>=0).snd) $ zip [0..] $ map ti (toList r))
 
 --------------------------------------------------------------------------------

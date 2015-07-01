@@ -27,7 +27,7 @@ import Foreign.Ptr(castPtr)
 import Foreign.Marshal ( peekArray, copyArray, malloc, free )
 import Foreign.C.Types ( CInt(CInt) )
 import Vision.GUI.Parameters
-import Numeric.LinearAlgebra.Devel ( createVector, app1, vec )
+import Numeric.LinearAlgebra.Devel ( createVector, apply, (#|) )
 import Numeric.LinearAlgebra.HMatrix as LA hiding (step)
 import ImagProc.Contrib.Contours.Structs
 import Control.Monad ( when )
@@ -102,8 +102,8 @@ rawContours th minlen options pack thPack imgSrc = unsafePerformIO $ do
                 xs <- createVector n :: IO (Vector Float)
                 ys <- createVector n :: IO (Vector Float)
                 --putStrLn "vectors created"
-                app1 (\_ d -> copyArray d (x conts) n >> return 0) vec xs "memcopy npbRaw x"
-                app1 (\_ d -> copyArray d (y conts) n >> return 0) vec ys "memcopy npbRaw y"
+                (\_ d -> copyArray d (x conts) n >> return 0) `apply` xs #|"memcopy npbRaw x"
+                (\_ d -> copyArray d (y conts) n >> return 0) `apply` ys #|"memcopy npbRaw y"
                 --putStrLn "vectors copied";  print (LA.size xs, LA.size ys)
                 return (takesV c' xs, takesV c' ys)
 
