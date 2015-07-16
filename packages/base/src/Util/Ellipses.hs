@@ -212,7 +212,7 @@ pointsConic n c = fromUnitCircle c <| circle n 1 (Point 0 0)
 fromUnitCircle :: Conic -> Homography
 fromUnitCircle c = h
   where
-    (l,v) = eigSH (f . toMatrix $ c)
+    (l,v) = eigSH (trustSym . f . toMatrix $ c)
     f m = m * scalar (signum (-det m))
     h = unsafeFromMatrix $ v <> diag (recip $ sqrt $ abs $ l)
 

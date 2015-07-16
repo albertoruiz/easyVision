@@ -3,8 +3,8 @@
 module Util.Sparse(
     MatrixBlock(..), SparseMatrix(..), SMat,
     mkSparse, toDense,
-    bMul,bTrans, blockDiag,
-    blockDiagSolveLU
+    bMul,bTrans, blockDiag
+-- ,    blockDiagSolveLU
 ) where
 
 import Numeric.LinearAlgebra.HMatrix hiding (mkSparse, toDense)
@@ -111,8 +111,8 @@ blockDiag bs = fromBlocks [ [ f i j | i<-ns ] | j<-ns ] where
 --blockDiagSolve :: (Field t) => [Matrix t] -> Matrix t -> Matrix t
 --blockDiagSolve bs m = blockDiagOp linearSolve bs m
 
-blockDiagSolveLU :: (Field t) => [(Matrix t, [Int])] -> Matrix t -> Matrix t
-blockDiagSolveLU lus m = blockDiagOpG (rows.fst) luSolve lus m
+--blockDiagSolveLU :: (Field t) => [(Matrix t, [Int])] -> Matrix t -> Matrix t
+--blockDiagSolveLU lus m = blockDiagOpG (rows.fst) luSolve lus m
 
 blockDiagMul :: (Numeric t) => [Matrix t] -> Matrix t -> Matrix t
 blockDiagMul bs m = blockDiagOp (<>) bs m

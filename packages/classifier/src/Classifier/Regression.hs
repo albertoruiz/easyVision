@@ -94,7 +94,7 @@ pls n xc yc = (<#q) . (<#w)
 pcr :: Int -> RegressionMethod
 pcr n xc yc = (<#q) . (<#w) where
     w = takeColumns n v
-    (_,v) = eigSH (tr xc <> xc)
+    (_,v) = eigSH (xTx xc)
     t = xc <> w
     q = linearSolveSVD t yc
 
