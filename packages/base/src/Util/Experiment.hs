@@ -48,7 +48,7 @@ try name vals = concatMap g
 tryS :: Name -> [(v,String)] -> [(Case, v -> f)] -> [(Case,f)]
 tryS name vals = concatMap g
   where
-    h (s,f) (v,sym) = ((name, ("",sym)):s, f v)
+    h (s,f) (v,symb) = ((name, ("",symb)):s, f v)
     g af = map (h af) vals
 
 experiment :: Seed -> Trials -> t -> ([([a], t)] -> Expers) -> Results
