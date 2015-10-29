@@ -1,3 +1,5 @@
+{-# LANGUAGE ViewPatterns #-}
+
 import Classifier.Regression
 import Numeric.LinearAlgebra
 import Numeric.LinearAlgebra.HMatrix(Seed)
@@ -48,4 +50,14 @@ main = do
     study pls
     line "pcr"
     study pcr
+
+-- | R^2 score
+r2score :: Regressor -> DataPairs -> Double
+r2score f prob = 1 - u/v
+  where
+    (x,y) = unzip prob
+    n = length prob
+    ym = sum y / fromIntegral n
+    u = sum [ norm_2 (y - f x )**2 | (x,y) <- prob ]
+    v = sum [ norm_2 (y - ym  )**2 | (_,y) <- prob ]
 

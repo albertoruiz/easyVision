@@ -90,7 +90,7 @@ ofP prop other prob = prop prob' . other prob where
 mean :: Mat -> Vec
 mean = fst . meanCov
 
-cov :: Mat -> Mat
+cov :: Mat -> Herm Double
 cov  = snd . meanCov
 
 -- | Most discriminant linear features (LDA, Fisher)
@@ -100,7 +100,7 @@ mdf exs = f where
     n = length gs - 1
     gs = fst$ group exs
     v' = takeColumns n v
-    (_l,v) = geigSH' cm c
+    (_l,v) = geigSH cm c
     (m,c) = meanCov $ fromRows $ map fst exs
     cm = cov $ fromRows $ map (mean.fromRows) $ gs 
 

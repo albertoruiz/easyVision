@@ -299,7 +299,7 @@ relocate p = p { p3d = (p3d p * hi)!>"yx", cam = (cam p * h) !> "yx"} where
     pts = ihPoints3D p
     (m,c) = meanCov . fromRows $ (concat $ replicate (length cens) pts) ++ (concat $ replicate (length pts) cens)
     [x,y,z] = toList m
-    s = sqrt $ maxElement $ eigenvaluesSH' c 
+    s = sqrt $ maxElement $ eigenvaluesSH c 
 
 -------------------------------------------------
 
@@ -392,7 +392,7 @@ normalizeCoords :: (Int, Int) -> VProb -> VProb
 normalizeCoords sz p = p {p2d = p2d p!>"vw" * fromMatrix Contra Co (inv $ knor sz) !"vw"}
 
 signalLevel :: VProb -> Double
-signalLevel = mean . map (sqrt . minElement . eigenvaluesSH' . snd . meanCov . asMatrix . (~>"nv")) .  flip parts "c" . inhomogT "v" . p2d
+signalLevel = mean . map (sqrt . minElement . eigenvaluesSH . snd . meanCov . asMatrix . (~>"nv")) .  flip parts "c" . inhomogT "v" . p2d
 
 signalNoise :: VProb -> Double
 signalNoise p = (quality p / signalLevel p)

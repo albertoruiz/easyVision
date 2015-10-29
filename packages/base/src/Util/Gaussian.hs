@@ -11,6 +11,8 @@ Bayesian inference for gaussians.
 
 EM estimation for mixtures of gaussians.
 
+Must be updated to use Herm
+
 -}
 -----------------------------------------------------------------------------
 
@@ -73,7 +75,7 @@ conditional y (N m c) = N m' c'
     c' = cxx - r <> cyx
 
 -- a linear transformation of x is convolved with (suffers additive noise)
--- with offset o and covariance r 
+-- with offset o and covariance r
 -- x ~ N m c,   y|x ~ N (h x + o,  r)
 jointLinear :: Gaussian -> Mat -> Gaussian -> Gaussian
 jointLinear (N m c) h (N o r) = N m' c'
@@ -122,7 +124,7 @@ sampleMixture :: [Seed] -> Int -> Mixture -> Mat
 sampleMixture seeds n mix = fromBlocks $ map return $ zipWith3 f seeds ns (map snd mix)
   where
     ns = map (round . (fromIntegral n*). fst) mix
-    f seed k (N m c) = gaussianSample seed k m c 
+    f seed k (N m c) = gaussianSample seed k m (trustSym c)
 
 ----------------------------------------------------------------------
 
@@ -146,7 +148,7 @@ mStep dat (probs,l) = (mix,l)
     ps = map asColumn (toColumns probs)
     ws = toList $ (fst.meanCov) probs
     wis = map recip ws
-    
+
     ms' = map (fst.meanCov) (map (dat*) ps)
     ms = zipWith scale wis ms'
 
@@ -158,7 +160,7 @@ mStep dat (probs,l) = (mix,l)
 em :: Mat -> Mixture -> (Mixture,Double)
 em dat mix = fst $ -- debug "EM lik" snd $
     (mStep dat *** id) $
-    optimize 0 0.1 20 
+    optimize 0 0.1 20
     (eStep dat . mStep dat)
     (negate.snd)
     (eStep dat (mix,undefined))
@@ -166,7 +168,7 @@ em dat mix = fst $ -- debug "EM lik" snd $
 ----------------------------------------------------------------------
 
 initMix1 :: Mat -> Mixture
-initMix1 dat = [(1,N m c)] where (m,c) = meanCov dat 
+initMix1 dat = [(1,N m (unSym c))] where (m,c) = meanCov dat
 
 diviG :: (Double, Gaussian) -> [(Double, Gaussian)]
 diviG (k,(N m c)) = [(0.5*k,N m1 c),(0.5*k, N m2 c)]
