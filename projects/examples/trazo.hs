@@ -1,3 +1,5 @@
+{-# LANGUAGE FlexibleContexts #-}
+
 import Vision.GUI.Simple
 import Image.Devel ( pixelsToPoints )
 import Image.Processing
@@ -59,7 +61,7 @@ norScale f = g where
     g 0 = 0
     g k = f k / (5*s)
 
-align n f g = (h, pnorm PNorm2 (a <> zv - b)) where
+align n f g = (h, norm_2 (a #> zv - b)) where
     h 0 = g 0 + d
     h k = g k * z
     zv = a <\> b

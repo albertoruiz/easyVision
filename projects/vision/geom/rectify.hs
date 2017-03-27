@@ -3,7 +3,7 @@ import Image.Processing
 import Vision.Camera
 import Util.Options(getRawOption)
 import Data.Traversable(traverse)
-import Numeric.LinearAlgebra hiding (join)
+import Numeric.LinearAlgebra hiding (join, size)
 import Image.ROI
 import Util.Geometry as G
 import Util.Debug(debug)

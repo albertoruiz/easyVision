@@ -1,7 +1,6 @@
 import Vision.GUI.Simple
 import Util.Geometry
 import Numeric.LinearAlgebra
-import Numeric.LinearAlgebra.Util(rand,randn)
 import System.Random(randomIO)
 import Util.Misc(vec,degree)
 import Util.Statistics(randomPermutation)

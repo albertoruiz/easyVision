@@ -4,7 +4,6 @@ import Util.Geometry
 import Util.Options(getRawOption)
 import Data.Traversable(traverse)
 import Numeric.LinearAlgebra hiding (join)
-import Numeric.LinearAlgebra.Util(unitary)
 
 main = do
     mbimg <- getRawOption "--image" >>= traverse loadRGB

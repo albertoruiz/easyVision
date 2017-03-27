@@ -1,9 +1,10 @@
+{-# LANGUAGE FlexibleContexts, TypeFamilies #-}
 import Vision.GUI
 import Image
 import Image.Processing
 import Util.Options(optionFromFile,getRawOption)
 import Data.Traversable(traverse)
-import Numeric.LinearAlgebra hiding (gjoin)
+import Numeric.LinearAlgebra hiding (gjoin, size)
 import Vision(estimateHomography,scaling)
 import Util.Geometry as G
 import Util.Debug(debug)

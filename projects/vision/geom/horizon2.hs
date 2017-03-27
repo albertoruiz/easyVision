@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts, TypeFamilies #-}
 import Vision.GUI
 import Image.Processing
 import Contours.Polygons

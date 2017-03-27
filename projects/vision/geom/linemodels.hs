@@ -1,11 +1,10 @@
-import Vision.GUI.Simple
+import Vision.GUI.Simple hiding((|||))
 --import ImagProc
 import Data.Traversable(traverse)
 import Util.Options(optionFromFile)
 import Util.Geometry as G
 import Util.Estimation
 import Numeric.LinearAlgebra
-import Numeric.LinearAlgebra.Util
 import Numeric.LinearProgramming.L1
 
 
@@ -32,7 +31,7 @@ pinvline pts = unsafeFromVector (fromList [a',-1,b'])
     sol = a <\> b
     b = fromList $ map py pts
     x = col $ map px pts
-    a = x ¦ 1
+    a = x ||| 1
     px (Point x _) = x
     py (Point _ y) = y
 
@@ -43,8 +42,8 @@ eigline pts = gjoin p q
     x = fromRows $ map toVector pts
     (m,c) = meanCov x
     p = G.homog (unsafeFromVector m :: Point)
-    q' = head $ toColumns $ snd $ eigSH c
-    q = unsafeFromVector (q' & 0) :: HPoint
+    q' = head $ toColumns $ snd $ eigSH (trustSym c)
+    q = unsafeFromVector (vjoin [q' ,0]) :: HPoint
 
 l1yline :: [Point] -> HLine
 -- L1 cost of y value
@@ -54,7 +53,7 @@ l1yline pts = unsafeFromVector (fromList [a',-1,b'])
     sol = l1SolveO a b
     b = fromList $ map py pts
     x = col $ map px pts
-    a = x ¦ 1
+    a = x ||| 1
     px (Point x _) = x
     py (Point _ y) = y
 

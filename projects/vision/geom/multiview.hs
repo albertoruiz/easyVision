@@ -1,8 +1,7 @@
 {-# LANGUAGE FlexibleInstances, TypeFamilies #-}
 
 import Vision.GUI
-import Numeric.LinearAlgebra
-import Numeric.LinearAlgebra.Util((#),(&),row, col, diagl, norm)
+import Numeric.LinearAlgebra hiding((!))
 import Graphics.Plot(mplot)
 import Util.Geometry
 import Util.Camera
@@ -121,5 +120,5 @@ zoomProb s' p = p { p3d = (p3d p * hi)!>"yx", Vision.Tensorial.cam = (Vision.Ten
 camcenters = map (inhomog.camCenter) cams
 
 camCenter :: Camera -> HPoint3D
-camCenter = unsafeFromVector . nullVector . toMatrix
+camCenter = unsafeFromVector . null1 . toMatrix
 
